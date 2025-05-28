@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   Card,
@@ -13,7 +13,7 @@ import {
   Col,
   Tooltip,
   message,
-  Spin
+
 } from 'antd';
 import {
   EyeOutlined,
@@ -57,11 +57,7 @@ export const PromptLogsViewer: React.FC = () => {
     dateRange: undefined as [string, string] | undefined
   });
 
-  useEffect(() => {
-    loadLogs();
-  }, []);
-
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     try {
       setLoading(true);
       const response = await tuningApi.getPromptLogs({
@@ -79,7 +75,11 @@ export const PromptLogsViewer: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.promptType, filters.success, filters.dateRange]);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
 
   const viewLogDetails = (log: PromptLog) => {
     setSelectedLog(log);
@@ -92,7 +92,7 @@ export const PromptLogsViewer: React.FC = () => {
 
   const getSuccessTag = (success?: boolean) => {
     if (success === undefined) return <Tag>Unknown</Tag>;
-    return success ? 
+    return success ?
       <Tag color="green" icon={<CheckCircleOutlined />}>Success</Tag> :
       <Tag color="red" icon={<CloseCircleOutlined />}>Failed</Tag>;
   };
@@ -107,7 +107,7 @@ export const PromptLogsViewer: React.FC = () => {
           <Text>{new Date(date).toLocaleDateString()}</Text>
         </Tooltip>
       ),
-      sorter: (a: PromptLog, b: PromptLog) => 
+      sorter: (a: PromptLog, b: PromptLog) =>
         new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime(),
       defaultSortOrder: 'descend' as const
     },
@@ -176,7 +176,7 @@ export const PromptLogsViewer: React.FC = () => {
             <FilterOutlined /> Prompt Logs
           </Title>
           <Text type="secondary">
-            View detailed logs of AI prompts sent to OpenAI, including the full prompt content, 
+            View detailed logs of AI prompts sent to OpenAI, including the full prompt content,
             generated SQL, and execution results for debugging and optimization.
           </Text>
         </div>
@@ -210,7 +210,7 @@ export const PromptLogsViewer: React.FC = () => {
           <Col span={8}>
             <RangePicker
               style={{ width: '100%' }}
-              onChange={(dates, dateStrings) => 
+              onChange={(dates, dateStrings) =>
                 setFilters({ ...filters, dateRange: dateStrings as [string, string] })
               }
             />
@@ -269,7 +269,7 @@ export const PromptLogsViewer: React.FC = () => {
                 <Text strong>Status:</Text> {getSuccessTag(selectedLog.success)}
               </Col>
             </Row>
-            
+
             <Row gutter={16} style={{ marginBottom: 16 }}>
               <Col span={12}>
                 <Text strong>Type:</Text> <Tag color="blue">{selectedLog.promptType}</Tag>
@@ -288,11 +288,11 @@ export const PromptLogsViewer: React.FC = () => {
 
             <div style={{ marginBottom: 16 }}>
               <Text strong>Full Prompt Sent to AI:</Text>
-              <Paragraph 
-                copyable 
-                style={{ 
-                  marginTop: 8, 
-                  padding: 12, 
+              <Paragraph
+                copyable
+                style={{
+                  marginTop: 8,
+                  padding: 12,
                   backgroundColor: '#f0f2f5',
                   maxHeight: 300,
                   overflow: 'auto',
@@ -308,11 +308,11 @@ export const PromptLogsViewer: React.FC = () => {
             {selectedLog.generatedSQL && (
               <div style={{ marginBottom: 16 }}>
                 <Text strong>Generated SQL:</Text>
-                <Paragraph 
-                  copyable 
-                  style={{ 
-                    marginTop: 8, 
-                    padding: 12, 
+                <Paragraph
+                  copyable
+                  style={{
+                    marginTop: 8,
+                    padding: 12,
                     backgroundColor: '#e6f7ff',
                     fontFamily: 'monospace',
                     fontSize: '12px'
@@ -335,10 +335,10 @@ export const PromptLogsViewer: React.FC = () => {
             {selectedLog.metadata && (
               <div>
                 <Text strong>Metadata:</Text>
-                <Paragraph 
-                  style={{ 
-                    marginTop: 8, 
-                    padding: 8, 
+                <Paragraph
+                  style={{
+                    marginTop: 8,
+                    padding: 8,
                     backgroundColor: '#f9f9f9',
                     fontFamily: 'monospace',
                     fontSize: '11px'

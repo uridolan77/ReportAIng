@@ -322,7 +322,7 @@ export class ApiService {
 
   // Query Operations
   static async executeQuery(request: QueryRequest): Promise<QueryResult> {
-    const response = await api.post('/api/query/natural-language', request);
+    const response = await api.post('/api/query/execute', request);
     return response.data;
   }
 

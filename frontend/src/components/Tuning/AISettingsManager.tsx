@@ -15,18 +15,17 @@ import {
   Col,
   Switch,
   InputNumber,
-  Divider,
+
   Alert
 } from 'antd';
 import {
   EditOutlined,
   SettingOutlined,
-  InfoCircleOutlined,
-  SaveOutlined
+
 } from '@ant-design/icons';
 import { tuningApi, AITuningSetting } from '../../services/tuningApi';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 

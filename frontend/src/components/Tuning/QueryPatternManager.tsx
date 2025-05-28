@@ -23,13 +23,13 @@ import {
   DeleteOutlined,
   SearchOutlined,
   PlayCircleOutlined,
-  InfoCircleOutlined
+
 } from '@ant-design/icons';
 import { tuningApi, QueryPattern, CreateQueryPatternRequest } from '../../services/tuningApi';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
-const { Option } = Select;
+// const { Option } = Select;
 
 interface QueryPatternManagerProps {
   onDataChange?: () => void;
@@ -289,9 +289,9 @@ export const QueryPatternManager: React.FC<QueryPatternManagerProps> = ({ onData
                   </Col>
                   <Col span={12}>
                     <Title level={5}>SQL Template</Title>
-                    <div style={{ 
-                      backgroundColor: '#f6f8fa', 
-                      padding: '12px', 
+                    <div style={{
+                      backgroundColor: '#f6f8fa',
+                      padding: '12px',
                       borderRadius: '4px',
                       fontFamily: 'monospace',
                       fontSize: '12px',
@@ -441,9 +441,9 @@ export const QueryPatternManager: React.FC<QueryPatternManagerProps> = ({ onData
               <div>
                 <Divider />
                 <Title level={5}>Test Result</Title>
-                <div style={{ 
-                  backgroundColor: '#f6f8fa', 
-                  padding: '12px', 
+                <div style={{
+                  backgroundColor: '#f6f8fa',
+                  padding: '12px',
                   borderRadius: '4px',
                   fontFamily: 'monospace',
                   fontSize: '12px',

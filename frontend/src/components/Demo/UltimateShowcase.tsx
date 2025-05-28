@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Tabs, Button, Space, Typography, Badge, Alert, Progress, Statistic } from 'antd';
+import { Card, Row, Col, Tabs, Space, Typography, Badge, Alert, Progress, Statistic } from 'antd';
 import { SecurityScanOutlined, ThunderboltOutlined, TeamOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { CollaborativeDashboard } from '../Collaboration/CollaborativeDashboard';
 import { MemoizedDataTable, PerformanceMetrics } from '../Performance/MemoizedComponents';
@@ -40,7 +40,7 @@ const generateMockWidgets = () => [
   }
 ];
 
-const generateLargeDataset = (size: number) => 
+const generateLargeDataset = (size: number) =>
   Array.from({ length: size }, (_, i) => ({
     id: i,
     name: `Record ${i + 1}`,
@@ -52,20 +52,20 @@ const generateLargeDataset = (size: number) =>
 export const UltimateShowcase: React.FC = () => {
   const [activeTab, setActiveTab] = useState('security');
   const [securityDemo, setSecurityDemo] = useState<any>(null);
-  const [performanceData, setPerformanceData] = useState(generateLargeDataset(10000));
-  const [collaborationUsers, setCollaborationUsers] = useState(0);
-  
+  const [performanceData] = useState(generateLargeDataset(10000));
+  const [collaborationUsers] = useState(0);
+
   const { connectionState } = useWebSocket();
 
   // Security demonstration
   useEffect(() => {
     const demonstrateSecurity = async () => {
       const testData = 'Sensitive user token data';
-      
+
       try {
         const encrypted = await SecurityUtils.encryptToken(testData);
         const decrypted = await SecurityUtils.decryptToken(encrypted);
-        
+
         setSecurityDemo({
           original: testData,
           encrypted: encrypted.substring(0, 50) + '...',
@@ -152,8 +152,8 @@ export const UltimateShowcase: React.FC = () => {
       </div>
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} size="large">
-        <TabPane 
-          tab={<span><SecurityScanOutlined />Security Enhancements</span>} 
+        <TabPane
+          tab={<span><SecurityScanOutlined />Security Enhancements</span>}
           key="security"
         >
           <Alert
@@ -195,9 +195,9 @@ export const UltimateShowcase: React.FC = () => {
                   <Text strong>Decrypted:</Text> <Text code>{securityDemo.decrypted}</Text>
                 </div>
                 <div>
-                  <Badge 
-                    status={securityDemo.isValid ? 'success' : 'error'} 
-                    text={securityDemo.isValid ? 'Encryption/Decryption Successful' : 'Encryption Failed'} 
+                  <Badge
+                    status={securityDemo.isValid ? 'success' : 'error'}
+                    text={securityDemo.isValid ? 'Encryption/Decryption Successful' : 'Encryption Failed'}
                   />
                 </div>
               </Space>
@@ -205,8 +205,8 @@ export const UltimateShowcase: React.FC = () => {
           )}
         </TabPane>
 
-        <TabPane 
-          tab={<span><ThunderboltOutlined />Performance Optimization</span>} 
+        <TabPane
+          tab={<span><ThunderboltOutlined />Performance Optimization</span>}
           key="performance"
         >
           <Alert
@@ -249,8 +249,8 @@ export const UltimateShowcase: React.FC = () => {
           </Card>
         </TabPane>
 
-        <TabPane 
-          tab={<span><TeamOutlined />Real-time Collaboration</span>} 
+        <TabPane
+          tab={<span><TeamOutlined />Real-time Collaboration</span>}
           key="collaboration"
         >
           <Alert
@@ -299,8 +299,8 @@ export const UltimateShowcase: React.FC = () => {
           />
         </TabPane>
 
-        <TabPane 
-          tab={<span><ExperimentOutlined />Testing Infrastructure</span>} 
+        <TabPane
+          tab={<span><ExperimentOutlined />Testing Infrastructure</span>}
           key="testing"
         >
           <Alert

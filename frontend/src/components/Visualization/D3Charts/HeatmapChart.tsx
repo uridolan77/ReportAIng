@@ -241,7 +241,7 @@ export const HeatmapChart: React.FC<HeatmapChartProps> = ({
       .attr('transform', `translate(0,${legendHeight})`)
       .call(legendAxis);
 
-  }, [data, size, config, interactive, onCellClick, onCellHover, announce]);
+  }, [data, size, config, onCellClick, onCellHover, announce, title, colorScheme, showValues, interactive, margin]);
 
   return (
     <div ref={elementRef} style={{ width: '100%', position: 'relative' }}>

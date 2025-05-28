@@ -70,6 +70,7 @@ public class SchemaController : ControllerBase
     /// </summary>
     /// <returns>List of available data sources</returns>
     [HttpGet("datasources")]
+    [AllowAnonymous] // Allow anonymous access for data source discovery
     public async Task<ActionResult<object>> GetDataSources()
     {
         try
@@ -78,6 +79,7 @@ public class SchemaController : ControllerBase
             _logger.LogInformation("Getting available data sources for user {UserId}", userId);
 
             // Get schema metadata to provide more detailed information
+            // For anonymous users, provide basic schema info without user-specific filtering
             var schema = await _schemaService.GetSchemaMetadataAsync();
 
             var dataSources = new[]

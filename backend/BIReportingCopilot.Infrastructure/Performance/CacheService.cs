@@ -41,7 +41,7 @@ public class CacheService : ICacheService
         _config = new CacheConfiguration();
         configuration.GetSection("Cache").Bind(_config);
 
-        _logger.LogInformation("Cache service initialized with memory cache and {DistributedCache}",
+        _logger.LogDebug("Cache service initialized with memory cache and {DistributedCache}",
             _distributedCache != null ? "distributed cache" : "no distributed cache");
     }
 

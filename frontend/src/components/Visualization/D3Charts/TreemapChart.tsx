@@ -211,8 +211,7 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
           return `${Math.max(minFontSize, Math.min(maxFontSize, Math.sqrt(area) / 8))}px`;
         })
         .style('font-weight', 'bold')
-        .style('fill', function(d) {
-          const node = d3.select((this as any).parentNode).datum() as any;
+        .style('fill', function() {
           const bgColor = d3.select((this as any).parentNode).select('rect').attr('fill');
           return d3.hsl(bgColor).l > 0.5 ? '#000' : '#fff';
         })
@@ -258,7 +257,7 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
       .style('font-size', '12px')
       .text(d => d);
 
-  }, [data, size, config, interactive, onNodeClick, onNodeHover, announce]);
+  }, [data, size, config, interactive, onNodeClick, onNodeHover, announce, title, colorScheme, showLabels, padding, minFontSize, maxFontSize]);
 
   return (
     <div ref={elementRef} style={{ width: '100%', position: 'relative' }}>

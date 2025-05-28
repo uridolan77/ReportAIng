@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useCallback, forwardRef } from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import { Table, Card, List, Typography } from 'antd';
 
 // Performance monitoring hook

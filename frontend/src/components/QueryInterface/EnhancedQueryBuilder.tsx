@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -78,8 +78,8 @@ const EnhancedQueryBuilder: React.FC = () => {
   const [semanticAnalysis, setSemanticAnalysis] = useState<SemanticAnalysisResponse | null>(null);
   const [classification, setClassification] = useState<ClassificationResponse | null>(null);
 
-  // Enhanced sample queries with AI insights
-  const sampleQueries = [
+  // Enhanced sample queries with AI insights - memoized to prevent re-creation
+  const sampleQueries = useMemo(() => [
     "Show me total sales by month for this year",
     "What are the top 10 customers by revenue?",
     "Analyze customer behavior trends over the last quarter",
@@ -88,13 +88,9 @@ const EnhancedQueryBuilder: React.FC = () => {
     "What's the customer retention rate by segment?",
     "Find customers at risk of churning",
     "Show me the most profitable product categories",
-  ];
+  ], []);
 
-  useEffect(() => {
-    loadEnhancedSuggestions();
-  }, []);
-
-  const loadEnhancedSuggestions = async () => {
+  const loadEnhancedSuggestions = useCallback(async () => {
     try {
       setLoadingSuggestions(true);
       const apiSuggestions = await ApiService.getEnhancedQuerySuggestions();
@@ -105,7 +101,11 @@ const EnhancedQueryBuilder: React.FC = () => {
     } finally {
       setLoadingSuggestions(false);
     }
-  };
+  }, [sampleQueries]);
+
+  useEffect(() => {
+    loadEnhancedSuggestions();
+  }, [loadEnhancedSuggestions]);
 
   const handleAnalyzeQuery = async () => {
     if (!query.trim()) return;

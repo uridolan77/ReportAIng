@@ -23,15 +23,21 @@ export const useThrottle = <T extends (...args: any[]) => any>(
   delay: number
 ): T => {
   const lastRun = useRef(Date.now());
+  const callbackRef = useRef(callback);
+
+  // Update callback ref when callback changes
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
   return useCallback(
     ((...args) => {
       if (Date.now() - lastRun.current >= delay) {
-        callback(...args);
+        callbackRef.current(...args);
         lastRun.current = Date.now();
       }
     }) as T,
-    [callback, delay]
+    [delay]
   );
 };
 

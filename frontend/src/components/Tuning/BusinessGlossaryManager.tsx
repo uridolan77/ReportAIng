@@ -21,7 +21,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   BookOutlined,
-  InfoCircleOutlined
+
 } from '@ant-design/icons';
 import { tuningApi, BusinessGlossaryTerm } from '../../services/tuningApi';
 
@@ -151,7 +151,7 @@ export const BusinessGlossaryManager: React.FC<BusinessGlossaryManagerProps> = (
     return colors[category] || 'default';
   };
 
-  const filteredTerms = selectedCategory 
+  const filteredTerms = selectedCategory
     ? terms.filter(term => term.category === selectedCategory)
     : terms;
 

@@ -5,8 +5,6 @@ import {
   Button,
   Space,
   Typography,
-  Spin,
-  Alert,
   Tabs,
   Tooltip,
   Progress,
@@ -18,7 +16,7 @@ import {
   StarOutlined,
   DownloadOutlined,
   CodeOutlined,
-  TableOutlined,
+
   BarChartOutlined,
   ThunderboltOutlined,
   DashboardOutlined,
@@ -39,7 +37,7 @@ import { DashboardView } from './DashboardView';
 import AdvancedVisualizationPanel from '../Visualization/AdvancedVisualizationPanel';
 import { TuningDashboard } from '../Tuning/TuningDashboard';
 import { DatabaseConnectionBanner } from '../Layout/DatabaseConnectionBanner';
-import type { QueryRequest, QueryResponse } from '../../types/query';
+import type { QueryRequest } from '../../types/query';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;

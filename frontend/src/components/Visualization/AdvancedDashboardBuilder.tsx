@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Card,
   Row,
@@ -13,7 +13,7 @@ import {
   Select,
   Switch,
   Slider,
-  Divider,
+
   Modal,
   message,
   Steps,
@@ -21,22 +21,17 @@ import {
 } from 'antd';
 import {
   DashboardOutlined,
-  PlusOutlined,
+
   SettingOutlined,
   SaveOutlined,
   EyeOutlined,
   ThunderboltOutlined,
-  LayoutOutlined,
-  BgColorsOutlined,
-  ClockCircleOutlined
+
 } from '@ant-design/icons';
 import {
   AdvancedDashboardConfig,
   DashboardPreferences,
-  AdvancedVisualizationConfig,
-  DashboardLayout,
-  GlobalFilter,
-  DashboardTheme
+
 } from '../../types/visualization';
 import AdvancedDashboard from './AdvancedDashboard';
 import advancedVisualizationService from '../../services/advancedVisualizationService';
@@ -44,7 +39,7 @@ import advancedVisualizationService from '../../services/advancedVisualizationSe
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { Step } = Steps;
-const { TextArea } = Input;
+// const { TextArea } = Input;
 
 interface AdvancedDashboardBuilderProps {
   data: any[];
@@ -266,8 +261,8 @@ const AdvancedDashboardBuilder: React.FC<AdvancedDashboardBuilderProps> = ({
             </Text>
             <br />
             <br />
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               size="large"
               onClick={generateDashboard}
               disabled={!data.length || !query}
@@ -282,8 +277,8 @@ const AdvancedDashboardBuilder: React.FC<AdvancedDashboardBuilderProps> = ({
 
   // Step 3: Preview and Save
   const renderPreviewStep = () => (
-    <Card 
-      title="Dashboard Preview" 
+    <Card
+      title="Dashboard Preview"
       style={{ marginBottom: 16 }}
       extra={
         <Space>
@@ -351,14 +346,14 @@ const AdvancedDashboardBuilder: React.FC<AdvancedDashboardBuilderProps> = ({
         }
         extra={
           <Space>
-            <Button 
+            <Button
               icon={<EyeOutlined />}
               onClick={() => setShowPreview(true)}
               disabled={!dashboard}
             >
               Quick Preview
             </Button>
-            <Button 
+            <Button
               icon={<SaveOutlined />}
               onClick={saveDashboard}
               disabled={!dashboard}
@@ -377,15 +372,15 @@ const AdvancedDashboardBuilder: React.FC<AdvancedDashboardBuilderProps> = ({
           />
         ) : (
           <>
-            <Steps 
-              current={currentStep} 
+            <Steps
+              current={currentStep}
               style={{ marginBottom: 24 }}
               onChange={setCurrentStep}
             >
               {steps.map((step, index) => (
-                <Step 
+                <Step
                   key={index}
-                  title={step.title} 
+                  title={step.title}
                   icon={step.icon}
                   disabled={index > currentStep && !dashboard}
                 />
@@ -402,8 +397,8 @@ const AdvancedDashboardBuilder: React.FC<AdvancedDashboardBuilderProps> = ({
                   </Button>
                 )}
                 {currentStep < steps.length - 1 && (
-                  <Button 
-                    type="primary" 
+                  <Button
+                    type="primary"
                     onClick={() => {
                       if (currentStep === 0) {
                         form.validateFields().then(() => {

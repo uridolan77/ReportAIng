@@ -71,6 +71,7 @@ export function VirtualScrollList<T>({
                 alignItems: 'center'
               }}
               role="option"
+              aria-selected={false}
               aria-posinset={originalIndex + 1}
               aria-setsize={items.length}
             >
@@ -139,7 +140,7 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({
         <div style={{ flex: 1 }}>Value</div>
         <div style={{ flex: 1 }}>Category</div>
       </div>
-      
+
       {/* Virtual scrolling content */}
       <VirtualScrollList
         items={data}
@@ -158,11 +159,11 @@ export const PerformanceMonitoredVirtualList = <T,>({
   ...props
 }: VirtualScrollListProps<T>) => {
   const startTime = performance.now();
-  
+
   React.useEffect(() => {
     const endTime = performance.now();
     const renderTime = endTime - startTime;
-    
+
     if (renderTime > 16) { // More than one frame (60fps)
       console.warn(`Virtual list render took ${renderTime.toFixed(2)}ms for ${items.length} items`);
     }

@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, Select, Button, Space, Row, Col, Switch, Slider, Typography, Tooltip, Spin } from 'antd';
 import { SettingOutlined, DownloadOutlined, FullscreenOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   InteractiveVisualizationConfig,
-  VisualizationConfig,
-  FilterConfig,
   ColumnInfo,
   VisualizationRequest
 } from '../../types/query';
@@ -36,14 +34,7 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
     height: 400
   });
 
-  // Generate interactive visualization config
-  useEffect(() => {
-    if (data.length > 0 && columns.length > 0) {
-      generateInteractiveConfig();
-    }
-  }, [data, columns, query]);
-
-  const generateInteractiveConfig = async () => {
+  const generateInteractiveConfig = useCallback(async () => {
     setLoading(true);
     try {
       const request: VisualizationRequest = {
@@ -73,7 +64,14 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
     } finally {
       setLoading(false);
     }
-  };
+  }, [query, columns, data, onConfigChange]);
+
+  // Generate interactive visualization config
+  useEffect(() => {
+    if (data.length > 0 && columns.length > 0) {
+      generateInteractiveConfig();
+    }
+  }, [data, columns, query, generateInteractiveConfig]);
 
   // Filter data based on active filters
   const filteredData = useMemo(() => {

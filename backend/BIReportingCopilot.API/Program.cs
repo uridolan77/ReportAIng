@@ -263,7 +263,7 @@ builder.Services.AddScoped<IStreamingSqlQueryService>(provider =>
 }); // Streaming query service
 builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.Services.PromptService>();
 builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Services.VisualizationService>(); // Consolidated visualization service
-builder.Services.AddScoped<ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>(); // Unified cache service
+builder.Services.AddSingleton<ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>(); // Unified cache service - singleton for performance
 builder.Services.AddScoped<IUserService, BIReportingCopilot.Infrastructure.Services.UserService>();
 builder.Services.AddScoped<IAuditService, BIReportingCopilot.Infrastructure.Services.AuditService>();
 builder.Services.AddScoped<IAuthenticationService, BIReportingCopilot.Infrastructure.Services.AuthenticationService>();

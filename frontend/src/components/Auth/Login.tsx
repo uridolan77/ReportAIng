@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Typography, message, Space, Collapse } from 'antd';
-import { UserOutlined, LockOutlined, RobotOutlined, SettingOutlined, DownOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, SettingOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../../stores/authStore';
 import ConnectionStatus from '../Debug/ConnectionStatus';
 import DatabaseStatus from '../Debug/DatabaseStatus';
 import KeyVaultStatus from '../Debug/KeyVaultStatus';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);

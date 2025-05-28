@@ -1,7 +1,7 @@
 // Connection Test Utility for BI Reporting Copilot
 // This utility helps diagnose frontend-backend connection issues
 
-import { API_BASE_URL, HEALTH_ENDPOINTS, AUTH_ENDPOINTS } from '../config/endpoints';
+import { API_BASE_URL, HEALTH_ENDPOINTS } from '../config/endpoints';
 
 export interface ConnectionTestResult {
   success: boolean;

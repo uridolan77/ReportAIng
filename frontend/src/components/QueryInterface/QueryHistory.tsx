@@ -1,5 +1,5 @@
 import React from 'react';
-import { List, Card, Typography, Tag, Button, Space, Empty } from 'antd';
+import { List, Card, Typography, Tag, Space, Empty } from 'antd';
 import { ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useQueryStore } from '../../stores/queryStore';
 
@@ -30,8 +30,8 @@ export const QueryHistory: React.FC<QueryHistoryProps> = ({ onQuerySelect }) => 
       dataSource={queryHistory}
       renderItem={(item) => (
         <List.Item>
-          <Card 
-            size="small" 
+          <Card
+            size="small"
             style={{ width: '100%' }}
             hoverable
             onClick={() => onQuerySelect(item.question)}
@@ -49,7 +49,7 @@ export const QueryHistory: React.FC<QueryHistoryProps> = ({ onQuerySelect }) => 
                   )}
                 </Space>
               </div>
-              
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space size="small">
                   <Tag icon={<ClockCircleOutlined />} color="blue">
@@ -61,7 +61,7 @@ export const QueryHistory: React.FC<QueryHistoryProps> = ({ onQuerySelect }) => 
                     </Tag>
                   )}
                 </Space>
-                
+
                 <Text type="secondary" style={{ fontSize: '12px' }}>
                   {new Date(item.timestamp).toLocaleString()}
                 </Text>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, Row, Col, Tabs, Button, Space, Typography, Statistic, Progress } from 'antd';
 import { HeatmapChart } from '../Visualization/D3Charts/HeatmapChart';
 import { TreemapChart } from '../Visualization/D3Charts/TreemapChart';
@@ -18,7 +18,7 @@ const generateHeatmapData = () => {
   const data = [];
   const categories = ['Q1', 'Q2', 'Q3', 'Q4'];
   const regions = ['North', 'South', 'East', 'West', 'Central'];
-  
+
   for (const x of categories) {
     for (const y of regions) {
       data.push({
@@ -85,18 +85,18 @@ export const AdvancedFeaturesDemo: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortKey, setSortKey] = useState<'name' | 'value' | null>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  
+
   // Performance monitoring
   const { measureAsync } = usePerformanceMeasure();
   const memoryInfo = useMemoryMonitor();
-  
+
   // Store usage
   const { preferences, updatePreferences } = useVisualizationStore();
   const { settings: querySettings, updateSettings } = useAdvancedQueryStore();
-  
+
   // Large dataset for performance testing
   const [largeDataset] = useState(() => generateLargeDataset(10000));
-  
+
   // Optimized data processing
   const filteredData = useOptimizedSearch(
     largeDataset,
@@ -104,20 +104,20 @@ export const AdvancedFeaturesDemo: React.FC = () => {
     ['name', 'category'],
     300
   );
-  
+
   const sortedData = useSortedData(filteredData, sortKey, sortDirection);
-  
+
   const { processedData, isProcessing, progress } = useChunkedProcessing(
     sortedData,
     (chunk) => chunk.map(item => ({ ...item, processed: true })),
     1000
   );
-  
+
   // Chart data
   const [heatmapData] = useState(generateHeatmapData);
   const [treemapData] = useState(generateTreemapData);
   const [networkData] = useState(generateNetworkData);
-  
+
   const handleChartInteraction = async (type: string, data: any) => {
     const { result, duration } = await measureAsync(
       `${type}-interaction`,
@@ -127,7 +127,7 @@ export const AdvancedFeaturesDemo: React.FC = () => {
         return data;
       }
     );
-    
+
     console.log(`${type} interaction took ${duration.toFixed(2)}ms:`, result);
   };
 
@@ -137,7 +137,7 @@ export const AdvancedFeaturesDemo: React.FC = () => {
       <Text type="secondary">
         Showcasing advanced D3.js charts, performance optimizations, and sophisticated state management
       </Text>
-      
+
       {/* Performance Stats */}
       <Card style={{ marginTop: '16px', marginBottom: '24px' }}>
         <Row gutter={16}>

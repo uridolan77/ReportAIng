@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { 
-  Card, 
-  Row, 
-  Col, 
-  Typography, 
-  Button, 
-  Space, 
-  Spin, 
-  Alert, 
-  Select, 
-  DatePicker, 
+import {
+  Card,
+  Row,
+  Col,
+  Typography,
+  Button,
+  Space,
+  Spin,
+
+  Select,
+  DatePicker,
   Tooltip,
   Switch,
   Slider,
@@ -17,21 +17,21 @@ import {
   Badge,
   Divider
 } from 'antd';
-import { 
-  FullscreenOutlined, 
-  DownloadOutlined, 
-  ReloadOutlined, 
+import {
+  FullscreenOutlined,
+  DownloadOutlined,
+  ReloadOutlined,
   SettingOutlined,
   FilterOutlined,
   ShareAltOutlined,
   EyeOutlined,
   ClockCircleOutlined
 } from '@ant-design/icons';
-import { 
-  AdvancedDashboardConfig, 
-  GlobalFilter, 
+import {
+  AdvancedDashboardConfig,
+
   DashboardGenerationMetrics,
-  DataSummary 
+  DataSummary
 } from '../../types/visualization';
 import AdvancedChart from './AdvancedChart';
 import dayjs from 'dayjs';
@@ -84,7 +84,7 @@ const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
   // Responsive layout calculation
   const responsiveLayout = useMemo(() => {
     const { layout, responsive } = config;
-    
+
     if (!responsive?.enabled) {
       return {
         columns: layout.columns,
@@ -94,7 +94,7 @@ const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
 
     // Simple responsive logic based on window width
     const width = window.innerWidth;
-    
+
     if (width <= 768) {
       return responsive.breakpoints.mobile || { columns: 1, chartSizes: ['full'] };
     } else if (width <= 1024) {
@@ -102,7 +102,7 @@ const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
     } else {
       return responsive.breakpoints.desktop || { columns: layout.columns, chartSizes: layout.chartSizes };
     }
-  }, [config.layout, config.responsive]);
+  }, [config]);
 
   // Filter data based on global filters
   const filteredData = useMemo(() => {
@@ -207,9 +207,9 @@ const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
   );
 
   const renderDashboardHeader = () => (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'space-between', 
+    <div style={{
+      display: 'flex',
+      justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: 24,
       padding: '16px 0'
@@ -220,57 +220,57 @@ const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
         </Title>
         <Text type="secondary">{config.description}</Text>
       </div>
-      
+
       <Space>
         {config.realTime?.enabled && (
-          <Badge 
-            status={autoRefresh ? "processing" : "default"} 
+          <Badge
+            status={autoRefresh ? "processing" : "default"}
             text={autoRefresh ? "Live" : "Paused"}
           />
         )}
-        
+
         <Tooltip title="Filters">
-          <Button 
-            icon={<FilterOutlined />} 
+          <Button
+            icon={<FilterOutlined />}
             onClick={() => setShowFilters(!showFilters)}
             type={showFilters ? "primary" : "default"}
           />
         </Tooltip>
-        
+
         <Tooltip title="Settings">
-          <Button 
-            icon={<SettingOutlined />} 
+          <Button
+            icon={<SettingOutlined />}
             onClick={() => setShowSettings(true)}
           />
         </Tooltip>
-        
+
         <Tooltip title="Refresh">
-          <Button 
-            icon={<ReloadOutlined />} 
+          <Button
+            icon={<ReloadOutlined />}
             onClick={onRefresh}
             loading={loading}
           />
         </Tooltip>
-        
+
         {config.collaboration?.allowSharing && (
           <Tooltip title="Share">
-            <Button 
-              icon={<ShareAltOutlined />} 
+            <Button
+              icon={<ShareAltOutlined />}
               onClick={onShare}
             />
           </Tooltip>
         )}
-        
+
         <Tooltip title="Export">
-          <Button 
-            icon={<DownloadOutlined />} 
+          <Button
+            icon={<DownloadOutlined />}
             onClick={() => onExport?.('pdf')}
           />
         </Tooltip>
-        
+
         <Tooltip title="Fullscreen">
-          <Button 
-            icon={<FullscreenOutlined />} 
+          <Button
+            icon={<FullscreenOutlined />}
             onClick={() => setIsFullscreen(!isFullscreen)}
           />
         </Tooltip>
@@ -417,15 +417,15 @@ const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
     <div className={`advanced-dashboard ${isFullscreen ? 'fullscreen' : ''}`}>
       <Spin spinning={loading}>
         {renderDashboardHeader()}
-        
+
         {renderDashboardStats()}
-        
+
         {showFilters && config.globalFilters.length > 0 && renderGlobalFilters()}
 
         <Row gutter={[16, 16]}>
           {config.charts.map((chart, index) => (
-            <Col 
-              key={index} 
+            <Col
+              key={index}
               span={getChartSize(index)}
               style={{ minHeight: 400 }}
             >
@@ -446,8 +446,8 @@ const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
               <Space>
                 <EyeOutlined />
                 <Text type="secondary">
-                  Layout: {config.layout.type} | 
-                  Charts: {config.charts.length} | 
+                  Layout: {config.layout.type} |
+                  Charts: {config.charts.length} |
                   Data: {filteredData.length} rows
                   {Object.keys(globalFilters).length > 0 && ' (filtered)'}
                 </Text>

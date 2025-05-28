@@ -220,7 +220,7 @@ export class SecurityUtils {
         // Basic SQL injection prevention
         const sqlInjectionPatterns = [
           /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE)\b)/i,
-          /(;|\-\-|\/\*|\*\/)/,
+          /(;|--|\/\*|\*\/)/,
           /(\b(UNION|OR|AND)\b.*\b(SELECT|INSERT|UPDATE|DELETE)\b)/i
         ];
         return !sqlInjectionPatterns.some(pattern => pattern.test(input));

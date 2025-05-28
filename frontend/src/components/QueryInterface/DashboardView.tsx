@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Typography, Button, Space, Spin, Alert, Select, DatePicker, Tooltip } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, Row, Col, Typography, Button, Space, Spin, Select, DatePicker, Tooltip } from 'antd';
 import { FullscreenOutlined, DownloadOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
-import { DashboardConfig, VisualizationConfig, FilterConfig, ColumnInfo, VisualizationRequest } from '../../types/query';
+import { DashboardConfig, VisualizationConfig, ColumnInfo, VisualizationRequest } from '../../types/query';
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import dayjs from 'dayjs';
 
@@ -27,24 +27,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [globalFilters, setGlobalFilters] = useState<Record<string, any>>({});
   const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (data.length > 0 && columns.length > 0) {
-      generateDashboard();
-    }
-  }, [data, columns, query]);
-
-  // Auto-refresh functionality
-  useEffect(() => {
-    if (refreshInterval && refreshInterval > 0) {
-      const interval = setInterval(() => {
-        generateDashboard();
-      }, refreshInterval * 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [refreshInterval]);
-
-  const generateDashboard = async () => {
+  const generateDashboard = useCallback(async () => {
     setLoading(true);
     try {
       const request: VisualizationRequest = {
@@ -75,7 +58,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [query, columns, data, onConfigChange]);
+
+  useEffect(() => {
+    if (data.length > 0 && columns.length > 0) {
+      generateDashboard();
+    }
+  }, [data, columns, query, generateDashboard]);
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (refreshInterval && refreshInterval > 0) {
+      const interval = setInterval(() => {
+        generateDashboard();
+      }, refreshInterval * 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [refreshInterval, generateDashboard]);
 
   // Apply global filters to data
   const getFilteredData = () => {

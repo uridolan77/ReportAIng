@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
+import { useComponentSize } from '../../../hooks/usePerformance';
+import { useAccessibility } from '../../../hooks/useAccessibility';
+
 // Note: d3-sankey types might need to be installed separately
 // For now, we'll use any types for sankey functions
 const sankey = (d3 as any).sankey;
 const sankeyLinkHorizontal = (d3 as any).sankeyLinkHorizontal;
-import { useComponentSize } from '../../../hooks/usePerformance';
-import { useAccessibility } from '../../../hooks/useAccessibility';
 
 interface SankeyData {
   nodes: Array<{ id: string; name: string; category?: string; description?: string }>;
@@ -132,7 +133,7 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
       .style('cursor', interactive ? 'pointer' : 'default');
 
     // Add node labels
-    const nodeLabels = g.append('g')
+    g.append('g')
       .attr('class', 'node-labels')
       .selectAll('.node-label')
       .data(nodes)
@@ -273,7 +274,7 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
         .text(title);
     }
 
-  }, [data, size, config, interactive, onNodeClick, onLinkClick, announce]);
+  }, [data, size, config, onNodeClick, onLinkClick, announce, title, colorScheme, interactive, nodeWidth, nodePadding, linkOpacity, showValues]);
 
   return (
     <div ref={elementRef} style={{ width: '100%', position: 'relative' }}>

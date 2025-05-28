@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Drawer, Tabs, Button, Space, List, Tag, Statistic, Row, Col, Typography } from 'antd';
-import { BugOutlined, ThunderboltOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { BugOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../../stores/authStore';
 import { useVisualizationStore } from '../../stores/visualizationStore';
 
@@ -145,7 +145,7 @@ export const DevTools: React.FC = () => {
 
           <TabPane tab="Mock Data" key="mock">
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Button 
+              <Button
                 onClick={() => {
                   console.log('Generating mock data...');
                   // Add mock data generation logic here
@@ -153,7 +153,7 @@ export const DevTools: React.FC = () => {
               >
                 Generate Mock Query Data
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   console.log('Clearing cache...');
                   localStorage.clear();
@@ -162,7 +162,7 @@ export const DevTools: React.FC = () => {
               >
                 Clear All Cache
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   console.log('Testing API connection...');
                   // Add connection test logic here

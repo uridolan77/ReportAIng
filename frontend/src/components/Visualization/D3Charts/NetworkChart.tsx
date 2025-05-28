@@ -335,7 +335,7 @@ export const NetworkChart: React.FC<NetworkChartProps> = ({
       sim.stop();
     };
 
-  }, [data, size, config, interactive, onNodeClick, onLinkClick, announce]);
+  }, [data, size, config, onNodeClick, onLinkClick, announce, title, colorScheme, interactive, showLabels, linkDistance, chargeStrength, nodeRadius, linkWidth]);
 
   // Cleanup simulation on unmount
   useEffect(() => {

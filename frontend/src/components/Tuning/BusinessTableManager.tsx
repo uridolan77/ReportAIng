@@ -22,14 +22,14 @@ import {
   EditOutlined,
   DeleteOutlined,
   TableOutlined,
-  InfoCircleOutlined
+
 } from '@ant-design/icons';
-import { tuningApi, BusinessTableInfo, CreateTableRequest, CreateColumnRequest } from '../../services/tuningApi';
+import { tuningApi, BusinessTableInfo, CreateTableRequest } from '../../services/tuningApi';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { Panel } = Collapse;
-const { Option } = Select;
+// const { Option } = Select;
 
 interface BusinessTableManagerProps {
   onDataChange?: () => void;

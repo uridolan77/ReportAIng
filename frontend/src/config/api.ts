@@ -4,7 +4,7 @@ export const API_CONFIG = {
   // Base URL for API calls
   BASE_URL: process.env.NODE_ENV === 'production'
     ? 'https://your-production-api.com'
-    : 'http://localhost:55244',
+    : 'https://localhost:55243',
 
   // API endpoints
   ENDPOINTS: {
@@ -18,12 +18,12 @@ export const API_CONFIG = {
 
     // Query endpoints
     QUERY: {
-      NATURAL_LANGUAGE: '/api/query/natural-language',
-      EXECUTE_SQL: '/api/query/execute-sql',
-      VALIDATE_SQL: '/api/query/validate-sql',
+      NATURAL_LANGUAGE: '/api/query/execute',
+      EXECUTE_SQL: '/api/query/execute',
+      VALIDATE_SQL: '/api/query/validate',
       HISTORY: '/api/query/history',
       SUGGESTIONS: '/api/query/suggestions',
-      SCHEMA: '/api/query/schema',
+      SCHEMA: '/api/schema',
     },
 
     // Streaming endpoints

@@ -1,19 +1,18 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
-  Row,
-  Col,
+
   Button,
   Space,
   Typography,
   Spin,
-  Alert,
+
   Select,
   Switch,
-  Slider,
+
   Tooltip,
   Badge,
-  Divider,
+
   Modal,
   message,
   Tabs
@@ -24,7 +23,7 @@ import {
   BulbOutlined,
   SettingOutlined,
   DownloadOutlined,
-  ShareAltOutlined,
+
   ReloadOutlined,
   ThunderboltOutlined,
   EyeOutlined
@@ -38,7 +37,7 @@ import {
   ChartPerformanceMetrics
 } from '../../types/visualization';
 import AdvancedChart from './AdvancedChart';
-import AdvancedDashboard from './AdvancedDashboard';
+// import AdvancedDashboard from './AdvancedDashboard';
 import VisualizationRecommendations from './VisualizationRecommendations';
 import AdvancedDashboardBuilder from './AdvancedDashboardBuilder';
 import advancedVisualizationService from '../../services/advancedVisualizationService';

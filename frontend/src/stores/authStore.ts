@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { API_CONFIG, getApiUrl, getAuthHeaders } from '../config/api';
-import { setSessionId, clearSessionId, generateSessionId } from '../utils/sessionUtils';
+import { API_CONFIG } from '../config/api';
+import { setSessionId, clearSessionId } from '../utils/sessionUtils';
 import { SecurityUtils } from '../utils/security';
 import { apiClient } from '../services/apiClient';
 

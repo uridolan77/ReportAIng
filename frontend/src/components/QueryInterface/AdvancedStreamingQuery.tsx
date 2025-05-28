@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Button, Card, Progress, Typography, Space, Alert, Statistic, Row, Col, Switch, InputNumber } from 'antd';
-import { PlayCircleOutlined, PauseCircleOutlined, StopOutlined, DownloadOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined, StopOutlined, DownloadOutlined } from '@ant-design/icons';
 import { StreamingProgressUpdate, AdvancedStreamingRequest, StreamingQueryChunk } from '../../types/query';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface AdvancedStreamingQueryProps {
   onStreamingComplete?: (data: any[]) => void;
@@ -45,7 +45,7 @@ export const AdvancedStreamingQuery: React.FC<AdvancedStreamingQueryProps> = ({
     abortControllerRef.current = new AbortController();
 
     try {
-      const endpoint = streamingConfig.useBackpressure 
+      const endpoint = streamingConfig.useBackpressure
         ? '/api/streaming-query/stream-backpressure'
         : '/api/streaming-query/stream-progress';
 
@@ -81,7 +81,7 @@ export const AdvancedStreamingQuery: React.FC<AdvancedStreamingQueryProps> = ({
 
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
@@ -95,7 +95,7 @@ export const AdvancedStreamingQuery: React.FC<AdvancedStreamingQueryProps> = ({
                 const chunk: StreamingQueryChunk = JSON.parse(line);
                 accumulatedDataRef.current.push(...chunk.data);
                 setStreamingData([...accumulatedDataRef.current]);
-                
+
                 // Update progress based on chunk info
                 setProgress({
                   rowsProcessed: accumulatedDataRef.current.length,
@@ -115,7 +115,7 @@ export const AdvancedStreamingQuery: React.FC<AdvancedStreamingQueryProps> = ({
               } else {
                 const progressUpdate: StreamingProgressUpdate = JSON.parse(line);
                 setProgress(progressUpdate);
-                
+
                 if (progressUpdate.currentRow) {
                   accumulatedDataRef.current.push(progressUpdate.currentRow);
                   setStreamingData([...accumulatedDataRef.current]);
@@ -164,17 +164,17 @@ export const AdvancedStreamingQuery: React.FC<AdvancedStreamingQueryProps> = ({
 
   const convertToCSV = (data: any[]): string => {
     if (data.length === 0) return '';
-    
+
     const headers = Object.keys(data[0]);
     const csvContent = [
       headers.join(','),
-      ...data.map(row => 
-        headers.map(header => 
+      ...data.map(row =>
+        headers.map(header =>
           JSON.stringify(row[header] ?? '')
         ).join(',')
       )
     ].join('\n');
-    
+
     return csvContent;
   };
 
@@ -286,33 +286,33 @@ export const AdvancedStreamingQuery: React.FC<AdvancedStreamingQueryProps> = ({
                 <Statistic title="Rows Processed" value={progress.rowsProcessed} />
               </Col>
               <Col span={6}>
-                <Statistic 
-                  title="Progress" 
-                  value={progress.progressPercentage} 
-                  suffix="%" 
+                <Statistic
+                  title="Progress"
+                  value={progress.progressPercentage}
+                  suffix="%"
                 />
               </Col>
               <Col span={6}>
-                <Statistic 
-                  title="Speed" 
-                  value={progress.rowsPerSecond.toFixed(0)} 
-                  suffix="rows/sec" 
+                <Statistic
+                  title="Speed"
+                  value={progress.rowsPerSecond.toFixed(0)}
+                  suffix="rows/sec"
                 />
               </Col>
               <Col span={6}>
-                <Statistic 
-                  title="Elapsed Time" 
-                  value={formatTime(progress.elapsedTime)} 
+                <Statistic
+                  title="Elapsed Time"
+                  value={formatTime(progress.elapsedTime)}
                 />
               </Col>
             </Row>
-            
-            <Progress 
-              percent={Math.round(progress.progressPercentage)} 
+
+            <Progress
+              percent={Math.round(progress.progressPercentage)}
               status={progress.isCompleted ? 'success' : 'active'}
               style={{ marginTop: '16px' }}
             />
-            
+
             <Text type="secondary">Status: {progress.status}</Text>
             {progress.estimatedTimeRemaining !== '0ms' && (
               <Text type="secondary" style={{ marginLeft: '16px' }}>

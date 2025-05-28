@@ -35,12 +35,12 @@ export const AUTH_ENDPOINTS = {
  * Query Endpoints
  */
 export const QUERY_ENDPOINTS = {
-  NATURAL_LANGUAGE: '/api/query/natural-language',
-  EXECUTE_SQL: '/api/query/execute-sql',
-  VALIDATE_SQL: '/api/query/validate-sql',
+  NATURAL_LANGUAGE: '/api/query/execute',
+  EXECUTE_SQL: '/api/query/execute',
+  VALIDATE_SQL: '/api/query/validate',
   HISTORY: '/api/query/history',
   SUGGESTIONS: '/api/query/suggestions',
-  SCHEMA: '/api/query/schema',
+  SCHEMA: '/api/schema',
 } as const;
 
 /**
@@ -132,7 +132,7 @@ export const getHubUrl = (hubPath: string): string => {
  * - Use STREAMING_ENDPOINTS.* for streaming query responses
  */
 
-export default {
+const endpoints = {
   API_BASE_URL,
   HEALTH_ENDPOINTS,
   AUTH_ENDPOINTS,
@@ -146,3 +146,5 @@ export default {
   getApiUrl,
   getHubUrl,
 };
+
+export default endpoints;
