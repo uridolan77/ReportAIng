@@ -51,18 +51,20 @@ public interface ITokenRepository
 public interface IMfaService
 {
     // Status and Setup
-    Task<MfaStatus?> GetMfaStatusAsync(Guid userId);
-    Task<MfaSetupInfo?> SetupMfaAsync(Guid userId, MfaMethod method);
-    Task<bool> VerifySetupAsync(Guid userId, string verificationCode);
-    Task<bool> DisableMfaAsync(Guid userId, string verificationCode);
+    Task<MfaStatus?> GetMfaStatusAsync(string userId);
+    Task<MfaSetupInfo?> SetupMfaAsync(string userId, MfaMethod method);
+    Task<bool> VerifyMfaSetupAsync(string userId, string verificationCode);
+    Task<bool> DisableMfaAsync(string userId, string verificationCode);
     
     // Validation and Challenges
-    Task<bool> ValidateMfaCodeAsync(Guid userId, string code);
-    Task<MfaChallengeResponse> SendMfaChallengeAsync(Guid userId, MfaMethod method);
+    Task<bool> ValidateMfaCodeAsync(string userId, string code);
+    Task<bool> ValidateMfaAsync(MfaChallengeRequest request);
+    Task<MfaChallengeResponse?> SendMfaChallengeAsync(string userId, MfaMethod method);
     
     // Backup Codes
-    Task<string[]> GenerateBackupCodesAsync(Guid userId);
-    Task<int> GetBackupCodesCountAsync(Guid userId);
+    Task<string[]> GenerateBackupCodesAsync(string userId);
+    Task<int> GetBackupCodesCountAsync(string userId);
+    Task<int> GetRemainingBackupCodesCountAsync(string userId);
     
     // Testing/Utility
     Task<bool> TestSmsDeliveryAsync(string phoneNumber);

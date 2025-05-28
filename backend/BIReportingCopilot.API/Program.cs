@@ -233,6 +233,7 @@ builder.Services.AddSingleton(provider =>
 // Register repositories
 builder.Services.AddScoped<IUserRepository, BIReportingCopilot.Infrastructure.Repositories.UserRepository>();
 builder.Services.AddScoped<ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.IUserEntityRepository, BIReportingCopilot.Infrastructure.Repositories.UserEntityRepository>();
 
 // Register application services
 builder.Services.AddScoped<IQueryService, QueryService>();

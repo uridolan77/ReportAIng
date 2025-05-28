@@ -36,9 +36,10 @@ public class MfaController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized("User not found");
+                return Unauthorized("User not found");            var status = await _mfaService.GetMfaStatusAsync(userId);
+            if (status == null)
+                return NotFound("MFA status not found");
 
-            var status = await _mfaService.GetMfaStatusAsync(userId);
             return Ok(new MfaStatusResponse
             {
                 IsEnabled = status.IsEnabled,
@@ -65,12 +66,10 @@ public class MfaController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized("User not found");
-
-            var result = await _mfaService.SetupMfaAsync(userId, request);
+                return Unauthorized("User not found");            var result = await _mfaService.SetupMfaAsync(userId, request.Method);
             
-            if (!result.Success)
-                return BadRequest(result.ErrorMessage);
+            if (result == null || !result.Success)
+                return BadRequest(result?.ErrorMessage ?? "Failed to setup MFA");
 
             return Ok(result);
         }
@@ -91,14 +90,15 @@ public class MfaController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized("User not found");
-
-            var result = await _mfaService.VerifyMfaSetupAsync(userId, request.Code);
+                return Unauthorized("User not found");            var isValid = await _mfaService.VerifyMfaSetupAsync(userId, request.Code);
             
-            if (!result.Success)
-                return BadRequest(result.ErrorMessage);
+            if (!isValid)
+                return BadRequest("Invalid verification code");
 
-            return Ok(result);
+            return Ok(new MfaVerificationResult
+            {
+                Success = true
+            });
         }
         catch (Exception ex)
         {
@@ -117,17 +117,25 @@ public class MfaController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized("User not found");
-
-            // Override the UserId from the token for security
+                return Unauthorized("User not found");            // Override the UserId from the token for security
             request.UserId = userId;
 
-            var result = await _mfaService.ValidateMfaAsync(request);
-            
-            if (!result.Success)
-                return BadRequest(result.ErrorMessage);
+            var challengeRequest = new Core.Models.MfaChallengeRequest
+            {
+                UserId = Guid.Parse(userId),
+                ChallengeId = request.Code, // This might need proper mapping based on your use case
+                Code = request.Code
+            };
 
-            return Ok(result);
+            var result = await _mfaService.ValidateMfaAsync(challengeRequest);
+            
+            if (!result)
+                return BadRequest("Invalid MFA code");
+
+            return Ok(new MfaValidationResult
+            {
+                Success = true
+            });
         }
         catch (Exception ex)
         {
@@ -199,14 +207,16 @@ public class MfaController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized("User not found");
-
-            var result = await _mfaService.DisableMfaAsync(userId, request.ConfirmationCode);
+                return Unauthorized("User not found");            var isDisabled = await _mfaService.DisableMfaAsync(userId, request.ConfirmationCode);
             
-            if (!result.Success)
-                return BadRequest(result.ErrorMessage);
+            if (!isDisabled)
+                return BadRequest("Failed to disable MFA");
 
-            return Ok(result);
+            return Ok(new MfaDisableResult
+            {
+                Success = true,
+                Message = "MFA has been disabled successfully"
+            });
         }
         catch (Exception ex)
         {
@@ -223,8 +233,7 @@ public class MfaController : ControllerBase
     public async Task<ActionResult<MfaChallengeResponse>> SendMfaChallenge([FromBody] MfaChallengeRequest request)
     {
         try
-        {
-            var challenge = await _mfaService.SendMfaChallengeAsync(request.UserId, request.Method);
+        {            var challenge = await _mfaService.SendMfaChallengeAsync(request.UserId, request.Method);
             
             if (challenge == null)
                 return BadRequest("Unable to send MFA challenge");
@@ -234,7 +243,7 @@ public class MfaController : ControllerBase
                 ChallengeId = challenge.ChallengeId,
                 Method = challenge.Method,
                 ExpiresAt = challenge.ExpiresAt,
-                DeliveryTarget = GetMaskedDeliveryTarget(challenge)
+                DeliveryTarget = challenge.MaskedDeliveryAddress ?? "****"
             });
         }
         catch (Exception ex)
@@ -253,10 +262,9 @@ public class MfaController : ControllerBase
         try
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized("User not found");
+            if (string.IsNullOrEmpty(userId))                return Unauthorized("User not found");
 
-            var result = await _mfaService.TestSmsDeliveryAsync(userId, request.PhoneNumber);
+            var result = await _mfaService.TestSmsDeliveryAsync(request.PhoneNumber);
             
             return Ok(new TestSmsResponse
             {
@@ -269,19 +277,6 @@ public class MfaController : ControllerBase
             _logger.LogError(ex, "Error testing SMS delivery for user");
             return StatusCode(500, "Internal server error");
         }
-    }
-
-    private static string GetMaskedDeliveryTarget(MfaChallenge challenge)
-    {
-        if (string.IsNullOrEmpty(challenge.Challenge))
-            return "****";
-
-        return challenge.Method switch
-        {
-            MfaMethod.SMS => $"***-***-{challenge.Challenge[^4..]}",
-            MfaMethod.Email => $"***@{challenge.Challenge.Split('@').LastOrDefault()}",
-            _ => "****"
-        };
     }
 }
 

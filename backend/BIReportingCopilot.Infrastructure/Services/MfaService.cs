@@ -5,6 +5,9 @@ using System.Security.Cryptography;
 using System.Text;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Configuration;
+using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Infrastructure.Interfaces;
+using BIReportingCopilot.Infrastructure.Data.Entities;
 using OtpNet;
 
 namespace BIReportingCopilot.Infrastructure.Services;
@@ -14,118 +17,488 @@ namespace BIReportingCopilot.Infrastructure.Services;
 /// </summary>
 public class MfaService : IMfaService
 {
-    private readonly ILogger<MfaService> _logger;
-    private readonly SecuritySettings _securitySettings;
+    private readonly IUserEntityRepository _userRepository;
+    private readonly IMfaChallengeRepository _mfaChallengeRepository;
     private readonly IEmailService _emailService;
     private readonly ISmsService _smsService;
+    private readonly ILogger<MfaService> _logger;
+    private readonly SecuritySettings _securitySettings;
 
     public MfaService(
-        ILogger<MfaService> logger,
-        IOptions<SecuritySettings> securitySettings,
+        IUserEntityRepository userRepository,
+        IMfaChallengeRepository mfaChallengeRepository,
         IEmailService emailService,
-        ISmsService smsService)
+        ISmsService smsService,
+        ILogger<MfaService> logger,
+        IOptions<SecuritySettings> securitySettings)
     {
-        _logger = logger;
-        _securitySettings = securitySettings.Value;
+        _userRepository = userRepository;
+        _mfaChallengeRepository = mfaChallengeRepository;
         _emailService = emailService;
         _smsService = smsService;
+        _logger = logger;
+        _securitySettings = securitySettings.Value;
     }
 
-    public async Task<string> GenerateSecretAsync()
+    // Status and Setup Methods
+    public async Task<MfaStatus?> GetMfaStatusAsync(string userId)
     {
         try
         {
-            var key = KeyGeneration.GenerateRandomKey(20);
-            var secret = Base32Encoding.ToString(key);
-            
-            _logger.LogInformation("Generated TOTP secret");
-            return secret;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating TOTP secret");
-            throw;
-        }
-    }
+            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            if (user == null)
+                return null;
 
-    public async Task<string> GenerateQrCodeAsync(string secret, string userEmail, string issuer)
-    {
-        try
-        {
-            var totpUri = $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(userEmail)}?secret={secret}&issuer={Uri.EscapeDataString(issuer)}";
-            
-            using var qrGenerator = new QRCodeGenerator();
-            using var qrCodeData = qrGenerator.CreateQrCode(totpUri, QRCodeGenerator.ECCLevel.Q);
-            using var qrCode = new Base64QRCode(qrCodeData);
-            
-            var qrCodeImageAsBase64 = qrCode.GetGraphic(20);
-            
-            _logger.LogInformation("Generated QR code for user: {UserEmail}", userEmail);
-            return $"data:image/png;base64,{qrCodeImageAsBase64}";
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating QR code for user: {UserEmail}", userEmail);
-            throw;
-        }
-    }
-
-    public async Task<bool> ValidateTotpAsync(string secret, string code)
-    {
-        try
-        {
-            if (string.IsNullOrEmpty(secret) || string.IsNullOrEmpty(code))
+            var backupCodesCount = 0;
+            if (!string.IsNullOrEmpty(user.BackupCodes))
             {
-                return false;
+                backupCodesCount = user.BackupCodes.Split(',', StringSplitOptions.RemoveEmptyEntries).Length;
             }
 
-            var secretBytes = Base32Encoding.ToBytes(secret);
-            var totp = new Totp(secretBytes);
-            
-            // Allow for time drift - check current window and ±1 window
-            var currentTime = DateTime.UtcNow;
-            var windows = new[]
+            return new MfaStatus
             {
-                currentTime.AddSeconds(-30),
-                currentTime,
-                currentTime.AddSeconds(30)
+                IsEnabled = user.IsMfaEnabled,
+                Method = !string.IsNullOrEmpty(user.MfaMethod) ? Enum.Parse<MfaMethod>(user.MfaMethod) : MfaMethod.None,
+                BackupCodesCount = backupCodesCount,
+                HasBackupCodes = backupCodesCount > 0,
+                HasPhoneNumber = !string.IsNullOrEmpty(user.PhoneNumber),
+                IsPhoneNumberVerified = user.IsPhoneNumberVerified,
+                MaskedPhoneNumber = MaskPhoneNumber(user.PhoneNumber),
+                MaskedEmail = MaskEmail(user.Email),
+                LastValidationDate = user.LastMfaValidationDate
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting MFA status for user {UserId}", userId);
+            return null;
+        }
+    }
+
+    public async Task<MfaSetupInfo?> SetupMfaAsync(string userId, MfaMethod method)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            if (user == null)
+                return null;
+
+            var setupInfo = new MfaSetupInfo
+            {
+                Method = method,
+                BackupCodes = await GenerateBackupCodesInternalAsync()
             };
 
-            foreach (var window in windows)
+            if (method == MfaMethod.TOTP)
             {
-                var expectedCode = totp.ComputeTotp(window);
-                if (expectedCode == code)
+                setupInfo.TotpSecret = await GenerateSecretAsync();
+                setupInfo.QrCodeUrl = await GenerateQrCodeAsync(setupInfo.TotpSecret, user.Email, "BIReportingCopilot");
+            }
+
+            // Store the secret temporarily (user needs to verify before enabling)
+            user.MfaSecret = setupInfo.TotpSecret;
+            user.MfaMethod = method.ToString();
+            // Don't enable MFA yet - wait for verification
+            
+            await _userRepository.UpdateAsync(user);
+
+            _logger.LogInformation("MFA setup initiated for user {UserId} with method {Method}", userId, method);
+            return setupInfo;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting up MFA for user {UserId}", userId);
+            return new MfaSetupInfo
+            {
+                Method = method,
+                Success = false,
+                ErrorMessage = "Failed to setup MFA"
+            };
+        }
+    }
+
+    public async Task<bool> VerifyMfaSetupAsync(string userId, string verificationCode)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            if (user == null || string.IsNullOrEmpty(user.MfaSecret))
+                return false;
+
+            var isValid = false;
+            var method = !string.IsNullOrEmpty(user.MfaMethod) ? Enum.Parse<MfaMethod>(user.MfaMethod) : MfaMethod.None;
+
+            switch (method)
+            {
+                case MfaMethod.TOTP:
+                    isValid = await ValidateTotpAsync(user.MfaSecret, verificationCode);
+                    break;
+                case MfaMethod.SMS:
+                case MfaMethod.Email:
+                    // For SMS/Email, verification should come through challenge system
+                    var challenge = await _mfaChallengeRepository.GetActiveChallengeAsync(userId, method);
+                    if (challenge != null && challenge.Challenge == verificationCode && !challenge.IsUsed && challenge.ExpiresAt > DateTime.UtcNow)
+                    {
+                        isValid = true;
+                        await _mfaChallengeRepository.MarkChallengeAsUsedAsync(challenge.ChallengeId);
+                    }
+                    break;
+            }
+
+            if (isValid)
+            {
+                user.IsMfaEnabled = true;
+                user.LastMfaValidationDate = DateTime.UtcNow;
+                await _userRepository.UpdateAsync(user);
+                
+                _logger.LogInformation("MFA setup verified and enabled for user {UserId}", userId);
+            }
+
+            return isValid;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error verifying MFA setup for user {UserId}", userId);
+            return false;
+        }
+    }
+
+    public async Task<bool> DisableMfaAsync(string userId, string verificationCode)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            if (user == null || !user.IsMfaEnabled)
+                return false;
+
+            // Verify the code before disabling
+            var isValid = await ValidateMfaCodeAsync(userId, verificationCode);
+            if (!isValid)
+                return false;
+
+            user.IsMfaEnabled = false;
+            user.MfaSecret = null;
+            user.MfaMethod = MfaMethod.None.ToString();
+            user.BackupCodes = null;
+            await _userRepository.UpdateAsync(user);
+
+            _logger.LogInformation("MFA disabled for user {UserId}", userId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error disabling MFA for user {UserId}", userId);
+            return false;
+        }
+    }
+
+    // Validation and Challenge Methods
+    public async Task<bool> ValidateMfaCodeAsync(string userId, string code)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            if (user == null || !user.IsMfaEnabled)
+                return false;
+
+            // Check if it's a backup code
+            if (!string.IsNullOrEmpty(user.BackupCodes))
+            {
+                var backupCodes = user.BackupCodes.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                if (backupCodes.Contains(code))
                 {
-                    _logger.LogInformation("TOTP validation successful");
+                    // Remove used backup code
+                    var remainingCodes = backupCodes.Where(c => c != code).ToArray();
+                    user.BackupCodes = string.Join(",", remainingCodes);
+                    user.LastMfaValidationDate = DateTime.UtcNow;
+                    await _userRepository.UpdateAsync(user);
+                    
+                    _logger.LogInformation("Backup code used for user {UserId}", userId);
                     return true;
                 }
             }
 
-            _logger.LogWarning("TOTP validation failed - invalid code");
-            return false;
+            // Validate based on MFA method
+            var method = !string.IsNullOrEmpty(user.MfaMethod) ? Enum.Parse<MfaMethod>(user.MfaMethod) : MfaMethod.None;
+            var isValid = method switch
+            {
+                MfaMethod.TOTP => await ValidateTotpAsync(user.MfaSecret ?? "", code),
+                MfaMethod.SMS or MfaMethod.Email => await ValidateChallengeCodeAsync(userId, method, code),
+                _ => false
+            };
+
+            if (isValid)
+            {
+                user.LastMfaValidationDate = DateTime.UtcNow;
+                await _userRepository.UpdateAsync(user);
+            }
+
+            return isValid;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error validating TOTP code");
+            _logger.LogError(ex, "Error validating MFA code for user {UserId}", userId);
+            return false;
+        }
+    }    public async Task<bool> ValidateMfaAsync(MfaChallengeRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.ChallengeId) || string.IsNullOrEmpty(request.Code))
+                return false;
+
+            var challenge = await _mfaChallengeRepository.GetChallengeAsync(request.ChallengeId);
+            if (challenge == null || challenge.IsUsed || challenge.ExpiresAt <= DateTime.UtcNow)
+                return false;
+
+            if (challenge.Challenge != request.Code)
+                return false;
+
+            await _mfaChallengeRepository.MarkChallengeAsUsedAsync(challenge.ChallengeId);
+            
+            var user = await _userRepository.GetByIdAsync(Guid.Parse(challenge.UserId));
+            if (user != null)
+            {
+                user.LastMfaValidationDate = DateTime.UtcNow;
+                await _userRepository.UpdateAsync(user);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating MFA challenge {ChallengeId}", request.ChallengeId);
             return false;
         }
     }
 
-    public async Task<string> GenerateSmsCodeAsync()
+    public async Task<MfaChallengeResponse?> SendMfaChallengeAsync(string userId, MfaMethod method)
     {
         try
         {
-            var random = new Random();
-            var code = random.Next(100000, 999999).ToString();
-            
-            _logger.LogInformation("Generated SMS code");
-            return code;
+            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            if (user == null)
+            {
+                return new MfaChallengeResponse
+                {
+                    Success = false,
+                    ErrorMessage = "User not found"
+                };
+            }
+
+            var challengeCode = method switch
+            {
+                MfaMethod.SMS => await GenerateSmsCodeAsync(),
+                MfaMethod.Email => await GenerateEmailCodeAsync(),
+                _ => throw new NotSupportedException($"Challenge method {method} not supported")
+            };
+
+            var challenge = new MfaChallenge
+            {
+                ChallengeId = Guid.NewGuid().ToString(),
+                UserId = userId,
+                Method = method,
+                Challenge = challengeCode,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_securitySettings.MfaCodeExpirationMinutes)
+            };
+
+            await _mfaChallengeRepository.CreateChallengeAsync(challenge);
+
+            var success = method switch
+            {
+                MfaMethod.SMS => await _smsService.SendAsync(user.PhoneNumber ?? "", challengeCode),
+                MfaMethod.Email => await _emailService.SendMfaCodeAsync(user.Email, challengeCode),
+                _ => false
+            };
+
+            return new MfaChallengeResponse
+            {
+                ChallengeId = challenge.ChallengeId,
+                Method = method,
+                Success = success,
+                ExpiresAt = challenge.ExpiresAt,
+                MaskedDeliveryAddress = method == MfaMethod.SMS ? MaskPhoneNumber(user.PhoneNumber) : MaskEmail(user.Email),
+                ErrorMessage = success ? null : "Failed to send challenge"
+            };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating SMS code");
-            throw;
+            _logger.LogError(ex, "Error sending MFA challenge for user {UserId}", userId);
+            return new MfaChallengeResponse
+            {
+                Success = false,
+                ErrorMessage = "Failed to send challenge"
+            };
         }
+    }
+
+    // Backup Code Methods
+    public async Task<string[]> GenerateBackupCodesAsync(string userId)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            if (user == null)
+                return Array.Empty<string>();
+
+            var backupCodes = await GenerateBackupCodesInternalAsync();
+            user.BackupCodes = string.Join(",", backupCodes);
+            await _userRepository.UpdateAsync(user);
+
+            _logger.LogInformation("Generated new backup codes for user {UserId}", userId);
+            return backupCodes;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating backup codes for user {UserId}", userId);
+            return Array.Empty<string>();
+        }
+    }
+
+    public async Task<int> GetBackupCodesCountAsync(string userId)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            if (user == null || string.IsNullOrEmpty(user.BackupCodes))
+                return 0;
+
+            return user.BackupCodes.Split(',', StringSplitOptions.RemoveEmptyEntries).Length;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting backup codes count for user {UserId}", userId);
+            return 0;
+        }
+    }
+
+    public async Task<int> GetRemainingBackupCodesCountAsync(string userId)
+    {
+        return await GetBackupCodesCountAsync(userId);
+    }
+
+    // Testing/Utility Methods
+    public async Task<bool> TestSmsDeliveryAsync(string phoneNumber)
+    {
+        try
+        {
+            return await _smsService.TestDeliveryAsync(phoneNumber);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error testing SMS delivery to {PhoneNumber}", phoneNumber);
+            return false;
+        }
+    }
+
+    // Legacy Methods for Backward Compatibility
+    public async Task<string> GenerateSecretAsync()
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var key = KeyGeneration.GenerateRandomKey(20);
+                var secret = Base32Encoding.ToString(key);
+                
+                _logger.LogInformation("Generated TOTP secret");
+                return secret;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating TOTP secret");
+                throw;
+            }
+        });
+    }
+
+    public async Task<string> GenerateQrCodeAsync(string secret, string userEmail, string issuer)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var totpUri = $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(userEmail)}?secret={secret}&issuer={Uri.EscapeDataString(issuer)}";
+                
+                using var qrGenerator = new QRCodeGenerator();
+                using var qrCodeData = qrGenerator.CreateQrCode(totpUri, QRCodeGenerator.ECCLevel.Q);
+                using var qrCode = new Base64QRCode(qrCodeData);
+                
+                var qrCodeImageAsBase64 = qrCode.GetGraphic(20);
+                
+                _logger.LogInformation("Generated QR code for user: {UserEmail}", userEmail);
+                return $"data:image/png;base64,{qrCodeImageAsBase64}";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating QR code for user: {UserEmail}", userEmail);
+                throw;
+            }
+        });
+    }
+
+    public async Task<bool> ValidateTotpAsync(string secret, string code)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(secret) || string.IsNullOrEmpty(code))
+                {
+                    return false;
+                }
+
+                var secretBytes = Base32Encoding.ToBytes(secret);
+                var totp = new Totp(secretBytes);
+                
+                // Allow for time drift - check current window and ±1 window
+                var currentTime = DateTime.UtcNow;
+                var windows = new[]
+                {
+                    currentTime.AddSeconds(-30),
+                    currentTime,
+                    currentTime.AddSeconds(30)
+                };
+
+                foreach (var window in windows)
+                {
+                    var expectedCode = totp.ComputeTotp(window);
+                    if (expectedCode == code)
+                    {
+                        _logger.LogInformation("TOTP validation successful");
+                        return true;
+                    }
+                }
+
+                _logger.LogWarning("TOTP validation failed - invalid code");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating TOTP code");
+                return false;
+            }
+        });
+    }
+
+    public async Task<string> GenerateSmsCodeAsync()
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var random = new Random();
+                var code = random.Next(100000, 999999).ToString();
+                
+                _logger.LogInformation("Generated SMS code");
+                return code;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating SMS code");
+                throw;
+            }
+        });
     }
 
     public async Task<bool> SendSmsAsync(string phoneNumber, string code)
@@ -155,19 +528,22 @@ public class MfaService : IMfaService
 
     public async Task<string> GenerateEmailCodeAsync()
     {
-        try
+        return await Task.Run(() =>
         {
-            var random = new Random();
-            var code = random.Next(100000, 999999).ToString();
-            
-            _logger.LogInformation("Generated email code");
-            return code;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating email code");
-            throw;
-        }
+            try
+            {
+                var random = new Random();
+                var code = random.Next(100000, 999999).ToString();
+                
+                _logger.LogInformation("Generated email code");
+                return code;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating email code");
+                throw;
+            }
+        });
     }
 
     public async Task<bool> SendEmailCodeAsync(string email, string code)
@@ -204,65 +580,99 @@ public class MfaService : IMfaService
 
     public async Task<string[]> GenerateBackupCodesAsync(int count = 8)
     {
-        try
+        return await Task.Run(() =>
         {
-            var codes = new string[count];
-            
-            for (int i = 0; i < count; i++)
+            try
             {
-                using var rng = RandomNumberGenerator.Create();
-                var bytes = new byte[4];
-                rng.GetBytes(bytes);
+                var codes = new string[count];
                 
-                // Generate 8-character alphanumeric code
-                var code = Convert.ToBase64String(bytes)
-                    .Replace("+", "")
-                    .Replace("/", "")
-                    .Replace("=", "")
-                    .ToUpper();
+                for (int i = 0; i < count; i++)
+                {
+                    using var rng = RandomNumberGenerator.Create();
+                    var bytes = new byte[4];
+                    rng.GetBytes(bytes);
+                    
+                    // Generate 8-character alphanumeric code
+                    var code = Convert.ToBase64String(bytes)
+                        .Replace("+", "")
+                        .Replace("/", "")
+                        .Replace("=", "")
+                        .ToUpper();
+                    
+                    if (code.Length >= 8)
+                    {
+                        codes[i] = code.Substring(0, 8);
+                    }
+                    else
+                    {
+                        // Fallback: generate random alphanumeric string
+                        codes[i] = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
+                    }
+                }
                 
-                if (code.Length >= 8)
-                {
-                    codes[i] = code.Substring(0, 8);
-                }
-                else
-                {
-                    // Fallback: generate random alphanumeric string
-                    codes[i] = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
-                }
+                _logger.LogInformation("Generated {Count} backup codes", count);
+                return codes;
             }
-            
-            _logger.LogInformation("Generated {Count} backup codes", count);
-            return codes;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating backup codes");
-            throw;
-        }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating backup codes");
+                throw;
+            }
+        });
     }
 
-    private static string MaskPhoneNumber(string phoneNumber)
+    // Helper Methods
+    private Task<string[]> GenerateBackupCodesInternalAsync()
+    {
+        var codes = new string[10];
+        using var rng = RandomNumberGenerator.Create();
+        
+        for (int i = 0; i < codes.Length; i++)
+        {
+            var bytes = new byte[4];
+            rng.GetBytes(bytes);
+            codes[i] = Convert.ToHexString(bytes);
+        }
+        
+        return Task.FromResult(codes);
+    }
+
+    private async Task<bool> ValidateChallengeCodeAsync(string userId, MfaMethod method, string code)
+    {
+        var challenge = await _mfaChallengeRepository.GetActiveChallengeAsync(userId, method);
+        if (challenge == null || challenge.IsUsed || challenge.ExpiresAt <= DateTime.UtcNow)
+            return false;
+
+        if (challenge.Challenge != code)
+            return false;
+
+        await _mfaChallengeRepository.MarkChallengeAsUsedAsync(challenge.ChallengeId);
+        return true;
+    }
+
+    private static string MaskPhoneNumber(string? phoneNumber)
     {
         if (string.IsNullOrEmpty(phoneNumber) || phoneNumber.Length < 4)
-            return "****";
-        
-        return phoneNumber.Substring(0, 3) + "****" + phoneNumber.Substring(phoneNumber.Length - 4);
+            return phoneNumber ?? "";
+
+        return phoneNumber.Length > 10 
+            ? "***-***-" + phoneNumber.Substring(phoneNumber.Length - 4)
+            : "***-" + phoneNumber.Substring(phoneNumber.Length - 4);
     }
 
     private static string MaskEmail(string email)
     {
         if (string.IsNullOrEmpty(email) || !email.Contains('@'))
-            return "****@****.***";
-        
+            return email;
+
         var parts = email.Split('@');
-        var localPart = parts[0];
-        var domainPart = parts[1];
+        var username = parts[0];
+        var domain = parts[1];
+
+        var maskedUsername = username.Length <= 1 
+            ? username 
+            : username.Substring(0, 1) + "***";
         
-        var maskedLocal = localPart.Length > 2 
-            ? localPart.Substring(0, 2) + "****" 
-            : "****";
-        
-        return $"{maskedLocal}@{domainPart}";
+        return $"{maskedUsername}@{domain}";
     }
 }

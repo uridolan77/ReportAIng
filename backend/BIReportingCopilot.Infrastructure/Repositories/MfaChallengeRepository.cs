@@ -133,4 +133,36 @@ public class MfaChallengeRepository : IMfaChallengeRepository
         {
             _logger.LogError(ex, "Error cleaning up expired MFA challenges");
         }    }
+
+    public async Task<MfaChallenge?> GetActiveChallengeAsync(string userId, MfaMethod method)
+    {
+        try
+        {
+            var entity = await _context.MfaChallenges
+                .Where(c => c.UserId == userId && 
+                           c.MfaMethod == method.ToString() && 
+                           !c.IsUsed && 
+                           c.ExpiresAt > DateTime.UtcNow)
+                .OrderByDescending(c => c.CreatedDate)
+                .FirstOrDefaultAsync();
+
+            if (entity == null)
+                return null;
+
+            return new MfaChallenge
+            {
+                ChallengeId = entity.Id,
+                UserId = entity.UserId,
+                Method = method,
+                Challenge = entity.ChallengeCode,
+                ExpiresAt = entity.ExpiresAt,
+                IsUsed = entity.IsUsed
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting active MFA challenge for user: {UserId}", userId);
+            return null;
+        }
+    }
 }

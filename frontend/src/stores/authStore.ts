@@ -49,20 +49,29 @@ export const useAuthStore = create<AuthState>()(
             password
           });
 
-          if (response.success) {
-            // Encrypt tokens before storing
-            const encryptedToken = SecurityUtils.encryptToken(response.accessToken);
-            const encryptedRefreshToken = SecurityUtils.encryptToken(response.refreshToken);
+          if ((response as any).success) {
+            // Encrypt tokens before storing (now async)
+            const encryptedToken = await SecurityUtils.encryptToken((response as any).accessToken);
+            const encryptedRefreshToken = await SecurityUtils.encryptToken((response as any).refreshToken);
 
             set({
               isAuthenticated: true,
-              user: response.user,
+              user: (response as any).user,
               token: encryptedToken,
               refreshToken: encryptedRefreshToken,
             });
 
-            // Create a new session ID for the authenticated user
-            setSessionId(generateSessionId());
+            // Create a secure session ID
+            const secureSessionId = SecurityUtils.generateSecureSessionId();
+            setSessionId(secureSessionId);
+
+            // Store session data securely
+            SecurityUtils.setSecureSessionStorage('user-session', JSON.stringify({
+              userId: (response as any).user.id,
+              sessionId: secureSessionId,
+              loginTime: Date.now()
+            }));
+
             return true;
           }
           return false;
@@ -97,10 +106,10 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: decryptedRefreshToken
           });
 
-          if (response.success) {
+          if ((response as any).success) {
             // Encrypt new tokens
-            const encryptedToken = SecurityUtils.encryptToken(response.accessToken);
-            const encryptedRefreshToken = SecurityUtils.encryptToken(response.refreshToken);
+            const encryptedToken = await SecurityUtils.encryptToken((response as any).accessToken);
+            const encryptedRefreshToken = await SecurityUtils.encryptToken((response as any).refreshToken);
 
             set({
               token: encryptedToken,
@@ -119,9 +128,9 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      getDecryptedToken: () => {
+      getDecryptedToken: async () => {
         const { token } = get();
-        return token ? SecurityUtils.decryptToken(token) : null;
+        return token ? await SecurityUtils.decryptToken(token) : null;
       }
     }),
     {

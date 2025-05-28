@@ -3,12 +3,13 @@ import styled from '@emotion/styled';
 import React from 'react';
 
 // Unified Button component
-export interface ButtonProps extends Omit<AntButtonProps, 'variant'> {
+export interface ButtonProps extends Omit<AntButtonProps, 'type'> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
 }
 
 export const Button = styled(AntButton)<ButtonProps>`
-  ${({ variant }: { variant?: string }) => {
+  ${(props: ButtonProps) => {
+    const { variant } = props;
     switch (variant) {
       case 'secondary':
         return `
@@ -63,9 +64,13 @@ export const Card = styled.div`
 `;
 
 // Common spacing utilities
-export const Spacer = styled.div<{ size?: 'small' | 'medium' | 'large' }>`
-  height: ${({ size }: { size?: string }) => {
-    switch (size) {
+interface SpacerProps {
+  size?: 'small' | 'medium' | 'large';
+}
+
+export const Spacer = styled.div<SpacerProps>`
+  height: ${(props: SpacerProps) => {
+    switch (props.size) {
       case 'small': return '8px';
       case 'large': return '32px';
       default: return '16px';
@@ -74,23 +79,29 @@ export const Spacer = styled.div<{ size?: 'small' | 'medium' | 'large' }>`
 `;
 
 // Flex utilities
-export const FlexContainer = styled.div<{
+interface FlexContainerProps {
   direction?: 'row' | 'column';
   justify?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around';
   align?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
   gap?: string;
-}>`
+}
+
+export const FlexContainer = styled.div<FlexContainerProps>`
   display: flex;
-  flex-direction: ${({ direction }: { direction?: string }) => direction || 'row'};
-  justify-content: ${({ justify }: { justify?: string }) => justify || 'flex-start'};
-  align-items: ${({ align }: { align?: string }) => align || 'flex-start'};
-  gap: ${({ gap }: { gap?: string }) => gap || '0'};
+  flex-direction: ${(props: FlexContainerProps) => props.direction || 'row'};
+  justify-content: ${(props: FlexContainerProps) => props.justify || 'flex-start'};
+  align-items: ${(props: FlexContainerProps) => props.align || 'flex-start'};
+  gap: ${(props: FlexContainerProps) => props.gap || '0'};
 `;
 
 // Typography
-export const Title = styled.h1<{ level?: 1 | 2 | 3 | 4 | 5 }>`
-  font-size: ${({ level }: { level?: number }) => {
-    switch (level) {
+interface TitleProps {
+  level?: 1 | 2 | 3 | 4 | 5;
+}
+
+export const Title = styled.h1<TitleProps>`
+  font-size: ${(props: TitleProps) => {
+    switch (props.level) {
       case 1: return '2.5rem';
       case 2: return '2rem';
       case 3: return '1.5rem';
@@ -104,34 +115,38 @@ export const Title = styled.h1<{ level?: 1 | 2 | 3 | 4 | 5 }>`
   color: #262626;
 `;
 
-export const Text = styled.p<{
+interface TextProps {
   size?: 'small' | 'medium' | 'large';
   weight?: 'normal' | 'medium' | 'bold';
   color?: string;
-}>`
-  font-size: ${({ size }: { size?: string }) => {
-    switch (size) {
+}
+
+export const Text = styled.p<TextProps>`
+  font-size: ${(props: TextProps) => {
+    switch (props.size) {
       case 'small': return '0.875rem';
       case 'large': return '1.125rem';
       default: return '1rem';
     }
   }};
-  font-weight: ${({ weight }: { weight?: string }) => {
-    switch (weight) {
+  font-weight: ${(props: TextProps) => {
+    switch (props.weight) {
       case 'medium': return '500';
       case 'bold': return '600';
       default: return '400';
     }
   }};
-  color: ${({ color }: { color?: string }) => color || '#595959'};
+  color: ${(props: TextProps) => props.color || '#595959'};
   margin: 0 0 8px 0;
   line-height: 1.5;
 `;
 
 // Status indicators
-export const StatusBadge = styled.span<{
-  status: 'success' | 'warning' | 'error' | 'info' | 'default'
-}>`
+interface StatusBadgeProps {
+  status: 'success' | 'warning' | 'error' | 'info' | 'default';
+}
+
+export const StatusBadge = styled.span<StatusBadgeProps>`
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
@@ -141,8 +156,8 @@ export const StatusBadge = styled.span<{
   text-transform: uppercase;
   letter-spacing: 0.5px;
 
-  ${({ status }: { status: string }) => {
-    switch (status) {
+  ${(props: StatusBadgeProps) => {
+    switch (props.status) {
       case 'success':
         return `
           background: #f6ffed;
@@ -178,16 +193,18 @@ export const StatusBadge = styled.span<{
 `;
 
 // Grid system
-export const Grid = styled.div<{
+interface GridProps {
   columns?: number;
   gap?: string;
   responsive?: boolean;
-}>`
-  display: grid;
-  grid-template-columns: ${({ columns }: { columns?: number }) => `repeat(${columns || 1}, 1fr)`};
-  gap: ${({ gap }: { gap?: string }) => gap || '16px'};
+}
 
-  ${({ responsive }: { responsive?: boolean }) => responsive && `
+export const Grid = styled.div<GridProps>`
+  display: grid;
+  grid-template-columns: ${(props: GridProps) => `repeat(${props.columns || 1}, 1fr)`};
+  gap: ${(props: GridProps) => props.gap || '16px'};
+
+  ${(props: GridProps) => props.responsive && `
     @media (max-width: 768px) {
       grid-template-columns: 1fr;
     }
@@ -209,9 +226,13 @@ export const slideIn = `
   }
 `;
 
-export const AnimatedContainer = styled.div<{ animation?: 'fadeIn' | 'slideIn' }>`
-  ${({ animation }: { animation?: string }) => {
-    switch (animation) {
+interface AnimatedContainerProps {
+  animation?: 'fadeIn' | 'slideIn';
+}
+
+export const AnimatedContainer = styled.div<AnimatedContainerProps>`
+  ${(props: AnimatedContainerProps) => {
+    switch (props.animation) {
       case 'fadeIn':
         return `
           ${fadeIn}

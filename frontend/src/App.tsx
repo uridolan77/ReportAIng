@@ -18,6 +18,7 @@ const QuerySimilarityAnalyzer = lazy(() => import('./components/AI/QuerySimilari
 const AdvancedVisualizationPanel = lazy(() => import('./components/Visualization/AdvancedVisualizationPanel'));
 const AdvancedVisualizationDemo = lazy(() => import('./components/Demo/AdvancedVisualizationDemo'));
 const AdvancedFeaturesDemo = lazy(() => import('./components/Demo/AdvancedFeaturesDemo').then(module => ({ default: module.AdvancedFeaturesDemo })));
+const UltimateShowcase = lazy(() => import('./components/Demo/UltimateShowcase').then(module => ({ default: module.UltimateShowcase })));
 
 const App: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
@@ -61,6 +62,7 @@ const App: React.FC = () => {
                     />
                     <Route path="/demo" element={<AdvancedVisualizationDemo />} />
                     <Route path="/advanced-demo" element={<AdvancedFeaturesDemo />} />
+                    <Route path="/showcase" element={<UltimateShowcase />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Suspense>
