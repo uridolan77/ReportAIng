@@ -17,8 +17,7 @@ namespace BIReportingCopilot.Tests.Unit.Services;
 /// </summary>
 public class AIServiceTests
 {
-    private readonly Mock<OpenAIClient> _mockOpenAIClient;
-    private readonly Mock<IConfiguration> _mockConfiguration;
+    private readonly Mock<IAIProviderFactory> _mockProviderFactory;
     private readonly Mock<ILogger<AIService>> _mockLogger;
     private readonly Mock<ICacheService> _mockCacheService;
     private readonly Mock<IContextManager> _mockContextManager;
@@ -26,36 +25,18 @@ public class AIServiceTests
 
     public AIServiceTests()
     {
-        _mockOpenAIClient = new Mock<OpenAIClient>();
-        _mockConfiguration = new Mock<IConfiguration>();
+        _mockProviderFactory = new Mock<IAIProviderFactory>();
         _mockLogger = new Mock<ILogger<AIService>>();
         _mockCacheService = new Mock<ICacheService>();
         _mockContextManager = new Mock<IContextManager>();
 
-        // Setup configuration
-        var mockOpenAISection = new Mock<IConfigurationSection>();
-        mockOpenAISection.Setup(x => x["ApiKey"]).Returns("test-key");
-        mockOpenAISection.Setup(x => x["Model"]).Returns("gpt-4");
-        mockOpenAISection.Setup(x => x["MaxTokens"]).Returns("1000");
-        mockOpenAISection.Setup(x => x["Temperature"]).Returns("0.1");
-        mockOpenAISection.Setup(x => x["FrequencyPenalty"]).Returns("0.0");
-        mockOpenAISection.Setup(x => x["PresencePenalty"]).Returns("0.0");
-
-        var mockAzureSection = new Mock<IConfigurationSection>();
-        mockAzureSection.Setup(x => x["Endpoint"]).Returns("https://test.openai.azure.com");
-        mockAzureSection.Setup(x => x["ApiKey"]).Returns("test-azure-key");
-        mockAzureSection.Setup(x => x["DeploymentName"]).Returns("gpt-4");
-
-        _mockConfiguration.Setup(x => x.GetSection("OpenAI")).Returns(mockOpenAISection.Object);
-        _mockConfiguration.Setup(x => x.GetSection("AzureOpenAI")).Returns(mockAzureSection.Object);
-
-        // Setup configuration binding for AIServiceConfiguration
-        _mockConfiguration.Setup(x => x.GetSection("OpenAI:ApiKey")).Returns(mockOpenAISection.Object);
-        _mockConfiguration.Setup(x => x.GetSection("AzureOpenAI:ApiKey")).Returns(mockAzureSection.Object);
+        // Setup mock provider
+        var mockProvider = new Mock<IAIProvider>();
+        mockProvider.Setup(x => x.ProviderName).Returns("TestProvider");
+        _mockProviderFactory.Setup(x => x.GetProvider()).Returns(mockProvider.Object);
 
         _service = new AIService(
-            _mockOpenAIClient.Object,
-            _mockConfiguration.Object,
+            _mockProviderFactory.Object,
             _mockLogger.Object,
             _mockCacheService.Object,
             _mockContextManager.Object);

@@ -1,6 +1,7 @@
 using Moq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
+using System.Diagnostics;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Messaging;
@@ -74,7 +75,7 @@ public class MockServiceBuilder
         var mock = For<IQueryService>();
 
         // Default behaviors
-        mock.Setup(x => x.ExecuteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        mock.Setup(x => x.ProcessQueryAsync(It.IsAny<QueryRequest>(), It.IsAny<string>()))
             .ReturnsAsync(new QueryResponse
             {
                 Success = true,
@@ -137,7 +138,7 @@ public class MockServiceBuilder
 
         // Default behaviors - cache misses by default
         mock.Setup(x => x.GetAsync<It.IsAnyType>(It.IsAny<string>()))
-            .Returns(Task.FromResult((object?)null));
+            .Returns<string>(key => Task.FromResult(default(It.IsAnyType)));
 
         mock.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan?>()))
             .Returns(Task.CompletedTask);
@@ -365,7 +366,7 @@ public static class MockServiceBuilderExtensions
 
         foreach (var kvp in sqlToResultMap)
         {
-            mock.Setup(x => x.ExecuteAsync(kvp.Key, It.IsAny<CancellationToken>()))
+            mock.Setup(x => x.ProcessQueryAsync(It.IsAny<QueryRequest>(), It.IsAny<string>()))
                 .ReturnsAsync(kvp.Value);
         }
 

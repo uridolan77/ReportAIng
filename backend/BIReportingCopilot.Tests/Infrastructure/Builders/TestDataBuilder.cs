@@ -214,7 +214,7 @@ public static class TestDataBuilders
             .With(q => q.GeneratedSQL, "SELECT * FROM Customers")
             .With(q => q.IsSuccessful, true)
             .With(q => q.ExecutionTimeMs, Random.Shared.Next(100, 5000))
-            .With(q => q.RowCount, Random.Shared.Next(1, 1000))
+            .With(q => q.ResultRowCount, Random.Shared.Next(1, 1000))
             .With(q => q.QueryTimestamp, DateTime.UtcNow);
     }
 
@@ -225,7 +225,7 @@ public static class TestDataBuilders
             .With(t => t.SchemaName, "dbo")
             .With(t => t.TableName, $"TestTable{Random.Shared.Next(100, 999)}")
             .With(t => t.BusinessPurpose, "Test table for unit testing")
-            .With(t => t.DataClassification, "Internal")
+            .With(t => t.BusinessContext, "Internal business table")
             .With(t => t.IsActive, true)
             .With(t => t.CreatedDate, DateTime.UtcNow)
             .With(t => t.CreatedBy, "System");
@@ -303,7 +303,7 @@ public static class TestDataBuilders
             .With(c => c.IsPrimaryKey, false)
             .With(c => c.MaxLength, 255)
             .With(c => c.Description, "Test column")
-            .With(c => c.SampleValues, new List<string> { "Sample1", "Sample2" });
+            .With(c => c.SampleValues, new string[] { "Sample1", "Sample2" });
     }
 
     public static TestDataBuilder<AIGenerationAttempt> AIGenerationAttempt()
