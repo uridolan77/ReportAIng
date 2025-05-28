@@ -16,7 +16,7 @@ namespace BIReportingCopilot.Tests.Unit.Services;
 public class QueryServiceTests
 {
     private Mock<ILogger<QueryService>> _mockLogger;
-    private Mock<IOpenAIService> _mockOpenAIService;
+    private Mock<IAIService> _mockAIService;
     private Mock<ISchemaService> _mockSchemaService;
     private Mock<ISqlQueryService> _mockSqlQueryService;
     private Mock<IAuditService> _mockAuditService;
@@ -30,7 +30,7 @@ public class QueryServiceTests
     public void Setup()
     {
         _mockLogger = new Mock<ILogger<QueryService>>();
-        _mockOpenAIService = new Mock<IOpenAIService>();
+        _mockAIService = new Mock<IAIService>();
         _mockSchemaService = new Mock<ISchemaService>();
         _mockSqlQueryService = new Mock<ISqlQueryService>();
         _mockAuditService = new Mock<IAuditService>();
@@ -45,7 +45,7 @@ public class QueryServiceTests
 
         _queryService = new QueryService(
             _mockLogger.Object,
-            _mockOpenAIService.Object,
+            _mockAIService.Object,
             _mockSchemaService.Object,
             _mockSqlQueryService.Object,
             _mockCacheService.Object,

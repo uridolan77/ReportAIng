@@ -10,16 +10,16 @@ namespace BIReportingCopilot.API.HealthChecks;
 
 public class OpenAIHealthCheck : IHealthCheck
 {
-    private readonly IOpenAIService _openAIService;
+    private readonly IAIService _aiService;
     private readonly ILogger<OpenAIHealthCheck> _logger;
     private readonly IConfiguration _configuration;
 
     public OpenAIHealthCheck(
-        IOpenAIService openAIService,
+        IAIService aiService,
         ILogger<OpenAIHealthCheck> logger,
         IConfiguration configuration)
     {
-        _openAIService = openAIService;
+        _aiService = aiService;
         _logger = logger;
         _configuration = configuration;
     }
@@ -33,7 +33,7 @@ public class OpenAIHealthCheck : IHealthCheck
             cts.CancelAfter(timeout);
 
             // Quick validation test - lightweight API call
-            var isValid = await _openAIService.ValidateQueryIntentAsync("test");
+            var isValid = await _aiService.ValidateQueryIntentAsync("test");
 
             if (!isValid)
             {

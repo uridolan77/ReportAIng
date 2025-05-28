@@ -11,18 +11,18 @@ namespace BIReportingCopilot.Tests.Unit.Services;
 public class VisualizationServiceTests
 {
     private readonly Mock<ILogger<VisualizationService>> _mockLogger;
-    private readonly Mock<IOpenAIService> _mockOpenAIService;
+    private readonly Mock<IAIService> _mockAIService;
     private readonly Mock<ICacheService> _mockCacheService;
     private readonly VisualizationService _service;
 
     public VisualizationServiceTests()
     {
         _mockLogger = new Mock<ILogger<VisualizationService>>();
-        _mockOpenAIService = new Mock<IOpenAIService>();
+        _mockAIService = new Mock<IAIService>();
         _mockCacheService = new Mock<ICacheService>();
 
         _service = new VisualizationService(
-            _mockOpenAIService.Object,
+            _mockAIService.Object,
             _mockLogger.Object,
             _mockCacheService.Object);
     }
@@ -51,7 +51,7 @@ public class VisualizationServiceTests
             YAxis = "sales"
         };
 
-        _mockOpenAIService
+        _mockAIService
             .Setup(x => x.GenerateVisualizationConfigAsync(query, columns, data))
             .ReturnsAsync("{\"type\":\"bar\",\"title\":\"Sales by Region\"}");
 
@@ -93,7 +93,7 @@ public class VisualizationServiceTests
             YAxis = "sales"
         };
 
-        _mockOpenAIService
+        _mockAIService
             .Setup(x => x.GenerateVisualizationConfigAsync(query, columns, data))
             .ReturnsAsync("{\"type\":\"bar\",\"title\":\"Sales Analysis\"}");
 
@@ -265,7 +265,7 @@ public class VisualizationServiceTests
             YAxis = "sales"
         };
 
-        _mockOpenAIService
+        _mockAIService
             .Setup(x => x.GenerateVisualizationConfigAsync(query, columns, data))
             .ReturnsAsync("{\"type\":\"treemap\",\"title\":\"Product Sales Hierarchy\"}");
 
@@ -301,7 +301,7 @@ public class VisualizationServiceTests
             YAxis = "marketing"
         };
 
-        _mockOpenAIService
+        _mockAIService
             .Setup(x => x.GenerateVisualizationConfigAsync(query, columns, data))
             .ReturnsAsync("{\"type\":\"heatmap\",\"title\":\"Business Metrics Correlation\"}");
 
@@ -370,7 +370,7 @@ public class VisualizationServiceTests
             YAxis = "sales"
         };
 
-        _mockOpenAIService
+        _mockAIService
             .Setup(x => x.GenerateVisualizationConfigAsync(query, columns, data))
             .ReturnsAsync("{\"type\":\"bar\",\"title\":\"Sales\"}");
 

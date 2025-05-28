@@ -41,8 +41,8 @@ public class ServiceIntegrationTests : IClassFixture<WebApplicationFactory<Progr
         var cacheService = services.GetRequiredService<ICacheService>();
         Assert.NotNull(cacheService);
 
-        var openAIService = services.GetRequiredService<IOpenAIService>();
-        Assert.NotNull(openAIService);
+        var aiService = services.GetRequiredService<IAIService>();
+        Assert.NotNull(aiService);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class ServiceIntegrationTests : IClassFixture<WebApplicationFactory<Progr
         var auditService = scope.ServiceProvider.GetRequiredService<IAuditService>();
 
         // Act & Assert - Should not throw
-        await auditService.LogAsync("TEST_ACTION", "test-user", "TestEntity", "123", 
+        await auditService.LogAsync("TEST_ACTION", "test-user", "TestEntity", "123",
             new { TestProperty = "TestValue" });
     }
 
@@ -111,10 +111,10 @@ public class ServiceIntegrationTests : IClassFixture<WebApplicationFactory<Progr
     {
         // Arrange
         using var scope = _factory.Services.CreateScope();
-        var openAIService = scope.ServiceProvider.GetRequiredService<IOpenAIService>();
+        var aiService = scope.ServiceProvider.GetRequiredService<IAIService>();
 
         // Act
-        var isValid = await openAIService.ValidateQueryIntentAsync("Show me all users");
+        var isValid = await aiService.ValidateQueryIntentAsync("Show me all users");
 
         // Assert
         // Should not throw and return a boolean result

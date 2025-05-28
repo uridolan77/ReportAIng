@@ -40,16 +40,16 @@ public interface IVisualizationService
 
 public class VisualizationService : IVisualizationService
 {
-    private readonly IOpenAIService _openAIService;
+    private readonly IAIService _aiService;
     private readonly ILogger<VisualizationService> _logger;
     private readonly ICacheService _cacheService;
 
     public VisualizationService(
-        IOpenAIService openAIService,
+        IAIService aiService,
         ILogger<VisualizationService> logger,
         ICacheService cacheService)
     {
-        _openAIService = openAIService;
+        _aiService = aiService;
         _logger = logger;
         _cacheService = cacheService;
     }
@@ -62,7 +62,7 @@ public class VisualizationService : IVisualizationService
             var recommendedType = DetermineOptimalVisualizationType(dataAnalysis);
 
             // Use AI to generate enhanced configuration
-            var aiConfig = await _openAIService.GenerateVisualizationConfigAsync(query, columns, data);
+            var aiConfig = await _aiService.GenerateVisualizationConfigAsync(query, columns, data);
             var parsedConfig = ParseAIVisualizationConfig(aiConfig);
 
             var config = new VisualizationConfig

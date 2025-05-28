@@ -239,17 +239,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.IUserEnt
 builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.AIService>(); // Unified AI service with standard and streaming capabilities
 builder.Services.AddScoped<IQueryService, QueryService>(); // Enhanced query service with advanced processing
 
-// Legacy service registrations for backward compatibility
-builder.Services.AddScoped<IOpenAIService>(provider =>
-{
-    var aiService = provider.GetRequiredService<IAIService>();
-    return new BIReportingCopilot.Infrastructure.Adapters.LegacyOpenAIServiceAdapter(aiService);
-});
-builder.Services.AddScoped<IStreamingOpenAIService>(provider =>
-{
-    var aiService = provider.GetRequiredService<IAIService>();
-    return new BIReportingCopilot.Infrastructure.Adapters.LegacyStreamingOpenAIServiceAdapter(aiService);
-});
+// No legacy service registrations needed - using unified IAIService directly
 builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Services.SchemaService>();
 builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Services.SqlQueryService>();
 builder.Services.AddScoped<IStreamingSqlQueryService>(provider =>

@@ -13,7 +13,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
     private readonly IContextManager _contextManager;
     private readonly IQueryOptimizer _queryOptimizer;
     private readonly IQueryClassifier _queryClassifier;
-    private readonly IOpenAIService _openAIService;
+    private readonly IAIService _aiService;
     private readonly ISchemaService _schemaService;
     private readonly ILogger<EnhancedQueryProcessor> _logger;
     private readonly ICacheService _cacheService;
@@ -23,7 +23,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
         IContextManager contextManager,
         IQueryOptimizer queryOptimizer,
         IQueryClassifier queryClassifier,
-        IOpenAIService openAIService,
+        IAIService aiService,
         ISchemaService schemaService,
         ILogger<EnhancedQueryProcessor> logger,
         ICacheService cacheService)
@@ -32,7 +32,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
         _contextManager = contextManager;
         _queryOptimizer = queryOptimizer;
         _queryClassifier = queryClassifier;
-        _openAIService = openAIService;
+        _aiService = aiService;
         _schemaService = schemaService;
         _logger = logger;
         _cacheService = cacheService;
@@ -59,7 +59,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
 
             // Step 4: Query Classification
             var classification = await _queryClassifier.ClassifyQueryAsync(naturalLanguageQuery);
-            _logger.LogDebug("Query classified as {Category} with {Complexity} complexity", 
+            _logger.LogDebug("Query classified as {Category} with {Complexity} complexity",
                 classification.Category, classification.Complexity);
 
             // Step 5: Generate SQL Candidates
@@ -85,7 +85,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
             // Step 8: Cache the result for similar queries
             await CacheProcessedQueryAsync(naturalLanguageQuery, processedQuery);
 
-            _logger.LogInformation("Query processing completed successfully with confidence: {Confidence}", 
+            _logger.LogInformation("Query processing completed successfully with confidence: {Confidence}",
                 processedQuery.Confidence);
 
             return processedQuery;
@@ -103,7 +103,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
         {
             var userContext = await _contextManager.GetUserContextAsync(userId);
             var schema = await _schemaService.GetSchemaMetadataAsync();
-            
+
             var suggestions = new List<string>();
 
             // Add context-based suggestions
@@ -166,7 +166,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
                     // Try to get cached processed query
                     var cacheKey = $"processed_query:{pattern.Pattern.GetHashCode()}";
                     var cachedQuery = await _cacheService.GetAsync<ProcessedQuery>(cacheKey);
-                    
+
                     if (cachedQuery != null)
                     {
                         similarQueries.Add(cachedQuery);
@@ -184,8 +184,8 @@ public class EnhancedQueryProcessor : IQueryProcessor
     }
 
     private async Task<List<string>> GenerateContextualSuggestions(
-        SemanticAnalysis contextAnalysis, 
-        UserContext userContext, 
+        SemanticAnalysis contextAnalysis,
+        UserContext userContext,
         SchemaMetadata schema)
     {
         var suggestions = new List<string>();
@@ -271,30 +271,30 @@ public class EnhancedQueryProcessor : IQueryProcessor
 
         // Based on available tables
         var relevantTables = schema.Tables
-            .Where(t => userContext.PreferredTables.Contains(t.Name) || 
+            .Where(t => userContext.PreferredTables.Contains(t.Name) ||
                        IsCommonBusinessTable(t.Name))
             .Take(3);
 
         foreach (var table in relevantTables)
         {
             suggestions.Add($"Show summary of {table.Name}");
-            
+
             // Find date columns for trend suggestions
-            var dateColumns = table.Columns.Where(c => 
+            var dateColumns = table.Columns.Where(c =>
                 c.DataType.Contains("date", StringComparison.OrdinalIgnoreCase) ||
                 c.DataType.Contains("time", StringComparison.OrdinalIgnoreCase));
-            
+
             if (dateColumns.Any())
             {
                 suggestions.Add($"Show {table.Name} trends over time");
             }
 
             // Find numeric columns for aggregation suggestions
-            var numericColumns = table.Columns.Where(c => 
+            var numericColumns = table.Columns.Where(c =>
                 c.DataType.Contains("int", StringComparison.OrdinalIgnoreCase) ||
                 c.DataType.Contains("decimal", StringComparison.OrdinalIgnoreCase) ||
                 c.DataType.Contains("float", StringComparison.OrdinalIgnoreCase));
-            
+
             if (numericColumns.Any())
             {
                 var column = numericColumns.First();
@@ -329,8 +329,8 @@ public class EnhancedQueryProcessor : IQueryProcessor
         try
         {
             // Use the basic OpenAI service as fallback
-            var fallbackSql = await _openAIService.GenerateSQLAsync(naturalLanguageQuery);
-            var fallbackConfidence = await _openAIService.CalculateConfidenceScoreAsync(naturalLanguageQuery, fallbackSql);
+            var fallbackSql = await _aiService.GenerateSQLAsync(naturalLanguageQuery);
+            var fallbackConfidence = await _aiService.CalculateConfidenceScoreAsync(naturalLanguageQuery, fallbackSql);
 
             return new ProcessedQuery
             {

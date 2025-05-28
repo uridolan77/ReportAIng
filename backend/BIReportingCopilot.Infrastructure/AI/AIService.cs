@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text;
 using Azure;
 using System.Runtime.CompilerServices;
+using CoreModels = BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.AI;
 
@@ -47,7 +48,7 @@ public class AIService : IAIService
         configuration.GetSection("AzureOpenAI").Bind(_aiConfig.AzureOpenAI);
 
         _isConfigured = _aiConfig.HasValidConfiguration;
-        _promptManager = new PromptTemplateManager(configuration, logger);
+        _promptManager = new PromptTemplateManager();
 
         if (!_isConfigured)
         {
@@ -222,12 +223,12 @@ Return only valid JSON.";
     {
         // Implement confidence calculation logic
         var score = 0.8; // Default confidence
-        
+
         // Add various confidence factors
         if (generatedSQL.Contains("SELECT", StringComparison.OrdinalIgnoreCase)) score += 0.1;
         if (generatedSQL.Contains("FROM", StringComparison.OrdinalIgnoreCase)) score += 0.1;
         if (!generatedSQL.Contains("ERROR", StringComparison.OrdinalIgnoreCase)) score += 0.1;
-        
+
         return Math.Min(1.0, score);
     }
 
@@ -259,14 +260,14 @@ Return only valid JSON.";
     {
         // Implement query intent validation
         var lowerQuery = naturalLanguageQuery.ToLowerInvariant();
-        
+
         // Check for SQL injection attempts
         var dangerousPatterns = new[] { "drop", "delete", "truncate", "alter", "create", "insert", "update" };
         if (dangerousPatterns.Any(pattern => lowerQuery.Contains(pattern)))
         {
             return false;
         }
-        
+
         // Check for valid query patterns
         var validPatterns = new[] { "show", "get", "find", "list", "count", "sum", "average", "total" };
         return validPatterns.Any(pattern => lowerQuery.Contains(pattern));
@@ -279,7 +280,7 @@ Return only valid JSON.";
     public async IAsyncEnumerable<StreamingResponse> GenerateSQLStreamAsync(
         string prompt,
         SchemaMetadata? schema = null,
-        QueryContext? context = null,
+        CoreModels.QueryContext? context = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (!_isConfigured)
@@ -294,8 +295,8 @@ Return only valid JSON.";
         }
 
         var enhancedPrompt = await _promptManager.BuildSQLGenerationPromptAsync(prompt, schema, context);
-        
-        await foreach (var response in StreamChatCompletionAsync(enhancedPrompt, StreamingResponseType.SQL, cancellationToken))
+
+        await foreach (var response in StreamChatCompletionAsync(enhancedPrompt, StreamingResponseType.SQLGeneration, cancellationToken))
         {
             yield return response;
         }
@@ -304,7 +305,7 @@ Return only valid JSON.";
     public async IAsyncEnumerable<StreamingResponse> GenerateInsightStreamAsync(
         string query,
         object[] data,
-        AnalysisContext? context = null,
+        CoreModels.AnalysisContext? context = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (!_isConfigured)
@@ -319,7 +320,7 @@ Return only valid JSON.";
         }
 
         var insightPrompt = await _promptManager.BuildInsightGenerationPromptAsync(query, data, context);
-        
+
         await foreach (var response in StreamChatCompletionAsync(insightPrompt, StreamingResponseType.Insight, cancellationToken))
         {
             yield return response;
@@ -328,7 +329,7 @@ Return only valid JSON.";
 
     public async IAsyncEnumerable<StreamingResponse> GenerateExplanationStreamAsync(
         string sql,
-        StreamingQueryComplexity complexity = StreamingQueryComplexity.Medium,
+        CoreModels.StreamingQueryComplexity complexity = CoreModels.StreamingQueryComplexity.Medium,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (!_isConfigured)
@@ -343,7 +344,7 @@ Return only valid JSON.";
         }
 
         var explanationPrompt = await _promptManager.BuildSQLExplanationPromptAsync(sql, complexity);
-        
+
         await foreach (var response in StreamChatCompletionAsync(explanationPrompt, StreamingResponseType.Explanation, cancellationToken))
         {
             yield return response;
@@ -378,67 +379,48 @@ Return only valid JSON.";
         var chunkIndex = 0;
         var contentBuilder = new StringBuilder();
 
-        try
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var timeoutSeconds = _aiConfig.PreferAzureOpenAI ?
+            _aiConfig.AzureOpenAI.TimeoutSeconds :
+            _aiConfig.OpenAI.TimeoutSeconds;
+        cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+
+        var streamingResponse = await _client.GetChatCompletionsStreamingAsync(chatCompletionsOptions, cts.Token);
+
+        await foreach (var update in streamingResponse.WithCancellation(cts.Token))
         {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            var timeoutSeconds = _aiConfig.PreferAzureOpenAI ?
-                _aiConfig.AzureOpenAI.TimeoutSeconds :
-                _aiConfig.OpenAI.TimeoutSeconds;
-            cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
-
-            var streamingResponse = await _client.GetChatCompletionsStreamingAsync(chatCompletionsOptions, cts.Token);
-
-            await foreach (var choice in streamingResponse.Value.GetChoicesStreaming().WithCancellation(cts.Token))
+            if (update.ContentUpdate != null)
             {
-                await foreach (var message in choice.GetMessageStreaming().WithCancellation(cts.Token))
+                contentBuilder.Append(update.ContentUpdate);
+
+                yield return new StreamingResponse
                 {
-                    if (message.Content != null)
-                    {
-                        contentBuilder.Append(message.Content);
-                        
-                        yield return new StreamingResponse
-                        {
-                            Type = responseType,
-                            Content = message.Content,
-                            IsComplete = false,
-                            ChunkIndex = chunkIndex++,
-                            Timestamp = DateTime.UtcNow
-                        };
-                    }
-                }
+                    Type = responseType,
+                    Content = update.ContentUpdate,
+                    IsComplete = false,
+                    ChunkIndex = chunkIndex++,
+                    Timestamp = DateTime.UtcNow
+                };
             }
+        }
 
-            // Send final completion message
-            yield return new StreamingResponse
-            {
-                Type = responseType,
-                Content = string.Empty,
-                IsComplete = true,
-                ChunkIndex = chunkIndex,
-                Timestamp = DateTime.UtcNow,
-                Metadata = new { TotalContent = contentBuilder.ToString(), TotalChunks = chunkIndex }
-            };
-        }
-        catch (Exception ex)
+        // Send final completion message
+        yield return new StreamingResponse
         {
-            _logger.LogError(ex, "Error in streaming chat completion for type {ResponseType}", responseType);
-            
-            yield return new StreamingResponse
-            {
-                Type = StreamingResponseType.Error,
-                Content = $"Streaming error: {ex.Message}",
-                IsComplete = true,
-                ChunkIndex = chunkIndex,
-                Timestamp = DateTime.UtcNow
-            };
-        }
+            Type = responseType,
+            Content = string.Empty,
+            IsComplete = true,
+            ChunkIndex = chunkIndex,
+            Timestamp = DateTime.UtcNow,
+            Metadata = new { TotalContent = contentBuilder.ToString(), TotalChunks = chunkIndex }
+        };
     }
 
     private string GetSystemPromptForType(StreamingResponseType type)
     {
         return type switch
         {
-            StreamingResponseType.SQL => "You are an expert SQL developer. Generate only valid SQL queries.",
+            StreamingResponseType.SQLGeneration => "You are an expert SQL developer. Generate only valid SQL queries.",
             StreamingResponseType.Insight => "You are a business intelligence analyst providing insights from data.",
             StreamingResponseType.Explanation => "You are a SQL expert explaining queries in simple terms.",
             _ => "You are a helpful AI assistant."
@@ -449,7 +431,7 @@ Return only valid JSON.";
     {
         return type switch
         {
-            StreamingResponseType.SQL => 0.1f,
+            StreamingResponseType.SQLGeneration => 0.1f,
             StreamingResponseType.Insight => 0.3f,
             StreamingResponseType.Explanation => 0.2f,
             _ => 0.2f
@@ -460,7 +442,7 @@ Return only valid JSON.";
     {
         return type switch
         {
-            StreamingResponseType.SQL => 1000,
+            StreamingResponseType.SQLGeneration => 1000,
             StreamingResponseType.Insight => 500,
             StreamingResponseType.Explanation => 800,
             _ => 500
@@ -492,7 +474,7 @@ Return only valid JSON.";
     private string GenerateDataPreview(object[] data)
     {
         if (data.Length == 0) return "No data available";
-        
+
         var preview = data.Take(3).Select(item => item.ToString()).ToArray();
         return string.Join(", ", preview) + (data.Length > 3 ? "..." : "");
     }
@@ -501,8 +483,8 @@ Return only valid JSON.";
     {
         return new List<QueryExample>
         {
-            new() { Question = "Show all users", Sql = "SELECT * FROM Users" },
-            new() { Question = "Count total orders", Sql = "SELECT COUNT(*) FROM Orders" }
+            new() { NaturalLanguage = "Show all users", SQL = "SELECT * FROM Users" },
+            new() { NaturalLanguage = "Count total orders", SQL = "SELECT COUNT(*) FROM Orders" }
         };
     }
 

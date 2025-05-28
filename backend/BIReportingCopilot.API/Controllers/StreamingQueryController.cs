@@ -17,20 +17,20 @@ namespace BIReportingCopilot.API.Controllers;
 public class StreamingQueryController : ControllerBase
 {
     private readonly IStreamingSqlQueryService _streamingQueryService;
-    private readonly IOpenAIService _openAIService;
+    private readonly IAIService _aiService;
     private readonly ISchemaService _schemaService;
     private readonly IHubContext<QueryHub> _hubContext;
     private readonly ILogger<StreamingQueryController> _logger;
 
     public StreamingQueryController(
         IStreamingSqlQueryService streamingQueryService,
-        IOpenAIService openAIService,
+        IAIService aiService,
         ISchemaService schemaService,
         IHubContext<QueryHub> hubContext,
         ILogger<StreamingQueryController> logger)
     {
         _streamingQueryService = streamingQueryService;
-        _openAIService = openAIService;
+        _aiService = aiService;
         _schemaService = schemaService;
         _hubContext = hubContext;
         _logger = logger;
@@ -52,7 +52,7 @@ public class StreamingQueryController : ControllerBase
             var schema = await _schemaService.GetSchemaMetadataAsync();
             var schemaSummary = await _schemaService.GetSchemaSummaryAsync();
             var prompt = $"Generate SQL for: {request.Question}\n\nSchema: {schemaSummary}";
-            var sql = await _openAIService.GenerateSQLAsync(prompt);
+            var sql = await _aiService.GenerateSQLAsync(prompt);
 
             // Get streaming metadata
             var metadata = await _streamingQueryService.GetStreamingQueryMetadataAsync(sql, request.Options);
@@ -92,7 +92,7 @@ public class StreamingQueryController : ControllerBase
             var schema = await _schemaService.GetSchemaMetadataAsync();
             var schemaSummary = await _schemaService.GetSchemaSummaryAsync();
             var prompt = $"Generate SQL for: {request.Question}\n\nSchema: {schemaSummary}";
-            var sql = await _openAIService.GenerateSQLAsync(prompt);
+            var sql = await _aiService.GenerateSQLAsync(prompt);
 
             // Validate SQL
             var isValid = await _streamingQueryService.ValidateSqlAsync(sql);
@@ -247,7 +247,7 @@ public class StreamingQueryController : ControllerBase
 
         try
         {
-            sql = await _openAIService.GenerateSQLAsync(request.Question, cancellationToken);
+            sql = await _aiService.GenerateSQLAsync(request.Question, cancellationToken);
             _logger.LogDebug("Generated SQL for streaming: {Sql}", sql);
 
             options = new QueryOptions
@@ -339,7 +339,7 @@ public class StreamingQueryController : ControllerBase
 
         try
         {
-            sql = await _openAIService.GenerateSQLAsync(request.Question, cancellationToken);
+            sql = await _aiService.GenerateSQLAsync(request.Question, cancellationToken);
             _logger.LogDebug("Generated SQL for progress streaming: {Sql}", sql);
 
             options = new QueryOptions

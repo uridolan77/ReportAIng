@@ -9,7 +9,7 @@ namespace BIReportingCopilot.Infrastructure.AI;
 public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
 {
     private readonly ISchemaService _schemaService;
-    private readonly IOpenAIService _openAIService;
+    private readonly IAIService _aiService;
     private readonly ILogger<BusinessContextAutoGenerator> _logger;
 
     // Gaming/Casino domain knowledge for better context generation
@@ -36,11 +36,11 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
 
     public BusinessContextAutoGenerator(
         ISchemaService schemaService,
-        IOpenAIService openAIService,
+        IAIService aiService,
         ILogger<BusinessContextAutoGenerator> logger)
     {
         _schemaService = schemaService;
-        _openAIService = openAIService;
+        _aiService = aiService;
         _logger = logger;
     }
 
@@ -93,7 +93,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
             var prompt = BuildTableAnalysisPrompt(tableMetadata);
 
             // Get AI analysis
-            var aiResponse = await _openAIService.GenerateSQLAsync(prompt);
+            var aiResponse = await _aiService.GenerateSQLAsync(prompt);
 
             // Parse AI response and create context
             var context = ParseTableContextResponse(aiResponse, tableMetadata);

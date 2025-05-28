@@ -58,60 +58,52 @@ export const Login: React.FC = () => {
         </div>
       )}
       <Card className="login-card">
-        <div className="login-header">
-          <Space direction="vertical" size="small" style={{ width: '100%', textAlign: 'center' }}>
-            <RobotOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
-            <Title level={2} className="login-title">
-              BI Reporting Copilot
-            </Title>
-            <Text className="login-subtitle">
-              AI-Powered Business Intelligence
-            </Text>
-          </Space>
-        </div>
 
         <Form
           name="login"
           onFinish={onFinish}
           autoComplete="off"
           size="large"
+          className="login-form"
         >
-          <Form.Item
-            name="username"
-            rules={[
-              {
-                required: true,
-                message: 'Please input your username!',
-              },
-            ]}
-          >
-            <Input
-              prefix={<UserOutlined />}
-              placeholder="Username"
-            />
-          </Form.Item>
+          <div className="login-form-inputs">
+            <Form.Item
+              name="username"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please input your username!',
+                },
+              ]}
+            >
+              <Input
+                prefix={<UserOutlined />}
+                placeholder="Username"
+              />
+            </Form.Item>
 
-          <Form.Item
-            name="password"
-            rules={[
-              {
-                required: true,
-                message: 'Please input your password!',
-              },
-            ]}
-          >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder="Password"
-            />
-          </Form.Item>
+            <Form.Item
+              name="password"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please input your password!',
+                },
+              ]}
+            >
+              <Input.Password
+                prefix={<LockOutlined />}
+                placeholder="Password"
+              />
+            </Form.Item>
+          </div>
 
-          <Form.Item>
+          <Form.Item style={{ margin: 0 }}>
             <Button
               type="primary"
               htmlType="submit"
               loading={loading}
-              style={{ width: '100%' }}
+              className="login-button"
             >
               Sign In
             </Button>

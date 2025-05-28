@@ -66,11 +66,11 @@ public class CacheService : ICacheService
                 if (!string.IsNullOrEmpty(distributedValue))
                 {
                     var deserializedValue = JsonSerializer.Deserialize<T>(distributedValue);
-                    
+
                     // Store in memory cache for faster access
                     var memoryExpiry = TimeSpan.FromMinutes(_config.MemoryCacheExpiryMinutes);
                     _memoryCache.Set(key, deserializedValue, memoryExpiry);
-                    
+
                     RecordHit();
                     _logger.LogDebug("Cache hit (distributed): {Key}", key);
                     return deserializedValue;
@@ -132,7 +132,7 @@ public class CacheService : ICacheService
         try
         {
             _memoryCache.Remove(key);
-            
+
             if (_distributedCache != null)
             {
                 await _distributedCache.RemoveAsync(key);
@@ -203,9 +203,10 @@ public class CacheService : ICacheService
     {
         try
         {
-            var currentValue = await GetAsync<long?>(key.ToString()) ?? 0;
+            var currentValueStr = await GetAsync<string>(key.ToString());
+            var currentValue = long.TryParse(currentValueStr, out var parsed) ? parsed : 0;
             var newValue = currentValue + value;
-            await SetAsync(key, newValue);
+            await SetAsync(key, newValue.ToString());
             return newValue;
         }
         catch (Exception ex)
@@ -331,7 +332,7 @@ public class CacheService : ICacheService
             if (_keyTimestamps.TryGetValue(key, out _))
             {
                 _keyTimestamps[key] = DateTime.UtcNow;
-                
+
                 // If we have the value in memory cache, reset its expiry
                 if (_memoryCache.TryGetValue(key, out var value))
                 {

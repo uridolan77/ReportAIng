@@ -19,16 +19,16 @@ public class StreamingOpenAIServiceTests
 {
     private readonly Mock<OpenAIClient> _mockOpenAIClient;
     private readonly Mock<IConfiguration> _mockConfiguration;
-    private readonly Mock<ILogger<StreamingOpenAIService>> _mockLogger;
+    private readonly Mock<ILogger<AIService>> _mockLogger;
     private readonly Mock<ICacheService> _mockCacheService;
     private readonly Mock<IContextManager> _mockContextManager;
-    private readonly StreamingOpenAIService _service;
+    private readonly AIService _service;
 
     public StreamingOpenAIServiceTests()
     {
         _mockOpenAIClient = new Mock<OpenAIClient>();
         _mockConfiguration = new Mock<IConfiguration>();
-        _mockLogger = new Mock<ILogger<StreamingOpenAIService>>();
+        _mockLogger = new Mock<ILogger<AIService>>();
         _mockCacheService = new Mock<ICacheService>();
         _mockContextManager = new Mock<IContextManager>();
 
@@ -53,7 +53,7 @@ public class StreamingOpenAIServiceTests
         _mockConfiguration.Setup(x => x.GetSection("OpenAI:ApiKey")).Returns(mockOpenAISection.Object);
         _mockConfiguration.Setup(x => x.GetSection("AzureOpenAI:ApiKey")).Returns(mockAzureSection.Object);
 
-        _service = new StreamingOpenAIService(
+        _service = new AIService(
             _mockOpenAIClient.Object,
             _mockConfiguration.Object,
             _mockLogger.Object,

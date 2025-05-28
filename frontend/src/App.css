@@ -91,40 +91,98 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: url('./assets/login-bg.png') center center / cover no-repeat;
+  position: relative;
+  padding: 40px;
+}
+
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.login-container > * {
+  position: relative;
+  z-index: 2;
 }
 
 .login-card {
-  width: 400px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  width: 1000px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   border-radius: 16px;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-left: 900px;
+  margin-top: 700px;
+  padding: 24px;
 }
 
-.login-header {
-  text-align: center;
-  margin-bottom: 32px;
+.login-form {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  align-items: stretch;
+  justify-content: center;
+  width: 100%;
 }
 
-.login-title {
-  color: #1890ff;
-  margin-bottom: 8px;
+.login-form-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  max-width: 500px;
 }
 
-.login-subtitle {
-  color: #666;
+.login-form-inputs .ant-input {
+  height: 48px;
+  border-radius: 8px;
+  font-size: 16px;
+  width: 100%;
 }
+
+.login-button {
+  width: 120px !important;
+  height: 130px !important;
+  border-radius: 8px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+
 
 @media (max-width: 768px) {
   .query-interface {
     padding: 12px;
   }
-  
+
   .submit-button {
     min-height: 50px;
   }
-  
+
   .login-card {
     width: 90%;
     margin: 20px;
+  }
+
+  .login-form {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .login-button {
+    width: 100% !important;
+    height: 48px !important;
   }
 }

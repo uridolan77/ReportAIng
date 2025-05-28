@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Models;
+using CoreModels = BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Core.Interfaces;
 
@@ -18,7 +19,7 @@ public interface IQueryService
     Task InvalidateQueryCacheAsync(string pattern);
 
     // Advanced query processing capabilities
-    Task<ProcessedQuery> ProcessAdvancedQueryAsync(string query, string userId, QueryContext? context = null);
+    Task<ProcessedQuery> ProcessAdvancedQueryAsync(string query, string userId, CoreModels.QueryContext? context = null);
     Task<double> CalculateSemanticSimilarityAsync(string query1, string query2);
     Task<List<ProcessedQuery>> FindSimilarQueriesAsync(string query, string userId, int limit = 5);
 }
@@ -38,9 +39,9 @@ public interface IAIService
     Task<bool> ValidateQueryIntentAsync(string naturalLanguageQuery);
 
     // Streaming capabilities
-    IAsyncEnumerable<StreamingResponse> GenerateSQLStreamAsync(string prompt, SchemaMetadata? schema = null, QueryContext? context = null, CancellationToken cancellationToken = default);
-    IAsyncEnumerable<StreamingResponse> GenerateInsightStreamAsync(string query, object[] data, AnalysisContext? context = null, CancellationToken cancellationToken = default);
-    IAsyncEnumerable<StreamingResponse> GenerateExplanationStreamAsync(string sql, StreamingQueryComplexity complexity = StreamingQueryComplexity.Medium, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<StreamingResponse> GenerateSQLStreamAsync(string prompt, SchemaMetadata? schema = null, CoreModels.QueryContext? context = null, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<StreamingResponse> GenerateInsightStreamAsync(string query, object[] data, CoreModels.AnalysisContext? context = null, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<StreamingResponse> GenerateExplanationStreamAsync(string sql, CoreModels.StreamingQueryComplexity complexity = CoreModels.StreamingQueryComplexity.Medium, CancellationToken cancellationToken = default);
 }
 
 // New advanced AI/ML interfaces

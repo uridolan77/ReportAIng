@@ -18,18 +18,18 @@ namespace BIReportingCopilot.API.Controllers;
 [Authorize]
 public class AdvancedStreamingController : ControllerBase
 {
-    private readonly IStreamingOpenAIService _streamingOpenAIService;
+    private readonly IAIService _aiService;
     private readonly ISchemaService _schemaService;
     private readonly IAuditService _auditService;
     private readonly ILogger<AdvancedStreamingController> _logger;
 
     public AdvancedStreamingController(
-        IStreamingOpenAIService streamingOpenAIService,
+        IAIService aiService,
         ISchemaService schemaService,
         IAuditService auditService,
         ILogger<AdvancedStreamingController> logger)
     {
-        _streamingOpenAIService = streamingOpenAIService;
+        _aiService = aiService;
         _schemaService = schemaService;
         _auditService = auditService;
         _logger = logger;
@@ -72,7 +72,7 @@ public class AdvancedStreamingController : ControllerBase
                 UserPreferences = request.UserPreferences ?? new Dictionary<string, object>()
             };
 
-            streamingResults = _streamingOpenAIService.GenerateSQLStreamAsync(
+            streamingResults = _aiService.GenerateSQLStreamAsync(
                 request.Prompt, schema, context, cancellationToken);
         }
         catch (Exception ex)
@@ -157,7 +157,7 @@ public class AdvancedStreamingController : ControllerBase
                 Type = request.AnalysisType
             };
 
-            streamingResults = _streamingOpenAIService.GenerateInsightStreamAsync(
+            streamingResults = _aiService.GenerateInsightStreamAsync(
                 request.Query, request.Data, analysisContext, cancellationToken);
         }
         catch (Exception ex)
@@ -232,7 +232,7 @@ public class AdvancedStreamingController : ControllerBase
 
         try
         {
-            streamingResults = _streamingOpenAIService.GenerateExplanationStreamAsync(
+            streamingResults = _aiService.GenerateExplanationStreamAsync(
                 request.SQL, request.Complexity, cancellationToken);
         }
         catch (Exception ex)

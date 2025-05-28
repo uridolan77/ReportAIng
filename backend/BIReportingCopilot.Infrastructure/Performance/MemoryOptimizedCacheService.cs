@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.Performance;
 
@@ -176,6 +177,66 @@ public class MemoryOptimizedCacheService : ICacheService
         if (!exists)
         {
             await SetAsync(key, value, expiry);
+            return true;
+        }
+        return false;
+    }
+
+    // Additional methods required by ICacheService interface
+    public async Task<Dictionary<string, T?>> GetMultipleAsync<T>(string[] keys) where T : class
+    {
+        var results = new Dictionary<string, T?>();
+
+        foreach (var key in keys)
+        {
+            results[key] = await GetAsync<T>(key);
+        }
+
+        return results;
+    }
+
+    public async Task SetMultipleAsync<T>(Dictionary<string, T> items, TimeSpan? expiry = null) where T : class
+    {
+        var tasks = items.Select(kvp => SetAsync(kvp.Key, kvp.Value, expiry));
+        await Task.WhenAll(tasks);
+    }
+
+    public async Task ClearAllAsync()
+    {
+        // This is a simplified implementation
+        // In production, you'd want to use Redis FLUSHDB or similar
+        _logger.LogWarning("ClearAllAsync not fully implemented - only clearing memory cache");
+
+        if (_memoryCache is MemoryCache mc)
+        {
+            mc.Clear();
+        }
+
+        await Task.CompletedTask;
+    }
+
+    public async Task<CacheStatistics> GetStatisticsAsync()
+    {
+        // This is a simplified implementation
+        // In production, you'd gather real statistics from Redis
+        return new CacheStatistics
+        {
+            TotalKeys = 0, // Not easily available with IDistributedCache
+            HitCount = 0,  // Would need to track this
+            MissCount = 0, // Would need to track this
+            MemoryUsage = 0, // Not easily available
+            LastUpdated = DateTime.UtcNow
+        };
+    }
+
+    public async Task<bool> RefreshAsync(string key, TimeSpan? newExpiry = null)
+    {
+        // Get the current value
+        var value = await GetAsync<object>(key);
+        if (value != null)
+        {
+            // Reset with new expiry
+            await SetAsync(key, value, newExpiry);
             return true;
         }
         return false;

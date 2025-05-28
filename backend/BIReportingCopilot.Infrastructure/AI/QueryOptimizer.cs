@@ -7,18 +7,18 @@ namespace BIReportingCopilot.Infrastructure.AI;
 
 public class QueryOptimizer : IQueryOptimizer
 {
-    private readonly IOpenAIService _openAIService;
+    private readonly IAIService _aiService;
     private readonly ISqlQueryService _sqlQueryService;
     private readonly ILogger<QueryOptimizer> _logger;
     private readonly ICacheService _cacheService;
 
     public QueryOptimizer(
-        IOpenAIService openAIService,
+        IAIService aiService,
         ISqlQueryService sqlQueryService,
         ILogger<QueryOptimizer> logger,
         ICacheService cacheService)
     {
-        _openAIService = openAIService;
+        _aiService = aiService;
         _sqlQueryService = sqlQueryService;
         _logger = logger;
         _cacheService = cacheService;
@@ -37,7 +37,7 @@ public class QueryOptimizer : IQueryOptimizer
 
             // Score and rank candidates
             var scoredCandidates = new List<SqlCandidate>();
-            
+
             foreach (var candidate in candidates)
             {
                 var enhancedCandidate = await EnhanceCandidateAsync(candidate, context);
@@ -81,8 +81,8 @@ public class QueryOptimizer : IQueryOptimizer
 
             // Generate primary candidate using enhanced prompt
             var enhancedPrompt = BuildEnhancedPrompt(analysis, schema);
-            var primarySql = await _openAIService.GenerateSQLAsync(enhancedPrompt);
-            
+            var primarySql = await _aiService.GenerateSQLAsync(enhancedPrompt);
+
             candidates.Add(new SqlCandidate
             {
                 Sql = primarySql,
@@ -148,9 +148,9 @@ public class QueryOptimizer : IQueryOptimizer
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating SQL candidates");
-            
+
             // Return fallback candidate
-            var fallbackSql = await _openAIService.GenerateSQLAsync(analysis.OriginalQuery);
+            var fallbackSql = await _aiService.GenerateSQLAsync(analysis.OriginalQuery);
             return new List<SqlCandidate>
             {
                 new SqlCandidate
@@ -218,7 +218,7 @@ public class QueryOptimizer : IQueryOptimizer
             }
 
             // Add LIMIT if missing for large result sets
-            if (!sql.Contains("LIMIT", StringComparison.OrdinalIgnoreCase) && 
+            if (!sql.Contains("LIMIT", StringComparison.OrdinalIgnoreCase) &&
                 !sql.Contains("TOP", StringComparison.OrdinalIgnoreCase))
             {
                 if (sql.Contains("ORDER BY", StringComparison.OrdinalIgnoreCase))
@@ -249,8 +249,8 @@ public class QueryOptimizer : IQueryOptimizer
         try
         {
             // Calculate confidence score based on various factors
-            var confidence = await _openAIService.CalculateConfidenceScoreAsync("", candidate.Sql);
-            
+            var confidence = await _aiService.CalculateConfidenceScoreAsync("", candidate.Sql);
+
             // Adjust score based on user context
             if (context.PreferredTables.Any(table => candidate.Sql.Contains(table, StringComparison.OrdinalIgnoreCase)))
             {
@@ -278,7 +278,7 @@ public class QueryOptimizer : IQueryOptimizer
     private string BuildEnhancedPrompt(SemanticAnalysis analysis, SchemaContext schema)
     {
         var prompt = $"Natural language query: {analysis.OriginalQuery}\n\n";
-        
+
         prompt += "Semantic Analysis:\n";
         prompt += $"- Intent: {analysis.Intent}\n";
         prompt += $"- Entities: {string.Join(", ", analysis.Entities.Select(e => $"{e.Text} ({e.Type})"))}\n";
@@ -300,7 +300,7 @@ public class QueryOptimizer : IQueryOptimizer
         }
 
         prompt += "\nGenerate an optimized SQL query that addresses the user's request.";
-        
+
         return prompt;
     }
 
@@ -308,24 +308,24 @@ public class QueryOptimizer : IQueryOptimizer
     {
         var aggregationPrompt = $"Generate a SQL query optimized for aggregation operations: {analysis.OriginalQuery}\n";
         aggregationPrompt += "Focus on efficient GROUP BY, aggregate functions, and proper indexing considerations.";
-        
-        return await _openAIService.GenerateSQLAsync(aggregationPrompt);
+
+        return await _aiService.GenerateSQLAsync(aggregationPrompt);
     }
 
     private async Task<string> GenerateTrendCandidate(SemanticAnalysis analysis, SchemaContext schema)
     {
         var trendPrompt = $"Generate a SQL query optimized for time-series trend analysis: {analysis.OriginalQuery}\n";
         trendPrompt += "Focus on date-based grouping, time windows, and trend calculations.";
-        
-        return await _openAIService.GenerateSQLAsync(trendPrompt);
+
+        return await _aiService.GenerateSQLAsync(trendPrompt);
     }
 
     private async Task<string> GenerateSimplifiedCandidate(SemanticAnalysis analysis, SchemaContext schema)
     {
         var simplifiedPrompt = $"Generate a simplified, high-performance SQL query: {analysis.OriginalQuery}\n";
         simplifiedPrompt += "Focus on essential data only, minimal joins, and fast execution.";
-        
-        return await _openAIService.GenerateSQLAsync(simplifiedPrompt);
+
+        return await _aiService.GenerateSQLAsync(simplifiedPrompt);
     }
 
     private async Task<string> ApplyOptimizationsAsync(string sql, UserContext context)
@@ -333,7 +333,7 @@ public class QueryOptimizer : IQueryOptimizer
         var optimizedSql = sql;
 
         // Apply user-specific optimizations
-        if (context.CommonFilters.Any(f => f.Contains("last month")) && 
+        if (context.CommonFilters.Any(f => f.Contains("last month")) &&
             !sql.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
         {
             // Add common date filter if missing
@@ -349,19 +349,19 @@ public class QueryOptimizer : IQueryOptimizer
     private string AddDateFilter(string sql)
     {
         // Simplified date filter addition
-        if (sql.Contains("FROM", StringComparison.OrdinalIgnoreCase) && 
+        if (sql.Contains("FROM", StringComparison.OrdinalIgnoreCase) &&
             !sql.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
         {
             var fromIndex = sql.LastIndexOf("FROM", StringComparison.OrdinalIgnoreCase);
             var tableEndIndex = sql.IndexOf(' ', fromIndex + 5);
             if (tableEndIndex == -1) tableEndIndex = sql.Length;
-            
+
             var beforeTable = sql.Substring(0, tableEndIndex);
             var afterTable = sql.Substring(tableEndIndex);
-            
+
             return beforeTable + " WHERE CreatedDate >= DATEADD(month, -1, GETDATE())" + afterTable;
         }
-        
+
         return sql;
     }
 
@@ -387,18 +387,18 @@ public class QueryOptimizer : IQueryOptimizer
     {
         var baseTime = 100; // milliseconds
         var multiplier = 1 + (complexity * 5); // Scale based on complexity
-        
+
         // Additional factors
         if (sql.Contains("ORDER BY", StringComparison.OrdinalIgnoreCase)) multiplier *= 1.2;
         if (CountJoins(sql) > 3) multiplier *= 1.5;
-        
+
         return TimeSpan.FromMilliseconds(baseTime * multiplier);
     }
 
     private int EstimateRowCount(string sql)
     {
         var baseCount = 1000;
-        
+
         // Adjust based on query characteristics
         if (sql.Contains("WHERE", StringComparison.OrdinalIgnoreCase)) baseCount /= 2;
         if (sql.Contains("GROUP BY", StringComparison.OrdinalIgnoreCase)) baseCount /= 5;
@@ -406,13 +406,13 @@ public class QueryOptimizer : IQueryOptimizer
         {
             var limitMatch = Regex.Match(sql, @"LIMIT\s+(\d+)", RegexOptions.IgnoreCase);
             var topMatch = Regex.Match(sql, @"TOP\s+(\d+)", RegexOptions.IgnoreCase);
-            
+
             if (limitMatch.Success && int.TryParse(limitMatch.Groups[1].Value, out var limitValue))
                 return Math.Min(baseCount, limitValue);
             if (topMatch.Success && int.TryParse(topMatch.Groups[1].Value, out var topValue))
                 return Math.Min(baseCount, topValue);
         }
-        
+
         return baseCount;
     }
 
@@ -442,7 +442,7 @@ public class QueryOptimizer : IQueryOptimizer
     private List<string> GenerateIndexRecommendations(string sql, SchemaMetadata? schema)
     {
         var recommendations = new List<string>();
-        
+
         // Extract table and column references for index recommendations
         var joinColumns = ExtractJoinColumns(sql);
         var whereColumns = ExtractWhereColumns(sql);
@@ -479,7 +479,7 @@ public class QueryOptimizer : IQueryOptimizer
     private void UpdateCandidateAnalysis(SqlCandidate candidate)
     {
         var sql = candidate.Sql;
-        
+
         // Update strengths
         if (sql.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
             candidate.Strengths.Add("Includes filtering");
@@ -499,20 +499,20 @@ public class QueryOptimizer : IQueryOptimizer
     {
         var explanation = $"Selected query based on: {bestCandidate.Reasoning}\n";
         explanation += $"Confidence Score: {bestCandidate.Score:F2}\n";
-        
+
         if (bestCandidate.Strengths.Any())
             explanation += $"Strengths: {string.Join(", ", bestCandidate.Strengths)}\n";
-        
+
         if (optimizedSql != bestCandidate.Sql)
             explanation += "Additional optimizations were applied for better performance.";
-        
+
         return explanation;
     }
 
     private List<string> GetAppliedOptimizations(string originalSql, string optimizedSql)
     {
         var optimizations = new List<string>();
-        
+
         if (optimizedSql.Length > originalSql.Length)
         {
             if (optimizedSql.Contains("LIMIT") && !originalSql.Contains("LIMIT"))
@@ -520,7 +520,7 @@ public class QueryOptimizer : IQueryOptimizer
             if (optimizedSql.Contains("WHERE") && !originalSql.Contains("WHERE"))
                 optimizations.Add("Added WHERE clause");
         }
-        
+
         return optimizations;
     }
 
@@ -552,13 +552,13 @@ public class QueryOptimizer : IQueryOptimizer
     {
         var columns = new List<string>();
         var joinMatches = Regex.Matches(sql, @"JOIN\s+\w+\s+ON\s+(\w+\.\w+)\s*=\s*(\w+\.\w+)", RegexOptions.IgnoreCase);
-        
+
         foreach (Match match in joinMatches)
         {
             columns.Add(match.Groups[1].Value);
             columns.Add(match.Groups[2].Value);
         }
-        
+
         return columns;
     }
 
@@ -566,12 +566,12 @@ public class QueryOptimizer : IQueryOptimizer
     {
         var columns = new List<string>();
         var whereMatches = Regex.Matches(sql, @"WHERE\s+.*?(\w+\.\w+|\w+)\s*[=<>]", RegexOptions.IgnoreCase);
-        
+
         foreach (Match match in whereMatches)
         {
             columns.Add(match.Groups[1].Value);
         }
-        
+
         return columns;
     }
 
@@ -579,7 +579,7 @@ public class QueryOptimizer : IQueryOptimizer
     {
         var columns = new List<string>();
         var orderMatches = Regex.Matches(sql, @"ORDER\s+BY\s+(.*?)(?:\s+LIMIT|\s*$)", RegexOptions.IgnoreCase);
-        
+
         foreach (Match match in orderMatches)
         {
             var orderColumns = match.Groups[1].Value.Split(',');
@@ -589,7 +589,7 @@ public class QueryOptimizer : IQueryOptimizer
                 columns.Add(cleanColumn);
             }
         }
-        
+
         return columns;
     }
 }

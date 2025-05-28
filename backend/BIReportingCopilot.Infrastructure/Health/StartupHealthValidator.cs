@@ -84,13 +84,13 @@ public class StartupHealthValidator : IStartupHealthValidator
             _logger.LogInformation("Validating OpenAI service...");
 
             using var scope = _serviceProvider.CreateScope();
-            var openAIService = scope.ServiceProvider.GetRequiredService<IOpenAIService>();
+            var aiService = scope.ServiceProvider.GetRequiredService<IAIService>();
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
             // Test with a simple validation first
             _logger.LogInformation("Testing OpenAI service with ValidateQueryIntentAsync...");
-            var isValid = await openAIService.ValidateQueryIntentAsync("show me test data");
+            var isValid = await aiService.ValidateQueryIntentAsync("show me test data");
             _logger.LogInformation("ValidateQueryIntentAsync result: {IsValid}", isValid);
 
             if (!isValid)
@@ -117,7 +117,7 @@ public class StartupHealthValidator : IStartupHealthValidator
             _logger.LogInformation("Testing OpenAI service with actual API call...");
             try
             {
-                var testSql = await openAIService.GenerateSQLAsync("show me test data", cts.Token);
+                var testSql = await aiService.GenerateSQLAsync("show me test data", cts.Token);
                 _logger.LogInformation("OpenAI API call successful. Generated SQL: {TestSql}", testSql);
             }
             catch (Exception apiEx)

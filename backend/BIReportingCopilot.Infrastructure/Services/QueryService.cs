@@ -1,6 +1,7 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using Microsoft.Extensions.Logging;
+using CoreModels = BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
@@ -15,8 +16,7 @@ public class QueryService : IQueryService
     private readonly IPromptService _promptService;
     private readonly IAITuningSettingsService _settingsService;
 
-    // Legacy support
-    private readonly IOpenAIService? _openAIService;
+    // Legacy support removed - using IAIService instead
 
     public QueryService(
         ILogger<QueryService> logger,
@@ -27,7 +27,7 @@ public class QueryService : IQueryService
         IAuditService auditService,
         IPromptService promptService,
         IAITuningSettingsService settingsService,
-        IOpenAIService? openAIService = null)
+        object? unused = null) // Legacy parameter removed
     {
         _logger = logger;
         _aiService = aiService;
@@ -36,8 +36,7 @@ public class QueryService : IQueryService
         _cacheService = cacheService;
         _auditService = auditService;
         _promptService = promptService;
-        _settingsService = settingsService;
-        _openAIService = openAIService; // For backward compatibility
+        _settingsService = settingsService; // For backward compatibility
     }
 
     public async Task<QueryResponse> ProcessQueryAsync(QueryRequest request, string userId)
@@ -434,7 +433,7 @@ public class QueryService : IQueryService
 
     #region Advanced Query Processing Methods
 
-    public async Task<ProcessedQuery> ProcessAdvancedQueryAsync(string query, string userId, QueryContext? context = null)
+    public async Task<ProcessedQuery> ProcessAdvancedQueryAsync(string query, string userId, CoreModels.QueryContext? context = null)
     {
         try
         {

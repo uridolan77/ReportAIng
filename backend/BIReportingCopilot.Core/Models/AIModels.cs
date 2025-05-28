@@ -123,6 +123,14 @@ public class QueryPerformancePrediction
 // Enhanced Processing Models
 public class ProcessedQuery
 {
+    public string OriginalQuery { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public QueryContext? Context { get; set; }
+    public DateTime ProcessedAt { get; set; } = DateTime.UtcNow;
+    public string GeneratedSQL { get; set; } = string.Empty;
+    public List<ProcessedQuery> SimilarQueries { get; set; } = new();
+
+    // Legacy properties for backward compatibility
     public string Sql { get; set; } = string.Empty;
     public string Explanation { get; set; } = string.Empty;
     public double Confidence { get; set; }
@@ -130,6 +138,13 @@ public class ProcessedQuery
     public List<SemanticEntity> SemanticEntities { get; set; } = new();
     public QueryClassification Classification { get; set; } = new();
     public SchemaContext UsedSchema { get; set; } = new();
+
+    // Advanced processing properties
+    public string? QueryType { get; set; }
+    public string? Complexity { get; set; }
+    public List<string> SemanticTokens { get; set; } = new();
+    public string? Intent { get; set; }
+    public List<string> Entities { get; set; } = new();
 }
 
 // Enums
@@ -203,4 +218,92 @@ public enum RelationshipType
     OneToMany,
     ManyToOne,
     ManyToMany
+}
+
+// Query Context Models (moved from IStreamingOpenAIService.cs for better organization)
+/// <summary>
+/// Query context for enhanced prompt engineering
+/// </summary>
+public class QueryContext
+{
+    public string? UserId { get; set; }
+    public string? SessionId { get; set; }
+    public List<string> PreviousQueries { get; set; } = new();
+    public Dictionary<string, object> UserPreferences { get; set; } = new();
+    public string? BusinessDomain { get; set; }
+    public StreamingQueryComplexity PreferredComplexity { get; set; } = StreamingQueryComplexity.Medium;
+}
+
+/// <summary>
+/// Analysis context for insight generation
+/// </summary>
+public class AnalysisContext
+{
+    public string? BusinessGoal { get; set; }
+    public string? TimeFrame { get; set; }
+    public List<string> KeyMetrics { get; set; } = new();
+    public string? ComparisonPeriod { get; set; }
+    public AnalysisType Type { get; set; } = AnalysisType.Descriptive;
+}
+
+/// <summary>
+/// Query complexity levels for streaming AI
+/// </summary>
+public enum StreamingQueryComplexity
+{
+    Simple,
+    Medium,
+    Complex,
+    Expert
+}
+
+/// <summary>
+/// Analysis types for insights
+/// </summary>
+public enum AnalysisType
+{
+    Descriptive,
+    Diagnostic,
+    Predictive,
+    Prescriptive
+}
+
+// Streaming Response Models (moved from IStreamingOpenAIService.cs)
+/// <summary>
+/// Streaming response from AI service
+/// </summary>
+public class StreamingResponse
+{
+    public StreamingResponseType Type { get; set; }
+    public string Content { get; set; } = string.Empty;
+    public bool IsComplete { get; set; }
+    public int ChunkIndex { get; set; }
+    public object? Metadata { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Types of streaming responses
+/// </summary>
+public enum StreamingResponseType
+{
+    SQLGeneration,
+    Insight,
+    Explanation,
+    Error,
+    Progress
+}
+
+// Query Example Models
+/// <summary>
+/// Example query for training and prompt engineering
+/// </summary>
+public class QueryExample
+{
+    public string NaturalLanguage { get; set; } = string.Empty;
+    public string SQL { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public double Confidence { get; set; } = 1.0;
+    public List<string> Tags { get; set; } = new();
 }
