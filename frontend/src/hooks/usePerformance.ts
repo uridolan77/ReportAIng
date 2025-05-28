@@ -30,15 +30,17 @@ export const useThrottle = <T extends (...args: any[]) => any>(
     callbackRef.current = callback;
   }, [callback]);
 
-  return useCallback(
-    ((...args) => {
+  const throttledCallback = useCallback(
+    (...args: any[]) => {
       if (Date.now() - lastRun.current >= delay) {
         callbackRef.current(...args);
         lastRun.current = Date.now();
       }
-    }) as T,
+    },
     [delay]
   );
+
+  return throttledCallback as T;
 };
 
 // Intersection Observer hook for lazy loading

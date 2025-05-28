@@ -42,10 +42,15 @@ export const useStableCallback = <T extends (...args: any[]) => any>(
 ): T => {
   const ref = useRef<T>();
 
-  return useMemo(() => {
+  // Update ref when callback changes
+  useEffect(() => {
     ref.current = callback;
+  }, [callback]);
+
+  return useMemo(() => {
     return ((...args: any[]) => ref.current?.(...args)) as T;
-  }, [callback, ...deps]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 };
 
 // Memoized data processing
@@ -66,6 +71,7 @@ export const useProcessedData = <TInput, TOutput>(
     }
 
     return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, processor, ...deps]);
 };
 
