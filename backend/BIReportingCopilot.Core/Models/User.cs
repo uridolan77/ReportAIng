@@ -12,6 +12,15 @@ public class User
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginDate { get; set; }
     public bool IsActive { get; set; } = true;
+    
+    // MFA-related properties
+    public bool IsMfaEnabled { get; set; } = false;
+    public string? MfaSecret { get; set; } = null;
+    public MfaMethod MfaMethod { get; set; } = MfaMethod.None;
+    public string? PhoneNumber { get; set; } = null;
+    public bool IsPhoneNumberVerified { get; set; } = false;
+    public DateTime? LastMfaValidationDate { get; set; }
+    public string[] BackupCodes { get; set; } = Array.Empty<string>();
 }
 
 public class UserInfo
@@ -70,6 +79,10 @@ public class AuthenticationResult
     public UserInfo? User { get; set; }
     public string? ErrorMessage { get; set; }
     public DateTime? ExpiresAt { get; set; }
+    
+    // MFA-related properties
+    public bool RequiresMfa { get; set; } = false;
+    public MfaChallenge? MfaChallenge { get; set; }
 }
 
 public class RefreshTokenRequest
@@ -113,4 +126,64 @@ public class UserActivity
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }
     public string SessionId { get; set; } = string.Empty;
+}
+
+public enum MfaMethod
+{
+    None,
+    TOTP,
+    SMS,
+    Email
+}
+
+// MFA-related models
+public class MfaChallenge
+{
+    public string ChallengeId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public MfaMethod Method { get; set; }
+    public DateTime ExpiresAt { get; set; }
+    public bool IsUsed { get; set; } = false;
+    public string? Challenge { get; set; } // For SMS/Email, this contains the code
+}
+
+public class MfaSetupRequest
+{
+    [Required(ErrorMessage = "MFA method is required")]
+    public MfaMethod Method { get; set; }
+    
+    public string? PhoneNumber { get; set; } // Required for SMS
+}
+
+public class MfaSetupResult
+{
+    public bool Success { get; set; }
+    public string? Secret { get; set; } // For TOTP
+    public string? QrCode { get; set; } // For TOTP
+    public string[]? BackupCodes { get; set; }
+    public string? ErrorMessage { get; set; }
+}
+
+public class MfaValidationRequest
+{
+    [Required(ErrorMessage = "User ID is required")]
+    public string UserId { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "MFA code is required")]
+    public string Code { get; set; } = string.Empty;
+    
+    public bool TrustDevice { get; set; } = false;
+}
+
+public class MfaValidationResult
+{
+    public bool Success { get; set; }
+    public bool IsBackupCode { get; set; } = false;
+    public string? ErrorMessage { get; set; }
+}
+
+public class LoginWithMfaRequest : LoginRequest
+{
+    public string? MfaCode { get; set; }
+    public string? ChallengeId { get; set; }
 }

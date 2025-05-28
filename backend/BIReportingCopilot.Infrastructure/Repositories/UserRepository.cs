@@ -272,6 +272,13 @@ public class UserRepository : IUserRepository
             existingEntity.Roles = string.Join(",", user.Roles);
             existingEntity.IsActive = user.IsActive;
             existingEntity.LastLoginDate = user.LastLoginDate;
+            existingEntity.IsMfaEnabled = user.IsMfaEnabled;
+            existingEntity.MfaSecret = user.MfaSecret;
+            existingEntity.MfaMethod = user.MfaMethod.ToString();
+            existingEntity.PhoneNumber = user.PhoneNumber;
+            existingEntity.IsPhoneNumberVerified = user.IsPhoneNumberVerified;
+            existingEntity.LastMfaValidationDate = user.LastMfaValidationDate;
+            existingEntity.BackupCodes = user.BackupCodes.Length > 0 ? string.Join(",", user.BackupCodes) : null;
 
             await _context.SaveChangesAsync();
 
@@ -325,7 +332,16 @@ public class UserRepository : IUserRepository
                 : entity.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries),
             IsActive = entity.IsActive,
             CreatedDate = entity.CreatedDate,
-            LastLoginDate = entity.LastLoginDate
+            LastLoginDate = entity.LastLoginDate,
+            IsMfaEnabled = entity.IsMfaEnabled,
+            MfaSecret = entity.MfaSecret,
+            MfaMethod = !string.IsNullOrEmpty(entity.MfaMethod) ? Enum.Parse<MfaMethod>(entity.MfaMethod) : MfaMethod.None,
+            PhoneNumber = entity.PhoneNumber,
+            IsPhoneNumberVerified = entity.IsPhoneNumberVerified,
+            LastMfaValidationDate = entity.LastMfaValidationDate,
+            BackupCodes = !string.IsNullOrEmpty(entity.BackupCodes) 
+                ? entity.BackupCodes.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                : Array.Empty<string>()
         };
     }
 
@@ -341,7 +357,14 @@ public class UserRepository : IUserRepository
             Roles = string.Join(",", model.Roles),
             IsActive = model.IsActive,
             CreatedDate = model.CreatedDate,
-            LastLoginDate = model.LastLoginDate
+            LastLoginDate = model.LastLoginDate,
+            IsMfaEnabled = model.IsMfaEnabled,
+            MfaSecret = model.MfaSecret,
+            MfaMethod = model.MfaMethod.ToString(),
+            PhoneNumber = model.PhoneNumber,
+            IsPhoneNumberVerified = model.IsPhoneNumberVerified,
+            LastMfaValidationDate = model.LastMfaValidationDate,
+            BackupCodes = model.BackupCodes.Length > 0 ? string.Join(",", model.BackupCodes) : null
         };
     }
 

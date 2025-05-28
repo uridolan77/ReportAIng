@@ -22,6 +22,66 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.AITuningSettingsEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DataType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SettingKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SettingValue")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category")
+                        .HasDatabaseName("IX_AITuningSettings_Category");
+
+                    b.HasIndex("SettingKey")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AITuningSettings_SettingKey");
+
+                    b.ToTable("AITuningSettings");
+                });
+
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.AuditLogEntity", b =>
                 {
                     b.Property<long>("Id")
@@ -91,6 +151,329 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                     b.ToTable("AuditLog");
                 });
 
+            modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.BusinessColumnInfoEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BusinessContext")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("BusinessMeaning")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ColumnName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DataExamples")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsKeyColumn")
+                        .HasColumnType("bit");
+
+                    b.Property<long>("TableInfoId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ValidationRules")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsKeyColumn")
+                        .HasDatabaseName("IX_BusinessColumnInfo_IsKeyColumn");
+
+                    b.HasIndex("TableInfoId", "ColumnName")
+                        .IsUnique()
+                        .HasDatabaseName("IX_BusinessColumnInfo_Table_Column");
+
+                    b.ToTable("BusinessColumnInfo");
+                });
+
+            modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.BusinessGlossaryEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BusinessContext")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Definition")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastUsed")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RelatedTerms")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Synonyms")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Term")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UsageCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category")
+                        .HasDatabaseName("IX_BusinessGlossary_Category");
+
+                    b.HasIndex("Term")
+                        .IsUnique()
+                        .HasDatabaseName("IX_BusinessGlossary_Term");
+
+                    b.ToTable("BusinessGlossary");
+                });
+
+            modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.BusinessTableInfoEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BusinessContext")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("BusinessPurpose")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("BusinessRules")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("CommonQueryPatterns")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PrimaryUseCase")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("SchemaName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("TableName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_BusinessTableInfo_IsActive");
+
+                    b.HasIndex("SchemaName", "TableName")
+                        .IsUnique()
+                        .HasDatabaseName("IX_BusinessTableInfo_Schema_Table");
+
+                    b.ToTable("BusinessTableInfo");
+                });
+
+            modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.MfaChallengeEntity", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ChallengeCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeliveryAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MfaMethod")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("IsUsed", "ExpiresAt");
+
+                    b.HasIndex("UserId", "ExpiresAt");
+
+                    b.ToTable("MfaChallenges");
+                });
+
+            modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.PromptLogEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ExecutionTimeMs")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FullPrompt")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GeneratedSQL")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Metadata")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PromptLength")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PromptType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("ResponseLength")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SessionId")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool?>("Success")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("UserQuery")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PromptLogs");
+                });
+
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.PromptTemplateEntity", b =>
                 {
                     b.Property<long>("Id")
@@ -157,7 +540,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                             Id = 1L,
                             Content = "You are a SQL Server expert helping generate business intelligence reports.\n\nDatabase schema:\n{schema}\n\nWhen the user asks: '{question}'\n- Write a T-SQL SELECT query to answer the question.\n- Only use SELECT statements, never write/alter data.\n- Use proper table and column names from the schema.\n- Include appropriate WHERE clauses for filtering.\n- Use JOINs when data from multiple tables is needed.\n- Format the query for readability.\n\nReturn only the SQL query without any explanation or markdown formatting.",
                             CreatedBy = "System",
-                            CreatedDate = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1936),
+                            CreatedDate = new DateTime(2025, 5, 28, 1, 51, 48, 264, DateTimeKind.Utc).AddTicks(9976),
                             Description = "Basic template for generating SQL queries from natural language",
                             IsActive = true,
                             Name = "BasicQueryGeneration",
@@ -298,6 +681,88 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                     b.HasIndex("UserId", "QueryTimestamp");
 
                     b.ToTable("QueryHistory");
+                });
+
+            modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.QueryPatternEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BusinessContext")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Keywords")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("LastUsed")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NaturalLanguagePattern")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PatternName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RequiredTables")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("SqlTemplate")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UsageCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatternName")
+                        .IsUnique()
+                        .HasDatabaseName("IX_QueryPatterns_PatternName");
+
+                    b.HasIndex("UsageCount")
+                        .HasDatabaseName("IX_QueryPatterns_UsageCount");
+
+                    b.HasIndex("Priority", "IsActive")
+                        .HasDatabaseName("IX_QueryPatterns_Priority_Active");
+
+                    b.ToTable("QueryPatterns");
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.QueryPerformanceEntity", b =>
@@ -536,55 +1001,55 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                         new
                         {
                             Key = "MaxQueryExecutionTimeSeconds",
-                            CreatedDate = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1806),
+                            CreatedDate = new DateTime(2025, 5, 28, 1, 51, 48, 264, DateTimeKind.Utc).AddTicks(9764),
                             DataType = "int",
                             Description = "Maximum time allowed for query execution",
                             IsEncrypted = false,
-                            LastUpdated = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1809),
+                            LastUpdated = new DateTime(2025, 5, 28, 1, 51, 48, 264, DateTimeKind.Utc).AddTicks(9766),
                             UpdatedBy = "System",
                             Value = "30"
                         },
                         new
                         {
                             Key = "MaxResultRows",
-                            CreatedDate = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1810),
+                            CreatedDate = new DateTime(2025, 5, 28, 1, 51, 48, 264, DateTimeKind.Utc).AddTicks(9767),
                             DataType = "int",
                             Description = "Maximum number of rows returned per query",
                             IsEncrypted = false,
-                            LastUpdated = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1811),
+                            LastUpdated = new DateTime(2025, 5, 28, 1, 51, 48, 264, DateTimeKind.Utc).AddTicks(9768),
                             UpdatedBy = "System",
                             Value = "10000"
                         },
                         new
                         {
                             Key = "EnableQueryCaching",
-                            CreatedDate = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1812),
+                            CreatedDate = new DateTime(2025, 5, 28, 1, 51, 48, 264, DateTimeKind.Utc).AddTicks(9769),
                             DataType = "bool",
                             Description = "Enable caching of query results",
                             IsEncrypted = false,
-                            LastUpdated = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1813),
+                            LastUpdated = new DateTime(2025, 5, 28, 1, 51, 48, 264, DateTimeKind.Utc).AddTicks(9770),
                             UpdatedBy = "System",
                             Value = "true"
                         },
                         new
                         {
                             Key = "CacheExpiryHours",
-                            CreatedDate = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1813),
+                            CreatedDate = new DateTime(2025, 5, 28, 1, 51, 48, 264, DateTimeKind.Utc).AddTicks(9771),
                             DataType = "int",
                             Description = "Default cache expiry time in hours",
                             IsEncrypted = false,
-                            LastUpdated = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1814),
+                            LastUpdated = new DateTime(2025, 5, 28, 1, 51, 48, 264, DateTimeKind.Utc).AddTicks(9771),
                             UpdatedBy = "System",
                             Value = "24"
                         },
                         new
                         {
                             Key = "EnableAuditLogging",
-                            CreatedDate = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1815),
+                            CreatedDate = new DateTime(2025, 5, 28, 1, 51, 48, 264, DateTimeKind.Utc).AddTicks(9772),
                             DataType = "bool",
                             Description = "Enable comprehensive audit logging",
                             IsEncrypted = false,
-                            LastUpdated = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1816),
+                            LastUpdated = new DateTime(2025, 5, 28, 1, 51, 48, 264, DateTimeKind.Utc).AddTicks(9773),
                             UpdatedBy = "System",
                             Value = "true"
                         });
@@ -640,6 +1105,10 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("BackupCodes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
 
@@ -659,13 +1128,34 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsMfaEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPhoneNumberVerified")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("LastLoginDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastMfaValidationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MfaMethod")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MfaSecret")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Roles")
                         .IsRequired()
@@ -698,10 +1188,12 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                         {
                             Id = "admin-user-001",
                             CreatedBy = "System",
-                            CreatedDate = new DateTime(2025, 5, 27, 0, 36, 19, 152, DateTimeKind.Utc).AddTicks(1952),
+                            CreatedDate = new DateTime(2025, 5, 28, 1, 51, 48, 265, DateTimeKind.Utc).AddTicks(2),
                             DisplayName = "System Administrator",
                             Email = "admin@bireporting.local",
                             IsActive = true,
+                            IsMfaEnabled = false,
+                            IsPhoneNumberVerified = false,
                             PasswordHash = "",
                             Roles = "Admin",
                             Username = "admin"
@@ -805,6 +1297,22 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserSessions");
+                });
+
+            modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.BusinessColumnInfoEntity", b =>
+                {
+                    b.HasOne("BIReportingCopilot.Infrastructure.Data.Entities.BusinessTableInfoEntity", "TableInfo")
+                        .WithMany("Columns")
+                        .HasForeignKey("TableInfoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TableInfo");
+                });
+
+            modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.BusinessTableInfoEntity", b =>
+                {
+                    b.Navigation("Columns");
                 });
 #pragma warning restore 612, 618
         }

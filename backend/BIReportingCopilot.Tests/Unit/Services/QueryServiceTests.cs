@@ -22,6 +22,7 @@ public class QueryServiceTests
     private Mock<IAuditService> _mockAuditService;
     private Mock<ICacheService> _mockCacheService;
     private Mock<IPromptService> _mockPromptService;
+    private Mock<IAITuningSettingsService> _mockSettingsService;
     private BICopilotContext _context;
     private QueryService _queryService;
 
@@ -35,6 +36,7 @@ public class QueryServiceTests
         _mockAuditService = new Mock<IAuditService>();
         _mockCacheService = new Mock<ICacheService>();
         _mockPromptService = new Mock<IPromptService>();
+        _mockSettingsService = new Mock<IAITuningSettingsService>();
 
         var options = new DbContextOptionsBuilder<BICopilotContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -48,7 +50,8 @@ public class QueryServiceTests
             _mockSqlQueryService.Object,
             _mockCacheService.Object,
             _mockAuditService.Object,
-            _mockPromptService.Object
+            _mockPromptService.Object,
+            _mockSettingsService.Object
         );
     }
 

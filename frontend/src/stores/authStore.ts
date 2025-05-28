@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { API_CONFIG, getApiUrl, getAuthHeaders } from '../config/api';
 import { setSessionId, clearSessionId, generateSessionId } from '../utils/sessionUtils';
+import { SecurityUtils } from '../utils/security';
+import { apiClient } from '../services/apiClient';
 
 interface User {
   id: string;
@@ -19,6 +21,7 @@ interface AuthState {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   refreshAuth: () => Promise<boolean>;
+  getDecryptedToken: () => string | null;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,29 +34,40 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (username: string, password: string) => {
         try {
-          const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH.LOGIN), {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ username, password }),
+          // Validate inputs
+          if (!SecurityUtils.validateInput(username, 'username')) {
+            throw new Error('Invalid username format');
+          }
+
+          const response = await apiClient.post<{
+            success: boolean;
+            accessToken: string;
+            refreshToken: string;
+            user: User;
+          }>(API_CONFIG.ENDPOINTS.AUTH.LOGIN, {
+            username,
+            password
           });
 
-          if (response.ok) {
-            const data = await response.json();
+          if (response.success) {
+            // Encrypt tokens before storing
+            const encryptedToken = SecurityUtils.encryptToken(response.accessToken);
+            const encryptedRefreshToken = SecurityUtils.encryptToken(response.refreshToken);
+
             set({
               isAuthenticated: true,
-              user: data.user,
-              token: data.accessToken,
-              refreshToken: data.refreshToken,
+              user: response.user,
+              token: encryptedToken,
+              refreshToken: encryptedRefreshToken,
             });
+
             // Create a new session ID for the authenticated user
             setSessionId(generateSessionId());
             return true;
-          } else {
-            console.error('Login failed:', response.status, response.statusText);
-            return false;
           }
+          return false;
         } catch (error) {
-          console.error('Login error:', error);
+          console.error('Login failed:', error);
           return false;
         }
       },
@@ -74,17 +88,23 @@ export const useAuthStore = create<AuthState>()(
         if (!refreshToken) return false;
 
         try {
-          const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH.REFRESH), {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ refreshToken }),
+          const decryptedRefreshToken = SecurityUtils.decryptToken(refreshToken);
+          const response = await apiClient.post<{
+            success: boolean;
+            accessToken: string;
+            refreshToken: string;
+          }>(API_CONFIG.ENDPOINTS.AUTH.REFRESH, {
+            refreshToken: decryptedRefreshToken
           });
 
-          if (response.ok) {
-            const data = await response.json();
+          if (response.success) {
+            // Encrypt new tokens
+            const encryptedToken = SecurityUtils.encryptToken(response.accessToken);
+            const encryptedRefreshToken = SecurityUtils.encryptToken(response.refreshToken);
+
             set({
-              token: data.accessToken,
-              refreshToken: data.refreshToken,
+              token: encryptedToken,
+              refreshToken: encryptedRefreshToken,
             });
             return true;
           } else {
@@ -98,6 +118,11 @@ export const useAuthStore = create<AuthState>()(
           return false;
         }
       },
+
+      getDecryptedToken: () => {
+        const { token } = get();
+        return token ? SecurityUtils.decryptToken(token) : null;
+      }
     }),
     {
       name: 'auth-storage',

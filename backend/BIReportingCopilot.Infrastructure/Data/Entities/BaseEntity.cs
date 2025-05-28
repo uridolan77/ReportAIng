@@ -116,6 +116,15 @@ public class UserEntity : BaseEntity
     public string Roles { get; set; } = string.Empty;
     public DateTime? LastLoginDate { get; set; }
     public bool IsActive { get; set; } = true;
+    
+    // MFA Properties
+    public bool IsMfaEnabled { get; set; } = false;
+    public string? MfaSecret { get; set; }
+    public string? MfaMethod { get; set; }
+    public string? PhoneNumber { get; set; }
+    public bool IsPhoneNumberVerified { get; set; } = false;
+    public DateTime? LastMfaValidationDate { get; set; }
+    public string? BackupCodes { get; set; }
 }
 
 public class UserSessionEntity : BaseEntity
@@ -162,4 +171,16 @@ public class SystemMetricsEntity : BaseEntity
     public string? Unit { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public string? Tags { get; set; }
+}
+
+public class MfaChallengeEntity : BaseEntity
+{
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string ChallengeCode { get; set; } = string.Empty;
+    public string MfaMethod { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
+    public bool IsUsed { get; set; } = false;
+    public string? DeliveryAddress { get; set; }
+    public int AttemptCount { get; set; } = 0;
 }

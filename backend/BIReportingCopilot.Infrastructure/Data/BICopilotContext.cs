@@ -30,6 +30,7 @@ public class BICopilotContext : DbContext
     public DbSet<UserEntity> Users { get; set; }
     public DbSet<UserSessionEntity> UserSessions { get; set; }
     public DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
+    public DbSet<MfaChallengeEntity> MfaChallenges { get; set; }
 
     // Analytics and monitoring
     public DbSet<QueryPerformanceEntity> QueryPerformance { get; set; }
@@ -132,6 +133,10 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.DisplayName).HasMaxLength(200);
             entity.Property(e => e.PasswordHash).HasMaxLength(500);
             entity.Property(e => e.Roles).HasMaxLength(500);
+            entity.Property(e => e.MfaSecret).HasMaxLength(500);
+            entity.Property(e => e.MfaMethod).HasMaxLength(50);
+            entity.Property(e => e.PhoneNumber).HasMaxLength(20);
+            entity.Property(e => e.BackupCodes).HasMaxLength(2000);
         });
 
         // Configure UserSessions
@@ -175,6 +180,20 @@ public class BICopilotContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Timestamp);
             entity.Property(e => e.MetricName).HasMaxLength(100);
+        });
+
+        // Configure MfaChallenges
+        modelBuilder.Entity<MfaChallengeEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.ExpiresAt });
+            entity.HasIndex(e => e.ExpiresAt);
+            entity.HasIndex(e => new { e.IsUsed, e.ExpiresAt });
+            entity.Property(e => e.Id).HasMaxLength(50);
+            entity.Property(e => e.UserId).HasMaxLength(256);
+            entity.Property(e => e.ChallengeCode).HasMaxLength(10);
+            entity.Property(e => e.MfaMethod).HasMaxLength(50);
+            entity.Property(e => e.DeliveryAddress).HasMaxLength(256);
         });
 
         // Configure AI Tuning entities

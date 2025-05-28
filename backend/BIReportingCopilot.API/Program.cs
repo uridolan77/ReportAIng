@@ -265,6 +265,10 @@ builder.Services.AddScoped<ICacheService, MemoryOptimizedCacheService>(); // Enh
 builder.Services.AddScoped<IUserService, BIReportingCopilot.Infrastructure.Services.UserService>();
 builder.Services.AddScoped<IAuditService, BIReportingCopilot.Infrastructure.Services.AuditService>();
 builder.Services.AddScoped<IAuthenticationService, BIReportingCopilot.Infrastructure.Services.AuthenticationService>();
+builder.Services.AddScoped<IMfaService, BIReportingCopilot.Infrastructure.Services.MfaService>();
+builder.Services.AddScoped<IMfaChallengeRepository, BIReportingCopilot.Infrastructure.Repositories.MfaChallengeRepository>();
+builder.Services.AddScoped<IEmailService, BIReportingCopilot.Infrastructure.Services.EmailService>();
+builder.Services.AddScoped<ISmsService, BIReportingCopilot.Infrastructure.Services.SmsService>();
 
 // Register new advanced AI/ML services
 builder.Services.AddScoped<ISemanticAnalyzer, BIReportingCopilot.Infrastructure.AI.SemanticAnalyzer>();

@@ -26,6 +26,8 @@ public class SimpleAuthenticationTests : IDisposable
     private readonly Mock<ITokenRepository> _tokenRepository;
     private readonly Mock<IAuditService> _auditService;
     private readonly Mock<ICacheService> _cacheService;
+    private readonly Mock<IMfaService> _mfaService;
+    private readonly Mock<IMfaChallengeRepository> _mfaChallengeRepository;
 
     public SimpleAuthenticationTests()
     {
@@ -45,6 +47,8 @@ public class SimpleAuthenticationTests : IDisposable
         _tokenRepository = new Mock<ITokenRepository>();
         _auditService = new Mock<IAuditService>();
         _cacheService = new Mock<ICacheService>();
+        _mfaService = new Mock<IMfaService>();
+        _mfaChallengeRepository = new Mock<IMfaChallengeRepository>();
 
         // Setup JWT settings
         var jwtSettings = new JwtSettings
@@ -76,7 +80,9 @@ public class SimpleAuthenticationTests : IDisposable
             _auditService.Object,
             Options.Create(jwtSettings),
             Options.Create(securitySettings),
-            _cacheService.Object);
+            _cacheService.Object,
+            _mfaService.Object,
+            _mfaChallengeRepository.Object);
 
         // Seed test data
         SeedTestData();

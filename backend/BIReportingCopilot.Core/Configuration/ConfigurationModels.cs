@@ -144,6 +144,21 @@ public class SecuritySettings
     [Range(1, 24, ErrorMessage = "Password history count must be between 1 and 24")]
     public int PasswordHistoryCount { get; set; } = 5;
 
+    // MFA-related settings
+    [Range(1, 60, ErrorMessage = "MFA code expiration must be between 1 and 60 minutes")]
+    public int MfaCodeExpirationMinutes { get; set; } = 5;
+
+    [Range(1, 10, ErrorMessage = "Max MFA attempts must be between 1 and 10")]
+    public int MaxMfaAttempts { get; set; } = 3;
+
+    [Range(1, 1440, ErrorMessage = "MFA lockout duration must be between 1 and 1440 minutes")]
+    public int MfaLockoutDurationMinutes { get; set; } = 30;
+
+    public bool EnableMfaRememberDevice { get; set; } = true;
+
+    [Range(1, 365, ErrorMessage = "MFA remember device duration must be between 1 and 365 days")]
+    public int MfaRememberDeviceDays { get; set; } = 30;
+
     public List<string> AllowedOrigins { get; set; } = new();
     public List<string> TrustedProxies { get; set; } = new();
 }
@@ -212,4 +227,72 @@ public class FeatureFlagSettings
     public bool EnableAuditLogging { get; set; } = true;
     public bool EnablePerformanceMetrics { get; set; } = true;
     public bool EnableHealthChecks { get; set; } = true;
+}
+
+/// <summary>
+/// Email service configuration with validation
+/// </summary>
+public class EmailSettings
+{
+    public const string SectionName = "Email";
+
+    [Required(ErrorMessage = "SMTP server is required")]
+    public string SmtpServer { get; set; } = string.Empty;
+
+    [Range(1, 65535, ErrorMessage = "SMTP port must be between 1 and 65535")]
+    public int SmtpPort { get; set; } = 587;
+
+    [Required(ErrorMessage = "SMTP username is required")]
+    public string SmtpUsername { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "SMTP password is required")]
+    public string SmtpPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "From email is required")]
+    [EmailAddress(ErrorMessage = "From email must be a valid email address")]
+    public string FromEmail { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "From name is required")]
+    public string FromName { get; set; } = "BI Reporting Copilot";
+
+    public bool EnableSsl { get; set; } = true;
+
+    [Range(5, 300, ErrorMessage = "Timeout must be between 5 and 300 seconds")]
+    public int TimeoutSeconds { get; set; } = 30;
+
+    [Range(1, 10, ErrorMessage = "Max retry attempts must be between 1 and 10")]
+    public int MaxRetryAttempts { get; set; } = 3;
+
+    [Range(1, 60, ErrorMessage = "Retry delay must be between 1 and 60 seconds")]
+    public int RetryDelaySeconds { get; set; } = 5;
+}
+
+/// <summary>
+/// SMS service configuration with validation
+/// </summary>
+public class SmsSettings
+{
+    public const string SectionName = "SMS";
+
+    [Required(ErrorMessage = "Twilio Account SID is required")]
+    public string TwilioAccountSid { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Twilio Auth Token is required")]
+    public string TwilioAuthToken { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Twilio phone number is required")]
+    [Phone(ErrorMessage = "Twilio phone number must be a valid phone number")]
+    public string TwilioPhoneNumber { get; set; } = string.Empty;
+
+    [Range(1, 10, ErrorMessage = "Max retry attempts must be between 1 and 10")]
+    public int MaxRetryAttempts { get; set; } = 3;
+
+    [Range(1, 60, ErrorMessage = "Retry delay must be between 1 and 60 seconds")]
+    public int RetryDelaySeconds { get; set; } = 5;
+
+    [Range(5, 300, ErrorMessage = "Timeout must be between 5 and 300 seconds")]
+    public int TimeoutSeconds { get; set; } = 30;
+
+    public bool EnableDeliveryReports { get; set; } = true;
+    public bool EnableTestMode { get; set; } = false;
 }

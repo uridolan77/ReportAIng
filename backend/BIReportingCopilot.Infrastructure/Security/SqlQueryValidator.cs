@@ -13,6 +13,8 @@ public interface ISqlQueryValidator
     bool IsSelectOnlyQuery(string sql);
     bool ContainsDangerousKeywords(string sql);
     bool HasValidSyntax(string sql);
+    bool ValidateParameterizedQuery(string sql, Dictionary<string, object> parameters);
+    SqlValidationResult ValidateQueryStructure(string sql);
 }
 
 public class SqlValidationResult
@@ -40,8 +42,13 @@ public class SqlQueryValidator : ISqlQueryValidator
     // Dangerous keywords that should be blocked (enhanced list)
     private readonly string[] _dangerousKeywords;
 
-    // Suspicious patterns
-    private readonly string[] _suspiciousPatterns = {
+    // Enhanced injection patterns with more sophisticated detection
+    private readonly string[] _injectionPatterns = {
+        @"(\b(UNION|INTERSECT|EXCEPT)\s+(ALL\s+)?SELECT\b)",
+        @"(xp_cmdshell|sp_executesql|sp_makewebtask)",
+        @"(INFORMATION_SCHEMA|sys\.objects|sys\.tables)",
+        @"(0x[0-9a-fA-F]+)", // Hex encoding attempts
+        @"(CHAR\s*\([0-9]+\))", // Character encoding
         @"--.*",           // SQL comments
         @"/\*.*?\*/",      // Block comments
         @";\s*\w+",        // Multiple statements
@@ -52,7 +59,18 @@ public class SqlQueryValidator : ISqlQueryValidator
         @"'\s*AND\s*'",
         @"WAITFOR\s+DELAY", // Time-based attacks
         @"BENCHMARK\s*\(",
-        @"SLEEP\s*\("
+        @"SLEEP\s*\(",
+        @"(\bOR\b|\bAND\b)\s+['""]?\w*['""]?\s*[=<>!]+\s*['""]?\w*['""]?\s*--",
+        @"(\bOR\b|\bAND\b)\s+['""]?1['""]?\s*=\s*['""]?1['""]?",
+        @"(\'\s*(or|and)\s*\')",
+        @"(exec(\s|\+)+(s|x)p\w+)",
+        @"(script\s*:)",
+        @"(javascript\s*:)",
+        @"(vbscript\s*:)",
+        @"(<\s*script)",
+        @"(onload\s*=)",
+        @"(onerror\s*=)",
+        @"(onclick\s*=)"
     };
 
     public SqlQueryValidator(IConfiguration configuration, ILogger<SqlQueryValidator> logger, IOptions<QuerySettings> querySettings)
@@ -187,7 +205,7 @@ public class SqlQueryValidator : ISqlQueryValidator
     {
         var detectedPatterns = new List<string>();
 
-        foreach (var pattern in _suspiciousPatterns)
+        foreach (var pattern in _injectionPatterns)
         {
             if (Regex.IsMatch(sql, pattern, RegexOptions.IgnoreCase))
             {
@@ -196,6 +214,203 @@ public class SqlQueryValidator : ISqlQueryValidator
         }
 
         return detectedPatterns;
+    }
+
+    public bool ValidateParameterizedQuery(string sql, Dictionary<string, object> parameters)
+    {
+        try
+        {
+            // Ensure all parameters are properly typed and validated
+            if (parameters == null || !parameters.Any())
+                return true; // No parameters to validate
+
+            foreach (var param in parameters)
+            {
+                // Check parameter name format
+                if (!IsValidParameterName(param.Key))
+                    return false;
+
+                // Check for suspicious parameter values
+                if (param.Value != null && ContainsSuspiciousContent(param.Value.ToString() ?? ""))
+                    return false;
+
+                // Validate parameter type safety
+                if (!IsValidParameterType(param.Value))
+                    return false;
+            }
+
+            // Ensure all parameters in SQL have corresponding values
+            var sqlParams = ExtractParameterNames(sql);
+            return sqlParams.All(p => parameters.ContainsKey(p));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error validating parameterized query");
+            return false;
+        }
+    }
+
+    public SqlValidationResult ValidateQueryStructure(string sql)
+    {
+        var result = new SqlValidationResult();
+
+        try
+        {
+            // Check for proper SQL structure
+            var trimmedSql = sql.Trim();
+            
+            // Must start with SELECT
+            if (!trimmedSql.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
+            {
+                result.Errors.Add("Query must start with SELECT");
+                result.SecurityLevel = SecurityLevel.Blocked;
+                return result;
+            }
+
+            // Check for balanced parentheses
+            if (!HasBalancedParentheses(sql))
+            {
+                result.Errors.Add("Query has unbalanced parentheses");
+                result.SecurityLevel = SecurityLevel.Dangerous;
+            }
+
+            // Check for balanced quotes
+            if (!HasBalancedQuotes(sql))
+            {
+                result.Errors.Add("Query has unbalanced quotes");
+                result.SecurityLevel = SecurityLevel.Dangerous;
+            }
+
+            // Validate FROM clause existence
+            if (!Regex.IsMatch(sql, @"\bFROM\b", RegexOptions.IgnoreCase))
+            {
+                result.Warnings.Add("Query does not contain FROM clause");
+            }
+
+            // Check for potential performance issues
+            CheckPerformanceWarnings(sql, result);
+
+            result.IsValid = !result.Errors.Any();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating query structure");
+            result.Errors.Add("Failed to validate query structure");
+            result.SecurityLevel = SecurityLevel.Dangerous;
+        }
+
+        return result;
+    }
+
+    private bool IsValidParameterName(string paramName)
+    {
+        // Parameter names should start with @ and contain only alphanumeric characters and underscores
+        return Regex.IsMatch(paramName, @"^@?[a-zA-Z_][a-zA-Z0-9_]*$");
+    }
+
+    private bool ContainsSuspiciousContent(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return false;
+
+        // Check for common injection attempts in parameter values
+        var suspiciousPatterns = new[]
+        {
+            @"'.*--",
+            @"'.*\bOR\b.*'",
+            @"'.*\bAND\b.*'",
+            @"'.*\bUNION\b.*'",
+            @"'.*\bSELECT\b.*'",
+            @"<script",
+            @"javascript:",
+            @"vbscript:"
+        };
+
+        return suspiciousPatterns.Any(pattern => 
+            Regex.IsMatch(value, pattern, RegexOptions.IgnoreCase));
+    }
+
+    private bool IsValidParameterType(object? value)
+    {
+        if (value == null)
+            return true;
+
+        // Allow only safe parameter types
+        var allowedTypes = new[]
+        {
+            typeof(string), typeof(int), typeof(long), typeof(decimal), typeof(double), typeof(float),
+            typeof(DateTime), typeof(bool), typeof(Guid), typeof(byte[])
+        };
+
+        return allowedTypes.Contains(value.GetType());
+    }
+
+    private List<string> ExtractParameterNames(string sql)
+    {
+        var parameters = new List<string>();
+        var matches = Regex.Matches(sql, @"@([a-zA-Z_][a-zA-Z0-9_]*)", RegexOptions.IgnoreCase);
+        
+        foreach (Match match in matches)
+        {
+            var paramName = match.Groups[1].Value;
+            if (!parameters.Contains(paramName))
+                parameters.Add(paramName);
+        }
+
+        return parameters;
+    }
+
+    private bool HasBalancedParentheses(string sql)
+    {
+        var count = 0;
+        foreach (char c in sql)
+        {
+            if (c == '(') count++;
+            else if (c == ')') count--;
+            if (count < 0) return false;
+        }
+        return count == 0;
+    }
+
+    private bool HasBalancedQuotes(string sql)
+    {
+        var singleQuoteCount = 0;
+        var doubleQuoteCount = 0;
+        
+        for (int i = 0; i < sql.Length; i++)
+        {
+            if (sql[i] == '\'' && (i == 0 || sql[i - 1] != '\\'))
+                singleQuoteCount++;
+            else if (sql[i] == '"' && (i == 0 || sql[i - 1] != '\\'))
+                doubleQuoteCount++;
+        }
+
+        return singleQuoteCount % 2 == 0 && doubleQuoteCount % 2 == 0;
+    }
+
+    private void CheckPerformanceWarnings(string sql, SqlValidationResult result)
+    {
+        // Check for SELECT *
+        if (Regex.IsMatch(sql, @"SELECT\s+\*", RegexOptions.IgnoreCase))
+        {
+            result.Warnings.Add("Consider specifying columns instead of using SELECT *");
+        }
+
+        // Check for missing WHERE clause
+        if (!Regex.IsMatch(sql, @"\bWHERE\b", RegexOptions.IgnoreCase))
+        {
+            result.Warnings.Add("Query does not contain WHERE clause - may return large result set");
+        }
+
+        // Check for potential Cartesian product
+        var fromMatches = Regex.Matches(sql, @"\bFROM\b", RegexOptions.IgnoreCase);
+        var joinMatches = Regex.Matches(sql, @"\b(INNER\s+JOIN|LEFT\s+JOIN|RIGHT\s+JOIN|FULL\s+JOIN|JOIN)\b", RegexOptions.IgnoreCase);
+        var tableCount = Regex.Matches(sql, @"\b[a-zA-Z_][a-zA-Z0-9_]*\s*(?=\s|,|$|\)|WHERE|ORDER|GROUP)", RegexOptions.IgnoreCase).Count;
+        
+        if (tableCount > 1 && joinMatches.Count < tableCount - 1)
+        {
+            result.Warnings.Add("Potential Cartesian product detected - verify JOIN conditions");
+        }
     }
 
     private List<string> CheckQueryComplexity(string sql)
