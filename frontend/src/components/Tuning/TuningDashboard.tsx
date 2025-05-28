@@ -23,13 +23,15 @@ import {
   BulbOutlined,
   TrophyOutlined,
   ClockCircleOutlined,
-  BugOutlined
+  BugOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import { BusinessTableManager } from './BusinessTableManager';
 import { QueryPatternManager } from './QueryPatternManager';
 import { BusinessGlossaryManager } from './BusinessGlossaryManager';
 import { AISettingsManager } from './AISettingsManager';
 import { PromptLogsViewer } from './PromptLogsViewer';
+import { AutoGenerationManager } from '../TuningDashboard/AutoGeneration/AutoGenerationManager';
 import { tuningApi } from '../../services/tuningApi';
 
 const { Title, Text } = Typography;
@@ -203,6 +205,13 @@ export const TuningDashboard: React.FC = () => {
                   Business Glossary
                 </Button>
                 <Button
+                  icon={<RobotOutlined />}
+                  onClick={() => setActiveTab('auto-generation')}
+                  type="dashed"
+                >
+                  Auto-Generate
+                </Button>
+                <Button
                   icon={<SettingOutlined />}
                   onClick={() => setActiveTab('settings')}
                 >
@@ -281,6 +290,13 @@ export const TuningDashboard: React.FC = () => {
           key="glossary"
         >
           <BusinessGlossaryManager onDataChange={loadDashboardData} />
+        </TabPane>
+
+        <TabPane
+          tab={<span><RobotOutlined />Auto-Generate</span>}
+          key="auto-generation"
+        >
+          <AutoGenerationManager onRefresh={loadDashboardData} />
         </TabPane>
 
         <TabPane

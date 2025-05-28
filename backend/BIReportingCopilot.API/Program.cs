@@ -303,6 +303,7 @@ builder.Services.AddScoped<IConnectionStringProvider, SecureConnectionStringProv
 builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializationService>();
 builder.Services.AddScoped<ITuningService, TuningService>();
 builder.Services.AddScoped<IAITuningSettingsService, AITuningSettingsService>();
+builder.Services.AddScoped<IBusinessContextAutoGenerator, BusinessContextAutoGenerator>();
 
 // Add startup health validation services
 builder.Services.AddSingleton<IStartupHealthValidator, StartupHealthValidator>();

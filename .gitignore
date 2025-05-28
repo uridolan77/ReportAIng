@@ -30,6 +30,14 @@
 *.swo
 *~
 
+# Visual Studio files
+.vs/
+**/.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
 # OS generated files
 .DS_Store
 .DS_Store?
