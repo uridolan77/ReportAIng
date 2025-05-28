@@ -414,7 +414,7 @@ app.UseResponseCompression();
 // Custom middleware
 app.UseCorrelationId();
 app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<StandardizedErrorHandlingMiddleware>(app.Environment.IsDevelopment());
+app.UseMiddleware<BIReportingCopilot.API.Middleware.StandardizedErrorHandlingMiddleware>(app.Environment.IsDevelopment());
 app.UseMiddleware<RateLimitingMiddleware>(); // Now properly handles scoped services
 
 app.UseCors("AllowFrontend");

@@ -3,133 +3,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Constants;
-using System.Diagnostics;
 using System.Text.Json;
-using System.Security;
 
 namespace BIReportingCopilot.API.Middleware;
 
-public class RequestLoggingMiddleware
-{
-    private readonly RequestDelegate _next;
-    private readonly ILogger<RequestLoggingMiddleware> _logger;
-
-    public RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
-    public async Task InvokeAsync(HttpContext context)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        var requestId = Guid.NewGuid().ToString();
-
-        // Add request ID to response headers using constants
-        context.Response.Headers[ApplicationConstants.Headers.RequestId] = requestId;
-
-        _logger.LogInformation("Request {RequestId} started: {Method} {Path}",
-            requestId, context.Request.Method, context.Request.Path);
-
-        try
-        {
-            await _next(context);
-        }
-        finally
-        {
-            stopwatch.Stop();
-            _logger.LogInformation("Request {RequestId} completed in {ElapsedMs}ms with status {StatusCode}",
-                requestId, stopwatch.ElapsedMilliseconds, context.Response.StatusCode);
-        }
-    }
-}
-
-public class ExceptionHandlingMiddleware
-{
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ExceptionHandlingMiddleware> _logger;
-
-    public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
-    public async Task InvokeAsync(HttpContext context)
-    {
-        try
-        {
-            await _next(context);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An unhandled exception occurred");
-            await HandleExceptionAsync(context, ex);
-        }
-    }
-
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
-    {
-        context.Response.ContentType = ApplicationConstants.ContentTypes.Json;
-
-        var (statusCode, message, errorCode) = GetErrorDetails(exception);
-
-        var response = new
-        {
-            error = new
-            {
-                code = errorCode,
-                message = message,
-                details = GetSafeErrorDetails(exception),
-                timestamp = DateTime.UtcNow,
-                traceId = context.TraceIdentifier,
-                path = context.Request.Path.Value
-            }
-        };
-
-        context.Response.StatusCode = statusCode;
-
-        var jsonResponse = JsonSerializer.Serialize(response, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        });
-
-        await context.Response.WriteAsync(jsonResponse);
-    }
-
-    private static (int statusCode, string message, string errorCode) GetErrorDetails(Exception exception)
-    {
-        return exception switch
-        {
-            ArgumentNullException => (StatusCodes.Status400BadRequest, "Required parameter is missing.", "MISSING_PARAMETER"),
-            ArgumentException => (StatusCodes.Status400BadRequest, "Invalid request parameters.", "INVALID_PARAMETERS"),
-            UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Authentication required.", "UNAUTHORIZED"),
-            SecurityException => (StatusCodes.Status403Forbidden, "Access denied.", "FORBIDDEN"),
-            FileNotFoundException => (StatusCodes.Status404NotFound, "Resource not found.", "NOT_FOUND"),
-            NotImplementedException => (StatusCodes.Status501NotImplemented, "Feature not implemented.", "NOT_IMPLEMENTED"),
-            TimeoutException => (StatusCodes.Status408RequestTimeout, "Request timeout.", "TIMEOUT"),
-            InvalidOperationException => (StatusCodes.Status409Conflict, "Operation not allowed in current state.", "INVALID_OPERATION"),
-            _ => (StatusCodes.Status500InternalServerError, "An internal server error occurred.", "INTERNAL_ERROR")
-        };
-    }
-
-    private static string GetSafeErrorDetails(Exception exception)
-    {
-        // In production, don't expose sensitive error details
-        #if DEBUG
-            return exception.Message;
-        #else
-            return exception switch
-            {
-                ArgumentException or ArgumentNullException => exception.Message,
-                UnauthorizedAccessException or SecurityException => "Access denied",
-                FileNotFoundException => "Resource not found",
-                _ => "An error occurred while processing your request"
-            };
-        #endif
-    }
-}
-
+/// <summary>
+/// Middleware for rate limiting API requests with distributed cache support
+/// </summary>
 public class RateLimitingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -269,6 +149,9 @@ public class RateLimitingMiddleware
     }
 }
 
+/// <summary>
+/// Data structure for rate limiting information
+/// </summary>
 public class RateLimitData
 {
     public int Count { get; set; }
