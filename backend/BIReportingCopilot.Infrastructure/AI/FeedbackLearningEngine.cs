@@ -13,10 +13,10 @@ namespace BIReportingCopilot.Infrastructure.AI;
 public class FeedbackLearningEngine
 {
     private readonly BICopilotContext _context;
-    private readonly ILogger _logger;
+    private readonly ILogger<FeedbackLearningEngine> _logger;
     private readonly Dictionary<string, LearningPattern> _patternCache;
 
-    public FeedbackLearningEngine(BICopilotContext context, ILogger logger)
+    public FeedbackLearningEngine(BICopilotContext context, ILogger<FeedbackLearningEngine> logger)
     {
         _context = context;
         _logger = logger;

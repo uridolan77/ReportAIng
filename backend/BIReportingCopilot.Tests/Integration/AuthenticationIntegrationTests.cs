@@ -53,10 +53,10 @@ public class AuthenticationIntegrationTests : IClassFixture<WebApplicationFactor
                 }
 
                 // Remove MemoryOptimizedCacheService that depends on Redis
-                var cacheServiceDescriptor = services.SingleOrDefault(d => d.ServiceType.Name.Contains("CacheService"));
-                if (cacheServiceDescriptor != null)
+                var cacheServiceDescriptors = services.Where(d => d.ServiceType.Name.Contains("CacheService")).ToList();
+                foreach (var cacheDescriptor in cacheServiceDescriptors)
                 {
-                    services.Remove(cacheServiceDescriptor);
+                    services.Remove(cacheDescriptor);
                 }
 
                 // Add in-memory database for testing

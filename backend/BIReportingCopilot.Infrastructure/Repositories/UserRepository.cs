@@ -2,6 +2,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Infrastructure.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
@@ -9,7 +10,11 @@ using System.Text;
 
 namespace BIReportingCopilot.Infrastructure.Repositories;
 
-public class UserRepository : IUserRepository
+/// <summary>
+/// Unified user repository implementing both domain model and entity operations
+/// Consolidates UserRepository and UserEntityRepository functionality
+/// </summary>
+public class UserRepository : IUserRepository, IUserEntityRepository
 {
     private readonly BICopilotContext _context;
     private readonly ILogger<UserRepository> _logger;
@@ -420,6 +425,88 @@ public class UserRepository : IUserRepository
             }
         };
     }
+
+    #region IUserEntityRepository Implementation (Consolidated)
+
+    /// <summary>
+    /// Get user entity by ID (IUserEntityRepository interface)
+    /// </summary>
+    public async Task<UserEntity?> GetByIdAsync(Guid userId)
+    {
+        return await GetEntityByIdAsync(userId);
+    }
+
+    /// <summary>
+    /// Update user entity (IUserEntityRepository interface)
+    /// </summary>
+    public async Task UpdateAsync(UserEntity user)
+    {
+        try
+        {
+            user.UpdatedDate = DateTime.UtcNow;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Updated user entity: {UserId}", user.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user entity: {UserId}", user.Id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Get user entity by email (IUserEntityRepository interface)
+    /// </summary>
+    async Task<UserEntity?> IUserEntityRepository.GetByEmailAsync(string email)
+    {
+        return await GetEntityByEmailAsync(email);
+    }
+
+    /// <summary>
+    /// Get user entity by username (IUserEntityRepository interface)
+    /// </summary>
+    async Task<UserEntity?> IUserEntityRepository.GetByUsernameAsync(string username)
+    {
+        return await GetEntityByUsernameAsync(username);
+    }
+
+    /// <summary>
+    /// Create user entity (IUserEntityRepository interface)
+    /// </summary>
+    public async Task<UserEntity> CreateAsync(UserEntity user)
+    {
+        return await CreateEntityAsync(user);
+    }
+
+    /// <summary>
+    /// Delete user entity (IUserEntityRepository interface)
+    /// </summary>
+    public async Task<bool> DeleteAsync(Guid userId)
+    {
+        try
+        {
+            var user = await GetByIdAsync(userId);
+            if (user == null)
+                return false;
+
+            user.IsActive = false;
+            user.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Soft deleted user entity: {UserId}", userId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error soft deleting user entity: {UserId}", userId);
+            return false;
+        }
+    }
+
+    #endregion
 
     #region Additional Unified Interface Methods
 

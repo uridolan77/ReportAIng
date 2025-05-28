@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -257,85 +258,117 @@ builder.Services.AddSingleton(provider =>
     return new Azure.AI.OpenAI.OpenAIClient("mock-key");
 });
 
-// Register repositories
-builder.Services.AddScoped<IUserRepository, BIReportingCopilot.Infrastructure.Repositories.UserRepository>();
+// ===== REPOSITORY LAYER =====
+// Unified UserRepository implements both IUserRepository and IUserEntityRepository
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Repositories.UserRepository>();
+builder.Services.AddScoped<IUserRepository>(provider => provider.GetRequiredService<BIReportingCopilot.Infrastructure.Repositories.UserRepository>());
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.IUserEntityRepository>(provider => provider.GetRequiredService<BIReportingCopilot.Infrastructure.Repositories.UserRepository>());
 builder.Services.AddScoped<ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.IUserEntityRepository, BIReportingCopilot.Infrastructure.Repositories.UserEntityRepository>();
+builder.Services.AddScoped<IMfaChallengeRepository, BIReportingCopilot.Infrastructure.Repositories.MfaChallengeRepository>();
 
-// Register AI providers and factory
+// ===== AI PROVIDERS & FACTORY =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Providers.OpenAIProvider>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Providers.AzureOpenAIProvider>();
 builder.Services.AddScoped<IAIProviderFactory, BIReportingCopilot.Infrastructure.AI.Providers.AIProviderFactory>();
 
-// Register performance and monitoring services
+// ===== AI/ML ENHANCEMENT SERVICES =====
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.SemanticCacheService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.MLAnomalyDetector>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.FeedbackLearningEngine>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.PromptOptimizer>();
+builder.Services.AddScoped<ISemanticAnalyzer, BIReportingCopilot.Infrastructure.AI.SemanticAnalyzer>();
+builder.Services.AddScoped<IQueryClassifier, BIReportingCopilot.Infrastructure.AI.QueryClassifier>();
+builder.Services.AddScoped<IContextManager, BIReportingCopilot.Infrastructure.AI.ContextManager>();
+builder.Services.AddScoped<IQueryOptimizer, BIReportingCopilot.Infrastructure.AI.QueryOptimizer>();
+builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.EnhancedQueryProcessor>();
+
+// ===== PERFORMANCE & MONITORING =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.StreamingDataService>();
 builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Monitoring.IMetricsCollector, BIReportingCopilot.Infrastructure.Monitoring.MetricsCollector>();
 
-// Register AI/ML enhancement services
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.SemanticCacheService>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.MLAnomalyDetector>();
-
-// Register scalability services
+// ===== MESSAGING & EVENTS =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.IEventBus, BIReportingCopilot.Infrastructure.Messaging.InMemoryEventBus>();
 builder.Services.Configure<BIReportingCopilot.Infrastructure.Messaging.EventBusConfiguration>(
     builder.Configuration.GetSection("EventBus"));
 
-// Register distributed cache service
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("Redis");
-    if (!string.IsNullOrEmpty(connectionString))
-    {
-        options.Configuration = connectionString;
-    }
-});
+// ===== CACHING & REDIS =====
+// Configure Redis settings
+builder.Services.Configure<BIReportingCopilot.Core.Configuration.RedisConfiguration>(
+    builder.Configuration.GetSection("Redis"));
 
-// Register Redis connection multiplexer for advanced caching features
-if (!string.IsNullOrEmpty(redisConnectionString))
+// Conditionally register Redis services based on configuration
+var redisConfig = builder.Configuration.GetSection("Redis").Get<BIReportingCopilot.Core.Configuration.RedisConfiguration>();
+if (redisConfig?.Enabled == true)
 {
+    // Register Redis connection multiplexer
     builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(provider =>
-        StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
+    {
+        var config = provider.GetRequiredService<IOptions<BIReportingCopilot.Core.Configuration.RedisConfiguration>>().Value;
+        var connectionString = config.GetConnectionStringWithOptions();
 
-    builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Caching.DistributedCacheService>();
-    builder.Services.Configure<BIReportingCopilot.Infrastructure.Caching.DistributedCacheConfiguration>(
-        builder.Configuration.GetSection("DistributedCache"));
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new InvalidOperationException("Redis is enabled but no valid connection string is configured");
+        }
+
+        return StackExchange.Redis.ConnectionMultiplexer.Connect(connectionString);
+    });
+
+    // Register Redis distributed cache
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        var config = redisConfig.GetConnectionStringWithOptions();
+        if (!string.IsNullOrEmpty(config))
+        {
+            options.Configuration = config;
+        }
+    });
+
+    Log.Information("Redis caching enabled with connection: {ConnectionString}", redisConfig.ConnectionString);
+}
+else
+{
+    // Register a null implementation for IConnectionMultiplexer when Redis is disabled
+    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(provider => null!);
+
+    // Use in-memory caching instead
+    builder.Services.AddMemoryCache();
+
+    Log.Information("Redis caching disabled - using in-memory caching");
 }
 
-// Register sharded schema service
+// Unified cache service with built-in distributed caching support
+builder.Services.AddSingleton<ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();
+
+// ===== CONFIGURATION SECTIONS =====
+builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.RateLimitingConfiguration>(
+    builder.Configuration.GetSection("RateLimit"));
 builder.Services.Configure<BIReportingCopilot.Infrastructure.Services.ShardingConfiguration>(
     builder.Configuration.GetSection("Sharding"));
 
-// Register event handlers
+// ===== EVENT HANDLERS =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHandlers.QueryExecutedEventHandler>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHandlers.FeedbackReceivedEventHandler>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHandlers.AnomalyDetectedEventHandler>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHandlers.CacheInvalidatedEventHandler>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHandlers.PerformanceMetricsEventHandler>();
 
-// Register core application services - Consolidated and unified
-builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.AIService>(); // Base AI service
-builder.Services.AddScoped<IQueryService, QueryService>(); // Base query service
-
-// Register AI enhancement decorators
-builder.Services.Decorate<IAIService, BIReportingCopilot.Infrastructure.AI.AdaptiveAIService>();
-
-// Register resilient services as decorators
-builder.Services.Decorate<IAIService, BIReportingCopilot.Infrastructure.Resilience.ResilientAIService>();
-builder.Services.Decorate<IQueryService, BIReportingCopilot.Infrastructure.Resilience.ResilientQueryService>();
-
-// Register traced services as final decorators
-builder.Services.Decorate<IQueryService, BIReportingCopilot.Infrastructure.Monitoring.TracedQueryService>();
-
-// No legacy service registrations needed - using unified IAIService directly
-builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Services.SchemaService>();
+// ===== CORE APPLICATION SERVICES =====
+// Base services
+builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.AIService>();
+builder.Services.AddScoped<IQueryService, QueryService>();
+builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Services.SchemaService>(); // Unified with built-in caching
 builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Services.SqlQueryService>();
+builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.Services.PromptService>();
+builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Services.VisualizationService>();
+
+// Streaming query service with factory pattern
 builder.Services.AddScoped<IStreamingSqlQueryService>(provider =>
 {
     var innerService = provider.GetRequiredService<ISqlQueryService>();
     var connectionStringProvider = provider.GetRequiredService<IConnectionStringProvider>();
     var logger = provider.GetRequiredService<ILogger<StreamingSqlQueryService>>();
 
-    // Try to get BIDatabase connection string, fallback to DefaultConnection
     string connectionString;
     try
     {
@@ -347,55 +380,31 @@ builder.Services.AddScoped<IStreamingSqlQueryService>(provider =>
     }
 
     return new StreamingSqlQueryService(innerService, connectionString, logger);
-}); // Streaming query service
-builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.Services.PromptService>();
-builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Services.VisualizationService>(); // Consolidated visualization service
-builder.Services.AddSingleton<ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>(); // Unified cache service - singleton for performance
+});
+
+// ===== BUSINESS SERVICES =====
 builder.Services.AddScoped<IUserService, BIReportingCopilot.Infrastructure.Services.UserService>();
 builder.Services.AddScoped<IAuditService, BIReportingCopilot.Infrastructure.Services.AuditService>();
 builder.Services.AddScoped<IAuthenticationService, BIReportingCopilot.Infrastructure.Services.AuthenticationService>();
 builder.Services.AddScoped<IMfaService, BIReportingCopilot.Infrastructure.Services.MfaService>();
-builder.Services.AddScoped<IMfaChallengeRepository, BIReportingCopilot.Infrastructure.Repositories.MfaChallengeRepository>();
 builder.Services.AddScoped<IEmailService, BIReportingCopilot.Infrastructure.Services.EmailService>();
 builder.Services.AddScoped<ISmsService, BIReportingCopilot.Infrastructure.Services.SmsService>();
 
-// Register new advanced AI/ML services
-builder.Services.AddScoped<ISemanticAnalyzer, BIReportingCopilot.Infrastructure.AI.SemanticAnalyzer>();
-builder.Services.AddScoped<IQueryClassifier, BIReportingCopilot.Infrastructure.AI.QueryClassifier>();
-builder.Services.AddScoped<IContextManager, BIReportingCopilot.Infrastructure.AI.ContextManager>();
-builder.Services.AddScoped<IQueryOptimizer, BIReportingCopilot.Infrastructure.AI.QueryOptimizer>();
-builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.EnhancedQueryProcessor>();
+// ===== SECURITY SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISqlQueryValidator, BIReportingCopilot.Infrastructure.Security.SqlQueryValidator>();
-
-// Register enhanced security services
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.IRateLimitingService, BIReportingCopilot.Infrastructure.Security.DistributedRateLimitingService>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISecretsManagementService, BIReportingCopilot.Infrastructure.Security.SecretsManagementService>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.IEnhancedSqlQueryValidator, BIReportingCopilot.Infrastructure.Security.EnhancedSqlQueryValidator>();
 
-// Configure AutoMapper
-builder.Services.AddAutoMapper(typeof(Program));
+// ===== SERVICE ENHANCEMENTS =====
+// Enhanced AI service with built-in resilience, monitoring, and adaptive capabilities
+// (No decorators needed - functionality consolidated into base service)
 
-// Configure MediatR
-builder.Services.AddMediatR(cfg => {
-    cfg.RegisterServicesFromAssembly(typeof(ExecuteQueryCommand).Assembly); // Core assembly
-    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly); // API assembly
-    cfg.RegisterServicesFromAssembly(typeof(BIReportingCopilot.Infrastructure.Handlers.ExecuteQueryCommandHandler).Assembly); // Infrastructure assembly
-});
+// Query service enhancements (keeping minimal decorators for now)
+builder.Services.Decorate<IQueryService, BIReportingCopilot.Infrastructure.Resilience.ResilientQueryService>();
+builder.Services.Decorate<IQueryService, BIReportingCopilot.Infrastructure.Monitoring.TracedQueryService>();
 
-// Add MediatR pipeline behaviors
-builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
-// Add validators
-builder.Services.AddValidatorsFromAssembly(typeof(ExecuteQueryCommand).Assembly);
-
-// Configure Hangfire (skip in test environment)
-if (!builder.Environment.IsEnvironment("Test"))
-{
-    builder.Services.ConfigureHangfire(builder.Configuration);
-}
-
-// Add enhanced services
+// ===== INFRASTRUCTURE SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IPasswordHasher, BIReportingCopilot.Infrastructure.Security.PasswordHasher>();
 builder.Services.AddScoped<IConnectionStringProvider, SecureConnectionStringProvider>();
 builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializationService>();
@@ -403,16 +412,35 @@ builder.Services.AddScoped<ITuningService, TuningService>();
 builder.Services.AddScoped<IAITuningSettingsService, AITuningSettingsService>();
 builder.Services.AddScoped<IBusinessContextAutoGenerator, BusinessContextAutoGenerator>();
 
-// Add startup health validation services
+// ===== STARTUP & HEALTH SERVICES =====
 builder.Services.AddSingleton<IStartupHealthValidator, StartupHealthValidator>();
 builder.Services.AddHostedService<StartupValidationService>();
 
-// Decorate schema service with caching
-builder.Services.Decorate<ISchemaService, CachedSchemaService>();
+// ===== FRAMEWORK SERVICES =====
+// AutoMapper
+builder.Services.AddAutoMapper(typeof(Program));
 
-// Enhanced services are now registered directly above
+// MediatR with assemblies
+builder.Services.AddMediatR(cfg => {
+    cfg.RegisterServicesFromAssembly(typeof(ExecuteQueryCommand).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(BIReportingCopilot.Infrastructure.Handlers.ExecuteQueryCommandHandler).Assembly);
+});
 
-// Add response compression
+// MediatR pipeline behaviors
+builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+// FluentValidation
+builder.Services.AddValidatorsFromAssembly(typeof(ExecuteQueryCommand).Assembly);
+
+// Hangfire (skip in test environment)
+if (!builder.Environment.IsEnvironment("Test"))
+{
+    builder.Services.ConfigureHangfire(builder.Configuration);
+}
+
+// Response compression
 builder.Services.AddOptimizedResponseCompression();
 
 // Configure Swagger/OpenAPI

@@ -38,9 +38,9 @@ public class EnhancementIntegrationTests : IClassFixture<WebApplicationFactory<P
 
         Assert.NotNull(services.GetService<IMediator>());
 
-        // Verify cache service is the enhanced version
+        // Verify cache service is the unified version
         Assert.NotNull(services.GetService<ICacheService>());
-        Assert.IsType<MemoryOptimizedCacheService>(services.GetService<ICacheService>());
+        Assert.IsType<CacheService>(services.GetService<ICacheService>());
     }
 
     [Fact]

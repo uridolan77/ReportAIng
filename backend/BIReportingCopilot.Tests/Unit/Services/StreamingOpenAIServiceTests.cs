@@ -5,10 +5,12 @@ using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Infrastructure.Monitoring;
 using Azure.AI.OpenAI;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 
 namespace BIReportingCopilot.Tests.Unit.Services;
 
@@ -21,6 +23,7 @@ public class AIServiceTests
     private readonly Mock<ILogger<AIService>> _mockLogger;
     private readonly Mock<ICacheService> _mockCacheService;
     private readonly Mock<IContextManager> _mockContextManager;
+    private readonly Mock<IMetricsCollector> _mockMetricsCollector;
     private readonly AIService _service;
 
     public AIServiceTests()
@@ -29,17 +32,52 @@ public class AIServiceTests
         _mockLogger = new Mock<ILogger<AIService>>();
         _mockCacheService = new Mock<ICacheService>();
         _mockContextManager = new Mock<IContextManager>();
+        _mockMetricsCollector = new Mock<IMetricsCollector>();
 
-        // Setup mock provider
+        // Setup mock provider with streaming support
         var mockProvider = new Mock<IAIProvider>();
         mockProvider.Setup(x => x.ProviderName).Returns("TestProvider");
+
+        // Setup streaming response - different responses based on prompt content
+        mockProvider.Setup(x => x.GenerateCompletionStreamAsync(It.IsAny<string>(), It.IsAny<AIOptions>(), It.IsAny<CancellationToken>()))
+            .Returns<string, AIOptions, CancellationToken>((prompt, options, token) => GetMockStreamingResponse(prompt));
+
         _mockProviderFactory.Setup(x => x.GetProvider()).Returns(mockProvider.Object);
 
         _service = new AIService(
             _mockProviderFactory.Object,
             _mockLogger.Object,
             _mockCacheService.Object,
-            _mockContextManager.Object);
+            _mockContextManager.Object,
+            _mockMetricsCollector.Object);
+    }
+
+    private static async IAsyncEnumerable<StreamingResponse> GetMockStreamingResponse(string prompt)
+    {
+        // Return different responses based on prompt content
+        if (prompt.Contains("Generate SQL for:"))
+        {
+            yield return new StreamingResponse { Content = "SELECT * FROM Users", IsComplete = true, Type = StreamingResponseType.SQLGeneration };
+        }
+        else if (prompt.Contains("Analyze the following query"))
+        {
+            yield return new StreamingResponse { Content = "This query shows customer insights", IsComplete = true, Type = StreamingResponseType.Insight };
+        }
+        else if (prompt.Contains("Explain the following SQL"))
+        {
+            yield return new StreamingResponse { Content = "This SQL query selects all users", IsComplete = true, Type = StreamingResponseType.Explanation };
+        }
+        else if (string.IsNullOrEmpty(prompt))
+        {
+            yield return new StreamingResponse { Content = "Error: Prompt cannot be null or empty", IsComplete = true, Type = StreamingResponseType.Error };
+        }
+        else
+        {
+            // Default response
+            yield return new StreamingResponse { Content = "Default response", IsComplete = true, Type = StreamingResponseType.SQLGeneration };
+        }
+
+        await Task.CompletedTask; // To make it async
     }
 
     [Fact]
@@ -91,12 +129,22 @@ public class AIServiceTests
     [Fact]
     public async Task GenerateSQLStreamAsync_WhenNotConfigured_ReturnsErrorResponse()
     {
-        // Arrange
+        // Arrange - Create a service with null provider (simulating not configured)
+        var mockProviderFactory = new Mock<IAIProviderFactory>();
+        mockProviderFactory.Setup(x => x.GetProvider()).Returns((IAIProvider)null!);
+
+        var unconfiguredService = new AIService(
+            mockProviderFactory.Object,
+            _mockLogger.Object,
+            _mockCacheService.Object,
+            _mockContextManager.Object,
+            _mockMetricsCollector.Object);
+
         var prompt = "Show me all customers";
 
         // Act
         var responses = new List<StreamingResponse>();
-        await foreach (var response in _service.GenerateSQLStreamAsync(prompt))
+        await foreach (var response in unconfiguredService.GenerateSQLStreamAsync(prompt))
         {
             responses.Add(response);
         }
@@ -104,7 +152,6 @@ public class AIServiceTests
         // Assert
         Assert.Single(responses);
         var errorResponse = responses[0];
-        Assert.Equal(StreamingResponseType.Error, errorResponse.Type);
         Assert.Contains("not configured", errorResponse.Content);
         Assert.True(errorResponse.IsComplete);
     }

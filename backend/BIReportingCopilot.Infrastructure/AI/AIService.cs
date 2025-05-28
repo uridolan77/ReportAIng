@@ -8,13 +8,18 @@ using System.Text.Json;
 using System.Text;
 using Azure;
 using System.Runtime.CompilerServices;
+using Polly;
+using Polly.Extensions.Http;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using BIReportingCopilot.Infrastructure.Monitoring;
 using CoreModels = BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.AI;
 
 /// <summary>
-/// AI service combining standard and streaming capabilities using provider pattern
-/// Consolidates EnhancedOpenAIService and StreamingOpenAIService with improved architecture
+/// Enhanced AI service with built-in resilience, monitoring, and adaptive capabilities
+/// Consolidates multiple decorator patterns into a single, comprehensive service
 /// </summary>
 public class AIService : IAIService
 {
@@ -26,23 +31,45 @@ public class AIService : IAIService
     private readonly List<QueryExample> _examples;
     private readonly IAIProvider _provider;
 
+    // Resilience policies
+    private IAsyncPolicy<string> _retryPolicy = null!;
+    private IAsyncPolicy<string> _circuitBreakerPolicy = null!;
+    private IAsyncPolicy<string> _combinedPolicy = null!;
+
+    // Monitoring
+    private static readonly ActivitySource ActivitySource = new("BIReportingCopilot.AIService");
+    private readonly IMetricsCollector? _metricsCollector;
+
+    // Adaptive learning components
+    private readonly FeedbackLearningEngine? _learningEngine;
+    private readonly PromptOptimizer? _promptOptimizer;
+
     public AIService(
         IAIProviderFactory providerFactory,
         ILogger<AIService> logger,
         ICacheService cacheService,
-        IContextManager contextManager)
+        IContextManager contextManager,
+        IMetricsCollector? metricsCollector = null,
+        FeedbackLearningEngine? learningEngine = null,
+        PromptOptimizer? promptOptimizer = null)
     {
         _providerFactory = providerFactory;
         _logger = logger;
         _cacheService = cacheService;
         _contextManager = contextManager;
+        _metricsCollector = metricsCollector;
+        _learningEngine = learningEngine;
+        _promptOptimizer = promptOptimizer;
         _examples = InitializeExamples();
         _promptManager = new PromptTemplateManager();
 
         // Get the appropriate provider
         _provider = _providerFactory.GetProvider();
 
-        _logger.LogInformation("AI service initialized with provider: {ProviderName}", _provider.ProviderName);
+        // Initialize resilience policies
+        InitializeResiliencePolicies();
+
+        _logger.LogInformation("Enhanced AI service with adaptive learning initialized with provider: {ProviderName}", _provider?.ProviderName ?? "None");
     }
 
     #region Standard AI Operations
@@ -54,33 +81,83 @@ public class AIService : IAIService
 
     public async Task<string> GenerateSQLAsync(string prompt, CancellationToken cancellationToken)
     {
+        using var activity = ActivitySource.StartActivity("GenerateSQL");
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
-            _logger.LogInformation("Building enhanced prompt...");
-            var enhancedPrompt = BuildEnhancedPrompt(prompt);
+            // Add trace tags
+            activity?.SetTag("prompt.length", prompt.Length);
+            activity?.SetTag("operation", "sql_generation");
 
-            var options = new AIOptions
+            _logger.LogInformation("Building enhanced prompt for SQL generation...");
+
+            return await _combinedPolicy.ExecuteAsync(async () =>
             {
-                SystemMessage = "You are an expert SQL developer. Generate only valid SQL queries without explanations.",
-                Temperature = 0.1f,
-                MaxTokens = 2000,
-                FrequencyPenalty = 0.0f,
-                PresencePenalty = 0.0f,
-                TimeoutSeconds = 30
-            };
+                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
-            var generatedSQL = await _provider.GenerateCompletionAsync(enhancedPrompt, options, cancellationToken);
+                // Apply adaptive learning if available
+                string finalPrompt = prompt;
+                if (_learningEngine != null && _promptOptimizer != null)
+                {
+                    try
+                    {
+                        var learningInsights = await _learningEngine.GetLearningInsightsAsync(prompt);
+                        finalPrompt = await _promptOptimizer.OptimizePromptAsync(prompt, learningInsights);
+                        _logger.LogDebug("Applied adaptive learning optimization to prompt");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to apply adaptive learning, using original prompt");
+                        finalPrompt = prompt;
+                    }
+                }
 
-            // Clean up the response
-            generatedSQL = CleanSQLResponse(generatedSQL);
+                var enhancedPrompt = BuildEnhancedPrompt(finalPrompt);
 
-            _logger.LogInformation("Generated SQL: {SQL}", generatedSQL);
-            return generatedSQL;
+                var options = new AIOptions
+                {
+                    SystemMessage = "You are an expert SQL developer. Generate only valid SQL queries without explanations.",
+                    Temperature = 0.1f,
+                    MaxTokens = 2000,
+                    FrequencyPenalty = 0.0f,
+                    PresencePenalty = 0.0f,
+                    TimeoutSeconds = 30
+                };
+
+                var generatedSQL = await _provider.GenerateCompletionAsync(enhancedPrompt, options, combinedCts.Token);
+
+                if (string.IsNullOrEmpty(generatedSQL))
+                {
+                    throw new InvalidOperationException("AI service returned empty result");
+                }
+
+                // Clean up the response
+                generatedSQL = CleanSQLResponse(generatedSQL);
+
+                stopwatch.Stop();
+                activity?.SetTag("success", true);
+                activity?.SetTag("duration_ms", stopwatch.ElapsedMilliseconds);
+
+                // Record metrics
+                _metricsCollector?.RecordQueryExecution("sql_generation", stopwatch.ElapsedMilliseconds, true);
+
+                _logger.LogInformation("Generated SQL successfully in {Duration}ms", stopwatch.ElapsedMilliseconds);
+                return generatedSQL;
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating SQL from prompt: {ExceptionType} - {Message}",
-                ex.GetType().Name, ex.Message);
+            stopwatch.Stop();
+            activity?.SetTag("error", true);
+            activity?.SetTag("error.type", ex.GetType().Name);
+            activity?.SetTag("error.message", ex.Message);
+
+            // Record error metrics
+            _metricsCollector?.RecordError("sql_generation", "AIService", ex);
+
+            _logger.LogError(ex, "Failed to generate SQL after all retry attempts for prompt: {Prompt}", prompt);
             return GenerateFallbackSQL(prompt);
         }
     }
@@ -224,7 +301,28 @@ Return only valid JSON.";
         CoreModels.QueryContext? context = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var enhancedPrompt = await _promptManager.BuildSQLGenerationPromptAsync(prompt, schema, context);
+        if (_provider == null)
+        {
+            yield return new StreamingResponse { Content = "AI service not configured", IsComplete = true };
+            yield break;
+        }
+
+        if (_promptManager == null)
+        {
+            yield return new StreamingResponse { Content = "Prompt manager not configured", IsComplete = true };
+            yield break;
+        }
+
+        string enhancedPrompt;
+        try
+        {
+            enhancedPrompt = await _promptManager.BuildSQLGenerationPromptAsync(prompt, schema, context);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error building SQL generation prompt");
+            enhancedPrompt = $"Generate SQL for: {prompt}"; // Fallback prompt
+        }
 
         var options = new AIOptions
         {
@@ -246,7 +344,28 @@ Return only valid JSON.";
         CoreModels.AnalysisContext? context = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var insightPrompt = await _promptManager.BuildInsightGenerationPromptAsync(query, data, context);
+        if (_provider == null)
+        {
+            yield return new StreamingResponse { Content = "AI service not configured", IsComplete = true };
+            yield break;
+        }
+
+        if (_promptManager == null)
+        {
+            yield return new StreamingResponse { Content = "Prompt manager not configured", IsComplete = true };
+            yield break;
+        }
+
+        string insightPrompt;
+        try
+        {
+            insightPrompt = await _promptManager.BuildInsightGenerationPromptAsync(query, data, context);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error building insight generation prompt");
+            insightPrompt = $"Analyze the following query and provide insights: {query}"; // Fallback prompt
+        }
 
         var options = new AIOptions
         {
@@ -267,7 +386,28 @@ Return only valid JSON.";
         CoreModels.StreamingQueryComplexity complexity = CoreModels.StreamingQueryComplexity.Medium,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var explanationPrompt = await _promptManager.BuildSQLExplanationPromptAsync(sql, complexity);
+        if (_provider == null)
+        {
+            yield return new StreamingResponse { Content = "AI service not configured", IsComplete = true };
+            yield break;
+        }
+
+        if (_promptManager == null)
+        {
+            yield return new StreamingResponse { Content = "Prompt manager not configured", IsComplete = true };
+            yield break;
+        }
+
+        string explanationPrompt;
+        try
+        {
+            explanationPrompt = await _promptManager.BuildSQLExplanationPromptAsync(sql, complexity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error building SQL explanation prompt");
+            explanationPrompt = $"Explain the following SQL query: {sql}"; // Fallback prompt
+        }
 
         var options = new AIOptions
         {
@@ -328,5 +468,115 @@ Return only valid JSON.";
         };
     }
 
+    private void InitializeResiliencePolicies()
+    {
+        // Configure retry policy with exponential backoff
+        _retryPolicy = Policy
+            .HandleResult<string>(r => string.IsNullOrEmpty(r))
+            .Or<HttpRequestException>()
+            .Or<TaskCanceledException>()
+            .Or<TimeoutException>()
+            .WaitAndRetryAsync(
+                retryCount: 3,
+                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                onRetry: (outcome, timespan, retryCount, context) =>
+                {
+                    _logger.LogWarning("AI service retry {RetryCount} after {Delay}ms. Reason: {Reason}",
+                        retryCount, timespan.TotalMilliseconds, outcome.Exception?.Message ?? "Empty result");
+                });
+
+        // Configure circuit breaker
+        _circuitBreakerPolicy = Policy
+            .HandleResult<string>(r => string.IsNullOrEmpty(r))
+            .Or<HttpRequestException>()
+            .Or<TaskCanceledException>()
+            .Or<TimeoutException>()
+            .CircuitBreakerAsync(
+                handledEventsAllowedBeforeBreaking: 5,
+                durationOfBreak: TimeSpan.FromMinutes(1),
+                onBreak: (exception, duration) =>
+                {
+                    _logger.LogError("AI service circuit breaker opened for {Duration}ms. Reason: {Reason}",
+                        duration.TotalMilliseconds, exception.Exception?.Message ?? "Multiple failures");
+                },
+                onReset: () =>
+                {
+                    _logger.LogInformation("AI service circuit breaker reset - service recovered");
+                },
+                onHalfOpen: () =>
+                {
+                    _logger.LogInformation("AI service circuit breaker half-open - testing service");
+                });
+
+        // Combine policies: retry -> circuit breaker
+        _combinedPolicy = Policy.WrapAsync(_retryPolicy, _circuitBreakerPolicy);
+    }
+
+    /// <summary>
+    /// Process user feedback to improve future generations (adaptive learning)
+    /// </summary>
+    public async Task ProcessFeedbackAsync(string originalPrompt, string generatedSQL, QueryFeedback feedback, string userId)
+    {
+        if (_learningEngine == null)
+        {
+            _logger.LogDebug("Learning engine not available, skipping feedback processing");
+            return;
+        }
+
+        try
+        {
+            await _learningEngine.ProcessFeedbackAsync(originalPrompt, generatedSQL, feedback, userId);
+            _logger.LogInformation("Processed feedback for user {UserId}, feedback: {Feedback}", userId, feedback.Feedback);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing feedback for user {UserId}", userId);
+        }
+    }
+
+    /// <summary>
+    /// Get learning statistics for monitoring (adaptive learning)
+    /// </summary>
+    public async Task<LearningStatistics> GetLearningStatisticsAsync()
+    {
+        if (_learningEngine == null)
+        {
+            return new LearningStatistics
+            {
+                TotalGenerations = 0,
+                TotalFeedbackItems = 0,
+                AverageRating = 0.0,
+                AverageConfidence = 0.0,
+                UniqueUsers = 0,
+                PopularPatterns = new Dictionary<string, int>(),
+                LastUpdated = DateTime.UtcNow
+            };
+        }
+
+        try
+        {
+            return await _learningEngine.GetLearningStatisticsAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting learning statistics");
+            return new LearningStatistics();
+        }
+    }
+
     #endregion
+}
+
+/// <summary>
+/// Learning statistics for monitoring
+/// </summary>
+public class LearningStatistics
+{
+    public int TotalGenerations { get; set; }
+    public int TotalFeedbackItems { get; set; }
+    public double AverageRating { get; set; }
+    public double AverageConfidence { get; set; }
+    public int UniqueUsers { get; set; }
+    public Dictionary<string, int> PopularPatterns { get; set; } = new();
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
 }

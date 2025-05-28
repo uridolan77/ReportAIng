@@ -5,43 +5,62 @@ using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
+/// <summary>
+/// Unified schema service with built-in distributed caching and database persistence
+/// Consolidates SchemaService and CachedSchemaService functionality
+/// </summary>
 public class SchemaService : ISchemaService
 {
     private readonly ILogger<SchemaService> _logger;
     private readonly IConfiguration _configuration;
     private readonly BICopilotContext _context;
     private readonly IConnectionStringProvider _connectionStringProvider;
+    private readonly IDistributedCache? _distributedCache;
+    private readonly TimeSpan _distributedCacheExpiration = TimeSpan.FromHours(24);
 
     public SchemaService(
         ILogger<SchemaService> logger,
         IConfiguration configuration,
         BICopilotContext context,
-        IConnectionStringProvider connectionStringProvider)
+        IConnectionStringProvider connectionStringProvider,
+        IDistributedCache? distributedCache = null)
     {
         _logger = logger;
         _configuration = configuration;
         _context = context;
         _connectionStringProvider = connectionStringProvider;
+        _distributedCache = distributedCache;
     }
 
     public async Task<SchemaMetadata> GetSchemaMetadataAsync(string? dataSource = null)
     {
         try
         {
-            // Try to get cached schema first
+            // Try distributed cache first (fastest)
+            var distributedCachedSchema = await GetDistributedCachedSchemaAsync(dataSource);
+            if (distributedCachedSchema != null)
+            {
+                _logger.LogDebug("Returning schema from distributed cache");
+                return distributedCachedSchema;
+            }
+
+            // Try database cache second (medium speed)
             var cachedSchema = await GetCachedSchemaAsync(dataSource);
             if (cachedSchema != null)
             {
+                // Store in distributed cache for next time
+                await SetDistributedCachedSchemaAsync(cachedSchema, dataSource);
                 return cachedSchema;
             }
 
-            // If not cached, refresh and return
+            // If not cached anywhere, refresh and return (slowest)
             return await RefreshSchemaMetadataAsync(dataSource);
         }
         catch (Exception ex)
@@ -55,6 +74,9 @@ public class SchemaService : ISchemaService
     {
         try
         {
+            // Clear distributed cache first
+            await ClearDistributedCachedSchemaAsync(dataSource);
+
             var connectionString = await GetConnectionStringAsync(dataSource);
             if (string.IsNullOrEmpty(connectionString))
             {
@@ -63,8 +85,9 @@ public class SchemaService : ISchemaService
 
             var schema = await ExtractSchemaFromDatabaseAsync(connectionString);
 
-            // Cache the schema
+            // Cache the schema in both database and distributed cache
             await CacheSchemaAsync(schema, dataSource);
+            await SetDistributedCachedSchemaAsync(schema, dataSource);
 
             _logger.LogInformation("Schema metadata refreshed for data source: {DataSource}", dataSource ?? "default");
             return schema;
@@ -607,4 +630,68 @@ public class SchemaService : ISchemaService
     {
         await RefreshSchemaMetadataAsync(dataSource);
     }
+
+    #region Distributed Cache Methods
+
+    private async Task<SchemaMetadata?> GetDistributedCachedSchemaAsync(string? dataSource)
+    {
+        if (_distributedCache == null)
+            return null;
+
+        try
+        {
+            var cacheKey = $"schema:metadata:{dataSource ?? "default"}";
+            var cachedData = await _distributedCache.GetStringAsync(cacheKey);
+
+            if (!string.IsNullOrEmpty(cachedData))
+            {
+                return JsonSerializer.Deserialize<SchemaMetadata>(cachedData);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error retrieving schema from distributed cache");
+        }
+
+        return null;
+    }
+
+    private async Task SetDistributedCachedSchemaAsync(SchemaMetadata schema, string? dataSource)
+    {
+        if (_distributedCache == null)
+            return;
+
+        try
+        {
+            var cacheKey = $"schema:metadata:{dataSource ?? "default"}";
+            var serialized = JsonSerializer.Serialize(schema);
+
+            await _distributedCache.SetStringAsync(cacheKey, serialized, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = _distributedCacheExpiration
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error caching schema in distributed cache");
+        }
+    }
+
+    private async Task ClearDistributedCachedSchemaAsync(string? dataSource)
+    {
+        if (_distributedCache == null)
+            return;
+
+        try
+        {
+            var cacheKey = $"schema:metadata:{dataSource ?? "default"}";
+            await _distributedCache.RemoveAsync(cacheKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error clearing schema from distributed cache");
+        }
+    }
+
+    #endregion
 }

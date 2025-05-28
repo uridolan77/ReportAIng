@@ -74,8 +74,11 @@ public class GlobalExceptionHandlerMiddleware
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = GetStatusCode(exception);
 
-        // Add correlation headers
-        context.Response.Headers.Add("X-Request-ID", requestId);
+        // Add correlation headers (only if not already present)
+        if (!context.Response.Headers.ContainsKey("X-Request-ID"))
+        {
+            context.Response.Headers.Add("X-Request-ID", requestId);
+        }
         context.Response.Headers.Add("X-Error-ID", errorResponse.Error?.ErrorId ?? Guid.NewGuid().ToString());
 
         // Serialize and write response

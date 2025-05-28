@@ -13,19 +13,16 @@ namespace BIReportingCopilot.API.Middleware;
 public class EnhancedRateLimitingMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly IRateLimitingService _rateLimitingService;
     private readonly ILogger<EnhancedRateLimitingMiddleware> _logger;
     private readonly RateLimitingConfiguration _config;
     private readonly JsonSerializerOptions _jsonOptions;
 
     public EnhancedRateLimitingMiddleware(
         RequestDelegate next,
-        IRateLimitingService rateLimitingService,
         ILogger<EnhancedRateLimitingMiddleware> logger,
         IOptions<RateLimitingConfiguration> config)
     {
         _next = next;
-        _rateLimitingService = rateLimitingService;
         _logger = logger;
         _config = config.Value;
 
@@ -36,7 +33,7 @@ public class EnhancedRateLimitingMiddleware
         };
     }
 
-    public async Task InvokeAsync(HttpContext context)
+    public async Task InvokeAsync(HttpContext context, IRateLimitingService rateLimitingService)
     {
         // Skip rate limiting if disabled
         if (!_config.EnableRateLimiting)
@@ -64,7 +61,7 @@ public class EnhancedRateLimitingMiddleware
         try
         {
             // Check all applicable rate limit policies
-            var rateLimitResults = await _rateLimitingService.CheckMultipleRateLimitsAsync(
+            var rateLimitResults = await rateLimitingService.CheckMultipleRateLimitsAsync(
                 clientIdentifier,
                 applicablePolicies,
                 context.RequestAborted);

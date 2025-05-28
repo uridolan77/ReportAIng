@@ -7,6 +7,9 @@ using Xunit;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Tests.Infrastructure.Builders;
 using BIReportingCopilot.Tests.Infrastructure.Fixtures;
+using BIReportingCopilot.Infrastructure.Monitoring;
+using Moq;
+using StackExchange.Redis;
 
 namespace BIReportingCopilot.Tests.Infrastructure;
 
@@ -52,6 +55,21 @@ public abstract class TestBase : IDisposable
         // Add test-specific services
         services.AddScoped(typeof(TestDataBuilder<>));
         services.AddScoped<MockServiceBuilder>();
+
+        // Add mock metrics collector
+        var mockMetricsCollector = new Mock<IMetricsCollector>();
+        services.AddSingleton(mockMetricsCollector.Object);
+
+        // Add mock Redis connection multiplexer
+        var mockRedis = new Mock<IConnectionMultiplexer>();
+        var mockDatabase = new Mock<IDatabase>();
+        mockRedis.Setup(x => x.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(mockDatabase.Object);
+        mockRedis.Setup(x => x.GetDatabase(-1, null)).Returns(mockDatabase.Object);
+        services.AddSingleton(mockRedis.Object);
+
+        // Add mock semantic cache service
+        var mockSemanticCache = new Mock<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService>();
+        services.AddSingleton(mockSemanticCache.Object);
     }
 
     protected virtual IConfiguration CreateTestConfiguration()

@@ -10,8 +10,9 @@ using System.Collections.Concurrent;
 namespace BIReportingCopilot.Infrastructure.Performance;
 
 /// <summary>
-/// Cache service implementation supporting both memory and distributed caching
-/// Consolidates MemoryOptimizedCacheService and TestCacheService functionality
+/// Unified cache service implementation supporting both memory and distributed caching
+/// Consolidates MemoryOptimizedCacheService, DistributedCacheService, and TestCacheService functionality
+/// Provides automatic fallback from distributed to memory cache with advanced features
 /// </summary>
 public class CacheService : ICacheService
 {
@@ -23,6 +24,7 @@ public class CacheService : ICacheService
     private readonly ConcurrentDictionary<string, DateTime> _keyTimestamps;
     private readonly CacheStatistics _statistics;
     private readonly object _statsLock = new();
+    private readonly SemaphoreSlim _semaphore = new(1, 1); // For thread-safe operations
 
     public CacheService(
         IMemoryCache memoryCache,
@@ -388,23 +390,41 @@ public class CacheService : ICacheService
     #region Advanced Caching Strategies
 
     /// <summary>
-    /// Get or set with factory pattern - cache-aside pattern
+    /// Get or set with factory pattern - cache-aside pattern with thread-safe double-check locking
     /// </summary>
     public async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiry = null) where T : class
     {
+        // First check without lock
         var cachedValue = await GetAsync<T>(key);
         if (cachedValue != null)
         {
             return cachedValue;
         }
 
-        var value = await factory();
-        if (value != null)
+        // Use semaphore for thread-safe operations
+        await _semaphore.WaitAsync();
+        try
         {
-            await SetAsync(key, value, expiry);
-        }
+            // Double-check after acquiring lock
+            cachedValue = await GetAsync<T>(key);
+            if (cachedValue != null)
+            {
+                return cachedValue;
+            }
 
-        return value;
+            // Generate value and cache it
+            var value = await factory();
+            if (value != null)
+            {
+                await SetAsync(key, value, expiry);
+            }
+
+            return value;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     /// <summary>

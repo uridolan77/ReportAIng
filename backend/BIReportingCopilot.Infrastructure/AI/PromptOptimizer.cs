@@ -12,10 +12,10 @@ namespace BIReportingCopilot.Infrastructure.AI;
 public class PromptOptimizer
 {
     private readonly BICopilotContext _context;
-    private readonly ILogger _logger;
+    private readonly ILogger<PromptOptimizer> _logger;
     private readonly Dictionary<string, OptimizationRule> _optimizationRules;
 
-    public PromptOptimizer(BICopilotContext context, ILogger logger)
+    public PromptOptimizer(BICopilotContext context, ILogger<PromptOptimizer> logger)
     {
         _context = context;
         _logger = logger;
