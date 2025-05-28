@@ -203,50 +203,32 @@ public class ResilientAIService : IAIService
         QueryContext? context = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var streamingRetryPolicy = Policy
-            .Handle<Exception>()
-            .WaitAndRetryAsync(2, _ => TimeSpan.FromSeconds(1));
-
-        var hasYieldedAny = false;
+        IAsyncEnumerable<StreamingResponse> stream;
 
         try
         {
-            await foreach (var response in _innerService.GenerateSQLStreamAsync(prompt, schema, context, cancellationToken))
-            {
-                hasYieldedAny = true;
-                yield return response;
-            }
+            stream = _innerService.GenerateSQLStreamAsync(prompt, schema, context, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Streaming SQL generation failed");
+            _logger.LogError(ex, "Failed to initialize streaming SQL generation");
+            stream = CreateErrorStreamAsync("Service temporarily unavailable. Using fallback response.", GenerateFallbackSQL(prompt));
+        }
 
-            if (!hasYieldedAny)
-            {
-                // If we haven't yielded anything yet, try fallback
-                yield return new StreamingResponse
-                {
-                    Type = StreamingResponseType.Error,
-                    Content = "Service temporarily unavailable. Using fallback response.",
-                    IsComplete = false
-                };
+        var hasYieldedAny = false;
 
-                yield return new StreamingResponse
-                {
-                    Type = StreamingResponseType.SQLGeneration,
-                    Content = GenerateFallbackSQL(prompt),
-                    IsComplete = true
-                };
-            }
-            else
+        await foreach (var response in stream.WithCancellation(cancellationToken))
+        {
+            hasYieldedAny = true;
+            yield return response;
+        }
+
+        // If no responses were yielded and we didn't get an error stream, provide fallback
+        if (!hasYieldedAny)
+        {
+            await foreach (var response in CreateErrorStreamAsync("Service temporarily unavailable. Using fallback response.", GenerateFallbackSQL(prompt)))
             {
-                // If we were in the middle of streaming, send error
-                yield return new StreamingResponse
-                {
-                    Type = StreamingResponseType.Error,
-                    Content = "Stream interrupted",
-                    IsComplete = true
-                };
+                yield return response;
             }
         }
     }
@@ -257,22 +239,21 @@ public class ResilientAIService : IAIService
         AnalysisContext? context = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        IAsyncEnumerable<StreamingResponse> stream;
+
         try
         {
-            await foreach (var response in _innerService.GenerateInsightStreamAsync(query, data, context, cancellationToken))
-            {
-                yield return response;
-            }
+            stream = _innerService.GenerateInsightStreamAsync(query, data, context, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Streaming insight generation failed");
-            yield return new StreamingResponse
-            {
-                Type = StreamingResponseType.Error,
-                Content = "Unable to generate insights at this time",
-                IsComplete = true
-            };
+            _logger.LogError(ex, "Failed to initialize streaming insight generation");
+            stream = CreateSingleErrorStreamAsync("Unable to generate insights at this time");
+        }
+
+        await foreach (var response in stream.WithCancellation(cancellationToken))
+        {
+            yield return response;
         }
     }
 
@@ -281,27 +262,56 @@ public class ResilientAIService : IAIService
         StreamingQueryComplexity complexity = StreamingQueryComplexity.Medium,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        IAsyncEnumerable<StreamingResponse> stream;
+
         try
         {
-            await foreach (var response in _innerService.GenerateExplanationStreamAsync(sql, complexity, cancellationToken))
-            {
-                yield return response;
-            }
+            stream = _innerService.GenerateExplanationStreamAsync(sql, complexity, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Streaming explanation generation failed");
-            yield return new StreamingResponse
-            {
-                Type = StreamingResponseType.Error,
-                Content = "Unable to generate explanation at this time",
-                IsComplete = true
-            };
+            _logger.LogError(ex, "Failed to initialize streaming explanation generation");
+            stream = CreateSingleErrorStreamAsync("Unable to generate explanation at this time");
+        }
+
+        await foreach (var response in stream.WithCancellation(cancellationToken))
+        {
+            yield return response;
         }
     }
 
     private string GenerateFallbackSQL(string prompt)
     {
         return $"-- Fallback response for: {prompt}\nSELECT 'Service temporarily unavailable' as Message";
+    }
+
+    private async IAsyncEnumerable<StreamingResponse> CreateErrorStreamAsync(string errorMessage, string? fallbackContent = null)
+    {
+        yield return new StreamingResponse
+        {
+            Type = StreamingResponseType.Error,
+            Content = errorMessage,
+            IsComplete = fallbackContent == null
+        };
+
+        if (fallbackContent != null)
+        {
+            yield return new StreamingResponse
+            {
+                Type = StreamingResponseType.SQLGeneration,
+                Content = fallbackContent,
+                IsComplete = true
+            };
+        }
+    }
+
+    private async IAsyncEnumerable<StreamingResponse> CreateSingleErrorStreamAsync(string errorMessage)
+    {
+        yield return new StreamingResponse
+        {
+            Type = StreamingResponseType.Error,
+            Content = errorMessage,
+            IsComplete = true
+        };
     }
 }

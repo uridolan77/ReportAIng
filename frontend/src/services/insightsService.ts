@@ -1,4 +1,3 @@
-import { apiClient } from './apiClient';
 import { API_CONFIG } from '../config/api';
 
 export interface DataInsight {
@@ -53,7 +52,7 @@ class InsightsService {
   async generateInsights(request: InsightRequest): Promise<DataInsight[]> {
     const cacheKey = this.generateCacheKey(request);
     const cached = this.cache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
       return cached.insights;
     }
@@ -61,7 +60,7 @@ class InsightsService {
     try {
       // For now, generate insights locally until backend AI service is ready
       const insights = await this.generateLocalInsights(request);
-      
+
       // Cache the results
       this.cache.set(cacheKey, {
         insights,
@@ -114,7 +113,7 @@ class InsightsService {
 
     for (const column of numericColumns) {
       const values = data.map(row => row[column.name]).filter(val => val != null && !isNaN(val));
-      
+
       if (values.length === 0) continue;
 
       const sum = values.reduce((a, b) => a + b, 0);
@@ -162,7 +161,7 @@ class InsightsService {
 
   private generateTrendInsights(data: any[], columns: ColumnInfo[], timeColumn?: string): DataInsight[] {
     const insights: DataInsight[] = [];
-    
+
     if (!timeColumn) {
       // Try to find a date column
       timeColumn = columns.find(col => col.type === 'date')?.name;
@@ -171,7 +170,7 @@ class InsightsService {
     if (!timeColumn) return insights;
 
     const numericColumns = columns.filter(col => col.type === 'numeric');
-    
+
     for (const column of numericColumns) {
       const timeSeriesData = data
         .filter(row => row[timeColumn!] && row[column.name] != null)
@@ -184,11 +183,11 @@ class InsightsService {
       if (timeSeriesData.length < 3) continue;
 
       const trend = this.calculateTrend(timeSeriesData);
-      
+
       if (Math.abs(trend.slope) > 0.1) {
         const direction = trend.slope > 0 ? 'increasing' : 'decreasing';
         const strength = Math.abs(trend.slope) > 0.5 ? 'strongly' : 'gradually';
-        
+
         insights.push({
           id: `trend_${column.name}`,
           type: 'trend',
@@ -232,14 +231,14 @@ class InsightsService {
 
     for (const column of numericColumns) {
       const values = data.map(row => row[column.name]).filter(val => val != null && !isNaN(val));
-      
+
       if (values.length < 10) continue;
 
       const anomalies = this.detectAnomalies(values);
-      
+
       if (anomalies.length > 0) {
         const anomalyPercentage = (anomalies.length / values.length) * 100;
-        
+
         insights.push({
           id: `anomaly_${column.name}`,
           type: 'anomaly',
@@ -284,13 +283,13 @@ class InsightsService {
       for (let j = i + 1; j < numericColumns.length; j++) {
         const col1 = numericColumns[i];
         const col2 = numericColumns[j];
-        
+
         const correlation = this.calculateCorrelation(data, col1.name, col2.name);
-        
+
         if (Math.abs(correlation) > 0.5) {
           const strength = Math.abs(correlation) > 0.8 ? 'strong' : 'moderate';
           const direction = correlation > 0 ? 'positive' : 'negative';
-          
+
           insights.push({
             id: `correlation_${col1.name}_${col2.name}`,
             type: 'correlation',
@@ -329,16 +328,16 @@ class InsightsService {
 
   private generatePatternInsights(data: any[], columns: ColumnInfo[]): DataInsight[] {
     const insights: DataInsight[] = [];
-    
+
     // Detect seasonal patterns, cyclical patterns, etc.
     // This is a simplified implementation
-    
+
     return insights;
   }
 
   private generateRecommendations(data: any[], columns: ColumnInfo[]): DataInsight[] {
     const insights: DataInsight[] = [];
-    
+
     // Generate actionable recommendations based on the data
     if (data.length > 1000) {
       insights.push({
@@ -378,14 +377,14 @@ class InsightsService {
     const n = data.length;
     const x = data.map((_, i) => i);
     const y = data.map(d => d.value);
-    
+
     const sumX = x.reduce((a, b) => a + b, 0);
     const sumY = y.reduce((a, b) => a + b, 0);
     const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
     const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0);
-    
+
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    
+
     // Calculate correlation coefficient
     const meanX = sumX / n;
     const meanY = sumY / n;
@@ -393,7 +392,7 @@ class InsightsService {
     const denomX = Math.sqrt(x.reduce((sum, xi) => sum + (xi - meanX) ** 2, 0));
     const denomY = Math.sqrt(y.reduce((sum, yi) => sum + (yi - meanY) ** 2, 0));
     const correlation = numerator / (denomX * denomY);
-    
+
     return { slope, correlation };
   }
 
@@ -402,7 +401,7 @@ class InsightsService {
     const variance = values.reduce((sum, val) => sum + (val - mean) ** 2, 0) / values.length;
     const stdDev = Math.sqrt(variance);
     const threshold = 2 * stdDev;
-    
+
     return values
       .map((value, index) => ({ value, index }))
       .filter(({ value }) => Math.abs(value - mean) > threshold)
@@ -413,19 +412,19 @@ class InsightsService {
     const pairs = data
       .filter(row => row[col1] != null && row[col2] != null && !isNaN(row[col1]) && !isNaN(row[col2]))
       .map(row => ({ x: row[col1], y: row[col2] }));
-    
+
     if (pairs.length < 2) return 0;
-    
+
     const n = pairs.length;
     const sumX = pairs.reduce((sum, p) => sum + p.x, 0);
     const sumY = pairs.reduce((sum, p) => sum + p.y, 0);
     const sumXY = pairs.reduce((sum, p) => sum + p.x * p.y, 0);
     const sumXX = pairs.reduce((sum, p) => sum + p.x * p.x, 0);
     const sumYY = pairs.reduce((sum, p) => sum + p.y * p.y, 0);
-    
+
     const numerator = n * sumXY - sumX * sumY;
     const denominator = Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY));
-    
+
     return denominator === 0 ? 0 : numerator / denominator;
   }
 

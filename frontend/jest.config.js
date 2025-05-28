@@ -6,10 +6,13 @@
 module.exports = {
   // Test environment
   testEnvironment: 'jsdom',
-  
+
   // Setup files
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
-  
+  setupFilesAfterEnv: [
+    '<rootDir>/src/setupTests.ts',
+    '<rootDir>/src/test-utils/customMatchers.ts',
+  ],
+
   // Module name mapping for absolute imports and assets
   moduleNameMapping: {
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -21,7 +24,7 @@ module.exports = {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/src/test-utils/__mocks__/fileMock.js',
   },
-  
+
   // Transform files
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
@@ -36,28 +39,28 @@ module.exports = {
       ],
     }],
   },
-  
+
   // File extensions to consider
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  
+
   // Test file patterns
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.(ts|tsx|js|jsx)',
     '<rootDir>/src/**/*.(test|spec).(ts|tsx|js|jsx)',
   ],
-  
+
   // Ignore patterns
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',
     '<rootDir>/build/',
     '<rootDir>/dist/',
   ],
-  
+
   // Transform ignore patterns
   transformIgnorePatterns: [
     'node_modules/(?!(antd|@ant-design|rc-.+|@babel/runtime)/)',
   ],
-  
+
   // Coverage configuration
   collectCoverage: true,
   collectCoverageFrom: [
@@ -72,7 +75,7 @@ module.exports = {
     '!src/**/*.stories.{ts,tsx}',
     '!src/test-utils/**',
   ],
-  
+
   // Coverage thresholds
   coverageThreshold: {
     global: {
@@ -100,49 +103,49 @@ module.exports = {
       statements: 75,
     },
   },
-  
+
   // Coverage reporters
   coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
-  
+
   // Coverage directory
   coverageDirectory: '<rootDir>/coverage',
-  
+
   // Test timeout
   testTimeout: 10000,
-  
+
   // Verbose output
   verbose: true,
-  
+
   // Clear mocks between tests
   clearMocks: true,
-  
+
   // Restore mocks after each test
   restoreMocks: true,
-  
+
   // Reset modules between tests
   resetModules: true,
-  
+
   // Global setup and teardown
   globalSetup: '<rootDir>/src/test-utils/globalSetup.js',
   globalTeardown: '<rootDir>/src/test-utils/globalTeardown.js',
-  
+
   // Custom test environment options
   testEnvironmentOptions: {
     url: 'http://localhost:3000',
   },
-  
+
   // Watch plugins
   watchPlugins: [
     'jest-watch-typeahead/filename',
     'jest-watch-typeahead/testname',
   ],
-  
+
   // Error handling
   errorOnDeprecated: true,
-  
+
   // Snapshot serializers
   snapshotSerializers: ['@emotion/jest/serializer'],
-  
+
   // Custom reporters
   reporters: [
     'default',
@@ -160,41 +163,35 @@ module.exports = {
       expand: true,
     }],
   ],
-  
+
   // Module directories
   moduleDirectories: ['node_modules', '<rootDir>/src'],
-  
+
   // Globals
   globals: {
     'ts-jest': {
       isolatedModules: true,
     },
   },
-  
+
   // Cache directory
   cacheDirectory: '<rootDir>/node_modules/.cache/jest',
-  
+
   // Max workers
   maxWorkers: '50%',
-  
+
   // Notify mode
   notify: false,
-  
+
   // Bail on first test failure in CI
   bail: process.env.CI ? 1 : 0,
-  
+
   // Force exit in CI
   forceExit: process.env.CI ? true : false,
-  
+
   // Detect open handles
   detectOpenHandles: true,
-  
+
   // Detect leaked timers
   detectLeaks: true,
-  
-  // Custom matchers
-  setupFilesAfterEnv: [
-    '<rootDir>/src/setupTests.ts',
-    '<rootDir>/src/test-utils/customMatchers.ts',
-  ],
 };

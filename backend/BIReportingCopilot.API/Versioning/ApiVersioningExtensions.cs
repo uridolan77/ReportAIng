@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Microsoft.OpenApi.Models;
+using BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.API.Versioning;
 
@@ -48,7 +49,7 @@ public static class ApiVersioningExtensions
     public static IServiceCollection AddVersionedSwagger(this IServiceCollection services)
     {
         services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
-        
+
         services.AddSwaggerGen(options =>
         {
             // Include XML comments

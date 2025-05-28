@@ -3,10 +3,11 @@ using Microsoft.AspNetCore.Authorization;
 using FluentValidation;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
-using BIReportingCopilot.Core.Validation;
 using BIReportingCopilot.API.Versioning;
 using BIReportingCopilot.Infrastructure.Monitoring;
 using System.Diagnostics;
+using QueryRequest = BIReportingCopilot.Core.Validation.QueryRequest;
+using FeedbackRequest = BIReportingCopilot.Core.Validation.FeedbackRequest;
 
 namespace BIReportingCopilot.API.Controllers.V1;
 
@@ -71,7 +72,7 @@ public class QueriesController : VersionedApiController
                 var errors = validationResult.Errors
                     .GroupBy(e => e.PropertyName)
                     .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
-                
+
                 return ValidationError<QueryResponse>(errors);
             }
 
@@ -79,7 +80,7 @@ public class QueriesController : VersionedApiController
 
             // Generate SQL
             var sql = await _aiService.GenerateSQLAsync(request.NaturalLanguageQuery, cancellationToken);
-            
+
             // Calculate confidence score
             var confidence = await _aiService.CalculateConfidenceScoreAsync(request.NaturalLanguageQuery, sql);
 
@@ -137,7 +138,7 @@ public class QueriesController : VersionedApiController
                 var errors = validationResult.Errors
                     .GroupBy(e => e.PropertyName)
                     .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
-                
+
                 return ValidationError<SqlGenerationResponse>(errors);
             }
 
@@ -145,7 +146,7 @@ public class QueriesController : VersionedApiController
 
             // Generate SQL
             var sql = await _aiService.GenerateSQLAsync(request.NaturalLanguageQuery, cancellationToken);
-            
+
             // Calculate confidence score
             var confidence = await _aiService.CalculateConfidenceScoreAsync(request.NaturalLanguageQuery, sql);
 
@@ -226,11 +227,11 @@ public class QueriesController : VersionedApiController
                 var errors = validationResult.Errors
                     .GroupBy(e => e.PropertyName)
                     .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
-                
+
                 return ValidationError<object>(errors);
             }
 
-            _logger.LogInformation("Received feedback from user {UserId} for query {QueryId}: Rating {Rating}", 
+            _logger.LogInformation("Received feedback from user {UserId} for query {QueryId}: Rating {Rating}",
                 userId, request.QueryId, request.Rating);
 
             // Process feedback (this would typically involve storing it and updating AI models)

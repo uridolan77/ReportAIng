@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '../test-utils';
+import { render, screen, waitFor } from '../test-utils/testing-providers';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
 import { useAuthStore } from '../stores/authStore';

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
 import { z } from 'zod';
-import { validateApiResponse, createValidationMiddleware } from '../utils/runtime-validation';
-import { validatedApi } from '../services/validatedApi';
+import { validateApiResponse, createValidationMiddleware } from '../utils/validation';
+import { ApiService } from '../services/api';
 import {
   QueryResponseSchema,
   EnhancedQueryResponseSchema,
@@ -97,7 +97,7 @@ export function useExecuteQuery() {
       timeout?: number;
       useCache?: boolean;
       context?: Record<string, unknown>;
-    }) => validatedApi.executeQuery(request),
+    }) => ApiService.executeQuery(request),
     QueryResponseSchema,
     {
       validationContext: 'executeQuery',
@@ -123,7 +123,7 @@ export function useExecuteEnhancedQuery() {
       timeout?: number;
       useCache?: boolean;
       context?: Record<string, unknown>;
-    }) => validatedApi.executeEnhancedQuery(request),
+    }) => ApiService.executeQuery(request),
     EnhancedQueryResponseSchema,
     {
       validationContext: 'executeEnhancedQuery',
@@ -140,7 +140,7 @@ export function useExecuteEnhancedQuery() {
 
 export function useValidateSql() {
   return useValidatedMutation(
-    (sql: string) => validatedApi.validateSql(sql),
+    (sql: string) => ApiService.validateSql(sql),
     z.object({
       isValid: z.boolean(),
       errors: z.array(z.string()),
@@ -157,7 +157,7 @@ export function useValidateSql() {
 export function useQueryHistory(page: number = 1, pageSize: number = 20) {
   return useValidatedQuery(
     ['queries', 'history', page, pageSize],
-    () => validatedApi.getQueryHistory(page, pageSize),
+    () => ApiService.getQueryHistory(page, pageSize),
     z.array(QueryHistoryItemSchema),
     {
       validationContext: 'queryHistory',
@@ -170,7 +170,7 @@ export function useQueryHistory(page: number = 1, pageSize: number = 20) {
 export function useQuerySuggestions() {
   return useValidatedQuery(
     ['queries', 'suggestions'],
-    () => validatedApi.getQuerySuggestions(),
+    () => ApiService.getQuerySuggestions(),
     z.array(z.string()),
     {
       validationContext: 'querySuggestions',
@@ -183,7 +183,7 @@ export function useQuerySuggestions() {
 export function useSchemaMetadata() {
   return useValidatedQuery(
     ['schema', 'metadata'],
-    () => validatedApi.getSchemaMetadata(),
+    () => ApiService.getSchemaMetadata(),
     SchemaMetadataSchema,
     {
       validationContext: 'schemaMetadata',
@@ -196,7 +196,7 @@ export function useSchemaMetadata() {
 export function useTableMetadata(tableName: string) {
   return useValidatedQuery(
     ['schema', 'tables', tableName],
-    () => validatedApi.getTableMetadata(tableName),
+    () => ApiService.getTableMetadata(tableName),
     z.object({
       name: z.string(),
       schema: z.string(),
@@ -221,7 +221,7 @@ export function useTableMetadata(tableName: string) {
 export function useDashboardOverview() {
   return useValidatedQuery(
     ['dashboard', 'overview'],
-    () => validatedApi.getDashboardOverview(),
+    () => ApiService.getDashboardOverview(),
     DashboardOverviewSchema,
     {
       validationContext: 'dashboardOverview',
@@ -235,7 +235,7 @@ export function useDashboardOverview() {
 export function useHealthStatus() {
   return useValidatedQuery(
     ['health', 'status'],
-    () => validatedApi.getHealthStatus(),
+    () => ApiService.getHealthStatus(),
     HealthStatusSchema,
     {
       validationContext: 'healthStatus',
@@ -261,7 +261,7 @@ export function useStreamingQuery() {
       onError: (error: Error) => void,
       onComplete: () => void
     ) => {
-      return validatedApi.startStreamingQuery(
+      return ApiService.startStreamingQuery(
         query,
         (data) => {
           // Validate streaming data if needed
@@ -303,7 +303,7 @@ export function usePrefetchQueries() {
     prefetchQueryHistory: (page: number = 1, pageSize: number = 20) => {
       return queryClient.prefetchQuery({
         queryKey: ['queries', 'history', page, pageSize],
-        queryFn: () => validatedApi.getQueryHistory(page, pageSize),
+        queryFn: () => ApiService.getQueryHistory(page, pageSize),
         staleTime: 2 * 60 * 1000,
       });
     },
@@ -311,7 +311,7 @@ export function usePrefetchQueries() {
     prefetchSchemaMetadata: () => {
       return queryClient.prefetchQuery({
         queryKey: ['schema', 'metadata'],
-        queryFn: () => validatedApi.getSchemaMetadata(),
+        queryFn: () => ApiService.getSchemaMetadata(),
         staleTime: 30 * 60 * 1000,
       });
     },
@@ -319,7 +319,7 @@ export function usePrefetchQueries() {
     prefetchDashboard: () => {
       return queryClient.prefetchQuery({
         queryKey: ['dashboard', 'overview'],
-        queryFn: () => validatedApi.getDashboardOverview(),
+        queryFn: () => ApiService.getDashboardOverview(),
         staleTime: 5 * 60 * 1000,
       });
     },

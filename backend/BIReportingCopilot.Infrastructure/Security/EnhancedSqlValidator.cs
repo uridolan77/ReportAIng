@@ -230,15 +230,9 @@ public class EnhancedSqlValidator : ISqlQueryValidator
     // Implement ISqlQueryValidator interface methods
     async Task<SqlValidationResult> ISqlQueryValidator.ValidateAsync(string sql)
     {
-        var enhancedResult = await ValidateQueryAsync(sql);
+        var enhancedResult = await ValidateAsync(sql);
 
-        return new SqlValidationResult
-        {
-            IsValid = enhancedResult.IsValid,
-            SecurityLevel = enhancedResult.SecurityLevel,
-            Errors = enhancedResult.Issues.Where(i => i.Severity >= 8).Select(i => i.Message).ToList(),
-            Warnings = enhancedResult.Issues.Where(i => i.Severity < 8).Select(i => i.Message).ToList()
-        };
+        return enhancedResult;
     }
 
     public bool IsSelectOnlyQuery(string sql)

@@ -28,7 +28,7 @@ public class GlobalExceptionHandlerMiddleware
         _logger = logger;
         _metricsCollector = metricsCollector;
         _environment = environment;
-        
+
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -55,7 +55,7 @@ public class GlobalExceptionHandlerMiddleware
         var endpoint = $"{context.Request.Method} {context.Request.Path}";
 
         // Log the exception
-        _logger.LogError(exception, 
+        _logger.LogError(exception,
             "Unhandled exception occurred. RequestId: {RequestId}, UserId: {UserId}, Endpoint: {Endpoint}",
             requestId, userId, endpoint);
 
@@ -69,7 +69,7 @@ public class GlobalExceptionHandlerMiddleware
 
         // Create error response
         var errorResponse = CreateErrorResponse(exception, requestId);
-        
+
         // Set response details
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = GetStatusCode(exception);
@@ -204,15 +204,15 @@ public class GlobalExceptionHandlerMiddleware
     private ApiError CreateCanceledError(TaskCanceledException canceledException)
     {
         var isTimeout = canceledException.InnerException is TimeoutException;
-        
+
         return new ApiError
         {
             Code = isTimeout ? ApiErrorCodes.TIMEOUT : ApiErrorCodes.OPERATION_NOT_ALLOWED,
-            Message = isTimeout 
+            Message = isTimeout
                 ? "The operation timed out. Please try again or contact support if the problem persists."
                 : "The operation was canceled",
             Details = _environment.IsDevelopment() ? new { OriginalMessage = canceledException.Message } : null,
-            HelpUrl = isTimeout 
+            HelpUrl = isTimeout
                 ? "https://docs.bireportingcopilot.com/errors/timeout"
                 : "https://docs.bireportingcopilot.com/errors/canceled"
         };
@@ -221,13 +221,13 @@ public class GlobalExceptionHandlerMiddleware
     private ApiError CreateGenericError(Exception exception)
     {
         var includeDetails = _environment.IsDevelopment() || _environment.IsStaging();
-        
+
         return new ApiError
         {
             Code = ApiErrorCodes.INTERNAL_ERROR,
             Message = "An unexpected error occurred. Please try again or contact support if the problem persists.",
-            Details = includeDetails ? new 
-            { 
+            Details = includeDetails ? new
+            {
                 ExceptionType = exception.GetType().Name,
                 OriginalMessage = exception.Message,
                 StackTrace = exception.StackTrace
@@ -268,88 +268,4 @@ public static class GlobalExceptionHandlerExtensions
     }
 }
 
-/// <summary>
-/// Custom exceptions for specific business scenarios
-/// </summary>
-namespace BIReportingCopilot.Core.Exceptions
-{
-    /// <summary>
-    /// Exception thrown when AI service confidence is too low
-    /// </summary>
-    public class LowConfidenceException : Exception
-    {
-        public double ConfidenceScore { get; }
-        public double MinimumRequired { get; }
 
-        public LowConfidenceException(double confidenceScore, double minimumRequired)
-            : base($"AI confidence score {confidenceScore:P2} is below the minimum required {minimumRequired:P2}")
-        {
-            ConfidenceScore = confidenceScore;
-            MinimumRequired = minimumRequired;
-        }
-    }
-
-    /// <summary>
-    /// Exception thrown when a query is deemed unsafe
-    /// </summary>
-    public class UnsafeQueryException : Exception
-    {
-        public string Query { get; }
-        public List<string> ViolatedRules { get; }
-
-        public UnsafeQueryException(string query, List<string> violatedRules)
-            : base($"Query violates safety rules: {string.Join(", ", violatedRules)}")
-        {
-            Query = query;
-            ViolatedRules = violatedRules;
-        }
-    }
-
-    /// <summary>
-    /// Exception thrown when rate limits are exceeded
-    /// </summary>
-    public class RateLimitExceededException : Exception
-    {
-        public TimeSpan RetryAfter { get; }
-        public string LimitType { get; }
-
-        public RateLimitExceededException(string limitType, TimeSpan retryAfter)
-            : base($"Rate limit exceeded for {limitType}. Retry after {retryAfter.TotalSeconds} seconds.")
-        {
-            LimitType = limitType;
-            RetryAfter = retryAfter;
-        }
-    }
-
-    /// <summary>
-    /// Exception thrown when business rules are violated
-    /// </summary>
-    public class BusinessRuleViolationException : Exception
-    {
-        public string RuleName { get; }
-        public Dictionary<string, object> Context { get; }
-
-        public BusinessRuleViolationException(string ruleName, string message, Dictionary<string, object>? context = null)
-            : base(message)
-        {
-            RuleName = ruleName;
-            Context = context ?? new Dictionary<string, object>();
-        }
-    }
-
-    /// <summary>
-    /// Exception thrown when external services are unavailable
-    /// </summary>
-    public class ExternalServiceException : Exception
-    {
-        public string ServiceName { get; }
-        public string? ServiceEndpoint { get; }
-
-        public ExternalServiceException(string serviceName, string message, string? serviceEndpoint = null, Exception? innerException = null)
-            : base(message, innerException)
-        {
-            ServiceName = serviceName;
-            ServiceEndpoint = serviceEndpoint;
-        }
-    }
-}

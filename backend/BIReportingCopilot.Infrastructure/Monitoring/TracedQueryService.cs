@@ -142,9 +142,9 @@ public class TracedQueryService : IQueryService
 
             _metricsCollector.IncrementCounter("feedback_submissions", new TagList
             {
-                ["user_id"] = userId,
-                ["success"] = result.ToString().ToLower(),
-                ["rating"] = FeedbackLearningEngineExtensions.GetRatingFromFeedback(feedback).ToString()
+                { "user_id", userId },
+                { "success", result.ToString().ToLower() },
+                { "rating", FeedbackLearningEngineExtensions.GetRatingFromFeedback(feedback).ToString() }
             });
 
             return result;
@@ -287,8 +287,8 @@ public class TracedQueryService : IQueryService
 
             _metricsCollector.IncrementCounter("query_validations", new TagList
             {
-                ["result"] = result.ToString().ToLower(),
-                ["session"] = request.SessionId ?? "Unknown"
+                { "result", result.ToString().ToLower() },
+                { "session", request.SessionId ?? "Unknown" }
             });
 
             return result;

@@ -31,7 +31,7 @@ public class StreamingDataService
         var totalCount = await _context.BusinessTableInfo.CountAsync(t => t.IsActive, cancellationToken);
         var processedCount = 0;
 
-        _logger.LogInformation("Starting to stream {TotalCount} business tables in batches of {BatchSize}", 
+        _logger.LogInformation("Starting to stream {TotalCount} business tables in batches of {BatchSize}",
             totalCount, batchSize);
 
         while (processedCount < totalCount)
@@ -63,7 +63,7 @@ public class StreamingDataService
             }
 
             processedCount += batch.Count;
-            
+
             if (batch.Count < batchSize)
                 break; // No more data
 
@@ -84,7 +84,7 @@ public class StreamingDataService
         var totalCount = await _context.QueryPatterns.CountAsync(p => p.IsActive, cancellationToken);
         var processedCount = 0;
 
-        _logger.LogInformation("Starting to stream {TotalCount} query patterns in batches of {BatchSize}", 
+        _logger.LogInformation("Starting to stream {TotalCount} query patterns in batches of {BatchSize}",
             totalCount, batchSize);
 
         while (processedCount < totalCount)
@@ -115,7 +115,7 @@ public class StreamingDataService
             }
 
             processedCount += batch.Count;
-            
+
             if (batch.Count < batchSize)
                 break;
 
@@ -132,11 +132,12 @@ public class StreamingDataService
         IQueryable<T> query,
         int batchSize = DefaultBatchSize,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        where T : class
     {
         var totalCount = await query.CountAsync(cancellationToken);
         var processedCount = 0;
 
-        _logger.LogInformation("Starting to stream {TotalCount} query results in batches of {BatchSize}", 
+        _logger.LogInformation("Starting to stream {TotalCount} query results in batches of {BatchSize}",
             totalCount, batchSize);
 
         while (processedCount < totalCount)
@@ -153,7 +154,7 @@ public class StreamingDataService
             }
 
             processedCount += batch.Count;
-            
+
             if (batch.Count < batchSize)
                 break;
 
@@ -192,8 +193,8 @@ public class StreamingDataService
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var result = new BatchOperationResult<TResult>();
         var itemsList = items.ToList();
-        
-        _logger.LogInformation("Starting batch processing of {TotalItems} items in batches of {BatchSize}", 
+
+        _logger.LogInformation("Starting batch processing of {TotalItems} items in batches of {BatchSize}",
             itemsList.Count, batchSize);
 
         for (int i = 0; i < itemsList.Count; i += batchSize)
@@ -218,7 +219,7 @@ public class StreamingDataService
             foreach (var batchResult in batchResults)
             {
                 result.TotalProcessed++;
-                
+
                 if (batchResult.Success)
                 {
                     result.SuccessCount++;

@@ -62,7 +62,7 @@ public class AzureOpenAIProvider : IAIProvider
             cts.CancelAfter(TimeSpan.FromSeconds(options.TimeoutSeconds));
 
             var response = await _client.GetChatCompletionsAsync(chatCompletionsOptions, cts.Token);
-            
+
             if (response?.Value?.Choices?.Count > 0)
             {
                 return response.Value.Choices[0].Message.Content;
@@ -83,8 +83,8 @@ public class AzureOpenAIProvider : IAIProvider
     }
 
     public async IAsyncEnumerable<StreamingResponse> GenerateCompletionStreamAsync(
-        string prompt, 
-        AIOptions options, 
+        string prompt,
+        AIOptions options,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (!IsConfigured)
@@ -115,55 +115,61 @@ public class AzureOpenAIProvider : IAIProvider
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(options.TimeoutSeconds));
 
+        IAsyncEnumerable<StreamingResponse> stream;
+
         try
         {
-            var streamingResponse = await _client.GetChatCompletionsStreamingAsync(chatCompletionsOptions, cts.Token);
-            int chunkIndex = 0;
-
-            await foreach (var choice in streamingResponse.Value.GetChoicesStreaming().WithCancellation(cts.Token))
-            {
-                await foreach (var message in choice.GetMessageStreaming().WithCancellation(cts.Token))
-                {
-                    if (!string.IsNullOrEmpty(message.Content))
-                    {
-                        yield return new StreamingResponse
-                        {
-                            Type = StreamingResponseType.SQLGeneration,
-                            Content = message.Content,
-                            IsComplete = false,
-                            ChunkIndex = chunkIndex++
-                        };
-                    }
-                }
-            }
-
-            yield return new StreamingResponse
-            {
-                Type = StreamingResponseType.SQLGeneration,
-                Content = string.Empty,
-                IsComplete = true,
-                ChunkIndex = chunkIndex
-            };
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("Azure OpenAI streaming request timed out after {TimeoutSeconds} seconds", options.TimeoutSeconds);
-            yield return new StreamingResponse
-            {
-                Type = StreamingResponseType.Error,
-                Content = "Request timed out",
-                IsComplete = true
-            };
+            stream = GetStreamingResponsesAsync(chatCompletionsOptions, cts.Token);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in Azure OpenAI streaming completion: {Message}", ex.Message);
-            yield return new StreamingResponse
-            {
-                Type = StreamingResponseType.Error,
-                Content = $"Error: {ex.Message}",
-                IsComplete = true
-            };
+            _logger.LogError(ex, "Failed to initialize Azure OpenAI streaming: {Message}", ex.Message);
+            stream = CreateErrorStreamAsync($"Error: {ex.Message}");
         }
+
+        await foreach (var response in stream.WithCancellation(cts.Token))
+        {
+            yield return response;
+        }
+    }
+
+    private async IAsyncEnumerable<StreamingResponse> GetStreamingResponsesAsync(
+        ChatCompletionsOptions options,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var streamingResponse = await _client.GetChatCompletionsStreamingAsync(options, cancellationToken);
+        int chunkIndex = 0;
+
+        await foreach (var update in streamingResponse.WithCancellation(cancellationToken))
+        {
+            if (update.ContentUpdate != null && !string.IsNullOrEmpty(update.ContentUpdate))
+            {
+                yield return new StreamingResponse
+                {
+                    Type = StreamingResponseType.SQLGeneration,
+                    Content = update.ContentUpdate,
+                    IsComplete = false,
+                    ChunkIndex = chunkIndex++
+                };
+            }
+        }
+
+        yield return new StreamingResponse
+        {
+            Type = StreamingResponseType.SQLGeneration,
+            Content = string.Empty,
+            IsComplete = true,
+            ChunkIndex = chunkIndex
+        };
+    }
+
+    private async IAsyncEnumerable<StreamingResponse> CreateErrorStreamAsync(string errorMessage)
+    {
+        yield return new StreamingResponse
+        {
+            Type = StreamingResponseType.Error,
+            Content = errorMessage,
+            IsComplete = true
+        };
     }
 }

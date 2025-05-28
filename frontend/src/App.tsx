@@ -19,9 +19,7 @@ const EnhancedQueryBuilder = lazy(() => import('./components/QueryInterface/Enha
 const UserContextPanel = lazy(() => import('./components/AI/UserContextPanel'));
 const QuerySimilarityAnalyzer = lazy(() => import('./components/AI/QuerySimilarityAnalyzer'));
 const AdvancedVisualizationPanel = lazy(() => import('./components/Visualization/AdvancedVisualizationPanel'));
-const AdvancedVisualizationDemo = lazy(() => import('./components/Demo/AdvancedVisualizationDemo'));
 const AdvancedFeaturesDemo = lazy(() => import('./components/Demo/AdvancedFeaturesDemo').then(module => ({ default: module.AdvancedFeaturesDemo })));
-const UltimateShowcase = lazy(() => import('./components/Demo/UltimateShowcase').then(module => ({ default: module.UltimateShowcase })));
 const SecurityDashboard = lazy(() => import('./components/Security/SecurityDashboard').then(module => ({ default: module.SecurityDashboard })));
 const RequestSigningDemo = lazy(() => import('./components/Security/RequestSigningDemo').then(module => ({ default: module.RequestSigningDemo })));
 const TypeSafetyDemo = lazy(() => import('./components/TypeSafety/TypeSafetyDemo').then(module => ({ default: module.TypeSafetyDemo })));
@@ -79,9 +77,8 @@ const App: React.FC = () => {
                             />
                           }
                         />
-                        <Route path="/demo" element={<AdvancedVisualizationDemo />} />
-                        <Route path="/advanced-demo" element={<AdvancedFeaturesDemo />} />
-                        <Route path="/showcase" element={<UltimateShowcase />} />
+                        <Route path="/demo" element={<AdvancedFeaturesDemo />} />
+                        <Route path="/showcase" element={<AdvancedFeaturesDemo />} />
                         <Route path="/security" element={<SecurityDashboard />} />
                         <Route path="/security/signing" element={<RequestSigningDemo />} />
                         <Route path="/security/types" element={<TypeSafetyDemo />} />

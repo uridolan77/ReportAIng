@@ -43,8 +43,10 @@ public class ResilientQueryService : IQueryService
         _circuitBreakerPolicy = Policy
             .Handle<SqlException>()
             .Or<TimeoutException>()
-            .CircuitBreakerAsync(
-                handledEventsAllowedBeforeBreaking: 3,
+            .AdvancedCircuitBreakerAsync(
+                failureThreshold: 0.5,
+                samplingDuration: TimeSpan.FromSeconds(30),
+                minimumThroughput: 3,
                 durationOfBreak: TimeSpan.FromMinutes(1),
                 onBreak: (exception, duration) =>
                 {
@@ -322,7 +324,7 @@ public class ResilientQueryService : IQueryService
     // Missing IQueryService methods
     public async Task InvalidateQueryCacheAsync(string pattern)
     {
-        return await _databaseRetryPolicy.ExecuteAsync(async () =>
+        await _databaseRetryPolicy.ExecuteAsync(async () =>
         {
             _logger.LogInformation("Invalidating query cache with pattern: {Pattern}", pattern);
             await _innerService.InvalidateQueryCacheAsync(pattern);

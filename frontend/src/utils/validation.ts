@@ -415,7 +415,114 @@ export const isValidDate = (date: string): boolean => {
   return z.string().datetime().safeParse(date).success;
 };
 
+// Runtime validation utilities (consolidated from runtime-validation.ts)
+
+/**
+ * Type assertion with runtime validation
+ */
+export function assertType<T>(
+  schema: z.ZodSchema<T>,
+  value: unknown,
+  context?: string
+): asserts value is T {
+  const result = ValidationUtils.validate(schema, value);
+
+  if (!result.success) {
+    const errorMessage = context
+      ? `Type assertion failed for ${context}: ${result.error!.message}`
+      : `Type assertion failed: ${result.error!.message}`;
+
+    throw new TypeError(errorMessage);
+  }
+}
+
+/**
+ * Safe type checking that returns boolean
+ */
+export function isType<T>(
+  schema: z.ZodSchema<T>,
+  value: unknown
+): value is T {
+  const result = ValidationUtils.validate(schema, value);
+  return result.success;
+}
+
+/**
+ * Validate with fallback value
+ */
+export function validateWithFallback<T>(
+  schema: z.ZodSchema<T>,
+  value: unknown,
+  fallback: T,
+  context?: string
+): T {
+  const result = ValidationUtils.validate(schema, value);
+
+  if (result.success) {
+    return result.data!;
+  }
+
+  if (context && process.env.NODE_ENV === 'development') {
+    console.warn(`Validation failed for ${context}, using fallback:`, {
+      error: result.error!.message,
+      value,
+      fallback
+    });
+  }
+
+  return fallback;
+}
+
+/**
+ * Create a validation middleware for React Query
+ */
+export function createValidationMiddleware<T>(
+  schema: z.ZodSchema<T>,
+  context?: string
+) {
+  return (data: unknown): T => {
+    return ValidationUtils.validateApiResponse(schema, data, context);
+  };
+}
+
+/**
+ * Type-safe localStorage with validation
+ */
+export function createValidatedStorage<T>(
+  key: string,
+  schema: z.ZodSchema<T>,
+  defaultValue: T
+) {
+  return {
+    get(): T {
+      try {
+        const stored = localStorage.getItem(key);
+        if (!stored) return defaultValue;
+
+        const parsed = JSON.parse(stored);
+        return validateWithFallback(schema, parsed, defaultValue, `localStorage:${key}`);
+      } catch {
+        return defaultValue;
+      }
+    },
+
+    set(value: T): void {
+      try {
+        assertType(schema, value, `localStorage:${key}`);
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (error) {
+        console.error(`Failed to store value in localStorage:${key}:`, error);
+      }
+    },
+
+    remove(): void {
+      localStorage.removeItem(key);
+    }
+  };
+}
+
 // Export the main validation function for convenience
 export const validate = ValidationUtils.validate;
 export const safeParse = ValidationUtils.safeParse;
 export const validateOrThrow = ValidationUtils.validateOrThrow;
+export const validateApiResponse = ValidationUtils.validateApiResponse;

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -112,12 +113,12 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator
                 issues.Add(issue);
                 riskScore += pattern.RiskScore;
                 securityLevel = SecurityLevel.Blocked;
-                
+
                 _logger.LogWarning("Dangerous SQL pattern detected for user {UserId}: {Pattern}", userId, pattern.Name);
-                _metricsCollector.IncrementCounter("sql_validation_dangerous_patterns", new()
+                _metricsCollector.IncrementCounter("sql_validation_dangerous_patterns", new TagList
                 {
-                    ["pattern"] = pattern.Name,
-                    ["user_id"] = userId ?? "unknown"
+                    { "pattern", pattern.Name },
+                    { "user_id", userId ?? "unknown" }
                 });
             }
         }
@@ -130,17 +131,17 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator
                 var issue = new SecurityIssue(pattern.Name, $"Suspicious SQL pattern detected: {pattern.Name}", pattern.RiskScore);
                 issues.Add(issue);
                 riskScore += pattern.RiskScore;
-                
+
                 if (securityLevel == SecurityLevel.Safe)
                 {
                     securityLevel = riskScore >= _config.WarningThreshold ? SecurityLevel.Warning : SecurityLevel.Safe;
                 }
-                
+
                 _logger.LogWarning("Suspicious SQL pattern detected for user {UserId}: {Pattern}", userId, pattern.Name);
-                _metricsCollector.IncrementCounter("sql_validation_suspicious_patterns", new()
+                _metricsCollector.IncrementCounter("sql_validation_suspicious_patterns", new TagList
                 {
-                    ["pattern"] = pattern.Name,
-                    ["user_id"] = userId ?? "unknown"
+                    { "pattern", pattern.Name },
+                    { "user_id", userId ?? "unknown" }
                 });
             }
         }
@@ -150,17 +151,21 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator
         {
             try
             {
-                var anomalyResult = await _anomalyDetector.DetectQueryAnomalyAsync(query, userId);
-                if (anomalyResult.IsAnomalous)
+                var anomalyResult = await _anomalyDetector.AnalyzeQueryAsync(userId, query, query);
+                if (anomalyResult.AnomalyScore > 0.1) // Consider it anomalous if score > 0.1
                 {
+                    var anomalyReason = anomalyResult.DetectedAnomalies.Any()
+                        ? string.Join(", ", anomalyResult.DetectedAnomalies)
+                        : "Unusual query pattern detected";
+
                     var anomalyIssue = new SecurityIssue(
-                        "ML Anomaly", 
-                        $"Query anomaly detected: {anomalyResult.Reason}", 
+                        "ML Anomaly",
+                        $"Query anomaly detected: {anomalyReason}",
                         (int)(anomalyResult.AnomalyScore * 10));
-                    
+
                     issues.Add(anomalyIssue);
                     riskScore += anomalyIssue.RiskScore;
-                    
+
                     if (anomalyResult.AnomalyScore >= _config.AnomalyBlockThreshold)
                     {
                         securityLevel = SecurityLevel.Blocked;
@@ -200,10 +205,11 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator
         };
 
         // Record metrics
-        _metricsCollector.RecordValue("sql_validation_risk_score", riskScore, new()
+        _metricsCollector.RecordValue("sql_validation_risk_score", riskScore);
+        _metricsCollector.RecordHistogram("sql_validation_risk_score_detailed", riskScore, new TagList
         {
-            ["security_level"] = securityLevel.ToString(),
-            ["user_id"] = userId ?? "unknown"
+            { "security_level", securityLevel.ToString() },
+            { "user_id", userId ?? "unknown" }
         });
 
         return result;
@@ -218,7 +224,7 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator
     public async Task<SqlSecurityReport> GenerateSecurityReportAsync(string query, string? userId = null)
     {
         var validationResult = await ValidateQueryAsync(query, null, userId);
-        
+
         return new SqlSecurityReport
         {
             Query = query,
@@ -237,7 +243,7 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator
 
     private bool IsWhitelisted(string query)
     {
-        return WhitelistPatterns.Any(pattern => 
+        return WhitelistPatterns.Any(pattern =>
             Regex.IsMatch(query, pattern, RegexOptions.IgnoreCase | RegexOptions.Multiline));
     }
 
@@ -248,17 +254,17 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator
         if (result.RiskScore > 0)
         {
             recommendations.Add("Review the query for potential security issues");
-            
+
             if (result.Issues.Any(i => i.Type.Contains("Injection")))
             {
                 recommendations.Add("Use parameterized queries to prevent SQL injection");
             }
-            
+
             if (result.Issues.Any(i => i.Type.Contains("System")))
             {
                 recommendations.Add("Avoid accessing system tables and procedures");
             }
-            
+
             if (result.Issues.Any(i => i.Type.Contains("Dynamic")))
             {
                 recommendations.Add("Minimize use of dynamic SQL construction");

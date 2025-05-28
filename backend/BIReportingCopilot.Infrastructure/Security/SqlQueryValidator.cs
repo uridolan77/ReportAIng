@@ -23,6 +23,8 @@ public class SqlValidationResult
     public List<string> Errors { get; set; } = new();
     public List<string> Warnings { get; set; } = new();
     public SecurityLevel SecurityLevel { get; set; } = SecurityLevel.Safe;
+    public double RiskScore { get; set; }
+    public DateTime ValidationTime { get; set; } = DateTime.UtcNow;
 }
 
 public enum SecurityLevel
@@ -258,7 +260,7 @@ public class SqlQueryValidator : ISqlQueryValidator
         {
             // Check for proper SQL structure
             var trimmedSql = sql.Trim();
-            
+
             // Must start with SELECT
             if (!trimmedSql.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
             {
@@ -326,7 +328,7 @@ public class SqlQueryValidator : ISqlQueryValidator
             @"vbscript:"
         };
 
-        return suspiciousPatterns.Any(pattern => 
+        return suspiciousPatterns.Any(pattern =>
             Regex.IsMatch(value, pattern, RegexOptions.IgnoreCase));
     }
 
@@ -349,7 +351,7 @@ public class SqlQueryValidator : ISqlQueryValidator
     {
         var parameters = new List<string>();
         var matches = Regex.Matches(sql, @"@([a-zA-Z_][a-zA-Z0-9_]*)", RegexOptions.IgnoreCase);
-        
+
         foreach (Match match in matches)
         {
             var paramName = match.Groups[1].Value;
@@ -376,7 +378,7 @@ public class SqlQueryValidator : ISqlQueryValidator
     {
         var singleQuoteCount = 0;
         var doubleQuoteCount = 0;
-        
+
         for (int i = 0; i < sql.Length; i++)
         {
             if (sql[i] == '\'' && (i == 0 || sql[i - 1] != '\\'))
@@ -406,7 +408,7 @@ public class SqlQueryValidator : ISqlQueryValidator
         var fromMatches = Regex.Matches(sql, @"\bFROM\b", RegexOptions.IgnoreCase);
         var joinMatches = Regex.Matches(sql, @"\b(INNER\s+JOIN|LEFT\s+JOIN|RIGHT\s+JOIN|FULL\s+JOIN|JOIN)\b", RegexOptions.IgnoreCase);
         var tableCount = Regex.Matches(sql, @"\b[a-zA-Z_][a-zA-Z0-9_]*\s*(?=\s|,|$|\)|WHERE|ORDER|GROUP)", RegexOptions.IgnoreCase).Count;
-        
+
         if (tableCount > 1 && joinMatches.Count < tableCount - 1)
         {
             result.Warnings.Add("Potential Cartesian product detected - verify JOIN conditions");

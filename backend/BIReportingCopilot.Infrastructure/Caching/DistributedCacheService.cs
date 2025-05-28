@@ -208,7 +208,8 @@ public class DistributedCacheService : ICacheService, IDisposable
         try
         {
             var fullKeys = keys.Select(GetFullKey).ToArray();
-            var values = await _database.StringGetAsync(fullKeys);
+            var redisKeys = fullKeys.Select(k => (RedisKey)k).ToArray();
+            var values = await _database.StringGetAsync(redisKeys);
 
             for (int i = 0; i < keys.Count(); i++)
             {
@@ -261,11 +262,13 @@ public class DistributedCacheService : ICacheService, IDisposable
             var keyArray = keys.ToArray();
             if (keyArray.Length > 0)
             {
-                await _database.KeyDeleteAsync(keyArray);
+                var redisKeys = keyArray.Select(k => (RedisKey)k).ToArray();
+                await _database.KeyDeleteAsync(redisKeys);
 
                 // Remove metadata for these keys
                 var metadataKeys = keyArray.Select(k => $"{k}:metadata").ToArray();
-                await _database.KeyDeleteAsync(metadataKeys);
+                var redisMetadataKeys = metadataKeys.Select(k => (RedisKey)k).ToArray();
+                await _database.KeyDeleteAsync(redisMetadataKeys);
 
                 _logger.LogInformation("Removed {Count} cache entries matching pattern: {Pattern}", keyArray.Length, pattern);
             }

@@ -40,10 +40,10 @@ import {
   DatabaseOutlined,
   ApiOutlined,
   SecurityScanOutlined,
-  PerformanceOutlined,
+  DashboardOutlined,
   ExperimentOutlined,
-  ConsoleOutlined,
-  NetworkOutlined,
+  CodeOutlined,
+  GlobalOutlined,
   ClockCircleOutlined,
   WarningOutlined,
   CheckCircleOutlined,
@@ -484,7 +484,7 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
 
           {/* Performance Tab */}
           <TabPane
-            tab={<Space><PerformanceOutlined />Performance</Space>}
+            tab={<Space><DashboardOutlined />Performance</Space>}
             key="performance"
           >
             <Row gutter={[16, 16]}>
@@ -579,7 +579,7 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
 
           {/* Network Tab */}
           <TabPane
-            tab={<Space><NetworkOutlined />Network</Space>}
+            tab={<Space><GlobalOutlined />Network</Space>}
             key="network"
           >
             <Card title="Network Requests" size="small">
@@ -642,7 +642,7 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
 
           {/* Console Tab */}
           <TabPane
-            tab={<Space><ConsoleOutlined />Console</Space>}
+            tab={<Space><CodeOutlined />Console</Space>}
             key="console"
           >
             <Card
@@ -815,7 +815,7 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
                     </Button>
                     <Button
                       block
-                      icon={<PerformanceOutlined />}
+                      icon={<DashboardOutlined />}
                       onClick={() => {
                         performance.mark('debug-performance-test');
                         addLog('Performance', 'Performance test marker set', 'info');

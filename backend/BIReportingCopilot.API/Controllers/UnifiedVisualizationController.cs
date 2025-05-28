@@ -329,7 +329,7 @@ public class UnifiedVisualizationController : ControllerBase
         return User.FindFirst("sub")?.Value ?? "anonymous";
     }
 
-    private double CalculateRecommendationScore(VisualizationConfig config, ColumnInfo[] columns, int dataLength)
+    private double CalculateRecommendationScore(VisualizationConfig config, ColumnMetadata[] columns, int dataLength)
     {
         var score = 0.5; // Base score
 
@@ -379,7 +379,7 @@ public class UnifiedVisualizationController : ControllerBase
     private bool IsDateTimeType(string dataType) =>
         dataType.Contains("date") || dataType.Contains("time");
 
-    private List<string> GetAlternativeRecommendations(string type, ColumnInfo[] columns, int rowCount)
+    private List<string> GetAlternativeRecommendations(string type, ColumnMetadata[] columns, int rowCount)
     {
         var recommendations = new List<string>();
 
@@ -404,7 +404,7 @@ public class UnifiedVisualizationController : ControllerBase
         return recommendations;
     }
 
-    private string[] GetVisualizationIssues(string type, ColumnInfo[] columns, int rowCount)
+    private string[] GetVisualizationIssues(string type, ColumnMetadata[] columns, int rowCount)
     {
         var issues = new List<string>();
 
@@ -426,7 +426,7 @@ public class UnifiedVisualizationController : ControllerBase
         return issues.ToArray();
     }
 
-    private string CalculateDataComplexity(ColumnInfo[] columns, object[] data)
+    private string CalculateDataComplexity(ColumnMetadata[] columns, object[] data)
     {
         var numericCount = columns.Count(c => IsNumericType(c.DataType));
         var categoricalCount = columns.Count(c => IsCategoricalType(c.DataType));
@@ -492,7 +492,7 @@ public class UnifiedVisualizationController : ControllerBase
 public class VisualizationRequest
 {
     public string Query { get; set; } = string.Empty;
-    public ColumnInfo[] Columns { get; set; } = Array.Empty<ColumnInfo>();
+    public ColumnMetadata[] Columns { get; set; } = Array.Empty<ColumnMetadata>();
     public object[] Data { get; set; } = Array.Empty<object>();
 }
 
@@ -524,7 +524,7 @@ public class VisualizationOption
 public class VisualizationValidationRequest
 {
     public string VisualizationType { get; set; } = string.Empty;
-    public ColumnInfo[] Columns { get; set; } = Array.Empty<ColumnInfo>();
+    public ColumnMetadata[] Columns { get; set; } = Array.Empty<ColumnMetadata>();
     public int RowCount { get; set; }
 }
 
