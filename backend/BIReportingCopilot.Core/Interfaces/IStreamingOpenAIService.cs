@@ -5,7 +5,10 @@ namespace BIReportingCopilot.Core.Interfaces;
 
 /// <summary>
 /// Interface for streaming OpenAI service with advanced capabilities
+/// DEPRECATED: Use IAIService instead which provides both standard and streaming capabilities
+/// This interface will be removed in the next major version
 /// </summary>
+[Obsolete("Use IAIService instead. This interface will be removed in the next major version.")]
 public interface IStreamingOpenAIService
 {
     /// <summary>

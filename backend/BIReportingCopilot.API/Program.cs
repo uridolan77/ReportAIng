@@ -235,10 +235,21 @@ builder.Services.AddScoped<IUserRepository, BIReportingCopilot.Infrastructure.Re
 builder.Services.AddScoped<ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.IUserEntityRepository, BIReportingCopilot.Infrastructure.Repositories.UserEntityRepository>();
 
-// Register application services
-builder.Services.AddScoped<IQueryService, QueryService>();
-builder.Services.AddScoped<IOpenAIService, EnhancedOpenAIService>(); // Consolidated AI service with all features
-builder.Services.AddScoped<IStreamingOpenAIService, BIReportingCopilot.Infrastructure.AI.StreamingOpenAIService>(); // Streaming capabilities
+// Register core application services - Consolidated and unified
+builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.AIService>(); // Unified AI service with standard and streaming capabilities
+builder.Services.AddScoped<IQueryService, QueryService>(); // Enhanced query service with advanced processing
+
+// Legacy service registrations for backward compatibility
+builder.Services.AddScoped<IOpenAIService>(provider =>
+{
+    var aiService = provider.GetRequiredService<IAIService>();
+    return new BIReportingCopilot.Infrastructure.Adapters.LegacyOpenAIServiceAdapter(aiService);
+});
+builder.Services.AddScoped<IStreamingOpenAIService>(provider =>
+{
+    var aiService = provider.GetRequiredService<IAIService>();
+    return new BIReportingCopilot.Infrastructure.Adapters.LegacyStreamingOpenAIServiceAdapter(aiService);
+});
 builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Services.SchemaService>();
 builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Services.SqlQueryService>();
 builder.Services.AddScoped<IStreamingSqlQueryService>(provider =>
@@ -262,7 +273,7 @@ builder.Services.AddScoped<IStreamingSqlQueryService>(provider =>
 }); // Streaming query service
 builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.Services.PromptService>();
 builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Services.VisualizationService>(); // Consolidated visualization service
-builder.Services.AddScoped<ICacheService, MemoryOptimizedCacheService>(); // Enhanced cache service
+builder.Services.AddScoped<ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>(); // Unified cache service
 builder.Services.AddScoped<IUserService, BIReportingCopilot.Infrastructure.Services.UserService>();
 builder.Services.AddScoped<IAuditService, BIReportingCopilot.Infrastructure.Services.AuditService>();
 builder.Services.AddScoped<IAuthenticationService, BIReportingCopilot.Infrastructure.Services.AuthenticationService>();

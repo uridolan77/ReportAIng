@@ -34,8 +34,8 @@ class ApiClient {
   private setupInterceptors(): void {
     // Request interceptor
     this.client.interceptors.request.use(
-      (config) => {
-        const token = this.getAuthToken();
+      async (config) => {
+        const token = await this.getAuthToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -51,7 +51,7 @@ class ApiClient {
         if (error.response?.status === 401) {
           const authStore = useAuthStore.getState();
           const refreshed = await authStore.refreshAuth();
-          
+
           if (refreshed) {
             // Retry the original request
             return this.client.request(error.config);
@@ -65,14 +65,10 @@ class ApiClient {
     );
   }
 
-  private getAuthToken(): string | null {
+  private async getAuthToken(): Promise<string | null> {
     try {
-      const authStorage = localStorage.getItem('auth-storage');
-      if (authStorage) {
-        const parsed = JSON.parse(authStorage);
-        return parsed?.state?.token || null;
-      }
-      return null;
+      const authStore = useAuthStore.getState();
+      return await authStore.getDecryptedToken();
     } catch {
       return null;
     }

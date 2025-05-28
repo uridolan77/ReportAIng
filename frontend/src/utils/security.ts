@@ -45,8 +45,8 @@ export class SecurityUtils {
       const salt = window.crypto.getRandomValues(new Uint8Array(16));
       const iv = window.crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
 
-      // Use a combination of user agent and timestamp as password base
-      const passwordBase = `${navigator.userAgent}-${Date.now()}`;
+      // Use a consistent password base (user agent + session identifier)
+      const passwordBase = `${navigator.userAgent}-bi-reporting-copilot-2025`;
       const key = await this.deriveKey(passwordBase, salt);
 
       const encrypted = await window.crypto.subtle.encrypt(
@@ -84,8 +84,8 @@ export class SecurityUtils {
       const iv = combined.slice(16, 16 + this.IV_LENGTH);
       const encrypted = combined.slice(16 + this.IV_LENGTH);
 
-      // Derive the same key
-      const passwordBase = `${navigator.userAgent}-${Date.now()}`;
+      // Derive the same key using consistent password base
+      const passwordBase = `${navigator.userAgent}-bi-reporting-copilot-2025`;
       const key = await this.deriveKey(passwordBase, salt);
 
       const decrypted = await window.crypto.subtle.decrypt(

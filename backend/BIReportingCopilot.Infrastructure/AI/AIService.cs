@@ -12,14 +12,14 @@ using System.Runtime.CompilerServices;
 namespace BIReportingCopilot.Infrastructure.AI;
 
 /// <summary>
-/// Unified AI service combining standard and streaming capabilities
+/// AI service combining standard and streaming capabilities
 /// Consolidates EnhancedOpenAIService and StreamingOpenAIService
 /// </summary>
-public class UnifiedAIService : IAIService
+public class AIService : IAIService
 {
     private readonly OpenAIClient _client;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<UnifiedAIService> _logger;
+    private readonly ILogger<AIService> _logger;
     private readonly ICacheService _cacheService;
     private readonly AIServiceConfiguration _aiConfig;
     private readonly bool _isConfigured;
@@ -27,10 +27,10 @@ public class UnifiedAIService : IAIService
     private readonly IContextManager _contextManager;
     private readonly List<QueryExample> _examples;
 
-    public UnifiedAIService(
+    public AIService(
         OpenAIClient client,
         IConfiguration configuration,
-        ILogger<UnifiedAIService> logger,
+        ILogger<AIService> logger,
         ICacheService cacheService,
         IContextManager contextManager)
     {
@@ -56,7 +56,7 @@ public class UnifiedAIService : IAIService
         else
         {
             var configType = _aiConfig.PreferAzureOpenAI ? "Azure OpenAI" : "OpenAI";
-            _logger.LogInformation("Unified AI service configured with {ConfigType}", configType);
+            _logger.LogInformation("AI service configured with {ConfigType}", configType);
         }
     }
 
@@ -375,14 +375,63 @@ Return only valid JSON.";
             PresencePenalty = _aiConfig.OpenAI.PresencePenalty
         };
 
-        // Implementation would continue with streaming logic...
-        // For brevity, yielding a simple response
-        yield return new StreamingResponse
+        var chunkIndex = 0;
+        var contentBuilder = new StringBuilder();
+
+        try
         {
-            Type = responseType,
-            Content = "Streaming implementation placeholder",
-            IsComplete = true
-        };
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            var timeoutSeconds = _aiConfig.PreferAzureOpenAI ?
+                _aiConfig.AzureOpenAI.TimeoutSeconds :
+                _aiConfig.OpenAI.TimeoutSeconds;
+            cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+
+            var streamingResponse = await _client.GetChatCompletionsStreamingAsync(chatCompletionsOptions, cts.Token);
+
+            await foreach (var choice in streamingResponse.Value.GetChoicesStreaming().WithCancellation(cts.Token))
+            {
+                await foreach (var message in choice.GetMessageStreaming().WithCancellation(cts.Token))
+                {
+                    if (message.Content != null)
+                    {
+                        contentBuilder.Append(message.Content);
+                        
+                        yield return new StreamingResponse
+                        {
+                            Type = responseType,
+                            Content = message.Content,
+                            IsComplete = false,
+                            ChunkIndex = chunkIndex++,
+                            Timestamp = DateTime.UtcNow
+                        };
+                    }
+                }
+            }
+
+            // Send final completion message
+            yield return new StreamingResponse
+            {
+                Type = responseType,
+                Content = string.Empty,
+                IsComplete = true,
+                ChunkIndex = chunkIndex,
+                Timestamp = DateTime.UtcNow,
+                Metadata = new { TotalContent = contentBuilder.ToString(), TotalChunks = chunkIndex }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in streaming chat completion for type {ResponseType}", responseType);
+            
+            yield return new StreamingResponse
+            {
+                Type = StreamingResponseType.Error,
+                Content = $"Streaming error: {ex.Message}",
+                IsComplete = true,
+                ChunkIndex = chunkIndex,
+                Timestamp = DateTime.UtcNow
+            };
+        }
     }
 
     private string GetSystemPromptForType(StreamingResponseType type)

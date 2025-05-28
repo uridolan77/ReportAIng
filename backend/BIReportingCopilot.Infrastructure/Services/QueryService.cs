@@ -7,7 +7,7 @@ namespace BIReportingCopilot.Infrastructure.Services;
 public class QueryService : IQueryService
 {
     private readonly ILogger<QueryService> _logger;
-    private readonly IOpenAIService _openAIService;
+    private readonly IAIService _aiService;
     private readonly ISchemaService _schemaService;
     private readonly ISqlQueryService _sqlQueryService;
     private readonly ICacheService _cacheService;
@@ -15,24 +15,29 @@ public class QueryService : IQueryService
     private readonly IPromptService _promptService;
     private readonly IAITuningSettingsService _settingsService;
 
+    // Legacy support
+    private readonly IOpenAIService? _openAIService;
+
     public QueryService(
         ILogger<QueryService> logger,
-        IOpenAIService openAIService,
+        IAIService aiService,
         ISchemaService schemaService,
         ISqlQueryService sqlQueryService,
         ICacheService cacheService,
         IAuditService auditService,
         IPromptService promptService,
-        IAITuningSettingsService settingsService)
+        IAITuningSettingsService settingsService,
+        IOpenAIService? openAIService = null)
     {
         _logger = logger;
-        _openAIService = openAIService;
+        _aiService = aiService;
         _schemaService = schemaService;
         _sqlQueryService = sqlQueryService;
         _cacheService = cacheService;
         _auditService = auditService;
         _promptService = promptService;
         _settingsService = settingsService;
+        _openAIService = openAIService; // For backward compatibility
     }
 
     public async Task<QueryResponse> ProcessQueryAsync(QueryRequest request, string userId)
@@ -75,7 +80,7 @@ public class QueryService : IQueryService
             // Generate SQL using enhanced AI prompt with business context
             var prompt = await _promptService.BuildQueryPromptAsync(request.Question, schema);
             var aiStartTime = DateTime.UtcNow;
-            var generatedSQL = await _openAIService.GenerateSQLAsync(prompt, cancellationToken);
+            var generatedSQL = await _aiService.GenerateSQLAsync(prompt, cancellationToken);
             var aiExecutionTime = (int)(DateTime.UtcNow - aiStartTime).TotalMilliseconds;
 
             // Validate the generated SQL
@@ -93,13 +98,13 @@ public class QueryService : IQueryService
             var totalExecutionTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
 
             // Calculate confidence score
-            var confidence = await _openAIService.CalculateConfidenceScoreAsync(request.Question, generatedSQL);
+            var confidence = await _aiService.CalculateConfidenceScoreAsync(request.Question, generatedSQL);
 
             // Generate visualization config if requested
             VisualizationConfig? visualization = null;
             if (request.Options.IncludeVisualization && queryResult.Data?.Length > 0)
             {
-                var vizConfigJson = await _openAIService.GenerateVisualizationConfigAsync(
+                var vizConfigJson = await _aiService.GenerateVisualizationConfigAsync(
                     request.Question, queryResult.Metadata.Columns, queryResult.Data);
 
                 // Parse visualization config (simplified for now)
@@ -111,7 +116,7 @@ public class QueryService : IQueryService
             }
 
             // Generate suggestions
-            var suggestions = await _openAIService.GenerateQuerySuggestionsAsync(request.Question, schema);
+            var suggestions = await _aiService.GenerateQuerySuggestionsAsync(request.Question, schema);
 
             var response = new QueryResponse
             {
@@ -215,7 +220,7 @@ public class QueryService : IQueryService
         try
         {
             var schema = await _schemaService.GetSchemaMetadataAsync();
-            var suggestions = await _openAIService.GenerateQuerySuggestionsAsync(context ?? "general business queries", schema);
+            var suggestions = await _aiService.GenerateQuerySuggestionsAsync(context ?? "general business queries", schema);
             return suggestions.ToList();
         }
         catch (Exception ex)
@@ -426,4 +431,80 @@ public class QueryService : IQueryService
             _logger.LogError(ex, "Error logging prompt details for user {UserId}", userId);
         }
     }
+
+    #region Advanced Query Processing Methods
+
+    public async Task<ProcessedQuery> ProcessAdvancedQueryAsync(string query, string userId, QueryContext? context = null)
+    {
+        try
+        {
+            _logger.LogInformation("Processing advanced query for user {UserId}: {Query}", userId, query);
+
+            var processedQuery = new ProcessedQuery
+            {
+                OriginalQuery = query,
+                UserId = userId,
+                Context = context,
+                ProcessedAt = DateTime.UtcNow
+            };
+
+            // Generate SQL using AI service
+            var schema = await _schemaService.GetSchemaMetadataAsync();
+            processedQuery.GeneratedSQL = await _aiService.GenerateSQLAsync(query);
+
+            // Calculate semantic similarity with previous queries
+            var similarQueries = await FindSimilarQueriesAsync(query, userId, 3);
+            processedQuery.SimilarQueries = similarQueries;
+
+            return processedQuery;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing advanced query for user {UserId}: {Query}", userId, query);
+            throw;
+        }
+    }
+
+    public async Task<double> CalculateSemanticSimilarityAsync(string query1, string query2)
+    {
+        try
+        {
+            // Fallback to simple text similarity
+            return CalculateSimpleTextSimilarity(query1, query2);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating semantic similarity");
+            return 0.0;
+        }
+    }
+
+    public async Task<List<ProcessedQuery>> FindSimilarQueriesAsync(string query, string userId, int limit = 5)
+    {
+        try
+        {
+            // In a real implementation, this would search a database of processed queries
+            // For now, return empty list
+            return new List<ProcessedQuery>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error finding similar queries for user {UserId}", userId);
+            return new List<ProcessedQuery>();
+        }
+    }
+
+    private double CalculateSimpleTextSimilarity(string text1, string text2)
+    {
+        // Simple Jaccard similarity
+        var words1 = text1.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+        var words2 = text2.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+
+        var intersection = words1.Intersect(words2).Count();
+        var union = words1.Union(words2).Count();
+
+        return union > 0 ? (double)intersection / union : 0.0;
+    }
+
+    #endregion
 }

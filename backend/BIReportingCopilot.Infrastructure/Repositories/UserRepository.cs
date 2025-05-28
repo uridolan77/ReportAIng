@@ -84,13 +84,15 @@ public class UserRepository : IUserRepository
         }
     }
 
-    public async Task<User?> GetByIdAsync(string userId)
+    #region Domain Model Operations (User)
+
+    public async Task<User?> GetUserByIdAsync(string userId)
     {
         try
         {
             var userEntity = await _context.Users
                 .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == userId);
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
             return userEntity != null ? MapToModel(userEntity) : null;
         }
@@ -101,13 +103,13 @@ public class UserRepository : IUserRepository
         }
     }
 
-    public async Task<User?> GetByUsernameAsync(string username)
+    public async Task<User?> GetUserByUsernameAsync(string username)
     {
         try
         {
             var userEntity = await _context.Users
                 .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Username == username);
+                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
 
             return userEntity != null ? MapToModel(userEntity) : null;
         }
@@ -118,13 +120,13 @@ public class UserRepository : IUserRepository
         }
     }
 
-    public async Task<User?> GetByEmailAsync(string email)
+    public async Task<User?> GetUserByEmailAsync(string email)
     {
         try
         {
             var userEntity = await _context.Users
                 .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Email == email);
+                .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
 
             return userEntity != null ? MapToModel(userEntity) : null;
         }
@@ -134,6 +136,13 @@ public class UserRepository : IUserRepository
             return null;
         }
     }
+
+    // Legacy methods for backward compatibility
+    public async Task<User?> GetByIdAsync(string userId) => await GetUserByIdAsync(userId);
+    public async Task<User?> GetByUsernameAsync(string username) => await GetUserByUsernameAsync(username);
+    public async Task<User?> GetByEmailAsync(string email) => await GetUserByEmailAsync(email);
+
+    #endregion
 
     public async Task<List<string>> GetUserPermissionsAsync(string userId)
     {
@@ -186,7 +195,7 @@ public class UserRepository : IUserRepository
         }
     }
 
-    public async Task<User> CreateUserAsync(User user)
+    public async Task<User> CreateUserAsync(User user, string passwordHash)
     {
         try
         {
@@ -194,6 +203,7 @@ public class UserRepository : IUserRepository
             user.CreatedDate = DateTime.UtcNow;
 
             var userEntity = MapToEntity(user);
+            userEntity.PasswordHash = passwordHash;
             _context.Users.Add(userEntity);
             await _context.SaveChangesAsync();
 
@@ -205,6 +215,12 @@ public class UserRepository : IUserRepository
             _logger.LogError(ex, "Error creating user {Username}", user.Username);
             throw;
         }
+    }
+
+    // Legacy method for backward compatibility
+    public async Task<User> CreateUserAsync(User user)
+    {
+        return await CreateUserAsync(user, string.Empty);
     }
 
     public async Task<User> CreateUserWithPasswordAsync(User user, string password)
@@ -339,7 +355,7 @@ public class UserRepository : IUserRepository
             PhoneNumber = entity.PhoneNumber,
             IsPhoneNumberVerified = entity.IsPhoneNumberVerified,
             LastMfaValidationDate = entity.LastMfaValidationDate,
-            BackupCodes = !string.IsNullOrEmpty(entity.BackupCodes) 
+            BackupCodes = !string.IsNullOrEmpty(entity.BackupCodes)
                 ? entity.BackupCodes.Split(',', StringSplitOptions.RemoveEmptyEntries)
                 : Array.Empty<string>()
         };
@@ -404,4 +420,417 @@ public class UserRepository : IUserRepository
             }
         };
     }
+
+    #region Additional Unified Interface Methods
+
+    public async Task<List<User>> GetActiveUsersAsync()
+    {
+        try
+        {
+            var entities = await _context.Users
+                .Where(u => u.IsActive)
+                .OrderBy(u => u.Username)
+                .ToListAsync();
+
+            return entities.Select(MapToModel).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting active users");
+            return new List<User>();
+        }
+    }
+
+    public async Task<List<User>> SearchUsersAsync(string searchTerm, int page = 1, int pageSize = 20)
+    {
+        try
+        {
+            var query = _context.Users
+                .Where(u => u.IsActive &&
+                           (u.Username.Contains(searchTerm) ||
+                            u.Email.Contains(searchTerm) ||
+                            u.DisplayName.Contains(searchTerm)));
+
+            var entities = await query
+                .OrderBy(u => u.Username)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return entities.Select(MapToModel).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching users with term: {SearchTerm}", searchTerm);
+            return new List<User>();
+        }
+    }
+
+    public async Task<UserEntity?> GetEntityByIdAsync(Guid userId)
+    {
+        try
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == userId.ToString() && u.IsActive);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user entity by ID: {UserId}", userId);
+            return null;
+        }
+    }
+
+    public async Task<UserEntity?> GetEntityByUsernameAsync(string username)
+    {
+        try
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user entity by username: {Username}", username);
+            return null;
+        }
+    }
+
+    public async Task<UserEntity?> GetEntityByEmailAsync(string email)
+    {
+        try
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user entity by email: {Email}", email);
+            return null;
+        }
+    }
+
+    public async Task<UserEntity> CreateEntityAsync(UserEntity entity)
+    {
+        try
+        {
+            entity.Id = string.IsNullOrEmpty(entity.Id) ? Guid.NewGuid().ToString() : entity.Id;
+            entity.CreatedDate = DateTime.UtcNow;
+
+            _context.Users.Add(entity);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Created user entity: {UserId}", entity.Id);
+            return entity;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user entity: {Username}", entity.Username);
+            throw;
+        }
+    }
+
+    public async Task UpdateEntityAsync(UserEntity entity)
+    {
+        try
+        {
+            entity.UpdatedDate = DateTime.UtcNow;
+            _context.Users.Update(entity);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Updated user entity: {UserId}", entity.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user entity: {UserId}", entity.Id);
+            throw;
+        }
+    }
+
+    public async Task<bool> UpdatePasswordHashAsync(string userId, string passwordHash)
+    {
+        try
+        {
+            var entity = await _context.Users.FindAsync(userId);
+            if (entity == null) return false;
+
+            entity.PasswordHash = passwordHash;
+            entity.UpdatedDate = DateTime.UtcNow;
+            entity.UpdatedBy = "System";
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating password hash for user: {UserId}", userId);
+            return false;
+        }
+    }
+
+    public async Task<bool> UpdateLastLoginAsync(string userId, DateTime loginDate)
+    {
+        try
+        {
+            var entity = await _context.Users.FindAsync(userId);
+            if (entity == null) return false;
+
+            entity.LastLoginDate = loginDate;
+            entity.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating last login for user: {UserId}", userId);
+            return false;
+        }
+    }
+
+    public async Task<bool> UsernameExistsAsync(string username)
+    {
+        try
+        {
+            return await _context.Users.AnyAsync(u => u.Username == username && u.IsActive);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking username existence: {Username}", username);
+            return false;
+        }
+    }
+
+    public async Task<bool> EmailExistsAsync(string email)
+    {
+        try
+        {
+            return await _context.Users.AnyAsync(u => u.Email == email && u.IsActive);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking email existence: {Email}", email);
+            return false;
+        }
+    }
+
+    public async Task<string?> GetPasswordHashAsync(string userId)
+    {
+        try
+        {
+            var entity = await _context.Users.FindAsync(userId);
+            return entity?.PasswordHash;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting password hash for user: {UserId}", userId);
+            return null;
+        }
+    }
+
+    // MFA, Activity, Preferences, Bulk Operations, and Statistics methods would be implemented here
+    // For brevity, providing placeholder implementations
+
+    public async Task<bool> UpdateMfaSettingsAsync(string userId, bool enabled, string? secret, MfaMethod method)
+    {
+        var user = await GetUserByIdAsync(userId);
+        if (user == null) return false;
+
+        user.IsMfaEnabled = enabled;
+        user.MfaSecret = secret;
+        user.MfaMethod = method;
+
+        await UpdateUserAsync(user);
+        return true;
+    }
+
+    public async Task<bool> UpdatePhoneNumberAsync(string userId, string? phoneNumber, bool isVerified)
+    {
+        var user = await GetUserByIdAsync(userId);
+        if (user == null) return false;
+
+        user.PhoneNumber = phoneNumber;
+        user.IsPhoneNumberVerified = isVerified;
+
+        await UpdateUserAsync(user);
+        return true;
+    }
+
+    public async Task<bool> UpdateBackupCodesAsync(string userId, string[] backupCodes)
+    {
+        var user = await GetUserByIdAsync(userId);
+        if (user == null) return false;
+
+        user.BackupCodes = backupCodes;
+        await UpdateUserAsync(user);
+        return true;
+    }
+
+    public async Task<bool> UpdateLastMfaValidationAsync(string userId, DateTime validationDate)
+    {
+        var user = await GetUserByIdAsync(userId);
+        if (user == null) return false;
+
+        user.LastMfaValidationDate = validationDate;
+        await UpdateUserAsync(user);
+        return true;
+    }
+
+    public async Task<bool> UpdateActivitySummaryAsync(string userId, UserActivitySummary activitySummary)
+    {
+        var user = await GetUserByIdAsync(userId);
+        if (user == null) return false;
+
+        user.ActivitySummary = activitySummary;
+        await UpdateUserAsync(user);
+        return true;
+    }
+
+    public async Task<UserActivitySummary?> GetActivitySummaryAsync(string userId)
+    {
+        var user = await GetUserByIdAsync(userId);
+        return user?.ActivitySummary;
+    }
+
+    public async Task RecordUserActivityAsync(string userId, string activityType, Dictionary<string, object>? metadata = null)
+    {
+        // Implementation would record activity in activity log table
+        _logger.LogInformation("User activity recorded: {UserId} - {ActivityType}", userId, activityType);
+    }
+
+    public async Task<bool> UpdatePreferencesAsync(string userId, UserPreferences preferences)
+    {
+        var user = await GetUserByIdAsync(userId);
+        if (user == null) return false;
+
+        user.Preferences = preferences;
+        await UpdateUserAsync(user);
+        return true;
+    }
+
+    public async Task<UserPreferences?> GetPreferencesAsync(string userId)
+    {
+        var user = await GetUserByIdAsync(userId);
+        return user?.Preferences;
+    }
+
+    public async Task<List<User>> GetUsersByIdsAsync(string[] userIds)
+    {
+        try
+        {
+            var entities = await _context.Users
+                .Where(u => userIds.Contains(u.Id) && u.IsActive)
+                .ToListAsync();
+
+            return entities.Select(MapToModel).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting users by IDs");
+            return new List<User>();
+        }
+    }
+
+    public async Task<List<User>> GetUsersByRoleAsync(string role)
+    {
+        try
+        {
+            var entities = await _context.Users
+                .Where(u => u.IsActive && u.Roles.Contains(role))
+                .ToListAsync();
+
+            return entities.Select(MapToModel).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting users by role: {Role}", role);
+            return new List<User>();
+        }
+    }
+
+    public async Task<bool> BulkUpdateUserStatusAsync(string[] userIds, bool isActive)
+    {
+        try
+        {
+            var entities = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .ToListAsync();
+
+            foreach (var entity in entities)
+            {
+                entity.IsActive = isActive;
+                entity.UpdatedDate = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk updating user status");
+            return false;
+        }
+    }
+
+    public async Task<int> GetTotalUserCountAsync()
+    {
+        try
+        {
+            return await _context.Users.CountAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting total user count");
+            return 0;
+        }
+    }
+
+    public async Task<int> GetActiveUserCountAsync()
+    {
+        try
+        {
+            return await _context.Users.CountAsync(u => u.IsActive);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting active user count");
+            return 0;
+        }
+    }
+
+    public async Task<List<User>> GetUsersCreatedInRangeAsync(DateTime startDate, DateTime endDate)
+    {
+        try
+        {
+            var entities = await _context.Users
+                .Where(u => u.CreatedDate >= startDate && u.CreatedDate <= endDate)
+                .ToListAsync();
+
+            return entities.Select(MapToModel).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting users created in range");
+            return new List<User>();
+        }
+    }
+
+    public async Task<Dictionary<string, int>> GetUserLoginStatsAsync(DateTime startDate, DateTime endDate)
+    {
+        try
+        {
+            var stats = await _context.Users
+                .Where(u => u.LastLoginDate >= startDate && u.LastLoginDate <= endDate)
+                .GroupBy(u => u.LastLoginDate.HasValue ? u.LastLoginDate.Value.Date : DateTime.MinValue)
+                .Select(g => new { Date = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Date.ToString("yyyy-MM-dd"), x => x.Count);
+
+            return stats;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user login stats");
+            return new Dictionary<string, int>();
+        }
+    }
+
+    #endregion
 }
