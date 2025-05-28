@@ -443,55 +443,8 @@ if (!builder.Environment.IsEnvironment("Test"))
 // Response compression
 builder.Services.AddOptimizedResponseCompression();
 
-// Configure Swagger/OpenAPI
+// Configure Swagger/OpenAPI (already configured by AddVersionedSwagger above)
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "BI Reporting Copilot API",
-        Version = "v1",
-        Description = "AI-Powered Business Intelligence Reporting Copilot API",
-        Contact = new OpenApiContact
-        {
-            Name = "BI Copilot Team",
-            Email = "support@company.com"
-        }
-    });
-
-    // Configure JWT authentication in Swagger
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    });
-
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-
-    // Include XML comments
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-    {
-        c.IncludeXmlComments(xmlPath);
-    }
-});
 
 // Configure Fast Health Checks (using cached status from startup validation)
 var healthChecks = builder.Services.AddHealthChecks();

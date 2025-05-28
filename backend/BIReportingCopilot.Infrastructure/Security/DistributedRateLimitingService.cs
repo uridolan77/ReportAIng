@@ -11,24 +11,47 @@ namespace BIReportingCopilot.Infrastructure.Security;
 /// </summary>
 public class DistributedRateLimitingService : IRateLimitingService
 {
-    private readonly IConnectionMultiplexer _redis;
-    private readonly IDatabase _database;
+    private readonly IConnectionMultiplexer? _redis;
+    private readonly IDatabase? _database;
     private readonly ILogger<DistributedRateLimitingService> _logger;
     private readonly RateLimitingConfiguration _config;
+    private readonly bool _isRedisAvailable;
 
     public DistributedRateLimitingService(
-        IConnectionMultiplexer redis,
+        IConnectionMultiplexer? redis,
         ILogger<DistributedRateLimitingService> logger,
         IOptions<RateLimitingConfiguration> config)
     {
         _redis = redis;
-        _database = redis.GetDatabase();
+        _database = redis?.GetDatabase();
         _logger = logger;
         _config = config.Value;
+        _isRedisAvailable = redis != null;
+
+        if (!_isRedisAvailable)
+        {
+            _logger.LogInformation("Redis is not available - rate limiting will fail open");
+        }
     }
 
     public async Task<RateLimitResult> CheckRateLimitAsync(string identifier, RateLimitPolicy policy, CancellationToken cancellationToken = default)
     {
+        // If Redis is not available, fail open (allow all requests)
+        if (!_isRedisAvailable || _database == null)
+        {
+            _logger.LogDebug("Redis not available - allowing request for {Identifier} on policy {Policy}", identifier, policy.Name);
+            return new RateLimitResult
+            {
+                IsAllowed = true,
+                RequestCount = 0,
+                RequestLimit = policy.RequestLimit,
+                WindowSizeSeconds = policy.WindowSizeSeconds,
+                ResetTime = DateTimeOffset.UtcNow.AddSeconds(policy.WindowSizeSeconds),
+                RetryAfter = TimeSpan.Zero,
+                PolicyName = policy.Name
+            };
+        }
+
         try
         {
             var key = GetRateLimitKey(identifier, policy.Name);
@@ -102,7 +125,7 @@ public class DistributedRateLimitingService : IRateLimitingService
 
             if (!allowed)
             {
-                _logger.LogWarning("Rate limit exceeded for {Identifier} on policy {Policy}: {Count}/{Limit} requests", 
+                _logger.LogWarning("Rate limit exceeded for {Identifier} on policy {Policy}: {Count}/{Limit} requests",
                     identifier, policy.Name, currentCount, limit);
             }
 
@@ -111,7 +134,7 @@ public class DistributedRateLimitingService : IRateLimitingService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error checking rate limit for {Identifier} on policy {Policy}", identifier, policy.Name);
-            
+
             // Fail open - allow request if rate limiting service is down
             return new RateLimitResult
             {
@@ -127,29 +150,45 @@ public class DistributedRateLimitingService : IRateLimitingService
     }
 
     public async Task<Dictionary<string, RateLimitResult>> CheckMultipleRateLimitsAsync(
-        string identifier, 
-        IEnumerable<RateLimitPolicy> policies, 
+        string identifier,
+        IEnumerable<RateLimitPolicy> policies,
         CancellationToken cancellationToken = default)
     {
         var results = new Dictionary<string, RateLimitResult>();
-        
+
         foreach (var policy in policies)
         {
             var result = await CheckRateLimitAsync(identifier, policy, cancellationToken);
             results[policy.Name] = result;
-            
+
             // If any policy is violated, we can stop checking others
             if (!result.IsAllowed)
             {
                 break;
             }
         }
-        
+
         return results;
     }
 
     public async Task<RateLimitStatistics> GetRateLimitStatisticsAsync(string identifier, string policyName, CancellationToken cancellationToken = default)
     {
+        // If Redis is not available, return empty statistics
+        if (!_isRedisAvailable || _database == null)
+        {
+            return new RateLimitStatistics
+            {
+                Identifier = identifier,
+                PolicyName = policyName,
+                CurrentWindowRequests = 0,
+                WindowStartTime = DateTimeOffset.UtcNow,
+                WindowEndTime = DateTimeOffset.UtcNow,
+                RequestTimestamps = new List<DateTimeOffset>(),
+                AverageRequestsPerMinute = 0,
+                PeakRequestsPerMinute = 0
+            };
+        }
+
         try
         {
             var key = GetRateLimitKey(identifier, policyName);
@@ -158,12 +197,12 @@ public class DistributedRateLimitingService : IRateLimitingService
 
             // Get current window data
             var entries = await _database.SortedSetRangeByScoreWithScoresAsync(
-                key, 
-                windowStart.ToUnixTimeSeconds(), 
+                key,
+                windowStart.ToUnixTimeSeconds(),
                 now.ToUnixTimeSeconds());
 
             var requestTimes = entries.Select(e => DateTimeOffset.FromUnixTimeSeconds((long)e.Score)).ToList();
-            
+
             var statistics = new RateLimitStatistics
             {
                 Identifier = identifier,
@@ -181,7 +220,7 @@ public class DistributedRateLimitingService : IRateLimitingService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting rate limit statistics for {Identifier} on policy {Policy}", identifier, policyName);
-            
+
             return new RateLimitStatistics
             {
                 Identifier = identifier,
@@ -198,11 +237,18 @@ public class DistributedRateLimitingService : IRateLimitingService
 
     public async Task ResetRateLimitAsync(string identifier, string policyName, CancellationToken cancellationToken = default)
     {
+        // If Redis is not available, nothing to reset
+        if (!_isRedisAvailable || _database == null)
+        {
+            _logger.LogDebug("Redis not available - cannot reset rate limit for {Identifier} on policy {Policy}", identifier, policyName);
+            return;
+        }
+
         try
         {
             var key = GetRateLimitKey(identifier, policyName);
             await _database.KeyDeleteAsync(key);
-            
+
             _logger.LogInformation("Reset rate limit for {Identifier} on policy {Policy}", identifier, policyName);
         }
         catch (Exception ex)
@@ -213,6 +259,12 @@ public class DistributedRateLimitingService : IRateLimitingService
 
     public async Task<bool> IsRateLimitActiveAsync(string identifier, string policyName, CancellationToken cancellationToken = default)
     {
+        // If Redis is not available, rate limit is not active
+        if (!_isRedisAvailable || _database == null)
+        {
+            return false;
+        }
+
         try
         {
             var key = GetRateLimitKey(identifier, policyName);
