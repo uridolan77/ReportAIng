@@ -60,11 +60,11 @@ public class GlobalExceptionHandlerMiddleware
             requestId, userId, endpoint);
 
         // Record metrics
-        _metricsCollector.IncrementCounter("api_errors_total", new Dictionary<string, string>
+        _metricsCollector.IncrementCounter("api_errors_total", new()
         {
-            ["exception_type"] = exception.GetType().Name,
-            ["endpoint"] = endpoint,
-            ["user_id"] = userId
+            { "exception_type", exception.GetType().Name },
+            { "endpoint", endpoint },
+            { "user_id", userId }
         });
 
         // Create error response

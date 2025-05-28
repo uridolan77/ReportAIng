@@ -291,7 +291,6 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 // Register Redis connection multiplexer for advanced caching features
-var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
 if (!string.IsNullOrEmpty(redisConnectionString))
 {
     builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(provider =>

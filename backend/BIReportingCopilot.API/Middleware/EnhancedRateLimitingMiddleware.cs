@@ -28,7 +28,7 @@ public class EnhancedRateLimitingMiddleware
         _rateLimitingService = rateLimitingService;
         _logger = logger;
         _config = config.Value;
-        
+
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -65,8 +65,8 @@ public class EnhancedRateLimitingMiddleware
         {
             // Check all applicable rate limit policies
             var rateLimitResults = await _rateLimitingService.CheckMultipleRateLimitsAsync(
-                clientIdentifier, 
-                applicablePolicies, 
+                clientIdentifier,
+                applicablePolicies,
                 context.RequestAborted);
 
             // Find the most restrictive violated policy
@@ -86,7 +86,7 @@ public class EnhancedRateLimitingMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error in rate limiting middleware for client {ClientId}", clientIdentifier);
-            
+
             // Fail open if configured to do so
             if (_config.FailOpen)
             {
@@ -102,7 +102,7 @@ public class EnhancedRateLimitingMiddleware
     private bool ShouldSkipRateLimiting(HttpContext context)
     {
         var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
-        
+
         // Skip health checks and monitoring endpoints
         var skipPaths = new[]
         {
@@ -250,7 +250,7 @@ public class EnhancedRateLimitingMiddleware
 
     private async Task HandleRateLimitExceededAsync(HttpContext context, RateLimitResult violatedPolicy, string clientIdentifier)
     {
-        _logger.LogWarning("Rate limit exceeded for client {ClientId} on policy {Policy}: {Count}/{Limit} requests", 
+        _logger.LogWarning("Rate limit exceeded for client {ClientId} on policy {Policy}: {Count}/{Limit} requests",
             clientIdentifier, violatedPolicy.PolicyName, violatedPolicy.RequestCount, violatedPolicy.RequestLimit);
 
         context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
@@ -262,7 +262,7 @@ public class EnhancedRateLimitingMiddleware
         context.Response.Headers.Add("X-RateLimit-Reset", violatedPolicy.ResetTime.ToUnixTimeSeconds().ToString());
         context.Response.Headers.Add("Retry-After", ((int)violatedPolicy.RetryAfter.TotalSeconds).ToString());
 
-        var errorResponse = ApiResponse<object>.Error(
+        var errorResponse = ApiResponse<object>.CreateError(
             ApiErrorCodes.RATE_LIMITED,
             "Rate limit exceeded. Please try again later.",
             new
@@ -285,7 +285,7 @@ public class EnhancedRateLimitingMiddleware
         context.Response.StatusCode = (int)HttpStatusCode.ServiceUnavailable;
         context.Response.ContentType = "application/json";
 
-        var errorResponse = ApiResponse<object>.Error(
+        var errorResponse = ApiResponse<object>.CreateError(
             ApiErrorCodes.SERVICE_UNAVAILABLE,
             "Rate limiting service is temporarily unavailable");
 
@@ -303,7 +303,7 @@ public class EnhancedRateLimitingMiddleware
         if (mostRestrictive != null)
         {
             var remaining = Math.Max(0, mostRestrictive.RequestLimit - mostRestrictive.RequestCount);
-            
+
             context.Response.Headers.Add("X-RateLimit-Limit", mostRestrictive.RequestLimit.ToString());
             context.Response.Headers.Add("X-RateLimit-Remaining", remaining.ToString());
             context.Response.Headers.Add("X-RateLimit-Reset", mostRestrictive.ResetTime.ToUnixTimeSeconds().ToString());

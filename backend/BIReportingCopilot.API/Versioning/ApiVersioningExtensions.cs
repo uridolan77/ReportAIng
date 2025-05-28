@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Microsoft.OpenApi.Models;
 using BIReportingCopilot.Core.Models;
+using Microsoft.AspNetCore.Mvc.Versioning;
 
 namespace BIReportingCopilot.API.Versioning;
 
@@ -300,7 +301,7 @@ public abstract class VersionedApiController : ControllerBase
     /// </summary>
     protected IActionResult Error<T>(string code, string message, object? details = null)
     {
-        var response = ApiResponse<T>.Error(code, message, details);
+        var response = ApiResponse<T>.CreateError(code, message, details);
         response.ApiVersion = CurrentApiVersion.ToString();
         return BadRequest(response);
     }

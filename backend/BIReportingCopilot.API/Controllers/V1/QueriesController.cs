@@ -85,17 +85,34 @@ public class QueriesController : VersionedApiController
             var confidence = await _aiService.CalculateConfidenceScoreAsync(request.NaturalLanguageQuery, sql);
 
             // Execute query
-            var queryResponse = await _queryService.ExecuteQueryAsync(sql, cancellationToken);
-            queryResponse.ConfidenceScore = confidence;
+            var queryRequest = new BIReportingCopilot.Core.Models.QueryRequest
+            {
+                Question = request.NaturalLanguageQuery,
+                SessionId = Guid.NewGuid().ToString(),
+                Options = new QueryOptions
+                {
+                    MaxRows = request.MaxRows ?? 1000,
+                    TimeoutSeconds = request.TimeoutSeconds ?? 30,
+                    EnableCache = request.CacheResults
+                }
+            };
+            var queryResponse = await _queryService.ProcessQueryAsync(queryRequest, userId, cancellationToken);
+            queryResponse.Confidence = confidence;
 
             // Generate explanation if requested
             if (request.IncludeExplanation)
             {
-                queryResponse.Explanation = await _aiService.GenerateInsightAsync(sql, queryResponse.Data.ToArray());
+                // Store explanation in the Result metadata or create a custom property
+                var explanation = await _aiService.GenerateInsightAsync(sql, queryResponse.Result?.Data ?? new object[0]);
+                // Note: QueryResponse doesn't have Explanation property, so we could add it to suggestions or metadata
+                var currentSuggestions = queryResponse.Suggestions?.ToList() ?? new List<string>();
+                currentSuggestions.Insert(0, $"Explanation: {explanation}");
+                queryResponse.Suggestions = currentSuggestions.ToArray();
             }
 
             // Record metrics
-            _metricsCollector.RecordQueryExecution("v1", stopwatch.ElapsedMilliseconds, queryResponse.Success, queryResponse.RowCount);
+            var rowCount = queryResponse.Result?.Metadata?.RowCount ?? 0;
+            _metricsCollector.RecordQueryExecution("v1", stopwatch.ElapsedMilliseconds, queryResponse.Success, rowCount);
 
             var metadata = new ApiMetadata
             {
@@ -108,7 +125,7 @@ public class QueriesController : VersionedApiController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error executing query for user {UserId}: {Query}", userId, request.NaturalLanguageQuery);
-            _metricsCollector.IncrementCounter("query_errors_total", new() { ["version"] = "v1", ["user_id"] = userId });
+            _metricsCollector.IncrementCounter("query_errors_total", new() { { "version", "v1" }, { "user_id", userId } });
             throw; // Let global exception handler deal with it
         }
     }
@@ -237,17 +254,17 @@ public class QueriesController : VersionedApiController
             // Process feedback (this would typically involve storing it and updating AI models)
             var feedback = new QueryFeedback
             {
-                Rating = request.Rating,
-                Comments = request.Comments,
-                IsHelpful = request.IsHelpful
+                QueryId = request.QueryId,
+                Feedback = request.IsHelpful ? "positive" : "negative",
+                Comments = request.Comments
             };
 
             // Record metrics
             _metricsCollector.IncrementCounter("feedback_received_total", new()
             {
-                ["version"] = "v1",
-                ["user_id"] = userId,
-                ["rating"] = request.Rating.ToString()
+                { "version", "v1" },
+                { "user_id", userId },
+                { "rating", request.Rating.ToString() }
             });
 
             return Ok();

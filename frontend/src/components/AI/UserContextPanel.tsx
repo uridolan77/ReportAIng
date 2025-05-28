@@ -1,35 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
   Card,
-  CardContent,
   Typography,
-  Chip,
+  Tag,
   List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Grid,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  CircularProgress,
+  Row,
+  Col,
+  Collapse,
+  Spin,
   Alert,
-  Divider,
   Avatar,
   Badge,
-} from '@mui/material';
+  Space,
+  Flex,
+} from 'antd';
 import {
-  ExpandMore as ExpandMoreIcon,
-  Person as PersonIcon,
-  TableChart as TableChartIcon,
-  FilterList as FilterListIcon,
-  Pattern as PatternIcon,
-  TrendingUp as TrendingUpIcon,
-  Schedule as ScheduleIcon,
-  Domain as DomainIcon,
-  Insights as InsightsIcon,
-} from '@mui/icons-material';
+  DownOutlined as ExpandMoreIcon,
+  UserOutlined as PersonIcon,
+  TableOutlined as TableChartIcon,
+  FilterOutlined as FilterListIcon,
+  AppstoreOutlined as PatternIcon,
+  TrendingUpOutlined as TrendingUpIcon,
+  ClockCircleOutlined as ScheduleIcon,
+  GlobalOutlined as DomainIcon,
+  BulbOutlined as InsightsIcon,
+} from '@ant-design/icons';
 import { ApiService, UserContextResponse } from '../../services/api';
 
 const UserContextPanel: React.FC = () => {
@@ -56,10 +51,10 @@ const UserContextPanel: React.FC = () => {
   const getDomainColor = (domain: string) => {
     switch (domain.toLowerCase()) {
       case 'sales': return 'success';
-      case 'marketing': return 'primary';
-      case 'finance': return 'warning';
-      case 'hr': return 'info';
-      case 'operations': return 'secondary';
+      case 'marketing': return 'blue';
+      case 'finance': return 'orange';
+      case 'hr': return 'cyan';
+      case 'operations': return 'purple';
       default: return 'default';
     }
   };
@@ -86,236 +81,230 @@ const UserContextPanel: React.FC = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
-        <CircularProgress />
-      </Box>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+        <Spin size="large" />
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        {error}
-      </Alert>
+      <Alert
+        message={error}
+        type="error"
+        style={{ marginBottom: 16 }}
+        showIcon
+      />
     );
   }
 
   if (!userContext) {
     return (
-      <Alert severity="info" sx={{ mb: 2 }}>
-        No user context available. Start asking questions to build your AI profile!
-      </Alert>
+      <Alert
+        message="No user context available. Start asking questions to build your AI profile!"
+        type="info"
+        style={{ marginBottom: 16 }}
+        showIcon
+      />
     );
   }
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
-        <PersonIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+    <div>
+      <Typography.Title level={3}>
+        <PersonIcon style={{ marginRight: 8 }} />
         Your AI Profile
-      </Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom>
+      </Typography.Title>
+      <Typography.Text type="secondary">
         AI learns from your query patterns to provide better suggestions and insights
-      </Typography>
+      </Typography.Text>
 
       {/* Domain and Overview */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Box display="flex" alignItems="center" mb={2}>
-                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                  <DomainIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6">Domain Focus</Typography>
-                  <Chip 
-                    label={userContext.domain || 'General'}
-                    color={getDomainColor(userContext.domain)}
-                    size="small"
-                  />
-                </Box>
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Box display="flex" alignItems="center" mb={2}>
-                <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                  <ScheduleIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6">Last Updated</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {formatDate(userContext.lastUpdated)}
-                  </Typography>
-                </Box>
-              </Box>
-            </Grid>
-          </Grid>
-        </CardContent>
+      <Card style={{ marginBottom: 24 }}>
+        <Row gutter={24}>
+          <Col xs={24} md={12}>
+            <Flex align="center" style={{ marginBottom: 16 }}>
+              <Avatar style={{ backgroundColor: '#1890ff', marginRight: 16 }}>
+                <DomainIcon />
+              </Avatar>
+              <div>
+                <Typography.Title level={5} style={{ margin: 0 }}>Domain Focus</Typography.Title>
+                <Tag
+                  color={getDomainColor(userContext.domain)}
+                >
+                  {userContext.domain || 'General'}
+                </Tag>
+              </div>
+            </Flex>
+          </Col>
+          <Col xs={24} md={12}>
+            <Flex align="center" style={{ marginBottom: 16 }}>
+              <Avatar style={{ backgroundColor: '#722ed1', marginRight: 16 }}>
+                <ScheduleIcon />
+              </Avatar>
+              <div>
+                <Typography.Title level={5} style={{ margin: 0 }}>Last Updated</Typography.Title>
+                <Typography.Text type="secondary">
+                  {formatDate(userContext.lastUpdated)}
+                </Typography.Text>
+              </div>
+            </Flex>
+          </Col>
+        </Row>
       </Card>
 
       {/* Preferred Tables */}
       {userContext.preferredTables.length > 0 && (
-        <Accordion sx={{ mb: 2 }}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box display="flex" alignItems="center">
-              <TableChartIcon sx={{ mr: 1 }} />
-              <Typography variant="h6">
-                Preferred Tables
-              </Typography>
-              <Badge 
-                badgeContent={userContext.preferredTables.length} 
-                color="primary" 
-                sx={{ ml: 2 }}
-              >
-                <Box />
-              </Badge>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box display="flex" flexWrap="wrap" gap={1}>
-              {userContext.preferredTables.map((table, index) => (
-                <Chip 
-                  key={index}
-                  label={table}
-                  variant="outlined"
-                  icon={<TableChartIcon />}
-                  size="small"
+        <Collapse style={{ marginBottom: 16 }}>
+          <Collapse.Panel
+            header={
+              <Flex align="center">
+                <TableChartIcon style={{ marginRight: 8 }} />
+                <Typography.Title level={5} style={{ margin: 0 }}>
+                  Preferred Tables
+                </Typography.Title>
+                <Badge
+                  count={userContext.preferredTables.length}
+                  style={{ marginLeft: 16 }}
                 />
+              </Flex>
+            }
+            key="1"
+          >
+            <Space wrap>
+              {userContext.preferredTables.map((table, index) => (
+                <Tag
+                  key={index}
+                  icon={<TableChartIcon />}
+                  color="blue"
+                >
+                  {table}
+                </Tag>
               ))}
-            </Box>
-          </AccordionDetails>
-        </Accordion>
+            </Space>
+          </Collapse.Panel>
+        </Collapse>
       )}
 
       {/* Common Filters */}
       {userContext.commonFilters.length > 0 && (
-        <Accordion sx={{ mb: 2 }}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box display="flex" alignItems="center">
-              <FilterListIcon sx={{ mr: 1 }} />
-              <Typography variant="h6">
-                Common Filters
-              </Typography>
-              <Badge 
-                badgeContent={userContext.commonFilters.length} 
-                color="secondary" 
-                sx={{ ml: 2 }}
-              >
-                <Box />
-              </Badge>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box display="flex" flexWrap="wrap" gap={1}>
-              {userContext.commonFilters.map((filter, index) => (
-                <Chip 
-                  key={index}
-                  label={filter}
-                  variant="outlined"
-                  icon={<FilterListIcon />}
-                  size="small"
-                  color="secondary"
+        <Collapse style={{ marginBottom: 16 }}>
+          <Collapse.Panel
+            header={
+              <Flex align="center">
+                <FilterListIcon style={{ marginRight: 8 }} />
+                <Typography.Title level={5} style={{ margin: 0 }}>
+                  Common Filters
+                </Typography.Title>
+                <Badge
+                  count={userContext.commonFilters.length}
+                  style={{ marginLeft: 16 }}
                 />
+              </Flex>
+            }
+            key="1"
+          >
+            <Space wrap>
+              {userContext.commonFilters.map((filter, index) => (
+                <Tag
+                  key={index}
+                  icon={<FilterListIcon />}
+                  color="purple"
+                >
+                  {filter}
+                </Tag>
               ))}
-            </Box>
-          </AccordionDetails>
-        </Accordion>
+            </Space>
+          </Collapse.Panel>
+        </Collapse>
       )}
 
       {/* Query Patterns */}
       {userContext.recentPatterns.length > 0 && (
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box display="flex" alignItems="center">
-              <PatternIcon sx={{ mr: 1 }} />
-              <Typography variant="h6">
-                Query Patterns
-              </Typography>
-              <Badge 
-                badgeContent={userContext.recentPatterns.length} 
-                color="info" 
-                sx={{ ml: 2 }}
-              >
-                <Box />
-              </Badge>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <List>
-              {userContext.recentPatterns.map((pattern, index) => (
-                <React.Fragment key={index}>
-                  <ListItem>
-                    <ListItemIcon>
-                      {getIntentIcon(pattern.intent)}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Box display="flex" alignItems="center" justifyContent="space-between">
-                          <Typography variant="body1" sx={{ flexGrow: 1 }}>
-                            {pattern.pattern}
-                          </Typography>
-                          <Box display="flex" gap={1}>
-                            <Chip 
-                              label={`${pattern.frequency}x`}
-                              size="small"
-                              color="primary"
-                            />
-                            <Chip 
-                              label={pattern.intent}
-                              size="small"
-                              variant="outlined"
-                            />
-                          </Box>
-                        </Box>
-                      }
-                      secondary={
-                        <Box mt={1}>
-                          <Typography variant="caption" color="text.secondary">
-                            Last used: {formatDate(pattern.lastUsed)}
-                          </Typography>
-                          {pattern.associatedTables.length > 0 && (
-                            <Box mt={1} display="flex" flexWrap="wrap" gap={0.5}>
+        <Collapse>
+          <Collapse.Panel
+            header={
+              <Flex align="center">
+                <PatternIcon style={{ marginRight: 8 }} />
+                <Typography.Title level={5} style={{ margin: 0 }}>
+                  Query Patterns
+                </Typography.Title>
+                <Badge
+                  count={userContext.recentPatterns.length}
+                  style={{ marginLeft: 16 }}
+                />
+              </Flex>
+            }
+            key="1"
+          >
+            <List
+              dataSource={userContext.recentPatterns}
+              renderItem={(pattern, index) => (
+                <List.Item>
+                  <List.Item.Meta
+                    avatar={getIntentIcon(pattern.intent)}
+                    title={
+                      <Flex justify="space-between" align="center">
+                        <Typography.Text style={{ flex: 1 }}>
+                          {pattern.pattern}
+                        </Typography.Text>
+                        <Space>
+                          <Tag color="blue">
+                            {pattern.frequency}x
+                          </Tag>
+                          <Tag>
+                            {pattern.intent}
+                          </Tag>
+                        </Space>
+                      </Flex>
+                    }
+                    description={
+                      <div>
+                        <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+                          Last used: {formatDate(pattern.lastUsed)}
+                        </Typography.Text>
+                        {pattern.associatedTables.length > 0 && (
+                          <div style={{ marginTop: 8 }}>
+                            <Space wrap>
                               {pattern.associatedTables.map((table, tableIndex) => (
-                                <Chip 
+                                <Tag
                                   key={tableIndex}
-                                  label={table}
                                   size="small"
-                                  variant="outlined"
-                                  sx={{ fontSize: '0.7rem', height: 20 }}
-                                />
+                                  style={{ fontSize: '11px' }}
+                                >
+                                  {table}
+                                </Tag>
                               ))}
-                            </Box>
-                          )}
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                  {index < userContext.recentPatterns.length - 1 && <Divider />}
-                </React.Fragment>
-              ))}
-            </List>
-          </AccordionDetails>
-        </Accordion>
+                            </Space>
+                          </div>
+                        )}
+                      </div>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </Collapse.Panel>
+        </Collapse>
       )}
 
       {/* Empty State */}
-      {userContext.preferredTables.length === 0 && 
-       userContext.commonFilters.length === 0 && 
+      {userContext.preferredTables.length === 0 &&
+       userContext.commonFilters.length === 0 &&
        userContext.recentPatterns.length === 0 && (
         <Card>
-          <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <InsightsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <InsightsIcon style={{ fontSize: 64, color: '#bfbfbf', marginBottom: 16 }} />
+            <Typography.Title level={4}>
               Start Building Your AI Profile
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            </Typography.Title>
+            <Typography.Text type="secondary">
               Ask questions and execute queries to help AI learn your preferences and provide better suggestions.
-            </Typography>
-          </CardContent>
+            </Typography.Text>
+          </div>
         </Card>
       )}
-    </Box>
+    </div>
   );
 };
 

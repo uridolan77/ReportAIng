@@ -1,32 +1,29 @@
 import React, { useState } from 'react';
 import {
-  Box,
   Card,
-  CardContent,
-  TextField,
+  Input,
   Button,
   Typography,
   Alert,
-  CircularProgress,
-  Grid,
-  Chip,
+  Spin,
+  Row,
+  Col,
+  Tag,
   List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  LinearProgress,
+  Progress,
   Divider,
-  Paper,
-} from '@mui/material';
+  Space,
+  Flex,
+} from 'antd';
 import {
-  Compare as CompareIcon,
-  Psychology as PsychologyIcon,
-  TrendingUp as TrendingUpIcon,
-  CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-  Lightbulb as LightbulbIcon,
-} from '@mui/icons-material';
+  SwapOutlined as CompareIcon,
+  BulbOutlined as PsychologyIcon,
+  TrendingUpOutlined as TrendingUpIcon,
+  CheckCircleOutlined as CheckCircleIcon,
+  WarningOutlined as WarningIcon,
+  CloseCircleOutlined as ErrorIcon,
+  BulbOutlined as LightbulbIcon,
+} from '@ant-design/icons';
 import { ApiService, SimilarityRequest, SimilarityResponse, SimilarQueryResponse } from '../../services/api';
 
 const QuerySimilarityAnalyzer: React.FC = () => {
@@ -84,14 +81,14 @@ const QuerySimilarityAnalyzer: React.FC = () => {
   const getSimilarityColor = (score: number) => {
     if (score >= 0.8) return 'success';
     if (score >= 0.6) return 'warning';
-    if (score >= 0.4) return 'info';
+    if (score >= 0.4) return 'processing';
     return 'error';
   };
 
   const getSimilarityIcon = (score: number) => {
-    if (score >= 0.8) return <CheckCircleIcon color="success" />;
-    if (score >= 0.6) return <WarningIcon color="warning" />;
-    return <ErrorIcon color="error" />;
+    if (score >= 0.8) return <CheckCircleIcon style={{ color: '#52c41a' }} />;
+    if (score >= 0.6) return <WarningIcon style={{ color: '#faad14' }} />;
+    return <ErrorIcon style={{ color: '#ff4d4f' }} />;
   };
 
   const getSimilarityDescription = (score: number) => {
@@ -113,254 +110,231 @@ const QuerySimilarityAnalyzer: React.FC = () => {
   ];
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
-        <CompareIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+    <div>
+      <Typography.Title level={3}>
+        <CompareIcon style={{ marginRight: 8 }} />
         Query Similarity Analyzer
-      </Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom>
+      </Typography.Title>
+      <Typography.Text type="secondary">
         Compare queries semantically and find similar patterns in your query history
-      </Typography>
+      </Typography.Text>
 
       {/* Query Comparison */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Compare Two Queries
-          </Typography>
+      <Card style={{ marginBottom: 24 }}>
+        <Typography.Title level={4}>
+          Compare Two Queries
+        </Typography.Title>
 
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="First Query"
-                value={query1}
-                onChange={(e) => setQuery1(e.target.value)}
-                placeholder="Enter your first query..."
-                variant="outlined"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Second Query"
-                value={query2}
-                onChange={(e) => setQuery2(e.target.value)}
-                placeholder="Enter your second query..."
-                variant="outlined"
-              />
-            </Grid>
-          </Grid>
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <Input.TextArea
+              rows={3}
+              placeholder="Enter your first query..."
+              value={query1}
+              onChange={(e) => setQuery1(e.target.value)}
+            />
+          </Col>
+          <Col xs={24} md={12}>
+            <Input.TextArea
+              rows={3}
+              placeholder="Enter your second query..."
+              value={query2}
+              onChange={(e) => setQuery2(e.target.value)}
+            />
+          </Col>
+        </Row>
 
-          <Box sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Button
-              variant="contained"
-              startIcon={loading ? <CircularProgress size={20} /> : <CompareIcon />}
-              onClick={handleCompareSimilarity}
-              disabled={loading || !query1.trim() || !query2.trim()}
-            >
-              {loading ? 'Comparing...' : 'Compare Similarity'}
-            </Button>
+        <Space style={{ marginTop: 16 }}>
+          <Button
+            type="primary"
+            icon={loading ? <Spin size="small" /> : <CompareIcon />}
+            onClick={handleCompareSimilarity}
+            disabled={loading || !query1.trim() || !query2.trim()}
+            loading={loading}
+          >
+            {loading ? 'Comparing...' : 'Compare Similarity'}
+          </Button>
 
-            <Button
-              variant="outlined"
-              startIcon={loadingSimilar ? <CircularProgress size={20} /> : <PsychologyIcon />}
-              onClick={handleFindSimilar}
-              disabled={loadingSimilar || !query1.trim()}
-            >
-              {loadingSimilar ? 'Finding...' : 'Find Similar Queries'}
-            </Button>
-          </Box>
-        </CardContent>
+          <Button
+            icon={loadingSimilar ? <Spin size="small" /> : <PsychologyIcon />}
+            onClick={handleFindSimilar}
+            disabled={loadingSimilar || !query1.trim()}
+            loading={loadingSimilar}
+          >
+            {loadingSimilar ? 'Finding...' : 'Find Similar Queries'}
+          </Button>
+        </Space>
       </Card>
 
       {/* Sample Queries */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            <LightbulbIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Sample Queries to Try
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {sampleQueries.map((sample, index) => (
-              <Chip
-                key={index}
-                label={sample}
-                variant="outlined"
-                onClick={() => {
-                  if (!query1.trim()) {
-                    setQuery1(sample);
-                  } else if (!query2.trim()) {
-                    setQuery2(sample);
-                  } else {
-                    setQuery1(sample);
-                    setQuery2('');
-                  }
-                }}
-                sx={{ cursor: 'pointer' }}
-              />
-            ))}
-          </Box>
-        </CardContent>
+      <Card style={{ marginBottom: 24 }}>
+        <Typography.Title level={4}>
+          <LightbulbIcon style={{ marginRight: 8 }} />
+          Sample Queries to Try
+        </Typography.Title>
+        <Space wrap>
+          {sampleQueries.map((sample, index) => (
+            <Tag
+              key={index}
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                if (!query1.trim()) {
+                  setQuery1(sample);
+                } else if (!query2.trim()) {
+                  setQuery2(sample);
+                } else {
+                  setQuery1(sample);
+                  setQuery2('');
+                }
+              }}
+            >
+              {sample}
+            </Tag>
+          ))}
+        </Space>
       </Card>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <Alert
+          message={error}
+          type="error"
+          style={{ marginBottom: 16 }}
+          showIcon
+        />
       )}
 
       {/* Similarity Results */}
       {similarityResult && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Similarity Analysis Results
-            </Typography>
+        <Card style={{ marginBottom: 24 }}>
+          <Typography.Title level={4}>
+            Similarity Analysis Results
+          </Typography.Title>
 
-            <Box sx={{ mb: 3 }}>
-              <Box display="flex" alignItems="center" mb={2}>
-                {getSimilarityIcon(similarityResult.similarityScore)}
-                <Typography variant="h4" sx={{ ml: 1, mr: 2 }}>
-                  {(similarityResult.similarityScore * 100).toFixed(1)}%
-                </Typography>
-                <Chip
-                  label={getSimilarityDescription(similarityResult.similarityScore)}
-                  color={getSimilarityColor(similarityResult.similarityScore)}
-                />
-              </Box>
+          <div style={{ marginBottom: 24 }}>
+            <Flex align="center" style={{ marginBottom: 16 }}>
+              {getSimilarityIcon(similarityResult.similarityScore)}
+              <Typography.Title level={2} style={{ margin: '0 16px' }}>
+                {(similarityResult.similarityScore * 100).toFixed(1)}%
+              </Typography.Title>
+              <Tag color={getSimilarityColor(similarityResult.similarityScore)}>
+                {getSimilarityDescription(similarityResult.similarityScore)}
+              </Tag>
+            </Flex>
 
-              <LinearProgress
-                variant="determinate"
-                value={similarityResult.similarityScore * 100}
-                color={getSimilarityColor(similarityResult.similarityScore)}
-                sx={{ height: 8, borderRadius: 4 }}
-              />
-            </Box>
+            <Progress
+              percent={similarityResult.similarityScore * 100}
+              status={getSimilarityColor(similarityResult.similarityScore) as any}
+              strokeWidth={8}
+            />
+          </div>
 
-            <Typography variant="body1" gutterBottom>
-              <strong>Analysis:</strong> {similarityResult.analysis}
-            </Typography>
+          <Typography.Text>
+            <strong>Analysis:</strong> {similarityResult.analysis}
+          </Typography.Text>
 
-            <Grid container spacing={2} sx={{ mt: 2 }}>
-              {similarityResult.commonEntities.length > 0 && (
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Common Entities
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {similarityResult.commonEntities.map((entity, index) => (
-                      <Chip
-                        key={index}
-                        label={entity}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                      />
-                    ))}
-                  </Box>
-                </Grid>
-              )}
+          <Row gutter={16} style={{ marginTop: 16 }}>
+            {similarityResult.commonEntities.length > 0 && (
+              <Col xs={24} md={12}>
+                <Typography.Title level={5}>
+                  Common Entities
+                </Typography.Title>
+                <Space wrap>
+                  {similarityResult.commonEntities.map((entity, index) => (
+                    <Tag
+                      key={index}
+                      color="blue"
+                    >
+                      {entity}
+                    </Tag>
+                  ))}
+                </Space>
+              </Col>
+            )}
 
-              {similarityResult.commonKeywords.length > 0 && (
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Common Keywords
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {similarityResult.commonKeywords.map((keyword, index) => (
-                      <Chip
-                        key={index}
-                        label={keyword}
-                        size="small"
-                        color="secondary"
-                        variant="outlined"
-                      />
-                    ))}
-                  </Box>
-                </Grid>
-              )}
-            </Grid>
-          </CardContent>
+            {similarityResult.commonKeywords.length > 0 && (
+              <Col xs={24} md={12}>
+                <Typography.Title level={5}>
+                  Common Keywords
+                </Typography.Title>
+                <Space wrap>
+                  {similarityResult.commonKeywords.map((keyword, index) => (
+                    <Tag
+                      key={index}
+                      color="purple"
+                    >
+                      {keyword}
+                    </Tag>
+                  ))}
+                </Space>
+              </Col>
+            )}
+          </Row>
         </Card>
       )}
 
       {/* Similar Queries */}
       {similarQueries.length > 0 && (
         <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              <TrendingUpIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Similar Queries Found
-            </Typography>
+          <Typography.Title level={4}>
+            <TrendingUpIcon style={{ marginRight: 8 }} />
+            Similar Queries Found
+          </Typography.Title>
 
-            <List>
-              {similarQueries.map((similar, index) => (
-                <React.Fragment key={index}>
-                  <ListItem>
-                    <ListItemIcon>
-                      <PsychologyIcon color="primary" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Box display="flex" alignItems="center" justifyContent="space-between">
-                          <Typography variant="body1" sx={{ flexGrow: 1 }}>
-                            {similar.explanation}
-                          </Typography>
-                          <Box display="flex" gap={1}>
-                            <Chip
-                              label={`${(similar.confidence * 100).toFixed(1)}%`}
-                              size="small"
-                              color={getSimilarityColor(similar.confidence)}
-                            />
-                            <Chip
-                              label={similar.classification}
-                              size="small"
-                              variant="outlined"
-                            />
-                          </Box>
-                        </Box>
-                      }
-                      secondary={
-                        <Paper sx={{ p: 1, mt: 1, bgcolor: 'grey.100' }}>
-                          <Typography
-                            variant="caption"
-                            component="pre"
-                            sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}
-                          >
-                            {similar.sql}
-                          </Typography>
-                        </Paper>
-                      }
-                    />
-                  </ListItem>
-                  {index < similarQueries.length - 1 && <Divider />}
-                </React.Fragment>
-              ))}
-            </List>
-          </CardContent>
+          <List
+            dataSource={similarQueries}
+            renderItem={(similar, index) => (
+              <List.Item>
+                <List.Item.Meta
+                  avatar={<PsychologyIcon style={{ color: '#1890ff' }} />}
+                  title={
+                    <Flex justify="space-between" align="center">
+                      <Typography.Text style={{ flex: 1 }}>
+                        {similar.explanation}
+                      </Typography.Text>
+                      <Space>
+                        <Tag color={getSimilarityColor(similar.confidence)}>
+                          {(similar.confidence * 100).toFixed(1)}%
+                        </Tag>
+                        <Tag>
+                          {similar.classification}
+                        </Tag>
+                      </Space>
+                    </Flex>
+                  }
+                  description={
+                    <div style={{
+                      padding: 8,
+                      marginTop: 8,
+                      backgroundColor: '#f5f5f5',
+                      borderRadius: 4,
+                      fontFamily: 'monospace',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {similar.sql}
+                    </div>
+                  }
+                />
+              </List.Item>
+            )}
+          />
         </Card>
       )}
 
       {/* Empty State */}
       {!similarityResult && similarQueries.length === 0 && !loading && !loadingSimilar && (
         <Card>
-          <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <CompareIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <CompareIcon style={{ fontSize: 64, color: '#bfbfbf', marginBottom: 16 }} />
+            <Typography.Title level={4}>
               Analyze Query Similarity
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            </Typography.Title>
+            <Typography.Text type="secondary">
               Enter queries above to compare their semantic similarity or find similar patterns in your history.
-            </Typography>
-          </CardContent>
+            </Typography.Text>
+          </div>
         </Card>
       )}
-    </Box>
+    </div>
   );
 };
 
