@@ -106,8 +106,8 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
 
   const { user } = useAuthStore();
 
-  // Check if user is admin (temporarily allow all authenticated users to see tuning tab)
-  const isAdmin = user !== null; // TODO: Change back to: user?.roles?.includes('Admin') || user?.roles?.includes('admin') || false;
+  // Check if user is admin
+  const isAdmin = user?.roles?.includes('Admin') || user?.roles?.includes('admin') || false;
 
   // WebSocket for real-time updates
   const { isConnected, lastMessage } = useWebSocket('/ws/query-status');

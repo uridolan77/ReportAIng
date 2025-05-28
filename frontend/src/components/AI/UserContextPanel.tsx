@@ -20,7 +20,7 @@ import {
   TableOutlined as TableChartIcon,
   FilterOutlined as FilterListIcon,
   AppstoreOutlined as PatternIcon,
-  TrendingUpOutlined as TrendingUpIcon,
+  RiseOutlined as TrendingUpIcon,
   ClockCircleOutlined as ScheduleIcon,
   GlobalOutlined as DomainIcon,
   BulbOutlined as InsightsIcon,

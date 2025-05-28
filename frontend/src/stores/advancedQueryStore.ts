@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { apiClient } from '../services/apiClient';
+import { ApiService } from '../services/api';
 
 interface QueryResult {
   id: string;
@@ -48,12 +48,12 @@ interface AdvancedQueryState {
   isExecuting: boolean;
   lastResult: QueryResult | null;
   lastError: string | null;
-  
+
   // History and cache
   history: QueryHistory[];
   cache: QueryCache;
   suggestions: QuerySuggestion[];
-  
+
   // Settings
   settings: {
     cacheEnabled: boolean;
@@ -62,7 +62,7 @@ interface AdvancedQueryState {
     autoSuggestEnabled: boolean;
     sqlValidationEnabled: boolean;
   };
-  
+
   // Actions
   setCurrentQuery: (query: string) => void;
   setCurrentSql: (sql: string) => void;
@@ -75,7 +75,7 @@ interface AdvancedQueryState {
   addToHistory: (query: QueryHistory) => void;
   getFromCache: (key: string) => QueryResult | null;
   addToCache: (key: string, result: QueryResult) => void;
-  
+
   // Selectors
   getRecentQueries: (limit: number) => QueryHistory[];
   getSuccessfulQueries: () => QueryHistory[];
@@ -103,25 +103,25 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
           autoSuggestEnabled: true,
           sqlValidationEnabled: true
         },
-        
+
         // Actions
         setCurrentQuery: (query) => set((state) => {
           state.currentQuery = query;
         }),
-        
+
         setCurrentSql: (sql) => set((state) => {
           state.currentSql = sql;
         }),
-        
+
         executeQuery: async (query: string) => {
           const state = get();
-          
+
           set((draft) => {
             draft.isExecuting = true;
             draft.lastError = null;
             draft.currentQuery = query;
           });
-          
+
           try {
             // Check cache first
             const cacheKey = `query:${query}`;
@@ -135,15 +135,15 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
                 return cached;
               }
             }
-            
-            const response = await apiClient.post<{
+
+            const response = await ApiService.post<{
               success: boolean;
               sql: string;
               results: any[];
               executionTime: number;
               rowCount: number;
             }>('/api/query/natural-language', { question: query });
-            
+
             if (response.success) {
               const result: QueryResult = {
                 id: `result-${Date.now()}`,
@@ -155,12 +155,12 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
                 timestamp: Date.now(),
                 cached: false
               };
-              
+
               // Add to cache
               if (state.settings.cacheEnabled) {
                 state.addToCache(cacheKey, result);
               }
-              
+
               // Add to history
               state.addToHistory({
                 id: `history-${Date.now()}`,
@@ -171,20 +171,20 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
                 timestamp: Date.now(),
                 resultId: result.id
               });
-              
+
               set((draft) => {
                 draft.isExecuting = false;
                 draft.lastResult = result;
                 draft.currentSql = response.sql;
               });
-              
+
               return result;
             } else {
               throw new Error('Query execution failed');
             }
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            
+
             // Add failed query to history
             state.addToHistory({
               id: `history-${Date.now()}`,
@@ -195,31 +195,31 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
               timestamp: Date.now(),
               error: errorMessage
             });
-            
+
             set((draft) => {
               draft.isExecuting = false;
               draft.lastError = errorMessage;
             });
-            
+
             return null;
           }
         },
-        
+
         executeSql: async (sql: string) => {
           set((draft) => {
             draft.isExecuting = true;
             draft.lastError = null;
             draft.currentSql = sql;
           });
-          
+
           try {
-            const response = await apiClient.post<{
+            const response = await ApiService.post<{
               success: boolean;
               results: any[];
               executionTime: number;
               rowCount: number;
             }>('/api/query/execute-sql', { sql });
-            
+
             if (response.success) {
               const result: QueryResult = {
                 id: `result-${Date.now()}`,
@@ -231,47 +231,47 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
                 timestamp: Date.now(),
                 cached: false
               };
-              
+
               set((draft) => {
                 draft.isExecuting = false;
                 draft.lastResult = result;
               });
-              
+
               return result;
             } else {
               throw new Error('SQL execution failed');
             }
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            
+
             set((draft) => {
               draft.isExecuting = false;
               draft.lastError = errorMessage;
             });
-            
+
             return null;
           }
         },
-        
+
         clearHistory: () => set((state) => {
           state.history = [];
         }),
-        
+
         clearCache: () => set((state) => {
           state.cache = {};
         }),
-        
+
         updateSettings: (newSettings) => set((state) => {
           Object.assign(state.settings, newSettings);
         }),
-        
+
         getSuggestions: async (partial: string) => {
           try {
-            const response = await apiClient.get<{
+            const response = await ApiService.get<{
               success: boolean;
               suggestions: string[];
             }>(`/api/query/suggestions?q=${encodeURIComponent(partial)}`);
-            
+
             if (response.success) {
               const suggestions: QuerySuggestion[] = response.suggestions.map((text, index) => ({
                 id: `suggestion-${index}`,
@@ -280,27 +280,27 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
                 confidence: 0.8,
                 usage: 0
               }));
-              
+
               set((draft) => {
                 draft.suggestions = suggestions;
               });
-              
+
               return suggestions;
             }
           } catch (error) {
             console.error('Failed to get suggestions:', error);
           }
-          
+
           return [];
         },
-        
+
         addToHistory: (query) => set((state) => {
           state.history.unshift(query);
           if (state.history.length > state.settings.maxHistoryItems) {
             state.history = state.history.slice(0, state.settings.maxHistoryItems);
           }
         }),
-        
+
         getFromCache: (key: string) => {
           const cached = get().cache[key];
           if (cached && cached.expiry > Date.now()) {
@@ -308,27 +308,27 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
           }
           return null;
         },
-        
+
         addToCache: (key: string, result: QueryResult) => set((state) => {
           state.cache[key] = {
             result,
             expiry: Date.now() + state.settings.cacheExpiryMs
           };
         }),
-        
+
         // Selectors
         getRecentQueries: (limit: number) => {
           return get().history.slice(0, limit);
         },
-        
+
         getSuccessfulQueries: () => {
           return get().history.filter(q => q.successful);
         },
-        
+
         getFailedQueries: () => {
           return get().history.filter(q => !q.successful);
         },
-        
+
         getCacheStats: () => {
           const cache = get().cache;
           const history = get().history;
@@ -336,7 +336,7 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
           const totalQueries = history.length;
           const cachedQueries = history.filter(q => q.successful).length;
           const hitRate = totalQueries > 0 ? (cachedQueries / totalQueries) * 100 : 0;
-          
+
           return { size: cacheSize, hitRate };
         }
       })),

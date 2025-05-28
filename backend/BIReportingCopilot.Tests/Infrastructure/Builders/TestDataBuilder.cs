@@ -1,6 +1,7 @@
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.AI;
+using BIReportingCopilot.Infrastructure.Data;
 using System.Reflection;
 
 namespace BIReportingCopilot.Tests.Infrastructure.Builders;
@@ -77,30 +78,30 @@ public class TestDataBuilder<T> where T : class, new()
     public List<T> BuildMany(int count, Action<TestDataBuilder<T>, int>? customizer = null)
     {
         var results = new List<T>();
-        
+
         for (int i = 0; i < count; i++)
         {
             var builder = new TestDataBuilder<T>();
-            
+
             // Copy current property values
             foreach (var kvp in _propertyValues)
             {
                 builder._propertyValues[kvp.Key] = kvp.Value;
             }
-            
+
             // Apply customization
             customizer?.Invoke(builder, i);
-            
+
             results.Add(builder.Build());
         }
-        
+
         return results;
     }
 
     private void SetDefaultValues()
     {
         var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-        
+
         foreach (var property in properties)
         {
             if (!property.CanWrite)
@@ -130,9 +131,9 @@ public class TestDataBuilder<T> where T : class, new()
             nameof(DateTime) => DateTime.UtcNow.AddDays(_random.Next(-30, 30)),
             nameof(Guid) => Guid.NewGuid(),
             _ when underlyingType.IsEnum => GenerateEnumValue(underlyingType),
-            _ when propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>) => 
+            _ when propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>) =>
                 Activator.CreateInstance(propertyType),
-            _ when propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>) => 
+            _ when propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>) =>
                 Activator.CreateInstance(propertyType),
             _ => null
         };
@@ -179,7 +180,7 @@ public class TestDataBuilder<T> where T : class, new()
         {
             return memberExpression.Member.Name;
         }
-        
+
         throw new ArgumentException("Expression must be a property access", nameof(propertyExpression));
     }
 }
@@ -203,9 +204,9 @@ public static class TestDataBuilders
             .With(u => u.CreatedBy, "System");
     }
 
-    public static TestDataBuilder<QueryHistoryEntity> QueryHistory()
+    public static TestDataBuilder<BIReportingCopilot.Infrastructure.Data.Entities.QueryHistoryEntity> QueryHistory()
     {
-        return new TestDataBuilder<QueryHistoryEntity>()
+        return new TestDataBuilder<BIReportingCopilot.Infrastructure.Data.Entities.QueryHistoryEntity>()
             .With(q => q.Id, Random.Shared.NextInt64(1, long.MaxValue))
             .With(q => q.UserId, Guid.NewGuid().ToString())
             .With(q => q.SessionId, Guid.NewGuid().ToString())
@@ -233,65 +234,69 @@ public static class TestDataBuilders
     public static TestDataBuilder<AIFeedbackEntry> AIFeedback()
     {
         return new TestDataBuilder<AIFeedbackEntry>()
-            .With(f => f.Id, Random.Shared.NextInt64(1, long.MaxValue))
+            .With(f => f.Id, Random.Shared.Next(1, int.MaxValue))
             .With(f => f.UserId, Guid.NewGuid().ToString())
-            .With(f => f.OriginalPrompt, "Show me sales data")
-            .With(f => f.GeneratedSQL, "SELECT * FROM Sales")
+            .With(f => f.OriginalQuery, "Show me sales data")
+            .With(f => f.GeneratedSql, "SELECT * FROM Sales")
             .With(f => f.Rating, Random.Shared.Next(1, 6))
-            .With(f => f.IsSuccessful, true)
-            .With(f => f.Timestamp, DateTime.UtcNow)
-            .With(f => f.PromptPattern, "display_query")
-            .With(f => f.SQLPattern, "simple_query");
+            .With(f => f.FeedbackType, "Positive")
+            .With(f => f.CreatedAt, DateTime.UtcNow)
+            .With(f => f.IsProcessed, false);
     }
 
     public static TestDataBuilder<SemanticCacheEntry> SemanticCache()
     {
         return new TestDataBuilder<SemanticCacheEntry>()
-            .With(c => c.Id, Random.Shared.NextInt64(1, long.MaxValue))
-            .With(c => c.QuerySignature, Guid.NewGuid().ToString("N")[..16])
-            .With(c => c.NaturalLanguageQuery, "Show me customer data")
-            .With(c => c.SqlQuery, "SELECT * FROM Customers")
-            .With(c => c.CachedResponse, "{\"data\": [], \"success\": true}")
-            .With(c => c.SemanticFeatures, "{\"intent\": \"display\"}")
-            .With(c => c.Timestamp, DateTime.UtcNow)
-            .With(c => c.ExpiryTime, DateTime.UtcNow.AddHours(24))
+            .With(c => c.Id, Random.Shared.Next(1, int.MaxValue))
+            .With(c => c.QueryHash, Guid.NewGuid().ToString("N")[..16])
+            .With(c => c.OriginalQuery, "Show me customer data")
+            .With(c => c.NormalizedQuery, "SELECT * FROM Customers")
+            .With(c => c.GeneratedSql, "SELECT * FROM Customers")
+            .With(c => c.ResultData, "{\"data\": [], \"success\": true}")
+            .With(c => c.ResultMetadata, "{\"intent\": \"display\"}")
+            .With(c => c.CreatedAt, DateTime.UtcNow)
+            .With(c => c.ExpiresAt, DateTime.UtcNow.AddHours(24))
             .With(c => c.AccessCount, 1)
-            .With(c => c.LastAccessTime, DateTime.UtcNow);
+            .With(c => c.LastAccessedAt, DateTime.UtcNow);
     }
 
     public static TestDataBuilder<QueryResponse> QueryResponse()
     {
         return new TestDataBuilder<QueryResponse>()
             .With(r => r.Success, true)
-            .With(r => r.Data, new List<Dictionary<string, object>>())
-            .With(r => r.RowCount, 0)
+            .With(r => r.Result, new QueryResult
+            {
+                Data = new object[] { },
+                Metadata = new QueryMetadata { RowCount = 0 }
+            })
             .With(r => r.ExecutionTimeMs, Random.Shared.Next(100, 1000))
-            .With(r => r.GeneratedSQL, "SELECT * FROM TestTable")
-            .With(r => r.ConfidenceScore, Random.Shared.NextDouble());
+            .With(r => r.Sql, "SELECT * FROM TestTable")
+            .With(r => r.Confidence, Random.Shared.NextDouble())
+            .With(r => r.Suggestions, Array.Empty<string>())
+            .With(r => r.Error, null);
     }
 
     public static TestDataBuilder<SchemaMetadata> SchemaMetadata()
     {
         return new TestDataBuilder<SchemaMetadata>()
             .With(s => s.DatabaseName, "TestDatabase")
-            .With(s => s.Tables, new List<TableInfo>())
+            .With(s => s.Tables, new List<TableMetadata>())
             .With(s => s.LastUpdated, DateTime.UtcNow);
     }
 
-    public static TestDataBuilder<TableInfo> TableInfo()
+    public static TestDataBuilder<TableMetadata> TableMetadata()
     {
-        return new TestDataBuilder<TableInfo>()
+        return new TestDataBuilder<TableMetadata>()
             .With(t => t.Name, $"TestTable{Random.Shared.Next(100, 999)}")
             .With(t => t.Schema, "dbo")
-            .With(t => t.Columns, new List<ColumnInfo>())
+            .With(t => t.Columns, new List<ColumnMetadata>())
             .With(t => t.RowCount, Random.Shared.Next(1, 10000))
-            .With(t => t.Description, "Test table")
-            .With(t => t.Metadata, new Dictionary<string, object>());
+            .With(t => t.Description, "Test table");
     }
 
-    public static TestDataBuilder<ColumnInfo> ColumnInfo()
+    public static TestDataBuilder<ColumnMetadata> ColumnMetadata()
     {
-        return new TestDataBuilder<ColumnInfo>()
+        return new TestDataBuilder<ColumnMetadata>()
             .With(c => c.Name, $"TestColumn{Random.Shared.Next(100, 999)}")
             .With(c => c.DataType, "varchar")
             .With(c => c.IsNullable, false)
@@ -299,6 +304,19 @@ public static class TestDataBuilders
             .With(c => c.MaxLength, 255)
             .With(c => c.Description, "Test column")
             .With(c => c.SampleValues, new List<string> { "Sample1", "Sample2" });
+    }
+
+    public static TestDataBuilder<AIGenerationAttempt> AIGenerationAttempt()
+    {
+        return new TestDataBuilder<AIGenerationAttempt>()
+            .With(a => a.Id, Random.Shared.Next(1, int.MaxValue))
+            .With(a => a.UserQuery, "Show me data")
+            .With(a => a.PromptTemplate, "Context: Focus on display queries. Query: Show me data")
+            .With(a => a.GeneratedSql, "SELECT * FROM TestTable")
+            .With(a => a.AttemptedAt, DateTime.UtcNow)
+            .With(a => a.IsSuccessful, true)
+            .With(a => a.ConfidenceScore, 0.8)
+            .With(a => a.UserId, "test-user");
     }
 }
 
@@ -317,7 +335,7 @@ public class TestScenarioBuilder
         return this;
     }
 
-    public TestScenarioBuilder AddQueryHistory(Action<TestDataBuilder<QueryHistoryEntity>>? configure = null)
+    public TestScenarioBuilder AddQueryHistory(Action<TestDataBuilder<BIReportingCopilot.Infrastructure.Data.Entities.QueryHistoryEntity>>? configure = null)
     {
         var builder = TestDataBuilders.QueryHistory();
         configure?.Invoke(builder);
@@ -360,7 +378,7 @@ public class TestScenarioBuilder
         {
             context.Add(entity);
         }
-        
+
         await context.SaveChangesAsync();
     }
 }

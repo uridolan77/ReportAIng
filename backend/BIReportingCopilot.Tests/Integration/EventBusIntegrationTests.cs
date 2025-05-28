@@ -23,7 +23,7 @@ public class EventBusIntegrationTests : IntegrationTestBase
     public EventBusIntegrationTests()
     {
         _capturedEvents = new List<IEvent>();
-        
+
         var config = Options.Create(new EventBusConfiguration
         {
             MaxConcurrentHandlers = 5,
@@ -32,7 +32,7 @@ public class EventBusIntegrationTests : IntegrationTestBase
         });
 
         _eventBus = new InMemoryEventBus(GetLogger<InMemoryEventBus>(), config);
-        
+
         _queryHandler = new QueryExecutedEventHandler(
             GetLogger<QueryExecutedEventHandler>(),
             GetService<BIReportingCopilot.Infrastructure.Monitoring.IMetricsCollector>(),
@@ -45,7 +45,7 @@ public class EventBusIntegrationTests : IntegrationTestBase
     {
         // Arrange
         await _eventBus.StartAsync();
-        
+
         var queryEvent = new QueryExecutedEvent
         {
             UserId = "test-user",
@@ -74,9 +74,9 @@ public class EventBusIntegrationTests : IntegrationTestBase
     {
         // Arrange
         await _eventBus.StartAsync();
-        
+
         var receivedEvents = new List<QueryExecutedEvent>();
-        
+
         await _eventBus.SubscribeAsync<QueryExecutedEvent>(async (evt, ct) =>
         {
             receivedEvents.Add(evt);
@@ -110,7 +110,7 @@ public class EventBusIntegrationTests : IntegrationTestBase
     {
         // Arrange
         await _eventBus.StartAsync();
-        
+
         // Subscribe the actual handler
         await _eventBus.SubscribeAsync<QueryExecutedEvent>(_queryHandler.HandleAsync);
 
@@ -142,7 +142,7 @@ public class EventBusIntegrationTests : IntegrationTestBase
     {
         // Arrange
         await _eventBus.StartAsync();
-        
+
         var handler1Events = new List<FeedbackReceivedEvent>();
         var handler2Events = new List<FeedbackReceivedEvent>();
 
@@ -171,7 +171,7 @@ public class EventBusIntegrationTests : IntegrationTestBase
         await _eventBus.PublishAsync(feedbackEvent);
 
         // Wait for processing
-        await AssertEventuallyAsync(() => handler1Events.Count > 0 && handler2Events.Count > 0, 
+        await AssertEventuallyAsync(() => handler1Events.Count > 0 && handler2Events.Count > 0,
             TimeSpan.FromSeconds(2));
 
         // Assert
@@ -186,7 +186,7 @@ public class EventBusIntegrationTests : IntegrationTestBase
     {
         // Arrange
         await _eventBus.StartAsync();
-        
+
         var attemptCount = 0;
         var successfulEvents = new List<AnomalyDetectedEvent>();
 
@@ -230,7 +230,7 @@ public class EventBusIntegrationTests : IntegrationTestBase
     {
         // Arrange
         await _eventBus.StartAsync();
-        
+
         var securityEvents = new List<AnomalyDetectedEvent>();
         var performanceEvents = new List<PerformanceMetricsEvent>();
 
@@ -269,7 +269,7 @@ public class EventBusIntegrationTests : IntegrationTestBase
         await _eventBus.PublishAsync(performanceEvent, "performance.metrics");
 
         // Wait for processing
-        await AssertEventuallyAsync(() => securityEvents.Count > 0 && performanceEvents.Count > 0, 
+        await AssertEventuallyAsync(() => securityEvents.Count > 0 && performanceEvents.Count > 0,
             TimeSpan.FromSeconds(2));
 
         // Assert
@@ -315,7 +315,7 @@ public class EventBusIntegrationTests : IntegrationTestBase
     {
         // Arrange
         await _eventBus.StartAsync();
-        
+
         var processedEvents = new List<QueryExecutedEvent>();
         var lockObject = new object();
 
@@ -323,7 +323,7 @@ public class EventBusIntegrationTests : IntegrationTestBase
         {
             // Simulate some processing time
             await Task.Delay(10, ct);
-            
+
             lock (lockObject)
             {
                 processedEvents.Add(evt);
@@ -351,20 +351,17 @@ public class EventBusIntegrationTests : IntegrationTestBase
 
         // Assert
         processedEvents.Should().HaveCount(events.Count);
-        
+
         // Verify all events were processed
         var processedQueries = processedEvents.Select(e => e.NaturalLanguageQuery).ToHashSet();
         var originalQueries = events.Select(e => e.NaturalLanguageQuery).ToHashSet();
         processedQueries.Should().BeEquivalentTo(originalQueries);
     }
 
-    protected override void Dispose(bool disposing)
+    public override void Dispose()
     {
-        if (disposing)
-        {
-            _eventBus?.StopAsync().Wait(TimeSpan.FromSeconds(5));
-            _eventBus?.Dispose();
-        }
-        base.Dispose(disposing);
+        _eventBus?.StopAsync().Wait(TimeSpan.FromSeconds(5));
+        _eventBus?.Dispose();
+        base.Dispose();
     }
 }

@@ -4,6 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Core.Interfaces;
@@ -26,7 +27,7 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
     {
         _mockBuilder = new MockServiceBuilder();
         _mockInnerService = _mockBuilder.For<IAIService>();
-        
+
         _adaptiveService = new AdaptiveAIService(
             _mockInnerService.Object,
             DbContext,
@@ -40,7 +41,7 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
         // Arrange
         var prompt = "Show me all customers";
         var expectedSQL = "SELECT * FROM Customers";
-        
+
         _mockInnerService
             .Setup(x => x.GenerateSQLAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedSQL);
@@ -59,17 +60,17 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
         // Arrange
         var prompt = "Show customers";
         var userId = "test-user";
-        
+
         // Seed learning data
         await SeedDatabaseAsync(context =>
         {
             var feedback = TestDataBuilders.AIFeedback()
-                .With(f => f.OriginalPrompt, "Show customers")
+                .With(f => f.OriginalQuery, "Show customers")
                 .With(f => f.Rating, 5)
-                .With(f => f.IsSuccessful, true)
-                .With(f => f.PromptPattern, "display_query")
+                .With(f => f.FeedbackType, "Positive")
+                .With(f => f.Comments, "display_query")
                 .Build();
-            
+
             context.AIFeedbackEntries.Add(feedback);
         });
 
@@ -82,7 +83,7 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
 
         // Assert
         result.Should().NotBeNullOrEmpty();
-        
+
         // Verify that the prompt was optimized (inner service called with enhanced prompt)
         _mockInnerService.Verify(x => x.GenerateSQLAsync(
             It.Is<string>(p => p.Length > prompt.Length), // Optimized prompt should be longer
@@ -96,18 +97,18 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
         var prompt = "Count customers";
         var sql = "SELECT COUNT(*) FROM Customers";
         var baseConfidence = 0.7;
-        
+
         // Seed successful pattern data
         await SeedDatabaseAsync(context =>
         {
             var feedback = TestDataBuilders.AIFeedback()
-                .With(f => f.OriginalPrompt, "Count all customers")
-                .With(f => f.GeneratedSQL, "SELECT COUNT(*) FROM Customers")
+                .With(f => f.OriginalQuery, "Count all customers")
+                .With(f => f.GeneratedSql, "SELECT COUNT(*) FROM Customers")
                 .With(f => f.Rating, 5)
-                .With(f => f.IsSuccessful, true)
-                .With(f => f.PromptPattern, "count_query")
+                .With(f => f.FeedbackType, "Positive")
+                .With(f => f.Comments, "count_query")
                 .Build();
-            
+
             context.AIFeedbackEntries.Add(feedback);
         });
 
@@ -130,7 +131,7 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
         var sql = "SELECT * FROM Sales";
         var feedback = new QueryFeedback
         {
-            Rating = 4,
+            Feedback = "positive",
             Comments = "Good query, but could be more specific"
         };
         var userId = "test-user";
@@ -140,13 +141,13 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
 
         // Assert
         var storedFeedback = await DbContext.AIFeedbackEntries
-            .Where(f => f.UserId == userId && f.OriginalPrompt == prompt)
+            .Where(f => f.UserId == userId && f.OriginalQuery == prompt)
             .FirstOrDefaultAsync();
 
         storedFeedback.Should().NotBeNull();
-        storedFeedback!.Rating.Should().Be(feedback.Rating);
-        storedFeedback.FeedbackText.Should().Be(feedback.Comments);
-        storedFeedback.IsSuccessful.Should().BeTrue(); // Rating >= 4
+        storedFeedback!.FeedbackType.Should().Be("positive");
+        storedFeedback.Comments.Should().Be(feedback.Comments);
+        storedFeedback.IsProcessed.Should().BeFalse();
     }
 
     [Fact]
@@ -161,13 +162,13 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
         await SeedDatabaseAsync(dbContext =>
         {
             var feedback = TestDataBuilders.AIFeedback()
-                .With(f => f.OriginalPrompt, "Show monthly sales trends")
+                .With(f => f.OriginalQuery, "Show monthly sales trends")
                 .With(f => f.Rating, 5)
-                .With(f => f.IsSuccessful, true)
-                .With(f => f.PromptPattern, "display_query")
-                .With(f => f.Timestamp, DateTime.UtcNow.AddDays(-5))
+                .With(f => f.FeedbackType, "Positive")
+                .With(f => f.Comments, "display_query")
+                .With(f => f.CreatedAt, DateTime.UtcNow.AddDays(-5))
                 .Build();
-            
+
             dbContext.AIFeedbackEntries.Add(feedback);
         });
 
@@ -191,9 +192,9 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
         {
             // Add generation attempts
             var attempts = TestDataBuilders.AIGenerationAttempt()
-                .BuildMany(10, (builder, index) => 
+                .BuildMany(10, (builder, index) =>
                     builder.With(a => a.UserId, $"user-{index % 3}"));
-            
+
             foreach (var attempt in attempts)
             {
                 context.AIGenerationAttempts.Add(attempt);
@@ -201,10 +202,10 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
 
             // Add feedback entries
             var feedbackEntries = TestDataBuilders.AIFeedback()
-                .BuildMany(15, (builder, index) => 
+                .BuildMany(15, (builder, index) =>
                     builder.With(f => f.Rating, index % 5 + 1)
                            .With(f => f.UserId, $"user-{index % 3}"));
-            
+
             foreach (var feedback in feedbackEntries)
             {
                 context.AIFeedbackEntries.Add(feedback);
@@ -228,7 +229,7 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
         // Arrange
         var prompt = "Show customers";
         var logCapture = CaptureLogsFor<AdaptiveAIService>();
-        
+
         _mockInnerService
             .Setup(x => x.GenerateSQLAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("AI service unavailable"));
@@ -252,7 +253,7 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
 
         _mockInnerService
             .Setup(x => x.GenerateSQLAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Returns((string p, CancellationToken ct) => 
+            .Returns((string p, CancellationToken ct) =>
             {
                 ct.ThrowIfCancellationRequested();
                 return Task.FromResult("SELECT * FROM Customers");
@@ -270,17 +271,17 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
         var query = "SELECT COUNT(*) FROM Orders";
         var data = new object[] { new { Count = 1000 } };
         var baseInsight = "There are 1000 orders in the system.";
-        
+
         // Seed insight context data
         await SeedDatabaseAsync(context =>
         {
             var feedback = TestDataBuilders.AIFeedback()
-                .With(f => f.GeneratedSQL, query)
-                .With(f => f.FeedbackText, "Consider seasonal trends when analyzing order counts")
-                .With(f => f.IsSuccessful, true)
-                .With(f => f.SQLPattern, "simple_query")
+                .With(f => f.GeneratedSql, query)
+                .With(f => f.Comments, "Consider seasonal trends when analyzing order counts")
+                .With(f => f.FeedbackType, "Positive")
+                .With(f => f.Category, "simple_query")
                 .Build();
-            
+
             context.AIFeedbackEntries.Add(feedback);
         });
 
@@ -297,13 +298,10 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
         result.Should().Contain(baseInsight); // Should include original insight
     }
 
-    protected override void Dispose(bool disposing)
+    public override void Dispose()
     {
-        if (disposing)
-        {
-            _mockBuilder?.Reset();
-        }
-        base.Dispose(disposing);
+        _mockBuilder?.Reset();
+        base.Dispose();
     }
 }
 
@@ -312,16 +310,16 @@ public class AdaptiveAIServiceTests : IntegrationTestBase
 /// </summary>
 public static class AITestDataExtensions
 {
-    public static TestDataBuilder<AIGenerationAttempt> AIGenerationAttempt(this TestDataBuilders builders)
+    public static TestDataBuilder<AIGenerationAttempt> AIGenerationAttempt()
     {
         return new TestDataBuilder<AIGenerationAttempt>()
-            .With(a => a.Id, Random.Shared.NextInt64(1, long.MaxValue))
-            .With(a => a.OriginalPrompt, "Show me data")
-            .With(a => a.OptimizedPrompt, "Context: Focus on display queries. Query: Show me data")
-            .With(a => a.GeneratedSQL, "SELECT * FROM TestTable")
-            .With(a => a.Timestamp, DateTime.UtcNow)
-            .With(a => a.PromptHash, Guid.NewGuid().ToString("N")[..16])
-            .With(a => a.SQLHash, Guid.NewGuid().ToString("N")[..16])
+            .With(a => a.Id, Random.Shared.Next(1, int.MaxValue))
+            .With(a => a.UserQuery, "Show me data")
+            .With(a => a.PromptTemplate, "Context: Focus on display queries. Query: Show me data")
+            .With(a => a.GeneratedSql, "SELECT * FROM TestTable")
+            .With(a => a.AttemptedAt, DateTime.UtcNow)
+            .With(a => a.IsSuccessful, true)
+            .With(a => a.ConfidenceScore, 0.8)
             .With(a => a.UserId, "test-user");
     }
 }

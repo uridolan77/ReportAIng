@@ -18,7 +18,7 @@ import {
 import {
   SwapOutlined as CompareIcon,
   BulbOutlined as PsychologyIcon,
-  TrendingUpOutlined as TrendingUpIcon,
+  RiseOutlined as TrendingUpIcon,
   CheckCircleOutlined as CheckCircleIcon,
   WarningOutlined as WarningIcon,
   CloseCircleOutlined as ErrorIcon,

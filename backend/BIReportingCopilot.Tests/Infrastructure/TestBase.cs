@@ -26,10 +26,10 @@ public abstract class TestBase : IDisposable
     {
         _services = new ServiceCollection();
         Configuration = CreateTestConfiguration();
-        
+
         ConfigureServices(_services);
         ServiceProvider = _services.BuildServiceProvider();
-        
+
         Logger = ServiceProvider.GetRequiredService<ILogger<TestBase>>();
         MemoryCache = ServiceProvider.GetRequiredService<IMemoryCache>();
     }
@@ -50,7 +50,7 @@ public abstract class TestBase : IDisposable
         services.AddMemoryCache();
 
         // Add test-specific services
-        services.AddScoped<TestDataBuilder>();
+        services.AddScoped(typeof(TestDataBuilder<>));
         services.AddScoped<MockServiceBuilder>();
     }
 
@@ -101,7 +101,7 @@ public abstract class TestBase : IDisposable
     {
         var builder = CreateBuilder<T>();
         configure?.Invoke(builder);
-        
+
         return Enumerable.Range(0, count)
             .Select(_ => builder.Build())
             .ToList();
@@ -110,7 +110,7 @@ public abstract class TestBase : IDisposable
     /// <summary>
     /// Assert that an async operation throws a specific exception
     /// </summary>
-    protected async Task<TException> AssertThrowsAsync<TException>(Func<Task> operation) 
+    protected async Task<TException> AssertThrowsAsync<TException>(Func<Task> operation)
         where TException : Exception
     {
         try
@@ -341,7 +341,7 @@ public abstract class ApiIntegrationTestBase : IntegrationTestBase, IClassFixtur
     /// </summary>
     protected void SetAuthorizationHeader(string token)
     {
-        HttpClient.DefaultRequestHeaders.Authorization = 
+        HttpClient.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
     }
 
@@ -372,7 +372,7 @@ public abstract class ApiIntegrationTestBase : IntegrationTestBase, IClassFixtur
     {
         var response = await HttpClient.GetAsync(requestUri);
         response.EnsureSuccessStatusCode();
-        
+
         var json = await response.Content.ReadAsStringAsync();
         return System.Text.Json.JsonSerializer.Deserialize<T>(json, new System.Text.Json.JsonSerializerOptions
         {

@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { API_CONFIG } from '../config/api';
 import { setSessionId, clearSessionId } from '../utils/sessionUtils';
 import { SecurityUtils } from '../utils/security';
-import { apiClient } from '../services/apiClient';
+import { ApiService } from '../services/api';
 import { tokenManager } from '../services/tokenManager';
 
 interface User {
@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('Invalid username format');
           }
 
-          const response = await apiClient.post<{
+          const response = await ApiService.post<{
             success: boolean;
             accessToken: string;
             refreshToken: string;
@@ -107,7 +107,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const decryptedRefreshToken = SecurityUtils.decryptToken(refreshToken);
-          const response = await apiClient.post<{
+          const response = await ApiService.post<{
             success: boolean;
             accessToken: string;
             refreshToken: string;

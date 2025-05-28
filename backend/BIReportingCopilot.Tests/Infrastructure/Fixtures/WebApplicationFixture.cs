@@ -10,6 +10,7 @@ using System.Security.Claims;
 using System.Text;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.API;
+using Xunit;
 
 namespace BIReportingCopilot.Tests.Infrastructure.Fixtures;
 
@@ -33,7 +34,7 @@ public class WebApplicationFixture : WebApplicationFactory<Program>, IDisposable
         {
             // Clear existing configuration
             config.Sources.Clear();
-            
+
             // Add test configuration
             config.AddInMemoryCollection(_testConfiguration);
         });
@@ -60,7 +61,7 @@ public class WebApplicationFixture : WebApplicationFactory<Program>, IDisposable
         });
 
         builder.UseEnvironment("Testing");
-        
+
         // Configure logging for tests
         builder.ConfigureLogging(logging =>
         {
@@ -109,7 +110,7 @@ public class WebApplicationFixture : WebApplicationFactory<Program>, IDisposable
     {
         var client = CreateClient();
         var token = await AuthenticateAsync(userId, roles);
-        client.DefaultRequestHeaders.Authorization = 
+        client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
         return client;
     }
@@ -120,10 +121,10 @@ public class WebApplicationFixture : WebApplicationFactory<Program>, IDisposable
     public async Task<string> AuthenticateAsync(string userId = "test-user", string[] roles = null!)
     {
         roles ??= new[] { "User" };
-        
+
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_testConfiguration["Authentication:Jwt:Key"]);
-        
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, userId),
@@ -159,7 +160,7 @@ public class WebApplicationFixture : WebApplicationFactory<Program>, IDisposable
     {
         using var scope = Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<BICopilotContext>();
-        
+
         await context.Database.EnsureCreatedAsync();
         seedAction(context);
         await context.SaveChangesAsync();
@@ -172,7 +173,7 @@ public class WebApplicationFixture : WebApplicationFactory<Program>, IDisposable
     {
         using var scope = Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<BICopilotContext>();
-        
+
         // Remove all entities in reverse dependency order
         context.AIFeedbackEntries.RemoveRange(context.AIFeedbackEntries);
         context.AIGenerationAttempts.RemoveRange(context.AIGenerationAttempts);
@@ -201,7 +202,7 @@ public class WebApplicationFixture : WebApplicationFactory<Program>, IDisposable
     {
         using var scope = Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<BICopilotContext>();
-        
+
         using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
@@ -293,14 +294,14 @@ public static class HttpRequestHelper
         {
             PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
         });
-        
+
         return new StringContent(json, Encoding.UTF8, "application/json");
     }
 
     public static async Task<T?> ReadJsonResponseAsync<T>(HttpResponseMessage response)
     {
         var json = await response.Content.ReadAsStringAsync();
-        
+
         return System.Text.Json.JsonSerializer.Deserialize<T>(json, new System.Text.Json.JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
@@ -309,7 +310,7 @@ public static class HttpRequestHelper
 
     public static void AddAuthorizationHeader(HttpClient client, string token)
     {
-        client.DefaultRequestHeaders.Authorization = 
+        client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
     }
 }

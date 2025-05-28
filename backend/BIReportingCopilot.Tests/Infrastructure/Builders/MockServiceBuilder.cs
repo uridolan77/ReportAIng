@@ -45,20 +45,20 @@ public class MockServiceBuilder
     public MockServiceBuilder WithMockAIService(Action<Mock<IAIService>>? configure = null)
     {
         var mock = For<IAIService>();
-        
+
         // Default behaviors
         mock.Setup(x => x.GenerateSQLAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("SELECT * FROM TestTable");
-            
+
         mock.Setup(x => x.CalculateConfidenceScoreAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(0.85);
-            
+
         mock.Setup(x => x.GenerateQuerySuggestionsAsync(It.IsAny<string>(), It.IsAny<SchemaMetadata>()))
             .ReturnsAsync(new[] { "Show all customers", "Count total orders", "Average sales amount" });
-            
+
         mock.Setup(x => x.GenerateInsightAsync(It.IsAny<string>(), It.IsAny<object[]>()))
             .ReturnsAsync("This data shows a positive trend in sales.");
-            
+
         mock.Setup(x => x.ValidateQueryIntentAsync(It.IsAny<string>()))
             .ReturnsAsync(true);
 
@@ -72,16 +72,19 @@ public class MockServiceBuilder
     public MockServiceBuilder WithMockQueryService(Action<Mock<IQueryService>>? configure = null)
     {
         var mock = For<IQueryService>();
-        
+
         // Default behaviors
-        mock.Setup(x => x.ExecuteQueryAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        mock.Setup(x => x.ExecuteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new QueryResponse
             {
                 Success = true,
-                Data = new List<Dictionary<string, object>>(),
-                RowCount = 0,
+                Result = new QueryResult
+                {
+                    Data = new object[] { },
+                    Metadata = new QueryMetadata { RowCount = 0 }
+                },
                 ExecutionTimeMs = 100,
-                GeneratedSQL = "SELECT * FROM TestTable"
+                Sql = "SELECT * FROM TestTable"
             });
 
         configure?.Invoke(mock);
@@ -94,30 +97,30 @@ public class MockServiceBuilder
     public MockServiceBuilder WithMockSchemaService(Action<Mock<ISchemaService>>? configure = null)
     {
         var mock = For<ISchemaService>();
-        
+
         // Default behaviors
         mock.Setup(x => x.GetSchemaAsync(It.IsAny<string>()))
             .ReturnsAsync(new SchemaMetadata
             {
                 DatabaseName = "TestDatabase",
-                Tables = new List<TableInfo>
+                Tables = new List<TableMetadata>
                 {
-                    new TableInfo
+                    new TableMetadata
                     {
                         Name = "Customers",
                         Schema = "dbo",
-                        Columns = new List<ColumnInfo>
+                        Columns = new List<ColumnMetadata>
                         {
-                            new ColumnInfo { Name = "Id", DataType = "int", IsPrimaryKey = true },
-                            new ColumnInfo { Name = "Name", DataType = "varchar", MaxLength = 255 },
-                            new ColumnInfo { Name = "Email", DataType = "varchar", MaxLength = 255 }
+                            new ColumnMetadata { Name = "Id", DataType = "int", IsPrimaryKey = true },
+                            new ColumnMetadata { Name = "Name", DataType = "varchar", MaxLength = 255 },
+                            new ColumnMetadata { Name = "Email", DataType = "varchar", MaxLength = 255 }
                         },
                         RowCount = 1000
                     }
                 },
                 LastUpdated = DateTime.UtcNow
             });
-            
+
         mock.Setup(x => x.GetTableNamesAsync(It.IsAny<string>()))
             .ReturnsAsync(new List<string> { "Customers", "Orders", "Products" });
 
@@ -131,17 +134,17 @@ public class MockServiceBuilder
     public MockServiceBuilder WithMockCacheService(Action<Mock<ICacheService>>? configure = null)
     {
         var mock = For<ICacheService>();
-        
+
         // Default behaviors - cache misses by default
         mock.Setup(x => x.GetAsync<It.IsAnyType>(It.IsAny<string>()))
-            .ReturnsAsync((object?)null);
-            
+            .Returns(Task.FromResult((object?)null));
+
         mock.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan?>()))
             .Returns(Task.CompletedTask);
-            
+
         mock.Setup(x => x.RemoveAsync(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
-            
+
         mock.Setup(x => x.ExistsAsync(It.IsAny<string>()))
             .ReturnsAsync(false);
 
@@ -155,17 +158,17 @@ public class MockServiceBuilder
     public MockServiceBuilder WithMockEventBus(Action<Mock<IEventBus>>? configure = null)
     {
         var mock = For<IEventBus>();
-        
+
         // Default behaviors
         mock.Setup(x => x.PublishAsync(It.IsAny<IEvent>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-            
+
         mock.Setup(x => x.PublishAsync(It.IsAny<IEvent>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-            
+
         mock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-            
+
         mock.Setup(x => x.StopAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -179,11 +182,11 @@ public class MockServiceBuilder
     public MockServiceBuilder WithMockMetricsCollector(Action<Mock<IMetricsCollector>>? configure = null)
     {
         var mock = For<IMetricsCollector>();
-        
+
         // Default behaviors - all methods are void, so just verify they can be called
-        mock.Setup(x => x.IncrementCounter(It.IsAny<string>(), It.IsAny<Dictionary<string, string>>()));
-        mock.Setup(x => x.RecordHistogram(It.IsAny<string>(), It.IsAny<double>(), It.IsAny<Dictionary<string, string>>()));
-        mock.Setup(x => x.SetGaugeValue(It.IsAny<string>(), It.IsAny<double>(), It.IsAny<Dictionary<string, string>>()));
+        mock.Setup(x => x.IncrementCounter(It.IsAny<string>(), It.IsAny<TagList?>()));
+        mock.Setup(x => x.RecordHistogram(It.IsAny<string>(), It.IsAny<double>(), It.IsAny<TagList?>()));
+        mock.Setup(x => x.SetGaugeValue(It.IsAny<string>(), It.IsAny<double>()));
 
         configure?.Invoke(mock);
         return this;
@@ -195,18 +198,18 @@ public class MockServiceBuilder
     public MockServiceBuilder WithMockSemanticCacheService(Action<Mock<ISemanticCacheService>>? configure = null)
     {
         var mock = For<ISemanticCacheService>();
-        
+
         // Default behaviors - cache misses by default
         mock.Setup(x => x.GetSemanticallySimilarAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((SemanticCacheResult?)null);
-            
+
         mock.Setup(x => x.CacheSemanticQueryAsync(
-                It.IsAny<string>(), 
-                It.IsAny<string>(), 
-                It.IsAny<QueryResponse>(), 
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<QueryResponse>(),
                 It.IsAny<TimeSpan?>()))
             .Returns(Task.CompletedTask);
-            
+
         mock.Setup(x => x.GetCacheStatisticsAsync())
             .ReturnsAsync(new SemanticCacheStatistics
             {
@@ -226,7 +229,7 @@ public class MockServiceBuilder
     public MockServiceBuilder WithMockLogger<T>(Action<Mock<ILogger<T>>>? configure = null)
     {
         var mock = For<ILogger<T>>();
-        
+
         // Default behavior - allow all logging calls
         mock.Setup(x => x.Log(
                 It.IsAny<LogLevel>(),
@@ -246,10 +249,10 @@ public class MockServiceBuilder
     public MockServiceBuilder WithFailingAIService(string errorMessage = "AI service error")
     {
         var mock = For<IAIService>();
-        
+
         mock.Setup(x => x.GenerateSQLAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException(errorMessage));
-            
+
         mock.Setup(x => x.CalculateConfidenceScoreAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ThrowsAsync(new InvalidOperationException(errorMessage));
 
@@ -262,7 +265,7 @@ public class MockServiceBuilder
     public MockServiceBuilder WithSlowAIService(TimeSpan delay)
     {
         var mock = For<IAIService>();
-        
+
         mock.Setup(x => x.GenerateSQLAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(async (string prompt, CancellationToken ct) =>
             {
@@ -279,10 +282,10 @@ public class MockServiceBuilder
     public MockServiceBuilder WithCacheHits<T>(Dictionary<string, T> cachedItems) where T : class
     {
         var mock = For<ICacheService>();
-        
+
         mock.Setup(x => x.GetAsync<T>(It.IsAny<string>()))
             .Returns<string>(key => Task.FromResult(cachedItems.GetValueOrDefault(key)));
-            
+
         mock.Setup(x => x.ExistsAsync(It.IsAny<string>()))
             .Returns<string>(key => Task.FromResult(cachedItems.ContainsKey(key)));
 
@@ -338,17 +341,17 @@ public static class MockServiceBuilderExtensions
     /// <summary>
     /// Configure a mock to return specific values for specific inputs
     /// </summary>
-    public static MockServiceBuilder WithAIServiceResponses(this MockServiceBuilder builder, 
+    public static MockServiceBuilder WithAIServiceResponses(this MockServiceBuilder builder,
         Dictionary<string, string> promptToSqlMap)
     {
         var mock = builder.For<IAIService>();
-        
+
         foreach (var kvp in promptToSqlMap)
         {
             mock.Setup(x => x.GenerateSQLAsync(kvp.Key, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(kvp.Value);
         }
-        
+
         return builder;
     }
 
@@ -359,32 +362,32 @@ public static class MockServiceBuilderExtensions
         Dictionary<string, QueryResponse> sqlToResultMap)
     {
         var mock = builder.For<IQueryService>();
-        
+
         foreach (var kvp in sqlToResultMap)
         {
-            mock.Setup(x => x.ExecuteQueryAsync(kvp.Key, It.IsAny<CancellationToken>()))
+            mock.Setup(x => x.ExecuteAsync(kvp.Key, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(kvp.Value);
         }
-        
+
         return builder;
     }
 
     /// <summary>
     /// Configure event bus to capture published events
     /// </summary>
-    public static MockServiceBuilder WithEventCapture(this MockServiceBuilder builder, 
+    public static MockServiceBuilder WithEventCapture(this MockServiceBuilder builder,
         List<IEvent> capturedEvents)
     {
         var mock = builder.For<IEventBus>();
-        
+
         mock.Setup(x => x.PublishAsync(It.IsAny<IEvent>(), It.IsAny<CancellationToken>()))
             .Callback<IEvent, CancellationToken>((evt, ct) => capturedEvents.Add(evt))
             .Returns(Task.CompletedTask);
-            
+
         mock.Setup(x => x.PublishAsync(It.IsAny<IEvent>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Callback<IEvent, string, CancellationToken>((evt, key, ct) => capturedEvents.Add(evt))
             .Returns(Task.CompletedTask);
-        
+
         return builder;
     }
 }

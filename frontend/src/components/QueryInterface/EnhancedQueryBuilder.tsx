@@ -1,42 +1,36 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Box,
   Card,
-  CardContent,
-  TextField,
+  Input,
   Button,
   Typography,
   Alert,
-  CircularProgress,
-  Paper,
-  Chip,
-  Autocomplete,
-  Grid,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
+  Spin,
+  Tag,
+  AutoComplete,
+  Row,
+  Col,
+  Collapse,
   Tabs,
-  Tab,
   List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   Tooltip,
-} from '@mui/material';
+  Space,
+  Flex,
+} from 'antd';
 import {
-  Send as SendIcon,
-  ExpandMore as ExpandMoreIcon,
-  Timer as TimerIcon,
-  TableRows as TableRowsIcon,
-  Psychology as PsychologyIcon,
-  Category as CategoryIcon,
-  TrendingUp as TrendingUpIcon,
-  Lightbulb as LightbulbIcon,
-  Compare as CompareIcon,
-  Speed as SpeedIcon,
-  Star as StarIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material';
+  SendOutlined as SendIcon,
+  DownOutlined as ExpandMoreIcon,
+  ClockCircleOutlined as TimerIcon,
+  TableOutlined as TableRowsIcon,
+  BulbOutlined as PsychologyIcon,
+  AppstoreOutlined as CategoryIcon,
+  RiseOutlined as TrendingUpIcon,
+  BulbOutlined as LightbulbIcon,
+  SwapOutlined as CompareIcon,
+  DashboardOutlined as SpeedIcon,
+  StarOutlined as StarIcon,
+  WarningOutlined as WarningIcon,
+} from '@ant-design/icons';
 import {
   ApiService,
   EnhancedQueryRequest,
@@ -61,7 +55,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`enhanced-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <div style={{ padding: 24 }}>{children}</div>}
     </div>
   );
 }

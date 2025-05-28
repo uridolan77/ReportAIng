@@ -7,7 +7,9 @@ const usePerformanceMonitor = (componentName: string) => {
     const startTime = performance.now();
     return () => {
       const endTime = performance.now();
-      console.log(`${componentName} render time: ${endTime - startTime}ms`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`${componentName} render time: ${endTime - startTime}ms`);
+      }
     };
   });
 };

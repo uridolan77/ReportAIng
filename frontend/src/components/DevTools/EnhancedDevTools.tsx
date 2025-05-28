@@ -807,7 +807,9 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
                       block
                       icon={<SecurityScanOutlined />}
                       onClick={() => {
-                        console.log('Security scan initiated');
+                        if (process.env.NODE_ENV === 'development') {
+                          console.log('Security scan initiated');
+                        }
                         addLog('Security', 'Security scan completed', 'info');
                       }}
                     >

@@ -34,8 +34,8 @@ public class VisualizationServiceTests
         var query = "SELECT sales, region FROM sales_data";
         var columns = new[]
         {
-            new ColumnInfo { Name = "sales", DataType = "decimal", IsNullable = false },
-            new ColumnInfo { Name = "region", DataType = "varchar", IsNullable = false }
+            new ColumnMetadata { Name = "sales", DataType = "decimal", IsNullable = false },
+            new ColumnMetadata { Name = "region", DataType = "varchar", IsNullable = false }
         };
         var data = new object[]
         {
@@ -75,9 +75,9 @@ public class VisualizationServiceTests
         var query = "SELECT sales, region, date FROM sales_data";
         var columns = new[]
         {
-            new ColumnInfo { Name = "sales", DataType = "decimal", IsNullable = false },
-            new ColumnInfo { Name = "region", DataType = "varchar", IsNullable = false },
-            new ColumnInfo { Name = "date", DataType = "datetime", IsNullable = false }
+            new ColumnMetadata { Name = "sales", DataType = "decimal", IsNullable = false },
+            new ColumnMetadata { Name = "region", DataType = "varchar", IsNullable = false },
+            new ColumnMetadata { Name = "date", DataType = "datetime", IsNullable = false }
         };
         var data = new object[]
         {
@@ -115,9 +115,9 @@ public class VisualizationServiceTests
         // Arrange
         var columns = new[]
         {
-            new ColumnInfo { Name = "sales", DataType = "decimal", IsNullable = false },
-            new ColumnInfo { Name = "profit", DataType = "decimal", IsNullable = false },
-            new ColumnInfo { Name = "region", DataType = "varchar", IsNullable = false }
+            new ColumnMetadata { Name = "sales", DataType = "decimal", IsNullable = false },
+            new ColumnMetadata { Name = "profit", DataType = "decimal", IsNullable = false },
+            new ColumnMetadata { Name = "region", DataType = "varchar", IsNullable = false }
         };
         var data = new object[]
         {
@@ -143,8 +143,8 @@ public class VisualizationServiceTests
         // Arrange
         var columns = new[]
         {
-            new ColumnInfo { Name = "date", DataType = "datetime", IsNullable = false },
-            new ColumnInfo { Name = "value", DataType = "decimal", IsNullable = false }
+            new ColumnMetadata { Name = "date", DataType = "datetime", IsNullable = false },
+            new ColumnMetadata { Name = "value", DataType = "decimal", IsNullable = false }
         };
         var data = new object[]
         {
@@ -173,7 +173,7 @@ public class VisualizationServiceTests
         // Arrange
         var columns = new[]
         {
-            new ColumnInfo { Name = "kpi_value", DataType = "decimal", IsNullable = false }
+            new ColumnMetadata { Name = "kpi_value", DataType = "decimal", IsNullable = false }
         };
         var data = new object[]
         {
@@ -246,9 +246,9 @@ public class VisualizationServiceTests
         var query = "SELECT category, subcategory, sales FROM product_sales";
         var columns = new[]
         {
-            new ColumnInfo { Name = "category", DataType = "varchar", IsNullable = false },
-            new ColumnInfo { Name = "subcategory", DataType = "varchar", IsNullable = false },
-            new ColumnInfo { Name = "sales", DataType = "decimal", IsNullable = false }
+            new ColumnMetadata { Name = "category", DataType = "varchar", IsNullable = false },
+            new ColumnMetadata { Name = "subcategory", DataType = "varchar", IsNullable = false },
+            new ColumnMetadata { Name = "sales", DataType = "decimal", IsNullable = false }
         };
         var data = new object[]
         {
@@ -287,9 +287,9 @@ public class VisualizationServiceTests
         var query = "SELECT sales, marketing, profit FROM business_metrics";
         var columns = new[]
         {
-            new ColumnInfo { Name = "sales", DataType = "decimal", IsNullable = false },
-            new ColumnInfo { Name = "marketing", DataType = "decimal", IsNullable = false },
-            new ColumnInfo { Name = "profit", DataType = "decimal", IsNullable = false }
+            new ColumnMetadata { Name = "sales", DataType = "decimal", IsNullable = false },
+            new ColumnMetadata { Name = "marketing", DataType = "decimal", IsNullable = false },
+            new ColumnMetadata { Name = "profit", DataType = "decimal", IsNullable = false }
         };
         var data = new object[1000]; // Large dataset for correlation analysis
 
@@ -327,8 +327,8 @@ public class VisualizationServiceTests
         // Arrange
         var columns = new[]
         {
-            new ColumnInfo { Name = "value", DataType = "decimal", IsNullable = false },
-            new ColumnInfo { Name = "category", DataType = "varchar", IsNullable = false }
+            new ColumnMetadata { Name = "value", DataType = "decimal", IsNullable = false },
+            new ColumnMetadata { Name = "category", DataType = "varchar", IsNullable = false }
         };
         var data = new object[] { new { value = 100, category = "A" } };
 
@@ -350,7 +350,7 @@ public class VisualizationServiceTests
         var query = "SELECT * FROM sales_data";
         var columns = new[]
         {
-            new ColumnInfo { Name = "sales", DataType = "decimal", IsNullable = false }
+            new ColumnMetadata { Name = "sales", DataType = "decimal", IsNullable = false }
         };
         var data = new object[] { new { sales = 1000 } };
         var preferences = new DashboardPreferences

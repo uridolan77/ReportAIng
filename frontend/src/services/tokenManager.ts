@@ -1,5 +1,5 @@
 import { SecurityUtils } from '../utils/security';
-import { apiClient } from './apiClient';
+import { ApiService } from './api';
 import { API_CONFIG } from '../config/api';
 
 interface TokenPair {
@@ -29,7 +29,7 @@ class TokenManager {
     }
 
     this.refreshPromise = this.performTokenRefresh();
-    
+
     try {
       const result = await this.refreshPromise;
       return result;
@@ -40,7 +40,7 @@ class TokenManager {
 
   private async performTokenRefresh(): Promise<TokenPair> {
     const currentRefreshToken = await this.getRefreshToken();
-    
+
     if (!currentRefreshToken) {
       throw new Error('No refresh token available');
     }
@@ -52,7 +52,7 @@ class TokenManager {
     }
 
     try {
-      const response = await apiClient.post<{
+      const response = await ApiService.post<{
         success: boolean;
         accessToken: string;
         refreshToken: string;
@@ -67,10 +67,10 @@ class TokenManager {
       }
 
       const { accessToken, refreshToken, expiresIn } = response;
-      
+
       // Store new tokens securely
       await this.storeTokens({ accessToken, refreshToken, expiresIn });
-      
+
       // Update metadata
       const now = Date.now();
       this.tokenMetadata.set(refreshToken, {
@@ -82,10 +82,10 @@ class TokenManager {
 
       // Clean up old metadata
       this.tokenMetadata.delete(currentRefreshToken);
-      
+
       // Schedule next refresh
       this.scheduleTokenRefresh(expiresIn - this.tokenExpiryBuffer);
-      
+
       console.log('Token refreshed successfully');
       return { accessToken, refreshToken, expiresIn };
     } catch (error) {
@@ -100,7 +100,7 @@ class TokenManager {
       // Encrypt tokens before storing
       const encryptedAccessToken = await SecurityUtils.encryptToken(tokens.accessToken);
       const encryptedRefreshToken = await SecurityUtils.encryptToken(tokens.refreshToken);
-      
+
       // Store in secure storage with integrity checks
       const tokenData = {
         accessToken: encryptedAccessToken,
@@ -111,12 +111,12 @@ class TokenManager {
       };
 
       SecurityUtils.setSecureSessionStorage('secure-tokens', JSON.stringify(tokenData));
-      
+
       // Also update the auth store
       const { useAuthStore } = await import('../stores/authStore');
       const authStore = useAuthStore.getState();
       authStore.refreshAuth();
-      
+
     } catch (error) {
       console.error('Failed to store tokens:', error);
       throw new Error('Token storage failed');
@@ -134,7 +134,7 @@ class TokenManager {
       }
 
       const parsed = JSON.parse(tokenData);
-      
+
       // Verify integrity
       const isValid = await this.verifyTokenIntegrity(parsed);
       if (!isValid) {
@@ -163,7 +163,7 @@ class TokenManager {
     try {
       const decryptedAccess = await SecurityUtils.decryptToken(tokenData.accessToken);
       const decryptedRefresh = await SecurityUtils.decryptToken(tokenData.refreshToken);
-      
+
       const expectedIntegrity = await this.generateTokenIntegrity({
         accessToken: decryptedAccess,
         refreshToken: decryptedRefresh,
@@ -185,7 +185,7 @@ class TokenManager {
 
     // Ensure delay is positive and reasonable
     const safeDelay = Math.max(delay, 30000); // Minimum 30 seconds
-    
+
     this.refreshTimeoutId = setTimeout(() => {
       this.refreshAccessToken().catch(error => {
         console.error('Scheduled token refresh failed:', error);
@@ -198,13 +198,13 @@ class TokenManager {
 
   private async handleRefreshFailure(error: any): Promise<void> {
     console.error('Token refresh failure:', error);
-    
+
     // Clear stored tokens
     this.clearTokens();
-    
+
     // Clear metadata
     this.tokenMetadata.clear();
-    
+
     // Notify auth store to logout
     try {
       const { useAuthStore } = await import('../stores/authStore');
@@ -213,7 +213,7 @@ class TokenManager {
     } catch (importError) {
       console.error('Failed to import auth store:', importError);
     }
-    
+
     // Redirect to login
     window.location.href = '/login';
   }
@@ -237,7 +237,7 @@ class TokenManager {
       const parsed = JSON.parse(tokenData);
       const now = Date.now();
       const expiresAt = parsed.storedAt + (parsed.expiresIn * 1000);
-      
+
       // Refresh if token expires within the buffer time
       return (expiresAt - now) <= this.tokenExpiryBuffer;
     } catch (error) {
@@ -258,7 +258,7 @@ class TokenManager {
       }
 
       const parsed = JSON.parse(tokenData);
-      
+
       // Verify integrity
       const isValid = await this.verifyTokenIntegrity(parsed);
       if (!isValid) {
@@ -282,7 +282,7 @@ class TokenManager {
       if (shouldRefresh) {
         await this.refreshAccessToken();
       }
-      
+
       console.log('Token manager initialized');
     } catch (error) {
       console.error('Token manager initialization failed:', error);

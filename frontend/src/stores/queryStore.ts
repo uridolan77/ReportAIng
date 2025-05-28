@@ -216,9 +216,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
   clearCache: async (pattern?: string) => {
     try {
       await queryCacheService.invalidateCache(pattern);
-      console.log('Cache cleared successfully');
+      // Cache cleared successfully
     } catch (error) {
-      console.error('Failed to clear cache:', error);
+      // Failed to clear cache - error handled by service layer
     }
   },
 
@@ -226,7 +226,7 @@ export const useQueryStore = create<QueryState>((set, get) => ({
     try {
       return await queryCacheService.getCacheMetrics();
     } catch (error) {
-      console.error('Failed to get cache metrics:', error);
+      // Failed to get cache metrics - error handled by service layer
       return null;
     }
   },
