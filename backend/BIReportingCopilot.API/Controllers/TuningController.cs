@@ -1,0 +1,453 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.DTOs;
+using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Infrastructure.Data;
+using System.Security.Claims;
+
+namespace BIReportingCopilot.API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize(Roles = "Admin")]
+public class TuningController : ControllerBase
+{
+    private readonly ITuningService _tuningService;
+    private readonly ILogger<TuningController> _logger;
+    private readonly BICopilotContext _context;
+
+    public TuningController(ITuningService tuningService, ILogger<TuningController> logger, BICopilotContext context)
+    {
+        _tuningService = tuningService;
+        _logger = logger;
+        _context = context;
+    }
+
+    private string GetCurrentUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+
+    #region Dashboard
+
+    [HttpGet("dashboard")]
+    public async Task<ActionResult<TuningDashboardData>> GetDashboard()
+    {
+        try
+        {
+            var dashboard = await _tuningService.GetDashboardDataAsync();
+            return Ok(dashboard);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting tuning dashboard data");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    #endregion
+
+    #region Business Table Info
+
+    [HttpGet("tables")]
+    public async Task<ActionResult<List<BusinessTableInfoDto>>> GetBusinessTables()
+    {
+        try
+        {
+            var tables = await _tuningService.GetBusinessTablesAsync();
+            return Ok(tables);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting business tables");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpGet("tables/{id}")]
+    public async Task<ActionResult<BusinessTableInfoDto>> GetBusinessTable(long id)
+    {
+        try
+        {
+            var table = await _tuningService.GetBusinessTableAsync(id);
+            if (table == null)
+                return NotFound();
+
+            return Ok(table);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting business table {TableId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPost("tables")]
+    public async Task<ActionResult<BusinessTableInfoDto>> CreateBusinessTable([FromBody] CreateTableInfoRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var table = await _tuningService.CreateBusinessTableAsync(request, userId);
+            return CreatedAtAction(nameof(GetBusinessTable), new { id = table.Id }, table);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating business table");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPut("tables/{id}")]
+    public async Task<ActionResult<BusinessTableInfoDto>> UpdateBusinessTable(long id, [FromBody] CreateTableInfoRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var table = await _tuningService.UpdateBusinessTableAsync(id, request, userId);
+            if (table == null)
+                return NotFound();
+
+            return Ok(table);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating business table {TableId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpDelete("tables/{id}")]
+    public async Task<ActionResult> DeleteBusinessTable(long id)
+    {
+        try
+        {
+            var success = await _tuningService.DeleteBusinessTableAsync(id);
+            if (!success)
+                return NotFound();
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting business table {TableId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    #endregion
+
+    #region Query Patterns
+
+    [HttpGet("patterns")]
+    public async Task<ActionResult<List<QueryPatternDto>>> GetQueryPatterns()
+    {
+        try
+        {
+            var patterns = await _tuningService.GetQueryPatternsAsync();
+            return Ok(patterns);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting query patterns");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpGet("patterns/{id}")]
+    public async Task<ActionResult<QueryPatternDto>> GetQueryPattern(long id)
+    {
+        try
+        {
+            var pattern = await _tuningService.GetQueryPatternAsync(id);
+            if (pattern == null)
+                return NotFound();
+
+            return Ok(pattern);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting query pattern {PatternId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPost("patterns")]
+    public async Task<ActionResult<QueryPatternDto>> CreateQueryPattern([FromBody] CreateQueryPatternRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var pattern = await _tuningService.CreateQueryPatternAsync(request, userId);
+            return CreatedAtAction(nameof(GetQueryPattern), new { id = pattern.Id }, pattern);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating query pattern");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPut("patterns/{id}")]
+    public async Task<ActionResult<QueryPatternDto>> UpdateQueryPattern(long id, [FromBody] CreateQueryPatternRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var pattern = await _tuningService.UpdateQueryPatternAsync(id, request, userId);
+            if (pattern == null)
+                return NotFound();
+
+            return Ok(pattern);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating query pattern {PatternId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpDelete("patterns/{id}")]
+    public async Task<ActionResult> DeleteQueryPattern(long id)
+    {
+        try
+        {
+            var success = await _tuningService.DeleteQueryPatternAsync(id);
+            if (!success)
+                return NotFound();
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting query pattern {PatternId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPost("patterns/{id}/test")]
+    public async Task<ActionResult<string>> TestQueryPattern(long id, [FromBody] string naturalLanguageQuery)
+    {
+        try
+        {
+            var result = await _tuningService.TestQueryPatternAsync(id, naturalLanguageQuery);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error testing query pattern {PatternId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    #endregion
+
+    #region Business Glossary
+
+    [HttpGet("glossary")]
+    public async Task<ActionResult<List<BusinessGlossaryDto>>> GetGlossaryTerms()
+    {
+        try
+        {
+            var terms = await _tuningService.GetGlossaryTermsAsync();
+            return Ok(terms);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting glossary terms");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPost("glossary")]
+    public async Task<ActionResult<BusinessGlossaryDto>> CreateGlossaryTerm([FromBody] BusinessGlossaryDto request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var term = await _tuningService.CreateGlossaryTermAsync(request, userId);
+            return Ok(term);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating glossary term");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPut("glossary/{id}")]
+    public async Task<ActionResult<BusinessGlossaryDto>> UpdateGlossaryTerm(long id, [FromBody] BusinessGlossaryDto request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var term = await _tuningService.UpdateGlossaryTermAsync(id, request, userId);
+            if (term == null)
+                return NotFound();
+
+            return Ok(term);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating glossary term {TermId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpDelete("glossary/{id}")]
+    public async Task<ActionResult> DeleteGlossaryTerm(long id)
+    {
+        try
+        {
+            var success = await _tuningService.DeleteGlossaryTermAsync(id);
+            if (!success)
+                return NotFound();
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting glossary term {TermId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    #endregion
+
+    #region AI Settings
+
+    [HttpGet("settings")]
+    public async Task<ActionResult<List<AITuningSettingsDto>>> GetAISettings()
+    {
+        try
+        {
+            var settings = await _tuningService.GetAISettingsAsync();
+            return Ok(settings);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting AI settings");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPut("settings/{id}")]
+    public async Task<ActionResult<AITuningSettingsDto>> UpdateAISetting(long id, [FromBody] AITuningSettingsDto request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var setting = await _tuningService.UpdateAISettingAsync(id, request, userId);
+            if (setting == null)
+                return NotFound();
+
+            return Ok(setting);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating AI setting {SettingId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    #endregion
+
+    #region Prompt Logs (Admin Debugging)
+
+    [HttpGet("prompt-logs")]
+    public async Task<ActionResult<IEnumerable<PromptLogDto>>> GetPromptLogs(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        [FromQuery] string? promptType = null,
+        [FromQuery] bool? success = null,
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null)
+    {
+        try
+        {
+            var query = _context.PromptLogs.AsQueryable();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(promptType))
+                query = query.Where(p => p.PromptType == promptType);
+
+            if (success.HasValue)
+                query = query.Where(p => p.Success == success.Value);
+
+            if (fromDate.HasValue)
+                query = query.Where(p => p.CreatedDate >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(p => p.CreatedDate <= toDate.Value);
+
+            var logs = await query
+                .OrderByDescending(p => p.CreatedDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new PromptLogDto
+                {
+                    Id = p.Id,
+                    PromptType = p.PromptType,
+                    UserQuery = p.UserQuery,
+                    FullPrompt = p.FullPrompt,
+                    GeneratedSQL = p.GeneratedSQL,
+                    Success = p.Success,
+                    ErrorMessage = p.ErrorMessage,
+                    PromptLength = p.PromptLength,
+                    ResponseLength = p.ResponseLength,
+                    ExecutionTimeMs = p.ExecutionTimeMs,
+                    CreatedDate = p.CreatedDate,
+                    UserId = p.UserId,
+                    SessionId = p.SessionId,
+                    Metadata = p.Metadata
+                })
+                .ToListAsync();
+
+            return Ok(logs);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving prompt logs");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpGet("prompt-logs/{id}")]
+    public async Task<ActionResult<PromptLogDto>> GetPromptLog(long id)
+    {
+        try
+        {
+            var log = await _context.PromptLogs
+                .Where(p => p.Id == id)
+                .Select(p => new PromptLogDto
+                {
+                    Id = p.Id,
+                    PromptType = p.PromptType,
+                    UserQuery = p.UserQuery,
+                    FullPrompt = p.FullPrompt,
+                    GeneratedSQL = p.GeneratedSQL,
+                    Success = p.Success,
+                    ErrorMessage = p.ErrorMessage,
+                    PromptLength = p.PromptLength,
+                    ResponseLength = p.ResponseLength,
+                    ExecutionTimeMs = p.ExecutionTimeMs,
+                    CreatedDate = p.CreatedDate,
+                    UserId = p.UserId,
+                    SessionId = p.SessionId,
+                    Metadata = p.Metadata
+                })
+                .FirstOrDefaultAsync();
+
+            if (log == null)
+                return NotFound();
+
+            return Ok(log);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving prompt log {Id}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    #endregion
+}

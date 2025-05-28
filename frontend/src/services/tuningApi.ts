@@ -1,0 +1,424 @@
+import { API_CONFIG, getAuthHeaders } from '../config/api';
+
+// Types
+export interface BusinessTableInfo {
+  id: number;
+  tableName: string;
+  schemaName: string;
+  businessPurpose: string;
+  businessContext: string;
+  primaryUseCase: string;
+  commonQueryPatterns: string[];
+  businessRules: string;
+  isActive: boolean;
+  columns: BusinessColumnInfo[];
+}
+
+export interface BusinessColumnInfo {
+  id: number;
+  columnName: string;
+  businessMeaning: string;
+  businessContext: string;
+  dataExamples: string[];
+  validationRules: string;
+  isKeyColumn: boolean;
+  isActive: boolean;
+}
+
+export interface QueryPattern {
+  id: number;
+  patternName: string;
+  naturalLanguagePattern: string;
+  sqlTemplate: string;
+  description: string;
+  businessContext: string;
+  keywords: string[];
+  requiredTables: string[];
+  priority: number;
+  isActive: boolean;
+}
+
+export interface BusinessGlossaryTerm {
+  id: number;
+  term: string;
+  definition: string;
+  businessContext: string;
+  synonyms: string[];
+  relatedTerms: string[];
+  category: string;
+  isActive: boolean;
+}
+
+export interface AITuningSetting {
+  id: number;
+  settingKey: string;
+  settingValue: string;
+  description: string;
+  category: string;
+  dataType: string;
+  isActive: boolean;
+}
+
+export interface PromptLog {
+  id: number;
+  promptType: string;
+  userQuery: string;
+  fullPrompt: string;
+  generatedSQL?: string;
+  success?: boolean;
+  errorMessage?: string;
+  promptLength: number;
+  responseLength?: number;
+  executionTimeMs?: number;
+  createdDate: string;
+  userId?: string;
+  sessionId?: string;
+  metadata?: string;
+}
+
+export interface TuningDashboardData {
+  totalTables: number;
+  totalColumns: number;
+  totalPatterns: number;
+  totalGlossaryTerms: number;
+  activePromptTemplates: number;
+  recentlyUpdatedTables: string[];
+  mostUsedPatterns: string[];
+  patternUsageStats: Record<string, number>;
+}
+
+export interface CreateTableRequest {
+  tableName: string;
+  schemaName: string;
+  businessPurpose: string;
+  businessContext: string;
+  primaryUseCase: string;
+  commonQueryPatterns: string[];
+  businessRules: string;
+  columns: CreateColumnRequest[];
+}
+
+export interface CreateColumnRequest {
+  columnName: string;
+  businessMeaning: string;
+  businessContext: string;
+  dataExamples: string[];
+  validationRules: string;
+  isKeyColumn: boolean;
+}
+
+export interface CreateQueryPatternRequest {
+  patternName: string;
+  naturalLanguagePattern: string;
+  sqlTemplate: string;
+  description: string;
+  businessContext: string;
+  keywords: string[];
+  requiredTables: string[];
+  priority: number;
+}
+
+class TuningApiService {
+  private baseUrl = API_CONFIG.BASE_URL;
+
+  // Dashboard
+  async getDashboard(): Promise<TuningDashboardData> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/dashboard`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get dashboard: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Business Tables
+  async getBusinessTables(): Promise<BusinessTableInfo[]> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/tables`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get business tables: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async getBusinessTable(id: number): Promise<BusinessTableInfo> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/tables/${id}`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get business table: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async createBusinessTable(request: CreateTableRequest): Promise<BusinessTableInfo> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/tables`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create business table: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async updateBusinessTable(id: number, request: CreateTableRequest): Promise<BusinessTableInfo> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/tables/${id}`, {
+      method: 'PUT',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update business table: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async deleteBusinessTable(id: number): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/tables/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete business table: ${response.statusText}`);
+    }
+  }
+
+  // Query Patterns
+  async getQueryPatterns(): Promise<QueryPattern[]> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/patterns`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get query patterns: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async getQueryPattern(id: number): Promise<QueryPattern> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/patterns/${id}`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get query pattern: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async createQueryPattern(request: CreateQueryPatternRequest): Promise<QueryPattern> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/patterns`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create query pattern: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async updateQueryPattern(id: number, request: CreateQueryPatternRequest): Promise<QueryPattern> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/patterns/${id}`, {
+      method: 'PUT',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update query pattern: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async deleteQueryPattern(id: number): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/patterns/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete query pattern: ${response.statusText}`);
+    }
+  }
+
+  async testQueryPattern(id: number, naturalLanguageQuery: string): Promise<string> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/patterns/${id}/test`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(naturalLanguageQuery),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to test query pattern: ${response.statusText}`);
+    }
+
+    return response.text();
+  }
+
+  // Business Glossary
+  async getGlossaryTerms(): Promise<BusinessGlossaryTerm[]> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/glossary`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get glossary terms: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async createGlossaryTerm(request: BusinessGlossaryTerm): Promise<BusinessGlossaryTerm> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/glossary`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create glossary term: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async updateGlossaryTerm(id: number, request: BusinessGlossaryTerm): Promise<BusinessGlossaryTerm> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/glossary/${id}`, {
+      method: 'PUT',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update glossary term: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async deleteGlossaryTerm(id: number): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/glossary/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete glossary term: ${response.statusText}`);
+    }
+  }
+
+  // AI Settings
+  async getAISettings(): Promise<AITuningSetting[]> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/settings`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get AI settings: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async updateAISetting(id: number, request: AITuningSetting): Promise<AITuningSetting> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/settings/${id}`, {
+      method: 'PUT',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update AI setting: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Prompt Logs
+  async getPromptLogs(params: {
+    page?: number;
+    pageSize?: number;
+    promptType?: string;
+    success?: boolean;
+    fromDate?: string;
+    toDate?: string;
+  }): Promise<PromptLog[]> {
+    const searchParams = new URLSearchParams();
+
+    if (params.page) searchParams.append('page', params.page.toString());
+    if (params.pageSize) searchParams.append('pageSize', params.pageSize.toString());
+    if (params.promptType) searchParams.append('promptType', params.promptType);
+    if (params.success !== undefined) searchParams.append('success', params.success.toString());
+    if (params.fromDate) searchParams.append('fromDate', params.fromDate);
+    if (params.toDate) searchParams.append('toDate', params.toDate);
+
+    const response = await fetch(`${this.baseUrl}/api/tuning/prompt-logs?${searchParams}`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get prompt logs: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async getPromptLog(id: number): Promise<PromptLog> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/prompt-logs/${id}`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get prompt log: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+}
+
+export const tuningApi = new TuningApiService();

@@ -1,0 +1,74 @@
+# Root .gitignore for BI Reporting Copilot
+
+# Configuration files with sensitive data
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/appsettings.Staging.json
+**/appsettings.Local.json
+
+# Environment-specific configuration
+**/*.env
+**/*.env.local
+**/*.env.development
+**/*.env.production
+
+# Azure Key Vault secrets
+**/secrets.json
+
+# Database connection strings and API keys
+**/connectionstrings.json
+**/apikeys.json
+
+# Logs
+**/logs/
+**/*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build outputs
+**/bin/
+**/obj/
+**/dist/
+**/build/
+
+# Node modules
+**/node_modules/
+
+# Package manager files
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# Test coverage
+**/coverage/
+
+# Database files
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+
+# Backup files
+**/*.bak
+**/*.backup
+
+# Local development files
+local-config.json
+dev-settings.json

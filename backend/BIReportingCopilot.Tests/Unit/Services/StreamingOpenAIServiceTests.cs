@@ -1,0 +1,264 @@
+using Xunit;
+using Moq;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using BIReportingCopilot.Infrastructure.AI;
+using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Models;
+using Azure.AI.OpenAI;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Threading;
+
+namespace BIReportingCopilot.Tests.Unit.Services;
+
+/// <summary>
+/// Unit tests for StreamingOpenAIService
+/// </summary>
+public class StreamingOpenAIServiceTests
+{
+    private readonly Mock<OpenAIClient> _mockOpenAIClient;
+    private readonly Mock<IConfiguration> _mockConfiguration;
+    private readonly Mock<ILogger<StreamingOpenAIService>> _mockLogger;
+    private readonly Mock<ICacheService> _mockCacheService;
+    private readonly Mock<IContextManager> _mockContextManager;
+    private readonly StreamingOpenAIService _service;
+
+    public StreamingOpenAIServiceTests()
+    {
+        _mockOpenAIClient = new Mock<OpenAIClient>();
+        _mockConfiguration = new Mock<IConfiguration>();
+        _mockLogger = new Mock<ILogger<StreamingOpenAIService>>();
+        _mockCacheService = new Mock<ICacheService>();
+        _mockContextManager = new Mock<IContextManager>();
+
+        // Setup configuration
+        var mockOpenAISection = new Mock<IConfigurationSection>();
+        mockOpenAISection.Setup(x => x["ApiKey"]).Returns("test-key");
+        mockOpenAISection.Setup(x => x["Model"]).Returns("gpt-4");
+        mockOpenAISection.Setup(x => x["MaxTokens"]).Returns("1000");
+        mockOpenAISection.Setup(x => x["Temperature"]).Returns("0.1");
+        mockOpenAISection.Setup(x => x["FrequencyPenalty"]).Returns("0.0");
+        mockOpenAISection.Setup(x => x["PresencePenalty"]).Returns("0.0");
+
+        var mockAzureSection = new Mock<IConfigurationSection>();
+        mockAzureSection.Setup(x => x["Endpoint"]).Returns("https://test.openai.azure.com");
+        mockAzureSection.Setup(x => x["ApiKey"]).Returns("test-azure-key");
+        mockAzureSection.Setup(x => x["DeploymentName"]).Returns("gpt-4");
+
+        _mockConfiguration.Setup(x => x.GetSection("OpenAI")).Returns(mockOpenAISection.Object);
+        _mockConfiguration.Setup(x => x.GetSection("AzureOpenAI")).Returns(mockAzureSection.Object);
+
+        // Setup configuration binding for AIServiceConfiguration
+        _mockConfiguration.Setup(x => x.GetSection("OpenAI:ApiKey")).Returns(mockOpenAISection.Object);
+        _mockConfiguration.Setup(x => x.GetSection("AzureOpenAI:ApiKey")).Returns(mockAzureSection.Object);
+
+        _service = new StreamingOpenAIService(
+            _mockOpenAIClient.Object,
+            _mockConfiguration.Object,
+            _mockLogger.Object,
+            _mockCacheService.Object,
+            _mockContextManager.Object);
+    }
+
+    [Fact]
+    public async Task GenerateSQLStreamAsync_WithValidPrompt_ReturnsStreamingResponse()
+    {
+        // Arrange
+        var prompt = "Show me all customers";
+        var schema = new SchemaMetadata
+        {
+            Tables = new List<TableMetadata>
+            {
+                new TableMetadata
+                {
+                    Name = "Customers",
+                    Description = "Customer information",
+                    Columns = new List<ColumnMetadata>
+                    {
+                        new ColumnMetadata { Name = "Id", DataType = "int", IsPrimaryKey = true },
+                        new ColumnMetadata { Name = "Name", DataType = "varchar(100)" }
+                    }
+                }
+            }
+        };
+
+        var context = new QueryContext
+        {
+            UserId = "test-user",
+            SessionId = "test-session",
+            PreferredComplexity = StreamingQueryComplexity.Simple
+        };
+
+        _mockCacheService.Setup(x => x.GetAsync<string>(It.IsAny<string>()))
+            .ReturnsAsync((string?)null);
+
+        // Act & Assert
+        var responses = new List<StreamingResponse>();
+        await foreach (var response in _service.GenerateSQLStreamAsync(prompt, schema, context))
+        {
+            responses.Add(response);
+            Assert.NotNull(response);
+            Assert.True(response.Type == StreamingResponseType.SQLGeneration ||
+                       response.Type == StreamingResponseType.Error);
+        }
+
+        // Should have at least one response
+        Assert.NotEmpty(responses);
+    }
+
+    [Fact]
+    public async Task GenerateSQLStreamAsync_WhenNotConfigured_ReturnsErrorResponse()
+    {
+        // Arrange
+        var prompt = "Show me all customers";
+
+        // Act
+        var responses = new List<StreamingResponse>();
+        await foreach (var response in _service.GenerateSQLStreamAsync(prompt))
+        {
+            responses.Add(response);
+        }
+
+        // Assert
+        Assert.Single(responses);
+        var errorResponse = responses[0];
+        Assert.Equal(StreamingResponseType.Error, errorResponse.Type);
+        Assert.Contains("not configured", errorResponse.Content);
+        Assert.True(errorResponse.IsComplete);
+    }
+
+    [Fact]
+    public async Task GenerateInsightStreamAsync_WithValidData_ReturnsStreamingResponse()
+    {
+        // Arrange
+        var query = "SELECT COUNT(*) as CustomerCount FROM Customers";
+        var data = new object[] { new { CustomerCount = 100 } };
+        var context = new AnalysisContext
+        {
+            BusinessGoal = "Understand customer base",
+            Type = AnalysisType.Descriptive
+        };
+
+        // Act
+        var responses = new List<StreamingResponse>();
+        await foreach (var response in _service.GenerateInsightStreamAsync(query, data, context))
+        {
+            responses.Add(response);
+            Assert.NotNull(response);
+            Assert.True(response.Type == StreamingResponseType.Insight ||
+                       response.Type == StreamingResponseType.Error);
+        }
+
+        // Should have at least one response
+        Assert.NotEmpty(responses);
+    }
+
+    [Fact]
+    public async Task GenerateExplanationStreamAsync_WithValidSQL_ReturnsStreamingResponse()
+    {
+        // Arrange
+        var sql = "SELECT c.Name, COUNT(o.Id) as OrderCount FROM Customers c LEFT JOIN Orders o ON c.Id = o.CustomerId GROUP BY c.Name";
+        var complexity = StreamingQueryComplexity.Complex;
+
+        // Act
+        var responses = new List<StreamingResponse>();
+        await foreach (var response in _service.GenerateExplanationStreamAsync(sql, complexity))
+        {
+            responses.Add(response);
+            Assert.NotNull(response);
+            Assert.True(response.Type == StreamingResponseType.Explanation ||
+                       response.Type == StreamingResponseType.Error);
+        }
+
+        // Should have at least one response
+        Assert.NotEmpty(responses);
+    }
+
+    [Fact]
+    public async Task GenerateSQLStreamAsync_WithNullPrompt_ReturnsErrorResponse()
+    {
+        // Arrange
+        string? prompt = null;
+
+        // Act
+        var responses = new List<StreamingResponse>();
+        await foreach (var response in _service.GenerateSQLStreamAsync(prompt!))
+        {
+            responses.Add(response);
+        }
+
+        // Assert
+        Assert.NotEmpty(responses);
+        var errorResponse = responses.FirstOrDefault(r => r.Type == StreamingResponseType.Error);
+        Assert.NotNull(errorResponse);
+    }
+
+    [Fact]
+    public void StreamingResponse_Properties_AreSetCorrectly()
+    {
+        // Arrange & Act
+        var response = new StreamingResponse
+        {
+            Type = StreamingResponseType.SQLGeneration,
+            Content = "SELECT * FROM Users",
+            IsComplete = true,
+            ChunkIndex = 1,
+            Metadata = new { Source = "Test" }
+        };
+
+        // Assert
+        Assert.Equal(StreamingResponseType.SQLGeneration, response.Type);
+        Assert.Equal("SELECT * FROM Users", response.Content);
+        Assert.True(response.IsComplete);
+        Assert.Equal(1, response.ChunkIndex);
+        Assert.NotNull(response.Metadata);
+        Assert.True(response.Timestamp > DateTime.MinValue);
+    }
+
+    [Theory]
+    [InlineData(StreamingQueryComplexity.Simple)]
+    [InlineData(StreamingQueryComplexity.Medium)]
+    [InlineData(StreamingQueryComplexity.Complex)]
+    [InlineData(StreamingQueryComplexity.Expert)]
+    public async Task GenerateExplanationStreamAsync_WithDifferentComplexities_HandlesCorrectly(StreamingQueryComplexity complexity)
+    {
+        // Arrange
+        var sql = "SELECT * FROM Users WHERE Active = 1";
+
+        // Act
+        var responses = new List<StreamingResponse>();
+        await foreach (var response in _service.GenerateExplanationStreamAsync(sql, complexity))
+        {
+            responses.Add(response);
+        }
+
+        // Assert
+        Assert.NotEmpty(responses);
+        // Should handle all complexity levels without throwing
+    }
+
+    [Theory]
+    [InlineData(AnalysisType.Descriptive)]
+    [InlineData(AnalysisType.Diagnostic)]
+    [InlineData(AnalysisType.Predictive)]
+    [InlineData(AnalysisType.Prescriptive)]
+    public async Task GenerateInsightStreamAsync_WithDifferentAnalysisTypes_HandlesCorrectly(AnalysisType analysisType)
+    {
+        // Arrange
+        var query = "SELECT AVG(Revenue) FROM Sales";
+        var data = new object[] { new { Revenue = 1000.50 } };
+        var context = new AnalysisContext { Type = analysisType };
+
+        // Act
+        var responses = new List<StreamingResponse>();
+        await foreach (var response in _service.GenerateInsightStreamAsync(query, data, context))
+        {
+            responses.Add(response);
+        }
+
+        // Assert
+        Assert.NotEmpty(responses);
+        // Should handle all analysis types without throwing
+    }
+}

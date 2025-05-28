@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BI Copilot API Tests</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1890ff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            background-color: #fafafa;
+        }
+        .test-button {
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background-color: #40a9ff;
+        }
+        .test-button:disabled {
+            background-color: #d9d9d9;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #389e0d;
+        }
+        .error {
+            background-color: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #cf1322;
+        }
+        .info {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #0958d9;
+        }
+        .config-section {
+            background-color: #fff7e6;
+            border: 1px solid #ffd591;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="url"] {
+            width: 300px;
+            padding: 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.online {
+            background-color: #f6ffed;
+            color: #389e0d;
+        }
+        .status.offline {
+            background-color: #fff2f0;
+            color: #cf1322;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 BI Reporting Copilot API Tests</h1>
+        
+        <div class="config-section">
+            <h3>Configuration</h3>
+            <div>
+                <label>API Base URL:</label>
+                <input type="url" id="apiBase" value="https://localhost:7001/api" />
+            </div>
+            <div>
+                <label>Auth Token:</label>
+                <input type="text" id="authToken" placeholder="Enter your JWT token (optional for testing)" />
+            </div>
+            <div style="margin-top: 10px;">
+                <span>Backend Status: </span>
+                <span id="backendStatus" class="status offline">Checking...</span>
+                <button class="test-button" onclick="checkBackendStatus()">Check Status</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Basic Query Test</h3>
+            <p>Test the existing natural language query endpoint</p>
+            <button class="test-button" onclick="testBasicQuery()">Test Basic Query</button>
+            <div id="basicQueryResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>⚡ Advanced Streaming Tests</h3>
+            <p>Test the new streaming endpoints with backpressure control and progress reporting</p>
+            <button class="test-button" onclick="testStreamingBackpressure()">Test Backpressure Streaming</button>
+            <button class="test-button" onclick="testStreamingProgress()">Test Progress Streaming</button>
+            <div id="streamingResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎨 Interactive Visualization Tests</h3>
+            <p>Test the new interactive visualization and dashboard endpoints</p>
+            <button class="test-button" onclick="testInteractiveVisualization()">Test Interactive Viz</button>
+            <button class="test-button" onclick="testDashboard()">Test Dashboard</button>
+            <button class="test-button" onclick="testEnhancedChartTypes()">Test Chart Types</button>
+            <div id="visualizationResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Run All Tests</h3>
+            <p>Execute all tests in sequence</p>
+            <button class="test-button" onclick="runAllTests()">Run All Tests</button>
+            <button class="test-button" onclick="clearResults()">Clear Results</button>
+            <div id="allTestsResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mock data for testing
+        const mockColumns = [
+            { name: 'ProductName', dataType: 'string' },
+            { name: 'Sales', dataType: 'decimal' },
+            { name: 'Region', dataType: 'string' },
+            { name: 'Date', dataType: 'datetime' }
+        ];
+
+        const mockData = [
+            { ProductName: 'Product A', Sales: 1000, Region: 'North', Date: '2024-01-01' },
+            { ProductName: 'Product B', Sales: 1500, Region: 'South', Date: '2024-01-02' },
+            { ProductName: 'Product C', Sales: 800, Region: 'East', Date: '2024-01-03' },
+            { ProductName: 'Product D', Sales: 2000, Region: 'West', Date: '2024-01-04' },
+            { ProductName: 'Product E', Sales: 1200, Region: 'North', Date: '2024-01-05' }
+        ];
+
+        function getApiBase() {
+            return document.getElementById('apiBase').value;
+        }
+
+        function getAuthToken() {
+            return document.getElementById('authToken').value;
+        }
+
+        function getHeaders() {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            const token = getAuthToken();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            return headers;
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${type}`;
+            element.textContent = message;
+        }
+
+        function appendResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            if (!element.className.includes('result')) {
+                element.className = `result ${type}`;
+            }
+            element.textContent += '\n' + message;
+        }
+
+        async function checkBackendStatus() {
+            const statusElement = document.getElementById('backendStatus');
+            statusElement.textContent = 'Checking...';
+            statusElement.className = 'status offline';
+
+            try {
+                const response = await fetch(`${getApiBase()}/health`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+
+                if (response.ok) {
+                    statusElement.textContent = 'Online';
+                    statusElement.className = 'status online';
+                } else {
+                    statusElement.textContent = `Error ${response.status}`;
+                    statusElement.className = 'status offline';
+                }
+            } catch (error) {
+                statusElement.textContent = 'Offline';
+                statusElement.className = 'status offline';
+            }
+        }
+
+        async function testBasicQuery() {
+            showResult('basicQueryResult', '🔍 Testing basic query endpoint...', 'info');
+
+            try {
+                const response = await fetch(`${getApiBase()}/query/natural-language`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        question: 'Show me total sales by region',
+                        sessionId: 'test-session',
+                        options: {
+                            includeVisualization: true,
+                            maxRows: 100,
+                            enableCache: false
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                showResult('basicQueryResult', 
+                    `✅ Basic query successful!\n` +
+                    `Success: ${result.success}\n` +
+                    `Rows: ${result.data?.length || 0}\n` +
+                    `Has Visualization: ${!!result.visualization}\n` +
+                    `Execution Time: ${result.executionTimeMs || 'unknown'}ms\n` +
+                    `SQL: ${result.sql || 'not provided'}`, 'success');
+
+            } catch (error) {
+                showResult('basicQueryResult', `❌ Basic query failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testStreamingBackpressure() {
+            showResult('streamingResult', '⚡ Testing backpressure streaming...', 'info');
+
+            try {
+                const response = await fetch(`${getApiBase()}/streaming-query/stream-backpressure`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        question: 'Show me all sales data',
+                        maxRows: 1000,
+                        timeoutSeconds: 60,
+                        chunkSize: 100,
+                        enableProgressReporting: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                appendResult('streamingResult', '✅ Backpressure streaming endpoint accessible', 'success');
+                appendResult('streamingResult', '📦 Reading stream chunks...', 'info');
+
+                const reader = response.body?.getReader();
+                if (reader) {
+                    let chunkCount = 0;
+                    const decoder = new TextDecoder();
+                    
+                    while (chunkCount < 3) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        const chunk = decoder.decode(value);
+                        appendResult('streamingResult', `📦 Chunk ${++chunkCount}: ${chunk.substring(0, 100)}...`, 'info');
+                    }
+                    
+                    reader.cancel();
+                    appendResult('streamingResult', '✅ Streaming test completed successfully!', 'success');
+                }
+
+            } catch (error) {
+                appendResult('streamingResult', `❌ Backpressure streaming failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testStreamingProgress() {
+            appendResult('streamingResult', '\n📊 Testing progress streaming...', 'info');
+
+            try {
+                const response = await fetch(`${getApiBase()}/streaming-query/stream-progress`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        question: 'Show me customer data with progress',
+                        maxRows: 500,
+                        timeoutSeconds: 30,
+                        chunkSize: 50,
+                        enableProgressReporting: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                appendResult('streamingResult', '✅ Progress streaming endpoint accessible', 'success');
+
+            } catch (error) {
+                appendResult('streamingResult', `❌ Progress streaming failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testInteractiveVisualization() {
+            showResult('visualizationResult', '🎨 Testing interactive visualization...', 'info');
+
+            try {
+                const response = await fetch(`${getApiBase()}/visualization/interactive`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        query: 'Sales by region analysis',
+                        columns: mockColumns,
+                        data: mockData
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                showResult('visualizationResult', 
+                    `✅ Interactive visualization successful!\n` +
+                    `Chart Type: ${result.baseVisualization?.type || 'unknown'}\n` +
+                    `Filters: ${result.filters?.length || 0}\n` +
+                    `Interactive Features: ${Object.keys(result.interactiveFeatures || {}).length}\n` +
+                    `Drill-down Options: ${result.drillDownOptions?.length || 0}\n` +
+                    `Export Options: ${result.exportOptions?.join(', ') || 'none'}`, 'success');
+
+            } catch (error) {
+                showResult('visualizationResult', `❌ Interactive visualization failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDashboard() {
+            appendResult('visualizationResult', '\n📋 Testing dashboard generation...', 'info');
+
+            try {
+                const response = await fetch(`${getApiBase()}/visualization/dashboard`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        query: 'Comprehensive sales dashboard',
+                        columns: mockColumns,
+                        data: mockData
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                appendResult('visualizationResult', 
+                    `✅ Dashboard generation successful!\n` +
+                    `Title: ${result.title}\n` +
+                    `Charts: ${result.charts?.length || 0}\n` +
+                    `Layout: ${result.layout?.rows}x${result.layout?.columns}\n` +
+                    `Global Filters: ${result.globalFilters?.length || 0}\n` +
+                    `Refresh Interval: ${result.refreshInterval || 'none'}`, 'success');
+
+            } catch (error) {
+                appendResult('visualizationResult', `❌ Dashboard generation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testEnhancedChartTypes() {
+            appendResult('visualizationResult', '\n📈 Testing enhanced chart types...', 'info');
+
+            try {
+                const response = await fetch(`${getApiBase()}/visualization/chart-types/enhanced`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const chartTypes = await response.json();
+                appendResult('visualizationResult', 
+                    `✅ Enhanced chart types retrieved!\n` +
+                    `Available Types: ${chartTypes.length}\n` +
+                    `Sample Types: ${chartTypes.slice(0, 3).map(c => c.name).join(', ')}`, 'success');
+
+            } catch (error) {
+                appendResult('visualizationResult', `❌ Enhanced chart types failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function runAllTests() {
+            showResult('allTestsResult', '🧪 Running all tests...\n', 'info');
+            
+            await checkBackendStatus();
+            appendResult('allTestsResult', '1. Backend status checked', 'info');
+            
+            await testBasicQuery();
+            appendResult('allTestsResult', '2. Basic query tested', 'info');
+            
+            await testStreamingBackpressure();
+            appendResult('allTestsResult', '3. Backpressure streaming tested', 'info');
+            
+            await testStreamingProgress();
+            appendResult('allTestsResult', '4. Progress streaming tested', 'info');
+            
+            await testInteractiveVisualization();
+            appendResult('allTestsResult', '5. Interactive visualization tested', 'info');
+            
+            await testDashboard();
+            appendResult('allTestsResult', '6. Dashboard generation tested', 'info');
+            
+            await testEnhancedChartTypes();
+            appendResult('allTestsResult', '7. Enhanced chart types tested', 'info');
+            
+            appendResult('allTestsResult', '\n🏁 All tests completed!', 'success');
+        }
+
+        function clearResults() {
+            const resultElements = document.querySelectorAll('.result');
+            resultElements.forEach(el => el.style.display = 'none');
+        }
+
+        // Check backend status on page load
+        window.addEventListener('load', checkBackendStatus);
+    </script>
+</body>
+</html>
