@@ -1,8 +1,7 @@
 import React, { memo, useMemo, useCallback, forwardRef } from 'react';
 import { Table, Card, List, Typography } from 'antd';
-import { usePerformanceMonitor } from '../../hooks/useOptimization';
 
-// Add missing hook
+// Performance monitoring hook
 const usePerformanceMonitor = (componentName: string) => {
   React.useEffect(() => {
     const startTime = performance.now();
@@ -106,37 +105,66 @@ export const MemoizedChartContainer = memo<MemoizedChartContainerProps>(({
 }) => {
   usePerformanceMonitor('MemoizedChartContainer');
 
-  // Lazy load chart components
-  const ChartComponent = useMemo(() => {
+  // Render chart based on type
+  const renderChart = () => {
     switch (chartType) {
       case 'heatmap':
-        return React.lazy(() => import('../Visualization/D3Charts/HeatmapChart').then(m => ({ default: m.HeatmapChart })));
+        const HeatmapChart = React.lazy(() => import('../Visualization/D3Charts/HeatmapChart').then(m => ({ default: m.HeatmapChart })));
+        return <HeatmapChart {...(chartProps as any)} />;
       case 'treemap':
-        return React.lazy(() => import('../Visualization/D3Charts/TreemapChart').then(m => ({ default: m.TreemapChart })));
+        const TreemapChart = React.lazy(() => import('../Visualization/D3Charts/TreemapChart').then(m => ({ default: m.TreemapChart })));
+        return <TreemapChart {...(chartProps as any)} />;
       case 'network':
-        return React.lazy(() => import('../Visualization/D3Charts/NetworkChart').then(m => ({ default: m.NetworkChart })));
+        const NetworkChart = React.lazy(() => import('../Visualization/D3Charts/NetworkChart').then(m => ({ default: m.NetworkChart })));
+        return <NetworkChart {...(chartProps as any)} />;
       default:
-        return React.lazy(() => import('../Visualization/AccessibleChart').then(m => ({ default: m.AccessibleBarChart })));
+        return <div>Chart type not supported</div>;
     }
-  }, [chartType]);
+  };
 
-  // Memoize chart props
-  const chartProps = useMemo(() => ({
-    data,
-    config: {
-      title,
-      interactive: true,
-      ...config
-    },
-    onCellClick: onInteraction,
-    onNodeClick: onInteraction,
-    onLinkClick: onInteraction
-  }), [data, title, config, onInteraction]);
+  // Memoize chart props based on chart type
+  const chartProps = useMemo(() => {
+    const baseProps = {
+      config: {
+        title,
+        interactive: true,
+        ...config
+      }
+    };
+
+    switch (chartType) {
+      case 'treemap':
+        return {
+          ...baseProps,
+          data: Array.isArray(data) ? { name: 'Root', children: data } : data,
+          onNodeClick: onInteraction
+        };
+      case 'network':
+        return {
+          ...baseProps,
+          data,
+          onNodeClick: onInteraction,
+          onLinkClick: onInteraction
+        };
+      case 'heatmap':
+        return {
+          ...baseProps,
+          data,
+          onCellClick: onInteraction
+        };
+      default:
+        return {
+          ...baseProps,
+          data,
+          onCellClick: onInteraction
+        };
+    }
+  }, [data, title, config, onInteraction, chartType]);
 
   return (
     <Card title={title} size="small">
       <React.Suspense fallback={<div>Loading chart...</div>}>
-        <ChartComponent {...chartProps} />
+        {renderChart()}
       </React.Suspense>
     </Card>
   );
@@ -208,14 +236,14 @@ export const withPerformanceMonitoring = <P extends object>(
   Component: React.ComponentType<P>,
   componentName?: string
 ) => {
-  const WrappedComponent = forwardRef<any, P>((props, ref) => {
+  const WrappedComponent = memo((props: P) => {
     usePerformanceMonitor(componentName || Component.displayName || Component.name);
-    return <Component {...props} ref={ref} />;
+    return <Component {...props} />;
   });
 
   WrappedComponent.displayName = `withPerformanceMonitoring(${componentName || Component.displayName || Component.name})`;
 
-  return memo(WrappedComponent);
+  return WrappedComponent;
 };
 
 // Memoized dashboard grid with dynamic loading

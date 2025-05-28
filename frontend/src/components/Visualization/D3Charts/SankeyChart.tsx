@@ -73,7 +73,7 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
     };
 
     // Create sankey layout
-    const sankeyLayout = sankey<any, any>()
+    const sankeyLayout = sankey()
       .nodeWidth(nodeWidth)
       .nodePadding(nodePadding)
       .extent([[0, 0], [innerWidth, innerHeight]]);
@@ -105,11 +105,11 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
       .append('path')
       .attr('class', 'link')
       .attr('d', sankeyLinkHorizontal())
-      .attr('stroke', d => {
+      .attr('stroke', (d: any) => {
         const sourceNode = d.source as any;
         return colorScale(sourceNode.category || sourceNode.name);
       })
-      .attr('stroke-width', d => Math.max(1, d.width || 0))
+      .attr('stroke-width', (d: any) => Math.max(1, d.width || 0))
       .attr('fill', 'none')
       .attr('opacity', linkOpacity)
       .style('cursor', interactive ? 'pointer' : 'default');
@@ -122,11 +122,11 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
       .enter()
       .append('rect')
       .attr('class', 'node')
-      .attr('x', d => d.x0 || 0)
-      .attr('y', d => d.y0 || 0)
-      .attr('width', d => (d.x1 || 0) - (d.x0 || 0))
-      .attr('height', d => (d.y1 || 0) - (d.y0 || 0))
-      .attr('fill', d => colorScale(d.category || d.name))
+      .attr('x', (d: any) => d.x0 || 0)
+      .attr('y', (d: any) => d.y0 || 0)
+      .attr('width', (d: any) => (d.x1 || 0) - (d.x0 || 0))
+      .attr('height', (d: any) => (d.y1 || 0) - (d.y0 || 0))
+      .attr('fill', (d: any) => colorScale(d.category || d.name))
       .attr('stroke', '#000')
       .attr('stroke-width', 1)
       .style('cursor', interactive ? 'pointer' : 'default');
@@ -139,19 +139,19 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
       .enter()
       .append('text')
       .attr('class', 'node-label')
-      .attr('x', d => {
+      .attr('x', (d: any) => {
         const x = (d.x0 || 0) + ((d.x1 || 0) - (d.x0 || 0)) / 2;
         return x < innerWidth / 2 ? (d.x1 || 0) + 6 : (d.x0 || 0) - 6;
       })
-      .attr('y', d => ((d.y0 || 0) + (d.y1 || 0)) / 2)
-      .attr('text-anchor', d => {
+      .attr('y', (d: any) => ((d.y0 || 0) + (d.y1 || 0)) / 2)
+      .attr('text-anchor', (d: any) => {
         const x = (d.x0 || 0) + ((d.x1 || 0) - (d.x0 || 0)) / 2;
         return x < innerWidth / 2 ? 'start' : 'end';
       })
       .attr('dominant-baseline', 'middle')
       .style('font-size', '12px')
       .style('font-weight', 'bold')
-      .text(d => d.name);
+      .text((d: any) => d.name);
 
     // Add value labels to nodes if enabled
     if (showValues) {
@@ -162,19 +162,19 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
         .enter()
         .append('text')
         .attr('class', 'node-value')
-        .attr('x', d => {
+        .attr('x', (d: any) => {
           const x = (d.x0 || 0) + ((d.x1 || 0) - (d.x0 || 0)) / 2;
           return x < innerWidth / 2 ? (d.x1 || 0) + 6 : (d.x0 || 0) - 6;
         })
-        .attr('y', d => ((d.y0 || 0) + (d.y1 || 0)) / 2 + 15)
-        .attr('text-anchor', d => {
+        .attr('y', (d: any) => ((d.y0 || 0) + (d.y1 || 0)) / 2 + 15)
+        .attr('text-anchor', (d: any) => {
           const x = (d.x0 || 0) + ((d.x1 || 0) - (d.x0 || 0)) / 2;
           return x < innerWidth / 2 ? 'start' : 'end';
         })
         .attr('dominant-baseline', 'middle')
         .style('font-size', '10px')
         .style('fill', '#666')
-        .text(d => (d.value || 0).toLocaleString());
+        .text((d: any) => (d.value || 0).toLocaleString());
     }
 
     // Add interactions
@@ -186,7 +186,7 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
 
           // Highlight connected links
           linkElements
-            .attr('opacity', link => {
+            .attr('opacity', (link: any) => {
               const isConnected = link.source === d || link.target === d;
               return isConnected ? 0.8 : 0.1;
             });
@@ -195,12 +195,12 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
             .duration(200)
             .style('opacity', 0.9);
 
-          const totalIn = d.targetLinks?.reduce((sum, link) => sum + (link.value || 0), 0) || 0;
-          const totalOut = d.sourceLinks?.reduce((sum, link) => sum + (link.value || 0), 0) || 0;
+          const totalIn = (d as any).targetLinks?.reduce((sum: number, link: any) => sum + (link.value || 0), 0) || 0;
+          const totalOut = (d as any).sourceLinks?.reduce((sum: number, link: any) => sum + (link.value || 0), 0) || 0;
 
           tooltip.html(`
-            <strong>${d.name}</strong><br/>
-            ${d.description ? `${d.description}<br/>` : ''}
+            <strong>${(d as any).name}</strong><br/>
+            ${(d as any).description ? `${(d as any).description}<br/>` : ''}
             Total In: ${totalIn.toLocaleString()}<br/>
             Total Out: ${totalOut.toLocaleString()}<br/>
             Net: ${(totalOut - totalIn).toLocaleString()}
@@ -218,8 +218,8 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
         })
         .on('click', function(event, d) {
           setSelectedElement({ type: 'node', data: d });
-          onNodeClick?.(d);
-          announce(`Selected node: ${d.name} with total value ${(d.value || 0).toLocaleString()}`);
+          onNodeClick?.(d as any);
+          announce(`Selected node: ${(d as any).name} with total value ${((d as any).value || 0).toLocaleString()}`);
         });
 
       // Link interactions
@@ -227,19 +227,19 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
         .on('mouseover', function(event, d) {
           d3.select(this)
             .attr('opacity', 0.8)
-            .attr('stroke-width', Math.max(2, (d.width || 0) + 2));
+            .attr('stroke-width', Math.max(2, ((d as any).width || 0) + 2));
 
           tooltip.transition()
             .duration(200)
             .style('opacity', 0.9);
 
-          const sourceNode = d.source as any;
-          const targetNode = d.target as any;
+          const sourceNode = (d as any).source as any;
+          const targetNode = (d as any).target as any;
 
           tooltip.html(`
             <strong>${sourceNode.name} → ${targetNode.name}</strong><br/>
-            ${d.label ? `${d.label}<br/>` : ''}
-            Value: ${(d.value || 0).toLocaleString()}
+            ${(d as any).label ? `${(d as any).label}<br/>` : ''}
+            Value: ${((d as any).value || 0).toLocaleString()}
           `)
             .style('left', (event.pageX + 10) + 'px')
             .style('top', (event.pageY - 28) + 'px');
@@ -247,7 +247,7 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
         .on('mouseout', function(event, d) {
           d3.select(this)
             .attr('opacity', linkOpacity)
-            .attr('stroke-width', Math.max(1, d.width || 0));
+            .attr('stroke-width', Math.max(1, (d as any).width || 0));
 
           tooltip.transition()
             .duration(500)
@@ -255,10 +255,10 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
         })
         .on('click', function(event, d) {
           setSelectedElement({ type: 'link', data: d });
-          onLinkClick?.(d);
-          const sourceNode = d.source as any;
-          const targetNode = d.target as any;
-          announce(`Selected flow: ${sourceNode.name} to ${targetNode.name} with value ${(d.value || 0).toLocaleString()}`);
+          onLinkClick?.(d as any);
+          const sourceNode = (d as any).source as any;
+          const targetNode = (d as any).target as any;
+          announce(`Selected flow: ${sourceNode.name} to ${targetNode.name} with value ${((d as any).value || 0).toLocaleString()}`);
         });
     }
 

@@ -138,7 +138,7 @@ export const usePerformanceMeasure = () => {
       console.warn(`No start time found for measure: ${name}`);
       return 0;
     }
-    
+
     const duration = performance.now() - startTime;
     delete measureRef.current[name];
     return duration;
@@ -210,7 +210,7 @@ export const useLazyImage = (src: string, placeholder?: string) => {
 // Component size tracking
 export const useComponentSize = () => {
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const elementRef = useRef<HTMLElement | null>(null);
+  const elementRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const element = elementRef.current;

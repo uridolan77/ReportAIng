@@ -155,7 +155,14 @@ export const HeatmapChart: React.FC<HeatmapChartProps> = ({
         .attr('y', d => (yScale(d.y) || 0) + yScale.bandwidth() / 2)
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
-        .attr('fill', d => d3.hsl(colorScale(d.value)).l > 0.5 ? '#000' : '#fff')
+        .attr('fill', d => {
+          const colorValue = colorScale(d.value);
+          if (typeof colorValue === 'string') {
+            const color = d3.color(colorValue);
+            return color && d3.hsl(color).l > 0.5 ? '#000' : '#fff';
+          }
+          return '#000';
+        })
         .attr('font-size', Math.min(xScale.bandwidth(), yScale.bandwidth()) / 4)
         .text(d => d.value.toFixed(1));
     }
@@ -247,7 +254,7 @@ export const HeatmapChart: React.FC<HeatmapChartProps> = ({
       <div ref={tooltipRef} />
       {selectedCell && (
         <div style={{ marginTop: '10px', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
-          <strong>Selected:</strong> {selectedCell.label || `${selectedCell.x}, ${selectedCell.y}`} - 
+          <strong>Selected:</strong> {selectedCell.label || `${selectedCell.x}, ${selectedCell.y}`} -
           Value: {selectedCell.value.toFixed(2)}
         </div>
       )}

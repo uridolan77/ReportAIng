@@ -103,7 +103,7 @@ export const NetworkChart: React.FC<NetworkChartProps> = ({
         .distance(linkDistance))
       .force('charge', d3.forceManyBody().strength(chargeStrength))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(d => nodeRadius(d) + 2));
+      .force('collision', d3.forceCollide().radius((d: any) => nodeRadius(d as NetworkNode) + 2));
 
     setSimulation(sim);
 
@@ -196,7 +196,7 @@ export const NetworkChart: React.FC<NetworkChartProps> = ({
             });
 
           nodeElements
-            .attr('opacity', (node: NetworkNode) => 
+            .attr('opacity', (node: NetworkNode) =>
               connectedNodes.has(node.id) ? 1 : 0.3
             );
 
@@ -204,7 +204,7 @@ export const NetworkChart: React.FC<NetworkChartProps> = ({
             .duration(200)
             .style('opacity', 0.9);
 
-          const connections = data.links.filter(link => 
+          const connections = data.links.filter(link =>
             link.source === d.id || link.target === d.id
           ).length;
 
@@ -236,7 +236,7 @@ export const NetworkChart: React.FC<NetworkChartProps> = ({
         .on('click', function(event, d) {
           setSelectedElement({ type: 'node', data: d });
           onNodeClick?.(d);
-          announce(`Selected node: ${d.name} with ${data.links.filter(link => 
+          announce(`Selected node: ${d.name} with ${data.links.filter(link =>
             link.source === d.id || link.target === d.id
           ).length} connections`);
         });
@@ -290,8 +290,8 @@ export const NetworkChart: React.FC<NetworkChartProps> = ({
 
       if (labelElements) {
         labelElements
-          .attr('x', d => d.x || 0)
-          .attr('y', d => d.y || 0);
+          .attr('x', (d: any) => d.x || 0)
+          .attr('y', (d: any) => d.y || 0);
       }
     });
 
@@ -358,7 +358,7 @@ export const NetworkChart: React.FC<NetworkChartProps> = ({
       {selectedElement && (
         <div style={{ marginTop: '10px', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
           <strong>Selected {selectedElement.type}:</strong>{' '}
-          {selectedElement.type === 'node' 
+          {selectedElement.type === 'node'
             ? `${selectedElement.data.name} (Group: ${selectedElement.data.group || 'None'})`
             : `${selectedElement.data.source.name} ↔ ${selectedElement.data.target.name}`
           }

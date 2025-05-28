@@ -38,15 +38,17 @@ public class MfaController : ControllerBase
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("User not found");            var status = await _mfaService.GetMfaStatusAsync(userId);
             if (status == null)
-                return NotFound("MFA status not found");
-
-            return Ok(new MfaStatusResponse
+                return NotFound("MFA status not found");            return Ok(new MfaStatusResponse
             {
                 IsEnabled = status.IsEnabled,
                 Method = status.Method,
                 IsPhoneNumberVerified = status.IsPhoneNumberVerified,
                 HasBackupCodes = status.HasBackupCodes,
-                LastValidationDate = status.LastValidationDate
+                LastValidationDate = status.LastValidationDate,
+                BackupCodesCount = status.BackupCodesCount,
+                HasPhoneNumber = status.HasPhoneNumber,
+                MaskedPhoneNumber = status.MaskedPhoneNumber,
+                MaskedEmail = status.MaskedEmail
             });
         }
         catch (Exception ex)
@@ -67,7 +69,7 @@ public class MfaController : ControllerBase
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("User not found");            var result = await _mfaService.SetupMfaAsync(userId, request.Method);
-            
+
             if (result == null || !result.Success)
                 return BadRequest(result?.ErrorMessage ?? "Failed to setup MFA");
 
@@ -91,7 +93,7 @@ public class MfaController : ControllerBase
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("User not found");            var isValid = await _mfaService.VerifyMfaSetupAsync(userId, request.Code);
-            
+
             if (!isValid)
                 return BadRequest("Invalid verification code");
 
@@ -128,7 +130,7 @@ public class MfaController : ControllerBase
             };
 
             var result = await _mfaService.ValidateMfaAsync(challengeRequest);
-            
+
             if (!result)
                 return BadRequest("Invalid MFA code");
 
@@ -157,7 +159,7 @@ public class MfaController : ControllerBase
                 return Unauthorized("User not found");
 
             var backupCodes = await _mfaService.GenerateBackupCodesAsync(userId);
-            
+
             return Ok(new BackupCodesResponse
             {
                 BackupCodes = backupCodes,
@@ -184,7 +186,7 @@ public class MfaController : ControllerBase
                 return Unauthorized("User not found");
 
             var count = await _mfaService.GetRemainingBackupCodesCountAsync(userId);
-            
+
             return Ok(new BackupCodesCountResponse
             {
                 RemainingCount = count
@@ -208,7 +210,7 @@ public class MfaController : ControllerBase
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("User not found");            var isDisabled = await _mfaService.DisableMfaAsync(userId, request.ConfirmationCode);
-            
+
             if (!isDisabled)
                 return BadRequest("Failed to disable MFA");
 
@@ -234,7 +236,7 @@ public class MfaController : ControllerBase
     {
         try
         {            var challenge = await _mfaService.SendMfaChallengeAsync(request.UserId, request.Method);
-            
+
             if (challenge == null)
                 return BadRequest("Unable to send MFA challenge");
 
@@ -265,7 +267,7 @@ public class MfaController : ControllerBase
             if (string.IsNullOrEmpty(userId))                return Unauthorized("User not found");
 
             var result = await _mfaService.TestSmsDeliveryAsync(request.PhoneNumber);
-            
+
             return Ok(new TestSmsResponse
             {
                 Success = result,
@@ -288,6 +290,10 @@ public class MfaStatusResponse
     public bool IsPhoneNumberVerified { get; set; }
     public bool HasBackupCodes { get; set; }
     public DateTime? LastValidationDate { get; set; }
+    public int BackupCodesCount { get; set; }
+    public bool HasPhoneNumber { get; set; }
+    public string? MaskedPhoneNumber { get; set; }
+    public string? MaskedEmail { get; set; }
 }
 
 public class MfaVerificationRequest
@@ -327,12 +333,28 @@ public class MfaDisableResult
     public string Message { get; set; } = string.Empty;
 }
 
+public class MfaSetupRequest
+{
+    [Required(ErrorMessage = "MFA method is required")]
+    public MfaMethod Method { get; set; }
+}
+
+public class MfaSetupResult
+{
+    public MfaMethod Method { get; set; }
+    public string? TotpSecret { get; set; }
+    public string? QrCodeUrl { get; set; }
+    public string[] BackupCodes { get; set; } = Array.Empty<string>();
+    public bool Success { get; set; } = true;
+    public string? ErrorMessage { get; set; }
+}
+
 public class MfaChallengeRequest
 {
     [Required(ErrorMessage = "User ID is required")]
     public string UserId { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "MFA method is required")]
+
+    [Required(ErrorMessage = "Method is required")]
     public MfaMethod Method { get; set; }
 }
 

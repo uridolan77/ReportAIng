@@ -3,7 +3,7 @@ import styled from '@emotion/styled';
 import React from 'react';
 
 // Unified Button component
-export interface ButtonProps extends Omit<AntButtonProps, 'type'> {
+export interface ButtonProps extends Omit<AntButtonProps, 'variant'> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
 }
 

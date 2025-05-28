@@ -32,7 +32,7 @@ export const CollaborativeDashboard: React.FC<CollaborativeDashboardProps> = ({
   const [collaborativeUsers, setCollaborativeUsers] = useState<Map<string, CollaborativeUser>>(new Map());
   const [isEditing, setIsEditing] = useState(false);
   const [lastActivity, setLastActivity] = useState<any>(null);
-  
+
   const { user } = useAuthStore();
   const {
     connectionState,
@@ -168,6 +168,7 @@ export const CollaborativeDashboard: React.FC<CollaborativeDashboardProps> = ({
   }, [roomId, user?.id, subscribe, onWidgetUpdate]);
 
   // Handle mouse movement for cursor broadcasting
+  const lastUpdateRef = React.useRef<number>(0);
   const handleMouseMove = useCallback((event: React.MouseEvent) => {
     if (connectionState === 'connected' && !readOnly) {
       const rect = event.currentTarget.getBoundingClientRect();
@@ -175,12 +176,12 @@ export const CollaborativeDashboard: React.FC<CollaborativeDashboardProps> = ({
         x: ((event.clientX - rect.left) / rect.width) * 100,
         y: ((event.clientY - rect.top) / rect.height) * 100
       };
-      
+
       // Throttle cursor updates
       const now = Date.now();
-      if (!handleMouseMove.lastUpdate || now - handleMouseMove.lastUpdate > 100) {
+      if (!lastUpdateRef.current || now - lastUpdateRef.current > 100) {
         broadcastCursorPosition(roomId, position);
-        handleMouseMove.lastUpdate = now;
+        lastUpdateRef.current = now;
       }
     }
   }, [connectionState, readOnly, broadcastCursorPosition, roomId]);
@@ -240,7 +241,7 @@ export const CollaborativeDashboard: React.FC<CollaborativeDashboardProps> = ({
   // Render user avatars
   const renderCollaborativeUsers = () => {
     const activeUsers = Array.from(collaborativeUsers.values()).filter(u => u.isActive);
-    
+
     return (
       <Space>
         <Text type="secondary">
@@ -275,10 +276,10 @@ export const CollaborativeDashboard: React.FC<CollaborativeDashboardProps> = ({
               text={connectionState === 'connected' ? 'Connected' : 'Disconnected'}
             />
           </div>
-          
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             {renderCollaborativeUsers()}
-            
+
             {!readOnly && (
               <Button
                 type={isEditing ? 'primary' : 'default'}
@@ -291,11 +292,11 @@ export const CollaborativeDashboard: React.FC<CollaborativeDashboardProps> = ({
             )}
           </div>
         </div>
-        
+
         {lastActivity && (
           <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
             <Text type="secondary">
-              Last activity: {lastActivity.user.name} {lastActivity.type.replace('_', ' ')} 
+              Last activity: {lastActivity.user.name} {lastActivity.type.replace('_', ' ')}
               {' '}({new Date(lastActivity.timestamp).toLocaleTimeString()})
             </Text>
           </div>
@@ -311,7 +312,7 @@ export const CollaborativeDashboard: React.FC<CollaborativeDashboardProps> = ({
           widgets={widgets}
           onWidgetInteraction={handleWidgetInteraction}
         />
-        
+
         {/* Collaborative cursors overlay */}
         {renderCollaborativeCursors()}
       </div>
@@ -323,12 +324,12 @@ export const CollaborativeDashboard: React.FC<CollaborativeDashboardProps> = ({
 export const useCollaboration = (roomId: string) => {
   const [users, setUsers] = useState<CollaborativeUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  
+
   const { connectionState, subscribe, joinRoom, leaveRoom } = useWebSocket();
 
   useEffect(() => {
     setIsConnected(connectionState === 'connected');
-    
+
     if (connectionState === 'connected') {
       joinRoom(roomId);
     }

@@ -46,13 +46,15 @@ public class MfaServiceTests
             _mockLogger.Object,
             _mockSecuritySettings.Object
         );
-    }    [Fact]
+    }
+
+    [Fact]
     public async Task GetMfaStatusAsync_WhenUserNotFound_ShouldReturnNull()
-    {        // Arrange
+    {
+        // Arrange
         var userId = Guid.NewGuid().ToString();
-        var userIdGuid = Guid.Parse(userId);
-        _mockUserRepository.Setup(x => x.GetByIdAsync(userIdGuid))
-            .ReturnsAsync((UserEntity?)null);
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
+            .ReturnsAsync((UserEntity)null);
 
         // Act
         var result = await _mfaService.GetMfaStatusAsync(userId);
@@ -63,9 +65,9 @@ public class MfaServiceTests
 
     [Fact]
     public async Task GetMfaStatusAsync_WhenUserFound_ShouldReturnMfaStatus()
-    {        // Arrange
+    {
+        // Arrange
         var userId = Guid.NewGuid().ToString();
-        var userIdGuid = Guid.Parse(userId);
         var user = new UserEntity
         {
             Id = userId,
@@ -77,7 +79,7 @@ public class MfaServiceTests
             BackupCodes = "code1,code2,code3"
         };
 
-        _mockUserRepository.Setup(x => x.GetByIdAsync(userIdGuid))
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
 
         // Act
@@ -105,10 +107,11 @@ public class MfaServiceTests
         {
             Id = userId,
             Email = "test@example.com",
-            PhoneNumber = "+1234567890",        IsMfaEnabled = false
+            PhoneNumber = "+1234567890",
+            IsMfaEnabled = false
         };
 
-        _mockUserRepository.Setup(x => x.GetByIdAsync(Guid.Parse(userId)))
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
 
         // Act
@@ -130,10 +133,11 @@ public class MfaServiceTests
 
     [Fact]
     public async Task SetupMfaAsync_WhenUserNotFound_ShouldReturnNull()
-    {        // Arrange
+    {
+        // Arrange
         var userId = Guid.NewGuid().ToString();
-        _mockUserRepository.Setup(x => x.GetByIdAsync(Guid.Parse(userId)))
-            .ReturnsAsync((UserEntity?)null);
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
+            .ReturnsAsync((UserEntity)null);
 
         // Act
         var result = await _mfaService.SetupMfaAsync(userId, MfaMethod.TOTP);
@@ -157,7 +161,7 @@ public class MfaServiceTests
             IsMfaEnabled = false
         };
 
-        _mockUserRepository.Setup(x => x.GetByIdAsync(Guid.Parse(userId)))
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
 
         // Generate a valid TOTP code for testing
@@ -186,7 +190,7 @@ public class MfaServiceTests
             IsMfaEnabled = true
         };
 
-        _mockUserRepository.Setup(x => x.GetByIdAsync(Guid.Parse(userId)))
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
 
         var validCode = GenerateValidTotpCode(secret);
@@ -212,7 +216,7 @@ public class MfaServiceTests
             IsMfaEnabled = true
         };
 
-        _mockUserRepository.Setup(x => x.GetByIdAsync(Guid.Parse(userId)))
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
 
         // Act
@@ -236,7 +240,7 @@ public class MfaServiceTests
             BackupCodes = $"{backupCode},XYZ789GHI"
         };
 
-        _mockUserRepository.Setup(x => x.GetByIdAsync(Guid.Parse(userId)))
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
 
         // Act
@@ -260,7 +264,7 @@ public class MfaServiceTests
             BackupCodes = "code1,code2,code3"
         };
 
-        _mockUserRepository.Setup(x => x.GetByIdAsync(Guid.Parse(userId)))
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
 
         // Act
@@ -284,7 +288,7 @@ public class MfaServiceTests
             IsMfaEnabled = true
         };
 
-        _mockUserRepository.Setup(x => x.GetByIdAsync(Guid.Parse(userId)))
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
 
         _mockSmsService.Setup(x => x.SendSmsAsync(It.IsAny<string>(), It.IsAny<string>()))
@@ -312,7 +316,7 @@ public class MfaServiceTests
             IsMfaEnabled = true
         };
 
-        _mockUserRepository.Setup(x => x.GetByIdAsync(Guid.Parse(userId)))
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
 
         _mockEmailService.Setup(x => x.SendMfaCodeAsync(It.IsAny<string>(), It.IsAny<string>()))
@@ -341,7 +345,7 @@ public class MfaServiceTests
             BackupCodes = "code1,code2"
         };
 
-        _mockUserRepository.Setup(x => x.GetByIdAsync(Guid.Parse(userId)))
+        _mockUserRepository.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
 
         // Act

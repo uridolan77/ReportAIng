@@ -94,12 +94,12 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
       .enter()
       .append('g')
       .attr('class', 'treemap-node')
-      .attr('transform', d => `translate(${d.x0},${d.y0})`);
+      .attr('transform', (d: any) => `translate(${(d as any).x0},${(d as any).y0})`);
 
     // Add rectangles
     const rects = nodes.append('rect')
-      .attr('width', d => Math.max(0, d.x1 - d.x0))
-      .attr('height', d => Math.max(0, d.y1 - d.y0))
+      .attr('width', (d: any) => Math.max(0, (d as any).x1 - (d as any).x0))
+      .attr('height', (d: any) => Math.max(0, (d as any).y1 - (d as any).y0))
       .attr('fill', d => {
         const category = d.data.category || d.parent?.data.name || d.data.name;
         return colorScale(category);
@@ -157,25 +157,25 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
       nodes.append('text')
         .attr('class', 'treemap-label')
         .selectAll('tspan')
-        .data(d => {
-          const width = d.x1 - d.x0;
-          const height = d.y1 - d.y0;
+        .data((d: any) => {
+          const width = (d as any).x1 - (d as any).x0;
+          const height = (d as any).y1 - (d as any).y0;
           const area = width * height;
-          
+
           // Calculate font size based on area
           const fontSize = Math.max(
             minFontSize,
             Math.min(maxFontSize, Math.sqrt(area) / 8)
           );
-          
+
           // Only show label if there's enough space
           if (width < fontSize * 2 || height < fontSize) return [];
-          
+
           // Split long names into multiple lines
           const words = d.data.name.split(' ');
           const lines = [];
           let currentLine = '';
-          
+
           for (const word of words) {
             const testLine = currentLine ? `${currentLine} ${word}` : word;
             if (testLine.length * fontSize * 0.6 > width && currentLine) {
@@ -186,17 +186,17 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
             }
           }
           if (currentLine) lines.push(currentLine);
-          
+
           return lines.slice(0, Math.floor(height / fontSize));
         })
         .enter()
         .append('tspan')
-        .attr('x', d => {
-          const node = d3.select(this.parentNode).datum() as any;
+        .attr('x', function(d) {
+          const node = d3.select((this as any).parentNode).datum() as any;
           return (node.x1 - node.x0) / 2;
         })
-        .attr('y', (d, i) => {
-          const node = d3.select(this.parentNode).datum() as any;
+        .attr('y', function(d, i) {
+          const node = d3.select((this as any).parentNode).datum() as any;
           const fontSize = Math.max(
             minFontSize,
             Math.min(maxFontSize, Math.sqrt((node.x1 - node.x0) * (node.y1 - node.y0)) / 8)
@@ -205,15 +205,15 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
         })
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
-        .style('font-size', d => {
-          const node = d3.select(this.parentNode).datum() as any;
+        .style('font-size', function(d) {
+          const node = d3.select((this as any).parentNode).datum() as any;
           const area = (node.x1 - node.x0) * (node.y1 - node.y0);
           return `${Math.max(minFontSize, Math.min(maxFontSize, Math.sqrt(area) / 8))}px`;
         })
         .style('font-weight', 'bold')
-        .style('fill', d => {
-          const node = d3.select(this.parentNode).datum() as any;
-          const bgColor = d3.select(this.parentNode).select('rect').attr('fill');
+        .style('fill', function(d) {
+          const node = d3.select((this as any).parentNode).datum() as any;
+          const bgColor = d3.select((this as any).parentNode).select('rect').attr('fill');
           return d3.hsl(bgColor).l > 0.5 ? '#000' : '#fff';
         })
         .style('pointer-events', 'none')
@@ -271,7 +271,7 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
       <div ref={tooltipRef} />
       {selectedNode && (
         <div style={{ marginTop: '10px', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
-          <strong>Selected:</strong> {selectedNode.name} - 
+          <strong>Selected:</strong> {selectedNode.name} -
           Value: {(selectedNode.value || 0).toLocaleString()}
           {selectedNode.description && (
             <div style={{ marginTop: '4px', fontStyle: 'italic' }}>

@@ -21,7 +21,7 @@ interface AuthState {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   refreshAuth: () => Promise<boolean>;
-  getDecryptedToken: () => string | null;
+  getDecryptedToken: () => Promise<string | null>;
 }
 
 export const useAuthStore = create<AuthState>()(
