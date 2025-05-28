@@ -8,7 +8,9 @@ import {
   Tabs,
   Tooltip,
   Progress,
-  Tag
+  Tag,
+  Row,
+  Col
 } from 'antd';
 import {
   SendOutlined,
@@ -16,12 +18,14 @@ import {
   StarOutlined,
   DownloadOutlined,
   CodeOutlined,
-
+  ToolOutlined,
   BarChartOutlined,
   ThunderboltOutlined,
   DashboardOutlined,
   InteractionOutlined,
-  SettingOutlined
+  SettingOutlined,
+  SafetyOutlined,
+  BookOutlined
 } from '@ant-design/icons';
 import { useQueryStore } from '../../stores/queryStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -31,12 +35,19 @@ import { QueryHistory } from './QueryHistory';
 import { QuerySuggestions } from './QuerySuggestions';
 import { ExportModal } from './ExportModal';
 import { AdvancedStreamingQuery } from './AdvancedStreamingQuery';
+import { QueryWizard } from './QueryWizard';
 import { getOrCreateSessionId } from '../../utils/sessionUtils';
 import { InteractiveVisualization } from './InteractiveVisualization';
 import { DashboardView } from './DashboardView';
 import AdvancedVisualizationPanel from '../Visualization/AdvancedVisualizationPanel';
 import { TuningDashboard } from '../Tuning/TuningDashboard';
 import { DatabaseConnectionBanner } from '../Layout/DatabaseConnectionBanner';
+import { CacheManager } from '../Performance/CacheManager';
+import { SecurityDashboard } from '../Security/SecurityDashboard';
+import { DataInsightsPanel } from '../Insights/DataInsightsPanel';
+import { QueryTemplateLibrary } from '../QueryTemplates/QueryTemplateLibrary';
+import { CommandPalette } from '../CommandPalette/CommandPalette';
+import { useKeyboardNavigation, ScreenReaderAnnouncer } from '../../hooks/useKeyboardNavigation';
 import type { QueryRequest } from '../../types/query';
 
 const { TextArea } = Input;
@@ -54,6 +65,10 @@ export const QueryInterface: React.FC<QueryInterfaceProps> = ({ className }) => 
   const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState('query');
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
+  const [showInsightsPanel, setShowInsightsPanel] = useState(true);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   // Store hooks
   const {
@@ -179,6 +194,135 @@ export const QueryInterface: React.FC<QueryInterfaceProps> = ({ className }) => 
     }
   }, [currentResult, query, addToFavorites]);
 
+  // Keyboard navigation
+  const keyboardNavigation = useKeyboardNavigation({
+    onExecuteQuery: handleSubmitQuery,
+    onSaveQuery: () => handleAddToFavorites(),
+    onFocusQueryInput: () => textAreaRef.current?.focus(),
+    onClearQuery: () => setQuery(''),
+    onNewQuery: () => {
+      setQuery('');
+      clearCurrentResult();
+      setActiveTab('query');
+    },
+    onOpenTemplates: () => setShowTemplateLibrary(true),
+    onToggleInsights: () => setShowInsightsPanel(prev => !prev),
+    onToggleHistory: () => setActiveTab('history'),
+    onExportResults: () => setShowExportModal(true),
+    onOpenCommandPalette: () => setShowCommandPalette(true),
+    onToggleHelp: () => {
+      // Show help modal or navigate to help
+      console.log('Help requested');
+    }
+  });
+
+  // Handle wizard query generation
+  const handleWizardQueryGenerated = useCallback(async (generatedQuery: string, wizardData: any) => {
+    setQuery(generatedQuery);
+    setShowWizard(false);
+    setIsLoading(true);
+    setProgress(10);
+    clearCurrentResult();
+
+    const queryRequest: QueryRequest = {
+      question: generatedQuery.trim(),
+      sessionId: getOrCreateSessionId(),
+      options: {
+        includeVisualization: true,
+        maxRows: 1000,
+        enableCache: true,
+        confidenceThreshold: 0.7
+      }
+    };
+
+    try {
+      await executeQuery(queryRequest);
+      setActiveTab('result');
+    } catch (error) {
+      console.error('Wizard query execution failed:', error);
+    } finally {
+      setIsLoading(false);
+      setProgress(0);
+    }
+  }, [executeQuery, clearCurrentResult]);
+
+  // Handle command palette actions
+  useEffect(() => {
+    const handleCommandAction = (event: CustomEvent) => {
+      const { action } = event.detail;
+
+      switch (action) {
+        case 'execute-query':
+          handleSubmitQuery();
+          break;
+        case 'new-query':
+          setQuery('');
+          clearCurrentResult();
+          setActiveTab('result');
+          break;
+        case 'save-query':
+          handleAddToFavorites();
+          break;
+        case 'toggle-history':
+          setActiveTab('history');
+          break;
+        case 'open-templates':
+          setShowTemplateLibrary(true);
+          break;
+        case 'export-results':
+          setShowExportModal(true);
+          break;
+        case 'toggle-insights':
+          setShowInsightsPanel(prev => !prev);
+          break;
+        case 'open-cache-manager':
+          setActiveTab('cache');
+          break;
+        case 'open-security':
+          setActiveTab('security');
+          break;
+        case 'open-visualizations':
+          setActiveTab('advanced');
+          break;
+        default:
+          console.log('Unknown command action:', action);
+      }
+    };
+
+    window.addEventListener('command-palette-action' as any, handleCommandAction);
+    return () => window.removeEventListener('command-palette-action' as any, handleCommandAction);
+  }, [handleSubmitQuery, handleAddToFavorites, clearCurrentResult]);
+
+  // Handle template application
+  const handleTemplateApply = useCallback(async (generatedQuery: string, template: any) => {
+    setQuery(generatedQuery);
+    setShowTemplateLibrary(false);
+    setIsLoading(true);
+    setProgress(10);
+    clearCurrentResult();
+
+    const queryRequest: QueryRequest = {
+      question: generatedQuery.trim(),
+      sessionId: getOrCreateSessionId(),
+      options: {
+        includeVisualization: true,
+        maxRows: 1000,
+        enableCache: true,
+        confidenceThreshold: 0.7
+      }
+    };
+
+    try {
+      await executeQuery(queryRequest);
+      setActiveTab('result');
+    } catch (error) {
+      console.error('Template query execution failed:', error);
+    } finally {
+      setIsLoading(false);
+      setProgress(0);
+    }
+  }, [executeQuery, clearCurrentResult]);
+
   return (
     <div className={`query-interface ${className || ''}`}>
       <DatabaseConnectionBanner />
@@ -198,42 +342,77 @@ export const QueryInterface: React.FC<QueryInterfaceProps> = ({ className }) => 
         </div>
 
         <div className="query-input-section">
-          <Space.Compact style={{ width: '100%' }}>
-            <TextArea
-              ref={textAreaRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask a question about your data... (e.g., 'Show me revenue by country last month')"
-              autoSize={{ minRows: 2, maxRows: 6 }}
-              disabled={isLoading}
-              className="query-textarea"
-            />
-            <Tooltip title="Execute Query (Ctrl+Enter)">
-              <Button
-                type="primary"
-                icon={<SendOutlined />}
-                onClick={handleSubmitQuery}
-                disabled={!query.trim() || isLoading}
-                loading={isLoading}
-                className="submit-button"
-              >
-                Ask
-              </Button>
-            </Tooltip>
-          </Space.Compact>
-
-          {isLoading && (
-            <div className="query-progress">
-              <Progress
-                percent={progress}
-                size="small"
-                status="active"
-                format={(percent) => `Processing... ${percent}%`}
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Space.Compact style={{ width: '100%' }}>
+              <TextArea
+                ref={textAreaRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask a question about your data... (e.g., 'Show me revenue by country last month')"
+                autoSize={{ minRows: 2, maxRows: 6 }}
+                disabled={isLoading}
+                className="query-textarea"
               />
+              <Tooltip title="Execute Query (Ctrl+Enter)">
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  onClick={handleSubmitQuery}
+                  disabled={!query.trim() || isLoading}
+                  loading={isLoading}
+                  className="submit-button"
+                >
+                  Ask
+                </Button>
+              </Tooltip>
+            </Space.Compact>
+
+            <div style={{ textAlign: 'center' }}>
+              <Space wrap>
+                <Text type="secondary">
+                  New to querying data?
+                </Text>
+                <Button
+                  type="link"
+                  icon={<ToolOutlined />}
+                  onClick={() => setShowWizard(true)}
+                  disabled={isLoading}
+                >
+                  Use Query Builder Wizard
+                </Button>
+                <Text type="secondary">•</Text>
+                <Button
+                  type="link"
+                  icon={<BookOutlined />}
+                  onClick={() => setShowTemplateLibrary(true)}
+                  disabled={isLoading}
+                >
+                  Browse Templates
+                </Button>
+                <Text type="secondary">•</Text>
+                <Button
+                  type="link"
+                  onClick={() => setShowCommandPalette(true)}
+                  disabled={isLoading}
+                >
+                  Command Palette (Ctrl+K)
+                </Button>
+              </Space>
             </div>
-          )}
+          </Space>
         </div>
+
+        {isLoading && (
+          <div className="query-progress">
+            <Progress
+              percent={progress}
+              size="small"
+              status="active"
+              format={(percent) => `Processing... ${percent}%`}
+            />
+          </div>
+        )}
 
         <Tabs
           activeKey={activeTab}
@@ -270,12 +449,28 @@ export const QueryInterface: React.FC<QueryInterfaceProps> = ({ className }) => 
             key="result"
           >
             {currentResult ? (
-              <QueryResult
-                result={currentResult}
-                query={query}
-                onRequery={handleSubmitQuery}
-                onSuggestionClick={handleFollowUpSuggestionClick}
-              />
+              <Row gutter={[16, 16]}>
+                <Col xs={24} lg={showInsightsPanel ? 16 : 24}>
+                  <QueryResult
+                    result={currentResult}
+                    query={query}
+                    onRequery={handleSubmitQuery}
+                    onSuggestionClick={handleFollowUpSuggestionClick}
+                  />
+                </Col>
+                {showInsightsPanel && (
+                  <Col xs={24} lg={8}>
+                    <DataInsightsPanel
+                      queryResult={currentResult}
+                      onInsightAction={(action) => {
+                        console.log('Insight action:', action);
+                        // Handle insight actions like drill-down, filtering, etc.
+                      }}
+                      autoGenerate={true}
+                    />
+                  </Col>
+                )}
+              </Row>
             ) : (
               <div className="empty-result">
                 <Text type="secondary">
@@ -433,6 +628,34 @@ export const QueryInterface: React.FC<QueryInterfaceProps> = ({ className }) => 
               <TuningDashboard />
             </TabPane>
           )}
+
+          {isAdmin && (
+            <TabPane
+              tab={
+                <span>
+                  <ThunderboltOutlined />
+                  Cache Manager
+                </span>
+              }
+              key="cache"
+            >
+              <CacheManager />
+            </TabPane>
+          )}
+
+          {isAdmin && (
+            <TabPane
+              tab={
+                <span>
+                  <SafetyOutlined />
+                  Security
+                </span>
+              }
+              key="security"
+            >
+              <SecurityDashboard />
+            </TabPane>
+          )}
         </Tabs>
       </Card>
 
@@ -444,6 +667,74 @@ export const QueryInterface: React.FC<QueryInterfaceProps> = ({ className }) => 
         query={query}
       />
 
+      {/* Query Wizard Modal */}
+      {showWizard && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            maxWidth: '95vw',
+            maxHeight: '95vh',
+            overflow: 'auto',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+          }}>
+            <QueryWizard
+              onQueryGenerated={handleWizardQueryGenerated}
+              onClose={() => setShowWizard(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Query Template Library Modal */}
+      {showTemplateLibrary && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            maxWidth: '95vw',
+            maxHeight: '95vh',
+            overflow: 'auto',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+          }}>
+            <QueryTemplateLibrary
+              onApplyTemplate={handleTemplateApply}
+              onClose={() => setShowTemplateLibrary(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Command Palette */}
+      <CommandPalette
+        visible={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+      />
+
+      {/* Screen Reader Announcer */}
+      <ScreenReaderAnnouncer />
 
     </div>
   );

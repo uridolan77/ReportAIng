@@ -4,6 +4,7 @@ import { API_CONFIG } from '../config/api';
 import { setSessionId, clearSessionId } from '../utils/sessionUtils';
 import { SecurityUtils } from '../utils/security';
 import { apiClient } from '../services/apiClient';
+import { tokenManager } from '../services/tokenManager';
 
 interface User {
   id: string;
@@ -82,14 +83,22 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        // Clean up token manager
+        tokenManager.destroy();
+
         set({
           isAuthenticated: false,
           user: null,
           token: null,
           refreshToken: null,
         });
+
         // Clear the session ID when logging out
         clearSessionId();
+
+        // Clear all storage
+        localStorage.removeItem('auth-storage');
+        sessionStorage.clear();
       },
 
       refreshAuth: async () => {

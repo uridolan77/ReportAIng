@@ -384,6 +384,114 @@ public class CacheService : ICacheService
     }
 
     #endregion
+
+    #region Advanced Caching Strategies
+
+    /// <summary>
+    /// Get or set with factory pattern - cache-aside pattern
+    /// </summary>
+    public async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiry = null) where T : class
+    {
+        var cachedValue = await GetAsync<T>(key);
+        if (cachedValue != null)
+        {
+            return cachedValue;
+        }
+
+        var value = await factory();
+        if (value != null)
+        {
+            await SetAsync(key, value, expiry);
+        }
+
+        return value;
+    }
+
+    /// <summary>
+    /// Write-through caching pattern
+    /// </summary>
+    public async Task<T> WriteThrough<T>(string key, T value, Func<T, Task> persistFunc, TimeSpan? expiry = null) where T : class
+    {
+        // Write to persistent store first
+        await persistFunc(value);
+
+        // Then update cache
+        await SetAsync(key, value, expiry);
+
+        return value;
+    }
+
+    /// <summary>
+    /// Write-behind (write-back) caching pattern
+    /// </summary>
+    public async Task WriteBehind<T>(string key, T value, Func<T, Task> persistFunc, TimeSpan? expiry = null) where T : class
+    {
+        // Update cache immediately
+        await SetAsync(key, value, expiry);
+
+        // Schedule background write to persistent store
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(_config.WriteBehindDelaySeconds));
+                await persistFunc(value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in write-behind operation for key: {Key}", key);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Refresh-ahead caching pattern
+    /// </summary>
+    public async Task<T?> RefreshAhead<T>(string key, Func<Task<T>> factory, TimeSpan refreshThreshold, TimeSpan? expiry = null) where T : class
+    {
+        var cachedValue = await GetAsync<T>(key);
+        var ttl = await GetTtlAsync(key);
+
+        // If cache is about to expire, refresh in background
+        if (cachedValue != null && ttl.HasValue && ttl.Value < refreshThreshold)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var newValue = await factory();
+                    if (newValue != null)
+                    {
+                        await SetAsync(key, newValue, expiry);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in refresh-ahead operation for key: {Key}", key);
+                }
+            });
+        }
+
+        return cachedValue;
+    }
+
+    /// <summary>
+    /// Circuit breaker pattern for cache operations
+    /// </summary>
+    public async Task<T?> GetWithCircuitBreaker<T>(string key, Func<Task<T>> fallback) where T : class
+    {
+        try
+        {
+            return await GetAsync<T>(key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cache operation failed, using fallback for key: {Key}", key);
+            return await fallback();
+        }
+    }
+
+    #endregion
 }
 
 /// <summary>
@@ -396,4 +504,7 @@ public class CacheConfiguration
     public int SlidingExpirationMinutes { get; set; } = 5;
     public bool UseDistributedCache { get; set; } = false;
     public string? RedisConnectionString { get; set; }
+    public int WriteBehindDelaySeconds { get; set; } = 5;
+    public bool EnableRefreshAhead { get; set; } = true;
+    public int RefreshAheadThresholdMinutes { get; set; } = 5;
 }

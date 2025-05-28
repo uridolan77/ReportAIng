@@ -294,6 +294,22 @@ public enum StreamingResponseType
     Progress
 }
 
+// AI Provider Models
+/// <summary>
+/// Options for AI provider operations
+/// </summary>
+public class AIOptions
+{
+    public float Temperature { get; set; } = 0.1f;
+    public int MaxTokens { get; set; } = 2000;
+    public float FrequencyPenalty { get; set; } = 0.0f;
+    public float PresencePenalty { get; set; } = 0.0f;
+    public string? SystemMessage { get; set; }
+    public int TimeoutSeconds { get; set; } = 30;
+    public bool UseStreaming { get; set; } = false;
+    public Dictionary<string, object> AdditionalParameters { get; set; } = new();
+}
+
 // Query Example Models
 /// <summary>
 /// Example query for training and prompt engineering

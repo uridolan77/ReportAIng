@@ -167,24 +167,24 @@ export class SecurityUtils {
     }
   }
 
-  static getSecureSessionStorage(key: string, maxAge: number = 3600000): string | null {
+  static getSecureSessionStorage(key: string): string | null {
     try {
-      const stored = sessionStorage.getItem(key);
-      if (!stored) return null;
+      const data = sessionStorage.getItem(key);
+      if (!data) return null;
 
-      const sessionData = JSON.parse(stored);
-      const now = Date.now();
+      const sessionData = JSON.parse(data);
 
-      // Check expiry
-      if (now - sessionData.timestamp > maxAge) {
+      // Verify integrity
+      const expectedIntegrity = this.generateIntegrityHash(sessionData.value);
+      if (expectedIntegrity !== sessionData.integrity) {
+        console.warn('Session storage integrity check failed');
         sessionStorage.removeItem(key);
         return null;
       }
 
-      // Check integrity
-      const expectedHash = this.generateIntegrityHash(sessionData.value);
-      if (sessionData.integrity !== expectedHash) {
-        console.warn('Session data integrity check failed');
+      // Check if data is too old (24 hours)
+      const maxAge = 24 * 60 * 60 * 1000;
+      if (Date.now() - sessionData.timestamp > maxAge) {
         sessionStorage.removeItem(key);
         return null;
       }
@@ -195,6 +195,16 @@ export class SecurityUtils {
       return null;
     }
   }
+
+  static clearSecureSessionStorage(key: string): void {
+    try {
+      sessionStorage.removeItem(key);
+    } catch (error) {
+      console.error('Failed to clear secure session storage:', error);
+    }
+  }
+
+
 
   private static generateIntegrityHash(data: string): string {
     // Simple hash for integrity check (not cryptographically secure)

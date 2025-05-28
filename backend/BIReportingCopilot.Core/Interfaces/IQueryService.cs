@@ -44,6 +44,23 @@ public interface IAIService
     IAsyncEnumerable<StreamingResponse> GenerateExplanationStreamAsync(string sql, CoreModels.StreamingQueryComplexity complexity = CoreModels.StreamingQueryComplexity.Medium, CancellationToken cancellationToken = default);
 }
 
+// AI Provider abstraction interfaces
+public interface IAIProvider
+{
+    Task<string> GenerateCompletionAsync(string prompt, AIOptions options);
+    Task<string> GenerateCompletionAsync(string prompt, AIOptions options, CancellationToken cancellationToken);
+    IAsyncEnumerable<StreamingResponse> GenerateCompletionStreamAsync(string prompt, AIOptions options, CancellationToken cancellationToken = default);
+    bool IsConfigured { get; }
+    string ProviderName { get; }
+}
+
+public interface IAIProviderFactory
+{
+    IAIProvider GetProvider();
+    IAIProvider GetProvider(string providerName);
+    IEnumerable<string> GetAvailableProviders();
+}
+
 // New advanced AI/ML interfaces
 public interface ISemanticAnalyzer
 {

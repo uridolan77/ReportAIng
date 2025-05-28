@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { QueryRequest, QueryResponse, QueryHistoryItem } from '../types/query';
 import { API_CONFIG, getApiUrl, getAuthHeaders } from '../config/api';
 import { useAuthStore } from './authStore';
+import { queryCacheService } from '../services/queryCacheService';
+import { validateNaturalLanguageQuery, validateQueryContext } from '../utils/queryValidator';
 
 interface QueryState {
   currentResult: QueryResponse | null;
@@ -13,6 +15,8 @@ interface QueryState {
   clearCurrentResult: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  clearCache: (pattern?: string) => Promise<void>;
+  getCacheMetrics: () => Promise<any>;
 }
 
 export const useQueryStore = create<QueryState>((set, get) => ({
@@ -25,6 +29,74 @@ export const useQueryStore = create<QueryState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
+      // Validate the query for security
+      const validationResult = validateNaturalLanguageQuery(request.question);
+
+      if (!validationResult.isValid) {
+        const errorMessage = `Query validation failed: ${validationResult.errors.join(', ')}`;
+        set({
+          error: errorMessage,
+          isLoading: false
+        });
+        console.error('Query validation failed:', validationResult);
+        return;
+      }
+
+      // Show warnings if any
+      if (validationResult.warnings.length > 0) {
+        console.warn('Query validation warnings:', validationResult.warnings);
+      }
+
+      // Get user context for additional validation
+      const authStateForValidation = useAuthStore.getState();
+      const userRoles = authStateForValidation.user?.roles || [];
+      const allowedTables = ['tbl_daily_actions', 'tbl_daily_actions_players', 'tbl_countries', 'tbl_currencies', 'tbl_whitelabels'];
+
+      // Additional context-based validation
+      const contextValidation = validateQueryContext(request.question, userRoles, allowedTables);
+      if (!contextValidation.isValid) {
+        const errorMessage = `Access denied: ${contextValidation.errors.join(', ')}`;
+        set({
+          error: errorMessage,
+          isLoading: false
+        });
+        console.error('Query context validation failed:', contextValidation);
+        return;
+      }
+
+      // Initialize cache service if not already done
+      await queryCacheService.init();
+
+      // Check cache first
+      const cachedResult = await queryCacheService.getCachedResult(request);
+      if (cachedResult) {
+        console.log('Using cached query result');
+        set({
+          currentResult: { ...cachedResult, cached: true },
+          isLoading: false,
+          error: null
+        });
+
+        // Add cached result to history
+        const historyItem: QueryHistoryItem = {
+          id: cachedResult.queryId,
+          question: request.question,
+          sql: cachedResult.sql,
+          timestamp: cachedResult.timestamp,
+          successful: cachedResult.success,
+          executionTimeMs: cachedResult.executionTimeMs,
+          confidence: cachedResult.confidence,
+          userId: 'current-user',
+          sessionId: request.sessionId,
+          error: cachedResult.error,
+        };
+
+        set(state => ({
+          queryHistory: [historyItem, ...state.queryHistory.slice(0, 49)]
+        }));
+        return;
+      }
+
       // Get the current auth token
       const authState = useAuthStore.getState();
       const token = authState.token;
@@ -37,8 +109,12 @@ export const useQueryStore = create<QueryState>((set, get) => ({
 
       if (response.ok) {
         const result: QueryResponse = await response.json();
+
+        // Cache the result for future use
+        await queryCacheService.cacheResult(request, result);
+
         set({
-          currentResult: result,
+          currentResult: { ...result, cached: false },
           isLoading: false,
           error: null
         });
@@ -136,5 +212,23 @@ export const useQueryStore = create<QueryState>((set, get) => ({
 
   setError: (error: string | null) => {
     set({ error });
+  },
+
+  clearCache: async (pattern?: string) => {
+    try {
+      await queryCacheService.invalidateCache(pattern);
+      console.log('Cache cleared successfully');
+    } catch (error) {
+      console.error('Failed to clear cache:', error);
+    }
+  },
+
+  getCacheMetrics: async () => {
+    try {
+      return await queryCacheService.getCacheMetrics();
+    } catch (error) {
+      console.error('Failed to get cache metrics:', error);
+      return null;
+    }
   },
 }));

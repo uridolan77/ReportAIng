@@ -3,8 +3,10 @@ using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Infrastructure.Performance;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
@@ -13,15 +15,18 @@ public class TuningService : ITuningService
     private readonly BICopilotContext _context;
     private readonly ILogger<TuningService> _logger;
     private readonly IBusinessContextAutoGenerator _autoGenerator;
+    private readonly StreamingDataService _streamingService;
 
     public TuningService(
         BICopilotContext context,
         ILogger<TuningService> logger,
-        IBusinessContextAutoGenerator autoGenerator)
+        IBusinessContextAutoGenerator autoGenerator,
+        StreamingDataService streamingService)
     {
         _context = context;
         _logger = logger;
         _autoGenerator = autoGenerator;
+        _streamingService = streamingService;
     }
 
     #region Dashboard
@@ -30,39 +35,65 @@ public class TuningService : ITuningService
     {
         try
         {
-            var totalTables = await _context.BusinessTableInfo.CountAsync(t => t.IsActive);
-            var totalColumns = await _context.BusinessColumnInfo.CountAsync(c => c.IsActive);
-            var totalPatterns = await _context.QueryPatterns.CountAsync(p => p.IsActive);
-            var totalGlossaryTerms = await _context.BusinessGlossary.CountAsync(g => g.IsActive);
-            var activePromptTemplates = await _context.PromptTemplates.CountAsync(p => p.IsActive);
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-            var recentlyUpdatedTables = await _context.BusinessTableInfo
-                .Where(t => t.IsActive && t.UpdatedDate.HasValue)
-                .OrderByDescending(t => t.UpdatedDate)
-                .Take(5)
-                .Select(t => $"{t.SchemaName}.{t.TableName}")
+            // Use a single query with multiple aggregations to reduce database round trips
+            var dashboardStats = await _context.BusinessTableInfo
+                .Where(t => t.IsActive)
+                .Select(t => new
+                {
+                    TableId = t.Id,
+                    SchemaTable = $"{t.SchemaName}.{t.TableName}",
+                    UpdatedDate = t.UpdatedDate,
+                    ColumnCount = t.Columns.Count(c => c.IsActive)
+                })
                 .ToListAsync();
 
-            var mostUsedPatterns = await _context.QueryPatterns
+            // Get all other counts in parallel
+            var countsTask = Task.WhenAll(
+                _context.BusinessColumnInfo.Where(c => c.IsActive).CountAsync(),
+                _context.QueryPatterns.Where(p => p.IsActive).CountAsync(),
+                _context.BusinessGlossary.Where(g => g.IsActive).CountAsync(),
+                _context.PromptTemplates.Where(p => p.IsActive).CountAsync()
+            );
+
+            // Get pattern data in parallel
+            var patternsTask = _context.QueryPatterns
                 .Where(p => p.IsActive)
+                .Select(p => new { p.PatternName, p.UsageCount, p.Priority })
+                .ToListAsync();
+
+            await Task.WhenAll(countsTask, patternsTask);
+
+            var counts = await countsTask;
+            var patterns = await patternsTask;
+
+            var recentlyUpdatedTables = dashboardStats
+                .Where(t => t.UpdatedDate.HasValue)
+                .OrderByDescending(t => t.UpdatedDate)
+                .Take(5)
+                .Select(t => t.SchemaTable)
+                .ToList();
+
+            var mostUsedPatterns = patterns
                 .OrderByDescending(p => p.UsageCount)
                 .Take(5)
                 .Select(p => p.PatternName)
-                .ToListAsync();
+                .ToList();
 
-            var patternUsageStats = await _context.QueryPatterns
-                .Where(p => p.IsActive)
+            var patternUsageStats = patterns
                 .GroupBy(p => p.Priority)
-                .Select(g => new { Priority = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => $"Priority {x.Priority}", x => x.Count);
+                .ToDictionary(g => $"Priority {g.Key}", g => g.Count());
+
+            stopwatch.Stop();
 
             return new TuningDashboardData
             {
-                TotalTables = totalTables,
-                TotalColumns = totalColumns,
-                TotalPatterns = totalPatterns,
-                TotalGlossaryTerms = totalGlossaryTerms,
-                ActivePromptTemplates = activePromptTemplates,
+                TotalTables = dashboardStats.Count,
+                TotalColumns = counts[0],
+                TotalPatterns = counts[1],
+                TotalGlossaryTerms = counts[2],
+                ActivePromptTemplates = counts[3],
                 RecentlyUpdatedTables = recentlyUpdatedTables,
                 MostUsedPatterns = mostUsedPatterns,
                 PatternUsageStats = patternUsageStats
@@ -95,6 +126,40 @@ public class TuningService : ITuningService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting business tables");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Optimized version that only loads necessary fields for better performance
+    /// </summary>
+    public async Task<List<BusinessTableInfoOptimizedDto>> GetBusinessTablesOptimizedAsync()
+    {
+        try
+        {
+            return await _context.BusinessTableInfo
+                .Where(t => t.IsActive)
+                .Select(t => new BusinessTableInfoOptimizedDto
+                {
+                    Id = t.Id,
+                    TableName = t.TableName,
+                    SchemaName = t.SchemaName,
+                    BusinessPurpose = t.BusinessPurpose,
+                    BusinessContext = t.BusinessContext,
+                    IsActive = t.IsActive,
+                    UpdatedDate = t.UpdatedDate,
+                    UpdatedBy = t.UpdatedBy,
+                    ColumnCount = t.Columns.Count(c => c.IsActive),
+                    CreatedDate = t.CreatedDate
+                })
+                .AsNoTracking()
+                .OrderBy(t => t.SchemaName)
+                .ThenBy(t => t.TableName)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting optimized business tables");
             throw;
         }
     }

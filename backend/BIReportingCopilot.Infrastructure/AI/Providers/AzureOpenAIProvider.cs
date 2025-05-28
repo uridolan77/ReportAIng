@@ -1,0 +1,169 @@
+using Azure.AI.OpenAI;
+using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using System.Runtime.CompilerServices;
+
+namespace BIReportingCopilot.Infrastructure.AI.Providers;
+
+/// <summary>
+/// Azure OpenAI provider implementation for AI operations
+/// </summary>
+public class AzureOpenAIProvider : IAIProvider
+{
+    private readonly OpenAIClient _client;
+    private readonly AzureOpenAIConfiguration _config;
+    private readonly ILogger<AzureOpenAIProvider> _logger;
+
+    public string ProviderName => "AzureOpenAI";
+    public bool IsConfigured => _config.IsConfigured;
+
+    public AzureOpenAIProvider(
+        OpenAIClient client,
+        IOptions<AzureOpenAIConfiguration> config,
+        ILogger<AzureOpenAIProvider> logger)
+    {
+        _client = client;
+        _config = config.Value;
+        _logger = logger;
+    }
+
+    public async Task<string> GenerateCompletionAsync(string prompt, AIOptions options)
+    {
+        return await GenerateCompletionAsync(prompt, options, CancellationToken.None);
+    }
+
+    public async Task<string> GenerateCompletionAsync(string prompt, AIOptions options, CancellationToken cancellationToken)
+    {
+        if (!IsConfigured)
+        {
+            throw new InvalidOperationException("Azure OpenAI provider is not properly configured");
+        }
+
+        try
+        {
+            var chatCompletionsOptions = new ChatCompletionsOptions()
+            {
+                DeploymentName = _config.DeploymentName,
+                Messages =
+                {
+                    new ChatRequestSystemMessage(options.SystemMessage ?? "You are a helpful AI assistant."),
+                    new ChatRequestUserMessage(prompt)
+                },
+                Temperature = options.Temperature,
+                MaxTokens = options.MaxTokens,
+                FrequencyPenalty = options.FrequencyPenalty,
+                PresencePenalty = options.PresencePenalty
+            };
+
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(options.TimeoutSeconds));
+
+            var response = await _client.GetChatCompletionsAsync(chatCompletionsOptions, cts.Token);
+            
+            if (response?.Value?.Choices?.Count > 0)
+            {
+                return response.Value.Choices[0].Message.Content;
+            }
+
+            throw new InvalidOperationException("No response received from Azure OpenAI");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Azure OpenAI request timed out after {TimeoutSeconds} seconds", options.TimeoutSeconds);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating completion with Azure OpenAI: {Message}", ex.Message);
+            throw;
+        }
+    }
+
+    public async IAsyncEnumerable<StreamingResponse> GenerateCompletionStreamAsync(
+        string prompt, 
+        AIOptions options, 
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (!IsConfigured)
+        {
+            yield return new StreamingResponse
+            {
+                Type = StreamingResponseType.Error,
+                Content = "Azure OpenAI provider is not properly configured",
+                IsComplete = true
+            };
+            yield break;
+        }
+
+        var chatCompletionsOptions = new ChatCompletionsOptions()
+        {
+            DeploymentName = _config.DeploymentName,
+            Messages =
+            {
+                new ChatRequestSystemMessage(options.SystemMessage ?? "You are a helpful AI assistant."),
+                new ChatRequestUserMessage(prompt)
+            },
+            Temperature = options.Temperature,
+            MaxTokens = options.MaxTokens,
+            FrequencyPenalty = options.FrequencyPenalty,
+            PresencePenalty = options.PresencePenalty
+        };
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(options.TimeoutSeconds));
+
+        try
+        {
+            var streamingResponse = await _client.GetChatCompletionsStreamingAsync(chatCompletionsOptions, cts.Token);
+            int chunkIndex = 0;
+
+            await foreach (var choice in streamingResponse.Value.GetChoicesStreaming().WithCancellation(cts.Token))
+            {
+                await foreach (var message in choice.GetMessageStreaming().WithCancellation(cts.Token))
+                {
+                    if (!string.IsNullOrEmpty(message.Content))
+                    {
+                        yield return new StreamingResponse
+                        {
+                            Type = StreamingResponseType.SQLGeneration,
+                            Content = message.Content,
+                            IsComplete = false,
+                            ChunkIndex = chunkIndex++
+                        };
+                    }
+                }
+            }
+
+            yield return new StreamingResponse
+            {
+                Type = StreamingResponseType.SQLGeneration,
+                Content = string.Empty,
+                IsComplete = true,
+                ChunkIndex = chunkIndex
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Azure OpenAI streaming request timed out after {TimeoutSeconds} seconds", options.TimeoutSeconds);
+            yield return new StreamingResponse
+            {
+                Type = StreamingResponseType.Error,
+                Content = "Request timed out",
+                IsComplete = true
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in Azure OpenAI streaming completion: {Message}", ex.Message);
+            yield return new StreamingResponse
+            {
+                Type = StreamingResponseType.Error,
+                Content = $"Error: {ex.Message}",
+                IsComplete = true
+            };
+        }
+    }
+}

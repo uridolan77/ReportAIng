@@ -36,6 +36,11 @@ public class BICopilotContext : DbContext
     public DbSet<QueryPerformanceEntity> QueryPerformance { get; set; }
     public DbSet<SystemMetricsEntity> SystemMetrics { get; set; }
 
+    // AI Learning and Semantic Cache
+    public DbSet<AIGenerationAttempt> AIGenerationAttempts { get; set; }
+    public DbSet<AIFeedbackEntry> AIFeedbackEntries { get; set; }
+    public DbSet<SemanticCacheEntry> SemanticCacheEntries { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -260,6 +265,38 @@ public class BICopilotContext : DbContext
             .WithMany(t => t.Columns)
             .HasForeignKey(c => c.TableInfoId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure AI Learning entities
+        modelBuilder.Entity<AIGenerationAttempt>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.PromptHash);
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.UserId);
+            entity.Property(e => e.PromptHash).HasMaxLength(32);
+            entity.Property(e => e.SQLHash).HasMaxLength(32);
+            entity.Property(e => e.UserId).HasMaxLength(256);
+        });
+
+        modelBuilder.Entity<AIFeedbackEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.PromptPattern, e.IsSuccessful });
+            entity.HasIndex(e => new { e.UserId, e.Timestamp });
+            entity.HasIndex(e => e.Timestamp);
+            entity.Property(e => e.UserId).HasMaxLength(256);
+            entity.Property(e => e.PromptPattern).HasMaxLength(50);
+            entity.Property(e => e.SQLPattern).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<SemanticCacheEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.QuerySignature).IsUnique();
+            entity.HasIndex(e => e.ExpiryTime);
+            entity.HasIndex(e => e.LastAccessTime);
+            entity.Property(e => e.QuerySignature).HasMaxLength(32);
+        });
 
         // Seed default data
         SeedDefaultData(modelBuilder);

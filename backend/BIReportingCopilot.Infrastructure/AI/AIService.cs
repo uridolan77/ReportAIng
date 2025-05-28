@@ -13,52 +13,36 @@ using CoreModels = BIReportingCopilot.Core.Models;
 namespace BIReportingCopilot.Infrastructure.AI;
 
 /// <summary>
-/// AI service combining standard and streaming capabilities
-/// Consolidates EnhancedOpenAIService and StreamingOpenAIService
+/// AI service combining standard and streaming capabilities using provider pattern
+/// Consolidates EnhancedOpenAIService and StreamingOpenAIService with improved architecture
 /// </summary>
 public class AIService : IAIService
 {
-    private readonly OpenAIClient _client;
-    private readonly IConfiguration _configuration;
+    private readonly IAIProviderFactory _providerFactory;
     private readonly ILogger<AIService> _logger;
     private readonly ICacheService _cacheService;
-    private readonly AIServiceConfiguration _aiConfig;
-    private readonly bool _isConfigured;
     private readonly PromptTemplateManager _promptManager;
     private readonly IContextManager _contextManager;
     private readonly List<QueryExample> _examples;
+    private readonly IAIProvider _provider;
 
     public AIService(
-        OpenAIClient client,
-        IConfiguration configuration,
+        IAIProviderFactory providerFactory,
         ILogger<AIService> logger,
         ICacheService cacheService,
         IContextManager contextManager)
     {
-        _client = client;
-        _configuration = configuration;
+        _providerFactory = providerFactory;
         _logger = logger;
         _cacheService = cacheService;
         _contextManager = contextManager;
         _examples = InitializeExamples();
-
-        // Load AI configuration
-        _aiConfig = new AIServiceConfiguration();
-        configuration.GetSection("OpenAI").Bind(_aiConfig.OpenAI);
-        configuration.GetSection("AzureOpenAI").Bind(_aiConfig.AzureOpenAI);
-
-        _isConfigured = _aiConfig.HasValidConfiguration;
         _promptManager = new PromptTemplateManager();
 
-        if (!_isConfigured)
-        {
-            _logger.LogWarning("AI service is not properly configured. Fallback responses will be used.");
-        }
-        else
-        {
-            var configType = _aiConfig.PreferAzureOpenAI ? "Azure OpenAI" : "OpenAI";
-            _logger.LogInformation("AI service configured with {ConfigType}", configType);
-        }
+        // Get the appropriate provider
+        _provider = _providerFactory.GetProvider();
+
+        _logger.LogInformation("AI service initialized with provider: {ProviderName}", _provider.ProviderName);
     }
 
     #region Standard AI Operations
@@ -70,47 +54,22 @@ public class AIService : IAIService
 
     public async Task<string> GenerateSQLAsync(string prompt, CancellationToken cancellationToken)
     {
-        if (!_isConfigured)
-        {
-            return GenerateFallbackSQL(prompt);
-        }
-
         try
         {
             _logger.LogInformation("Building enhanced prompt...");
             var enhancedPrompt = BuildEnhancedPrompt(prompt);
 
-            var deploymentName = _aiConfig.PreferAzureOpenAI ?
-                _aiConfig.AzureOpenAI.DeploymentName :
-                _aiConfig.OpenAI.Model;
-
-            var chatCompletionsOptions = new ChatCompletionsOptions()
+            var options = new AIOptions
             {
-                DeploymentName = deploymentName,
-                Messages =
-                {
-                    new ChatRequestSystemMessage("You are an expert SQL developer. Generate only valid SQL queries without explanations."),
-                    new ChatRequestUserMessage(enhancedPrompt)
-                },
-                Temperature = _aiConfig.OpenAI.Temperature,
-                MaxTokens = _aiConfig.OpenAI.MaxTokens,
-                FrequencyPenalty = _aiConfig.OpenAI.FrequencyPenalty,
-                PresencePenalty = _aiConfig.OpenAI.PresencePenalty
+                SystemMessage = "You are an expert SQL developer. Generate only valid SQL queries without explanations.",
+                Temperature = 0.1f,
+                MaxTokens = 2000,
+                FrequencyPenalty = 0.0f,
+                PresencePenalty = 0.0f,
+                TimeoutSeconds = 30
             };
 
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            var timeoutSeconds = _aiConfig.PreferAzureOpenAI ?
-                _aiConfig.AzureOpenAI.TimeoutSeconds :
-                _aiConfig.OpenAI.TimeoutSeconds;
-            cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
-
-            _logger.LogInformation("Making AI API call with timeout: {TimeoutSeconds}s...", timeoutSeconds);
-            var response = await _client.GetChatCompletionsAsync(chatCompletionsOptions, cts.Token);
-
-            _logger.LogInformation("AI API call successful. Response received with {ChoiceCount} choices",
-                response.Value.Choices.Count);
-
-            var generatedSQL = response.Value.Choices[0].Message.Content;
+            var generatedSQL = await _provider.GenerateCompletionAsync(enhancedPrompt, options, cancellationToken);
 
             // Clean up the response
             generatedSQL = CleanSQLResponse(generatedSQL);
@@ -128,11 +87,6 @@ public class AIService : IAIService
 
     public async Task<string> GenerateInsightAsync(string query, object[] data)
     {
-        if (!_isConfigured)
-        {
-            return GenerateFallbackInsight(query, data);
-        }
-
         try
         {
             var dataPreview = GenerateDataPreview(data);
@@ -149,23 +103,15 @@ Provide 2-3 key insights about the data, focusing on:
 
 Keep insights concise and actionable.";
 
-            var chatCompletionsOptions = new ChatCompletionsOptions()
+            var options = new AIOptions
             {
-                DeploymentName = _aiConfig.PreferAzureOpenAI ?
-                    _aiConfig.AzureOpenAI.DeploymentName :
-                    _aiConfig.OpenAI.Model,
-                Messages =
-                {
-                    new ChatRequestSystemMessage("You are a business intelligence analyst providing insights from data."),
-                    new ChatRequestUserMessage(insightPrompt)
-                },
+                SystemMessage = "You are a business intelligence analyst providing insights from data.",
                 Temperature = 0.3f,
-                MaxTokens = 500
+                MaxTokens = 500,
+                TimeoutSeconds = 30
             };
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            var response = await _client.GetChatCompletionsAsync(chatCompletionsOptions, cts.Token);
-            return response.Value.Choices[0].Message.Content;
+            return await _provider.GenerateCompletionAsync(insightPrompt, options);
         }
         catch (Exception ex)
         {
@@ -197,20 +143,15 @@ Return a JSON object with:
 
 Return only valid JSON.";
 
-            var chatCompletionsOptions = new ChatCompletionsOptions()
+            var options = new AIOptions
             {
-                DeploymentName = _configuration["OpenAI:DeploymentName"] ?? "gpt-4",
-                Messages =
-                {
-                    new ChatRequestSystemMessage("You are a data visualization expert. Return only valid JSON."),
-                    new ChatRequestUserMessage(vizPrompt)
-                },
+                SystemMessage = "You are a data visualization expert. Return only valid JSON.",
                 Temperature = 0.2f,
-                MaxTokens = 300
+                MaxTokens = 300,
+                TimeoutSeconds = 30
             };
 
-            var response = await _client.GetChatCompletionsAsync(chatCompletionsOptions);
-            return response.Value.Choices[0].Message.Content;
+            return await _provider.GenerateCompletionAsync(vizPrompt, options);
         }
         catch (Exception ex)
         {
@@ -283,20 +224,17 @@ Return only valid JSON.";
         CoreModels.QueryContext? context = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (!_isConfigured)
-        {
-            yield return new StreamingResponse
-            {
-                Type = StreamingResponseType.Error,
-                Content = "AI service is not configured",
-                IsComplete = true
-            };
-            yield break;
-        }
-
         var enhancedPrompt = await _promptManager.BuildSQLGenerationPromptAsync(prompt, schema, context);
 
-        await foreach (var response in StreamChatCompletionAsync(enhancedPrompt, StreamingResponseType.SQLGeneration, cancellationToken))
+        var options = new AIOptions
+        {
+            SystemMessage = "You are an expert SQL developer. Generate only valid SQL queries.",
+            Temperature = 0.1f,
+            MaxTokens = 1000,
+            TimeoutSeconds = 30
+        };
+
+        await foreach (var response in _provider.GenerateCompletionStreamAsync(enhancedPrompt, options, cancellationToken))
         {
             yield return response;
         }
@@ -308,20 +246,17 @@ Return only valid JSON.";
         CoreModels.AnalysisContext? context = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (!_isConfigured)
-        {
-            yield return new StreamingResponse
-            {
-                Type = StreamingResponseType.Error,
-                Content = "AI service is not configured",
-                IsComplete = true
-            };
-            yield break;
-        }
-
         var insightPrompt = await _promptManager.BuildInsightGenerationPromptAsync(query, data, context);
 
-        await foreach (var response in StreamChatCompletionAsync(insightPrompt, StreamingResponseType.Insight, cancellationToken))
+        var options = new AIOptions
+        {
+            SystemMessage = "You are a business intelligence analyst providing insights from data.",
+            Temperature = 0.3f,
+            MaxTokens = 500,
+            TimeoutSeconds = 30
+        };
+
+        await foreach (var response in _provider.GenerateCompletionStreamAsync(insightPrompt, options, cancellationToken))
         {
             yield return response;
         }
@@ -332,20 +267,17 @@ Return only valid JSON.";
         CoreModels.StreamingQueryComplexity complexity = CoreModels.StreamingQueryComplexity.Medium,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (!_isConfigured)
-        {
-            yield return new StreamingResponse
-            {
-                Type = StreamingResponseType.Error,
-                Content = "AI service is not configured",
-                IsComplete = true
-            };
-            yield break;
-        }
-
         var explanationPrompt = await _promptManager.BuildSQLExplanationPromptAsync(sql, complexity);
 
-        await foreach (var response in StreamChatCompletionAsync(explanationPrompt, StreamingResponseType.Explanation, cancellationToken))
+        var options = new AIOptions
+        {
+            SystemMessage = "You are a SQL expert explaining queries in simple terms.",
+            Temperature = 0.2f,
+            MaxTokens = 800,
+            TimeoutSeconds = 30
+        };
+
+        await foreach (var response in _provider.GenerateCompletionStreamAsync(explanationPrompt, options, cancellationToken))
         {
             yield return response;
         }
@@ -355,99 +287,7 @@ Return only valid JSON.";
 
     #region Private Helper Methods
 
-    private async IAsyncEnumerable<StreamingResponse> StreamChatCompletionAsync(
-        string prompt,
-        StreamingResponseType responseType,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var chatCompletionsOptions = new ChatCompletionsOptions()
-        {
-            DeploymentName = _aiConfig.PreferAzureOpenAI ?
-                _aiConfig.AzureOpenAI.DeploymentName :
-                _aiConfig.OpenAI.Model,
-            Messages =
-            {
-                new ChatRequestSystemMessage(GetSystemPromptForType(responseType)),
-                new ChatRequestUserMessage(prompt)
-            },
-            Temperature = GetTemperatureForType(responseType),
-            MaxTokens = GetMaxTokensForType(responseType),
-            FrequencyPenalty = _aiConfig.OpenAI.FrequencyPenalty,
-            PresencePenalty = _aiConfig.OpenAI.PresencePenalty
-        };
 
-        var chunkIndex = 0;
-        var contentBuilder = new StringBuilder();
-
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var timeoutSeconds = _aiConfig.PreferAzureOpenAI ?
-            _aiConfig.AzureOpenAI.TimeoutSeconds :
-            _aiConfig.OpenAI.TimeoutSeconds;
-        cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
-
-        var streamingResponse = await _client.GetChatCompletionsStreamingAsync(chatCompletionsOptions, cts.Token);
-
-        await foreach (var update in streamingResponse.WithCancellation(cts.Token))
-        {
-            if (update.ContentUpdate != null)
-            {
-                contentBuilder.Append(update.ContentUpdate);
-
-                yield return new StreamingResponse
-                {
-                    Type = responseType,
-                    Content = update.ContentUpdate,
-                    IsComplete = false,
-                    ChunkIndex = chunkIndex++,
-                    Timestamp = DateTime.UtcNow
-                };
-            }
-        }
-
-        // Send final completion message
-        yield return new StreamingResponse
-        {
-            Type = responseType,
-            Content = string.Empty,
-            IsComplete = true,
-            ChunkIndex = chunkIndex,
-            Timestamp = DateTime.UtcNow,
-            Metadata = new { TotalContent = contentBuilder.ToString(), TotalChunks = chunkIndex }
-        };
-    }
-
-    private string GetSystemPromptForType(StreamingResponseType type)
-    {
-        return type switch
-        {
-            StreamingResponseType.SQLGeneration => "You are an expert SQL developer. Generate only valid SQL queries.",
-            StreamingResponseType.Insight => "You are a business intelligence analyst providing insights from data.",
-            StreamingResponseType.Explanation => "You are a SQL expert explaining queries in simple terms.",
-            _ => "You are a helpful AI assistant."
-        };
-    }
-
-    private float GetTemperatureForType(StreamingResponseType type)
-    {
-        return type switch
-        {
-            StreamingResponseType.SQLGeneration => 0.1f,
-            StreamingResponseType.Insight => 0.3f,
-            StreamingResponseType.Explanation => 0.2f,
-            _ => 0.2f
-        };
-    }
-
-    private int GetMaxTokensForType(StreamingResponseType type)
-    {
-        return type switch
-        {
-            StreamingResponseType.SQLGeneration => 1000,
-            StreamingResponseType.Insight => 500,
-            StreamingResponseType.Explanation => 800,
-            _ => 500
-        };
-    }
 
     private string BuildEnhancedPrompt(string originalPrompt)
     {

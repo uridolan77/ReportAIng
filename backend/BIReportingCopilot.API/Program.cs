@@ -26,6 +26,8 @@ using BIReportingCopilot.Infrastructure.Middleware;
 using BIReportingCopilot.Core.Commands;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Hangfire;
+using BIReportingCopilot.API.Versioning;
+using BIReportingCopilot.Core.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,13 +79,29 @@ builder.Services.Configure<BIReportingCopilot.Core.Configuration.OpenAIConfigura
     builder.Configuration.GetSection("OpenAI"));
 builder.Services.Configure<BIReportingCopilot.Core.Configuration.AzureOpenAIConfiguration>(
     builder.Configuration.GetSection("AzureOpenAI"));
+builder.Services.Configure<BIReportingCopilot.Core.Configuration.AIServiceConfiguration>(config =>
+{
+    builder.Configuration.GetSection("OpenAI").Bind(config.OpenAI);
+    builder.Configuration.GetSection("AzureOpenAI").Bind(config.AzureOpenAI);
+});
 
 // JWT settings are already configured by AddValidatedConfiguration above
 
 // Add services to the container
 builder.Services.AddControllers();
+
+// Add API versioning support
+builder.Services.AddApiVersioningSupport();
+builder.Services.AddVersionedSwagger();
+
+// Add FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddValidatorsFromAssemblyContaining<QueryRequestValidator>();
+
+// Configure application settings
+builder.Services.Configure<BIReportingCopilot.Core.Configuration.ApplicationSettings>(
+    builder.Configuration.GetSection(BIReportingCopilot.Core.Configuration.ApplicationSettings.SectionName));
 
 // Configure Entity Framework
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -235,9 +253,70 @@ builder.Services.AddScoped<IUserRepository, BIReportingCopilot.Infrastructure.Re
 builder.Services.AddScoped<ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.IUserEntityRepository, BIReportingCopilot.Infrastructure.Repositories.UserEntityRepository>();
 
+// Register AI providers and factory
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Providers.OpenAIProvider>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Providers.AzureOpenAIProvider>();
+builder.Services.AddScoped<IAIProviderFactory, BIReportingCopilot.Infrastructure.AI.Providers.AIProviderFactory>();
+
+// Register performance and monitoring services
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.StreamingDataService>();
+builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Monitoring.IMetricsCollector, BIReportingCopilot.Infrastructure.Monitoring.MetricsCollector>();
+
+// Register AI/ML enhancement services
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.SemanticCacheService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.MLAnomalyDetector>();
+
+// Register scalability services
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.IEventBus, BIReportingCopilot.Infrastructure.Messaging.InMemoryEventBus>();
+builder.Services.Configure<BIReportingCopilot.Infrastructure.Messaging.EventBusConfiguration>(
+    builder.Configuration.GetSection("EventBus"));
+
+// Register distributed cache service
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("Redis");
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        options.Configuration = connectionString;
+    }
+});
+
+// Register Redis connection multiplexer for advanced caching features
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+if (!string.IsNullOrEmpty(redisConnectionString))
+{
+    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(provider =>
+        StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
+
+    builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Caching.DistributedCacheService>();
+    builder.Services.Configure<BIReportingCopilot.Infrastructure.Caching.DistributedCacheConfiguration>(
+        builder.Configuration.GetSection("DistributedCache"));
+}
+
+// Register sharded schema service
+builder.Services.Configure<BIReportingCopilot.Infrastructure.Services.ShardingConfiguration>(
+    builder.Configuration.GetSection("Sharding"));
+
+// Register event handlers
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHandlers.QueryExecutedEventHandler>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHandlers.FeedbackReceivedEventHandler>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHandlers.AnomalyDetectedEventHandler>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHandlers.CacheInvalidatedEventHandler>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHandlers.PerformanceMetricsEventHandler>();
+
 // Register core application services - Consolidated and unified
-builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.AIService>(); // Unified AI service with standard and streaming capabilities
-builder.Services.AddScoped<IQueryService, QueryService>(); // Enhanced query service with advanced processing
+builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.AIService>(); // Base AI service
+builder.Services.AddScoped<IQueryService, QueryService>(); // Base query service
+
+// Register AI enhancement decorators
+builder.Services.Decorate<IAIService, BIReportingCopilot.Infrastructure.AI.AdaptiveAIService>();
+
+// Register resilient services as decorators
+builder.Services.Decorate<IAIService, BIReportingCopilot.Infrastructure.Resilience.ResilientAIService>();
+builder.Services.Decorate<IQueryService, BIReportingCopilot.Infrastructure.Resilience.ResilientQueryService>();
+
+// Register traced services as final decorators
+builder.Services.Decorate<IQueryService, BIReportingCopilot.Infrastructure.Monitoring.TracedQueryService>();
 
 // No legacy service registrations needed - using unified IAIService directly
 builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Services.SchemaService>();
@@ -398,12 +477,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "BI Reporting Copilot API v1");
-        c.RoutePrefix = string.Empty; // Serve Swagger UI at root
-    });
+    var apiVersionDescriptionProvider = app.Services.GetRequiredService<Microsoft.AspNetCore.Mvc.ApiExplorer.IApiVersionDescriptionProvider>();
+    app.UseVersionedSwagger(apiVersionDescriptionProvider);
 }
 
 app.UseHttpsRedirection();
@@ -412,9 +487,9 @@ app.UseHttpsRedirection();
 app.UseResponseCompression();
 
 // Custom middleware
+app.UseGlobalExceptionHandler(); // Global exception handling
 app.UseCorrelationId();
 app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<BIReportingCopilot.API.Middleware.StandardizedErrorHandlingMiddleware>(app.Environment.IsDevelopment());
 app.UseMiddleware<RateLimitingMiddleware>(); // Now properly handles scoped services
 
 app.UseCors("AllowFrontend");
