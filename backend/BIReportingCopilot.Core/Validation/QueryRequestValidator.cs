@@ -6,7 +6,7 @@ namespace BIReportingCopilot.Core.Validation;
 /// <summary>
 /// Validator for query requests
 /// </summary>
-public class QueryRequestValidator : AbstractValidator<QueryRequest>
+public class QueryRequestValidator : AbstractValidator<ValidationQueryRequest>
 {
     public QueryRequestValidator()
     {
@@ -77,7 +77,7 @@ public class QueryRequestValidator : AbstractValidator<QueryRequest>
 
         foreach (var pattern in suspiciousPatterns)
         {
-            if (System.Text.RegularExpressions.Regex.IsMatch(query, pattern, 
+            if (System.Text.RegularExpressions.Regex.IsMatch(query, pattern,
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase))
             {
                 return false;
@@ -143,8 +143,8 @@ public class FeedbackRequestValidator : AbstractValidator<FeedbackRequest>
             @"onclick\s*="
         };
 
-        return !harmfulPatterns.Any(pattern => 
-            System.Text.RegularExpressions.Regex.IsMatch(comments, pattern, 
+        return !harmfulPatterns.Any(pattern =>
+            System.Text.RegularExpressions.Regex.IsMatch(comments, pattern,
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase));
     }
 
@@ -236,8 +236,8 @@ public class UserRegistrationValidator : AbstractValidator<UserRegistrationReque
             @"[<>""']"
         };
 
-        return !harmfulPatterns.Any(pattern => 
-            System.Text.RegularExpressions.Regex.IsMatch(content, pattern, 
+        return !harmfulPatterns.Any(pattern =>
+            System.Text.RegularExpressions.Regex.IsMatch(content, pattern,
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase));
     }
 
@@ -312,9 +312,9 @@ public class BusinessTableConfigValidator : AbstractValidator<BusinessTableConfi
         if (tags == null || !tags.Any())
             return true;
 
-        return tags.All(tag => 
-            !string.IsNullOrWhiteSpace(tag) && 
-            tag.Length <= 50 && 
+        return tags.All(tag =>
+            !string.IsNullOrWhiteSpace(tag) &&
+            tag.Length <= 50 &&
             System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9_\-\s]+$"));
     }
 }
@@ -322,7 +322,7 @@ public class BusinessTableConfigValidator : AbstractValidator<BusinessTableConfi
 /// <summary>
 /// Request models for validation
 /// </summary>
-public class QueryRequest
+public class ValidationQueryRequest
 {
     public string NaturalLanguageQuery { get; set; } = string.Empty;
     public string? DatabaseName { get; set; }

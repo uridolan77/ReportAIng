@@ -136,22 +136,25 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
               }
             }
 
-            const response = await ApiService.post<{
-              success: boolean;
-              sql: string;
-              results: any[];
-              executionTime: number;
-              rowCount: number;
-            }>('/api/query/natural-language', { question: query });
+            const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://localhost:55243'}/api/query/natural-language`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+              },
+              body: JSON.stringify({ question: query })
+            });
 
-            if (response.success) {
+            const data = await response.json();
+
+            if (data.success) {
               const result: QueryResult = {
                 id: `result-${Date.now()}`,
-                sql: response.sql,
-                data: response.results,
-                columns: response.results.length > 0 ? Object.keys(response.results[0]) : [],
-                executionTime: response.executionTime,
-                rowCount: response.rowCount,
+                sql: data.sql,
+                data: data.results,
+                columns: data.results.length > 0 ? Object.keys(data.results[0]) : [],
+                executionTime: data.executionTime,
+                rowCount: data.rowCount,
                 timestamp: Date.now(),
                 cached: false
               };
@@ -213,21 +216,25 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
           });
 
           try {
-            const response = await ApiService.post<{
-              success: boolean;
-              results: any[];
-              executionTime: number;
-              rowCount: number;
-            }>('/api/query/execute-sql', { sql });
+            const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://localhost:55243'}/api/query/execute-sql`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+              },
+              body: JSON.stringify({ sql })
+            });
 
-            if (response.success) {
+            const data = await response.json();
+
+            if (data.success) {
               const result: QueryResult = {
                 id: `result-${Date.now()}`,
                 sql,
-                data: response.results,
-                columns: response.results.length > 0 ? Object.keys(response.results[0]) : [],
-                executionTime: response.executionTime,
-                rowCount: response.rowCount,
+                data: data.results,
+                columns: data.results.length > 0 ? Object.keys(data.results[0]) : [],
+                executionTime: data.executionTime,
+                rowCount: data.rowCount,
                 timestamp: Date.now(),
                 cached: false
               };

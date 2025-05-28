@@ -40,27 +40,41 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('Invalid username format');
           }
 
-          const response = await ApiService.post<{
-            success: boolean;
-            accessToken: string;
-            refreshToken: string;
-            user: User;
-          }>(API_CONFIG.ENDPOINTS.AUTH.LOGIN, {
+          const response = await ApiService.login({
             username,
             password
           });
 
-          if ((response as any).success) {
+          if (response.success) {
+            // Backend returns AccessToken and RefreshToken (capital A and R)
+            console.log('🔐 Login response:', {
+              hasAccessToken: !!response.AccessToken,
+              hasToken: !!response.token,
+              hasRefreshToken: !!response.RefreshToken,
+              hasRefreshTokenLower: !!response.refreshToken,
+              user: response.user
+            });
+
             // Encrypt tokens before storing (now async)
-            const encryptedToken = await SecurityUtils.encryptToken((response as any).accessToken);
-            const encryptedRefreshToken = await SecurityUtils.encryptToken((response as any).refreshToken);
+            const accessToken = response.AccessToken || response.token || '';
+            const refreshToken = response.RefreshToken || response.refreshToken || '';
+
+            if (!accessToken) {
+              console.error('❌ No access token received from backend');
+              return false;
+            }
+
+            const encryptedToken = await SecurityUtils.encryptToken(accessToken);
+            const encryptedRefreshToken = await SecurityUtils.encryptToken(refreshToken);
 
             set({
               isAuthenticated: true,
-              user: (response as any).user,
+              user: response.user,
               token: encryptedToken,
               refreshToken: encryptedRefreshToken,
             });
+
+            console.log('✅ Auth state updated successfully');
 
             // Create a secure session ID
             const secureSessionId = SecurityUtils.generateSecureSessionId();
@@ -68,7 +82,7 @@ export const useAuthStore = create<AuthState>()(
 
             // Store session data securely
             SecurityUtils.setSecureSessionStorage('user-session', JSON.stringify({
-              userId: (response as any).user.id,
+              userId: response.user?.id,
               sessionId: secureSessionId,
               loginTime: Date.now()
             }));
@@ -106,19 +120,25 @@ export const useAuthStore = create<AuthState>()(
         if (!refreshToken) return false;
 
         try {
-          const decryptedRefreshToken = SecurityUtils.decryptToken(refreshToken);
-          const response = await ApiService.post<{
-            success: boolean;
-            accessToken: string;
-            refreshToken: string;
-          }>(API_CONFIG.ENDPOINTS.AUTH.REFRESH, {
-            refreshToken: decryptedRefreshToken
+          const decryptedRefreshToken = await SecurityUtils.decryptToken(refreshToken);
+          // Note: ApiService doesn't have a refresh method, so we'll use the axios instance directly
+          const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              refreshToken: decryptedRefreshToken
+            })
           });
 
-          if ((response as any).success) {
+          const data = await response.json();
+
+          if (data.success) {
+            // Backend returns AccessToken and RefreshToken (capital A and R)
             // Encrypt new tokens
-            const encryptedToken = await SecurityUtils.encryptToken((response as any).accessToken);
-            const encryptedRefreshToken = await SecurityUtils.encryptToken((response as any).refreshToken);
+            const encryptedToken = await SecurityUtils.encryptToken(data.AccessToken || data.accessToken);
+            const encryptedRefreshToken = await SecurityUtils.encryptToken(data.RefreshToken || data.refreshToken);
 
             set({
               token: encryptedToken,

@@ -320,11 +320,15 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     return () => window.removeEventListener('command-palette-action' as any, handleCommandAction);
   }, [handleSubmitQuery, handleAddToFavorites]);
 
-  // Prefetch related data on mount
+  // Prefetch related data on mount with delay to allow authentication to settle
   useEffect(() => {
-    prefetchHistory();
-    prefetchSuggestions();
-    prefetchSchema();
+    const prefetchTimeout = setTimeout(() => {
+      prefetchHistory();
+      prefetchSuggestions();
+      prefetchSchema();
+    }, 2000); // 2 second delay
+
+    return () => clearTimeout(prefetchTimeout);
   }, [prefetchHistory, prefetchSuggestions, prefetchSchema]);
 
   const contextValue: QueryContextType = {

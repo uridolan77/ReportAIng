@@ -32,8 +32,14 @@ export const DatabaseStatusIndicator: React.FC = () => {
     try {
       const startTime = Date.now();
 
+      // Import getAuthHeaders for authenticated requests
+      const { getAuthHeaders } = await import('../../config/api');
+      const authHeaders = await getAuthHeaders();
+
       // Check health endpoint
-      const healthResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.HEALTH}`);
+      const healthResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.HEALTH}`, {
+        headers: authHeaders
+      });
       const healthData = await healthResponse.json();
 
       const responseTime = Date.now() - startTime;
@@ -41,7 +47,9 @@ export const DatabaseStatusIndicator: React.FC = () => {
       if (healthResponse.ok && healthData.status === 'Healthy') {
         // Get database info from schema endpoint
         try {
-          const schemaResponse = await fetch(`${API_CONFIG.BASE_URL}/api/schema/datasources`);
+          const schemaResponse = await fetch(`${API_CONFIG.BASE_URL}/api/schema/datasources`, {
+            headers: authHeaders
+          });
           const dataSources = await schemaResponse.json();
 
           setStatus({
@@ -81,12 +89,18 @@ export const DatabaseStatusIndicator: React.FC = () => {
   };
 
   useEffect(() => {
-    checkDatabaseStatus();
+    // Delay initial check to allow authentication to settle
+    const initialTimeout = setTimeout(() => {
+      checkDatabaseStatus();
+    }, 1000);
 
     // Check status every 30 seconds
     const interval = setInterval(checkDatabaseStatus, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
   }, []);
 
   const getStatusIcon = () => {

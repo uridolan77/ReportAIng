@@ -6,7 +6,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.API.Versioning;
 using BIReportingCopilot.Infrastructure.Monitoring;
 using System.Diagnostics;
-using QueryRequest = BIReportingCopilot.Core.Validation.QueryRequest;
+using QueryRequest = BIReportingCopilot.Core.Validation.ValidationQueryRequest;
 using FeedbackRequest = BIReportingCopilot.Core.Validation.FeedbackRequest;
 
 namespace BIReportingCopilot.API.Controllers.V1;

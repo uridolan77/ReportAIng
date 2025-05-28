@@ -52,21 +52,28 @@ class TokenManager {
     }
 
     try {
-      const response = await ApiService.post<{
-        success: boolean;
-        accessToken: string;
-        refreshToken: string;
-        expiresIn: number;
-      }>(API_CONFIG.ENDPOINTS.AUTH.REFRESH, {
-        refreshToken: currentRefreshToken,
-        rotateToken: this.refreshTokenRotationEnabled
+      // Use fetch directly since ApiService doesn't have a post method
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          refreshToken: currentRefreshToken,
+          rotateToken: this.refreshTokenRotationEnabled
+        })
       });
 
-      if (!response.success) {
+      const data = await response.json();
+
+      if (!data.success) {
         throw new Error('Token refresh failed');
       }
 
-      const { accessToken, refreshToken, expiresIn } = response;
+      // Backend returns AccessToken and RefreshToken (capital A and R)
+      const accessToken = data.AccessToken || data.accessToken;
+      const refreshToken = data.RefreshToken || data.refreshToken;
+      const expiresIn = data.ExpiresIn || data.expiresIn;
 
       // Store new tokens securely
       await this.storeTokens({ accessToken, refreshToken, expiresIn });

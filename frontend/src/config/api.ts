@@ -80,7 +80,7 @@ export const getApiUrl = (endpoint: string): string => {
 };
 
 // Helper function to get authorization headers
-export const getAuthHeaders = (token?: string): Record<string, string> => {
+export const getAuthHeaders = async (token?: string): Promise<Record<string, string>> => {
   const headers: Record<string, string> = {
     ...API_CONFIG.REQUEST_CONFIG.headers,
   };
@@ -92,7 +92,18 @@ export const getAuthHeaders = (token?: string): Record<string, string> => {
       const authStorage = localStorage.getItem('auth-storage');
       if (authStorage) {
         const parsed = JSON.parse(authStorage);
-        authToken = parsed?.state?.token || null;
+        const encryptedToken = parsed?.state?.token || null;
+
+        if (encryptedToken) {
+          // Import SecurityUtils for token decryption
+          const { SecurityUtils } = await import('../utils/security');
+          try {
+            authToken = await SecurityUtils.decryptToken(encryptedToken);
+          } catch (decryptError) {
+            console.warn('Failed to decrypt token in getAuthHeaders:', decryptError);
+            authToken = null;
+          }
+        }
       }
     } catch (error) {
       console.warn('Error getting auth token in getAuthHeaders:', error);

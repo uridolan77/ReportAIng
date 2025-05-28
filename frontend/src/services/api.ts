@@ -12,27 +12,41 @@ const api = axios.create({
 });
 
 // Function to get token from Zustand store
-const getAuthToken = (): string | null => {
+const getAuthToken = async (): Promise<string | null> => {
   try {
-    // Debug: Log all localStorage keys to see what's available
-    console.log('🔍 Available localStorage keys:', Object.keys(localStorage));
+    // Import SecurityUtils for token decryption
+    const { SecurityUtils } = await import('../utils/security');
 
     // Get token from Zustand persist storage
     const authStorage = localStorage.getItem('auth-storage');
-    console.log('🔍 auth-storage content:', authStorage);
 
     if (authStorage) {
       const parsed = JSON.parse(authStorage);
-      console.log('🔍 Parsed auth storage:', parsed);
-      const token = parsed?.state?.token || null;
-      console.log('🔍 Extracted token:', token ? `${token.substring(0, 20)}...` : 'null');
-      return token;
+      const encryptedToken = parsed?.state?.token || null;
+
+      if (encryptedToken) {
+        // Decrypt the token before using it
+        try {
+          const decryptedToken = await SecurityUtils.decryptToken(encryptedToken);
+          console.log('🔍 Successfully decrypted token');
+          return decryptedToken;
+        } catch (decryptError) {
+          console.warn('❌ Failed to decrypt token:', decryptError);
+          // Token might be corrupted, clear it
+          localStorage.removeItem('auth-storage');
+          return null;
+        }
+      }
     }
 
-    // Fallback to legacy authToken storage
+    // Fallback to legacy authToken storage (unencrypted)
     const legacyToken = localStorage.getItem('authToken');
-    console.log('🔍 Legacy authToken:', legacyToken ? `${legacyToken.substring(0, 20)}...` : 'null');
-    return legacyToken;
+    if (legacyToken) {
+      console.log('🔍 Using legacy token');
+      return legacyToken;
+    }
+
+    return null;
   } catch (error) {
     console.warn('❌ Error getting auth token:', error);
     return localStorage.getItem('authToken');
@@ -41,10 +55,13 @@ const getAuthToken = (): string | null => {
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
-  (config) => {
-    const token = getAuthToken();
+  async (config) => {
+    const token = await getAuthToken();
     if (token) {
+      console.log(`🔑 Adding auth token to ${config.method?.toUpperCase()} ${config.url}`);
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.log(`⚠️ No auth token available for ${config.method?.toUpperCase()} ${config.url}`);
     }
     return config;
   },
@@ -56,11 +73,29 @@ api.interceptors.request.use(
 // Response interceptor to handle errors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      // Clear both storage mechanisms
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('auth-storage');
+      console.warn('🔒 401 Unauthorized - logging out user');
+      console.log('❌ Request details:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        hasAuthHeader: !!error.config?.headers?.Authorization
+      });
+
+      // Import and call the auth store logout method
+      try {
+        const { useAuthStore } = await import('../stores/authStore');
+        const authStore = useAuthStore.getState();
+        authStore.logout();
+      } catch (importError) {
+        console.error('Failed to import auth store for logout:', importError);
+        // Fallback to manual cleanup
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('auth-storage');
+        sessionStorage.clear();
+      }
+
+      // Redirect to login
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -77,6 +112,8 @@ export interface AuthenticationResult {
   success: boolean;
   token?: string;
   refreshToken?: string;
+  AccessToken?: string;  // Backend uses capital A
+  RefreshToken?: string; // Backend uses capital R
   expiresAt?: string;
   user?: UserProfile;
   errorMessage?: string;

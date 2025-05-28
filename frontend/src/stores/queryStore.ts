@@ -97,12 +97,22 @@ export const useQueryStore = create<QueryState>((set, get) => ({
         return;
       }
 
-      // Get the current auth token
-      const token = authStateForValidation.token;
+      // Get the current auth token (encrypted) and decrypt it
+      const encryptedToken = authStateForValidation.token;
+      let decryptedToken = null;
+
+      if (encryptedToken) {
+        try {
+          const { SecurityUtils } = await import('../utils/security');
+          decryptedToken = await SecurityUtils.decryptToken(encryptedToken);
+        } catch (error) {
+          console.warn('Failed to decrypt token in queryStore:', error);
+        }
+      }
 
       const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.QUERY.NATURAL_LANGUAGE), {
         method: 'POST',
-        headers: getAuthHeaders(token || undefined),
+        headers: await getAuthHeaders(decryptedToken || undefined),
         body: JSON.stringify(request),
       });
 
