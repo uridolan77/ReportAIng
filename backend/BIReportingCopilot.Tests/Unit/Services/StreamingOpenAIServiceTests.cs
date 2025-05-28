@@ -13,9 +13,9 @@ using System.Threading;
 namespace BIReportingCopilot.Tests.Unit.Services;
 
 /// <summary>
-/// Unit tests for StreamingOpenAIService
+/// Unit tests for AIService (formerly StreamingOpenAIService)
 /// </summary>
-public class StreamingOpenAIServiceTests
+public class AIServiceTests
 {
     private readonly Mock<OpenAIClient> _mockOpenAIClient;
     private readonly Mock<IConfiguration> _mockConfiguration;
@@ -24,7 +24,7 @@ public class StreamingOpenAIServiceTests
     private readonly Mock<IContextManager> _mockContextManager;
     private readonly AIService _service;
 
-    public StreamingOpenAIServiceTests()
+    public AIServiceTests()
     {
         _mockOpenAIClient = new Mock<OpenAIClient>();
         _mockConfiguration = new Mock<IConfiguration>();

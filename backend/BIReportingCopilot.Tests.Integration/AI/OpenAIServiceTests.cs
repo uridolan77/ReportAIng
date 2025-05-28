@@ -12,7 +12,7 @@ namespace BIReportingCopilot.Tests.Integration.AI;
 public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Program>>
 {
     private readonly TestWebApplicationFactory<Program> _factory;
-    private readonly IOpenAIService _openAIService;
+    private readonly IAIService _aiService;
     private readonly bool _isConfigured;
 
     public OpenAIServiceTests(TestWebApplicationFactory<Program> factory)
@@ -20,12 +20,11 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         _factory = factory;
 
         using var scope = _factory.Services.CreateScope();
-        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<EnhancedOpenAIService>>();
-        var openAIClient = scope.ServiceProvider.GetRequiredService<Azure.AI.OpenAI.OpenAIClient>();
 
-        // Create the service with test configuration
-        _openAIService = new EnhancedOpenAIService(openAIClient, configuration, logger);
+        // Get the unified AI service
+        _aiService = scope.ServiceProvider.GetRequiredService<IAIService>();
+
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
         // Check if OpenAI is actually configured for integration tests
         var azureEndpoint = configuration["AzureOpenAI:Endpoint"];
@@ -43,7 +42,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         var prompt = "Show me all users";
 
         // Act
-        var sql = await _openAIService.GenerateSQLAsync(prompt);
+        var sql = await _aiService.GenerateSQLAsync(prompt);
 
         // Assert
         sql.Should().NotBeNullOrEmpty();
@@ -70,7 +69,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         var prompt = "Show me revenue data";
 
         // Act
-        var sql = await _openAIService.GenerateSQLAsync(prompt);
+        var sql = await _aiService.GenerateSQLAsync(prompt);
 
         // Assert
         sql.Should().NotBeNullOrEmpty();
@@ -91,7 +90,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         var prompt = "Show me total revenue by month";
 
         // Act
-        var sql = await _openAIService.GenerateSQLAsync(prompt);
+        var sql = await _aiService.GenerateSQLAsync(prompt);
 
         // Assert
         sql.Should().NotBeNullOrEmpty();
@@ -108,7 +107,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         var prompt = "Count customers by country";
 
         // Act
-        var sql = await _openAIService.GenerateSQLAsync(prompt);
+        var sql = await _aiService.GenerateSQLAsync(prompt);
 
         // Assert
         sql.Should().NotBeNullOrEmpty();
@@ -126,7 +125,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         var data = new object[] { new { TotalUsers = 150 } };
 
         // Act
-        var insight = await _openAIService.GenerateInsightAsync(query, data);
+        var insight = await _aiService.GenerateInsightAsync(query, data);
 
         // Assert
         insight.Should().NotBeNullOrEmpty();
@@ -150,7 +149,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         };
 
         // Act
-        var config = await _openAIService.GenerateVisualizationConfigAsync(query, columns, data);
+        var config = await _aiService.GenerateVisualizationConfigAsync(query, columns, data);
 
         // Assert
         config.Should().NotBeNullOrEmpty();
@@ -167,7 +166,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         var generatedSQL = "SELECT * FROM Users";
 
         // Act
-        var confidence = await _openAIService.CalculateConfidenceScoreAsync(naturalQuery, generatedSQL);
+        var confidence = await _aiService.CalculateConfidenceScoreAsync(naturalQuery, generatedSQL);
 
         // Assert
         confidence.Should().BeGreaterThan(0.0);
@@ -189,7 +188,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
                              GROUP BY c.Country";
 
         // Act
-        var confidence = await _openAIService.CalculateConfidenceScoreAsync(naturalQuery, generatedSQL);
+        var confidence = await _aiService.CalculateConfidenceScoreAsync(naturalQuery, generatedSQL);
 
         // Assert
         confidence.Should().BeGreaterThan(0.0);
@@ -205,7 +204,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         var invalidSQL = "INVALID SQL STATEMENT";
 
         // Act
-        var confidence = await _openAIService.CalculateConfidenceScoreAsync(naturalQuery, invalidSQL);
+        var confidence = await _aiService.CalculateConfidenceScoreAsync(naturalQuery, invalidSQL);
 
         // Assert
         confidence.Should().BeGreaterThan(0.0);
@@ -246,7 +245,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         };
 
         // Act
-        var suggestions = await _openAIService.GenerateQuerySuggestionsAsync(context, schema);
+        var suggestions = await _aiService.GenerateQuerySuggestionsAsync(context, schema);
 
         // Assert
         suggestions.Should().NotBeNull();
@@ -272,7 +271,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         foreach (var query in validQueries)
         {
             // Act
-            var isValid = await _openAIService.ValidateQueryIntentAsync(query);
+            var isValid = await _aiService.ValidateQueryIntentAsync(query);
 
             // Assert
             isValid.Should().BeTrue($"Query '{query}' should be recognized as valid");
@@ -294,7 +293,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         foreach (var query in invalidQueries)
         {
             // Act
-            var isValid = await _openAIService.ValidateQueryIntentAsync(query);
+            var isValid = await _aiService.ValidateQueryIntentAsync(query);
 
             // Assert
             isValid.Should().BeFalse($"Query '{query}' should not be recognized as valid data query");
@@ -318,7 +317,7 @@ public class OpenAIServiceTests : IClassFixture<TestWebApplicationFactory<Progra
         var naturalQuery = "test query";
 
         // Act
-        var confidence = await _openAIService.CalculateConfidenceScoreAsync(naturalQuery, sql);
+        var confidence = await _aiService.CalculateConfidenceScoreAsync(naturalQuery, sql);
 
         // Assert
         if (expectedValid)

@@ -53,7 +53,7 @@ public class CleanupJob : ICleanupJob
 
     private async Task CleanupQueryHistory()
     {
-        var retentionDays = _configuration.GetValue<int>("QueryHistory:RetentionDays", 90);
+        var retentionDays = _configuration?.GetValue<int>("QueryHistory:RetentionDays", 90) ?? 90;
         var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
 
         var deletedCount = await _context.QueryHistory
@@ -82,7 +82,7 @@ public class CleanupJob : ICleanupJob
 
     private async Task CleanupAuditLogs()
     {
-        var retentionDays = _configuration.GetValue<int>("AuditLog:RetentionDays", 365);
+        var retentionDays = _configuration?.GetValue<int>("AuditLog:RetentionDays", 365) ?? 365;
         var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
 
         var deletedCount = await _context.AuditLog
