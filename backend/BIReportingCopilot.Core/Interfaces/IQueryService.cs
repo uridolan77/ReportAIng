@@ -2,8 +2,12 @@ using BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Core.Interfaces;
 
+/// <summary>
+/// Unified query service interface combining standard and advanced query processing
+/// </summary>
 public interface IQueryService
 {
+    // Standard query processing
     Task<QueryResponse> ProcessQueryAsync(QueryRequest request, string userId);
     Task<QueryResponse> ProcessQueryAsync(QueryRequest request, string userId, CancellationToken cancellationToken);
     Task<List<QueryHistoryItem>> GetQueryHistoryAsync(string userId, int page = 1, int pageSize = 20);
@@ -12,10 +16,19 @@ public interface IQueryService
     Task<QueryResponse?> GetCachedQueryAsync(string queryHash);
     Task CacheQueryAsync(string queryHash, QueryResponse response, TimeSpan? expiry = null);
     Task InvalidateQueryCacheAsync(string pattern);
+
+    // Advanced query processing capabilities
+    Task<ProcessedQuery> ProcessAdvancedQueryAsync(string query, string userId, QueryContext? context = null);
+    Task<double> CalculateSemanticSimilarityAsync(string query1, string query2);
+    Task<List<ProcessedQuery>> FindSimilarQueriesAsync(string query, string userId, int limit = 5);
 }
 
-public interface IOpenAIService
+/// <summary>
+/// Unified AI service interface combining standard and streaming capabilities
+/// </summary>
+public interface IAIService
 {
+    // Standard AI operations
     Task<string> GenerateSQLAsync(string prompt);
     Task<string> GenerateSQLAsync(string prompt, CancellationToken cancellationToken);
     Task<string> GenerateInsightAsync(string query, object[] data);
@@ -23,6 +36,11 @@ public interface IOpenAIService
     Task<double> CalculateConfidenceScoreAsync(string naturalLanguageQuery, string generatedSQL);
     Task<string[]> GenerateQuerySuggestionsAsync(string context, SchemaMetadata schema);
     Task<bool> ValidateQueryIntentAsync(string naturalLanguageQuery);
+
+    // Streaming capabilities
+    IAsyncEnumerable<StreamingResponse> GenerateSQLStreamAsync(string prompt, SchemaMetadata? schema = null, QueryContext? context = null, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<StreamingResponse> GenerateInsightStreamAsync(string query, object[] data, AnalysisContext? context = null, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<StreamingResponse> GenerateExplanationStreamAsync(string sql, StreamingQueryComplexity complexity = StreamingQueryComplexity.Medium, CancellationToken cancellationToken = default);
 }
 
 // New advanced AI/ML interfaces

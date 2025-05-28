@@ -2,6 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BIReportingCopilot.Core.Models;
 
+/// <summary>
+/// Core user domain model - consolidated from multiple user classes
+/// </summary>
 public class User
 {
     public string Id { get; set; } = string.Empty;
@@ -12,7 +15,10 @@ public class User
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginDate { get; set; }
     public bool IsActive { get; set; } = true;
-    
+
+    // Profile information (consolidated from UserProfile)
+    public string? ProfilePictureUrl { get; set; }
+
     // MFA-related properties
     public bool IsMfaEnabled { get; set; } = false;
     public string? MfaSecret { get; set; } = null;
@@ -21,8 +27,17 @@ public class User
     public bool IsPhoneNumberVerified { get; set; } = false;
     public DateTime? LastMfaValidationDate { get; set; }
     public string[] BackupCodes { get; set; } = Array.Empty<string>();
+
+    // User preferences and settings
+    public UserPreferences Preferences { get; set; } = new();
+
+    // Activity tracking
+    public UserActivitySummary ActivitySummary { get; set; } = new();
 }
 
+/// <summary>
+/// User information for API responses - lightweight version of User
+/// </summary>
 public class UserInfo
 {
     public string Id { get; set; } = string.Empty;
@@ -33,6 +48,7 @@ public class UserInfo
     public List<string> Permissions { get; set; } = new();
     public UserPreferences Preferences { get; set; } = new();
     public DateTime? LastLogin { get; set; }
+    public string? ProfilePictureUrl { get; set; }
 }
 
 public class UserPreferences
@@ -79,7 +95,7 @@ public class AuthenticationResult
     public UserInfo? User { get; set; }
     public string? ErrorMessage { get; set; }
     public DateTime? ExpiresAt { get; set; }
-    
+
     // MFA-related properties
     public bool RequiresMfa { get; set; } = false;
     public MfaChallenge? MfaChallenge { get; set; }
@@ -151,7 +167,7 @@ public class MfaSetupRequest
 {
     [Required(ErrorMessage = "MFA method is required")]
     public MfaMethod Method { get; set; }
-    
+
     public string? PhoneNumber { get; set; } // Required for SMS
 }
 
@@ -168,10 +184,10 @@ public class MfaValidationRequest
 {
     [Required(ErrorMessage = "User ID is required")]
     public string UserId { get; set; } = string.Empty;
-    
+
     [Required(ErrorMessage = "MFA code is required")]
     public string Code { get; set; } = string.Empty;
-    
+
     public bool TrustDevice { get; set; } = false;
 }
 

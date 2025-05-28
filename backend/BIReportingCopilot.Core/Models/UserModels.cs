@@ -1,18 +1,9 @@
 namespace BIReportingCopilot.Core.Models;
 
-public class UserProfile
-{
-    public string Id { get; set; } = string.Empty;
-    public string Username { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string DisplayName { get; set; } = string.Empty;
-    public string? ProfilePictureUrl { get; set; }
-    public DateTime CreatedDate { get; set; }
-    public DateTime LastLoginDate { get; set; }
-    public bool IsActive { get; set; } = true;
-    public List<string> Roles { get; set; } = new();
-}
-
+/// <summary>
+/// User activity tracking and analytics
+/// Note: UserProfile has been consolidated into the main User class
+/// </summary>
 public class UserActivitySummary
 {
     public int TotalQueries { get; set; }
@@ -31,6 +22,9 @@ public class DailyActivity
     public double AverageResponseTime { get; set; }
 }
 
+/// <summary>
+/// User permissions and access control
+/// </summary>
 public class UserPermissions
 {
     public List<string> Roles { get; set; } = new();
@@ -38,5 +32,3 @@ public class UserPermissions
     public Dictionary<string, bool> FeatureAccess { get; set; } = new();
     public List<string> AllowedDatabases { get; set; } = new();
 }
-
-// UserSession is already defined in User.cs
