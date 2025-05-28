@@ -204,6 +204,30 @@ public class SecuritySettings
     public int MaxRequestsPerMinute { get; set; } = 60;
 
     /// <summary>
+    /// Authentication and account lockout settings
+    /// </summary>
+    public int MaxLoginAttempts { get; set; } = 5;
+    public int LockoutDurationMinutes { get; set; } = 15;
+    public bool EnableTwoFactorAuthentication { get; set; } = false;
+
+    /// <summary>
+    /// Password policy settings
+    /// </summary>
+    public int MinPasswordLength { get; set; } = 8;
+    public bool RequireDigit { get; set; } = true;
+    public bool RequireLowercase { get; set; } = true;
+    public bool RequireUppercase { get; set; } = true;
+    public bool RequireNonAlphanumeric { get; set; } = true;
+    public bool EnablePasswordHistory { get; set; } = true;
+    public int PasswordHistoryCount { get; set; } = 5;
+
+    /// <summary>
+    /// MFA settings
+    /// </summary>
+    public int MfaCodeExpirationMinutes { get; set; } = 5;
+    public int MaxMfaAttempts { get; set; } = 3;
+
+    /// <summary>
     /// Maximum requests per hour per user
     /// </summary>
     [Range(1, 10000)]

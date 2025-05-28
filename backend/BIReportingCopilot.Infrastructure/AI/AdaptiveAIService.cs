@@ -193,7 +193,7 @@ public class AdaptiveAIService : IAIService
         try
         {
             await _learningEngine.ProcessFeedbackAsync(originalPrompt, generatedSQL, feedback, userId);
-            _logger.LogInformation("Processed feedback for user {UserId}, rating: {Rating}", userId, feedback.Rating);
+            _logger.LogInformation("Processed feedback for user {UserId}, feedback: {Feedback}", userId, feedback.Feedback);
         }
         catch (Exception ex)
         {
@@ -213,14 +213,16 @@ public class AdaptiveAIService : IAIService
     {
         try
         {
-            var attempt = new AIGenerationAttempt
+            var attempt = new Core.Models.AIGenerationAttempt
             {
-                OriginalPrompt = originalPrompt,
-                OptimizedPrompt = optimizedPrompt,
-                GeneratedSQL = generatedSQL,
-                Timestamp = DateTime.UtcNow,
-                PromptHash = ComputeHash(originalPrompt),
-                SQLHash = ComputeHash(generatedSQL)
+                UserQuery = originalPrompt,
+                GeneratedSql = generatedSQL,
+                AttemptedAt = DateTime.UtcNow,
+                IsSuccessful = !string.IsNullOrEmpty(generatedSQL),
+                ConfidenceScore = 0.8, // Default confidence
+                UserId = "system", // Default user for now
+                GenerationTimeMs = 0, // Will be calculated elsewhere
+                PromptTemplate = optimizedPrompt
             };
 
             _context.AIGenerationAttempts.Add(attempt);
@@ -240,22 +242,7 @@ public class AdaptiveAIService : IAIService
     }
 }
 
-/// <summary>
-/// Entity to track AI generation attempts for learning
-/// </summary>
-public class AIGenerationAttempt
-{
-    public long Id { get; set; }
-    public string OriginalPrompt { get; set; } = string.Empty;
-    public string OptimizedPrompt { get; set; } = string.Empty;
-    public string GeneratedSQL { get; set; } = string.Empty;
-    public DateTime Timestamp { get; set; }
-    public string PromptHash { get; set; } = string.Empty;
-    public string SQLHash { get; set; } = string.Empty;
-    public double? ConfidenceScore { get; set; }
-    public int? UserRating { get; set; }
-    public string? UserId { get; set; }
-}
+
 
 /// <summary>
 /// Learning statistics for monitoring

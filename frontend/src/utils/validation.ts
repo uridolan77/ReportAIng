@@ -80,8 +80,8 @@ export class ValidationUtils {
     } catch (error) {
       const validationError = this.formatValidationError(
         error,
-        errorFormat,
-        customErrorMessages
+        options.errorFormat || 'detailed',
+        options.customErrorMessages || {}
       );
 
       return {
@@ -273,9 +273,9 @@ export class ValidationUtils {
   /**
    * Create a discriminated union validator
    */
-  static createDiscriminatedUnion<T extends string, U extends z.ZodDiscriminatedUnionOption<T>[]>(
+  static createDiscriminatedUnion<T extends string>(
     discriminator: T,
-    options: U
+    options: z.ZodDiscriminatedUnionOption<T>[]
   ) {
     return z.discriminatedUnion(discriminator, options);
   }

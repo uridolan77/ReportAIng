@@ -85,13 +85,15 @@ public class MetricsCollector : IMetricsCollector, IDisposable
 
         _memoryUsage = _meter.CreateObservableGauge<double>(
             "memory_usage_mb",
-            "Memory usage in megabytes",
-            () => GC.GetTotalMemory(false) / 1024.0 / 1024.0);
+            () => GC.GetTotalMemory(false) / 1024.0 / 1024.0,
+            "MB",
+            "Memory usage in megabytes");
 
         _cpuUsage = _meter.CreateObservableGauge<double>(
             "cpu_usage_percent",
-            "CPU usage percentage",
-            () => _gaugeValues.GetValueOrDefault("cpu_usage", 0));
+            () => _gaugeValues.GetValueOrDefault("cpu_usage", 0),
+            "%",
+            "CPU usage percentage");
 
         // Start periodic metrics collection
         _metricsTimer = new Timer(CollectSystemMetrics, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
@@ -103,9 +105,9 @@ public class MetricsCollector : IMetricsCollector, IDisposable
     {
         var tags = new TagList
         {
-            ["type"] = queryType,
-            ["success"] = success.ToString().ToLower(),
-            ["row_count_range"] = GetRowCountRange(rowCount)
+            { "type", queryType },
+            { "success", success.ToString().ToLower() },
+            { "row_count_range", GetRowCountRange(rowCount) }
         };
 
         _queryExecutionsTotal.Add(1, tags);
@@ -119,9 +121,9 @@ public class MetricsCollector : IMetricsCollector, IDisposable
     {
         var tags = new TagList
         {
-            ["operation"] = operation,
-            ["success"] = success.ToString().ToLower(),
-            ["confidence_range"] = GetConfidenceRange(confidence)
+            { "operation", operation },
+            { "success", success.ToString().ToLower() },
+            { "confidence_range", GetConfidenceRange(confidence) }
         };
 
         _aiOperationsTotal.Add(1, tags);
@@ -135,8 +137,8 @@ public class MetricsCollector : IMetricsCollector, IDisposable
     {
         var tags = new TagList
         {
-            ["operation"] = operation,
-            ["hit"] = hit.ToString().ToLower()
+            { "operation", operation },
+            { "hit", hit.ToString().ToLower() }
         };
 
         _cacheOperationsTotal.Add(1, tags);
@@ -150,9 +152,9 @@ public class MetricsCollector : IMetricsCollector, IDisposable
     {
         var tags = new TagList
         {
-            ["error_type"] = errorType,
-            ["source"] = source,
-            ["exception_type"] = exception?.GetType().Name ?? "Unknown"
+            { "error_type", errorType },
+            { "source", source },
+            { "exception_type", exception?.GetType().Name ?? "Unknown" }
         };
 
         _errorsTotal.Add(1, tags);
@@ -165,10 +167,10 @@ public class MetricsCollector : IMetricsCollector, IDisposable
     {
         var tags = new TagList
         {
-            ["method"] = method,
-            ["endpoint"] = endpoint,
-            ["status_code"] = statusCode.ToString(),
-            ["status_class"] = GetStatusClass(statusCode)
+            { "method", method },
+            { "endpoint", endpoint },
+            { "status_code", statusCode.ToString() },
+            { "status_class", GetStatusClass(statusCode) }
         };
 
         _requestDuration.Record(durationMs, tags);
@@ -180,6 +182,14 @@ public class MetricsCollector : IMetricsCollector, IDisposable
     public void SetGaugeValue(string name, double value)
     {
         _gaugeValues.AddOrUpdate(name, value, (key, oldValue) => value);
+    }
+
+    /// <summary>
+    /// Alias for SetGaugeValue for backward compatibility
+    /// </summary>
+    public void RecordValue(string name, double value)
+    {
+        SetGaugeValue(name, value);
     }
 
     public void IncrementCounter(string name, TagList? tags = null)
@@ -285,6 +295,7 @@ public interface IMetricsCollector
     void RecordError(string errorType, string source, Exception? exception = null);
     void RecordRequestDuration(string method, string endpoint, int statusCode, long durationMs);
     void SetGaugeValue(string name, double value);
+    void RecordValue(string name, double value);
     void IncrementCounter(string name, TagList? tags = null);
     void RecordHistogram(string name, double value, TagList? tags = null);
     MetricsSnapshot GetSnapshot();

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Infrastructure.AI;
 
 namespace BIReportingCopilot.Infrastructure.Monitoring;
@@ -278,7 +279,8 @@ public class TracedQueryService : IQueryService
             activity?.SetTag("query.question", request.Question);
             activity?.SetTag("query.session", request.SessionId ?? "Unknown");
 
-            var result = await _innerService.ValidateQueryAsync(request);
+            // Extract SQL from QueryRequest and validate it
+            var result = await _innerService.ValidateQueryAsync(request.Question);
 
             stopwatch.Stop();
             activity?.SetTag("validation.result", result);
@@ -336,7 +338,8 @@ public class TracedQueryService : IQueryService
         {
             activity?.SetTag("query.question", request.Question);
 
-            var result = await _innerService.OptimizeQueryAsync(request);
+            // Extract SQL from QueryRequest and optimize it
+            var result = await _innerService.OptimizeQueryAsync(request.Question);
 
             stopwatch.Stop();
             activity?.SetTag("optimization.applied", result.OptimizationApplied);
@@ -482,6 +485,74 @@ public class TracedQueryService : IQueryService
 
             _metricsCollector.RecordError("similar_queries", "TracedQueryService", ex);
             _logger.LogError(ex, "Error finding similar queries for user {UserId}", userId);
+            throw;
+        }
+    }
+
+    public async Task<bool> ValidateQueryAsync(string sql)
+    {
+        using var activity = ActivitySource.StartActivity("ValidateQuery");
+        activity?.SetTag("sql.length", sql.Length);
+
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            _logger.LogDebug("Validating SQL query");
+
+            var result = await _innerService.ValidateQueryAsync(sql);
+
+            stopwatch.Stop();
+            activity?.SetTag("validation.result", result);
+
+            _metricsCollector.RecordQueryExecution("validate_query", stopwatch.ElapsedMilliseconds, true, result ? 1 : 0);
+
+            _logger.LogDebug("SQL validation completed: {Result}", result);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetTag("error", true);
+            activity?.SetTag("error.message", ex.Message);
+
+            _metricsCollector.RecordError("validate_query", "TracedQueryService", ex);
+            _logger.LogError(ex, "Error validating SQL query");
+            throw;
+        }
+    }
+
+    public async Task<QueryOptimizationResult> OptimizeQueryAsync(string sql)
+    {
+        using var activity = ActivitySource.StartActivity("OptimizeQuery");
+        activity?.SetTag("sql.length", sql.Length);
+
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            _logger.LogDebug("Optimizing SQL query");
+
+            var result = await _innerService.OptimizeQueryAsync(sql);
+
+            stopwatch.Stop();
+            activity?.SetTag("optimization.improvement", result.EstimatedImprovement);
+
+            _metricsCollector.RecordQueryExecution("optimize_query", stopwatch.ElapsedMilliseconds, true, 1);
+
+            _logger.LogDebug("SQL optimization completed with {Improvement}% improvement", result.EstimatedImprovement);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetTag("error", true);
+            activity?.SetTag("error.message", ex.Message);
+
+            _metricsCollector.RecordError("optimize_query", "TracedQueryService", ex);
+            _logger.LogError(ex, "Error optimizing SQL query");
             throw;
         }
     }

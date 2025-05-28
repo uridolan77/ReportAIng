@@ -40,7 +40,7 @@ public class PromptOptimizer
             // Add context enhancements
             optimizedPrompt = await AddContextEnhancementsAsync(optimizedPrompt);
 
-            _logger.LogDebug("Prompt optimized from {OriginalLength} to {OptimizedLength} characters", 
+            _logger.LogDebug("Prompt optimized from {OriginalLength} to {OptimizedLength} characters",
                 originalPrompt.Length, optimizedPrompt.Length);
 
             return optimizedPrompt;
@@ -184,7 +184,7 @@ public class PromptOptimizer
         {
             // Extract potential table/column names from prompt
             var words = ExtractWords(prompt);
-            
+
             var hints = await _context.BusinessTableInfo
                 .Where(t => words.Any(w => t.TableName.Contains(w) || t.BusinessPurpose.Contains(w)))
                 .Select(t => $"{t.TableName} ({t.BusinessPurpose})")
@@ -205,8 +205,8 @@ public class PromptOptimizer
         try
         {
             var insights = await _context.AIFeedbackEntries
-                .Where(f => f.SQLPattern == queryPattern && f.IsSuccessful && !string.IsNullOrEmpty(f.FeedbackText))
-                .Select(f => f.FeedbackText!)
+                .Where(f => f.Category == queryPattern && f.Rating >= 4 && !string.IsNullOrEmpty(f.Comments))
+                .Select(f => f.Comments!)
                 .Distinct()
                 .Take(5)
                 .ToListAsync();

@@ -41,7 +41,7 @@ public class SemanticCacheService : ISemanticCacheService
         try
         {
             var querySignature = GenerateQuerySignature(naturalLanguageQuery, sqlQuery);
-            
+
             // First check exact match in memory cache
             if (_memoryCache.TryGetValue($"semantic_{querySignature}", out SemanticCacheResult? exactMatch))
             {
@@ -51,14 +51,14 @@ public class SemanticCacheService : ISemanticCacheService
 
             // Check for similar queries in database
             var similarQueries = await FindSimilarQueriesAsync(naturalLanguageQuery, sqlQuery);
-            
+
             if (similarQueries.Any())
             {
                 var bestMatch = similarQueries.OrderByDescending(q => q.SimilarityScore).First();
-                
+
                 if (bestMatch.SimilarityScore >= _config.MinimumSimilarityThreshold)
                 {
-                    _logger.LogInformation("Semantic cache hit with similarity {Score:P2} for query: {Query}", 
+                    _logger.LogInformation("Semantic cache hit with similarity {Score:P2} for query: {Query}",
                         bestMatch.SimilarityScore, naturalLanguageQuery);
 
                     var cacheResult = new SemanticCacheResult
@@ -90,27 +90,28 @@ public class SemanticCacheService : ISemanticCacheService
     /// Cache a query result with semantic indexing
     /// </summary>
     public async Task CacheSemanticQueryAsync(
-        string naturalLanguageQuery, 
-        string sqlQuery, 
-        QueryResponse response, 
+        string naturalLanguageQuery,
+        string sqlQuery,
+        QueryResponse response,
         TimeSpan? expiry = null)
     {
         try
         {
             var querySignature = GenerateQuerySignature(naturalLanguageQuery, sqlQuery);
             var semanticFeatures = await _similarityAnalyzer.ExtractSemanticsAsync(naturalLanguageQuery, sqlQuery);
-            
-            var cacheEntry = new SemanticCacheEntry
+
+            var cacheEntry = new Core.Models.SemanticCacheEntry
             {
-                QuerySignature = querySignature,
-                NaturalLanguageQuery = naturalLanguageQuery,
-                SqlQuery = sqlQuery,
-                CachedResponse = JsonSerializer.Serialize(response),
-                SemanticFeatures = JsonSerializer.Serialize(semanticFeatures),
-                Timestamp = DateTime.UtcNow,
-                ExpiryTime = DateTime.UtcNow.Add(expiry ?? TimeSpan.FromHours(24)),
+                QueryHash = querySignature,
+                OriginalQuery = naturalLanguageQuery,
+                NormalizedQuery = sqlQuery,
+                GeneratedSql = sqlQuery,
+                ResultData = JsonSerializer.Serialize(response),
+                ResultMetadata = JsonSerializer.Serialize(semanticFeatures),
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.Add(expiry ?? TimeSpan.FromHours(24)),
                 AccessCount = 1,
-                LastAccessTime = DateTime.UtcNow
+                LastAccessedAt = DateTime.UtcNow
             };
 
             // Store in database for persistence and similarity search
@@ -145,18 +146,18 @@ public class SemanticCacheService : ISemanticCacheService
         try
         {
             var affectedEntries = await _context.SemanticCacheEntries
-                .Where(e => e.SqlQuery.Contains(tableName, StringComparison.OrdinalIgnoreCase))
+                .Where(e => e.GeneratedSql != null && e.GeneratedSql.Contains(tableName, StringComparison.OrdinalIgnoreCase))
                 .ToListAsync();
 
             foreach (var entry in affectedEntries)
             {
-                entry.ExpiryTime = DateTime.UtcNow; // Mark as expired
-                _memoryCache.Remove($"semantic_{entry.QuerySignature}");
+                entry.ExpiresAt = DateTime.UtcNow; // Mark as expired
+                _memoryCache.Remove($"semantic_{entry.QueryHash}");
             }
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Invalidated {Count} cache entries for table {TableName} due to {ChangeType}", 
+            _logger.LogInformation("Invalidated {Count} cache entries for table {TableName} due to {ChangeType}",
                 affectedEntries.Count, tableName, changeType);
         }
         catch (Exception ex)
@@ -173,13 +174,13 @@ public class SemanticCacheService : ISemanticCacheService
         try
         {
             var stats = await _context.SemanticCacheEntries
-                .Where(e => e.ExpiryTime > DateTime.UtcNow)
+                .Where(e => e.ExpiresAt > DateTime.UtcNow)
                 .GroupBy(e => 1)
                 .Select(g => new
                 {
                     TotalEntries = g.Count(),
                     TotalAccesses = g.Sum(e => e.AccessCount),
-                    AverageAge = g.Average(e => EF.Functions.DateDiffHour(e.Timestamp, DateTime.UtcNow))
+                    AverageAge = g.Average(e => EF.Functions.DateDiffHour(e.CreatedAt, DateTime.UtcNow))
                 })
                 .FirstOrDefaultAsync();
 
@@ -210,7 +211,7 @@ public class SemanticCacheService : ISemanticCacheService
         try
         {
             var expiredEntries = await _context.SemanticCacheEntries
-                .Where(e => e.ExpiryTime <= DateTime.UtcNow)
+                .Where(e => e.ExpiresAt <= DateTime.UtcNow)
                 .ToListAsync();
 
             _context.SemanticCacheEntries.RemoveRange(expiredEntries);
@@ -227,10 +228,10 @@ public class SemanticCacheService : ISemanticCacheService
     private async Task<List<SimilarQueryResult>> FindSimilarQueriesAsync(string naturalLanguageQuery, string sqlQuery)
     {
         var currentFeatures = await _similarityAnalyzer.ExtractSemanticsAsync(naturalLanguageQuery, sqlQuery);
-        
+
         var candidateEntries = await _context.SemanticCacheEntries
-            .Where(e => e.ExpiryTime > DateTime.UtcNow)
-            .OrderByDescending(e => e.LastAccessTime)
+            .Where(e => e.ExpiresAt > DateTime.UtcNow)
+            .OrderByDescending(e => e.LastAccessedAt)
             .Take(100) // Limit for performance
             .ToListAsync();
 
@@ -240,23 +241,23 @@ public class SemanticCacheService : ISemanticCacheService
         {
             try
             {
-                var entryFeatures = JsonSerializer.Deserialize<SemanticFeatures>(entry.SemanticFeatures);
+                var entryFeatures = JsonSerializer.Deserialize<SemanticFeatures>(entry.ResultMetadata ?? "{}");
                 var similarity = _similarityAnalyzer.CalculateSimilarity(currentFeatures, entryFeatures!);
 
                 if (similarity >= _config.MinimumSimilarityThreshold)
                 {
                     similarQueries.Add(new SimilarQueryResult
                     {
-                        NaturalLanguageQuery = entry.NaturalLanguageQuery,
-                        SqlQuery = entry.SqlQuery,
-                        CachedResponse = entry.CachedResponse,
+                        NaturalLanguageQuery = entry.OriginalQuery,
+                        SqlQuery = entry.GeneratedSql ?? "",
+                        CachedResponse = entry.ResultData ?? "",
                         SimilarityScore = similarity,
-                        Timestamp = entry.Timestamp
+                        Timestamp = entry.CreatedAt
                     });
 
                     // Update access statistics
                     entry.AccessCount++;
-                    entry.LastAccessTime = DateTime.UtcNow;
+                    entry.LastAccessedAt = DateTime.UtcNow;
                 }
             }
             catch (Exception ex)
@@ -287,7 +288,7 @@ public class SemanticCacheService : ISemanticCacheService
         {
             var totalQueries = await _context.QueryHistories.CountAsync();
             var cacheHits = await _context.SemanticCacheEntries.SumAsync(e => e.AccessCount);
-            
+
             return totalQueries > 0 ? (double)cacheHits / totalQueries : 0.0;
         }
         catch
@@ -301,7 +302,7 @@ public class SemanticCacheService : ISemanticCacheService
         // This is a simplified approach - in production, you might want to use a more sophisticated method
         if (_memoryCache is MemoryCache mc)
         {
-            var field = typeof(MemoryCache).GetField("_coherentState", 
+            var field = typeof(MemoryCache).GetField("_coherentState",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (field?.GetValue(mc) is object coherentState)
             {
@@ -377,19 +378,4 @@ public class SimilarQueryResult
     public DateTime Timestamp { get; set; }
 }
 
-/// <summary>
-/// Semantic cache entry entity
-/// </summary>
-public class SemanticCacheEntry
-{
-    public long Id { get; set; }
-    public string QuerySignature { get; set; } = string.Empty;
-    public string NaturalLanguageQuery { get; set; } = string.Empty;
-    public string SqlQuery { get; set; } = string.Empty;
-    public string CachedResponse { get; set; } = string.Empty;
-    public string SemanticFeatures { get; set; } = string.Empty;
-    public DateTime Timestamp { get; set; }
-    public DateTime ExpiryTime { get; set; }
-    public int AccessCount { get; set; }
-    public DateTime LastAccessTime { get; set; }
-}
+

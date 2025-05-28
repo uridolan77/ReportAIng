@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
+using System.Diagnostics.Metrics;
 using BIReportingCopilot.Infrastructure.Monitoring;
 using BIReportingCopilot.Infrastructure.AI;
+using System.Diagnostics;
 
 namespace BIReportingCopilot.Infrastructure.Messaging.EventHandlers;
 
@@ -30,7 +32,7 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
     {
         try
         {
-            _logger.LogInformation("Processing QueryExecutedEvent for user {UserId}, Success: {Success}", 
+            _logger.LogInformation("Processing QueryExecutedEvent for user {UserId}, Success: {Success}",
                 @event.UserId, @event.IsSuccessful);
 
             // Update metrics
@@ -49,7 +51,7 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing QueryExecutedEvent {EventId}: {Error}", 
+            _logger.LogError(ex, "Error processing QueryExecutedEvent {EventId}: {Error}",
                 @event.EventId, ex.Message);
         }
     }
@@ -74,10 +76,10 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
             }
 
             // Record user activity
-            _metricsCollector.IncrementCounter("user_queries_total", new()
+            _metricsCollector.IncrementCounter("user_queries_total", new TagList
             {
-                ["user_id"] = @event.UserId,
-                ["success"] = @event.IsSuccessful.ToString().ToLower()
+                { "user_id", @event.UserId },
+                { "success", @event.IsSuccessful.ToString().ToLower() }
             });
 
             await Task.CompletedTask;
@@ -99,7 +101,7 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
 
             if (anomalyResult.RiskLevel >= RiskLevel.Medium)
             {
-                _logger.LogWarning("Anomaly detected for user {UserId}: Risk Level {RiskLevel}, Score: {Score:F3}", 
+                _logger.LogWarning("Anomaly detected for user {UserId}: Risk Level {RiskLevel}, Score: {Score:F3}",
                     @event.UserId, anomalyResult.RiskLevel, anomalyResult.AnomalyScore);
 
                 // Could publish AnomalyDetectedEvent here for further processing
@@ -117,7 +119,7 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
         {
             // Update cache access patterns for future optimization
             var cacheStats = await _semanticCache.GetCacheStatisticsAsync();
-            
+
             _metricsCollector.SetGaugeValue("semantic_cache_entries", cacheStats.TotalEntries);
             _metricsCollector.SetGaugeValue("semantic_cache_hit_rate", cacheStats.HitRate);
         }
@@ -151,15 +153,15 @@ public class FeedbackReceivedEventHandler : IEventHandler<FeedbackReceivedEvent>
     {
         try
         {
-            _logger.LogInformation("Processing FeedbackReceivedEvent from user {UserId}, Rating: {Rating}", 
+            _logger.LogInformation("Processing FeedbackReceivedEvent from user {UserId}, Rating: {Rating}",
                 @event.UserId, @event.Rating);
 
             // Update feedback metrics
-            _metricsCollector.IncrementCounter("feedback_received_total", new()
+            _metricsCollector.IncrementCounter("feedback_received_total", new TagList
             {
-                ["user_id"] = @event.UserId,
-                ["rating"] = @event.Rating.ToString(),
-                ["feedback_type"] = @event.FeedbackType
+                { "user_id", @event.UserId },
+                { "rating", @event.Rating.ToString() },
+                { "feedback_type", @event.FeedbackType }
             });
 
             _metricsCollector.RecordHistogram("feedback_rating", @event.Rating);
@@ -174,7 +176,7 @@ public class FeedbackReceivedEventHandler : IEventHandler<FeedbackReceivedEvent>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing FeedbackReceivedEvent {EventId}: {Error}", 
+            _logger.LogError(ex, "Error processing FeedbackReceivedEvent {EventId}: {Error}",
                 @event.EventId, ex.Message);
         }
     }
@@ -186,7 +188,7 @@ public class FeedbackReceivedEventHandler : IEventHandler<FeedbackReceivedEvent>
             // In a real implementation, you might queue a background job
             // to retrain models or update learning patterns
             _logger.LogInformation("Triggering learning update for significant feedback: Rating {Rating}", @event.Rating);
-            
+
             // Could publish ModelRetrainRequestEvent here
             await Task.CompletedTask;
         }
@@ -217,15 +219,15 @@ public class AnomalyDetectedEventHandler : IEventHandler<AnomalyDetectedEvent>
     {
         try
         {
-            _logger.LogWarning("Processing AnomalyDetectedEvent for user {UserId}: {AnomalyType} - Risk Level {RiskLevel}", 
+            _logger.LogWarning("Processing AnomalyDetectedEvent for user {UserId}: {AnomalyType} - Risk Level {RiskLevel}",
                 @event.UserId, @event.AnomalyType, @event.RiskLevel);
 
             // Update security metrics
-            _metricsCollector.IncrementCounter("anomalies_detected_total", new()
+            _metricsCollector.IncrementCounter("anomalies_detected_total", new TagList
             {
-                ["user_id"] = @event.UserId,
-                ["anomaly_type"] = @event.AnomalyType,
-                ["risk_level"] = @event.RiskLevel
+                { "user_id", @event.UserId },
+                { "anomaly_type", @event.AnomalyType },
+                { "risk_level", @event.RiskLevel }
             });
 
             _metricsCollector.RecordHistogram("anomaly_score", @event.AnomalyScore);
@@ -240,7 +242,7 @@ public class AnomalyDetectedEventHandler : IEventHandler<AnomalyDetectedEvent>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing AnomalyDetectedEvent {EventId}: {Error}", 
+            _logger.LogError(ex, "Error processing AnomalyDetectedEvent {EventId}: {Error}",
                 @event.EventId, ex.Message);
         }
     }
@@ -255,7 +257,7 @@ public class AnomalyDetectedEventHandler : IEventHandler<AnomalyDetectedEvent>
             // 3. Log to security audit system
             // 4. Trigger additional monitoring
 
-            _logger.LogCritical("High-risk anomaly detected for user {UserId}: {Anomalies}", 
+            _logger.LogCritical("High-risk anomaly detected for user {UserId}: {Anomalies}",
                 @event.UserId, string.Join(", ", @event.DetectedAnomalies));
 
             // Could publish SecurityAlertEvent here
@@ -288,15 +290,15 @@ public class CacheInvalidatedEventHandler : IEventHandler<CacheInvalidatedEvent>
     {
         try
         {
-            _logger.LogInformation("Processing CacheInvalidatedEvent: {CacheType} - {Reason}, Affected Keys: {KeyCount}", 
+            _logger.LogInformation("Processing CacheInvalidatedEvent: {CacheType} - {Reason}, Affected Keys: {KeyCount}",
                 @event.CacheType, @event.InvalidationReason, @event.AffectedKeys.Count);
 
             // Update cache metrics
-            _metricsCollector.IncrementCounter("cache_invalidations_total", new()
+            _metricsCollector.IncrementCounter("cache_invalidations_total", new TagList
             {
-                ["cache_type"] = @event.CacheType,
-                ["reason"] = @event.InvalidationReason,
-                ["table_name"] = @event.TableName ?? "unknown"
+                { "cache_type", @event.CacheType },
+                { "reason", @event.InvalidationReason },
+                { "table_name", @event.TableName ?? "unknown" }
             });
 
             _metricsCollector.RecordHistogram("cache_invalidation_size", @event.AffectedKeys.Count);
@@ -305,7 +307,7 @@ public class CacheInvalidatedEventHandler : IEventHandler<CacheInvalidatedEvent>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing CacheInvalidatedEvent {EventId}: {Error}", 
+            _logger.LogError(ex, "Error processing CacheInvalidatedEvent {EventId}: {Error}",
                 @event.EventId, ex.Message);
         }
 
@@ -361,7 +363,7 @@ public class PerformanceMetricsEventHandler : IEventHandler<PerformanceMetricsEv
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing PerformanceMetricsEvent {EventId}: {Error}", 
+            _logger.LogError(ex, "Error processing PerformanceMetricsEvent {EventId}: {Error}",
                 @event.EventId, ex.Message);
         }
 

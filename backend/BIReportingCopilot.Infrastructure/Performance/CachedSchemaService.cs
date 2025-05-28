@@ -101,5 +101,26 @@ public class CachedSchemaService : ISchemaService
         return await _innerService.AssessDataQualityAsync(tableName);
     }
 
+    // Additional methods for compatibility
+    public async Task<SchemaMetadata> GetSchemaAsync(string? dataSource = null)
+    {
+        return await GetSchemaMetadataAsync(dataSource);
+    }
+
+    public async Task<TableMetadata?> GetTableInfoAsync(string tableName, string? schema = null)
+    {
+        return await GetTableMetadataAsync(tableName, schema);
+    }
+
+    public async Task<List<string>> GetTableNamesAsync(string? schema = null)
+    {
+        return await _innerService.GetTableNamesAsync(schema);
+    }
+
+    public async Task RefreshSchemaAsync(string? dataSource = null)
+    {
+        await RefreshSchemaMetadataAsync(dataSource);
+    }
+
     // Note: GetAvailableDataSourcesAsync method removed as it's not in the interface
 }

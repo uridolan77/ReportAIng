@@ -19,7 +19,7 @@ public class AuditService : IAuditService
         _context = context;
     }
 
-    public async Task LogAsync(string action, string userId, string? entityType = null, string? entityId = null, 
+    public async Task LogAsync(string action, string userId, string? entityType = null, string? entityId = null,
                               object? details = null, string? ipAddress = null, string? userAgent = null)
     {
         try
@@ -48,7 +48,7 @@ public class AuditService : IAuditService
         }
     }
 
-    public async Task LogQueryAsync(string userId, string sessionId, string naturalLanguageQuery, string generatedSQL, 
+    public async Task LogQueryAsync(string userId, string sessionId, string naturalLanguageQuery, string generatedSQL,
                                    bool successful, int executionTimeMs, string? error = null)
     {
         try
@@ -66,19 +66,19 @@ public class AuditService : IAuditService
             await LogAsync("QUERY_EXECUTED", userId, "Query", sessionId, auditDetails);
 
             // Also log to query history
-            var queryHistory = new QueryHistoryEntity
+            var queryHistory = new Core.Models.QueryHistoryEntity
             {
                 UserId = userId,
                 SessionId = sessionId,
-                NaturalLanguageQuery = naturalLanguageQuery,
-                GeneratedSQL = generatedSQL,
+                Query = naturalLanguageQuery,
+                GeneratedSql = generatedSQL,
                 ExecutionTimeMs = executionTimeMs,
                 IsSuccessful = successful,
                 ErrorMessage = error,
-                QueryTimestamp = DateTime.UtcNow
+                ExecutedAt = DateTime.UtcNow
             };
 
-            _context.QueryHistory.Add(queryHistory);
+            _context.QueryHistories.Add(queryHistory);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Query execution logged for user: {UserId}, successful: {Successful}", userId, successful);
@@ -89,7 +89,7 @@ public class AuditService : IAuditService
         }
     }
 
-    public async Task LogSecurityEventAsync(string eventType, string userId, string? details = null, 
+    public async Task LogSecurityEventAsync(string eventType, string userId, string? details = null,
                                            string? ipAddress = null, string severity = "Info")
     {
         try
@@ -108,7 +108,7 @@ public class AuditService : IAuditService
             _context.AuditLog.Add(auditEntry);
             await _context.SaveChangesAsync();
 
-            _logger.LogWarning("Security event logged: {EventType} for user: {UserId}, severity: {Severity}", 
+            _logger.LogWarning("Security event logged: {EventType} for user: {UserId}, severity: {Severity}",
                 eventType, userId, severity);
         }
         catch (Exception ex)
@@ -117,7 +117,7 @@ public class AuditService : IAuditService
         }
     }
 
-    public async Task<List<AuditLogEntry>> GetAuditLogsAsync(string? userId = null, DateTime? from = null, 
+    public async Task<List<AuditLogEntry>> GetAuditLogsAsync(string? userId = null, DateTime? from = null,
                                                             DateTime? to = null, string? action = null)
     {
         try

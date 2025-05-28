@@ -33,10 +33,10 @@ public class MLAnomalyDetector
         {
             var features = await ExtractQueryFeaturesAsync(userId, naturalLanguageQuery, sqlQuery);
             var userProfile = await GetOrCreateUserProfileAsync(userId);
-            
+
             var anomalyScore = _model.CalculateAnomalyScore(features, userProfile);
             var riskLevel = DetermineRiskLevel(anomalyScore);
-            
+
             var result = new AnomalyDetectionResult
             {
                 UserId = userId,
@@ -53,7 +53,7 @@ public class MLAnomalyDetector
             // Log high-risk queries
             if (riskLevel >= RiskLevel.High)
             {
-                _logger.LogWarning("High-risk query detected for user {UserId}. Anomaly score: {Score:F3}, Query: {Query}", 
+                _logger.LogWarning("High-risk query detected for user {UserId}. Anomaly score: {Score:F3}, Query: {Query}",
                     userId, anomalyScore, naturalLanguageQuery);
             }
 
@@ -150,9 +150,9 @@ public class MLAnomalyDetector
 
         // Add historical context
         var userHistory = await GetUserQueryHistoryAsync(userId, TimeSpan.FromDays(30));
-        features.QueriesInLast24Hours = userHistory.Count(q => q.QueryTimestamp > DateTime.UtcNow.AddDays(-1));
-        features.AverageQueryLength = userHistory.Any() ? userHistory.Average(q => q.NaturalLanguageQuery.Length) : 0;
-        features.UniqueTablesAccessed = userHistory.SelectMany(q => ExtractTableNames(q.GeneratedSQL ?? "")).Distinct().Count();
+        features.QueriesInLast24Hours = userHistory.Count(q => q.ExecutedAt > DateTime.UtcNow.AddDays(-1));
+        features.AverageQueryLength = userHistory.Any() ? userHistory.Average(q => q.Query.Length) : 0;
+        features.UniqueTablesAccessed = userHistory.SelectMany(q => ExtractTableNames(q.GeneratedSql ?? "")).Distinct().Count();
 
         return features;
     }
@@ -172,7 +172,7 @@ public class MLAnomalyDetector
     private async Task<UserBehaviorProfile> BuildUserProfileAsync(string userId)
     {
         var queryHistory = await GetUserQueryHistoryAsync(userId, TimeSpan.FromDays(90));
-        
+
         if (!queryHistory.Any())
         {
             return new UserBehaviorProfile { UserId = userId };
@@ -181,11 +181,11 @@ public class MLAnomalyDetector
         return new UserBehaviorProfile
         {
             UserId = userId,
-            AverageQueryLength = queryHistory.Average(q => q.NaturalLanguageQuery.Length),
+            AverageQueryLength = queryHistory.Average(q => q.Query.Length),
             AverageQueriesPerDay = queryHistory.Count / 90.0,
             PreferredTimeOfDay = GetPreferredTimeOfDay(queryHistory),
             CommonTablePatterns = GetCommonTablePatterns(queryHistory),
-            TypicalComplexity = queryHistory.Average(q => CalculateQueryComplexity(q.GeneratedSQL ?? "")),
+            TypicalComplexity = queryHistory.Average(q => CalculateQueryComplexity(q.GeneratedSql ?? "")),
             LastUpdated = DateTime.UtcNow
         };
     }
@@ -193,10 +193,10 @@ public class MLAnomalyDetector
     private async Task<List<QueryHistoryEntity>> GetUserQueryHistoryAsync(string userId, TimeSpan timeWindow)
     {
         var cutoffDate = DateTime.UtcNow.Subtract(timeWindow);
-        
+
         return await _context.QueryHistories
-            .Where(q => q.UserId == userId && q.QueryTimestamp > cutoffDate)
-            .OrderByDescending(q => q.QueryTimestamp)
+            .Where(q => q.UserId == userId && q.ExecutedAt > cutoffDate)
+            .OrderByDescending(q => q.ExecutedAt)
             .Take(1000) // Limit for performance
             .ToListAsync();
     }
@@ -204,10 +204,10 @@ public class MLAnomalyDetector
     private async Task<List<QueryHistoryEntity>> GetRecentUserQueriesAsync(string userId, TimeSpan timeWindow)
     {
         var cutoffDate = DateTime.UtcNow.Subtract(timeWindow);
-        
+
         return await _context.QueryHistories
-            .Where(q => q.UserId == userId && q.QueryTimestamp > cutoffDate)
-            .OrderByDescending(q => q.QueryTimestamp)
+            .Where(q => q.UserId == userId && q.ExecutedAt > cutoffDate)
+            .OrderByDescending(q => q.ExecutedAt)
             .ToListAsync();
     }
 
@@ -265,7 +265,7 @@ public class MLAnomalyDetector
         // Simplified column counting
         var selectIndex = sql.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
         var fromIndex = sql.IndexOf("FROM", StringComparison.OrdinalIgnoreCase);
-        
+
         if (selectIndex == -1 || fromIndex == -1 || fromIndex <= selectIndex) return 0;
 
         var selectClause = sql.Substring(selectIndex + 6, fromIndex - selectIndex - 6);
@@ -277,13 +277,13 @@ public class MLAnomalyDetector
         var tables = new List<string>();
         var tablePattern = @"FROM\s+(\w+)|JOIN\s+(\w+)";
         var matches = System.Text.RegularExpressions.Regex.Matches(sql, tablePattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        
+
         foreach (System.Text.RegularExpressions.Match match in matches)
         {
             var tableName = match.Groups[1].Value.Trim();
             if (string.IsNullOrEmpty(tableName))
                 tableName = match.Groups[2].Value.Trim();
-            
+
             if (!string.IsNullOrEmpty(tableName))
                 tables.Add(tableName.ToLower());
         }
@@ -353,7 +353,7 @@ public class MLAnomalyDetector
     {
         // Get historical query data for training
         var queries = await _context.QueryHistories
-            .Where(q => q.QueryTimestamp > DateTime.UtcNow.AddDays(-180))
+            .Where(q => q.ExecutedAt > DateTime.UtcNow.AddDays(-180))
             .Take(10000)
             .ToListAsync();
 
@@ -361,7 +361,7 @@ public class MLAnomalyDetector
 
         foreach (var query in queries)
         {
-            var features = await ExtractQueryFeaturesAsync(query.UserId, query.NaturalLanguageQuery, query.GeneratedSQL ?? "");
+            var features = await ExtractQueryFeaturesAsync(query.UserId, query.Query, query.GeneratedSql ?? "");
             var label = query.IsSuccessful ? 0.0 : 1.0; // 0 = normal, 1 = anomaly
 
             trainingData.Add(new TrainingDataPoint
@@ -376,7 +376,7 @@ public class MLAnomalyDetector
 
     private int GetPreferredTimeOfDay(List<QueryHistoryEntity> queries)
     {
-        return queries.GroupBy(q => q.QueryTimestamp.Hour)
+        return queries.GroupBy(q => q.ExecutedAt.Hour)
             .OrderByDescending(g => g.Count())
             .FirstOrDefault()?.Key ?? 9; // Default to 9 AM
     }
@@ -384,7 +384,7 @@ public class MLAnomalyDetector
     private List<string> GetCommonTablePatterns(List<QueryHistoryEntity> queries)
     {
         return queries
-            .SelectMany(q => ExtractTableNames(q.GeneratedSQL ?? ""))
+            .SelectMany(q => ExtractTableNames(q.GeneratedSql ?? ""))
             .GroupBy(t => t)
             .OrderByDescending(g => g.Count())
             .Take(10)
@@ -399,7 +399,7 @@ public class MLAnomalyDetector
         var intervals = new List<double>();
         for (int i = 1; i < queries.Count; i++)
         {
-            var interval = (queries[i-1].QueryTimestamp - queries[i].QueryTimestamp).TotalMinutes;
+            var interval = (queries[i-1].ExecutedAt - queries[i].ExecutedAt).TotalMinutes;
             intervals.Add(interval);
         }
 
@@ -409,13 +409,13 @@ public class MLAnomalyDetector
     private Dictionary<int, int> CalculateTimeDistribution(List<QueryHistoryEntity> queries)
     {
         return queries
-            .GroupBy(q => q.QueryTimestamp.Hour)
+            .GroupBy(q => q.ExecutedAt.Hour)
             .ToDictionary(g => g.Key, g => g.Count());
     }
 
     private double CalculateComplexityVariation(List<QueryHistoryEntity> queries)
     {
-        var complexities = queries.Select(q => CalculateQueryComplexity(q.GeneratedSQL ?? "")).ToList();
+        var complexities = queries.Select(q => CalculateQueryComplexity(q.GeneratedSql ?? "")).ToList();
         if (complexities.Count < 2) return 0.0;
 
         var mean = complexities.Average();
@@ -426,7 +426,7 @@ public class MLAnomalyDetector
     private Dictionary<string, int> CalculateTableAccessPattern(List<QueryHistoryEntity> queries)
     {
         return queries
-            .SelectMany(q => ExtractTableNames(q.GeneratedSQL ?? ""))
+            .SelectMany(q => ExtractTableNames(q.GeneratedSql ?? ""))
             .GroupBy(t => t)
             .ToDictionary(g => g.Key, g => g.Count());
     }
@@ -507,7 +507,7 @@ public class AnomalyDetectionModel
     public void Train(List<TrainingDataPoint> trainingData)
     {
         // Simplified training - in a real implementation, you would use proper ML algorithms
-        _logger.LogInformation("Training anomaly detection model with {SampleCount} samples", trainingData.Count);
+        // _logger.LogInformation("Training anomaly detection model with {SampleCount} samples", trainingData.Count);
         _isTrained = true;
     }
 }

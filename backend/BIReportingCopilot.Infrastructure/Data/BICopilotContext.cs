@@ -13,6 +13,7 @@ public class BICopilotContext : DbContext
     // Core entities
     public DbSet<SchemaMetadataEntity> SchemaMetadata { get; set; }
     public DbSet<Entities.QueryHistoryEntity> QueryHistory { get; set; }
+    public DbSet<Core.Models.QueryHistoryEntity> QueryHistories { get; set; } // Core version for compatibility
     public DbSet<PromptTemplateEntity> PromptTemplates { get; set; }
     public DbSet<PromptLogEntity> PromptLogs { get; set; }
     public DbSet<AITuningSettingsEntity> AITuningSettings { get; set; }
@@ -295,6 +296,15 @@ public class BICopilotContext : DbContext
             entity.HasIndex(e => e.ExpiresAt);
             entity.HasIndex(e => e.LastAccessedAt);
             entity.Property(e => e.QueryHash).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<Core.Models.QueryHistoryEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.ExecutedAt);
+            entity.Property(e => e.UserId).HasMaxLength(500);
+            entity.Property(e => e.Query).HasMaxLength(2000);
         });
 
         // Seed default data

@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.DTOs;
 using CoreModels = BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Core.Interfaces;
@@ -22,6 +23,12 @@ public interface IQueryService
     Task<ProcessedQuery> ProcessAdvancedQueryAsync(string query, string userId, CoreModels.QueryContext? context = null);
     Task<double> CalculateSemanticSimilarityAsync(string query1, string query2);
     Task<List<ProcessedQuery>> FindSimilarQueriesAsync(string query, string userId, int limit = 5);
+
+    // Performance and optimization methods
+    Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(string queryHash);
+    Task<bool> ValidateQueryAsync(string sql);
+    Task<List<QuerySuggestion>> GetSmartSuggestionsAsync(string userId, string? context = null);
+    Task<QueryOptimizationResult> OptimizeQueryAsync(string sql);
 }
 
 /// <summary>
@@ -115,6 +122,12 @@ public interface ISchemaService
     Task<List<string>> GetAccessibleTablesAsync(string userId);
     Task UpdateTableStatisticsAsync(string tableName);
     Task<DataQualityScore> AssessDataQualityAsync(string tableName);
+
+    // Additional methods for compatibility
+    Task<SchemaMetadata> GetSchemaAsync(string? dataSource = null);
+    Task<TableMetadata?> GetTableInfoAsync(string tableName, string? schema = null);
+    Task<List<string>> GetTableNamesAsync(string? schema = null);
+    Task RefreshSchemaAsync(string? dataSource = null);
 }
 
 public interface ISqlQueryService

@@ -124,11 +124,11 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
           setProgress(message.progress * 100);
           break;
         case 'query_completed':
-          setIsLoading(false);
+          // setIsLoading handled by React Query mutation state
           setProgress(0);
           break;
         case 'query_error':
-          setIsLoading(false);
+          // setIsLoading handled by React Query mutation state
           setProgress(0);
           break;
       }

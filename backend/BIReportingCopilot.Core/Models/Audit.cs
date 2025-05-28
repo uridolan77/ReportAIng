@@ -79,13 +79,4 @@ public class QueryExecutionPlan
     public List<string> Warnings { get; set; } = new();
 }
 
-public class QueryPerformanceMetrics
-{
-    public TimeSpan ExecutionTime { get; set; }
-    public long LogicalReads { get; set; }
-    public long PhysicalReads { get; set; }
-    public long RowsAffected { get; set; }
-    public double CpuTime { get; set; }
-    public string PerformanceLevel { get; set; } = "Good"; // Good, Fair, Poor
-    public List<string> OptimizationSuggestions { get; set; } = new();
-}
+// QueryPerformanceMetrics moved to OptimizedDTOs.cs to avoid duplication

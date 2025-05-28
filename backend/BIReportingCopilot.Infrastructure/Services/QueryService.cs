@@ -1,5 +1,6 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.DTOs;
 using Microsoft.Extensions.Logging;
 using CoreModels = BIReportingCopilot.Core.Models;
 
@@ -503,6 +504,80 @@ public class QueryService : IQueryService
         var union = words1.Union(words2).Count();
 
         return union > 0 ? (double)intersection / union : 0.0;
+    }
+
+    // Additional methods for interface compliance
+    public async Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(string queryHash)
+    {
+        try
+        {
+            // Basic implementation - in production, this would query performance data
+            return new QueryPerformanceMetrics
+            {
+                ExecutionTime = TimeSpan.FromMilliseconds(100),
+                RowCount = 0,
+                FromCache = false
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting query performance for hash: {QueryHash}", queryHash);
+            throw;
+        }
+    }
+
+    public async Task<bool> ValidateQueryAsync(string sql)
+    {
+        try
+        {
+            // Basic validation - check if it's a SELECT query
+            var trimmedSql = sql.Trim();
+            return trimmedSql.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating SQL: {Sql}", sql);
+            return false;
+        }
+    }
+
+    public async Task<List<QuerySuggestion>> GetSmartSuggestionsAsync(string userId, string? context = null)
+    {
+        try
+        {
+            // Basic implementation - return some default suggestions
+            return new List<QuerySuggestion>
+            {
+                new QuerySuggestion { Text = "Show me all data", Confidence = 0.8 },
+                new QuerySuggestion { Text = "Count total records", Confidence = 0.7 },
+                new QuerySuggestion { Text = "Show recent data", Confidence = 0.6 }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting smart suggestions for user: {UserId}", userId);
+            return new List<QuerySuggestion>();
+        }
+    }
+
+    public async Task<QueryOptimizationResult> OptimizeQueryAsync(string sql)
+    {
+        try
+        {
+            // Basic implementation - return the original SQL with minimal optimization
+            return new QueryOptimizationResult
+            {
+                OriginalQuery = sql,
+                OptimizedQuery = sql,
+                ImprovementScore = 0.0,
+                Suggestions = new List<OptimizationSuggestion>()
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error optimizing SQL: {Sql}", sql);
+            throw;
+        }
     }
 
     #endregion

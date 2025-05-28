@@ -1,5 +1,6 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Security;
@@ -81,7 +82,7 @@ public class SqlQueryService : ISqlQueryService
                     ColumnCount = 0,
                     RowCount = 0,
                     ExecutionTimeMs = (int)stopwatch.ElapsedMilliseconds,
-                    Columns = Array.Empty<ColumnInfo>(),
+                    Columns = Array.Empty<ColumnMetadata>(),
                     Error = ex.Message
                 },
                 IsSuccessful = false
@@ -299,10 +300,10 @@ public class SqlQueryService : ISqlQueryService
 
         using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-        var columns = new List<ColumnInfo>();
+        var columns = new List<ColumnMetadata>();
         for (int i = 0; i < reader.FieldCount; i++)
         {
-            columns.Add(new ColumnInfo
+            columns.Add(new ColumnMetadata
             {
                 Name = reader.GetName(i),
                 DataType = reader.GetFieldType(i).Name

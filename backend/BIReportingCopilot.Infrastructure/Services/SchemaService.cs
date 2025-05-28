@@ -570,4 +570,41 @@ public class SchemaService : ISchemaService
             return 0.8; // Default if we can't check
         }
     }
+
+    // Additional methods for compatibility
+    public async Task<SchemaMetadata> GetSchemaAsync(string? dataSource = null)
+    {
+        return await GetSchemaMetadataAsync(dataSource);
+    }
+
+    public async Task<TableMetadata?> GetTableInfoAsync(string tableName, string? schema = null)
+    {
+        return await GetTableMetadataAsync(tableName, schema);
+    }
+
+    public async Task<List<string>> GetTableNamesAsync(string? schema = null)
+    {
+        try
+        {
+            var schemaMetadata = await GetSchemaMetadataAsync();
+            var tables = schemaMetadata.Tables.AsQueryable();
+
+            if (!string.IsNullOrEmpty(schema))
+            {
+                tables = tables.Where(t => t.Schema.Equals(schema, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return tables.Select(t => t.Name).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting table names for schema: {Schema}", schema);
+            return new List<string>();
+        }
+    }
+
+    public async Task RefreshSchemaAsync(string? dataSource = null)
+    {
+        await RefreshSchemaMetadataAsync(dataSource);
+    }
 }

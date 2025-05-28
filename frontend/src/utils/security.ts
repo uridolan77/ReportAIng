@@ -264,4 +264,146 @@ export class SecurityUtils {
       return true; // Request allowed
     };
   }
+
+  // Enhanced encryption for request/response data
+  static async encryptData(data: string, key?: string): Promise<string> {
+    try {
+      const encoder = new TextEncoder();
+      const dataBuffer = encoder.encode(data);
+
+      // Use provided key or generate one
+      const encryptionKey = key || await this.generateEncryptionKey();
+      const keyBuffer = encoder.encode(encryptionKey);
+
+      // Generate IV
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+
+      // Import key
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyBuffer.slice(0, 32), // Use first 32 bytes for AES-256
+        { name: 'AES-GCM' },
+        false,
+        ['encrypt']
+      );
+
+      // Encrypt
+      const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        cryptoKey,
+        dataBuffer
+      );
+
+      // Combine IV and encrypted data
+      const combined = new Uint8Array(iv.length + encrypted.byteLength);
+      combined.set(iv);
+      combined.set(new Uint8Array(encrypted), iv.length);
+
+      return btoa(String.fromCharCode(...combined));
+    } catch (error) {
+      console.error('Encryption failed:', error);
+      throw new Error('Data encryption failed');
+    }
+  }
+
+  static async decryptData(encryptedData: string, key?: string): Promise<string> {
+    try {
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
+
+      // Decode base64
+      const combined = new Uint8Array(
+        atob(encryptedData).split('').map(char => char.charCodeAt(0))
+      );
+
+      // Extract IV and encrypted data
+      const iv = combined.slice(0, 12);
+      const encrypted = combined.slice(12);
+
+      // Use provided key or get stored key
+      const encryptionKey = key || await this.getStoredEncryptionKey();
+      const keyBuffer = encoder.encode(encryptionKey);
+
+      // Import key
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyBuffer.slice(0, 32),
+        { name: 'AES-GCM' },
+        false,
+        ['decrypt']
+      );
+
+      // Decrypt
+      const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        cryptoKey,
+        encrypted
+      );
+
+      return decoder.decode(decrypted);
+    } catch (error) {
+      console.error('Decryption failed:', error);
+      throw new Error('Data decryption failed');
+    }
+  }
+
+  private static async generateEncryptionKey(): Promise<string> {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  private static async getStoredEncryptionKey(): Promise<string> {
+    let key = this.getSecureSessionStorage('encryption-key');
+    if (!key) {
+      key = await this.generateEncryptionKey();
+      this.setSecureSessionStorage('encryption-key', key);
+    }
+    return key;
+  }
+
+
+
+  static removeSecureSessionStorage(key: string): void {
+    try {
+      sessionStorage.removeItem(`secure_${key}`);
+    } catch (error) {
+      console.warn('Failed to remove secure session storage:', error);
+    }
+  }
+
+  // Request integrity verification
+  static async verifyRequestIntegrity(
+    payload: string,
+    signature: string,
+    key: string
+  ): Promise<boolean> {
+    try {
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(key);
+      const payloadData = encoder.encode(payload);
+
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['verify']
+      );
+
+      const signatureBuffer = new Uint8Array(
+        signature.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []
+      );
+
+      return await crypto.subtle.verify(
+        'HMAC',
+        cryptoKey,
+        signatureBuffer,
+        payloadData
+      );
+    } catch (error) {
+      console.error('Integrity verification failed:', error);
+      return false;
+    }
+  }
 }

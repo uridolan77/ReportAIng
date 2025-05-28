@@ -7,9 +7,10 @@ import { Layout } from './components/Layout/Layout';
 import { Login } from './components/Auth/Login';
 import { useAuthStore } from './stores/authStore';
 import { ErrorService } from './services/errorService';
-import { DevTools } from './components/DevTools/DevTools';
+import { EnhancedDevTools } from './components/DevTools/EnhancedDevTools';
 import { ReactQueryProvider } from './components/Providers/ReactQueryProvider';
 import { StateSyncProvider } from './components/Providers/StateSyncProvider';
+import { secureApiClient } from './services/secureApiClient';
 import './App.css';
 
 // Lazy load heavy components
@@ -21,13 +22,27 @@ const AdvancedVisualizationPanel = lazy(() => import('./components/Visualization
 const AdvancedVisualizationDemo = lazy(() => import('./components/Demo/AdvancedVisualizationDemo'));
 const AdvancedFeaturesDemo = lazy(() => import('./components/Demo/AdvancedFeaturesDemo').then(module => ({ default: module.AdvancedFeaturesDemo })));
 const UltimateShowcase = lazy(() => import('./components/Demo/UltimateShowcase').then(module => ({ default: module.UltimateShowcase })));
+const SecurityDashboard = lazy(() => import('./components/Security/SecurityDashboard').then(module => ({ default: module.SecurityDashboard })));
+const RequestSigningDemo = lazy(() => import('./components/Security/RequestSigningDemo').then(module => ({ default: module.RequestSigningDemo })));
+const TypeSafetyDemo = lazy(() => import('./components/TypeSafety/TypeSafetyDemo').then(module => ({ default: module.TypeSafetyDemo })));
 
 const App: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
 
-  // Initialize error service
+  // Initialize services
   useEffect(() => {
     ErrorService.initialize();
+
+    // Initialize secure API client with enhanced security features
+    secureApiClient.updateConfig({
+      enableSigning: true,
+      enableEncryption: false, // Can be enabled for sensitive data
+      retryAttempts: 3,
+      rateLimitConfig: {
+        maxRequests: 100,
+        windowMs: 60000, // 1 minute
+      },
+    });
   }, []);
 
   return (
@@ -67,6 +82,9 @@ const App: React.FC = () => {
                         <Route path="/demo" element={<AdvancedVisualizationDemo />} />
                         <Route path="/advanced-demo" element={<AdvancedFeaturesDemo />} />
                         <Route path="/showcase" element={<UltimateShowcase />} />
+                        <Route path="/security" element={<SecurityDashboard />} />
+                        <Route path="/security/signing" element={<RequestSigningDemo />} />
+                        <Route path="/security/types" element={<TypeSafetyDemo />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                       </Routes>
                     </Suspense>
@@ -77,7 +95,7 @@ const App: React.FC = () => {
                     <Route path="*" element={<Navigate to="/login" replace />} />
                   </Routes>
                 )}
-                <DevTools />
+                <EnhancedDevTools />
               </div>
             </Router>
           </ConfigProvider>

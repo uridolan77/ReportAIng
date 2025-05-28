@@ -47,7 +47,7 @@ public class OptimizedTuningDashboardData
     public List<string> MostUsedPatterns { get; set; } = new();
     public Dictionary<string, int> PatternUsageStats { get; set; } = new();
     public DateTime LastRefreshed { get; set; } = DateTime.UtcNow;
-    
+
     // Additional performance metrics
     public TimeSpan QueryExecutionTime { get; set; }
     public int CacheHitCount { get; set; }
@@ -84,10 +84,18 @@ public class QueryPerformanceMetrics
 {
     public TimeSpan ExecutionTime { get; set; }
     public int RowsAffected { get; set; }
+    public int RowCount { get; set; } // Alias for RowsAffected for compatibility
     public long MemoryUsed { get; set; }
     public bool FromCache { get; set; }
     public string QueryHash { get; set; } = string.Empty;
     public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
+
+    // Additional properties from Audit.cs version
+    public long LogicalReads { get; set; }
+    public long PhysicalReads { get; set; }
+    public double CpuTime { get; set; }
+    public string PerformanceLevel { get; set; } = "Good"; // Good, Fair, Poor
+    public List<string> OptimizationSuggestions { get; set; } = new();
 }
 
 /// <summary>

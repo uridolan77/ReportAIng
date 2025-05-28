@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.CircuitBreaker;
+using BIReportingCopilot.Core.Exceptions;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.DTOs;
 using Microsoft.Data.SqlClient;
 
 namespace BIReportingCopilot.Infrastructure.Resilience;
@@ -217,7 +219,8 @@ public class ResilientQueryService : IQueryService
     {
         try
         {
-            return await _innerService.ValidateQueryAsync(request);
+            // Extract SQL from QueryRequest and validate it
+            return await _innerService.ValidateQueryAsync(request.Question);
         }
         catch (Exception ex)
         {
@@ -250,7 +253,8 @@ public class ResilientQueryService : IQueryService
     {
         try
         {
-            return await _innerService.OptimizeQueryAsync(request);
+            // Extract SQL from QueryRequest and optimize it
+            return await _innerService.OptimizeQueryAsync(request.Question);
         }
         catch (Exception ex)
         {
@@ -259,8 +263,16 @@ public class ResilientQueryService : IQueryService
             {
                 OriginalQuery = request.Question,
                 OptimizedQuery = request.Question,
-                OptimizationApplied = false,
-                Suggestions = new List<string> { "Optimization service temporarily unavailable" }
+                AppliedOptimizations = new List<string>(), // Empty list means no optimization applied
+                Suggestions = new List<OptimizationSuggestion>
+                {
+                    new OptimizationSuggestion
+                    {
+                        Description = "Optimization service temporarily unavailable",
+                        Type = "Service",
+                        Recommendation = "Please try again later"
+                    }
+                }
             };
         }
     }
@@ -287,18 +299,30 @@ public class ResilientQueryService : IQueryService
         return new QueryResponse
         {
             Success = false,
-            ErrorMessage = message,
-            Data = new object[0],
-            Columns = new ColumnMetadata[0],
+            Error = message,
+            Result = new QueryResult
+            {
+                Data = new object[0],
+                Metadata = new QueryMetadata
+                {
+                    Columns = new ColumnMetadata[0],
+                    RowCount = 0,
+                    ColumnCount = 0
+                },
+                IsSuccessful = false
+            },
             ExecutionTimeMs = 0,
-            RowCount = 0
+            Confidence = 0,
+            Suggestions = Array.Empty<string>(),
+            Cached = false,
+            Timestamp = DateTime.UtcNow
         };
     }
 
     // Missing IQueryService methods
     public async Task InvalidateQueryCacheAsync(string pattern)
     {
-        return await _retryPolicy.ExecuteAsync(async () =>
+        return await _databaseRetryPolicy.ExecuteAsync(async () =>
         {
             _logger.LogInformation("Invalidating query cache with pattern: {Pattern}", pattern);
             await _innerService.InvalidateQueryCacheAsync(pattern);
@@ -307,7 +331,7 @@ public class ResilientQueryService : IQueryService
 
     public async Task<ProcessedQuery> ProcessAdvancedQueryAsync(string query, string userId, Core.Models.QueryContext? context = null)
     {
-        return await _retryPolicy.ExecuteAsync(async () =>
+        return await _databaseRetryPolicy.ExecuteAsync(async () =>
         {
             _logger.LogInformation("Processing advanced query for user {UserId}: {Query}", userId, query);
             return await _innerService.ProcessAdvancedQueryAsync(query, userId, context);
@@ -316,7 +340,7 @@ public class ResilientQueryService : IQueryService
 
     public async Task<double> CalculateSemanticSimilarityAsync(string query1, string query2)
     {
-        return await _retryPolicy.ExecuteAsync(async () =>
+        return await _databaseRetryPolicy.ExecuteAsync(async () =>
         {
             _logger.LogDebug("Calculating semantic similarity between queries");
             return await _innerService.CalculateSemanticSimilarityAsync(query1, query2);
@@ -325,10 +349,28 @@ public class ResilientQueryService : IQueryService
 
     public async Task<List<ProcessedQuery>> FindSimilarQueriesAsync(string query, string userId, int limit = 5)
     {
-        return await _retryPolicy.ExecuteAsync(async () =>
+        return await _databaseRetryPolicy.ExecuteAsync(async () =>
         {
             _logger.LogDebug("Finding similar queries for user {UserId} with limit {Limit}", userId, limit);
             return await _innerService.FindSimilarQueriesAsync(query, userId, limit);
+        });
+    }
+
+    public async Task<bool> ValidateQueryAsync(string sql)
+    {
+        return await _databaseRetryPolicy.ExecuteAsync(async () =>
+        {
+            _logger.LogDebug("Validating SQL query");
+            return await _innerService.ValidateQueryAsync(sql);
+        });
+    }
+
+    public async Task<QueryOptimizationResult> OptimizeQueryAsync(string sql)
+    {
+        return await _databaseRetryPolicy.ExecuteAsync(async () =>
+        {
+            _logger.LogDebug("Optimizing SQL query");
+            return await _innerService.OptimizeQueryAsync(sql);
         });
     }
 }

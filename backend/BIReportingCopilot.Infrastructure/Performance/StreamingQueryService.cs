@@ -4,6 +4,7 @@ using System.Data;
 using System.Text.Json;
 using System.Threading.Channels;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Core.Interfaces;
 
 namespace BIReportingCopilot.Infrastructure.Performance;

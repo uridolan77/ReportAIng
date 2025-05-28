@@ -71,17 +71,17 @@ public class FeedbackLearningEngine
     {
         try
         {
-            var feedbackEntry = new AIFeedbackEntry
+            var feedbackEntry = new Core.Models.AIFeedbackEntry
             {
-                OriginalPrompt = originalPrompt,
-                GeneratedSQL = generatedSQL,
+                OriginalQuery = originalPrompt,
+                GeneratedSql = generatedSQL,
                 Rating = FeedbackLearningEngineExtensions.GetRatingFromFeedback(feedback),
-                FeedbackText = feedback.Comments,
+                Comments = feedback.Comments,
                 UserId = userId,
-                Timestamp = DateTime.UtcNow,
-                PromptPattern = ExtractPromptPattern(originalPrompt),
-                SQLPattern = ExtractSQLPattern(generatedSQL),
-                IsSuccessful = FeedbackLearningEngineExtensions.GetRatingFromFeedback(feedback) >= 4 // Consider 4+ stars as successful
+                CreatedAt = DateTime.UtcNow,
+                FeedbackType = feedback.Feedback ?? "neutral",
+                Category = ExtractPromptPattern(originalPrompt),
+                IsProcessed = false
             };
 
             _context.AIFeedbackEntries.Add(feedbackEntry);
@@ -91,7 +91,7 @@ public class FeedbackLearningEngine
             await UpdateLearningPatternsAsync(feedbackEntry);
 
             _logger.LogInformation("Processed feedback: Rating {Rating}, Pattern: {Pattern}",
-                FeedbackLearningEngineExtensions.GetRatingFromFeedback(feedback), feedbackEntry.PromptPattern);
+                FeedbackLearningEngineExtensions.GetRatingFromFeedback(feedback), feedbackEntry.Category);
         }
         catch (Exception ex)
         {
@@ -148,8 +148,8 @@ public class FeedbackLearningEngine
         {
             // Get popular patterns from successful queries
             var popularPatterns = await _context.AIFeedbackEntries
-                .Where(f => f.IsSuccessful && f.Timestamp > DateTime.UtcNow.AddDays(-30))
-                .GroupBy(f => f.PromptPattern)
+                .Where(f => f.Rating >= 4 && f.CreatedAt > DateTime.UtcNow.AddDays(-30))
+                .GroupBy(f => f.Category ?? "General")
                 .OrderByDescending(g => g.Count())
                 .Take(5)
                 .Select(g => g.Key)
@@ -185,8 +185,8 @@ public class FeedbackLearningEngine
             var queryPattern = ExtractSQLPattern(query);
 
             var relatedInsights = await _context.AIFeedbackEntries
-                .Where(f => f.SQLPattern == queryPattern && f.IsSuccessful)
-                .Select(f => f.FeedbackText)
+                .Where(f => f.Category == queryPattern && f.Rating >= 4)
+                .Select(f => f.Comments)
                 .Where(f => !string.IsNullOrEmpty(f))
                 .Take(10)
                 .ToListAsync();
@@ -225,11 +225,11 @@ public class FeedbackLearningEngine
             var totalGenerations = await _context.AIGenerationAttempts.CountAsync();
 
             var popularPatterns = await _context.AIFeedbackEntries
-                .Where(f => f.IsSuccessful)
-                .GroupBy(f => f.PromptPattern)
+                .Where(f => f.Rating >= 4)
+                .GroupBy(f => f.Category)
                 .OrderByDescending(g => g.Count())
                 .Take(10)
-                .ToDictionaryAsync(g => g.Key, g => g.Count());
+                .ToDictionaryAsync(g => g.Key ?? "unknown", g => g.Count());
 
             return new LearningStatistics
             {
@@ -253,18 +253,18 @@ public class FeedbackLearningEngine
         var pattern = ExtractPromptPattern(prompt);
 
         return await _context.AIFeedbackEntries
-            .Where(f => f.PromptPattern == pattern)
-            .Select(f => f.OriginalPrompt)
+            .Where(f => f.Category == pattern)
+            .Select(f => f.OriginalQuery)
             .Distinct()
             .Take(50)
             .ToListAsync();
     }
 
-    private async Task<List<AIFeedbackEntry>> GetFeedbackDataAsync(List<string> prompts)
+    private async Task<List<Core.Models.AIFeedbackEntry>> GetFeedbackDataAsync(List<string> prompts)
     {
         return await _context.AIFeedbackEntries
-            .Where(f => prompts.Contains(f.OriginalPrompt))
-            .OrderByDescending(f => f.Timestamp)
+            .Where(f => prompts.Contains(f.OriginalQuery))
+            .OrderByDescending(f => f.CreatedAt)
             .Take(100)
             .ToListAsync();
     }
@@ -312,11 +312,11 @@ public class FeedbackLearningEngine
         return "simple_query";
     }
 
-    private List<string> ExtractSuccessfulPatterns(List<AIFeedbackEntry> feedbackData)
+    private List<string> ExtractSuccessfulPatterns(List<Core.Models.AIFeedbackEntry> feedbackData)
     {
         return feedbackData
-            .Where(f => f.IsSuccessful)
-            .SelectMany(f => ExtractKeywords(f.OriginalPrompt))
+            .Where(f => f.Rating >= 4)
+            .SelectMany(f => ExtractKeywords(f.OriginalQuery))
             .GroupBy(k => k)
             .OrderByDescending(g => g.Count())
             .Take(10)
@@ -324,11 +324,11 @@ public class FeedbackLearningEngine
             .ToList();
     }
 
-    private List<string> ExtractCommonMistakes(List<AIFeedbackEntry> feedbackData)
+    private List<string> ExtractCommonMistakes(List<Core.Models.AIFeedbackEntry> feedbackData)
     {
         return feedbackData
-            .Where(f => !f.IsSuccessful)
-            .SelectMany(f => ExtractKeywords(f.GeneratedSQL))
+            .Where(f => f.Rating < 3)
+            .SelectMany(f => ExtractKeywords(f.GeneratedSql ?? ""))
             .GroupBy(k => k)
             .OrderByDescending(g => g.Count())
             .Take(5)
@@ -336,12 +336,12 @@ public class FeedbackLearningEngine
             .ToList();
     }
 
-    private List<string> GenerateOptimizationSuggestions(List<AIFeedbackEntry> feedbackData)
+    private List<string> GenerateOptimizationSuggestions(List<Core.Models.AIFeedbackEntry> feedbackData)
     {
         var suggestions = new List<string>();
 
-        var successfulQueries = feedbackData.Where(f => f.IsSuccessful).ToList();
-        var unsuccessfulQueries = feedbackData.Where(f => !f.IsSuccessful).ToList();
+        var successfulQueries = feedbackData.Where(f => f.Rating >= 4).ToList();
+        var unsuccessfulQueries = feedbackData.Where(f => f.Rating < 3).ToList();
 
         if (successfulQueries.Any() && unsuccessfulQueries.Any())
         {
@@ -353,11 +353,11 @@ public class FeedbackLearningEngine
         return suggestions;
     }
 
-    private double CalculateConfidenceModifier(List<AIFeedbackEntry> feedbackData)
+    private double CalculateConfidenceModifier(List<Core.Models.AIFeedbackEntry> feedbackData)
     {
         if (!feedbackData.Any()) return 0.0;
 
-        var successRate = feedbackData.Count(f => f.IsSuccessful) / (double)feedbackData.Count;
+        var successRate = feedbackData.Count(f => f.Rating >= 4) / (double)feedbackData.Count;
         return (successRate - 0.5) * 0.3; // Scale between -0.15 and +0.15
     }
 
@@ -377,10 +377,10 @@ public class FeedbackLearningEngine
         return stopWords.Contains(word);
     }
 
-    private async Task UpdateLearningPatternsAsync(AIFeedbackEntry feedbackEntry)
+    private async Task UpdateLearningPatternsAsync(Core.Models.AIFeedbackEntry feedbackEntry)
     {
         // Clear cache for this pattern to force refresh
-        var cacheKey = $"insights_{feedbackEntry.PromptPattern}";
+        var cacheKey = $"insights_{feedbackEntry.Category}";
         _patternCache.Remove(cacheKey);
     }
 
@@ -409,8 +409,8 @@ public class FeedbackLearningEngine
     private async Task<double> CalculateAverageConfidenceAsync()
     {
         return await _context.AIGenerationAttempts
-            .Where(a => a.ConfidenceScore.HasValue)
-            .AverageAsync(a => a.ConfidenceScore!.Value);
+            .Where(a => a.ConfidenceScore > 0)
+            .AverageAsync(a => a.ConfidenceScore);
     }
 
     private class LearningPattern
@@ -443,22 +443,7 @@ public class InsightContext
     public List<string> ContextualHints { get; set; } = new();
 }
 
-/// <summary>
-/// AI feedback entry for learning
-/// </summary>
-public class AIFeedbackEntry
-{
-    public long Id { get; set; }
-    public string OriginalPrompt { get; set; } = string.Empty;
-    public string GeneratedSQL { get; set; } = string.Empty;
-    public int Rating { get; set; }
-    public string? FeedbackText { get; set; }
-    public string UserId { get; set; } = string.Empty;
-    public DateTime Timestamp { get; set; }
-    public string PromptPattern { get; set; } = string.Empty;
-    public string SQLPattern { get; set; } = string.Empty;
-    public bool IsSuccessful { get; set; }
-}
+
 
 /// <summary>
 /// Extension methods for FeedbackLearningEngine

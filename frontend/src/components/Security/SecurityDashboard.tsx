@@ -31,6 +31,8 @@ import {
 import { validateQuery, validateNaturalLanguageQuery } from '../../utils/queryValidator';
 import { SecurityUtils } from '../../utils/security';
 import { tokenManager } from '../../services/tokenManager';
+import { secureApiClient, RequestMetrics } from '../../services/secureApiClient';
+import { requestSigning, SigningConfig } from '../../services/requestSigning';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -43,6 +45,12 @@ interface SecurityMetrics {
   lastSecurityScan: string;
   activeTokens: number;
   failedLogins: number;
+  // New request signing metrics
+  totalRequests: number;
+  signedRequests: number;
+  encryptedRequests: number;
+  averageResponseTime: number;
+  rateLimitHits: number;
 }
 
 interface SecurityEvent {
@@ -63,7 +71,13 @@ export const SecurityDashboard: React.FC = () => {
     securityScore: 85,
     lastSecurityScan: new Date().toISOString(),
     activeTokens: 0,
-    failedLogins: 0
+    failedLogins: 0,
+    // New request signing metrics
+    totalRequests: 0,
+    signedRequests: 0,
+    encryptedRequests: 0,
+    averageResponseTime: 0,
+    rateLimitHits: 0,
   });
 
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
@@ -81,13 +95,26 @@ export const SecurityDashboard: React.FC = () => {
   const [testQuery, setTestQuery] = useState('');
   const [testResult, setTestResult] = useState<any>(null);
 
+  // New state for request signing features
+  const [requestMetrics, setRequestMetrics] = useState<RequestMetrics[]>([]);
+  const [signingConfig, setSigningConfig] = useState<SigningConfig | null>(null);
+  const [signingConfigVisible, setSigningConfigVisible] = useState(false);
+
   useEffect(() => {
     loadSecurityMetrics();
     loadSecurityEvents();
+    loadRequestMetrics();
+    loadSigningConfig();
+
+    // Set up periodic refresh for request metrics
+    const interval = setInterval(loadRequestMetrics, 30000); // 30 seconds
+    return () => clearInterval(interval);
   }, []);
 
   const loadSecurityMetrics = async () => {
-    // In a real app, this would fetch from an API
+    // Get request metrics from secure API client
+    const apiMetrics = secureApiClient.getRequestMetrics();
+
     const mockMetrics: SecurityMetrics = {
       totalQueries: 1247,
       blockedQueries: 23,
@@ -95,7 +122,15 @@ export const SecurityDashboard: React.FC = () => {
       securityScore: calculateSecurityScore(),
       lastSecurityScan: new Date().toISOString(),
       activeTokens: 12,
-      failedLogins: 3
+      failedLogins: 3,
+      // New request signing metrics
+      totalRequests: apiMetrics.length,
+      signedRequests: apiMetrics.filter(m => m.signed).length,
+      encryptedRequests: apiMetrics.filter(m => m.encrypted).length,
+      averageResponseTime: apiMetrics.length > 0
+        ? Math.round(apiMetrics.reduce((sum, m) => sum + m.duration, 0) / apiMetrics.length)
+        : 0,
+      rateLimitHits: apiMetrics.filter(m => m.status === 429).length,
     };
     setMetrics(mockMetrics);
   };
@@ -130,6 +165,24 @@ export const SecurityDashboard: React.FC = () => {
       }
     ];
     setSecurityEvents(mockEvents);
+  };
+
+  const loadRequestMetrics = () => {
+    try {
+      const metrics = secureApiClient.getRequestMetrics();
+      setRequestMetrics(metrics);
+    } catch (error) {
+      console.error('Failed to load request metrics:', error);
+    }
+  };
+
+  const loadSigningConfig = () => {
+    try {
+      const config = requestSigning.getConfig();
+      setSigningConfig(config);
+    } catch (error) {
+      console.error('Failed to load signing config:', error);
+    }
   };
 
   const calculateSecurityScore = (): number => {
@@ -301,6 +354,56 @@ export const SecurityDashboard: React.FC = () => {
         </Col>
       </Row>
 
+      {/* Request Signing Metrics */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Total Requests"
+              value={metrics.totalRequests}
+              valueStyle={{ color: '#1890ff' }}
+              prefix={<EyeOutlined />}
+            />
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Signed Requests"
+              value={metrics.signedRequests}
+              suffix={`/ ${metrics.totalRequests}`}
+              valueStyle={{ color: '#52c41a' }}
+              prefix={<KeyOutlined />}
+            />
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Encrypted Requests"
+              value={metrics.encryptedRequests}
+              suffix={`/ ${metrics.totalRequests}`}
+              valueStyle={{ color: '#722ed1' }}
+              prefix={<LockOutlined />}
+            />
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Avg Response Time"
+              value={metrics.averageResponseTime}
+              suffix="ms"
+              valueStyle={{ color: '#faad14' }}
+              prefix={<SettingOutlined />}
+            />
+          </Card>
+        </Col>
+      </Row>
+
       {/* Security Settings */}
       <Card title="Security Settings" style={{ marginBottom: '24px' }}>
         <Row gutter={[16, 16]}>
@@ -355,6 +458,13 @@ export const SecurityDashboard: React.FC = () => {
                 onClick={refreshTokens}
               >
                 Refresh Tokens
+              </Button>
+
+              <Button
+                icon={<KeyOutlined />}
+                onClick={() => setSigningConfigVisible(true)}
+              >
+                Configure Request Signing
               </Button>
 
               <Button
@@ -421,6 +531,56 @@ export const SecurityDashboard: React.FC = () => {
             />
           )}
         </Space>
+      </Modal>
+
+      {/* Request Signing Configuration Modal */}
+      <Modal
+        title="Request Signing Configuration"
+        open={signingConfigVisible}
+        onCancel={() => setSigningConfigVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setSigningConfigVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="save"
+            type="primary"
+            onClick={() => {
+              // Save configuration logic would go here
+              setSigningConfigVisible(false);
+            }}
+          >
+            Save Configuration
+          </Button>
+        ]}
+        width={600}
+      >
+        {signingConfig && (
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Alert
+              message="Request Signing Configuration"
+              description="Configure cryptographic signing for API requests to enhance security."
+              type="info"
+              showIcon
+            />
+
+            <div>
+              <Text strong>Algorithm:</Text> {signingConfig.algorithm}
+            </div>
+            <div>
+              <Text strong>Include Body:</Text> {signingConfig.includeBody ? 'Yes' : 'No'}
+            </div>
+            <div>
+              <Text strong>Timestamp Tolerance:</Text> {signingConfig.timestampTolerance} seconds
+            </div>
+            <div>
+              <Text strong>Nonce Length:</Text> {signingConfig.nonceLength} bytes
+            </div>
+            <div>
+              <Text strong>Include Headers:</Text> {signingConfig.includeHeaders.join(', ')}
+            </div>
+          </Space>
+        )}
       </Modal>
     </div>
   );
