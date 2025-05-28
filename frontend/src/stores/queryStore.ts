@@ -98,8 +98,7 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       }
 
       // Get the current auth token
-      const authState = useAuthStore.getState();
-      const token = authState.token;
+      const token = authStateForValidation.token;
 
       const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.QUERY.NATURAL_LANGUAGE), {
         method: 'POST',

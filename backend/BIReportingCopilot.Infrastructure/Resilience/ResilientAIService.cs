@@ -80,7 +80,7 @@ public class ResilientAIService : IAIService
                 using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
                 var result = await _innerService.GenerateSQLAsync(prompt, combinedCts.Token);
-                
+
                 if (string.IsNullOrEmpty(result))
                 {
                     throw new InvalidOperationException("AI service returned empty result");
@@ -103,7 +103,7 @@ public class ResilientAIService : IAIService
             return await _combinedPolicy.ExecuteAsync(async () =>
             {
                 var result = await _innerService.GenerateInsightAsync(query, data);
-                
+
                 if (string.IsNullOrEmpty(result))
                 {
                     throw new InvalidOperationException("AI service returned empty insight");
@@ -119,14 +119,14 @@ public class ResilientAIService : IAIService
         }
     }
 
-    public async Task<string> GenerateVisualizationConfigAsync(string query, ColumnInfo[] columns, object[] data)
+    public async Task<string> GenerateVisualizationConfigAsync(string query, ColumnMetadata[] columns, object[] data)
     {
         try
         {
             return await _combinedPolicy.ExecuteAsync(async () =>
             {
                 var result = await _innerService.GenerateVisualizationConfigAsync(query, columns, data);
-                
+
                 if (string.IsNullOrEmpty(result))
                 {
                     throw new InvalidOperationException("AI service returned empty visualization config");
@@ -220,7 +220,7 @@ public class ResilientAIService : IAIService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Streaming SQL generation failed");
-            
+
             if (!hasYieldedAny)
             {
                 // If we haven't yielded anything yet, try fallback

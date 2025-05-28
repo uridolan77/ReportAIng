@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 
 namespace BIReportingCopilot.Infrastructure.Data;
@@ -11,7 +12,7 @@ public class BICopilotContext : DbContext
 
     // Core entities
     public DbSet<SchemaMetadataEntity> SchemaMetadata { get; set; }
-    public DbSet<QueryHistoryEntity> QueryHistory { get; set; }
+    public DbSet<Entities.QueryHistoryEntity> QueryHistory { get; set; }
     public DbSet<PromptTemplateEntity> PromptTemplates { get; set; }
     public DbSet<PromptLogEntity> PromptLogs { get; set; }
     public DbSet<AITuningSettingsEntity> AITuningSettings { get; set; }
@@ -37,9 +38,9 @@ public class BICopilotContext : DbContext
     public DbSet<SystemMetricsEntity> SystemMetrics { get; set; }
 
     // AI Learning and Semantic Cache
-    public DbSet<AIGenerationAttempt> AIGenerationAttempts { get; set; }
-    public DbSet<AIFeedbackEntry> AIFeedbackEntries { get; set; }
-    public DbSet<SemanticCacheEntry> SemanticCacheEntries { get; set; }
+    public DbSet<Core.Models.AIGenerationAttempt> AIGenerationAttempts { get; set; }
+    public DbSet<Core.Models.AIFeedbackEntry> AIFeedbackEntries { get; set; }
+    public DbSet<Core.Models.SemanticCacheEntry> SemanticCacheEntries { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,7 +58,7 @@ public class BICopilotContext : DbContext
         });
 
         // Configure QueryHistory
-        modelBuilder.Entity<QueryHistoryEntity>(entity =>
+        modelBuilder.Entity<Entities.QueryHistoryEntity>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.QueryTimestamp });
@@ -267,35 +268,33 @@ public class BICopilotContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         // Configure AI Learning entities
-        modelBuilder.Entity<AIGenerationAttempt>(entity =>
+        modelBuilder.Entity<Core.Models.AIGenerationAttempt>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.PromptHash);
-            entity.HasIndex(e => e.Timestamp);
             entity.HasIndex(e => e.UserId);
-            entity.Property(e => e.PromptHash).HasMaxLength(32);
-            entity.Property(e => e.SQLHash).HasMaxLength(32);
-            entity.Property(e => e.UserId).HasMaxLength(256);
+            entity.HasIndex(e => e.AttemptedAt);
+            entity.Property(e => e.UserId).HasMaxLength(500);
+            entity.Property(e => e.AIProvider).HasMaxLength(100);
+            entity.Property(e => e.ModelVersion).HasMaxLength(100);
         });
 
-        modelBuilder.Entity<AIFeedbackEntry>(entity =>
+        modelBuilder.Entity<Core.Models.AIFeedbackEntry>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.PromptPattern, e.IsSuccessful });
-            entity.HasIndex(e => new { e.UserId, e.Timestamp });
-            entity.HasIndex(e => e.Timestamp);
-            entity.Property(e => e.UserId).HasMaxLength(256);
-            entity.Property(e => e.PromptPattern).HasMaxLength(50);
-            entity.Property(e => e.SQLPattern).HasMaxLength(50);
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt });
+            entity.HasIndex(e => e.CreatedAt);
+            entity.Property(e => e.UserId).HasMaxLength(500);
+            entity.Property(e => e.FeedbackType).HasMaxLength(50);
+            entity.Property(e => e.Category).HasMaxLength(100);
         });
 
-        modelBuilder.Entity<SemanticCacheEntry>(entity =>
+        modelBuilder.Entity<Core.Models.SemanticCacheEntry>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.QuerySignature).IsUnique();
-            entity.HasIndex(e => e.ExpiryTime);
-            entity.HasIndex(e => e.LastAccessTime);
-            entity.Property(e => e.QuerySignature).HasMaxLength(32);
+            entity.HasIndex(e => e.QueryHash).IsUnique();
+            entity.HasIndex(e => e.ExpiresAt);
+            entity.HasIndex(e => e.LastAccessedAt);
+            entity.Property(e => e.QueryHash).HasMaxLength(100);
         });
 
         // Seed default data

@@ -66,20 +66,13 @@ public class QueryMetadata
     public int ColumnCount { get; set; }
     public int RowCount { get; set; }
     public int ExecutionTimeMs { get; set; }
-    public ColumnInfo[] Columns { get; set; } = Array.Empty<ColumnInfo>();
+    public ColumnMetadata[] Columns { get; set; } = Array.Empty<ColumnMetadata>();
     public string? DataSource { get; set; }
     public DateTime QueryTimestamp { get; set; } = DateTime.UtcNow;
     public string? Error { get; set; }
 }
 
-public class ColumnInfo
-{
-    public string Name { get; set; } = string.Empty;
-    public string DataType { get; set; } = string.Empty;
-    public bool IsNullable { get; set; }
-    public string? Description { get; set; }
-    public string[] SemanticTags { get; set; } = Array.Empty<string>();
-}
+
 
 public class VisualizationConfig
 {

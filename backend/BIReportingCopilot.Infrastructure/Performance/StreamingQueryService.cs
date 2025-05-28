@@ -54,7 +54,7 @@ public class StreamingQueryChunk
 
 public class StreamingQueryMetadata
 {
-    public ColumnInfo[] Columns { get; set; } = Array.Empty<ColumnInfo>();
+    public ColumnMetadata[] Columns { get; set; } = Array.Empty<ColumnMetadata>();
     public long EstimatedRowCount { get; set; }
     public int ChunkSize { get; set; }
     public int EstimatedChunks { get; set; }

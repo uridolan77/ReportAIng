@@ -8,28 +8,28 @@ namespace BIReportingCopilot.Infrastructure.Services;
 public interface IVisualizationService
 {
     // Basic visualization methods
-    Task<VisualizationConfig> GenerateVisualizationConfigAsync(string query, ColumnInfo[] columns, object[] data);
-    Task<VisualizationConfig[]> GenerateMultipleVisualizationOptionsAsync(string query, ColumnInfo[] columns, object[] data);
+    Task<VisualizationConfig> GenerateVisualizationConfigAsync(string query, ColumnMetadata[] columns, object[] data);
+    Task<VisualizationConfig[]> GenerateMultipleVisualizationOptionsAsync(string query, ColumnMetadata[] columns, object[] data);
     Task<VisualizationConfig> OptimizeVisualizationForDataSizeAsync(VisualizationConfig config, int dataSize);
-    bool IsVisualizationSuitableForData(string visualizationType, ColumnInfo[] columns, int rowCount);
-    Task<InteractiveVisualizationConfig> GenerateInteractiveVisualizationAsync(string query, ColumnInfo[] columns, object[] data);
-    Task<DashboardConfig> GenerateMultiChartDashboardAsync(string query, ColumnInfo[] columns, object[] data);
+    bool IsVisualizationSuitableForData(string visualizationType, ColumnMetadata[] columns, int rowCount);
+    Task<InteractiveVisualizationConfig> GenerateInteractiveVisualizationAsync(string query, ColumnMetadata[] columns, object[] data);
+    Task<DashboardConfig> GenerateMultiChartDashboardAsync(string query, ColumnMetadata[] columns, object[] data);
 
     // Advanced visualization methods (consolidated from IAdvancedVisualizationService)
     Task<AdvancedVisualizationConfig> GenerateAdvancedVisualizationAsync(
         string query,
-        ColumnInfo[] columns,
+        ColumnMetadata[] columns,
         object[] data,
         VisualizationPreferences? preferences = null);
 
     Task<AdvancedDashboardConfig> GenerateAdvancedDashboardAsync(
         string query,
-        ColumnInfo[] columns,
+        ColumnMetadata[] columns,
         object[] data,
         DashboardPreferences? preferences = null);
 
     Task<VisualizationRecommendation[]> GetVisualizationRecommendationsAsync(
-        ColumnInfo[] columns,
+        ColumnMetadata[] columns,
         object[] data,
         string? context = null);
 
@@ -54,7 +54,7 @@ public class VisualizationService : IVisualizationService
         _cacheService = cacheService;
     }
 
-    public async Task<VisualizationConfig> GenerateVisualizationConfigAsync(string query, ColumnInfo[] columns, object[] data)
+    public async Task<VisualizationConfig> GenerateVisualizationConfigAsync(string query, ColumnMetadata[] columns, object[] data)
     {
         try
         {
@@ -96,7 +96,7 @@ public class VisualizationService : IVisualizationService
         }
     }
 
-    public async Task<VisualizationConfig[]> GenerateMultipleVisualizationOptionsAsync(string query, ColumnInfo[] columns, object[] data)
+    public async Task<VisualizationConfig[]> GenerateMultipleVisualizationOptionsAsync(string query, ColumnMetadata[] columns, object[] data)
     {
         try
         {
@@ -181,7 +181,7 @@ public class VisualizationService : IVisualizationService
         return optimizedConfig;
     }
 
-    public bool IsVisualizationSuitableForData(string visualizationType, ColumnInfo[] columns, int rowCount)
+    public bool IsVisualizationSuitableForData(string visualizationType, ColumnMetadata[] columns, int rowCount)
     {
         var dataAnalysis = AnalyzeDataCharacteristics(columns, Array.Empty<object>());
         dataAnalysis.RowCount = rowCount;
@@ -198,7 +198,7 @@ public class VisualizationService : IVisualizationService
         };
     }
 
-    public async Task<InteractiveVisualizationConfig> GenerateInteractiveVisualizationAsync(string query, ColumnInfo[] columns, object[] data)
+    public async Task<InteractiveVisualizationConfig> GenerateInteractiveVisualizationAsync(string query, ColumnMetadata[] columns, object[] data)
     {
         var baseConfig = await GenerateVisualizationConfigAsync(query, columns, data);
         var dataAnalysis = AnalyzeDataCharacteristics(columns, data);
@@ -217,7 +217,7 @@ public class VisualizationService : IVisualizationService
         return interactiveConfig;
     }
 
-    public async Task<DashboardConfig> GenerateMultiChartDashboardAsync(string query, ColumnInfo[] columns, object[] data)
+    public async Task<DashboardConfig> GenerateMultiChartDashboardAsync(string query, ColumnMetadata[] columns, object[] data)
     {
         try
         {
@@ -246,7 +246,7 @@ public class VisualizationService : IVisualizationService
     // Advanced visualization methods
     public async Task<AdvancedVisualizationConfig> GenerateAdvancedVisualizationAsync(
         string query,
-        ColumnInfo[] columns,
+        ColumnMetadata[] columns,
         object[] data,
         VisualizationPreferences? preferences = null)
     {
@@ -284,7 +284,7 @@ public class VisualizationService : IVisualizationService
 
     public async Task<AdvancedDashboardConfig> GenerateAdvancedDashboardAsync(
         string query,
-        ColumnInfo[] columns,
+        ColumnMetadata[] columns,
         object[] data,
         DashboardPreferences? preferences = null)
     {
@@ -319,7 +319,7 @@ public class VisualizationService : IVisualizationService
     }
 
     public async Task<VisualizationRecommendation[]> GetVisualizationRecommendationsAsync(
-        ColumnInfo[] columns,
+        ColumnMetadata[] columns,
         object[] data,
         string? context = null)
     {
@@ -399,14 +399,14 @@ public class VisualizationService : IVisualizationService
     }
 
     // Helper methods that are missing - need to add them
-    private DataCharacteristics AnalyzeDataCharacteristics(ColumnInfo[] columns, object[] data)
+    private DataCharacteristics AnalyzeDataCharacteristics(ColumnMetadata[] columns, object[] data)
     {
         var analysis = new DataCharacteristics
         {
             RowCount = data.Length,
-            NumericColumns = new List<ColumnInfo>(),
-            CategoricalColumns = new List<ColumnInfo>(),
-            DateTimeColumns = new List<ColumnInfo>(),
+            NumericColumns = new List<ColumnMetadata>(),
+            CategoricalColumns = new List<ColumnMetadata>(),
+            DateTimeColumns = new List<ColumnMetadata>(),
             HasTimeColumn = false
         };
 
@@ -457,7 +457,7 @@ public class VisualizationService : IVisualizationService
         return $"Analysis: {ExtractQuerySubject(query)}";
     }
 
-    private string DetermineXAxis(ColumnInfo[] columns, DataCharacteristics analysis)
+    private string DetermineXAxis(ColumnMetadata[] columns, DataCharacteristics analysis)
     {
         var xColumn = analysis.HasTimeColumn ?
             analysis.DateTimeColumns.First() :
@@ -466,13 +466,13 @@ public class VisualizationService : IVisualizationService
         return xColumn.Name;
     }
 
-    private string DetermineYAxis(ColumnInfo[] columns, DataCharacteristics analysis)
+    private string DetermineYAxis(ColumnMetadata[] columns, DataCharacteristics analysis)
     {
         var yColumn = analysis.NumericColumns.FirstOrDefault() ?? columns.Last();
         return yColumn.Name;
     }
 
-    private string[] DetermineSeries(ColumnInfo[] columns, DataCharacteristics analysis)
+    private string[] DetermineSeries(ColumnMetadata[] columns, DataCharacteristics analysis)
     {
         var series = new List<string>();
 
@@ -530,7 +530,7 @@ public class VisualizationService : IVisualizationService
         return 0.85; // Simplified confidence calculation
     }
 
-    private VisualizationConfig GetFallbackVisualizationConfig(string query, ColumnInfo[] columns, object[] data)
+    private VisualizationConfig GetFallbackVisualizationConfig(string query, ColumnMetadata[] columns, object[] data)
     {
         return new VisualizationConfig
         {
@@ -543,7 +543,7 @@ public class VisualizationService : IVisualizationService
         };
     }
 
-    private VisualizationConfig CreateVisualizationConfig(string type, string title, ColumnInfo[] columns, object[] data, DataCharacteristics analysis)
+    private VisualizationConfig CreateVisualizationConfig(string type, string title, ColumnMetadata[] columns, object[] data, DataCharacteristics analysis)
     {
         return new VisualizationConfig
         {
@@ -577,7 +577,7 @@ public class VisualizationService : IVisualizationService
         return features;
     }
 
-    private FilterConfig[] GenerateSmartFilters(ColumnInfo[] columns, object[] data)
+    private FilterConfig[] GenerateSmartFilters(ColumnMetadata[] columns, object[] data)
     {
         var filters = new List<FilterConfig>();
 
@@ -835,8 +835,8 @@ public class VisualizationService : IVisualizationService
 public class DataCharacteristics
 {
     public int RowCount { get; set; }
-    public List<ColumnInfo> NumericColumns { get; set; } = new();
-    public List<ColumnInfo> CategoricalColumns { get; set; } = new();
-    public List<ColumnInfo> DateTimeColumns { get; set; } = new();
+    public List<ColumnMetadata> NumericColumns { get; set; } = new();
+    public List<ColumnMetadata> CategoricalColumns { get; set; } = new();
+    public List<ColumnMetadata> DateTimeColumns { get; set; } = new();
     public bool HasTimeColumn { get; set; }
 }

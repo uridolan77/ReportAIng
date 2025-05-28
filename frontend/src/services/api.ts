@@ -417,6 +417,33 @@ export class ApiService {
     const response = await api.get('/health');
     return response.data;
   }
+
+  static async healthCheck(checkType: 'database' | 'api' | 'cache'): Promise<any> {
+    const response = await api.get(`/health/${checkType}`);
+    return response.data;
+  }
+
+  // Favorites
+  static async addToFavorites(query: { query: string; timestamp: string; description: string }): Promise<any> {
+    const response = await api.post('/api/query/favorites', query);
+    return response.data;
+  }
+
+  static async getFavorites(): Promise<any[]> {
+    const response = await api.get('/api/query/favorites');
+    return response.data;
+  }
+
+  // Cache Management
+  static async clearCache(pattern?: string): Promise<any> {
+    const response = await api.delete('/api/cache/clear', { params: { pattern } });
+    return response.data;
+  }
+
+  static async getCacheMetrics(): Promise<any> {
+    const response = await api.get('/api/cache/metrics');
+    return response.data;
+  }
 }
 
 export default api;

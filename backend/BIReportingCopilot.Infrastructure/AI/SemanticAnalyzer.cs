@@ -36,7 +36,7 @@ public class SemanticAnalyzer : ISemanticAnalyzer
         _configuration = configuration;
         _logger = logger;
         _cacheService = cacheService;
-        _isConfigured = !string.IsNullOrEmpty(configuration["OpenAI:ApiKey"]) || 
+        _isConfigured = !string.IsNullOrEmpty(configuration["OpenAI:ApiKey"]) ||
                        !string.IsNullOrEmpty(configuration["AzureOpenAI:ApiKey"]);
     }
 
@@ -63,13 +63,13 @@ public class SemanticAnalyzer : ISemanticAnalyzer
 
             // Extract entities using pattern matching
             analysis.Entities = await ExtractEntitiesAsync(naturalLanguageQuery);
-            
+
             // Extract keywords
             analysis.Keywords = ExtractKeywords(naturalLanguageQuery);
-            
+
             // Classify intent
             analysis.Intent = await ClassifyIntentAsync(naturalLanguageQuery);
-            
+
             // Calculate confidence based on entity recognition and pattern matching
             analysis.ConfidenceScore = CalculateConfidenceScore(analysis);
 
@@ -202,7 +202,7 @@ public class SemanticAnalyzer : ISemanticAnalyzer
             .ToList();
     }
 
-    public async Task<QueryIntent> ClassifyIntentAsync(string query)
+    public Task<Core.Models.QueryIntent> ClassifyIntentAsync(string query)
     {
         var lowerQuery = query.ToLowerInvariant();
 
@@ -210,31 +210,31 @@ public class SemanticAnalyzer : ISemanticAnalyzer
         if (lowerQuery.Contains("sum") || lowerQuery.Contains("total") || lowerQuery.Contains("count") ||
             lowerQuery.Contains("average") || lowerQuery.Contains("avg") || lowerQuery.Contains("group"))
         {
-            return QueryIntent.Aggregation;
+            return Task.FromResult(Core.Models.QueryIntent.Aggregation);
         }
 
         // Trend intent
         if (lowerQuery.Contains("trend") || lowerQuery.Contains("over time") || lowerQuery.Contains("growth") ||
             lowerQuery.Contains("change") || lowerQuery.Contains("monthly") || lowerQuery.Contains("yearly"))
         {
-            return QueryIntent.Trend;
+            return Task.FromResult(Core.Models.QueryIntent.Trend);
         }
 
         // Comparison intent
         if (lowerQuery.Contains("compare") || lowerQuery.Contains("vs") || lowerQuery.Contains("versus") ||
             lowerQuery.Contains("top") || lowerQuery.Contains("best") || lowerQuery.Contains("highest"))
         {
-            return QueryIntent.Comparison;
+            return Task.FromResult(Core.Models.QueryIntent.Comparison);
         }
 
         // Filtering intent
         if (lowerQuery.Contains("where") || lowerQuery.Contains("filter") || lowerQuery.Contains("only") ||
             lowerQuery.Contains("specific") || lowerQuery.Contains("between"))
         {
-            return QueryIntent.Filtering;
+            return Task.FromResult(Core.Models.QueryIntent.Filtering);
         }
 
-        return QueryIntent.General;
+        return Task.FromResult(Core.Models.QueryIntent.General);
     }
 
     private List<string> ExtractKeywords(string query)
@@ -262,7 +262,7 @@ public class SemanticAnalyzer : ISemanticAnalyzer
         score += Math.Min(0.3, analysis.Entities.Count * 0.05);
 
         // Boost for clear intent
-        if (analysis.Intent != QueryIntent.General)
+        if (analysis.Intent != Core.Models.QueryIntent.General)
             score += 0.2;
 
         // Boost for meaningful keywords
@@ -354,12 +354,12 @@ public class SemanticAnalyzer : ISemanticAnalyzer
         var hash = text.GetHashCode();
         var embedding = new float[384]; // Standard embedding size
         var random = new Random(hash);
-        
+
         for (int i = 0; i < embedding.Length; i++)
         {
             embedding[i] = (float)(random.NextDouble() * 2 - 1); // Range [-1, 1]
         }
-        
+
         return embedding;
     }
 
@@ -384,7 +384,7 @@ public class SemanticAnalyzer : ISemanticAnalyzer
         {
             OriginalQuery = query,
             ProcessedQuery = query,
-            Intent = QueryIntent.General,
+            Intent = Core.Models.QueryIntent.General,
             Entities = new List<SemanticEntity>(),
             Keywords = ExtractKeywords(query),
             ConfidenceScore = 0.3,

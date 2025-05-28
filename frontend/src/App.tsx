@@ -8,6 +8,8 @@ import { Login } from './components/Auth/Login';
 import { useAuthStore } from './stores/authStore';
 import { ErrorService } from './services/errorService';
 import { DevTools } from './components/DevTools/DevTools';
+import { ReactQueryProvider } from './components/Providers/ReactQueryProvider';
+import { StateSyncProvider } from './components/Providers/StateSyncProvider';
 import './App.css';
 
 // Lazy load heavy components
@@ -29,55 +31,59 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <ConfigProvider
-        theme={{
-          algorithm: theme.defaultAlgorithm,
-          token: {
-            colorPrimary: '#1890ff',
-            borderRadius: 6,
-          },
-        }}
-      >
-        <Router>
-          <div className="App">
-            {isAuthenticated ? (
-              <Layout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <Routes>
-                    <Route path="/" element={<QueryInterface />} />
-                    <Route path="/query" element={<QueryInterface />} />
-                    <Route path="/enhanced-query" element={<EnhancedQueryBuilder />} />
-                    <Route path="/ai-profile" element={<UserContextPanel />} />
-                    <Route path="/similarity" element={<QuerySimilarityAnalyzer />} />
-                    <Route
-                      path="/advanced-viz"
-                      element={
-                        <AdvancedVisualizationPanel
-                          data={[]}
-                          columns={[]}
-                          query=""
+    <ReactQueryProvider>
+      <StateSyncProvider>
+        <ErrorBoundary>
+          <ConfigProvider
+            theme={{
+              algorithm: theme.defaultAlgorithm,
+              token: {
+                colorPrimary: '#1890ff',
+                borderRadius: 6,
+              },
+            }}
+          >
+            <Router>
+              <div className="App">
+                {isAuthenticated ? (
+                  <Layout>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Routes>
+                        <Route path="/" element={<QueryInterface />} />
+                        <Route path="/query" element={<QueryInterface />} />
+                        <Route path="/enhanced-query" element={<EnhancedQueryBuilder />} />
+                        <Route path="/ai-profile" element={<UserContextPanel />} />
+                        <Route path="/similarity" element={<QuerySimilarityAnalyzer />} />
+                        <Route
+                          path="/advanced-viz"
+                          element={
+                            <AdvancedVisualizationPanel
+                              data={[]}
+                              columns={[]}
+                              query=""
+                            />
+                          }
                         />
-                      }
-                    />
-                    <Route path="/demo" element={<AdvancedVisualizationDemo />} />
-                    <Route path="/advanced-demo" element={<AdvancedFeaturesDemo />} />
-                    <Route path="/showcase" element={<UltimateShowcase />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
+                        <Route path="/demo" element={<AdvancedVisualizationDemo />} />
+                        <Route path="/advanced-demo" element={<AdvancedFeaturesDemo />} />
+                        <Route path="/showcase" element={<UltimateShowcase />} />
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                      </Routes>
+                    </Suspense>
+                  </Layout>
+                ) : (
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="*" element={<Navigate to="/login" replace />} />
                   </Routes>
-                </Suspense>
-              </Layout>
-            ) : (
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="*" element={<Navigate to="/login" replace />} />
-              </Routes>
-            )}
-            <DevTools />
-          </div>
-        </Router>
-      </ConfigProvider>
-    </ErrorBoundary>
+                )}
+                <DevTools />
+              </div>
+            </Router>
+          </ConfigProvider>
+        </ErrorBoundary>
+      </StateSyncProvider>
+    </ReactQueryProvider>
   );
 };
 

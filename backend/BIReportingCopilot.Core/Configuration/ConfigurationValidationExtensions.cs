@@ -40,9 +40,9 @@ public static class ConfigurationValidationExtensions
             .Validate(ValidateQuerySettings, "Query configuration is invalid")
             .ValidateOnStart();
 
-        // Register and validate security settings
-        services.AddOptions<SecuritySettings>()
-            .Bind(configuration.GetSection(SecuritySettings.SectionName))
+        // Register and validate authentication settings
+        services.AddOptions<AuthenticationSettings>()
+            .Bind(configuration.GetSection(AuthenticationSettings.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
@@ -183,7 +183,7 @@ public static class ConfigurationValidationExtensions
             }
 
             configuration.GetValidatedSection<QuerySettings>(QuerySettings.SectionName);
-            configuration.GetValidatedSection<SecuritySettings>(SecuritySettings.SectionName);
+            configuration.GetValidatedSection<AuthenticationSettings>(AuthenticationSettings.SectionName);
             configuration.GetValidatedSection<CacheSettings>(CacheSettings.SectionName);
             configuration.GetValidatedSection<BackgroundJobSettings>(BackgroundJobSettings.SectionName);
 

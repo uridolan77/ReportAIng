@@ -73,7 +73,7 @@ public class QueryClassifier : IQueryClassifier
             // Cache the result
             await _cacheService.SetAsync(cacheKey, classification, TimeSpan.FromMinutes(30));
 
-            _logger.LogDebug("Query classified as {Category} with {Complexity} complexity", 
+            _logger.LogDebug("Query classified as {Category} with {Complexity} complexity",
                 classification.Category, classification.Complexity);
 
             return classification;
@@ -214,7 +214,7 @@ public class QueryClassifier : IQueryClassifier
     public async Task<bool> RequiresJoinAsync(string query, SchemaMetadata schema)
     {
         var lowerQuery = query.ToLowerInvariant();
-        
+
         // Direct join keywords
         if (lowerQuery.Contains("join") || lowerQuery.Contains("inner") || lowerQuery.Contains("left") || lowerQuery.Contains("right"))
         {
@@ -222,9 +222,9 @@ public class QueryClassifier : IQueryClassifier
         }
 
         // Multiple table references
-        var tableCount = schema.Tables.Count(table => 
+        var tableCount = schema.Tables.Count(table =>
             lowerQuery.Contains(table.Name.ToLowerInvariant()));
-        
+
         return tableCount > 1;
     }
 
@@ -254,16 +254,16 @@ public class QueryClassifier : IQueryClassifier
         // Score based on semantic analysis
         switch (semanticAnalysis.Intent)
         {
-            case QueryIntent.Aggregation:
+            case Core.Models.QueryIntent.Aggregation:
                 scores[QueryCategory.Aggregation] += 3;
                 break;
-            case QueryIntent.Trend:
+            case Core.Models.QueryIntent.Trend:
                 scores[QueryCategory.Trend] += 3;
                 break;
-            case QueryIntent.Comparison:
+            case Core.Models.QueryIntent.Comparison:
                 scores[QueryCategory.Comparison] += 3;
                 break;
-            case QueryIntent.Filtering:
+            case Core.Models.QueryIntent.Filtering:
                 scores[QueryCategory.Filtering] += 3;
                 break;
         }
@@ -353,21 +353,21 @@ public class QueryClassifier : IQueryClassifier
         var lowerQuery = query.ToLowerInvariant();
 
         // Time-based queries suggest line charts
-        if (semanticAnalysis.Intent == QueryIntent.Trend || 
+        if (semanticAnalysis.Intent == Core.Models.QueryIntent.Trend ||
             lowerQuery.Contains("over time") || lowerQuery.Contains("monthly") || lowerQuery.Contains("yearly"))
         {
             return VisualizationType.LineChart;
         }
 
         // Aggregation queries suggest bar charts
-        if (semanticAnalysis.Intent == QueryIntent.Aggregation ||
+        if (semanticAnalysis.Intent == Core.Models.QueryIntent.Aggregation ||
             lowerQuery.Contains("group by") || lowerQuery.Contains("sum") || lowerQuery.Contains("count"))
         {
             return VisualizationType.BarChart;
         }
 
         // Comparison queries suggest bar charts
-        if (semanticAnalysis.Intent == QueryIntent.Comparison ||
+        if (semanticAnalysis.Intent == Core.Models.QueryIntent.Comparison ||
             lowerQuery.Contains("top") || lowerQuery.Contains("compare"))
         {
             return VisualizationType.BarChart;
@@ -388,7 +388,7 @@ public class QueryClassifier : IQueryClassifier
         var confidence = 0.5; // Base confidence
 
         // Boost for clear semantic intent
-        if (semanticAnalysis.Intent != QueryIntent.General)
+        if (semanticAnalysis.Intent != Core.Models.QueryIntent.General)
             confidence += 0.2;
 
         // Boost for recognized entities
@@ -414,7 +414,7 @@ public class QueryClassifier : IQueryClassifier
             suggestions.Add("Add WHERE clause or LIMIT to reduce result set size");
         }
 
-        if (semanticAnalysis.Intent == QueryIntent.Aggregation && !query.ToLowerInvariant().Contains("group by"))
+        if (semanticAnalysis.Intent == Core.Models.QueryIntent.Aggregation && !query.ToLowerInvariant().Contains("group by"))
         {
             suggestions.Add("Consider using GROUP BY for aggregation queries");
         }

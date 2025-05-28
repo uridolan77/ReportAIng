@@ -83,7 +83,7 @@ public class EnhancedSqlValidator : ISqlQueryValidator
         // Set final security level
         result.SecurityLevel = DetermineSecurityLevel(result);
 
-        _logger.LogInformation("SQL validation completed. Risk Score: {RiskScore}, Security Level: {SecurityLevel}", 
+        _logger.LogInformation("SQL validation completed. Risk Score: {RiskScore}, Security Level: {SecurityLevel}",
             result.RiskScore, result.SecurityLevel);
 
         return result;
@@ -226,40 +226,165 @@ public class EnhancedSqlValidator : ISqlQueryValidator
 
         return SecurityLevel.Safe;
     }
+
+    // Implement ISqlQueryValidator interface methods
+    async Task<SqlValidationResult> ISqlQueryValidator.ValidateAsync(string sql)
+    {
+        var enhancedResult = await ValidateQueryAsync(sql);
+
+        return new SqlValidationResult
+        {
+            IsValid = enhancedResult.IsValid,
+            SecurityLevel = enhancedResult.SecurityLevel,
+            Errors = enhancedResult.Issues.Where(i => i.Severity >= 8).Select(i => i.Message).ToList(),
+            Warnings = enhancedResult.Issues.Where(i => i.Severity < 8).Select(i => i.Message).ToList()
+        };
+    }
+
+    public bool IsSelectOnlyQuery(string sql)
+    {
+        var trimmed = sql.Trim();
+        if (!trimmed.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var upperSql = sql.ToUpperInvariant();
+        var statementKeywords = new[] { "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER", "TRUNCATE" };
+
+        return !statementKeywords.Any(keyword =>
+            Regex.IsMatch(upperSql, $@"\b{keyword}\b", RegexOptions.IgnoreCase));
+    }
+
+    public bool ContainsDangerousKeywords(string sql)
+    {
+        var upperSql = sql.ToUpperInvariant();
+        var dangerousKeywords = new[] {
+            "DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE", "TRUNCATE",
+            "EXEC", "EXECUTE", "SP_", "XP_", "OPENROWSET", "OPENDATASOURCE",
+            "BULK", "BACKUP", "RESTORE", "SHUTDOWN", "RECONFIGURE"
+        };
+
+        return dangerousKeywords.Any(keyword =>
+            Regex.IsMatch(upperSql, $@"\b{keyword}\b", RegexOptions.IgnoreCase));
+    }
+
+    public bool HasValidSyntax(string sql)
+    {
+        try
+        {
+            var openParens = sql.Count(c => c == '(');
+            var closeParens = sql.Count(c => c == ')');
+            if (openParens != closeParens)
+                return false;
+
+            var singleQuotes = sql.Count(c => c == '\'');
+            if (singleQuotes % 2 != 0)
+                return false;
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public bool ValidateParameterizedQuery(string sql, Dictionary<string, object> parameters)
+    {
+        if (parameters == null || !parameters.Any())
+            return true;
+
+        foreach (var param in parameters)
+        {
+            if (!IsValidParameterName(param.Key))
+                return false;
+            if (param.Value != null && ContainsSuspiciousContent(param.Value.ToString() ?? ""))
+                return false;
+        }
+
+        return true;
+    }
+
+    public SqlValidationResult ValidateQueryStructure(string sql)
+    {
+        var result = new SqlValidationResult();
+
+        try
+        {
+            var trimmedSql = sql.Trim();
+
+            if (!trimmedSql.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
+            {
+                result.Errors.Add("Query must start with SELECT");
+                result.SecurityLevel = SecurityLevel.Blocked;
+                return result;
+            }
+
+            if (!HasBalancedParentheses(sql))
+            {
+                result.Errors.Add("Query has unbalanced parentheses");
+                result.SecurityLevel = SecurityLevel.Dangerous;
+            }
+
+            if (!HasBalancedQuotes(sql))
+            {
+                result.Errors.Add("Query has unbalanced quotes");
+                result.SecurityLevel = SecurityLevel.Dangerous;
+            }
+
+            result.IsValid = !result.Errors.Any();
+        }
+        catch (Exception ex)
+        {
+            result.Errors.Add("Failed to validate query structure");
+            result.SecurityLevel = SecurityLevel.Dangerous;
+        }
+
+        return result;
+    }
+
+    private bool IsValidParameterName(string paramName)
+    {
+        return Regex.IsMatch(paramName, @"^@?[a-zA-Z_][a-zA-Z0-9_]*$");
+    }
+
+    private bool ContainsSuspiciousContent(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return false;
+
+        var suspiciousPatterns = new[]
+        {
+            @"'.*--", @"'.*\bOR\b.*'", @"'.*\bAND\b.*'", @"'.*\bUNION\b.*'",
+            @"<script", @"javascript:", @"vbscript:"
+        };
+
+        return suspiciousPatterns.Any(pattern =>
+            Regex.IsMatch(value, pattern, RegexOptions.IgnoreCase));
+    }
+
+    private bool HasBalancedParentheses(string sql)
+    {
+        var count = 0;
+        foreach (char c in sql)
+        {
+            if (c == '(') count++;
+            else if (c == ')') count--;
+            if (count < 0) return false;
+        }
+        return count == 0;
+    }
+
+    private bool HasBalancedQuotes(string sql)
+    {
+        var singleQuoteCount = 0;
+        for (int i = 0; i < sql.Length; i++)
+        {
+            if (sql[i] == '\'' && (i == 0 || sql[i - 1] != '\\'))
+                singleQuoteCount++;
+        }
+        return singleQuoteCount % 2 == 0;
+    }
 }
 
-/// <summary>
-/// Configuration for SQL validation
-/// </summary>
-public class SqlValidationConfiguration
-{
-    public bool EnableAdvancedPatternDetection { get; set; } = true;
-    public bool EnableMLAnomalyDetection { get; set; } = false;
-    public double RiskThreshold { get; set; } = 0.5;
-    public int MaxQueryLength { get; set; } = 10000;
-    public bool AllowStoredProcedures { get; set; } = false;
-    public bool AllowDynamicSql { get; set; } = false;
-}
-
-/// <summary>
-/// Security levels for SQL queries
-/// </summary>
-public enum SecurityLevel
-{
-    Safe,
-    Warning,
-    Blocked
-}
-
-/// <summary>
-/// Result of SQL validation
-/// </summary>
-public class SqlValidationResult
-{
-    public bool IsValid { get; set; }
-    public SecurityLevel SecurityLevel { get; set; }
-    public List<string> Errors { get; set; } = new();
-    public List<string> Warnings { get; set; } = new();
-    public double RiskScore { get; set; }
-    public DateTime ValidationTime { get; set; }
-}
+// Duplicate classes removed - they are defined in SqlQueryValidator.cs
+// This file contains the enhanced implementation

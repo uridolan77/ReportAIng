@@ -47,11 +47,11 @@ public class AdaptiveAIService : IAIService
         {
             // Get learning insights for this type of query
             var learningInsights = await _learningEngine.GetLearningInsightsAsync(prompt);
-            
+
             // Optimize the prompt based on historical feedback
             var optimizedPrompt = await _promptOptimizer.OptimizePromptAsync(prompt, learningInsights);
-            
-            _logger.LogInformation("Generating SQL with adaptive learning. Original prompt length: {OriginalLength}, Optimized: {OptimizedLength}", 
+
+            _logger.LogInformation("Generating SQL with adaptive learning. Original prompt length: {OriginalLength}, Optimized: {OptimizedLength}",
                 prompt.Length, optimizedPrompt.Length);
 
             // Generate SQL using the optimized prompt
@@ -82,7 +82,7 @@ public class AdaptiveAIService : IAIService
             var enhancedConfidence = await _learningEngine.EnhanceConfidenceWithLearningAsync(
                 baseConfidence, naturalLanguageQuery, generatedSQL, learningInsights);
 
-            _logger.LogDebug("Confidence enhanced from {BaseConfidence:P2} to {EnhancedConfidence:P2}", 
+            _logger.LogDebug("Confidence enhanced from {BaseConfidence:P2} to {EnhancedConfidence:P2}",
                 baseConfidence, enhancedConfidence);
 
             return enhancedConfidence;
@@ -107,7 +107,7 @@ public class AdaptiveAIService : IAIService
             // Combine and rank suggestions
             var combinedSuggestions = baseSuggestions.Concat(personalizedSuggestions).Distinct().ToArray();
 
-            _logger.LogInformation("Generated {BaseCount} base suggestions, {PersonalizedCount} personalized suggestions", 
+            _logger.LogInformation("Generated {BaseCount} base suggestions, {PersonalizedCount} personalized suggestions",
                 baseSuggestions.Length, personalizedSuggestions.Length);
 
             return combinedSuggestions;
@@ -125,7 +125,7 @@ public class AdaptiveAIService : IAIService
         {
             // Get learning context for insight generation
             var insightContext = await _learningEngine.GetInsightContextAsync(query);
-            
+
             // Generate enhanced insight
             var baseInsight = await _innerService.GenerateInsightAsync(query, data);
             var enhancedInsight = await _promptOptimizer.EnhanceInsightAsync(baseInsight, insightContext, data);
@@ -139,7 +139,7 @@ public class AdaptiveAIService : IAIService
         }
     }
 
-    public async Task<string> GenerateVisualizationConfigAsync(string query, ColumnInfo[] columns, object[] data)
+    public async Task<string> GenerateVisualizationConfigAsync(string query, ColumnMetadata[] columns, object[] data)
     {
         return await _innerService.GenerateVisualizationConfigAsync(query, columns, data);
     }

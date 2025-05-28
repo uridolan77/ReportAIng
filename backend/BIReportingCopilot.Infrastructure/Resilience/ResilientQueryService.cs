@@ -3,7 +3,7 @@ using Polly;
 using Polly.CircuitBreaker;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 
 namespace BIReportingCopilot.Infrastructure.Resilience;
 
@@ -289,9 +289,46 @@ public class ResilientQueryService : IQueryService
             Success = false,
             ErrorMessage = message,
             Data = new object[0],
-            Columns = new ColumnInfo[0],
+            Columns = new ColumnMetadata[0],
             ExecutionTimeMs = 0,
             RowCount = 0
         };
+    }
+
+    // Missing IQueryService methods
+    public async Task InvalidateQueryCacheAsync(string pattern)
+    {
+        return await _retryPolicy.ExecuteAsync(async () =>
+        {
+            _logger.LogInformation("Invalidating query cache with pattern: {Pattern}", pattern);
+            await _innerService.InvalidateQueryCacheAsync(pattern);
+        });
+    }
+
+    public async Task<ProcessedQuery> ProcessAdvancedQueryAsync(string query, string userId, Core.Models.QueryContext? context = null)
+    {
+        return await _retryPolicy.ExecuteAsync(async () =>
+        {
+            _logger.LogInformation("Processing advanced query for user {UserId}: {Query}", userId, query);
+            return await _innerService.ProcessAdvancedQueryAsync(query, userId, context);
+        });
+    }
+
+    public async Task<double> CalculateSemanticSimilarityAsync(string query1, string query2)
+    {
+        return await _retryPolicy.ExecuteAsync(async () =>
+        {
+            _logger.LogDebug("Calculating semantic similarity between queries");
+            return await _innerService.CalculateSemanticSimilarityAsync(query1, query2);
+        });
+    }
+
+    public async Task<List<ProcessedQuery>> FindSimilarQueriesAsync(string query, string userId, int limit = 5)
+    {
+        return await _retryPolicy.ExecuteAsync(async () =>
+        {
+            _logger.LogDebug("Finding similar queries for user {UserId} with limit {Limit}", userId, limit);
+            return await _innerService.FindSimilarQueriesAsync(query, userId, limit);
+        });
     }
 }

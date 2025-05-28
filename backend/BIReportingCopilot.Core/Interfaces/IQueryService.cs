@@ -33,7 +33,7 @@ public interface IAIService
     Task<string> GenerateSQLAsync(string prompt);
     Task<string> GenerateSQLAsync(string prompt, CancellationToken cancellationToken);
     Task<string> GenerateInsightAsync(string query, object[] data);
-    Task<string> GenerateVisualizationConfigAsync(string query, ColumnInfo[] columns, object[] data);
+    Task<string> GenerateVisualizationConfigAsync(string query, ColumnMetadata[] columns, object[] data);
     Task<double> CalculateConfidenceScoreAsync(string naturalLanguageQuery, string generatedSQL);
     Task<string[]> GenerateQuerySuggestionsAsync(string context, SchemaMetadata schema);
     Task<bool> ValidateQueryIntentAsync(string naturalLanguageQuery);

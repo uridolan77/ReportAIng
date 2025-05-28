@@ -75,13 +75,13 @@ public class FeedbackLearningEngine
             {
                 OriginalPrompt = originalPrompt,
                 GeneratedSQL = generatedSQL,
-                Rating = feedback.Rating,
+                Rating = FeedbackLearningEngineExtensions.GetRatingFromFeedback(feedback),
                 FeedbackText = feedback.Comments,
                 UserId = userId,
                 Timestamp = DateTime.UtcNow,
                 PromptPattern = ExtractPromptPattern(originalPrompt),
                 SQLPattern = ExtractSQLPattern(generatedSQL),
-                IsSuccessful = feedback.Rating >= 4 // Consider 4+ stars as successful
+                IsSuccessful = FeedbackLearningEngineExtensions.GetRatingFromFeedback(feedback) >= 4 // Consider 4+ stars as successful
             };
 
             _context.AIFeedbackEntries.Add(feedbackEntry);
@@ -90,8 +90,8 @@ public class FeedbackLearningEngine
             // Update learning patterns
             await UpdateLearningPatternsAsync(feedbackEntry);
 
-            _logger.LogInformation("Processed feedback: Rating {Rating}, Pattern: {Pattern}", 
-                feedback.Rating, feedbackEntry.PromptPattern);
+            _logger.LogInformation("Processed feedback: Rating {Rating}, Pattern: {Pattern}",
+                FeedbackLearningEngineExtensions.GetRatingFromFeedback(feedback), feedbackEntry.PromptPattern);
         }
         catch (Exception ex)
         {
@@ -103,15 +103,15 @@ public class FeedbackLearningEngine
     /// Enhance confidence score based on learning
     /// </summary>
     public async Task<double> EnhanceConfidenceWithLearningAsync(
-        double baseConfidence, 
-        string prompt, 
-        string generatedSQL, 
+        double baseConfidence,
+        string prompt,
+        string generatedSQL,
         LearningInsights insights)
     {
         try
         {
             var enhancement = insights.ConfidenceModifier;
-            
+
             // Additional factors
             if (insights.SampleCount > 10)
             {
@@ -129,7 +129,7 @@ public class FeedbackLearningEngine
             }
 
             var enhancedConfidence = Math.Max(0.0, Math.Min(1.0, baseConfidence + enhancement));
-            
+
             return enhancedConfidence;
         }
         catch (Exception ex)
@@ -183,7 +183,7 @@ public class FeedbackLearningEngine
         try
         {
             var queryPattern = ExtractSQLPattern(query);
-            
+
             var relatedInsights = await _context.AIFeedbackEntries
                 .Where(f => f.SQLPattern == queryPattern && f.IsSuccessful)
                 .Select(f => f.FeedbackText)
@@ -251,7 +251,7 @@ public class FeedbackLearningEngine
     private async Task<List<string>> FindSimilarPromptsAsync(string prompt)
     {
         var pattern = ExtractPromptPattern(prompt);
-        
+
         return await _context.AIFeedbackEntries
             .Where(f => f.PromptPattern == pattern)
             .Select(f => f.OriginalPrompt)
@@ -273,7 +273,7 @@ public class FeedbackLearningEngine
     {
         // Simplified pattern extraction - categorize by key words
         var lowerPrompt = prompt.ToLower();
-        
+
         if (lowerPrompt.Contains("show") || lowerPrompt.Contains("display") || lowerPrompt.Contains("list"))
             return "display_query";
         if (lowerPrompt.Contains("count") || lowerPrompt.Contains("total") || lowerPrompt.Contains("number"))
@@ -288,14 +288,14 @@ public class FeedbackLearningEngine
             return "join_query";
         if (lowerPrompt.Contains("filter") || lowerPrompt.Contains("where") || lowerPrompt.Contains("condition"))
             return "filter_query";
-        
+
         return "general_query";
     }
 
     private string ExtractSQLPattern(string sql)
     {
         var upperSQL = sql.ToUpper();
-        
+
         if (upperSQL.Contains("GROUP BY"))
             return "grouped_query";
         if (upperSQL.Contains("JOIN"))
@@ -308,7 +308,7 @@ public class FeedbackLearningEngine
             return "ordered_query";
         if (upperSQL.Contains("HAVING"))
             return "having_query";
-        
+
         return "simple_query";
     }
 
@@ -339,7 +339,7 @@ public class FeedbackLearningEngine
     private List<string> GenerateOptimizationSuggestions(List<AIFeedbackEntry> feedbackData)
     {
         var suggestions = new List<string>();
-        
+
         var successfulQueries = feedbackData.Where(f => f.IsSuccessful).ToList();
         var unsuccessfulQueries = feedbackData.Where(f => !f.IsSuccessful).ToList();
 
@@ -367,7 +367,7 @@ public class FeedbackLearningEngine
             .Where(w => w.Length > 3)
             .Where(w => !IsStopWord(w))
             .ToList();
-        
+
         return words;
     }
 
@@ -458,4 +458,25 @@ public class AIFeedbackEntry
     public string PromptPattern { get; set; } = string.Empty;
     public string SQLPattern { get; set; } = string.Empty;
     public bool IsSuccessful { get; set; }
+}
+
+/// <summary>
+/// Extension methods for FeedbackLearningEngine
+/// </summary>
+public static class FeedbackLearningEngineExtensions
+{
+    /// <summary>
+    /// Convert QueryFeedback to rating (since Core.Models.QueryFeedback doesn't have Rating property)
+    /// </summary>
+    public static int GetRatingFromFeedback(QueryFeedback feedback)
+    {
+        // Map feedback string to rating
+        return feedback.Feedback?.ToLowerInvariant() switch
+        {
+            "positive" => 5,
+            "neutral" => 3,
+            "negative" => 1,
+            _ => 3 // Default to neutral
+        };
+    }
 }

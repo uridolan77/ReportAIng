@@ -12,7 +12,7 @@ public interface IAdvancedVisualizationService
     /// </summary>
     Task<AdvancedVisualizationConfig> GenerateAdvancedVisualizationAsync(
         string query,
-        ColumnInfo[] columns,
+        ColumnMetadata[] columns,
         object[] data,
         VisualizationPreferences? preferences = null);
 
@@ -21,7 +21,7 @@ public interface IAdvancedVisualizationService
     /// </summary>
     Task<AdvancedDashboardConfig> GenerateAdvancedDashboardAsync(
         string query,
-        ColumnInfo[] columns,
+        ColumnMetadata[] columns,
         object[] data,
         DashboardPreferences? preferences = null);
 
@@ -29,7 +29,7 @@ public interface IAdvancedVisualizationService
     /// Get AI-powered visualization recommendations based on data characteristics
     /// </summary>
     Task<VisualizationRecommendation[]> GetVisualizationRecommendationsAsync(
-        ColumnInfo[] columns,
+        ColumnMetadata[] columns,
         object[] data,
         string? context = null);
 
@@ -135,10 +135,10 @@ public class AdvancedDataCharacteristics
 {
     public int RowCount { get; set; }
     public int ColumnCount { get; set; }
-    public List<ColumnInfo> NumericColumns { get; set; } = new();
-    public List<ColumnInfo> CategoricalColumns { get; set; } = new();
-    public List<ColumnInfo> DateTimeColumns { get; set; } = new();
-    public List<ColumnInfo> TextColumns { get; set; } = new();
+    public List<ColumnMetadata> NumericColumns { get; set; } = new();
+    public List<ColumnMetadata> CategoricalColumns { get; set; } = new();
+    public List<ColumnMetadata> DateTimeColumns { get; set; } = new();
+    public List<ColumnMetadata> TextColumns { get; set; } = new();
     public bool HasNulls { get; set; }
     public double DataDensity { get; set; }
     public Dictionary<string, int> Cardinality { get; set; } = new();

@@ -120,7 +120,7 @@ Keep insights concise and actionable.";
         }
     }
 
-    public async Task<string> GenerateVisualizationConfigAsync(string query, ColumnInfo[] columns, object[] data)
+    public async Task<string> GenerateVisualizationConfigAsync(string query, ColumnMetadata[] columns, object[] data)
     {
         try
         {

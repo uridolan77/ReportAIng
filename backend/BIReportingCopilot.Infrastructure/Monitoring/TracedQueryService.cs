@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Infrastructure.AI;
 
 namespace BIReportingCopilot.Infrastructure.Monitoring;
 
@@ -16,7 +18,7 @@ public class TracedQueryService : IQueryService
     private static readonly ActivitySource ActivitySource = new("BIReportingCopilot.QueryService");
 
     public TracedQueryService(
-        IQueryService innerService, 
+        IQueryService innerService,
         ILogger<TracedQueryService> logger,
         IMetricsCollector metricsCollector)
     {
@@ -39,7 +41,7 @@ public class TracedQueryService : IQueryService
         {
             // Add trace tags
             activity?.SetTag("user.id", userId);
-            activity?.SetTag("query.type", request.Type?.ToString() ?? "Unknown");
+            activity?.SetTag("query.session", request.SessionId ?? "Unknown");
             activity?.SetTag("query.question", request.Question);
             activity?.SetTag("query.max_rows", request.Options?.MaxRows ?? 0);
 
@@ -52,23 +54,23 @@ public class TracedQueryService : IQueryService
             // Add response tags
             activity?.SetTag("query.success", response.Success);
             activity?.SetTag("query.duration_ms", response.ExecutionTimeMs);
-            activity?.SetTag("query.row_count", response.RowCount);
+            activity?.SetTag("query.row_count", response.Result?.Metadata?.RowCount ?? 0);
 
             if (!response.Success)
             {
                 activity?.SetTag("error", true);
-                activity?.SetTag("error.message", response.ErrorMessage);
+                activity?.SetTag("error.message", response.Error);
             }
 
             // Record metrics
             _metricsCollector.RecordQueryExecution(
-                request.Type?.ToString() ?? "Unknown",
+                "query",
                 stopwatch.ElapsedMilliseconds,
                 response.Success,
-                response.RowCount);
+                response.Result?.Metadata?.RowCount ?? 0);
 
             _logger.LogInformation("Query processed successfully for user {UserId} in {Duration}ms, returned {RowCount} rows",
-                userId, stopwatch.ElapsedMilliseconds, response.RowCount);
+                userId, stopwatch.ElapsedMilliseconds, response.Result?.Metadata?.RowCount ?? 0);
 
             return response;
         }
@@ -129,19 +131,19 @@ public class TracedQueryService : IQueryService
         try
         {
             activity?.SetTag("user.id", userId);
-            activity?.SetTag("feedback.rating", feedback.Rating);
-            activity?.SetTag("feedback.type", feedback.Type?.ToString() ?? "Unknown");
+            activity?.SetTag("feedback.rating", FeedbackLearningEngineExtensions.GetRatingFromFeedback(feedback));
+            activity?.SetTag("feedback.type", feedback.Feedback ?? "Unknown");
 
             var result = await _innerService.SubmitFeedbackAsync(feedback, userId);
 
             stopwatch.Stop();
             activity?.SetTag("success", result);
 
-            _metricsCollector.IncrementCounter("feedback_submissions", new()
+            _metricsCollector.IncrementCounter("feedback_submissions", new TagList
             {
                 ["user_id"] = userId,
                 ["success"] = result.ToString().ToLower(),
-                ["rating"] = feedback.Rating.ToString()
+                ["rating"] = FeedbackLearningEngineExtensions.GetRatingFromFeedback(feedback).ToString()
             });
 
             return result;
@@ -274,17 +276,17 @@ public class TracedQueryService : IQueryService
         try
         {
             activity?.SetTag("query.question", request.Question);
-            activity?.SetTag("query.type", request.Type?.ToString() ?? "Unknown");
+            activity?.SetTag("query.session", request.SessionId ?? "Unknown");
 
             var result = await _innerService.ValidateQueryAsync(request);
 
             stopwatch.Stop();
             activity?.SetTag("validation.result", result);
 
-            _metricsCollector.IncrementCounter("query_validations", new()
+            _metricsCollector.IncrementCounter("query_validations", new TagList
             {
                 ["result"] = result.ToString().ToLower(),
-                ["type"] = request.Type?.ToString() ?? "Unknown"
+                ["session"] = request.SessionId ?? "Unknown"
             });
 
             return result;
@@ -351,6 +353,135 @@ public class TracedQueryService : IQueryService
             activity?.SetTag("error.message", ex.Message);
 
             _metricsCollector.RecordError("query_optimization", "TracedQueryService", ex);
+            throw;
+        }
+    }
+
+    // Missing IQueryService methods
+    public async Task InvalidateQueryCacheAsync(string pattern)
+    {
+        using var activity = ActivitySource.StartActivity("InvalidateQueryCache");
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            activity?.SetTag("cache.pattern", pattern);
+
+            await _innerService.InvalidateQueryCacheAsync(pattern);
+
+            stopwatch.Stop();
+            _metricsCollector.RecordCacheOperation("invalidate", true, stopwatch.ElapsedMilliseconds);
+
+            _logger.LogInformation("Invalidated query cache with pattern: {Pattern}", pattern);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetTag("error", true);
+            activity?.SetTag("error.message", ex.Message);
+
+            _metricsCollector.RecordError("cache_invalidate", "TracedQueryService", ex);
+            _logger.LogError(ex, "Error invalidating query cache with pattern: {Pattern}", pattern);
+            throw;
+        }
+    }
+
+    public async Task<ProcessedQuery> ProcessAdvancedQueryAsync(string query, string userId, Core.Models.QueryContext? context = null)
+    {
+        using var activity = ActivitySource.StartActivity("ProcessAdvancedQuery");
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            activity?.SetTag("user.id", userId);
+            activity?.SetTag("query.text", query);
+            activity?.SetTag("context.provided", context != null);
+
+            _logger.LogInformation("Processing advanced query for user {UserId}: {Query}", userId, query);
+
+            var result = await _innerService.ProcessAdvancedQueryAsync(query, userId, context);
+
+            stopwatch.Stop();
+            activity?.SetTag("query.success", result != null);
+            activity?.SetTag("query.confidence", result?.Confidence ?? 0);
+
+            _metricsCollector.RecordQueryExecution("advanced", stopwatch.ElapsedMilliseconds, result != null);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetTag("error", true);
+            activity?.SetTag("error.message", ex.Message);
+
+            _metricsCollector.RecordError("advanced_query", "TracedQueryService", ex);
+            _logger.LogError(ex, "Error processing advanced query for user {UserId}: {Query}", userId, query);
+            throw;
+        }
+    }
+
+    public async Task<double> CalculateSemanticSimilarityAsync(string query1, string query2)
+    {
+        using var activity = ActivitySource.StartActivity("CalculateSemanticSimilarity");
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            activity?.SetTag("query1.length", query1.Length);
+            activity?.SetTag("query2.length", query2.Length);
+
+            var similarity = await _innerService.CalculateSemanticSimilarityAsync(query1, query2);
+
+            stopwatch.Stop();
+            activity?.SetTag("similarity.score", similarity);
+
+            _metricsCollector.RecordQueryExecution("similarity", stopwatch.ElapsedMilliseconds, true);
+
+            return similarity;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetTag("error", true);
+            activity?.SetTag("error.message", ex.Message);
+
+            _metricsCollector.RecordError("semantic_similarity", "TracedQueryService", ex);
+            _logger.LogError(ex, "Error calculating semantic similarity");
+            throw;
+        }
+    }
+
+    public async Task<List<ProcessedQuery>> FindSimilarQueriesAsync(string query, string userId, int limit = 5)
+    {
+        using var activity = ActivitySource.StartActivity("FindSimilarQueries");
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            activity?.SetTag("user.id", userId);
+            activity?.SetTag("query.text", query);
+            activity?.SetTag("limit", limit);
+
+            var result = await _innerService.FindSimilarQueriesAsync(query, userId, limit);
+
+            stopwatch.Stop();
+            activity?.SetTag("result.count", result.Count);
+
+            _metricsCollector.RecordQueryExecution("similar_queries", stopwatch.ElapsedMilliseconds, true, result.Count);
+
+            _logger.LogDebug("Found {Count} similar queries for user {UserId}", result.Count, userId);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetTag("error", true);
+            activity?.SetTag("error.message", ex.Message);
+
+            _metricsCollector.RecordError("similar_queries", "TracedQueryService", ex);
+            _logger.LogError(ex, "Error finding similar queries for user {UserId}", userId);
             throw;
         }
     }

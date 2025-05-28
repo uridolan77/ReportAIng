@@ -1,5 +1,6 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Configuration;
+using BIReportingCopilot.Core.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
@@ -66,7 +67,7 @@ public class AIProviderFactory : IAIProviderFactory
             {
                 return provider;
             }
-            
+
             _logger.LogWarning("Provider {ProviderName} is not properly configured", providerName);
             throw new InvalidOperationException($"Provider {providerName} is not properly configured");
         }
@@ -114,7 +115,7 @@ internal class FallbackAIProvider : IAIProvider
     public Task<string> GenerateCompletionAsync(string prompt, AIOptions options, CancellationToken cancellationToken)
     {
         _logger.LogWarning("Using fallback AI provider - returning mock response");
-        
+
         // Return a basic SQL query based on common patterns in the prompt
         if (prompt.ToLower().Contains("select") || prompt.ToLower().Contains("show") || prompt.ToLower().Contains("get"))
         {
@@ -125,8 +126,8 @@ internal class FallbackAIProvider : IAIProvider
     }
 
     public async IAsyncEnumerable<StreamingResponse> GenerateCompletionStreamAsync(
-        string prompt, 
-        AIOptions options, 
+        string prompt,
+        AIOptions options,
         CancellationToken cancellationToken = default)
     {
         _logger.LogWarning("Using fallback AI provider for streaming - returning mock response");

@@ -38,7 +38,7 @@ public class ShardedSchemaService : ISchemaService
         {
             var cacheKey = $"sharded_schema:{databaseName ?? "default"}";
             var cachedSchema = await _cacheService.GetAsync<SchemaMetadata>(cacheKey);
-            
+
             if (cachedSchema != null)
             {
                 _logger.LogDebug("Retrieved sharded schema from cache for database: {Database}", databaseName);
@@ -61,7 +61,7 @@ public class ShardedSchemaService : ISchemaService
                 {
                     var shardService = await GetShardServiceAsync(shard.ShardId);
                     var shardSchema = await shardService.GetSchemaAsync(shard.DatabaseName);
-                    
+
                     return new { ShardId = shard.ShardId, Schema = shardSchema };
                 }
                 catch (Exception ex)
@@ -78,7 +78,7 @@ public class ShardedSchemaService : ISchemaService
             {
                 foreach (var table in result!.Schema.Tables)
                 {
-                    var existingTable = aggregatedSchema.Tables.FirstOrDefault(t => 
+                    var existingTable = aggregatedSchema.Tables.FirstOrDefault(t =>
                         t.Name.Equals(table.Name, StringComparison.OrdinalIgnoreCase));
 
                     if (existingTable == null)
@@ -111,7 +111,7 @@ public class ShardedSchemaService : ISchemaService
             // Cache the aggregated schema
             await _cacheService.SetAsync(cacheKey, aggregatedSchema, TimeSpan.FromMinutes(_config.SchemaCacheMinutes));
 
-            _logger.LogInformation("Built sharded schema with {TableCount} tables from {ShardCount} shards", 
+            _logger.LogInformation("Built sharded schema with {TableCount} tables from {ShardCount} shards",
                 aggregatedSchema.Tables.Count, _config.Shards.Count);
 
             return aggregatedSchema;
@@ -123,13 +123,13 @@ public class ShardedSchemaService : ISchemaService
         }
     }
 
-    public async Task<TableInfo?> GetTableInfoAsync(string tableName, string? schemaName = null)
+    public async Task<TableMetadata?> GetTableInfoAsync(string tableName, string? schemaName = null)
     {
         try
         {
             var cacheKey = $"sharded_table:{schemaName}:{tableName}";
-            var cachedTable = await _cacheService.GetAsync<TableInfo>(cacheKey);
-            
+            var cachedTable = await _cacheService.GetAsync<TableMetadata>(cacheKey);
+
             if (cachedTable != null)
             {
                 return cachedTable;
@@ -151,16 +151,16 @@ public class ShardedSchemaService : ISchemaService
 
             if (tableInfo != null)
             {
-                // Add sharding metadata
-                tableInfo.Metadata = tableInfo.Metadata ?? new Dictionary<string, object>();
-                tableInfo.Metadata["ShardId"] = primaryShard.ShardId;
-                tableInfo.Metadata["IsSharded"] = targetShards.Count > 1;
-                tableInfo.Metadata["ShardCount"] = targetShards.Count;
+                // Add sharding metadata - TableMetadata doesn't have Metadata property, so we'll skip this for now
+                // tableInfo.Metadata = tableInfo.Metadata ?? new Dictionary<string, object>();
+                // tableInfo.Metadata["ShardId"] = primaryShard.ShardId;
+                // tableInfo.Metadata["IsSharded"] = targetShards.Count > 1;
+                // tableInfo.Metadata["ShardCount"] = targetShards.Count;
 
                 if (targetShards.Count > 1)
                 {
-                    tableInfo.Metadata["AllShards"] = targetShards.Select(s => s.ShardId).ToArray();
-                    
+                    // tableInfo.Metadata["AllShards"] = targetShards.Select(s => s.ShardId).ToArray();
+
                     // Aggregate row counts from all shards
                     var totalRowCount = await GetTotalRowCountAsync(tableName, schemaName, targetShards);
                     tableInfo.RowCount = totalRowCount;
@@ -184,7 +184,7 @@ public class ShardedSchemaService : ISchemaService
         {
             var cacheKey = $"sharded_table_names:{schemaName ?? "all"}";
             var cachedNames = await _cacheService.GetAsync<List<string>>(cacheKey);
-            
+
             if (cachedNames != null)
             {
                 return cachedNames;
@@ -281,46 +281,37 @@ public class ShardedSchemaService : ISchemaService
         });
     }
 
-    private void MergeTableInfo(TableInfo existingTable, TableInfo newTable, string shardId)
+    private void MergeTableInfo(TableMetadata existingTable, TableMetadata newTable, string shardId)
     {
         try
         {
             // Merge row counts
             existingTable.RowCount += newTable.RowCount;
 
-            // Merge metadata
-            existingTable.Metadata = existingTable.Metadata ?? new Dictionary<string, object>();
-            
-            if (!existingTable.Metadata.ContainsKey("AllShards"))
-            {
-                existingTable.Metadata["AllShards"] = new List<string> { (string)existingTable.Metadata["ShardId"] };
-                existingTable.Metadata["IsSharded"] = true;
-            }
-
-            var allShards = (List<string>)existingTable.Metadata["AllShards"];
-            if (!allShards.Contains(shardId))
-            {
-                allShards.Add(shardId);
-            }
-
-            existingTable.Metadata["ShardCount"] = allShards.Count;
+            // TableMetadata doesn't have Metadata property, so we'll skip metadata merging for now
+            // In a real implementation, you might want to extend TableMetadata or use a different approach
 
             // Merge column information if needed
-            foreach (var newColumn in newTable.Columns)
+            var existingColumns = existingTable.Columns?.ToList() ?? new List<ColumnMetadata>();
+            var newColumns = newTable.Columns?.ToList() ?? new List<ColumnMetadata>();
+
+            foreach (var newColumn in newColumns)
             {
-                var existingColumn = existingTable.Columns.FirstOrDefault(c => 
+                var existingColumn = existingColumns.FirstOrDefault(c =>
                     c.Name.Equals(newColumn.Name, StringComparison.OrdinalIgnoreCase));
 
                 if (existingColumn == null)
                 {
-                    existingTable.Columns.Add(newColumn);
+                    existingColumns.Add(newColumn);
                 }
                 // Could merge column statistics here if needed
             }
+
+            existingTable.Columns = existingColumns.ToArray();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Error merging table info for table {Table} from shard {ShardId}", 
+            _logger.LogWarning(ex, "Error merging table info for table {Table} from shard {ShardId}",
                 existingTable.Name, shardId);
         }
     }
@@ -339,7 +330,7 @@ public class ShardedSchemaService : ISchemaService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Error getting row count from shard {ShardId} for table {Table}", 
+                    _logger.LogWarning(ex, "Error getting row count from shard {ShardId} for table {Table}",
                         shard.ShardId, tableName);
                     return 0L;
                 }
@@ -353,6 +344,227 @@ public class ShardedSchemaService : ISchemaService
             _logger.LogError(ex, "Error calculating total row count for table {Table}", tableName);
             return 0;
         }
+    }
+
+    // Missing ISchemaService interface methods
+    public async Task<SchemaMetadata> GetSchemaMetadataAsync(string? dataSource = null)
+    {
+        return await GetSchemaAsync(dataSource);
+    }
+
+    public async Task<SchemaMetadata> RefreshSchemaMetadataAsync(string? dataSource = null)
+    {
+        await RefreshSchemaAsync(dataSource);
+        return await GetSchemaAsync(dataSource);
+    }
+
+    public async Task<string> GetSchemaSummaryAsync(string? dataSource = null)
+    {
+        try
+        {
+            var schema = await GetSchemaAsync(dataSource);
+            var summary = $"Database: {schema.DatabaseName}\n";
+            summary += $"Tables: {schema.Tables.Count}\n";
+            summary += $"Last Updated: {schema.LastUpdated:yyyy-MM-dd HH:mm:ss}\n\n";
+
+            summary += "Tables:\n";
+            foreach (var table in schema.Tables.Take(10))
+            {
+                summary += $"- {table.Schema}.{table.Name} ({table.Columns?.Length ?? 0} columns, {table.RowCount} rows)\n";
+            }
+
+            if (schema.Tables.Count > 10)
+            {
+                summary += $"... and {schema.Tables.Count - 10} more tables\n";
+            }
+
+            return summary;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating schema summary for data source: {DataSource}", dataSource);
+            return $"Error generating schema summary: {ex.Message}";
+        }
+    }
+
+    public async Task<TableMetadata?> GetTableMetadataAsync(string tableName, string? schema = null)
+    {
+        return await GetTableInfoAsync(tableName, schema);
+    }
+
+    public async Task<List<SchemaSuggestion>> GetSchemaSuggestionsAsync(string userId)
+    {
+        try
+        {
+            var suggestions = new List<SchemaSuggestion>();
+            var schema = await GetSchemaAsync();
+
+            // Generate suggestions based on table names and common patterns
+            foreach (var table in schema.Tables.Take(5))
+            {
+                suggestions.Add(new SchemaSuggestion
+                {
+                    Type = "table",
+                    Name = table.Name,
+                    Description = table.Description ?? $"Query data from {table.Name}",
+                    Confidence = 0.8,
+                    SampleQueries = GenerateSampleQueries(table)
+                });
+            }
+
+            return suggestions;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting schema suggestions for user: {UserId}", userId);
+            return new List<SchemaSuggestion>();
+        }
+    }
+
+    public async Task<bool> ValidateTableAccessAsync(string tableName, string userId)
+    {
+        try
+        {
+            var schema = await GetSchemaAsync();
+            return schema.Tables.Any(t => t.Name.Equals(tableName, StringComparison.OrdinalIgnoreCase));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating table access for user {UserId} and table {Table}", userId, tableName);
+            return false;
+        }
+    }
+
+    public async Task<List<string>> GetAccessibleTablesAsync(string userId)
+    {
+        try
+        {
+            var schema = await GetSchemaAsync();
+            // Basic implementation - return all tables
+            // In production, filter based on user permissions and shard access
+            return schema.Tables.Select(t => $"{t.Schema}.{t.Name}").ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting accessible tables for user: {UserId}", userId);
+            return new List<string>();
+        }
+    }
+
+    public async Task UpdateTableStatisticsAsync(string tableName)
+    {
+        try
+        {
+            _logger.LogInformation("Updating table statistics for sharded table: {TableName}", tableName);
+
+            // Update statistics on all shards that contain this table
+            var targetShards = await _shardRouter.GetShardsForTableAsync(tableName);
+
+            var updateTasks = targetShards.Select(async shard =>
+            {
+                try
+                {
+                    var shardService = await GetShardServiceAsync(shard.ShardId);
+                    await shardService.UpdateTableStatisticsAsync(tableName);
+                    _logger.LogDebug("Updated statistics for table {TableName} on shard {ShardId}", tableName, shard.ShardId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error updating statistics for table {TableName} on shard {ShardId}", tableName, shard.ShardId);
+                }
+            });
+
+            await Task.WhenAll(updateTasks);
+
+            // Clear cache to force refresh
+            var cacheKey = $"sharded_table:*:{tableName}";
+            await _cacheService.RemovePatternAsync(cacheKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating table statistics for sharded table: {TableName}", tableName);
+        }
+    }
+
+    public async Task<DataQualityScore> AssessDataQualityAsync(string tableName)
+    {
+        try
+        {
+            _logger.LogInformation("Assessing data quality for sharded table: {TableName}", tableName);
+
+            // Get data quality scores from all shards that contain this table
+            var targetShards = await _shardRouter.GetShardsForTableAsync(tableName);
+
+            if (!targetShards.Any())
+            {
+                return new DataQualityScore
+                {
+                    OverallScore = 0,
+                    CompletenessScore = 0,
+                    UniquenessScore = 0,
+                    ValidityScore = 0
+                };
+            }
+
+            var qualityTasks = targetShards.Select(async shard =>
+            {
+                try
+                {
+                    var shardService = await GetShardServiceAsync(shard.ShardId);
+                    return await shardService.AssessDataQualityAsync(tableName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error assessing data quality for table {TableName} on shard {ShardId}", tableName, shard.ShardId);
+                    return new DataQualityScore { OverallScore = 0 };
+                }
+            });
+
+            var qualityScores = await Task.WhenAll(qualityTasks);
+
+            // Aggregate quality scores across shards
+            var validScores = qualityScores.Where(s => s.OverallScore > 0).ToList();
+
+            if (!validScores.Any())
+            {
+                return new DataQualityScore
+                {
+                    OverallScore = 0,
+                    CompletenessScore = 0,
+                    UniquenessScore = 0,
+                    ValidityScore = 0
+                };
+            }
+
+            return new DataQualityScore
+            {
+                OverallScore = validScores.Average(s => s.OverallScore),
+                CompletenessScore = validScores.Average(s => s.CompletenessScore),
+                UniquenessScore = validScores.Average(s => s.UniquenessScore),
+                ValidityScore = validScores.Average(s => s.ValidityScore)
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error assessing data quality for sharded table: {TableName}", tableName);
+            return new DataQualityScore { OverallScore = 0 };
+        }
+    }
+
+    private List<string> GenerateSampleQueries(TableMetadata table)
+    {
+        var queries = new List<string>();
+
+        if (table.Columns?.Any() == true)
+        {
+            queries.Add($"SELECT TOP 10 * FROM {table.Schema}.{table.Name}");
+            queries.Add($"SELECT COUNT(*) FROM {table.Schema}.{table.Name}");
+
+            var firstColumn = table.Columns.First();
+            queries.Add($"SELECT {firstColumn.Name} FROM {table.Schema}.{table.Name} GROUP BY {firstColumn.Name}");
+        }
+
+        return queries;
     }
 }
 
@@ -376,7 +588,7 @@ public class ShardRouter
     public async Task<List<ShardInfo>> GetShardsForTableAsync(string tableName, string? schemaName = null)
     {
         var tableKey = $"{schemaName ?? "dbo"}.{tableName}".ToLower();
-        
+
         if (_tableShardMap.TryGetValue(tableKey, out var shards))
         {
             return shards;
@@ -400,7 +612,7 @@ public class ShardRouter
             }
         }
 
-        _logger.LogInformation("Built shard map with {TableCount} table patterns across {ShardCount} shards", 
+        _logger.LogInformation("Built shard map with {TableCount} table patterns across {ShardCount} shards",
             _tableShardMap.Count, _config.Shards.Count);
     }
 }

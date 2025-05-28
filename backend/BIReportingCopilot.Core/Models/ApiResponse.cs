@@ -71,7 +71,7 @@ public class ApiResponse<T>
     /// <summary>
     /// Create an error response
     /// </summary>
-    public static ApiResponse<T> Error(string code, string message, object? details = null)
+    public static ApiResponse<T> CreateError(string code, string message, object? details = null)
     {
         return new ApiResponse<T>
         {
@@ -143,22 +143,7 @@ public class ApiResponse : ApiResponse<object>
         };
     }
 
-    /// <summary>
-    /// Create an error response
-    /// </summary>
-    public static new ApiResponse Error(string code, string message, object? details = null)
-    {
-        return new ApiResponse
-        {
-            Success = false,
-            Error = new ApiError
-            {
-                Code = code,
-                Message = message,
-                Details = details
-            }
-        };
-    }
+
 }
 
 /// <summary>
@@ -286,7 +271,7 @@ public class PagedApiResponse<T> : ApiResponse<IEnumerable<T>>
         long? processingTimeMs = null)
     {
         var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-        
+
         return new PagedApiResponse<T>
         {
             Success = true,
@@ -364,7 +349,7 @@ public static class ApiResponseExtensions
     /// </summary>
     public static ApiResponse<T> NotFound<T>(string resource, string identifier)
     {
-        return ApiResponse<T>.Error(
+        return ApiResponse<T>.CreateError(
             ApiErrorCodes.NOT_FOUND,
             $"{resource} with identifier '{identifier}' was not found");
     }
@@ -374,7 +359,7 @@ public static class ApiResponseExtensions
     /// </summary>
     public static ApiResponse<T> Unauthorized<T>(string? message = null)
     {
-        return ApiResponse<T>.Error(
+        return ApiResponse<T>.CreateError(
             ApiErrorCodes.UNAUTHORIZED,
             message ?? "Authentication is required to access this resource");
     }
@@ -384,7 +369,7 @@ public static class ApiResponseExtensions
     /// </summary>
     public static ApiResponse<T> Forbidden<T>(string? message = null)
     {
-        return ApiResponse<T>.Error(
+        return ApiResponse<T>.CreateError(
             ApiErrorCodes.FORBIDDEN,
             message ?? "You do not have permission to access this resource");
     }
@@ -394,7 +379,7 @@ public static class ApiResponseExtensions
     /// </summary>
     public static ApiResponse<T> RateLimited<T>(TimeSpan retryAfter)
     {
-        return ApiResponse<T>.Error(
+        return ApiResponse<T>.CreateError(
             ApiErrorCodes.RATE_LIMITED,
             "Rate limit exceeded. Please try again later.",
             new { RetryAfterSeconds = (int)retryAfter.TotalSeconds });
@@ -405,7 +390,7 @@ public static class ApiResponseExtensions
     /// </summary>
     public static ApiResponse<T> ServiceUnavailable<T>(string? message = null)
     {
-        return ApiResponse<T>.Error(
+        return ApiResponse<T>.CreateError(
             ApiErrorCodes.SERVICE_UNAVAILABLE,
             message ?? "The service is temporarily unavailable. Please try again later.");
     }

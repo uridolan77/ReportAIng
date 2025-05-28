@@ -119,11 +119,11 @@ public class QuerySettings
 }
 
 /// <summary>
-/// Security configuration with validation
+/// Authentication and authorization configuration with validation
 /// </summary>
-public class SecuritySettings
+public class AuthenticationSettings
 {
-    public const string SectionName = "Security";
+    public const string SectionName = "Authentication";
 
     [Range(1, 10, ErrorMessage = "Max login attempts must be between 1 and 10")]
     public int MaxLoginAttempts { get; set; } = 5;

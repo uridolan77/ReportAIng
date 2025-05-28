@@ -6,19 +6,8 @@ using System.Text.Json;
 
 namespace BIReportingCopilot.Infrastructure.Security;
 
-public interface IRateLimitingService
-{
-    Task<RateLimitResult> CheckRateLimitAsync(string userId, string endpoint);
-    Task<RateLimitResult> CheckRateLimitAsync(string key, int maxRequests, TimeSpan window);
-}
-
-public class RateLimitResult
-{
-    public bool IsAllowed { get; set; }
-    public int RequestsRemaining { get; set; }
-    public TimeSpan RetryAfter { get; set; }
-    public string? Message { get; set; }
-}
+// Interface and result class are defined in DistributedRateLimitingService.cs
+// This file contains the basic implementation
 
 public class RateLimitingService : IRateLimitingService
 {
@@ -81,9 +70,12 @@ public class RateLimitingService : IRateLimitingService
                 return new RateLimitResult
                 {
                     IsAllowed = false,
-                    RequestsRemaining = 0,
+                    RequestCount = rateLimitData.Requests.Count,
+                    RequestLimit = maxRequests,
+                    WindowSizeSeconds = (int)window.TotalSeconds,
+                    ResetTime = DateTimeOffset.UtcNow.Add(retryAfter),
                     RetryAfter = retryAfter > TimeSpan.Zero ? retryAfter : TimeSpan.Zero,
-                    Message = $"Rate limit exceeded. Try again in {retryAfter.TotalSeconds:F0} seconds."
+                    PolicyName = "default"
                 };
             }
 
@@ -99,8 +91,12 @@ public class RateLimitingService : IRateLimitingService
             return new RateLimitResult
             {
                 IsAllowed = true,
-                RequestsRemaining = remaining,
-                RetryAfter = TimeSpan.Zero
+                RequestCount = rateLimitData.Requests.Count,
+                RequestLimit = maxRequests,
+                WindowSizeSeconds = (int)window.TotalSeconds,
+                ResetTime = DateTimeOffset.UtcNow.Add(window),
+                RetryAfter = TimeSpan.Zero,
+                PolicyName = "default"
             };
         }
         catch (Exception ex)
@@ -111,9 +107,12 @@ public class RateLimitingService : IRateLimitingService
             return new RateLimitResult
             {
                 IsAllowed = true,
-                RequestsRemaining = maxRequests,
+                RequestCount = 0,
+                RequestLimit = maxRequests,
+                WindowSizeSeconds = (int)window.TotalSeconds,
+                ResetTime = DateTimeOffset.UtcNow.Add(window),
                 RetryAfter = TimeSpan.Zero,
-                Message = "Rate limiting temporarily unavailable"
+                PolicyName = "error"
             };
         }
     }
@@ -175,6 +174,116 @@ public class RateLimitingService : IRateLimitingService
             _logger.LogError(ex, "Failed to save rate limit data for key {Key}", cacheKey);
         }
     }
+
+    // Missing IRateLimitingService methods
+    public async Task<RateLimitResult> CheckRateLimitAsync(string identifier, RateLimitPolicy policy, CancellationToken cancellationToken = default)
+    {
+        var key = $"{identifier}:{policy.Name}";
+        var window = TimeSpan.FromSeconds(policy.WindowSizeSeconds);
+
+        var result = await CheckRateLimitAsync(key, policy.RequestLimit, window);
+
+        // Convert to the expected RateLimitResult format
+        return new RateLimitResult
+        {
+            IsAllowed = result.IsAllowed,
+            RequestCount = result.RequestCount,
+            RequestLimit = policy.RequestLimit,
+            WindowSizeSeconds = policy.WindowSizeSeconds,
+            ResetTime = DateTimeOffset.UtcNow.Add(result.RetryAfter),
+            RetryAfter = result.RetryAfter,
+            PolicyName = policy.Name
+        };
+    }
+
+    public async Task<Dictionary<string, RateLimitResult>> CheckMultipleRateLimitsAsync(
+        string identifier,
+        IEnumerable<RateLimitPolicy> policies,
+        CancellationToken cancellationToken = default)
+    {
+        var results = new Dictionary<string, RateLimitResult>();
+
+        foreach (var policy in policies)
+        {
+            var result = await CheckRateLimitAsync(identifier, policy, cancellationToken);
+            results[policy.Name] = result;
+
+            // If any policy is violated, we can stop checking others
+            if (!result.IsAllowed)
+            {
+                break;
+            }
+        }
+
+        return results;
+    }
+
+    public async Task<RateLimitStatistics> GetRateLimitStatisticsAsync(string identifier, string policyName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var cacheKey = $"rate_limit:{identifier}:{policyName}";
+            var rateLimitData = await GetRateLimitDataAsync(cacheKey);
+
+            return new RateLimitStatistics
+            {
+                Identifier = identifier,
+                PolicyName = policyName,
+                CurrentWindowRequests = rateLimitData.Requests.Count,
+                WindowStartTime = rateLimitData.Requests.Any() ? DateTimeOffset.FromFileTime(rateLimitData.Requests.Min().ToFileTime()) : DateTimeOffset.UtcNow,
+                WindowEndTime = DateTimeOffset.UtcNow,
+                RequestTimestamps = rateLimitData.Requests.Select(r => DateTimeOffset.FromFileTime(r.ToFileTime())).ToList(),
+                AverageRequestsPerMinute = rateLimitData.Requests.Count > 0 ? rateLimitData.Requests.Count / Math.Max(1, (DateTime.UtcNow - rateLimitData.Requests.Min()).TotalMinutes) : 0,
+                PeakRequestsPerMinute = rateLimitData.Requests.Count
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting rate limit statistics for {Identifier} on policy {Policy}", identifier, policyName);
+            return new RateLimitStatistics
+            {
+                Identifier = identifier,
+                PolicyName = policyName,
+                CurrentWindowRequests = 0,
+                WindowStartTime = DateTimeOffset.UtcNow,
+                WindowEndTime = DateTimeOffset.UtcNow,
+                RequestTimestamps = new List<DateTimeOffset>(),
+                AverageRequestsPerMinute = 0,
+                PeakRequestsPerMinute = 0
+            };
+        }
+    }
+
+    public async Task ResetRateLimitAsync(string identifier, string policyName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var cacheKey = $"rate_limit:{identifier}:{policyName}";
+            await _cache.RemoveAsync(cacheKey);
+
+            _logger.LogInformation("Reset rate limit for {Identifier} on policy {Policy}", identifier, policyName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting rate limit for {Identifier} on policy {Policy}", identifier, policyName);
+        }
+    }
+
+    public async Task<bool> IsRateLimitActiveAsync(string identifier, string policyName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var cacheKey = $"rate_limit:{identifier}:{policyName}";
+            var rateLimitData = await GetRateLimitDataAsync(cacheKey);
+
+            return rateLimitData.Requests.Any();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking if rate limit is active for {Identifier} on policy {Policy}", identifier, policyName);
+            return false;
+        }
+    }
 }
 
 public class RateLimitData
@@ -211,7 +320,8 @@ public class UserBasedRateLimitingMiddleware
         var userId = GetUserId(context);
         var endpoint = GetEndpointName(context.Request.Path);
 
-        var result = await _rateLimitingService.CheckRateLimitAsync(userId, endpoint);
+        var policy = new RateLimitPolicy { Name = endpoint, RequestLimit = 100, WindowSizeSeconds = 3600 };
+        var result = await _rateLimitingService.CheckRateLimitAsync(userId, policy);
 
         if (!result.IsAllowed)
         {
@@ -221,7 +331,7 @@ public class UserBasedRateLimitingMiddleware
             await context.Response.WriteAsync(JsonSerializer.Serialize(new
             {
                 error = "Rate limit exceeded",
-                message = result.Message,
+                message = $"Rate limit exceeded for {result.PolicyName}. {result.RequestCount}/{result.RequestLimit} requests used.",
                 retryAfter = result.RetryAfter.TotalSeconds
             }));
 
@@ -229,7 +339,8 @@ public class UserBasedRateLimitingMiddleware
         }
 
         // Add rate limit headers
-        context.Response.Headers["X-RateLimit-Remaining"] = result.RequestsRemaining.ToString();
+        var remaining = result.RequestLimit - result.RequestCount;
+        context.Response.Headers["X-RateLimit-Remaining"] = remaining.ToString();
 
         await _next(context);
     }

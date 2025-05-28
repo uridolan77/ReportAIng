@@ -14,9 +14,11 @@ public class QueryResponseBuilder
         _response = new QueryResponse
         {
             Success = true,
-            Data = new List<Dictionary<string, object>>(),
-            Columns = new List<ColumnInfo>(),
-            Metadata = new Dictionary<string, object>(),
+            Result = new QueryResult
+            {
+                Data = new object[0],
+                Metadata = new QueryMetadata()
+            },
             Timestamp = DateTime.UtcNow
         };
     }
@@ -35,27 +37,35 @@ public class QueryResponseBuilder
     /// </summary>
     public QueryResponseBuilder WithGeneratedSQL(string sql)
     {
-        _response.GeneratedSQL = sql;
+        _response.Sql = sql;
         return this;
     }
 
     /// <summary>
     /// Set the data rows
     /// </summary>
-    public QueryResponseBuilder WithData(IEnumerable<Dictionary<string, object>> data)
+    public QueryResponseBuilder WithData(object[] data)
     {
-        _response.Data = data.ToList();
-        _response.RowCount = _response.Data.Count;
+        if (_response.Result == null)
+            _response.Result = new QueryResult();
+
+        _response.Result.Data = data;
+        _response.Result.Metadata.RowCount = data?.Length ?? 0;
         return this;
     }
 
     /// <summary>
-    /// Add a single data row
+    /// Add a single data row (for dictionary-based data)
     /// </summary>
     public QueryResponseBuilder AddDataRow(Dictionary<string, object> row)
     {
-        _response.Data.Add(row);
-        _response.RowCount = _response.Data.Count;
+        if (_response.Result == null)
+            _response.Result = new QueryResult();
+
+        var currentData = _response.Result.Data?.ToList() ?? new List<object>();
+        currentData.Add(row);
+        _response.Result.Data = currentData.ToArray();
+        _response.Result.Metadata.RowCount = currentData.Count;
         return this;
     }
 
@@ -67,16 +77,20 @@ public class QueryResponseBuilder
         var dictionary = row.GetType()
             .GetProperties()
             .ToDictionary(prop => prop.Name, prop => prop.GetValue(row) ?? DBNull.Value);
-        
+
         return AddDataRow(dictionary);
     }
 
     /// <summary>
     /// Set the column information
     /// </summary>
-    public QueryResponseBuilder WithColumns(IEnumerable<ColumnInfo> columns)
+    public QueryResponseBuilder WithColumns(IEnumerable<ColumnMetadata> columns)
     {
-        _response.Columns = columns.ToList();
+        if (_response.Result == null)
+            _response.Result = new QueryResult();
+
+        _response.Result.Metadata.Columns = columns.ToArray();
+        _response.Result.Metadata.ColumnCount = _response.Result.Metadata.Columns.Length;
         return this;
     }
 
@@ -85,12 +99,18 @@ public class QueryResponseBuilder
     /// </summary>
     public QueryResponseBuilder AddColumn(string name, string dataType, bool isNullable = true)
     {
-        _response.Columns.Add(new ColumnInfo
+        if (_response.Result == null)
+            _response.Result = new QueryResult();
+
+        var currentColumns = _response.Result.Metadata.Columns?.ToList() ?? new List<ColumnMetadata>();
+        currentColumns.Add(new ColumnMetadata
         {
             Name = name,
             DataType = dataType,
             IsNullable = isNullable
         });
+        _response.Result.Metadata.Columns = currentColumns.ToArray();
+        _response.Result.Metadata.ColumnCount = currentColumns.Count;
         return this;
     }
 
@@ -99,7 +119,11 @@ public class QueryResponseBuilder
     /// </summary>
     public QueryResponseBuilder WithExecutionTime(long milliseconds)
     {
-        _response.ExecutionTimeMs = milliseconds;
+        _response.ExecutionTimeMs = (int)milliseconds;
+        if (_response.Result != null)
+        {
+            _response.Result.Metadata.ExecutionTimeMs = (int)milliseconds;
+        }
         return this;
     }
 
@@ -108,7 +132,12 @@ public class QueryResponseBuilder
     /// </summary>
     public QueryResponseBuilder WithExecutionTime(TimeSpan duration)
     {
-        _response.ExecutionTimeMs = (long)duration.TotalMilliseconds;
+        var ms = (int)duration.TotalMilliseconds;
+        _response.ExecutionTimeMs = ms;
+        if (_response.Result != null)
+        {
+            _response.Result.Metadata.ExecutionTimeMs = ms;
+        }
         return this;
     }
 
@@ -117,7 +146,7 @@ public class QueryResponseBuilder
     /// </summary>
     public QueryResponseBuilder WithConfidenceScore(double score)
     {
-        _response.ConfidenceScore = Math.Max(0.0, Math.Min(1.0, score));
+        _response.Confidence = Math.Max(0.0, Math.Min(1.0, score));
         return this;
     }
 
@@ -127,7 +156,12 @@ public class QueryResponseBuilder
     public QueryResponseBuilder WithError(string errorMessage)
     {
         _response.Success = false;
-        _response.ErrorMessage = errorMessage;
+        _response.Error = errorMessage;
+        if (_response.Result != null)
+        {
+            _response.Result.IsSuccessful = false;
+            _response.Result.Metadata.Error = errorMessage;
+        }
         return this;
     }
 
@@ -137,77 +171,49 @@ public class QueryResponseBuilder
     public QueryResponseBuilder WithError(Exception exception)
     {
         _response.Success = false;
-        _response.ErrorMessage = exception.Message;
-        return this;
-    }
-
-    /// <summary>
-    /// Add metadata
-    /// </summary>
-    public QueryResponseBuilder WithMetadata(string key, object value)
-    {
-        _response.Metadata[key] = value;
-        return this;
-    }
-
-    /// <summary>
-    /// Add multiple metadata entries
-    /// </summary>
-    public QueryResponseBuilder WithMetadata(Dictionary<string, object> metadata)
-    {
-        foreach (var kvp in metadata)
+        _response.Error = exception.Message;
+        if (_response.Result != null)
         {
-            _response.Metadata[kvp.Key] = kvp.Value;
+            _response.Result.IsSuccessful = false;
+            _response.Result.Metadata.Error = exception.Message;
         }
-        return this;
-    }
-
-    /// <summary>
-    /// Set the explanation
-    /// </summary>
-    public QueryResponseBuilder WithExplanation(string explanation)
-    {
-        _response.Explanation = explanation;
         return this;
     }
 
     /// <summary>
     /// Set the visualization config
     /// </summary>
-    public QueryResponseBuilder WithVisualizationConfig(string config)
+    public QueryResponseBuilder WithVisualizationConfig(VisualizationConfig config)
     {
-        _response.VisualizationConfig = config;
+        _response.Visualization = config;
         return this;
     }
 
     /// <summary>
-    /// Set cache information
+    /// Set suggestions
     /// </summary>
-    public QueryResponseBuilder WithCacheInfo(bool fromCache, string? cacheKey = null, DateTime? expiresAt = null)
+    public QueryResponseBuilder WithSuggestions(params string[] suggestions)
     {
-        WithMetadata("FromCache", fromCache);
-        if (cacheKey != null)
-            WithMetadata("CacheKey", cacheKey);
-        if (expiresAt.HasValue)
-            WithMetadata("CacheExpiresAt", expiresAt.Value);
+        _response.Suggestions = suggestions;
         return this;
     }
 
     /// <summary>
-    /// Set query suggestions
+    /// Set cached flag
     /// </summary>
-    public QueryResponseBuilder WithSuggestions(IEnumerable<string> suggestions)
+    public QueryResponseBuilder WithCached(bool cached)
     {
-        WithMetadata("Suggestions", suggestions.ToList());
+        _response.Cached = cached;
         return this;
     }
 
     /// <summary>
     /// Mark as cached response
     /// </summary>
-    public QueryResponseBuilder FromCache(string cacheKey, DateTime expiresAt)
+    public QueryResponseBuilder FromCache()
     {
-        return WithCacheInfo(true, cacheKey, expiresAt);
+        _response.Cached = true;
+        return this;
     }
 
     /// <summary>
@@ -215,7 +221,8 @@ public class QueryResponseBuilder
     /// </summary>
     public QueryResponseBuilder Fresh()
     {
-        return WithCacheInfo(false);
+        _response.Cached = false;
+        return this;
     }
 
     /// <summary>
@@ -224,19 +231,19 @@ public class QueryResponseBuilder
     public QueryResponse Build()
     {
         // Validate the response
-        if (_response.Success && string.IsNullOrEmpty(_response.GeneratedSQL))
+        if (_response.Success && string.IsNullOrEmpty(_response.Sql))
         {
-            throw new InvalidOperationException("Successful response must have GeneratedSQL");
+            throw new InvalidOperationException("Successful response must have SQL");
         }
 
-        if (!_response.Success && string.IsNullOrEmpty(_response.ErrorMessage))
+        if (!_response.Success && string.IsNullOrEmpty(_response.Error))
         {
-            throw new InvalidOperationException("Failed response must have ErrorMessage");
+            throw new InvalidOperationException("Failed response must have Error message");
         }
 
-        // Set final metadata
-        _response.Metadata["BuildTimestamp"] = DateTime.UtcNow;
-        
+        // Set final timestamp
+        _response.Timestamp = DateTime.UtcNow;
+
         return _response;
     }
 
@@ -276,7 +283,7 @@ public class SchemaMetadataBuilder
     {
         _schema = new SchemaMetadata
         {
-            Tables = new List<TableInfo>(),
+            Tables = new List<TableMetadata>(),
             LastUpdated = DateTime.UtcNow
         };
     }
@@ -293,7 +300,7 @@ public class SchemaMetadataBuilder
     /// <summary>
     /// Add a table
     /// </summary>
-    public SchemaMetadataBuilder AddTable(TableInfo table)
+    public SchemaMetadataBuilder AddTable(TableMetadata table)
     {
         _schema.Tables.Add(table);
         return this;
@@ -302,9 +309,9 @@ public class SchemaMetadataBuilder
     /// <summary>
     /// Add a table using builder
     /// </summary>
-    public SchemaMetadataBuilder AddTable(Action<TableInfoBuilder> configure)
+    public SchemaMetadataBuilder AddTable(Action<TableMetadataBuilder> configure)
     {
-        var builder = new TableInfoBuilder();
+        var builder = new TableMetadataBuilder();
         configure(builder);
         _schema.Tables.Add(builder.Build());
         return this;
@@ -313,7 +320,7 @@ public class SchemaMetadataBuilder
     /// <summary>
     /// Add multiple tables
     /// </summary>
-    public SchemaMetadataBuilder WithTables(IEnumerable<TableInfo> tables)
+    public SchemaMetadataBuilder WithTables(IEnumerable<TableMetadata> tables)
     {
         _schema.Tables.AddRange(tables);
         return this;
@@ -343,25 +350,25 @@ public class SchemaMetadataBuilder
 }
 
 /// <summary>
-/// Builder for creating TableInfo objects
+/// Builder for creating TableMetadata objects
 /// </summary>
-public class TableInfoBuilder
+public class TableMetadataBuilder
 {
-    private readonly TableInfo _table;
+    private readonly TableMetadata _table;
 
-    public TableInfoBuilder()
+    public TableMetadataBuilder()
     {
-        _table = new TableInfo
+        _table = new TableMetadata
         {
-            Columns = new List<ColumnInfo>(),
-            Metadata = new Dictionary<string, object>()
+            Columns = new List<ColumnMetadata>(),
+            LastUpdated = DateTime.UtcNow
         };
     }
 
     /// <summary>
     /// Set the table name
     /// </summary>
-    public TableInfoBuilder WithName(string name)
+    public TableMetadataBuilder WithName(string name)
     {
         _table.Name = name;
         return this;
@@ -370,7 +377,7 @@ public class TableInfoBuilder
     /// <summary>
     /// Set the schema name
     /// </summary>
-    public TableInfoBuilder WithSchema(string schema)
+    public TableMetadataBuilder WithSchema(string schema)
     {
         _table.Schema = schema;
         return this;
@@ -379,7 +386,7 @@ public class TableInfoBuilder
     /// <summary>
     /// Set the description
     /// </summary>
-    public TableInfoBuilder WithDescription(string description)
+    public TableMetadataBuilder WithDescription(string description)
     {
         _table.Description = description;
         return this;
@@ -388,7 +395,7 @@ public class TableInfoBuilder
     /// <summary>
     /// Set the row count
     /// </summary>
-    public TableInfoBuilder WithRowCount(long rowCount)
+    public TableMetadataBuilder WithRowCount(long rowCount)
     {
         _table.RowCount = rowCount;
         return this;
@@ -397,7 +404,7 @@ public class TableInfoBuilder
     /// <summary>
     /// Add a column
     /// </summary>
-    public TableInfoBuilder AddColumn(ColumnInfo column)
+    public TableMetadataBuilder AddColumn(ColumnMetadata column)
     {
         _table.Columns.Add(column);
         return this;
@@ -406,9 +413,9 @@ public class TableInfoBuilder
     /// <summary>
     /// Add a column using builder
     /// </summary>
-    public TableInfoBuilder AddColumn(Action<ColumnInfoBuilder> configure)
+    public TableMetadataBuilder AddColumn(Action<ColumnMetadataBuilder> configure)
     {
-        var builder = new ColumnInfoBuilder();
+        var builder = new ColumnMetadataBuilder();
         configure(builder);
         _table.Columns.Add(builder.Build());
         return this;
@@ -417,9 +424,9 @@ public class TableInfoBuilder
     /// <summary>
     /// Add a simple column
     /// </summary>
-    public TableInfoBuilder AddColumn(string name, string dataType, bool isNullable = true, bool isPrimaryKey = false)
+    public TableMetadataBuilder AddColumn(string name, string dataType, bool isNullable = true, bool isPrimaryKey = false)
     {
-        _table.Columns.Add(new ColumnInfo
+        _table.Columns.Add(new ColumnMetadata
         {
             Name = name,
             DataType = dataType,
@@ -430,18 +437,9 @@ public class TableInfoBuilder
     }
 
     /// <summary>
-    /// Add metadata
+    /// Build the final TableMetadata
     /// </summary>
-    public TableInfoBuilder WithMetadata(string key, object value)
-    {
-        _table.Metadata[key] = value;
-        return this;
-    }
-
-    /// <summary>
-    /// Build the final TableInfo
-    /// </summary>
-    public TableInfo Build()
+    public TableMetadata Build()
     {
         if (string.IsNullOrEmpty(_table.Name))
         {
@@ -453,24 +451,24 @@ public class TableInfoBuilder
 }
 
 /// <summary>
-/// Builder for creating ColumnInfo objects
+/// Builder for creating ColumnMetadata objects
 /// </summary>
-public class ColumnInfoBuilder
+public class ColumnMetadataBuilder
 {
-    private readonly ColumnInfo _column;
+    private readonly ColumnMetadata _column;
 
-    public ColumnInfoBuilder()
+    public ColumnMetadataBuilder()
     {
-        _column = new ColumnInfo
+        _column = new ColumnMetadata
         {
-            SampleValues = new List<string>()
+            SampleValues = new string[0]
         };
     }
 
     /// <summary>
     /// Set the column name
     /// </summary>
-    public ColumnInfoBuilder WithName(string name)
+    public ColumnMetadataBuilder WithName(string name)
     {
         _column.Name = name;
         return this;
@@ -479,7 +477,7 @@ public class ColumnInfoBuilder
     /// <summary>
     /// Set the data type
     /// </summary>
-    public ColumnInfoBuilder WithDataType(string dataType)
+    public ColumnMetadataBuilder WithDataType(string dataType)
     {
         _column.DataType = dataType;
         return this;
@@ -488,7 +486,7 @@ public class ColumnInfoBuilder
     /// <summary>
     /// Set nullable flag
     /// </summary>
-    public ColumnInfoBuilder IsNullable(bool isNullable = true)
+    public ColumnMetadataBuilder IsNullable(bool isNullable = true)
     {
         _column.IsNullable = isNullable;
         return this;
@@ -497,7 +495,7 @@ public class ColumnInfoBuilder
     /// <summary>
     /// Set primary key flag
     /// </summary>
-    public ColumnInfoBuilder IsPrimaryKey(bool isPrimaryKey = true)
+    public ColumnMetadataBuilder IsPrimaryKey(bool isPrimaryKey = true)
     {
         _column.IsPrimaryKey = isPrimaryKey;
         return this;
@@ -506,7 +504,7 @@ public class ColumnInfoBuilder
     /// <summary>
     /// Set the maximum length
     /// </summary>
-    public ColumnInfoBuilder WithMaxLength(int? maxLength)
+    public ColumnMetadataBuilder WithMaxLength(int? maxLength)
     {
         _column.MaxLength = maxLength;
         return this;
@@ -515,7 +513,7 @@ public class ColumnInfoBuilder
     /// <summary>
     /// Set the description
     /// </summary>
-    public ColumnInfoBuilder WithDescription(string description)
+    public ColumnMetadataBuilder WithDescription(string description)
     {
         _column.Description = description;
         return this;
@@ -524,16 +522,16 @@ public class ColumnInfoBuilder
     /// <summary>
     /// Add sample values
     /// </summary>
-    public ColumnInfoBuilder WithSampleValues(params string[] values)
+    public ColumnMetadataBuilder WithSampleValues(params string[] values)
     {
-        _column.SampleValues.AddRange(values);
+        _column.SampleValues = _column.SampleValues.Concat(values).ToArray();
         return this;
     }
 
     /// <summary>
-    /// Build the final ColumnInfo
+    /// Build the final ColumnMetadata
     /// </summary>
-    public ColumnInfo Build()
+    public ColumnMetadata Build()
     {
         if (string.IsNullOrEmpty(_column.Name))
         {

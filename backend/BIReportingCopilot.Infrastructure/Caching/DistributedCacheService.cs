@@ -30,7 +30,7 @@ public class DistributedCacheService : ICacheService, IDisposable
         _database = redis.GetDatabase();
         _logger = logger;
         _config = config.Value;
-        
+
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -45,7 +45,7 @@ public class DistributedCacheService : ICacheService, IDisposable
         {
             var fullKey = GetFullKey(key);
             var cachedValue = await _distributedCache.GetStringAsync(fullKey);
-            
+
             if (string.IsNullOrEmpty(cachedValue))
             {
                 _logger.LogDebug("Cache miss for key: {Key}", key);
@@ -54,10 +54,10 @@ public class DistributedCacheService : ICacheService, IDisposable
 
             var result = JsonSerializer.Deserialize<T>(cachedValue, _jsonOptions);
             _logger.LogDebug("Cache hit for key: {Key}", key);
-            
+
             // Update access time for LRU tracking
             await UpdateAccessTimeAsync(fullKey);
-            
+
             return result;
         }
         catch (Exception ex)
@@ -73,9 +73,9 @@ public class DistributedCacheService : ICacheService, IDisposable
         {
             var fullKey = GetFullKey(key);
             var serializedValue = JsonSerializer.Serialize(value, _jsonOptions);
-            
+
             var options = new DistributedCacheEntryOptions();
-            
+
             if (expiry.HasValue)
             {
                 options.SetAbsoluteExpiration(expiry.Value);
@@ -86,10 +86,10 @@ public class DistributedCacheService : ICacheService, IDisposable
             }
 
             await _distributedCache.SetStringAsync(fullKey, serializedValue, options);
-            
+
             // Store metadata for advanced features
             await StoreMetadataAsync(fullKey, value.GetType().Name, expiry);
-            
+
             _logger.LogDebug("Cached value for key: {Key} with expiry: {Expiry}", key, expiry);
         }
         catch (Exception ex)
@@ -105,7 +105,7 @@ public class DistributedCacheService : ICacheService, IDisposable
             var fullKey = GetFullKey(key);
             await _distributedCache.RemoveAsync(fullKey);
             await RemoveMetadataAsync(fullKey);
-            
+
             _logger.LogDebug("Removed cached value for key: {Key}", key);
         }
         catch (Exception ex)
@@ -150,7 +150,7 @@ public class DistributedCacheService : ICacheService, IDisposable
         {
             var server = _redis.GetServer(_redis.GetEndPoints().First());
             var keys = server.Keys(pattern: $"{_config.KeyPrefix}:*");
-            
+
             var keyArray = keys.ToArray();
             if (keyArray.Length > 0)
             {
@@ -180,16 +180,16 @@ public class DistributedCacheService : ICacheService, IDisposable
             {
                 var fullKey = GetFullKey(item.Key);
                 var serializedValue = JsonSerializer.Serialize(item.Value, _jsonOptions);
-                
+
                 var expiryTime = expiry ?? TimeSpan.FromMinutes(_config.DefaultExpiryMinutes);
-                
+
                 tasks.Add(batch.StringSetAsync(fullKey, serializedValue, expiryTime));
                 tasks.Add(StoreMetadataAsync(fullKey, item.Value.GetType().Name, expiry, batch));
             }
 
             batch.Execute();
             await Task.WhenAll(tasks);
-            
+
             _logger.LogDebug("Set {Count} cache entries in batch", items.Count);
         }
         catch (Exception ex)
@@ -204,24 +204,24 @@ public class DistributedCacheService : ICacheService, IDisposable
     public async Task<Dictionary<string, T?>> GetManyAsync<T>(IEnumerable<string> keys) where T : class
     {
         var result = new Dictionary<string, T?>();
-        
+
         try
         {
             var fullKeys = keys.Select(GetFullKey).ToArray();
             var values = await _database.StringGetAsync(fullKeys);
-            
+
             for (int i = 0; i < keys.Count(); i++)
             {
                 var originalKey = keys.ElementAt(i);
                 var value = values[i];
-                
+
                 if (value.HasValue)
                 {
                     try
                     {
                         var deserializedValue = JsonSerializer.Deserialize<T>(value!, _jsonOptions);
                         result[originalKey] = deserializedValue;
-                        
+
                         // Update access time
                         _ = UpdateAccessTimeAsync(fullKeys[i]);
                     }
@@ -236,14 +236,14 @@ public class DistributedCacheService : ICacheService, IDisposable
                     result[originalKey] = null;
                 }
             }
-            
+
             _logger.LogDebug("Retrieved {Count} cache entries in batch", keys.Count());
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting multiple cache entries");
         }
-        
+
         return result;
     }
 
@@ -257,16 +257,16 @@ public class DistributedCacheService : ICacheService, IDisposable
             var server = _redis.GetServer(_redis.GetEndPoints().First());
             var fullPattern = GetFullKey(pattern);
             var keys = server.Keys(pattern: fullPattern);
-            
+
             var keyArray = keys.ToArray();
             if (keyArray.Length > 0)
             {
                 await _database.KeyDeleteAsync(keyArray);
-                
+
                 // Remove metadata for these keys
                 var metadataKeys = keyArray.Select(k => $"{k}:metadata").ToArray();
                 await _database.KeyDeleteAsync(metadataKeys);
-                
+
                 _logger.LogInformation("Removed {Count} cache entries matching pattern: {Pattern}", keyArray.Length, pattern);
             }
         }
@@ -285,23 +285,24 @@ public class DistributedCacheService : ICacheService, IDisposable
         {
             var server = _redis.GetServer(_redis.GetEndPoints().First());
             var info = await server.InfoAsync();
-            
+
             var keyCount = server.Keys(pattern: $"{_config.KeyPrefix}:*").Count();
-            
-            var stats = new CacheStatistics
+
+            var stats = new Core.Interfaces.CacheStatistics
             {
                 TotalKeys = keyCount,
-                MemoryUsed = GetMemoryUsage(info),
-                HitRate = GetHitRate(info),
+                MemoryUsage = GetMemoryUsage(info),
+                HitCount = 0, // Would need to track this
+                MissCount = 0, // Would need to track this
                 LastUpdated = DateTime.UtcNow
             };
-            
+
             return stats;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting cache statistics");
-            return new CacheStatistics();
+            return new Core.Interfaces.CacheStatistics();
         }
     }
 
@@ -315,20 +316,20 @@ public class DistributedCacheService : ICacheService, IDisposable
             var fullLockKey = GetFullKey($"lock:{lockKey}");
             var lockValue = Guid.NewGuid().ToString();
             var timeoutTime = DateTime.UtcNow.Add(timeout ?? TimeSpan.FromSeconds(30));
-            
+
             while (DateTime.UtcNow < timeoutTime)
             {
                 var acquired = await _database.StringSetAsync(fullLockKey, lockValue, expiry, When.NotExists);
-                
+
                 if (acquired)
                 {
                     _logger.LogDebug("Acquired distributed lock: {LockKey}", lockKey);
                     return new DistributedLock(_database, fullLockKey, lockValue, _logger);
                 }
-                
+
                 await Task.Delay(100); // Wait before retrying
             }
-            
+
             _logger.LogWarning("Failed to acquire distributed lock: {LockKey}", lockKey);
             return null;
         }
@@ -355,10 +356,10 @@ public class DistributedCacheService : ICacheService, IDisposable
                 LastAccessedAt = DateTime.UtcNow,
                 ExpiryTime = expiry.HasValue ? DateTime.UtcNow.Add(expiry.Value) : null
             };
-            
+
             var metadataKey = $"{fullKey}:metadata";
             var metadataJson = JsonSerializer.Serialize(metadata, _jsonOptions);
-            
+
             if (batch != null)
             {
                 batch.StringSetAsync(metadataKey, metadataJson, expiry);
@@ -380,7 +381,7 @@ public class DistributedCacheService : ICacheService, IDisposable
         {
             var metadataKey = $"{fullKey}:metadata";
             var metadataJson = await _database.StringGetAsync(metadataKey);
-            
+
             if (metadataJson.HasValue)
             {
                 var metadata = JsonSerializer.Deserialize<CacheMetadata>(metadataJson!, _jsonOptions);
@@ -429,7 +430,7 @@ public class DistributedCacheService : ICacheService, IDisposable
         {
             _logger.LogDebug(ex, "Error parsing memory usage from Redis info");
         }
-        
+
         return 0;
     }
 
@@ -442,8 +443,8 @@ public class DistributedCacheService : ICacheService, IDisposable
             {
                 var hits = statsSection.FirstOrDefault(kvp => kvp.Key == "keyspace_hits");
                 var misses = statsSection.FirstOrDefault(kvp => kvp.Key == "keyspace_misses");
-                
-                if (long.TryParse(hits.Value, out var hitCount) && 
+
+                if (long.TryParse(hits.Value, out var hitCount) &&
                     long.TryParse(misses.Value, out var missCount))
                 {
                     var total = hitCount + missCount;
@@ -455,8 +456,94 @@ public class DistributedCacheService : ICacheService, IDisposable
         {
             _logger.LogDebug(ex, "Error parsing hit rate from Redis info");
         }
-        
+
         return 0.0;
+    }
+
+    // ICacheService interface implementations that delegate to existing methods
+    public async Task RemovePatternAsync(string pattern)
+    {
+        await RemoveByPatternAsync(pattern);
+    }
+
+    public async Task<long> IncrementAsync(string key, long increment = 1)
+    {
+        try
+        {
+            var fullKey = GetFullKey(key);
+            return await _database.StringIncrementAsync(fullKey, increment);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error incrementing key: {Key}", key);
+            return 0;
+        }
+    }
+
+    async Task<bool> ICacheService.SetIfNotExistsAsync<T>(string key, T value, TimeSpan? expiry)
+    {
+        try
+        {
+            var fullKey = GetFullKey(key);
+            var serializedValue = JsonSerializer.Serialize(value, _jsonOptions);
+            var expiryTime = expiry ?? TimeSpan.FromMinutes(_config.DefaultExpiryMinutes);
+
+            var result = await _database.StringSetAsync(fullKey, serializedValue, expiryTime, When.NotExists);
+
+            if (result)
+            {
+                await StoreMetadataAsync(fullKey, value?.GetType().Name ?? "Unknown", expiry);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting value if not exists for key: {Key}", key);
+            return false;
+        }
+    }
+
+    public async Task<Dictionary<string, T?>> GetMultipleAsync<T>(string[] keys) where T : class
+    {
+        return await GetManyAsync<T>(keys);
+    }
+
+    async Task ICacheService.SetMultipleAsync<T>(Dictionary<string, T> keyValuePairs, TimeSpan? expiry)
+    {
+        await SetManyAsync(keyValuePairs, expiry);
+    }
+
+    public async Task ClearAllAsync()
+    {
+        await ClearAsync();
+    }
+
+    public async Task<bool> RefreshAsync(string key, TimeSpan? newExpiry = null)
+    {
+        try
+        {
+            var fullKey = GetFullKey(key);
+            var value = await _database.StringGetAsync(fullKey);
+
+            if (value.HasValue)
+            {
+                var expiryTime = newExpiry ?? TimeSpan.FromMinutes(_config.DefaultExpiryMinutes);
+                var result = await _database.KeyExpireAsync(fullKey, expiryTime);
+
+                // Update metadata
+                await UpdateAccessTimeAsync(fullKey);
+
+                return result;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refreshing key: {Key}", key);
+            return false;
+        }
     }
 
     public void Dispose()
@@ -490,16 +577,7 @@ public class CacheMetadata
     public DateTime? ExpiryTime { get; set; }
 }
 
-/// <summary>
-/// Cache statistics
-/// </summary>
-public class CacheStatistics
-{
-    public int TotalKeys { get; set; }
-    public long MemoryUsed { get; set; }
-    public double HitRate { get; set; }
-    public DateTime LastUpdated { get; set; }
-}
+// CacheStatistics class is defined in Core.Interfaces
 
 /// <summary>
 /// Distributed lock implementation

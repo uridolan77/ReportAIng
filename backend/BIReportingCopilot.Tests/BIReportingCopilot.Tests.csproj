@@ -27,9 +27,9 @@
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" />
     <PackageReference Include="Testcontainers" Version="3.6.0" />
-    <PackageReference Include="Testcontainers.SqlServer" Version="3.6.0" />
+    <PackageReference Include="Testcontainers.MsSql" Version="3.6.0" />
     <PackageReference Include="Testcontainers.Redis" Version="3.6.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Testing" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
     <PackageReference Include="Bogus" Version="35.0.1" />
   </ItemGroup>
 

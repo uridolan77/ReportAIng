@@ -28,6 +28,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Hangfire;
 using BIReportingCopilot.API.Versioning;
 using BIReportingCopilot.Core.Validation;
+using BIReportingCopilot.Infrastructure.Health;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -102,6 +103,14 @@ builder.Services.AddValidatorsFromAssemblyContaining<QueryRequestValidator>();
 // Configure application settings
 builder.Services.Configure<BIReportingCopilot.Core.Configuration.ApplicationSettings>(
     builder.Configuration.GetSection(BIReportingCopilot.Core.Configuration.ApplicationSettings.SectionName));
+
+// Configure security settings
+builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.RateLimitingConfiguration>(
+    builder.Configuration.GetSection("RateLimiting"));
+builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.SecretsConfiguration>(
+    builder.Configuration.GetSection("Secrets"));
+builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.SqlValidationConfiguration>(
+    builder.Configuration.GetSection("SqlValidation"));
 
 // Configure Entity Framework
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -359,6 +368,11 @@ builder.Services.AddScoped<IQueryOptimizer, BIReportingCopilot.Infrastructure.AI
 builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.EnhancedQueryProcessor>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISqlQueryValidator, BIReportingCopilot.Infrastructure.Security.SqlQueryValidator>();
 
+// Register enhanced security services
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.IRateLimitingService, BIReportingCopilot.Infrastructure.Security.DistributedRateLimitingService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISecretsManagementService, BIReportingCopilot.Infrastructure.Security.SecretsManagementService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.IEnhancedSqlQueryValidator, BIReportingCopilot.Infrastructure.Security.EnhancedSqlQueryValidator>();
+
 // Configure AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
 
@@ -461,6 +475,9 @@ healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.BIDatabaseHealthC
 healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.DefaultDatabaseHealthCheck>("defaultdb");
 healthChecks.AddCheck<FastRedisHealthCheck>("redis");
 
+// Add security health checks
+builder.Services.AddSecurityHealthChecks();
+
 // Configure Application Insights
 if (!string.IsNullOrEmpty(builder.Configuration.GetConnectionString("ApplicationInsights")))
 {
@@ -490,7 +507,7 @@ app.UseResponseCompression();
 app.UseGlobalExceptionHandler(); // Global exception handling
 app.UseCorrelationId();
 app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<RateLimitingMiddleware>(); // Now properly handles scoped services
+app.UseMiddleware<EnhancedRateLimitingMiddleware>(); // Enhanced distributed rate limiting
 
 app.UseCors("AllowFrontend");
 

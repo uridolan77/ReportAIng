@@ -53,11 +53,11 @@ class QueryCacheService {
 
   private generateQueryHash(request: QueryRequest): string {
     const hashData = {
-      question: request.question,
+      naturalLanguageQuery: request.naturalLanguageQuery,
       sessionId: request.sessionId,
       // Include relevant parameters that affect the result
-      includeVisualization: request.options.includeVisualization,
-      maxRows: request.options.maxRows
+      includeExplanation: request.includeExplanation,
+      maxRows: request.maxRows
     };
 
     return btoa(JSON.stringify(hashData)).replace(/[+/=]/g, '');
@@ -159,7 +159,7 @@ class QueryCacheService {
         const results = await tx.store.getAll();
         const toDelete = results.filter(result =>
           result.queryHash.includes(pattern) ||
-          result.request.query.toLowerCase().includes(pattern.toLowerCase())
+          result.request.naturalLanguageQuery.toLowerCase().includes(pattern.toLowerCase())
         );
 
         for (const result of toDelete) {

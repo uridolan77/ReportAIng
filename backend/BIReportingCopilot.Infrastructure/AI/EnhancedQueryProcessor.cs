@@ -211,15 +211,15 @@ public class EnhancedQueryProcessor : IQueryProcessor
         // Based on query intent
         switch (contextAnalysis.Intent)
         {
-            case QueryIntent.Aggregation:
+            case Core.Models.QueryIntent.Aggregation:
                 suggestions.Add("Group results by category");
                 suggestions.Add("Calculate totals and averages");
                 break;
-            case QueryIntent.Trend:
+            case Core.Models.QueryIntent.Trend:
                 suggestions.Add("Show monthly trends");
                 suggestions.Add("Compare year-over-year growth");
                 break;
-            case QueryIntent.Comparison:
+            case Core.Models.QueryIntent.Comparison:
                 suggestions.Add("Compare top performers");
                 suggestions.Add("Show differences between categories");
                 break;

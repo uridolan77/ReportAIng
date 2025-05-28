@@ -79,8 +79,9 @@ public class MetricsCollector : IMetricsCollector, IDisposable
 
         _activeConnections = _meter.CreateObservableGauge<double>(
             "active_connections",
-            "Number of active database connections",
-            () => _gaugeValues.GetValueOrDefault("active_connections", 0));
+            () => _gaugeValues.GetValueOrDefault("active_connections", 0),
+            "connections",
+            "Number of active database connections");
 
         _memoryUsage = _meter.CreateObservableGauge<double>(
             "memory_usage_mb",
