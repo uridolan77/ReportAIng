@@ -90,7 +90,13 @@ builder.Services.Configure<BIReportingCopilot.Core.Configuration.AIServiceConfig
 // JWT settings are already configured by AddValidatedConfiguration above
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Configure JSON serialization to use PascalCase to match frontend expectations
+        options.JsonSerializerOptions.PropertyNamingPolicy = null; // Use original property names (PascalCase)
+        options.JsonSerializerOptions.WriteIndented = builder.Environment.IsDevelopment();
+    });
 
 // Add API versioning support
 builder.Services.AddApiVersioningSupport();

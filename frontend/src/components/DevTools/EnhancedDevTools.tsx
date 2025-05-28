@@ -850,7 +850,8 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
                         addLog('Script Executor', `Executed: ${script}\nResult: ${JSON.stringify(result)}`, 'info');
                         message.success('Script executed successfully');
                       } catch (error) {
-                        addLog('Script Executor', `Error executing script: ${error}`, 'error');
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        addLog('Script Executor', `Error executing script: ${errorMessage}`, 'error');
                         message.error('Script execution failed');
                       }
                     }

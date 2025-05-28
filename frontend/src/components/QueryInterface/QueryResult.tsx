@@ -18,7 +18,7 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
       <Card>
         <div style={{ textAlign: 'center', padding: '40px' }}>
           <Title level={4} type="danger">Query Failed</Title>
-          <Text type="danger">{result.error}</Text>
+          <Text type="danger">{typeof result.error === 'string' ? result.error : result.error?.message || 'An error occurred'}</Text>
           <div style={{ marginTop: '16px' }}>
             <Button icon={<ReloadOutlined />} onClick={onRequery}>
               Try Again

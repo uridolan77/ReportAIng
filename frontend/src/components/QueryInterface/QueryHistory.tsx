@@ -69,7 +69,7 @@ export const QueryHistory: React.FC<QueryHistoryProps> = ({ onQuerySelect }) => 
 
               {item.error && (
                 <Text type="danger" style={{ fontSize: '12px' }}>
-                  Error: {item.error}
+                  Error: {typeof item.error === 'string' ? item.error : item.error?.message || 'An error occurred'}
                 </Text>
               )}
             </Space>

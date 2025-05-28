@@ -48,11 +48,11 @@ export const DatabaseConnectionBanner: React.FC<DatabaseConnectionBannerProps> =
         }
       } else {
         setIsConnected(false);
-        setLastError(data.error || 'Health check failed');
+        setLastError(String(data.error || 'Health check failed'));
       }
     } catch (error) {
       setIsConnected(false);
-      setLastError(error instanceof Error ? error.message : 'Connection failed');
+      setLastError(error instanceof Error ? error.message : String(error || 'Connection failed'));
     } finally {
       setIsChecking(false);
     }
@@ -84,9 +84,10 @@ export const DatabaseConnectionBanner: React.FC<DatabaseConnectionBannerProps> =
 
   const getMessage = () => {
     if (isConnected === false) {
-      const isDatabaseIssue = lastError.includes('Database connection issues') ||
-                             lastError.includes('Connection failed') ||
-                             lastError.includes('Health check failed');
+      const errorString = String(lastError || '');
+      const isDatabaseIssue = errorString.includes('Database connection issues') ||
+                             errorString.includes('Connection failed') ||
+                             errorString.includes('Health check failed');
 
       return (
         <Space direction="vertical" size={4}>
@@ -101,7 +102,7 @@ export const DatabaseConnectionBanner: React.FC<DatabaseConnectionBannerProps> =
               ? 'Unable to connect to the database. Query functionality may be limited.'
               : 'Some system components are experiencing issues but database connections are working.'
             }
-            {lastError && ` Error: ${lastError}`}
+            {errorString && ` Error: ${errorString}`}
           </Text>
         </Space>
       );

@@ -45,7 +45,7 @@ export const useAuthStore = create<AuthState>()(
             password
           });
 
-          if (response.success) {
+          if (response.Success || response.success) {
             // Backend returns AccessToken and RefreshToken (capital A and R)
             console.log('🔐 Login response:', {
               hasAccessToken: !!response.AccessToken,
@@ -134,7 +134,7 @@ export const useAuthStore = create<AuthState>()(
 
           const data = await response.json();
 
-          if (data.success) {
+          if (data.Success || data.success) {
             // Backend returns AccessToken and RefreshToken (capital A and R)
             // Encrypt new tokens
             const encryptedToken = await SecurityUtils.encryptToken(data.AccessToken || data.accessToken);

@@ -326,7 +326,7 @@ export const AdvancedStreamingQuery: React.FC<AdvancedStreamingQueryProps> = ({
         {error && (
           <Alert
             message="Streaming Error"
-            description={error}
+            description={typeof error === 'string' ? error : error?.message || 'An error occurred during streaming'}
             type="error"
             closable
             onClose={() => setError(null)}

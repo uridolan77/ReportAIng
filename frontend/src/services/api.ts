@@ -109,7 +109,8 @@ export interface LoginRequest {
 }
 
 export interface AuthenticationResult {
-  success: boolean;
+  success?: boolean;     // Lowercase for compatibility
+  Success?: boolean;     // Backend uses capital S
   token?: string;
   refreshToken?: string;
   AccessToken?: string;  // Backend uses capital A
