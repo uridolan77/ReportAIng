@@ -433,7 +433,7 @@ const EnhancedQueryBuilder: React.FC = () => {
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+          {typeof error === 'string' ? error : error?.message || 'An error occurred'}
         </Alert>
       )}
 

@@ -48,7 +48,18 @@ export const DatabaseConnectionBanner: React.FC<DatabaseConnectionBannerProps> =
         }
       } else {
         setIsConnected(false);
-        setLastError(String(data.error || 'Health check failed'));
+        // Handle different error response formats
+        let errorMessage = 'Health check failed';
+        if (data.error) {
+          if (typeof data.error === 'string') {
+            errorMessage = data.error;
+          } else if (data.error.message) {
+            errorMessage = data.error.message;
+          } else {
+            errorMessage = JSON.stringify(data.error);
+          }
+        }
+        setLastError(errorMessage);
       }
     } catch (error) {
       setIsConnected(false);

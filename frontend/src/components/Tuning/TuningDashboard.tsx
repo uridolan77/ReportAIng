@@ -244,7 +244,7 @@ export const TuningDashboard: React.FC = () => {
     return (
       <Alert
         message="Error Loading Dashboard"
-        description={error}
+        description={typeof error === 'string' ? error : error?.message || 'An error occurred'}
         type="error"
         showIcon
         action={

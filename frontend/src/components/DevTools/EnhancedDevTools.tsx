@@ -264,7 +264,8 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
       addLog('API Test', 'API connection successful', 'success');
       message.success('API connection test passed');
     } catch (error) {
-      addLog('API Test', `API connection failed: ${error}`, 'error');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addLog('API Test', `API connection failed: ${errorMessage}`, 'error');
       message.error('API connection test failed');
     }
   };

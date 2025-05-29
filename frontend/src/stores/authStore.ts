@@ -67,9 +67,21 @@ export const useAuthStore = create<AuthState>()(
             const encryptedToken = await SecurityUtils.encryptToken(accessToken);
             const encryptedRefreshToken = await SecurityUtils.encryptToken(refreshToken);
 
+            // Backend returns User (capital U), not user (lowercase)
+            const userFromResponse = response.User || response.user;
+
+            // Transform user object to match frontend interface (camelCase)
+            const transformedUser = userFromResponse ? {
+              id: userFromResponse.Id || userFromResponse.id,
+              username: userFromResponse.Username || userFromResponse.username,
+              displayName: userFromResponse.DisplayName || userFromResponse.displayName,
+              email: userFromResponse.Email || userFromResponse.email,
+              roles: userFromResponse.Roles || userFromResponse.roles || []
+            } : null;
+
             set({
               isAuthenticated: true,
-              user: response.user,
+              user: transformedUser,
               token: encryptedToken,
               refreshToken: encryptedRefreshToken,
             });
@@ -82,7 +94,7 @@ export const useAuthStore = create<AuthState>()(
 
             // Store session data securely
             SecurityUtils.setSecureSessionStorage('user-session', JSON.stringify({
-              userId: response.user?.id,
+              userId: transformedUser?.id,
               sessionId: secureSessionId,
               loginTime: Date.now()
             }));
@@ -113,6 +125,15 @@ export const useAuthStore = create<AuthState>()(
         // Clear all storage
         localStorage.removeItem('auth-storage');
         sessionStorage.clear();
+
+        // Force clear any other auth-related storage
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('auth') || key.includes('user') || key.includes('token')) {
+            localStorage.removeItem(key);
+          }
+        });
+
+
       },
 
       refreshAuth: async () => {

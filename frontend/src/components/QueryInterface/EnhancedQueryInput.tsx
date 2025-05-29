@@ -101,13 +101,13 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedSuggestion(prev => 
+        setSelectedSuggestion(prev =>
           prev < suggestions.length - 1 ? prev + 1 : 0
         );
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedSuggestion(prev => 
+        setSelectedSuggestion(prev =>
           prev > 0 ? prev - 1 : suggestions.length - 1
         );
         break;
@@ -130,14 +130,14 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
     onChange(suggestion.text);
     setShowSuggestions(false);
     setSelectedSuggestion(-1);
-    
+
     // Track usage
     queryTemplateService.incrementUsage(
-      suggestion.id, 
+      suggestion.id,
       suggestion.type === 'template' ? 'template' : 'shortcut'
     );
     queryTemplateService.addToRecent(suggestion.text);
-    
+
     message.success(`Applied ${suggestion.type}: ${suggestion.description}`);
   };
 
@@ -167,30 +167,30 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
     }
   };
 
-  const shortcutMenu = (
-    <Menu>
-      {shortcutHints.map(hint => (
-        <Menu.Item
-          key={hint.shortcut}
-          onClick={() => onChange(hint.shortcut)}
-        >
-          <Space direction="vertical" size={0}>
-            <Space>
-              <Tag color="blue">{hint.shortcut}</Tag>
-              <Text strong>{hint.description}</Text>
-            </Space>
-            <Text type="secondary" style={{ fontSize: '11px' }}>
-              {hint.example}
-            </Text>
+  const shortcutMenuItems = [
+    ...shortcutHints.map(hint => ({
+      key: hint.shortcut,
+      label: (
+        <Space direction="vertical" size={0}>
+          <Space>
+            <Tag color="blue">{hint.shortcut}</Tag>
+            <Text strong>{hint.description}</Text>
           </Space>
-        </Menu.Item>
-      ))}
-      <Menu.Divider />
-      <Menu.Item key="view-all">
-        <Text type="secondary">View all shortcuts...</Text>
-      </Menu.Item>
-    </Menu>
-  );
+          <Text type="secondary" style={{ fontSize: '11px' }}>
+            {hint.example}
+          </Text>
+        </Space>
+      ),
+      onClick: () => onChange(hint.shortcut)
+    })),
+    {
+      type: 'divider' as const
+    },
+    {
+      key: 'view-all',
+      label: <Text type="secondary">View all shortcuts...</Text>
+    }
+  ];
 
   const autoCompleteOptions = suggestions.map((suggestion, index) => ({
     value: suggestion.text,
@@ -216,8 +216,8 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
               wordBreak: 'break-all',
             }}
           >
-            {suggestion.text.length > 100 
-              ? `${suggestion.text.substring(0, 100)}...` 
+            {suggestion.text.length > 100
+              ? `${suggestion.text.substring(0, 100)}...`
               : suggestion.text
             }
           </Text>
@@ -276,7 +276,7 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                   />
                 </Tooltip>
               )}
-              
+
               <Tooltip title="Submit query (Ctrl+Enter)">
                 <Button
                   size="small"
@@ -307,7 +307,7 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                   </Tag>
                 </Tooltip>
               ))}
-              <Dropdown overlay={shortcutMenu} trigger={['click']}>
+              <Dropdown menu={{ items: shortcutMenuItems }} trigger={['click']}>
                 <Button size="small" type="text" icon={<BookOutlined />}>
                   More
                 </Button>
@@ -317,7 +317,7 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
 
           {/* Help Text */}
           <Text type="secondary" style={{ fontSize: '11px' }}>
-            💡 Tip: Use shortcuts like "rev", "users", "top10" or start typing to see suggestions. 
+            💡 Tip: Use shortcuts like "rev", "users", "top10" or start typing to see suggestions.
             Press Ctrl+Enter to submit.
           </Text>
         </Space>

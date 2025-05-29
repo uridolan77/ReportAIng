@@ -14,20 +14,20 @@ public class SecurityHealthCheck : IHealthCheck
     private readonly IRateLimitingService _rateLimitingService;
     private readonly ISecretsManagementService _secretsManagementService;
     private readonly IEnhancedSqlQueryValidator _sqlValidator;
-    private readonly IConnectionMultiplexer? _redis;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<SecurityHealthCheck> _logger;
 
     public SecurityHealthCheck(
         IRateLimitingService rateLimitingService,
         ISecretsManagementService secretsManagementService,
         IEnhancedSqlQueryValidator sqlValidator,
-        IConnectionMultiplexer? redis,
+        IServiceProvider serviceProvider,
         ILogger<SecurityHealthCheck> logger)
     {
         _rateLimitingService = rateLimitingService;
         _secretsManagementService = secretsManagementService;
         _sqlValidator = sqlValidator;
-        _redis = redis;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -86,9 +86,12 @@ public class SecurityHealthCheck : IHealthCheck
     {
         try
         {
-            if (_redis != null)
+            // Try to get Redis connection from service provider
+            var redis = _serviceProvider.GetService<IConnectionMultiplexer>();
+
+            if (redis != null)
             {
-                var database = _redis.GetDatabase();
+                var database = redis.GetDatabase();
                 var testKey = "health-check-test";
                 var testValue = DateTime.UtcNow.ToString();
 
@@ -110,8 +113,9 @@ public class SecurityHealthCheck : IHealthCheck
             }
             else
             {
-                issues.Add("Warning: Redis connection not available - rate limiting may be degraded");
-                healthData["redis_connectivity"] = "Not Available";
+                // Redis is disabled - this is not an issue, just informational
+                healthData["redis_connectivity"] = "Disabled";
+                healthData["redis_note"] = "Redis is disabled - using in-memory caching";
             }
         }
         catch (Exception ex)

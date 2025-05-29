@@ -137,7 +137,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         {error && (
           <Alert
             message="Auto-Generation Error"
-            description={error}
+            description={typeof error === 'string' ? error : error?.message || 'An error occurred'}
             type="error"
             showIcon
             style={{ marginBottom: '24px' }}

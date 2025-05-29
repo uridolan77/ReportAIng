@@ -90,7 +90,7 @@ const UserContextPanel: React.FC = () => {
   if (error) {
     return (
       <Alert
-        message={error}
+        message={typeof error === 'string' ? error : error?.message || 'An error occurred'}
         type="error"
         style={{ marginBottom: 16 }}
         showIcon

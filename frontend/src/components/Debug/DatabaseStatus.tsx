@@ -144,7 +144,7 @@ export const DatabaseStatus: React.FC<DatabaseStatusProps> = ({ showDetails = tr
       {error && (
         <Alert
           message="Health Check Failed"
-          description={error}
+          description={typeof error === 'string' ? error : error?.message || 'An error occurred'}
           type="error"
           showIcon
           style={{ marginBottom: 16 }}

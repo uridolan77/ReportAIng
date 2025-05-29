@@ -331,16 +331,20 @@ export const QueryShortcuts: React.FC<QueryShortcutsProps> = ({
         size="small"
         tabBarExtraContent={
           <Dropdown
-            overlay={
-              <Menu>
-                <Menu.Item key="create-template" icon={<PlusOutlined />}>
-                  Create Template
-                </Menu.Item>
-                <Menu.Item key="create-shortcut" icon={<TagsOutlined />}>
-                  Create Shortcut
-                </Menu.Item>
-              </Menu>
-            }
+            menu={{
+              items: [
+                {
+                  key: 'create-template',
+                  icon: <PlusOutlined />,
+                  label: 'Create Template'
+                },
+                {
+                  key: 'create-shortcut',
+                  icon: <TagsOutlined />,
+                  label: 'Create Shortcut'
+                }
+              ]
+            }}
             trigger={['click']}
           >
             <Button size="small" icon={<PlusOutlined />}>
