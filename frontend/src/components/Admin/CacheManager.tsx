@@ -29,6 +29,7 @@ import {
   DatabaseOutlined,
   ClockCircleOutlined
 } from '@ant-design/icons';
+import { tuningApi } from '../../services/tuningApi';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -62,21 +63,42 @@ export const CacheManager: React.FC = () => {
   });
   const [cacheEntries, setCacheEntries] = useState<CacheEntry[]>([]);
 
-  // Load cache settings from localStorage
+  // Load AI settings and cache settings
   useEffect(() => {
-    const savedCacheEnabled = localStorage.getItem('cache-enabled');
-    const savedPromptCacheEnabled = localStorage.getItem('prompt-cache-enabled');
-    
-    if (savedCacheEnabled !== null) {
-      setCacheEnabled(JSON.parse(savedCacheEnabled));
-    }
-    if (savedPromptCacheEnabled !== null) {
-      setPromptCacheEnabled(JSON.parse(savedPromptCacheEnabled));
-    }
-    
+    loadAISettings();
     loadCacheStats();
     loadCacheEntries();
   }, []);
+
+  const loadAISettings = async () => {
+    try {
+      const settings = await tuningApi.getAISettings();
+      setAiSettings(settings);
+
+      // Update local state based on database settings
+      const cacheSetting = settings.find((s: any) => s.settingKey === 'EnableQueryCaching');
+      if (cacheSetting) {
+        const isEnabled = cacheSetting.settingValue === 'true';
+        setCacheEnabled(isEnabled);
+        setPromptCacheEnabled(isEnabled);
+        // Also update localStorage to keep it in sync
+        localStorage.setItem('cache-enabled', JSON.stringify(isEnabled));
+        localStorage.setItem('prompt-cache-enabled', JSON.stringify(isEnabled));
+      }
+    } catch (error) {
+      console.error('Failed to load AI settings:', error);
+      // Fallback to localStorage
+      const savedCacheEnabled = localStorage.getItem('cache-enabled');
+      const savedPromptCacheEnabled = localStorage.getItem('prompt-cache-enabled');
+
+      if (savedCacheEnabled !== null) {
+        setCacheEnabled(JSON.parse(savedCacheEnabled));
+      }
+      if (savedPromptCacheEnabled !== null) {
+        setPromptCacheEnabled(JSON.parse(savedPromptCacheEnabled));
+      }
+    }
+  };
 
   const loadCacheStats = () => {
     // Mock cache stats - in real implementation, this would call an API
@@ -121,10 +143,36 @@ export const CacheManager: React.FC = () => {
     setCacheEntries(mockEntries);
   };
 
-  const handleCacheToggle = (enabled: boolean) => {
-    setCacheEnabled(enabled);
-    localStorage.setItem('cache-enabled', JSON.stringify(enabled));
-    message.success(`Query caching ${enabled ? 'enabled' : 'disabled'}`);
+  const handleCacheToggle = async (enabled: boolean) => {
+    try {
+      // Find the EnableQueryCaching setting
+      const cacheSetting = aiSettings.find((s: any) => s.settingKey === 'EnableQueryCaching');
+      if (cacheSetting) {
+        // Update the database setting via API
+        await tuningApi.updateAISetting(cacheSetting.id, {
+          ...cacheSetting,
+          settingValue: enabled ? 'true' : 'false'
+        });
+
+        // Update local state
+        setCacheEnabled(enabled);
+        setPromptCacheEnabled(enabled);
+
+        // Update localStorage to keep it in sync
+        localStorage.setItem('cache-enabled', JSON.stringify(enabled));
+        localStorage.setItem('prompt-cache-enabled', JSON.stringify(enabled));
+
+        message.success(`Query caching ${enabled ? 'enabled' : 'disabled'} in database`);
+
+        // Reload settings to ensure consistency
+        await loadAISettings();
+      } else {
+        message.error('EnableQueryCaching setting not found. Please refresh and try again.');
+      }
+    } catch (error) {
+      console.error('Failed to update cache setting:', error);
+      message.error('Failed to update cache setting');
+    }
   };
 
   const handlePromptCacheToggle = (enabled: boolean) => {
@@ -141,18 +189,18 @@ export const CacheManager: React.FC = () => {
       okType: 'danger',
       onOk: () => {
         setLoading(true);
-        
+
         // Clear localStorage cache items
         Object.keys(localStorage).forEach(key => {
           if (key.includes('cache') || key.includes('query-result') || key.includes('prompt-cache')) {
             localStorage.removeItem(key);
           }
         });
-        
+
         // Update last cleared timestamp
         const now = new Date().toISOString();
         localStorage.setItem('cache-last-cleared', now);
-        
+
         setTimeout(() => {
           setLoading(false);
           loadCacheStats();
@@ -298,7 +346,7 @@ export const CacheManager: React.FC = () => {
             />
           </Col>
         </Row>
-        
+
         {stats.lastCleared && (
           <Alert
             message={`Cache last cleared: ${new Date(stats.lastCleared).toLocaleString()}`}

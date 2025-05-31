@@ -59,22 +59,33 @@ public class QueryService : IQueryService
                 queryId, userId, request.Question);
 
             // Check cache first if enabled (both in request options AND admin settings)
-            var isCachingEnabled = request.Options.EnableCache && await _settingsService.GetBooleanSettingAsync("EnableQueryCaching", true);
+            var adminCachingEnabled = await _settingsService.GetBooleanSettingAsync("EnableQueryCaching", true);
+            var requestCachingEnabled = request.Options.EnableCache;
+            var isCachingEnabled = requestCachingEnabled && adminCachingEnabled;
+
+            _logger.LogError("🔍 CACHE DEBUG - Admin setting: {AdminCache}, Request setting: {RequestCache}, Final: {FinalCache}",
+                adminCachingEnabled, requestCachingEnabled, isCachingEnabled);
+
             if (isCachingEnabled)
             {
                 var cacheKey = GenerateCacheKey(request.Question);
                 var cachedResult = await GetCachedQueryAsync(cacheKey);
                 if (cachedResult != null)
                 {
-                    _logger.LogInformation("Returning cached result for query {QueryId}", queryId);
+                    _logger.LogError("🎯 CACHE HIT - Returning cached result for query {QueryId}", queryId);
                     cachedResult.QueryId = queryId;
                     cachedResult.Cached = true;
                     return cachedResult;
                 }
+                else
+                {
+                    _logger.LogError("🎯 CACHE MISS - No cached result found for query {QueryId}", queryId);
+                }
             }
-            else if (!await _settingsService.GetBooleanSettingAsync("EnableQueryCaching", true))
+            else
             {
-                _logger.LogInformation("Query caching disabled by admin settings for query {QueryId}", queryId);
+                _logger.LogError("🚫 CACHE DISABLED - Query caching disabled for query {QueryId} (Admin: {AdminCache}, Request: {RequestCache})",
+                    queryId, adminCachingEnabled, requestCachingEnabled);
             }
 
             // Get full schema metadata first
@@ -180,6 +191,11 @@ public class QueryService : IQueryService
             {
                 var cacheKey = GenerateCacheKey(request.Question);
                 await CacheQueryAsync(cacheKey, response, TimeSpan.FromHours(24));
+                _logger.LogError("💾 CACHE STORED - Result cached for query {QueryId} with key {CacheKey}", queryId, cacheKey);
+            }
+            else
+            {
+                _logger.LogError("💾 CACHE NOT STORED - Caching disabled for query {QueryId}", queryId);
             }
 
             // Log the successful query
