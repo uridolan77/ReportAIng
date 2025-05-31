@@ -88,28 +88,28 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
           icon: <BarChartOutlined />,
           label: 'Results & Charts',
           description: 'View query results and basic charts',
-          disabled: !currentResult
+          disabled: false
         },
         {
           key: '/dashboard',
           icon: <DashboardOutlined />,
           label: 'Dashboard View',
           description: 'Interactive dashboard builder',
-          disabled: !currentResult
+          disabled: false
         },
         {
           key: '/interactive',
           icon: <InteractionOutlined />,
           label: 'Interactive Viz',
           description: 'Advanced interactive visualizations',
-          disabled: !currentResult
+          disabled: false
         },
         {
           key: '/advanced-viz',
           icon: <RocketOutlined />,
           label: 'AI-Powered Charts',
           description: 'AI-generated advanced visualizations',
-          disabled: !currentResult
+          disabled: false
         }
       ]
     },

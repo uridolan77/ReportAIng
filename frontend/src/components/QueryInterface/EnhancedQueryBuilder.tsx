@@ -16,6 +16,7 @@ import {
   Tooltip,
   Space,
   Flex,
+  Form,
 } from 'antd';
 import {
   SendOutlined as SendIcon,
@@ -39,26 +40,9 @@ import {
   ClassificationResponse,
 } from '../../services/api';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`enhanced-tabpanel-${index}`}
-      aria-labelledby={`enhanced-tab-${index}`}
-      {...other}
-    >
-      {value === index && <div style={{ padding: 24 }}>{children}</div>}
-    </div>
-  );
-}
+const { Title, Text } = Typography;
+const { TabPane } = Tabs;
+const { Panel } = Collapse;
 
 const EnhancedQueryBuilder: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -156,16 +140,16 @@ const EnhancedQueryBuilder: React.FC = () => {
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return 'success';
-    if (confidence >= 0.6) return 'warning';
-    return 'error';
+    if (confidence >= 0.8) return 'green';
+    if (confidence >= 0.6) return 'orange';
+    return 'red';
   };
 
   const getComplexityColor = (complexity: string) => {
     switch (complexity.toLowerCase()) {
-      case 'low': return 'success';
-      case 'medium': return 'warning';
-      case 'high': return 'error';
+      case 'low': return 'green';
+      case 'medium': return 'orange';
+      case 'high': return 'red';
       default: return 'default';
     }
   };
@@ -174,61 +158,58 @@ const EnhancedQueryBuilder: React.FC = () => {
     if (!semanticAnalysis) return null;
 
     return (
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            <PsychologyIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+      <Card style={{ marginBottom: 16 }}>
+        <Title level={5}>
+          <Space>
+            <PsychologyIcon />
             Semantic Analysis
-          </Typography>
+          </Space>
+        </Title>
 
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Typography variant="subtitle2" gutterBottom>Intent</Typography>
-              <Chip
-                label={semanticAnalysis.intent}
-                color="primary"
-                icon={<CategoryIcon />}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Typography variant="subtitle2" gutterBottom>Confidence</Typography>
-              <Chip
-                label={`${(semanticAnalysis.confidence * 100).toFixed(1)}%`}
-                color={getConfidenceColor(semanticAnalysis.confidence)}
-                icon={<SpeedIcon />}
-              />
-            </Grid>
-          </Grid>
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <Text strong>Intent</Text>
+            <div style={{ marginTop: 8 }}>
+              <Tag color="blue" icon={<CategoryIcon />}>
+                {semanticAnalysis.intent}
+              </Tag>
+            </div>
+          </Col>
+          <Col xs={24} md={12}>
+            <Text strong>Confidence</Text>
+            <div style={{ marginTop: 8 }}>
+              <Tag color={getConfidenceColor(semanticAnalysis.confidence)} icon={<SpeedIcon />}>
+                {`${(semanticAnalysis.confidence * 100).toFixed(1)}%`}
+              </Tag>
+            </div>
+          </Col>
+        </Row>
 
-          {semanticAnalysis.entities.length > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>Detected Entities</Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {semanticAnalysis.entities.map((entity, index) => (
-                  <Tooltip key={index} title={`Type: ${entity.type}, Confidence: ${(entity.confidence * 100).toFixed(1)}%`}>
-                    <Chip
-                      label={entity.text}
-                      size="small"
-                      variant="outlined"
-                      color={getConfidenceColor(entity.confidence)}
-                    />
-                  </Tooltip>
-                ))}
-              </Box>
-            </Box>
-          )}
+        {semanticAnalysis.entities.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <Text strong>Detected Entities</Text>
+            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {semanticAnalysis.entities.map((entity, index) => (
+                <Tooltip key={index} title={`Type: ${entity.type}, Confidence: ${(entity.confidence * 100).toFixed(1)}%`}>
+                  <Tag color={getConfidenceColor(entity.confidence)}>
+                    {entity.text}
+                  </Tag>
+                </Tooltip>
+              ))}
+            </div>
+          </div>
+        )}
 
-          {semanticAnalysis.keywords.length > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>Keywords</Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {semanticAnalysis.keywords.map((keyword, index) => (
-                  <Chip key={index} label={keyword} size="small" />
-                ))}
-              </Box>
-            </Box>
-          )}
-        </CardContent>
+        {semanticAnalysis.keywords.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <Text strong>Keywords</Text>
+            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {semanticAnalysis.keywords.map((keyword, index) => (
+                <Tag key={index}>{keyword}</Tag>
+              ))}
+            </div>
+          </div>
+        )}
       </Card>
     );
   };
@@ -237,61 +218,71 @@ const EnhancedQueryBuilder: React.FC = () => {
     if (!classification) return null;
 
     return (
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            <CategoryIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+      <Card style={{ marginBottom: 16 }}>
+        <Title level={5}>
+          <Space>
+            <CategoryIcon />
             Query Classification
-          </Typography>
+          </Space>
+        </Title>
 
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Typography variant="subtitle2" gutterBottom>Category</Typography>
-              <Chip label={classification.category} color="primary" />
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Typography variant="subtitle2" gutterBottom>Complexity</Typography>
-              <Chip
-                label={classification.complexity}
-                color={getComplexityColor(classification.complexity)}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Typography variant="subtitle2" gutterBottom>Recommended Visualization</Typography>
-              <Chip label={classification.recommendedVisualization} color="info" />
-            </Grid>
-          </Grid>
+        <Row gutter={16}>
+          <Col xs={24} md={8}>
+            <Text strong>Category</Text>
+            <div style={{ marginTop: 8 }}>
+              <Tag color="blue">{classification.category}</Tag>
+            </div>
+          </Col>
+          <Col xs={24} md={8}>
+            <Text strong>Complexity</Text>
+            <div style={{ marginTop: 8 }}>
+              <Tag color={getComplexityColor(classification.complexity)}>
+                {classification.complexity}
+              </Tag>
+            </div>
+          </Col>
+          <Col xs={24} md={8}>
+            <Text strong>Recommended Visualization</Text>
+            <div style={{ marginTop: 8 }}>
+              <Tag color="cyan">{classification.recommendedVisualization}</Tag>
+            </div>
+          </Col>
+        </Row>
 
-          {classification.predictedTables.length > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>Predicted Tables</Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {classification.predictedTables.map((table, index) => (
-                  <Chip key={index} label={table} size="small" variant="outlined" />
-                ))}
-              </Box>
-            </Box>
-          )}
+        {classification.predictedTables.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <Text strong>Predicted Tables</Text>
+            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {classification.predictedTables.map((table, index) => (
+                <Tag key={index}>{table}</Tag>
+              ))}
+            </div>
+          </div>
+        )}
 
-          {classification.optimizationSuggestions.length > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                <LightbulbIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+        {classification.optimizationSuggestions.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <Text strong>
+              <Space>
+                <LightbulbIcon />
                 Optimization Suggestions
-              </Typography>
-              <List dense>
-                {classification.optimizationSuggestions.map((suggestion, index) => (
-                  <ListItem key={index}>
-                    <ListItemIcon>
-                      <TrendingUpIcon color="primary" />
-                    </ListItemIcon>
-                    <ListItemText primary={suggestion} />
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-          )}
-        </CardContent>
+              </Space>
+            </Text>
+            <List
+              style={{ marginTop: 8 }}
+              size="small"
+              dataSource={classification.optimizationSuggestions}
+              renderItem={(suggestion, index) => (
+                <List.Item key={index}>
+                  <Space>
+                    <TrendingUpIcon style={{ color: '#1890ff' }} />
+                    <Text>{suggestion}</Text>
+                  </Space>
+                </List.Item>
+              )}
+            />
+          </div>
+        )}
       </Card>
     );
   };
@@ -300,250 +291,240 @@ const EnhancedQueryBuilder: React.FC = () => {
     if (!result?.alternatives || result.alternatives.length === 0) return null;
 
     return (
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            <CompareIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+      <Card style={{ marginBottom: 16 }}>
+        <Title level={5}>
+          <Space>
+            <CompareIcon />
             Alternative Queries
-          </Typography>
+          </Space>
+        </Title>
 
+        <Collapse>
           {result.alternatives.map((alternative, index) => (
-            <Accordion key={index}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                  <Typography variant="subtitle1" sx={{ flexGrow: 1 }}>
-                    Alternative {index + 1}
-                  </Typography>
-                  <Chip
-                    label={`Score: ${(alternative.score * 100).toFixed(1)}%`}
-                    size="small"
-                    color={getConfidenceColor(alternative.score)}
-                    sx={{ mr: 1 }}
-                  />
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Typography variant="body2" gutterBottom>
-                  <strong>Reasoning:</strong> {alternative.reasoning}
-                </Typography>
+            <Panel
+              key={index}
+              header={
+                <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                  <Text strong>Alternative {index + 1}</Text>
+                  <Tag color={getConfidenceColor(alternative.score)}>
+                    Score: {(alternative.score * 100).toFixed(1)}%
+                  </Tag>
+                </Space>
+              }
+            >
+              <div style={{ marginBottom: 16 }}>
+                <Text strong>Reasoning:</Text> {alternative.reasoning}
+              </div>
 
-                <Paper sx={{ p: 2, bgcolor: 'grey.100', mb: 2 }}>
-                  <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-                    {alternative.sql}
-                  </Typography>
-                </Paper>
+              <div style={{
+                padding: 16,
+                backgroundColor: '#f5f5f5',
+                borderRadius: 6,
+                marginBottom: 16,
+                fontFamily: 'monospace',
+                whiteSpace: 'pre-wrap'
+              }}>
+                {alternative.sql}
+              </div>
 
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="subtitle2" gutterBottom color="success.main">
-                      <StarIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              <Row gutter={16}>
+                <Col xs={24} md={12}>
+                  <Text strong style={{ color: '#52c41a' }}>
+                    <Space>
+                      <StarIcon />
                       Strengths
-                    </Typography>
-                    <List dense>
-                      {alternative.strengths.map((strength, idx) => (
-                        <ListItem key={idx}>
-                          <ListItemText primary={strength} />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="subtitle2" gutterBottom color="warning.main">
-                      <WarningIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    </Space>
+                  </Text>
+                  <List
+                    style={{ marginTop: 8 }}
+                    size="small"
+                    dataSource={alternative.strengths}
+                    renderItem={(strength, idx) => (
+                      <List.Item key={idx}>
+                        <Text>{strength}</Text>
+                      </List.Item>
+                    )}
+                  />
+                </Col>
+                <Col xs={24} md={12}>
+                  <Text strong style={{ color: '#faad14' }}>
+                    <Space>
+                      <WarningIcon />
                       Considerations
-                    </Typography>
-                    <List dense>
-                      {alternative.weaknesses.map((weakness, idx) => (
-                        <ListItem key={idx}>
-                          <ListItemText primary={weakness} />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Grid>
-                </Grid>
-              </AccordionDetails>
-            </Accordion>
+                    </Space>
+                  </Text>
+                  <List
+                    style={{ marginTop: 8 }}
+                    size="small"
+                    dataSource={alternative.weaknesses}
+                    renderItem={(weakness, idx) => (
+                      <List.Item key={idx}>
+                        <Text>{weakness}</Text>
+                      </List.Item>
+                    )}
+                  />
+                </Col>
+              </Row>
+            </Panel>
           ))}
-        </CardContent>
+        </Collapse>
       </Card>
     );
   };
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Enhanced AI Query Builder
-      </Typography>
-      <Typography variant="body1" color="text.secondary" gutterBottom>
+    <div>
+      <Title level={2}>Enhanced AI Query Builder</Title>
+      <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
         Ask questions about your data with advanced AI analysis and insights
-      </Typography>
+      </Text>
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box component="form" onSubmit={handleSubmit}>
-            <Autocomplete
-              freeSolo
-              options={suggestions}
-              loading={loadingSuggestions}
+      <Card style={{ marginBottom: 24 }}>
+        <form onSubmit={handleSubmit}>
+          <AutoComplete
+            style={{ width: '100%', marginBottom: 16 }}
+            options={suggestions.map(s => ({ value: s }))}
+            value={query}
+            onSelect={handleSuggestionSelect}
+            onSearch={setQuery}
+            placeholder="Ask a question about your data with AI-powered insights... (e.g., 'Analyze customer behavior trends')"
+          >
+            <Input.TextArea
+              rows={3}
               value={query}
-              onInputChange={(event, newValue) => setQuery(newValue || '')}
-              onChange={(event, newValue) => handleSuggestionSelect(newValue)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  fullWidth
-                  multiline
-                  rows={3}
-                  placeholder="Ask a question about your data with AI-powered insights... (e.g., 'Analyze customer behavior trends')"
-                  variant="outlined"
-                  sx={{ mb: 2 }}
-                />
-              )}
-              renderOption={(props, option) => (
-                <li {...props}>
-                  <Typography variant="body2">{option}</Typography>
-                </li>
-              )}
+              onChange={(e) => setQuery(e.target.value)}
             />
+          </AutoComplete>
 
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Button
-                type="submit"
-                variant="contained"
-                startIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}
-                disabled={loading || !query.trim()}
-                size="large"
-              >
-                {loading ? 'Processing...' : 'Execute Enhanced Query'}
-              </Button>
+          <Space wrap>
+            <Button
+              type="primary"
+              htmlType="submit"
+              icon={loading ? <Spin size="small" /> : <SendIcon />}
+              disabled={loading || !query.trim()}
+              size="large"
+            >
+              {loading ? 'Processing...' : 'Execute Enhanced Query'}
+            </Button>
 
-              <Button
-                variant="outlined"
-                startIcon={analyzing ? <CircularProgress size={20} /> : <PsychologyIcon />}
-                disabled={analyzing || !query.trim()}
-                onClick={handleAnalyzeQuery}
-                size="large"
-              >
-                {analyzing ? 'Analyzing...' : 'Analyze Query'}
-              </Button>
-            </Box>
-          </Box>
-        </CardContent>
+            <Button
+              type="default"
+              icon={analyzing ? <Spin size="small" /> : <PsychologyIcon />}
+              disabled={analyzing || !query.trim()}
+              onClick={handleAnalyzeQuery}
+              size="large"
+            >
+              {analyzing ? 'Analyzing...' : 'Analyze Query'}
+            </Button>
+          </Space>
+        </form>
       </Card>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {typeof error === 'string' ? error : error?.message || 'An error occurred'}
-        </Alert>
+        <Alert
+          type="error"
+          message={typeof error === 'string' ? error : error?.message || 'An error occurred'}
+          style={{ marginBottom: 16 }}
+        />
       )}
 
       {/* Analysis Results */}
       {(semanticAnalysis || classification) && (
-        <Box sx={{ mb: 3 }}>
+        <div style={{ marginBottom: 24 }}>
           {renderSemanticAnalysis()}
           {renderClassification()}
-        </Box>
+        </div>
       )}
 
       {/* Enhanced Results */}
       {result && (
-        <Box>
-          <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} sx={{ mb: 2 }}>
-            <Tab label="Results" />
-            <Tab label="AI Insights" />
-            <Tab label="Alternatives" />
-          </Tabs>
+        <div>
+          <Tabs activeKey={tabValue.toString()} onChange={(key) => setTabValue(parseInt(key))}>
+            <TabPane tab="Results" key="0">
+              {result.queryResult && (
+                <div>
+                  <Row gutter={16} style={{ marginBottom: 16 }}>
+                    <Col xs={24} sm={8}>
+                      <Tag icon={<TimerIcon />} color="blue">
+                        {result.queryResult.executionTimeMs}ms
+                      </Tag>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <Tag icon={<TableRowsIcon />} color="green">
+                        {result.queryResult.rowCount || result.queryResult.data?.length || 0} rows
+                      </Tag>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <Tag color="cyan">
+                        {result.queryResult.columns?.length || 0} columns
+                      </Tag>
+                    </Col>
+                  </Row>
 
-          <TabPanel value={tabValue} index={0}>
-            {result.queryResult && (
-              <Box>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <Chip
-                      icon={<TimerIcon />}
-                      label={`${result.queryResult.executionTimeMs}ms`}
-                      color="primary"
-                      variant="outlined"
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <Chip
-                      icon={<TableRowsIcon />}
-                      label={`${result.queryResult.rowCount || result.queryResult.data?.length || 0} rows`}
-                      color="success"
-                      variant="outlined"
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <Chip
-                      label={`${result.queryResult.columns?.length || 0} columns`}
-                      color="info"
-                      variant="outlined"
-                    />
-                  </Grid>
-                </Grid>
-
-                {result.processedQuery?.sql && (
-                  <Accordion sx={{ mb: 2 }}>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="subtitle1">
-                        Generated SQL
-                        <Chip
-                          label={`${(result.processedQuery.confidence * 100).toFixed(1)}% confidence`}
-                          size="small"
-                          color={getConfidenceColor(result.processedQuery.confidence)}
-                          sx={{ ml: 2 }}
-                        />
-                      </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.100' }}>
-                        <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                  {result.processedQuery?.sql && (
+                    <Collapse style={{ marginBottom: 16 }}>
+                      <Panel
+                        header={
+                          <Space>
+                            <Text strong>Generated SQL</Text>
+                            <Tag color={getConfidenceColor(result.processedQuery.confidence)}>
+                              {(result.processedQuery.confidence * 100).toFixed(1)}% confidence
+                            </Tag>
+                          </Space>
+                        }
+                        key="sql"
+                      >
+                        <div style={{
+                          padding: 16,
+                          backgroundColor: '#f5f5f5',
+                          borderRadius: 6,
+                          fontFamily: 'monospace',
+                          whiteSpace: 'pre-wrap',
+                          marginBottom: 16
+                        }}>
                           {result.processedQuery.sql}
-                        </Typography>
-                      </Paper>
-                      {result.processedQuery.explanation && (
-                        <Box sx={{ mt: 2 }}>
-                          <Typography variant="subtitle2" gutterBottom>Explanation</Typography>
-                          <Typography variant="body2">{result.processedQuery.explanation}</Typography>
-                        </Box>
-                      )}
-                    </AccordionDetails>
-                  </Accordion>
-                )}
-              </Box>
-            )}
-          </TabPanel>
+                        </div>
+                        {result.processedQuery.explanation && (
+                          <div>
+                            <Text strong>Explanation</Text>
+                            <div style={{ marginTop: 8 }}>
+                              <Text>{result.processedQuery.explanation}</Text>
+                            </div>
+                          </div>
+                        )}
+                      </Panel>
+                    </Collapse>
+                  )}
+                </div>
+              )}
+            </TabPane>
 
-          <TabPanel value={tabValue} index={1}>
-            {result.semanticAnalysis && (
-              <Card sx={{ mb: 2 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>Semantic Analysis</Typography>
-                  <Typography variant="body2">Intent: {result.semanticAnalysis.intent}</Typography>
-                  <Typography variant="body2">Confidence: {(result.semanticAnalysis.confidence * 100).toFixed(1)}%</Typography>
-                </CardContent>
-              </Card>
-            )}
+            <TabPane tab="AI Insights" key="1">
+              {result.semanticAnalysis && (
+                <Card style={{ marginBottom: 16 }}>
+                  <Title level={5}>Semantic Analysis</Title>
+                  <Text>Intent: {result.semanticAnalysis.intent}</Text><br />
+                  <Text>Confidence: {(result.semanticAnalysis.confidence * 100).toFixed(1)}%</Text>
+                </Card>
+              )}
 
-            {result.classification && (
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>Classification</Typography>
-                  <Typography variant="body2">Category: {result.classification.category}</Typography>
-                  <Typography variant="body2">Complexity: {result.classification.complexity}</Typography>
-                  <Typography variant="body2">Recommended Visualization: {result.classification.recommendedVisualization}</Typography>
-                </CardContent>
-              </Card>
-            )}
-          </TabPanel>
+              {result.classification && (
+                <Card>
+                  <Title level={5}>Classification</Title>
+                  <Text>Category: {result.classification.category}</Text><br />
+                  <Text>Complexity: {result.classification.complexity}</Text><br />
+                  <Text>Recommended Visualization: {result.classification.recommendedVisualization}</Text>
+                </Card>
+              )}
+            </TabPane>
 
-          <TabPanel value={tabValue} index={2}>
-            {renderAlternatives()}
-          </TabPanel>
-        </Box>
+            <TabPane tab="Alternatives" key="2">
+              {renderAlternatives()}
+            </TabPane>
+          </Tabs>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 

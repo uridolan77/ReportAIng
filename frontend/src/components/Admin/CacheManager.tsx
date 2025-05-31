@@ -54,6 +54,7 @@ export const CacheManager: React.FC = () => {
   const [cacheEnabled, setCacheEnabled] = useState(true);
   const [promptCacheEnabled, setPromptCacheEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [aiSettings, setAiSettings] = useState<any[]>([]);
   const [stats, setStats] = useState<CacheStats>({
     totalEntries: 0,
     totalSize: '0 KB',
@@ -167,7 +168,16 @@ export const CacheManager: React.FC = () => {
         // Reload settings to ensure consistency
         await loadAISettings();
       } else {
-        message.error('EnableQueryCaching setting not found. Please refresh and try again.');
+        // Setting not found - use localStorage only and show warning
+        console.warn('EnableQueryCaching setting not found in database. Using localStorage only.');
+
+        // Update local state and localStorage
+        setCacheEnabled(enabled);
+        setPromptCacheEnabled(enabled);
+        localStorage.setItem('cache-enabled', JSON.stringify(enabled));
+        localStorage.setItem('prompt-cache-enabled', JSON.stringify(enabled));
+
+        message.warning(`Query caching ${enabled ? 'enabled' : 'disabled'} locally only. Database setting not found - please run database migrations.`);
       }
     } catch (error) {
       console.error('Failed to update cache setting:', error);
