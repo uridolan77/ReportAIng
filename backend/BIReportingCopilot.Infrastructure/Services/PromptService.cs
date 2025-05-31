@@ -658,7 +658,9 @@ TECHNICAL RULES:
 6. Add ORDER BY for logical sorting (usually by date DESC or amount DESC)
 7. Use TOP 100 to limit results unless user specifies otherwise
 8. Return only the SQL query without explanations or markdown formatting
-9. Ensure all referenced columns exist in the schema",
+9. Ensure all referenced columns exist in the schema
+10. Always add WITH (NOLOCK) hint to all table references for better read performance
+11. Format table hints as: FROM TableName WITH (NOLOCK) or JOIN TableName WITH (NOLOCK)",
                 Description = "Enhanced SQL generation template with business context",
                 IsActive = true,
                 CreatedBy = "System"
@@ -747,6 +749,8 @@ Generate a SQL SELECT query that:
 4. Returns aggregated totals when requested
 5. Limits results with TOP 100
 6. Uses clear column aliases
+7. Always adds WITH (NOLOCK) hint to all table references for better read performance
+8. Formats as: FROM TableName WITH (NOLOCK) or JOIN TableName WITH (NOLOCK)
 
 Return only the SQL query without explanations.";
     }

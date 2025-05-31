@@ -74,14 +74,14 @@ const EnhancedQueryBuilder: React.FC = () => {
 
   // Enhanced sample queries with AI insights - memoized to prevent re-creation
   const sampleQueries = useMemo(() => [
-    "Show me total sales by month for this year",
-    "What are the top 10 customers by revenue?",
-    "Analyze customer behavior trends over the last quarter",
-    "Compare sales performance between regions",
-    "Show me products with declining sales trends",
-    "What's the customer retention rate by segment?",
-    "Find customers at risk of churning",
-    "Show me the most profitable product categories",
+    "Show me total deposits for yesterday",
+    "Top 10 players by deposits in the last 7 days",
+    "Show me daily revenue for the last week",
+    "Count of active players yesterday",
+    "Show me casino vs sports betting revenue for last week",
+    "Show me player activity for the last 3 days",
+    "Total bets and wins for yesterday",
+    "Revenue breakdown by country for last week",
   ], []);
 
   const loadEnhancedSuggestions = useCallback(async () => {

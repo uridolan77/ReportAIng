@@ -300,6 +300,7 @@ public class QueryOptimizer : IQueryOptimizer
         }
 
         prompt += "\nGenerate an optimized SQL query that addresses the user's request.";
+        prompt += "\nIMPORTANT: Always add WITH (NOLOCK) hint to all table references for better read performance.";
 
         return prompt;
     }
@@ -307,7 +308,7 @@ public class QueryOptimizer : IQueryOptimizer
     private async Task<string> GenerateAggregationCandidate(SemanticAnalysis analysis, SchemaContext schema)
     {
         var aggregationPrompt = $"Generate a SQL query optimized for aggregation operations: {analysis.OriginalQuery}\n";
-        aggregationPrompt += "Focus on efficient GROUP BY, aggregate functions, and proper indexing considerations.";
+        aggregationPrompt += "Focus on efficient GROUP BY, aggregate functions, and proper indexing considerations. Always use WITH (NOLOCK) hints.";
 
         return await _aiService.GenerateSQLAsync(aggregationPrompt);
     }
@@ -315,7 +316,7 @@ public class QueryOptimizer : IQueryOptimizer
     private async Task<string> GenerateTrendCandidate(SemanticAnalysis analysis, SchemaContext schema)
     {
         var trendPrompt = $"Generate a SQL query optimized for time-series trend analysis: {analysis.OriginalQuery}\n";
-        trendPrompt += "Focus on date-based grouping, time windows, and trend calculations.";
+        trendPrompt += "Focus on date-based grouping, time windows, and trend calculations. Always use WITH (NOLOCK) hints.";
 
         return await _aiService.GenerateSQLAsync(trendPrompt);
     }
@@ -323,7 +324,7 @@ public class QueryOptimizer : IQueryOptimizer
     private async Task<string> GenerateSimplifiedCandidate(SemanticAnalysis analysis, SchemaContext schema)
     {
         var simplifiedPrompt = $"Generate a simplified, high-performance SQL query: {analysis.OriginalQuery}\n";
-        simplifiedPrompt += "Focus on essential data only, minimal joins, and fast execution.";
+        simplifiedPrompt += "Focus on essential data only, minimal joins, and fast execution. Always use WITH (NOLOCK) hints.";
 
         return await _aiService.GenerateSQLAsync(simplifiedPrompt);
     }

@@ -101,12 +101,12 @@ const QuerySimilarityAnalyzer: React.FC = () => {
   };
 
   const sampleQueries = [
-    "Show me total sales by month for this year",
-    "What are the top 10 customers by revenue?",
-    "Display monthly sales totals for current year",
-    "List the highest revenue customers",
-    "Analyze customer behavior trends over the last quarter",
-    "Show me products with declining sales trends",
+    "Show me total deposits for yesterday",
+    "Top 10 players by deposits in the last 7 days",
+    "Show me daily revenue for the last week",
+    "Count of active players yesterday",
+    "Show me casino vs sports betting revenue for last week",
+    "Show me player activity for the last 3 days",
   ];
 
   return (

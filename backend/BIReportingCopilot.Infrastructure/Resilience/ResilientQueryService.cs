@@ -151,7 +151,12 @@ public class ResilientQueryService : IQueryService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to get query suggestions for user {UserId}, using defaults", userId);
-            return new List<string> { "Show me all data", "Count total records", "Show recent data" };
+            var yesterday = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+            return new List<string> {
+                $"Show me total deposits for yesterday ({yesterday})",
+                "Top 10 players by deposits in the last 7 days",
+                "Show me daily revenue for the last week"
+            };
         }
     }
 

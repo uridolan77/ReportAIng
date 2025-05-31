@@ -15,10 +15,10 @@ export const QuerySuggestions: React.FC<QuerySuggestionsProps> = ({ onSuggestion
       icon: <BarChartOutlined />,
       color: '#1890ff',
       suggestions: [
-        'Show me total revenue by month this year',
-        'Compare revenue between this year and last year',
-        'What are the top 10 products by revenue?',
-        'Show revenue trends by region',
+        'Show me total deposits for yesterday',
+        'Show me daily revenue for the last week',
+        'Top 10 players by deposits in the last 7 days',
+        'Revenue breakdown by country for last week',
       ],
     },
     {
@@ -26,10 +26,10 @@ export const QuerySuggestions: React.FC<QuerySuggestionsProps> = ({ onSuggestion
       icon: <UserOutlined />,
       color: '#52c41a',
       suggestions: [
-        'How many new customers did we acquire this month?',
-        'Show customer retention rate by cohort',
-        'What is the average customer lifetime value?',
-        'Which customers have the highest purchase frequency?',
+        'Count of active players yesterday',
+        'Show me new player registrations for the last 7 days',
+        'Top 10 players by total bets in the last week',
+        'Show me player activity for the last 3 days',
       ],
     },
     {
@@ -37,10 +37,10 @@ export const QuerySuggestions: React.FC<QuerySuggestionsProps> = ({ onSuggestion
       icon: <TableOutlined />,
       color: '#fa8c16',
       suggestions: [
-        'Show me daily active users for the past 30 days',
-        'What is our current inventory status?',
-        'Display order fulfillment times by region',
-        'Show employee productivity metrics',
+        'Show me casino vs sports betting revenue for last week',
+        'Total bets and wins for yesterday',
+        'Show me bonus usage for the last 7 days',
+        'Daily transaction volume for the last week',
       ],
     },
   ];
@@ -56,7 +56,7 @@ export const QuerySuggestions: React.FC<QuerySuggestionsProps> = ({ onSuggestion
       </div>
 
       {suggestionCategories.map((category, categoryIndex) => (
-        <Card 
+        <Card
           key={categoryIndex}
           title={
             <Space>
@@ -71,9 +71,9 @@ export const QuerySuggestions: React.FC<QuerySuggestionsProps> = ({ onSuggestion
               <Button
                 key={index}
                 type="text"
-                style={{ 
-                  textAlign: 'left', 
-                  height: 'auto', 
+                style={{
+                  textAlign: 'left',
+                  height: 'auto',
                   padding: '8px 12px',
                   whiteSpace: 'normal',
                   wordWrap: 'break-word'

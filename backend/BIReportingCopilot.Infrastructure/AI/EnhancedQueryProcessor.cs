@@ -125,11 +125,14 @@ public class EnhancedQueryProcessor : IQueryProcessor
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating query suggestions");
+            var today = DateTime.Now;
+            var yesterday = today.AddDays(-1).ToString("yyyy-MM-dd");
+
             return new List<string>
             {
-                "Show me the total count of records",
-                "What are the top 10 items by value?",
-                "Show me data from the last 30 days"
+                $"Show me total deposits for yesterday ({yesterday})",
+                "Top 10 players by deposits in the last 7 days",
+                "Show me daily revenue for the last week"
             };
         }
     }

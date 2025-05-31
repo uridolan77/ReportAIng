@@ -424,7 +424,7 @@ builder.Services.AddHostedService<StartupValidationService>();
 
 // ===== FRAMEWORK SERVICES =====
 // AutoMapper
-builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddAutoMapper(typeof(Program), typeof(BIReportingCopilot.Infrastructure.Mapping.QueryHistoryMappingProfile));
 
 // MediatR with assemblies
 builder.Services.AddMediatR(cfg => {
@@ -484,7 +484,8 @@ if (app.Environment.IsDevelopment())
     app.UseVersionedSwagger(apiVersionDescriptionProvider);
 }
 
-app.UseHttpsRedirection();
+// Disable HTTPS redirection for development
+// app.UseHttpsRedirection();
 
 // Add response compression
 app.UseResponseCompression();

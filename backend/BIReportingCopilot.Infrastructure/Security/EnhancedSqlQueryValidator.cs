@@ -114,7 +114,15 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator
                 riskScore += pattern.RiskScore;
                 securityLevel = SecurityLevel.Blocked;
 
-                _logger.LogWarning("Dangerous SQL pattern detected for user {UserId}: {Pattern}", userId, pattern.Name);
+                // Reduce log noise for intentional health check tests
+                if (context?.Contains("health-check-intentional-test") == true)
+                {
+                    _logger.LogDebug("Dangerous SQL pattern detected for user {UserId}: {Pattern} (health check test)", userId, pattern.Name);
+                }
+                else
+                {
+                    _logger.LogWarning("Dangerous SQL pattern detected for user {UserId}: {Pattern}", userId, pattern.Name);
+                }
                 _metricsCollector.IncrementCounter("sql_validation_dangerous_patterns", new TagList
                 {
                     { "pattern", pattern.Name },

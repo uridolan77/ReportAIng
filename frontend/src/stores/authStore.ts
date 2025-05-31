@@ -19,6 +19,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   refreshToken: string | null;
+  isAdmin: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   refreshAuth: () => Promise<boolean>;
@@ -32,6 +33,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       refreshToken: null,
+      isAdmin: false,
 
       login: async (username: string, password: string) => {
         try {
@@ -84,6 +86,7 @@ export const useAuthStore = create<AuthState>()(
               user: transformedUser,
               token: encryptedToken,
               refreshToken: encryptedRefreshToken,
+              isAdmin: transformedUser?.roles?.includes('Admin') || transformedUser?.roles?.includes('admin') || false,
             });
 
             console.log('✅ Auth state updated successfully');
@@ -117,6 +120,7 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           token: null,
           refreshToken: null,
+          isAdmin: false,
         });
 
         // Clear the session ID when logging out

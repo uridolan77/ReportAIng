@@ -228,9 +228,17 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
 
   return (
     <div style={{ position: 'relative' }}>
-      <Card size="small" style={{ marginBottom: 8 }}>
+      <Card
+        className="enhanced-card"
+        size="small"
+        style={{
+          marginBottom: 16,
+          background: 'rgba(255, 255, 255, 0.98)',
+          border: '2px solid #e8f4fd'
+        }}
+      >
         <Space direction="vertical" style={{ width: '100%' }}>
-          {/* Query Input */}
+          {/* Enhanced Query Input */}
           <div style={{ position: 'relative' }}>
             <AutoComplete
               value={value}
@@ -245,25 +253,36 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
               open={showSuggestions}
               onDropdownVisibleChange={setShowSuggestions}
               style={{ width: '100%' }}
-              dropdownStyle={{ maxHeight: 300, overflow: 'auto' }}
+              dropdownStyle={{
+                maxHeight: 300,
+                overflow: 'auto',
+                borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+              }}
             >
               <TextArea
                 ref={inputRef}
                 placeholder={placeholder}
-                autoSize={autoHeight ? { minRows: 2, maxRows } : false}
+                autoSize={autoHeight ? { minRows: 3, maxRows } : false}
                 onKeyDown={handleKeyDown}
-                style={{ resize: 'vertical' }}
+                className="query-textarea"
+                style={{
+                  resize: 'vertical',
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  padding: '16px'
+                }}
               />
             </AutoComplete>
 
-            {/* Input Actions */}
+            {/* Enhanced Input Actions */}
             <div
               style={{
                 position: 'absolute',
-                bottom: 8,
-                right: 8,
+                bottom: 12,
+                right: 12,
                 display: 'flex',
-                gap: 4,
+                gap: 8,
               }}
             >
               {value && (
@@ -273,6 +292,11 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                     type="text"
                     icon={<ClearOutlined />}
                     onClick={handleClear}
+                    style={{
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      border: '1px solid #d9d9d9'
+                    }}
                   />
                 </Tooltip>
               )}
@@ -285,22 +309,43 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                   loading={loading}
                   onClick={handleSubmit}
                   disabled={!value.trim()}
+                  className="query-submit-btn"
+                  style={{
+                    height: '36px',
+                    borderRadius: '8px',
+                    fontWeight: 600
+                  }}
                 />
               </Tooltip>
             </div>
           </div>
 
-          {/* Shortcut Hints */}
+          {/* Enhanced Shortcut Hints */}
           {showShortcuts && shortcutHints.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                Quick shortcuts:
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              flexWrap: 'wrap',
+              padding: '12px',
+              background: 'linear-gradient(135deg, #f8f9ff 0%, #e8f4fd 100%)',
+              borderRadius: '8px',
+              border: '1px solid #e8f4fd'
+            }}>
+              <Text type="secondary" style={{ fontSize: '13px', fontWeight: 500 }}>
+                ⚡ Quick shortcuts:
               </Text>
               {shortcutHints.map(hint => (
                 <Tooltip key={hint.shortcut} title={hint.example}>
                   <Tag
                     color="blue"
-                    style={{ cursor: 'pointer', fontSize: '11px' }}
+                    style={{
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      borderRadius: '6px',
+                      fontWeight: 500,
+                      transition: 'all 0.3s ease'
+                    }}
                     onClick={() => onChange(hint.shortcut)}
                   >
                     {hint.shortcut}
@@ -308,18 +353,40 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                 </Tooltip>
               ))}
               <Dropdown menu={{ items: shortcutMenuItems }} trigger={['click']}>
-                <Button size="small" type="text" icon={<BookOutlined />}>
+                <Button
+                  size="small"
+                  type="text"
+                  icon={<BookOutlined />}
+                  style={{
+                    color: '#667eea',
+                    border: '1px solid #667eea',
+                    borderRadius: '6px',
+                    fontWeight: 500
+                  }}
+                >
                   More
                 </Button>
               </Dropdown>
             </div>
           )}
 
-          {/* Help Text */}
-          <Text type="secondary" style={{ fontSize: '11px' }}>
-            💡 Tip: Use shortcuts like "rev", "users", "top10" or start typing to see suggestions.
-            Press Ctrl+Enter to submit.
-          </Text>
+          {/* Enhanced Help Text */}
+          <div style={{
+            padding: '8px 12px',
+            background: 'rgba(102, 126, 234, 0.05)',
+            borderRadius: '6px',
+            border: '1px solid rgba(102, 126, 234, 0.1)'
+          }}>
+            <Text type="secondary" style={{ fontSize: '12px', color: '#667eea' }}>
+              💡 <strong>Tip:</strong> Use shortcuts like "rev", "users", "top10" or start typing to see suggestions.
+              Press <kbd style={{
+                background: '#f0f0f0',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                fontSize: '11px'
+              }}>Ctrl+Enter</kbd> to submit.
+            </Text>
+          </div>
         </Space>
       </Card>
     </div>

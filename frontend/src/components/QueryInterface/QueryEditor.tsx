@@ -53,22 +53,23 @@ export const QueryEditor: React.FC = () => {
 
   return (
     <>
+      {/* Enhanced Header Section */}
       <div className="query-header">
-        <Typography.Title level={3}>
+        <Typography.Title level={3} style={{ margin: 0 }}>
           BI Reporting Copilot
           {!isConnected && (
-            <Tag color="orange" style={{ marginLeft: 8 }}>
-              Offline
+            <Tag color="orange" style={{ marginLeft: 12, fontSize: '14px' }}>
+              Offline Mode
             </Tag>
           )}
         </Typography.Title>
-        <Text type="secondary">
+        <Text type="secondary" style={{ fontSize: '16px', marginTop: '8px', display: 'block' }}>
           Ask questions about your business data in natural language
         </Text>
       </div>
 
-      <Row gutter={[16, 16]}>
-        {/* Main Query Input */}
+      <Row gutter={[24, 24]}>
+        {/* Main Query Input Section */}
         <Col xs={24} lg={showShortcuts ? 16 : 24}>
           <div className="query-input-section">
             <EnhancedQueryInput
@@ -80,34 +81,61 @@ export const QueryEditor: React.FC = () => {
               showShortcuts={true}
             />
 
-            <div style={{ textAlign: 'center', marginTop: 16 }}>
-              <Space wrap>
-                <Text type="secondary">
-                  New to querying data?
-                </Text>
+            {/* Enhanced Action Buttons */}
+            <div style={{
+              textAlign: 'center',
+              marginTop: 24,
+              padding: '16px',
+              background: 'linear-gradient(135deg, #f8f9ff 0%, #e8f4fd 100%)',
+              borderRadius: '12px',
+              border: '1px solid #e8f4fd'
+            }}>
+              <Space wrap size="large">
                 <Button
-                  type="link"
+                  type="text"
                   icon={<ToolOutlined />}
                   onClick={() => setShowWizard(true)}
                   disabled={isLoading}
+                  style={{
+                    color: '#667eea',
+                    fontWeight: 500,
+                    border: '1px solid #667eea',
+                    borderRadius: '8px',
+                    padding: '4px 16px'
+                  }}
                 >
-                  Use Query Builder Wizard
+                  Query Builder Wizard
                 </Button>
-                <Text type="secondary">•</Text>
+
                 <Button
-                  type="link"
+                  type="text"
                   icon={<BookOutlined />}
                   onClick={() => setShowTemplateLibrary(true)}
                   disabled={isLoading}
+                  style={{
+                    color: '#667eea',
+                    fontWeight: 500,
+                    border: '1px solid #667eea',
+                    borderRadius: '8px',
+                    padding: '4px 16px'
+                  }}
                 >
                   Browse Templates
                 </Button>
-                <Text type="secondary">•</Text>
+
                 <Button
-                  type="link"
+                  type="text"
                   icon={<ThunderboltOutlined />}
                   onClick={() => setShowShortcuts(!showShortcuts)}
                   disabled={isLoading}
+                  style={{
+                    color: showShortcuts ? '#52c41a' : '#667eea',
+                    fontWeight: 500,
+                    border: `1px solid ${showShortcuts ? '#52c41a' : '#667eea'}`,
+                    borderRadius: '8px',
+                    padding: '4px 16px',
+                    background: showShortcuts ? 'rgba(82, 196, 26, 0.1)' : 'transparent'
+                  }}
                 >
                   {showShortcuts ? 'Hide' : 'Show'} Shortcuts
                 </Button>
@@ -116,14 +144,16 @@ export const QueryEditor: React.FC = () => {
           </div>
         </Col>
 
-        {/* Query Shortcuts Panel */}
+        {/* Enhanced Query Shortcuts Panel */}
         {showShortcuts && (
           <Col xs={24} lg={8}>
-            <QueryShortcuts
-              onQuerySelect={handleQuerySelect}
-              onTemplateSelect={handleTemplateSelect}
-              currentQuery={query}
-            />
+            <div className="shortcuts-panel">
+              <QueryShortcuts
+                onQuerySelect={handleQuerySelect}
+                onTemplateSelect={handleTemplateSelect}
+                currentQuery={query}
+              />
+            </div>
           </Col>
         )}
       </Row>

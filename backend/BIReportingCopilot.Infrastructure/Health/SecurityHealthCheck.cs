@@ -179,9 +179,10 @@ public class SecurityHealthCheck : IHealthCheck
                 issues.Add("Warning: SQL validation test query was marked as invalid");
             }
 
-            // Test with a dangerous query to ensure detection works
+            // Test with a dangerous query to ensure detection works (this is intentional for testing)
+            _logger.LogDebug("Testing SQL validation with intentionally dangerous query for health check");
             var dangerousQuery = "DROP TABLE Users; --";
-            var dangerousResult = await _sqlValidator.ValidateQueryAsync(dangerousQuery, "health-check", "system");
+            var dangerousResult = await _sqlValidator.ValidateQueryAsync(dangerousQuery, "health-check-intentional-test", "system");
 
             healthData["sql_validation_dangerous_test"] = !dangerousResult.IsValid;
 

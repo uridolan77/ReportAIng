@@ -21,7 +21,7 @@ export const DatabaseConnectionBanner: React.FC<DatabaseConnectionBannerProps> =
   const checkConnection = async () => {
     setIsChecking(true);
     try {
-      const response = await fetch('https://localhost:55243/health');
+      const response = await fetch('http://localhost:55243/health');
       const data = await response.json();
 
       if (response.ok) {
@@ -33,18 +33,19 @@ export const DatabaseConnectionBanner: React.FC<DatabaseConnectionBannerProps> =
           check.name === 'defaultdb'
         ) || [];
 
-        const hasDatabaseIssues = databaseChecks.some((check: any) => check.status === 'Unhealthy');
+        const hasDatabaseIssues = databaseChecks.some((check: any) => check.status !== 'Healthy');
 
         if (!hasDatabaseIssues && databaseChecks.length > 0) {
           setIsConnected(true);
           setLastError('');
         } else if (databaseChecks.length === 0) {
-          // No database checks found, assume connected if overall status is not Unhealthy
-          setIsConnected(data.status !== 'Unhealthy');
-          setLastError(data.status === 'Unhealthy' ? 'System health check failed' : '');
+          // No database checks found, show warning but don't block
+          setIsConnected(true);
+          setLastError('No database health checks found');
         } else {
           setIsConnected(false);
-          setLastError('Database connection issues detected');
+          const failedDatabases = databaseChecks.filter((check: any) => check.status !== 'Healthy');
+          setLastError(`Database issues: ${failedDatabases.map((db: any) => `${db.name} (${db.status})`).join(', ')}`);
         }
       } else {
         setIsConnected(false);

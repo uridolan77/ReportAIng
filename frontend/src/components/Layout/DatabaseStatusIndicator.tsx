@@ -44,27 +44,51 @@ export const DatabaseStatusIndicator: React.FC = () => {
 
       const responseTime = Date.now() - startTime;
 
-      if (healthResponse.ok && healthData.status === 'Healthy') {
-        // Get database info from schema endpoint
-        try {
-          const schemaResponse = await fetch(`${API_CONFIG.BASE_URL}/api/schema/datasources`, {
-            headers: authHeaders
-          });
-          const dataSources = await schemaResponse.json();
+      if (healthResponse.ok) {
+        // Check if database-specific health checks are healthy
+        const databaseChecks = healthData.checks?.filter((check: any) =>
+          check.name === 'bidatabase' ||
+          check.name === 'defaultdb' ||
+          check.name.toLowerCase().includes('database')
+        ) || [];
+
+        const allDatabasesHealthy = databaseChecks.length > 0 &&
+          databaseChecks.every((check: any) => check.status === 'Healthy');
+
+        if (allDatabasesHealthy) {
+          // Get database info from schema endpoint
+          try {
+            const schemaResponse = await fetch(`${API_CONFIG.BASE_URL}/api/schema/datasources`, {
+              headers: authHeaders
+            });
+            const dataSources = await schemaResponse.json();
+
+            setStatus({
+              isConnected: true,
+              database: 'DailyActionsDB',
+              server: '185.64.56.157',
+              lastChecked: new Date().toLocaleTimeString(),
+              responseTime,
+              tables: dataSources?.length || 0
+            });
+          } catch {
+            setStatus({
+              isConnected: true,
+              database: 'Connected',
+              server: 'Remote Server',
+              lastChecked: new Date().toLocaleTimeString(),
+              responseTime
+            });
+          }
+        } else {
+          const failedDatabases = databaseChecks.filter((check: any) => check.status !== 'Healthy');
+          const errorMessage = failedDatabases.length > 0
+            ? `Database issues: ${failedDatabases.map((db: any) => `${db.name} (${db.status})`).join(', ')}`
+            : 'No database health checks found';
 
           setStatus({
-            isConnected: true,
-            database: 'DailyActionsDB',
-            server: '185.64.56.157',
-            lastChecked: new Date().toLocaleTimeString(),
-            responseTime,
-            tables: dataSources?.length || 0
-          });
-        } catch {
-          setStatus({
-            isConnected: true,
-            database: 'Connected',
-            server: 'Remote Server',
+            isConnected: false,
+            error: errorMessage,
             lastChecked: new Date().toLocaleTimeString(),
             responseTime
           });
@@ -149,26 +173,32 @@ export const DatabaseStatusIndicator: React.FC = () => {
     <>
       <Tooltip
         title={getTooltipTitle()}
-        overlayClassName="database-status-tooltip"
+        classNames={{ root: "database-status-tooltip" }}
       >
-        <Badge status={getStatusColor()} dot className="database-status-badge">
-          <Button
-            type="text"
-            size="small"
-            icon={<DatabaseOutlined />}
-            onClick={() => setShowDetails(true)}
-            className={`database-status-indicator ${
-              loading ? 'checking' : status.isConnected ? 'connected' : 'disconnected'
-            }`}
-          >
-            <Space size={4}>
-              {getStatusIcon()}
-              <Text style={{ fontSize: '12px', color: 'inherit' }}>
-                DB
-              </Text>
-            </Space>
-          </Button>
-        </Badge>
+        <div
+          onClick={() => setShowDetails(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            background: status.isConnected ? '#f6ffed' : '#fff2f0',
+            border: `1px solid ${status.isConnected ? '#b7eb8f' : '#ffccc7'}`,
+            transition: 'all 0.2s ease'
+          }}
+          data-testid="database-status"
+        >
+          {getStatusIcon()}
+          <Text style={{
+            fontSize: '12px',
+            color: status.isConnected ? '#52c41a' : '#ff4d4f',
+            fontWeight: 500
+          }}>
+            {status.isConnected ? 'DB Connected' : 'DB Offline'}
+          </Text>
+        </div>
       </Tooltip>
 
       <Modal

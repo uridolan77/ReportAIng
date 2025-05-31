@@ -4,7 +4,7 @@ export const API_CONFIG = {
   // Base URL for API calls
   BASE_URL: process.env.NODE_ENV === 'production'
     ? 'https://your-production-api.com'
-    : 'https://localhost:55243',
+    : 'http://localhost:55243',
 
   // API endpoints
   ENDPOINTS: {
@@ -56,7 +56,7 @@ export const API_CONFIG = {
   // SignalR Hub URL
   SIGNALR_HUB_URL: process.env.NODE_ENV === 'production'
     ? 'https://your-production-api.com/queryHub'
-    : 'https://localhost:55243/queryHub',
+    : 'http://localhost:55243/queryHub',
 
   // Request configuration
   REQUEST_CONFIG: {

@@ -118,7 +118,7 @@ public class AIService : IAIService
 
                 var options = new AIOptions
                 {
-                    SystemMessage = "You are an expert SQL developer. Generate only valid SQL queries without explanations.",
+                    SystemMessage = "You are an expert SQL developer. Generate only valid SQL queries without explanations. Always use WITH (NOLOCK) hints on all table references for better read performance in reporting scenarios. Format as: FROM TableName WITH (NOLOCK).",
                     Temperature = 0.1f,
                     MaxTokens = 2000,
                     FrequencyPenalty = 0.0f,
@@ -126,19 +126,37 @@ public class AIService : IAIService
                     TimeoutSeconds = 30
                 };
 
+                // Log the full prompt being sent to AI
+                _logger.LogInformation("AI SQL Generation Request - System Message: {SystemMessage}", options.SystemMessage);
+                _logger.LogInformation("AI SQL Generation Request - User Prompt: {UserPrompt}",
+                    enhancedPrompt.Length > 2000 ? enhancedPrompt.Substring(0, 2000) + "..." : enhancedPrompt);
+                _logger.LogInformation("AI SQL Generation Request - Options: Temperature={Temperature}, MaxTokens={MaxTokens}, TimeoutSeconds={TimeoutSeconds}",
+                    options.Temperature, options.MaxTokens, options.TimeoutSeconds);
+
                 var generatedSQL = await _provider.GenerateCompletionAsync(enhancedPrompt, options, combinedCts.Token);
 
                 if (string.IsNullOrEmpty(generatedSQL))
                 {
+                    _logger.LogWarning("AI service returned empty result for prompt: {Prompt}",
+                        finalPrompt.Length > 500 ? finalPrompt.Substring(0, 500) + "..." : finalPrompt);
                     throw new InvalidOperationException("AI service returned empty result");
                 }
+
+                // Log the AI response before cleaning
+                _logger.LogInformation("AI SQL Generation Response (raw): {RawResponse}",
+                    generatedSQL.Length > 1000 ? generatedSQL.Substring(0, 1000) + "..." : generatedSQL);
 
                 // Clean up the response
                 generatedSQL = CleanSQLResponse(generatedSQL);
 
+                // Log the cleaned response
+                _logger.LogInformation("AI SQL Generation Response (cleaned): {CleanedSQL}",
+                    generatedSQL.Length > 1000 ? generatedSQL.Substring(0, 1000) + "..." : generatedSQL);
+
                 stopwatch.Stop();
                 activity?.SetTag("success", true);
                 activity?.SetTag("duration_ms", stopwatch.ElapsedMilliseconds);
+                activity?.SetTag("response.length", generatedSQL.Length);
 
                 // Record metrics
                 _metricsCollector?.RecordQueryExecution("sql_generation", stopwatch.ElapsedMilliseconds, true);
@@ -252,22 +270,34 @@ Return only valid JSON.";
 
     public async Task<string[]> GenerateQuerySuggestionsAsync(string context, SchemaMetadata schema)
     {
+        // Get current date for recent queries
+        var today = DateTime.Now;
+        var yesterday = today.AddDays(-1).ToString("yyyy-MM-dd");
+        var lastWeek = today.AddDays(-7).ToString("yyyy-MM-dd");
+        var thisMonth = today.ToString("yyyy-MM");
+
         var suggestions = new List<string>
         {
-            "Show me the total count of records",
-            "What are the top 10 items by value?",
-            "Show me data from the last 30 days",
-            "Group results by category",
-            "Show me the average values"
+            $"Show me total deposits for yesterday ({yesterday})",
+            $"Top 10 players by deposits in the last 7 days",
+            $"Show me daily revenue for the last week",
+            $"Count of active players yesterday",
+            $"Show me casino vs sports betting revenue for last week",
+            $"Total bets and wins for {thisMonth}",
+            $"Show me player activity for the last 3 days",
+            $"Revenue breakdown by country for last week"
         };
 
-        // Add schema-specific suggestions
-        foreach (var table in schema.Tables.Take(3))
+        // Add schema-specific suggestions with recent dates
+        foreach (var table in schema.Tables.Take(2))
         {
-            suggestions.Add($"Show me all data from {table.Name}");
-            if (table.Columns.Any(c => c.Name.ToLower().Contains("date")))
+            if (table.Name.ToLower().Contains("daily") || table.Name.ToLower().Contains("action"))
             {
-                suggestions.Add($"Show me recent {table.Name} records");
+                suggestions.Add($"Show me top 20 records from {table.Name} for yesterday");
+                if (table.Columns.Any(c => c.Name.ToLower().Contains("date")))
+                {
+                    suggestions.Add($"Show me {table.Name} data for the last 3 days");
+                }
             }
         }
 
@@ -431,8 +461,15 @@ Return only valid JSON.";
 
     private string BuildEnhancedPrompt(string originalPrompt)
     {
-        // Simplified version - full implementation would be more sophisticated
-        return $"Generate SQL for: {originalPrompt}";
+        // Enhanced prompt with NOLOCK instructions
+        return $@"Generate SQL for: {originalPrompt}
+
+IMPORTANT REQUIREMENTS:
+- Always add WITH (NOLOCK) hint to all table references for better read performance
+- Format as: FROM TableName WITH (NOLOCK) or JOIN TableName WITH (NOLOCK)
+- Use only SELECT statements for reporting queries
+- Include proper WHERE clauses for filtering
+- Use meaningful column aliases";
     }
 
     private string CleanSQLResponse(string sql)

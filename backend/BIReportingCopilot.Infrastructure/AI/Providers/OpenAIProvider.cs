@@ -58,6 +58,14 @@ public class OpenAIProvider : IAIProvider
                 PresencePenalty = options.PresencePenalty
             };
 
+            // Log the OpenAI API request details
+            _logger.LogInformation("OpenAI API Request - Model: {Model}, Temperature: {Temperature}, MaxTokens: {MaxTokens}",
+                _config.Model, options.Temperature, options.MaxTokens);
+            _logger.LogInformation("OpenAI API Request - System Message: {SystemMessage}",
+                options.SystemMessage ?? "You are a helpful AI assistant.");
+            _logger.LogInformation("OpenAI API Request - User Prompt: {UserPrompt}",
+                prompt.Length > 1500 ? prompt.Substring(0, 1500) + "..." : prompt);
+
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(options.TimeoutSeconds));
 
@@ -65,9 +73,20 @@ public class OpenAIProvider : IAIProvider
 
             if (response?.Value?.Choices?.Count > 0)
             {
-                return response.Value.Choices[0].Message.Content;
+                var content = response.Value.Choices[0].Message.Content;
+
+                // Log the OpenAI API response
+                _logger.LogInformation("OpenAI API Response - Content: {Content}",
+                    content.Length > 1500 ? content.Substring(0, 1500) + "..." : content);
+                _logger.LogInformation("OpenAI API Response - Usage: PromptTokens={PromptTokens}, CompletionTokens={CompletionTokens}, TotalTokens={TotalTokens}",
+                    response.Value.Usage?.PromptTokens ?? 0,
+                    response.Value.Usage?.CompletionTokens ?? 0,
+                    response.Value.Usage?.TotalTokens ?? 0);
+
+                return content;
             }
 
+            _logger.LogWarning("OpenAI API returned no choices in response");
             throw new InvalidOperationException("No response received from OpenAI");
         }
         catch (OperationCanceledException)

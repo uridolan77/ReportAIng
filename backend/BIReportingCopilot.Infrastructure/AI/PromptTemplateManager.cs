@@ -86,6 +86,8 @@ public class PromptTemplateManager
         promptBuilder.AppendLine("- Include comments for complex logic");
         promptBuilder.AppendLine("- Optimize for performance when possible");
         promptBuilder.AppendLine("- Use appropriate JOINs and WHERE clauses");
+        promptBuilder.AppendLine("- Always add WITH (NOLOCK) hint to all table references for better read performance");
+        promptBuilder.AppendLine("- Example: SELECT * FROM TableName WITH (NOLOCK) WHERE condition");
 
         return promptBuilder.ToString();
     }
@@ -176,7 +178,9 @@ Key principles:
 - Use clear, readable SQL with appropriate formatting
 - Include meaningful aliases and comments for complex logic
 - Follow SQL best practices and standards
-- Consider business context when interpreting requests";
+- Consider business context when interpreting requests
+- Always use WITH (NOLOCK) hints on all table references for better read performance in reporting scenarios
+- Format table hints as: FROM TableName WITH (NOLOCK)";
     }
 
     public string GetInsightSystemPrompt()
