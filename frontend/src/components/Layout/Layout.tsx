@@ -103,12 +103,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                color: 'white',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                color: '#262626',
+                border: '1px solid #d9d9d9',
                 borderRadius: '8px',
-                background: 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)',
-                padding: '4px 12px'
+                background: '#ffffff',
+                padding: '4px 12px',
+                height: '32px'
               }}
             >
               <Avatar
@@ -116,11 +116,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 icon={<UserOutlined />}
                 style={{
                   marginRight: '8px',
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)'
+                  background: '#1890ff',
+                  border: '1px solid #1890ff',
+                  color: 'white'
                 }}
               />
-              <Text style={{ color: 'white' }}>{user?.displayName || 'User'}</Text>
+              <Text style={{ color: '#262626', fontWeight: 500 }}>
+                {user?.displayName || 'User'}
+              </Text>
             </Button>
           </Dropdown>
         </Space>

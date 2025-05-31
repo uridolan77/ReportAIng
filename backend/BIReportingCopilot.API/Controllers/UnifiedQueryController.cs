@@ -82,6 +82,10 @@ public class UnifiedQueryController : ControllerBase
             };
 
             var response = await _mediator.Send(command);
+
+            _logger.LogError("🌐🌐🌐 CONTROLLER RESPONSE - Success: {Success}, QueryId: {QueryId}, Error: {Error}",
+                response.Success, response.QueryId, response.Error ?? "None");
+
             return response.Success ? Ok(response) : BadRequest(response);
         }
         catch (Exception ex)

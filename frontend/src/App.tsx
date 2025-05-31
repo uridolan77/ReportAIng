@@ -27,9 +27,20 @@ const AdvancedFeaturesDemo = lazy(() => import('./components/Demo/AdvancedFeatur
 const SecurityDashboard = lazy(() => import('./components/Security/SecurityDashboard').then(module => ({ default: module.SecurityDashboard })));
 const RequestSigningDemo = lazy(() => import('./components/Security/RequestSigningDemo').then(module => ({ default: module.RequestSigningDemo })));
 const TypeSafetyDemo = lazy(() => import('./components/TypeSafety/TypeSafetyDemo').then(module => ({ default: module.TypeSafetyDemo })));
+const CacheManager = lazy(() => import('./components/Admin/CacheManager').then(module => ({ default: module.CacheManager })));
 
 const App: React.FC = () => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user, isAdmin } = useAuthStore();
+
+  // Debug authentication state
+  useEffect(() => {
+    console.log('🔍 App component auth state:', {
+      isAuthenticated,
+      user,
+      isAdmin,
+      hasUser: !!user
+    });
+  }, [isAuthenticated, user, isAdmin]);
 
   // Initialize services
   useEffect(() => {
@@ -93,7 +104,7 @@ const App: React.FC = () => {
 
                         {/* Admin Routes */}
                         <Route path="/admin/tuning" element={<div style={{ padding: '40px', textAlign: 'center' }}>AI Tuning - Coming Soon</div>} />
-                        <Route path="/admin/cache" element={<div style={{ padding: '40px', textAlign: 'center' }}>Cache Manager - Coming Soon</div>} />
+                        <Route path="/admin/cache" element={<CacheManager />} />
                         <Route path="/admin/security" element={<SecurityDashboard />} />
 
                         {/* Legacy Routes */}

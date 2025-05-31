@@ -118,12 +118,12 @@ public class AIService : IAIService
 
                 var options = new AIOptions
                 {
-                    SystemMessage = "You are an expert SQL developer. Generate only valid SQL queries without explanations. Always use WITH (NOLOCK) hints on all table references for better read performance in reporting scenarios. Format as: FROM TableName WITH (NOLOCK).",
+                    SystemMessage = "You are an expert SQL developer. Generate only valid SQL queries without explanations. Always use WITH (NOLOCK) hints on all table references for better read performance in reporting scenarios. Format as: FROM TableName WITH (NOLOCK) or FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints.",
                     Temperature = 0.1f,
                     MaxTokens = 2000,
                     FrequencyPenalty = 0.0f,
                     PresencePenalty = 0.0f,
-                    TimeoutSeconds = 30
+                    TimeoutSeconds = 60 // Increased timeout for better reliability
                 };
 
                 // Log the full prompt being sent to AI
@@ -466,10 +466,16 @@ Return only valid JSON.";
 
 IMPORTANT REQUIREMENTS:
 - Always add WITH (NOLOCK) hint to all table references for better read performance
-- Format as: FROM TableName WITH (NOLOCK) or JOIN TableName WITH (NOLOCK)
+- Correct format: FROM TableName alias WITH (NOLOCK) or FROM TableName WITH (NOLOCK)
+- NEVER use: FROM TableName WITH (NOLOCK) AS alias (this causes syntax errors)
 - Use only SELECT statements for reporting queries
 - Include proper WHERE clauses for filtering
-- Use meaningful column aliases";
+- Use meaningful column aliases
+
+EXAMPLES:
+✅ Correct: FROM tbl_Daily_actions dap WITH (NOLOCK)
+✅ Correct: JOIN tbl_Players p WITH (NOLOCK) ON dap.PlayerID = p.PlayerID
+❌ Wrong: FROM tbl_Daily_actions WITH (NOLOCK) AS dap";
     }
 
     private string CleanSQLResponse(string sql)

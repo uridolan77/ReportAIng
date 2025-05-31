@@ -67,34 +67,39 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       // Initialize cache service if not already done
       await queryCacheService.init();
 
-      // Check cache first
-      const cachedResult = await queryCacheService.getCachedResult(request);
-      if (cachedResult) {
-        console.log('Using cached query result');
-        set({
-          currentResult: { ...cachedResult, cached: true },
-          isLoading: false,
-          error: null
-        });
+      // Check cache first (only if caching is enabled)
+      const isCacheEnabled = localStorage.getItem('cache-enabled') !== 'false';
+      if (isCacheEnabled) {
+        const cachedResult = await queryCacheService.getCachedResult(request);
+        if (cachedResult) {
+          console.log('Using cached query result');
+          set({
+            currentResult: { ...cachedResult, cached: true },
+            isLoading: false,
+            error: null
+          });
 
-        // Add cached result to history
-        const historyItem: QueryHistoryItem = {
-          id: cachedResult.queryId,
-          question: request.question,
-          sql: cachedResult.sql,
-          timestamp: cachedResult.timestamp,
-          successful: cachedResult.success,
-          executionTimeMs: cachedResult.executionTimeMs,
-          confidence: cachedResult.confidence,
-          userId: 'current-user',
-          sessionId: request.sessionId,
-          error: cachedResult.error,
-        };
+          // Add cached result to history
+          const historyItem: QueryHistoryItem = {
+            id: cachedResult.queryId,
+            question: request.question,
+            sql: cachedResult.sql,
+            timestamp: cachedResult.timestamp,
+            successful: cachedResult.success,
+            executionTimeMs: cachedResult.executionTimeMs,
+            confidence: cachedResult.confidence,
+            userId: 'current-user',
+            sessionId: request.sessionId,
+            error: cachedResult.error,
+          };
 
-        set(state => ({
-          queryHistory: [historyItem, ...state.queryHistory.slice(0, 49)]
-        }));
-        return;
+          set(state => ({
+            queryHistory: [historyItem, ...state.queryHistory.slice(0, 49)]
+          }));
+          return;
+        }
+      } else {
+        console.log('Query caching disabled - skipping cache check');
       }
 
       // Get the current auth token (encrypted) and decrypt it
@@ -110,17 +115,31 @@ export const useQueryStore = create<QueryState>((set, get) => ({
         }
       }
 
+      // Update request to include cache setting
+      const requestWithCacheSettings = {
+        ...request,
+        options: {
+          ...request.options,
+          enableCache: isCacheEnabled
+        }
+      };
+
       const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.QUERY.NATURAL_LANGUAGE), {
         method: 'POST',
         headers: await getAuthHeaders(decryptedToken || undefined),
-        body: JSON.stringify(request),
+        body: JSON.stringify(requestWithCacheSettings),
       });
 
       if (response.ok) {
         const result: QueryResponse = await response.json();
 
-        // Cache the result for future use
-        await queryCacheService.cacheResult(request, result);
+        // Cache the result for future use (only if caching is enabled)
+        if (isCacheEnabled) {
+          await queryCacheService.cacheResult(request, result);
+          console.log('Query result cached');
+        } else {
+          console.log('Query caching disabled - result not cached');
+        }
 
         set({
           currentResult: { ...result, cached: false },

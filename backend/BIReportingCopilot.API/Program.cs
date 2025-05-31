@@ -284,7 +284,8 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.FeedbackLearning
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.PromptOptimizer>();
 builder.Services.AddScoped<ISemanticAnalyzer, BIReportingCopilot.Infrastructure.AI.SemanticAnalyzer>();
 builder.Services.AddScoped<IQueryClassifier, BIReportingCopilot.Infrastructure.AI.QueryClassifier>();
-builder.Services.AddScoped<IContextManager, BIReportingCopilot.Infrastructure.AI.ContextManager>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ContextManager>();
+builder.Services.AddScoped<IContextManager>(provider => provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.ContextManager>());
 builder.Services.AddScoped<IQueryOptimizer, BIReportingCopilot.Infrastructure.AI.QueryOptimizer>();
 builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.EnhancedQueryProcessor>();
 

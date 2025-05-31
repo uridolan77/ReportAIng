@@ -87,7 +87,8 @@ public class PromptTemplateManager
         promptBuilder.AppendLine("- Optimize for performance when possible");
         promptBuilder.AppendLine("- Use appropriate JOINs and WHERE clauses");
         promptBuilder.AppendLine("- Always add WITH (NOLOCK) hint to all table references for better read performance");
-        promptBuilder.AppendLine("- Example: SELECT * FROM TableName WITH (NOLOCK) WHERE condition");
+        promptBuilder.AppendLine("- Correct format: FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints");
+        promptBuilder.AppendLine("- Example: SELECT * FROM TableName t WITH (NOLOCK) WHERE condition");
 
         return promptBuilder.ToString();
     }
@@ -180,7 +181,7 @@ Key principles:
 - Follow SQL best practices and standards
 - Consider business context when interpreting requests
 - Always use WITH (NOLOCK) hints on all table references for better read performance in reporting scenarios
-- Format table hints as: FROM TableName WITH (NOLOCK)";
+- Format table hints as: FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints";
     }
 
     public string GetInsightSystemPrompt()

@@ -47,6 +47,8 @@ export const useAuthStore = create<AuthState>()(
             password
           });
 
+          console.log('🔐 Full login response:', response);
+
           if (response.Success || response.success) {
             // Backend returns AccessToken and RefreshToken (capital A and R)
             console.log('🔐 Login response:', {
@@ -54,7 +56,7 @@ export const useAuthStore = create<AuthState>()(
               hasToken: !!response.token,
               hasRefreshToken: !!response.RefreshToken,
               hasRefreshTokenLower: !!response.refreshToken,
-              user: response.user
+              user: response.User || response.user
             });
 
             // Encrypt tokens before storing (now async)
@@ -81,6 +83,9 @@ export const useAuthStore = create<AuthState>()(
               roles: userFromResponse.Roles || userFromResponse.roles || []
             } : null;
 
+            console.log('🔐 Transformed user:', transformedUser);
+            console.log('🔐 Is admin check:', transformedUser?.roles?.includes('Admin'));
+
             set({
               isAuthenticated: true,
               user: transformedUser,
@@ -90,6 +95,7 @@ export const useAuthStore = create<AuthState>()(
             });
 
             console.log('✅ Auth state updated successfully');
+            console.log('✅ Current state after update:', get());
 
             // Create a secure session ID
             const secureSessionId = SecurityUtils.generateSecureSessionId();
@@ -101,6 +107,9 @@ export const useAuthStore = create<AuthState>()(
               sessionId: secureSessionId,
               loginTime: Date.now()
             }));
+
+            // Force a small delay to ensure state is persisted
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             return true;
           }
@@ -194,6 +203,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         token: state.token,
         refreshToken: state.refreshToken,
+        isAdmin: state.isAdmin,
       }),
     }
   )

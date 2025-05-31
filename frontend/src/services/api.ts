@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { QueryRequest as TypedQueryRequest, QueryResponse as FrontendQueryResponse } from '../types/query';
 
 // API Configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:55243';
@@ -132,10 +133,29 @@ export interface UserProfile {
   roles: string[];
 }
 
-export interface QueryRequest {
+// Legacy interface for backward compatibility
+export interface LegacyQueryRequest {
   naturalLanguageQuery: string;
   connectionName?: string;
   maxRows?: number;
+}
+
+// Backend QueryRequest interface to match actual API request
+export interface BackendQueryRequest {
+  question: string;
+  sessionId: string;
+  options: {
+    includeVisualization?: boolean;
+    maxRows?: number;
+    enableCache?: boolean;
+    confidenceThreshold?: number;
+    timeoutSeconds?: number;
+    chunkSize?: number;
+    enableStreaming?: boolean;
+    dataSource?: string;
+    dataSources?: string[];
+    parameters?: Record<string, any>;
+  };
 }
 
 export interface QueryResult {
@@ -146,6 +166,52 @@ export interface QueryResult {
   executionTimeMs?: number;
   rowCount?: number;
   errorMessage?: string;
+}
+
+// Backend QueryResponse interface to match actual API response (PascalCase)
+export interface QueryResponse {
+  QueryId: string;
+  Sql: string;
+  Result?: {
+    Data: any[];
+    Metadata: {
+      Columns: Array<{ Name: string; DataType: string; IsNullable: boolean }>;
+      RowCount: number;
+      ColumnCount: number;
+      ExecutionTimeMs: number;
+    };
+    IsSuccessful: boolean;
+  };
+  Visualization?: any;
+  Confidence: number;
+  Suggestions: string[];
+  Cached: boolean;
+  Success: boolean;
+  Timestamp: string;
+  ExecutionTimeMs: number;
+  Error?: string;
+
+  // Also support camelCase for backward compatibility
+  queryId?: string;
+  sql?: string;
+  result?: {
+    data: any[];
+    metadata: {
+      columns: Array<{ name: string; dataType: string; isNullable: boolean }>;
+      rowCount: number;
+      columnCount: number;
+      executionTimeMs: number;
+    };
+    isSuccessful: boolean;
+  };
+  visualization?: any;
+  confidence?: number;
+  suggestions?: string[];
+  cached?: boolean;
+  success?: boolean;
+  timestamp?: string;
+  executionTimeMs?: number;
+  error?: string;
 }
 
 // Enhanced AI Types
@@ -359,9 +425,62 @@ export class ApiService {
   }
 
   // Query Operations
-  static async executeQuery(request: QueryRequest): Promise<QueryResult> {
-    const response = await api.post('/api/query/execute', request);
-    return response.data;
+  static async executeQuery(request: TypedQueryRequest | LegacyQueryRequest): Promise<FrontendQueryResponse> {
+    // Handle both new and legacy request formats
+    let backendRequest;
+
+    if ('question' in request) {
+      // New format - already correct
+      backendRequest = request;
+    } else {
+      // Legacy format - transform to new format
+      backendRequest = {
+        question: (request as LegacyQueryRequest).naturalLanguageQuery,
+        sessionId: Date.now().toString(),
+        options: {
+          includeVisualization: true,
+          maxRows: (request as LegacyQueryRequest).maxRows || 1000,
+          enableCache: true,
+          confidenceThreshold: 0.7,
+          timeoutSeconds: 30
+        }
+      };
+    }
+
+    const response = await api.post('/api/query/execute', backendRequest);
+    const backendResponse: QueryResponse = response.data;
+
+    // Transform backend QueryResponse to match frontend QueryResponse interface
+    // Note: Backend uses PascalCase (Success, Result, Data) while frontend expects camelCase
+    return {
+      queryId: backendResponse.QueryId || backendResponse.queryId || '',
+      sql: backendResponse.Sql || backendResponse.sql || '',
+      result: {
+        data: backendResponse.Result?.Data || backendResponse.result?.data || [],
+        metadata: {
+          columnCount: backendResponse.Result?.Metadata?.ColumnCount || backendResponse.result?.metadata?.columnCount || 0,
+          rowCount: backendResponse.Result?.Metadata?.RowCount || backendResponse.result?.metadata?.rowCount || 0,
+          executionTimeMs: backendResponse.Result?.Metadata?.ExecutionTimeMs || backendResponse.result?.metadata?.executionTimeMs || 0,
+          columns: backendResponse.Result?.Metadata?.Columns?.map(col => ({
+            name: col.Name || col.name || '',
+            dataType: col.DataType || col.dataType || '',
+            isNullable: col.IsNullable || col.isNullable || false,
+            description: col.Description || col.description,
+            semanticTags: col.SemanticTags || col.semanticTags || []
+          })) || backendResponse.result?.metadata?.columns || [],
+          dataSource: backendResponse.Result?.Metadata?.DataSource || backendResponse.result?.metadata?.dataSource,
+          queryTimestamp: backendResponse.Result?.Metadata?.QueryTimestamp || backendResponse.result?.metadata?.queryTimestamp || new Date().toISOString()
+        }
+      },
+      visualization: backendResponse.Visualization || backendResponse.visualization,
+      confidence: backendResponse.Confidence || backendResponse.confidence || 0,
+      suggestions: backendResponse.Suggestions || backendResponse.suggestions || [],
+      cached: backendResponse.Cached || backendResponse.cached || false,
+      success: backendResponse.Success || backendResponse.success || false,
+      error: backendResponse.Error || backendResponse.error,
+      timestamp: backendResponse.Timestamp || backendResponse.timestamp || new Date().toISOString(),
+      executionTimeMs: backendResponse.ExecutionTimeMs || backendResponse.executionTimeMs || 0
+    };
   }
 
   static async getQueryHistory(page: number = 1, pageSize: number = 20): Promise<any> {

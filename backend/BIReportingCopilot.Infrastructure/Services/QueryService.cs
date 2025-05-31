@@ -1,6 +1,7 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.DTOs;
+using BIReportingCopilot.Infrastructure.AI;
 using Microsoft.Extensions.Logging;
 using CoreModels = BIReportingCopilot.Core.Models;
 
@@ -16,6 +17,7 @@ public class QueryService : IQueryService
     private readonly IAuditService _auditService;
     private readonly IPromptService _promptService;
     private readonly IAITuningSettingsService _settingsService;
+    private readonly ContextManager? _contextManager;
 
     // Legacy support removed - using IAIService instead
 
@@ -28,7 +30,7 @@ public class QueryService : IQueryService
         IAuditService auditService,
         IPromptService promptService,
         IAITuningSettingsService settingsService,
-        object? unused = null) // Legacy parameter removed
+        ContextManager? contextManager = null) // Optional for backward compatibility
     {
         _logger = logger;
         _aiService = aiService;
@@ -37,7 +39,8 @@ public class QueryService : IQueryService
         _cacheService = cacheService;
         _auditService = auditService;
         _promptService = promptService;
-        _settingsService = settingsService; // For backward compatibility
+        _settingsService = settingsService;
+        _contextManager = contextManager;
     }
 
     public async Task<QueryResponse> ProcessQueryAsync(QueryRequest request, string userId)
@@ -52,7 +55,7 @@ public class QueryService : IQueryService
 
         try
         {
-            _logger.LogInformation("Processing query {QueryId} for user {UserId}: {Question}",
+            _logger.LogError("🎯🎯🎯 ENHANCED QueryService.ProcessQueryAsync CALLED - Processing query {QueryId} for user {UserId}: {Question}",
                 queryId, userId, request.Question);
 
             // Check cache first if enabled (both in request options AND admin settings)
@@ -74,11 +77,45 @@ public class QueryService : IQueryService
                 _logger.LogInformation("Query caching disabled by admin settings for query {QueryId}", queryId);
             }
 
-            // Get schema metadata
-            var schema = await _schemaService.GetSchemaMetadataAsync();
+            // Get full schema metadata first
+            var fullSchema = await _schemaService.GetSchemaMetadataAsync();
 
-            // Generate SQL using enhanced AI prompt with business context
-            var prompt = await _promptService.BuildQueryPromptAsync(request.Question, schema);
+            // Get relevant schema context based on the query
+            SchemaMetadata relevantSchema;
+
+
+            try
+            {
+                if (_contextManager != null)
+                {
+                    _logger.LogInformation("QueryService: Calling ContextManager.GetRelevantSchemaAsync");
+                    var schemaContext = await _contextManager.GetRelevantSchemaAsync(request.Question, fullSchema);
+
+                    relevantSchema = new SchemaMetadata
+                    {
+                        Tables = schemaContext.RelevantTables,
+                        DatabaseName = fullSchema.DatabaseName,
+                        Version = fullSchema.Version,
+                        LastUpdated = fullSchema.LastUpdated
+                    };
+
+                    _logger.LogInformation("QueryService: Using relevant schema with {TableCount} tables for query: {Query}. Tables: {TableNames}",
+                        relevantSchema.Tables.Count, request.Question, string.Join(", ", relevantSchema.Tables.Select(t => t.Name)));
+                }
+                else
+                {
+                    _logger.LogWarning("QueryService: ContextManager not available, using full schema with {TableCount} tables", fullSchema.Tables.Count);
+                    relevantSchema = fullSchema;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "QueryService: Error getting relevant schema, falling back to full schema");
+                relevantSchema = fullSchema;
+            }
+
+            // Generate SQL using enhanced AI prompt with relevant business context
+            var prompt = await _promptService.BuildQueryPromptAsync(request.Question, relevantSchema);
             var aiStartTime = DateTime.UtcNow;
             var generatedSQL = await _aiService.GenerateSQLAsync(prompt, cancellationToken);
             var aiExecutionTime = (int)(DateTime.UtcNow - aiStartTime).TotalMilliseconds;
@@ -94,8 +131,14 @@ public class QueryService : IQueryService
             }
 
             // Execute the SQL query
+            _logger.LogInformation("Executing SQL: {SQL}", generatedSQL);
+            var dbStartTime = DateTime.UtcNow;
             var queryResult = await _sqlQueryService.ExecuteSelectQueryAsync(generatedSQL, request.Options, cancellationToken);
+            var dbExecutionTime = (int)(DateTime.UtcNow - dbStartTime).TotalMilliseconds;
             var totalExecutionTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
+
+            _logger.LogInformation("Database execution completed - Success: {Success}, RowCount: {RowCount}, ExecutionTime: {ExecutionTime}ms",
+                queryResult.IsSuccessful, queryResult.Metadata?.RowCount ?? 0, dbExecutionTime);
 
             // Calculate confidence score
             var confidence = await _aiService.CalculateConfidenceScoreAsync(request.Question, generatedSQL);
@@ -116,7 +159,7 @@ public class QueryService : IQueryService
             }
 
             // Generate suggestions
-            var suggestions = await _aiService.GenerateQuerySuggestionsAsync(request.Question, schema);
+            var suggestions = await _aiService.GenerateQuerySuggestionsAsync(request.Question, relevantSchema);
 
             var response = new QueryResponse
             {
@@ -145,8 +188,8 @@ public class QueryService : IQueryService
             // Log prompt details for admin debugging
             await LogPromptDetailsAsync(request.Question, prompt, generatedSQL, true, totalExecutionTime, userId, request.SessionId);
 
-            _logger.LogInformation("Successfully processed query {QueryId} in {ExecutionTime}ms",
-                queryId, totalExecutionTime);
+            _logger.LogInformation("Query completed successfully - QueryId: {QueryId}, ExecutionTime: {ExecutionTime}ms, RowCount: {RowCount}",
+                queryId, totalExecutionTime, response.Result?.Metadata?.RowCount ?? 0);
 
             return response;
         }

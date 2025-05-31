@@ -382,7 +382,7 @@ When the user asks: '{question}'
 - Use JOINs when data from multiple tables is needed.
 - Format the query for readability.
 - Always add WITH (NOLOCK) hint to all table references for better read performance.
-- Format table hints as: FROM TableName WITH (NOLOCK) or JOIN TableName WITH (NOLOCK).
+- Format table hints as: FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints.
 
 Return only the SQL query without any explanation or markdown formatting.",
                 Description = "Basic template for generating SQL queries from natural language",

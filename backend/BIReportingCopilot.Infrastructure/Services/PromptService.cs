@@ -310,7 +310,12 @@ public class PromptService : IPromptService
     {
         var description = new List<string>();
 
-        foreach (var table in schema.Tables.Take(15)) // Focus on most relevant tables
+        // Use all tables from the schema (should already be filtered by ContextManager)
+        var tablesToProcess = schema.Tables ?? new List<TableMetadata>();
+
+
+
+        foreach (var table in tablesToProcess)
         {
             var tableDesc = $"TABLE: {table.Schema}.{table.Name}";
 
@@ -354,10 +359,7 @@ public class PromptService : IPromptService
             description.Add(tableDesc);
         }
 
-        if (schema.Tables.Count > 15)
-        {
-            description.Add($"\n... and {schema.Tables.Count - 15} more tables available");
-        }
+        // Note: No need to show "more tables" message since we're using filtered relevant tables
 
         return string.Join("\n\n", description);
     }
@@ -660,7 +662,7 @@ TECHNICAL RULES:
 8. Return only the SQL query without explanations or markdown formatting
 9. Ensure all referenced columns exist in the schema
 10. Always add WITH (NOLOCK) hint to all table references for better read performance
-11. Format table hints as: FROM TableName WITH (NOLOCK) or JOIN TableName WITH (NOLOCK)",
+11. Format table hints as: FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints",
                 Description = "Enhanced SQL generation template with business context",
                 IsActive = true,
                 CreatedBy = "System"
@@ -750,7 +752,7 @@ Generate a SQL SELECT query that:
 5. Limits results with TOP 100
 6. Uses clear column aliases
 7. Always adds WITH (NOLOCK) hint to all table references for better read performance
-8. Formats as: FROM TableName WITH (NOLOCK) or JOIN TableName WITH (NOLOCK)
+8. Formats as: FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints
 
 Return only the SQL query without explanations.";
     }
