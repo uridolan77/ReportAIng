@@ -236,7 +236,7 @@ export const AutoGenerationResults: React.FC<AutoGenerationResultsProps> = ({
         )}
 
         {/* Results Tabs */}
-        <Tabs defaultActiveKey="tables">
+        <Tabs defaultActiveKey="tables" className="auto-generation-results-tabs">
           <TabPane
             tab={
               <Badge count={results.generatedTableContexts.length} showZero>

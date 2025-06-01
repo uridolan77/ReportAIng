@@ -19,6 +19,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
   const [currentTask, setCurrentTask] = useState<string>('');
   const [currentTable, setCurrentTable] = useState<string>('');
   const [currentStage, setCurrentStage] = useState<string>('');
+  const [currentColumn, setCurrentColumn] = useState<string>('');
   const [tablesProcessed, setTablesProcessed] = useState<number>(0);
   const [totalTables, setTotalTables] = useState<number>(0);
   const [columnsProcessed, setColumnsProcessed] = useState<number>(0);
@@ -182,6 +183,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
     setCurrentTask('Initializing auto-generation...');
     setCurrentTable('');
     setCurrentStage('');
+    setCurrentColumn('');
     setTablesProcessed(0);
     setTotalTables(0);
     setColumnsProcessed(0);
@@ -218,29 +220,59 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       setGenerationProgress(2);
 
       const actualTables = [...selectedTables];
-      const totalColumnsCount = actualTables.length * 8; // Estimate 8 columns per table
 
       setTotalTables(actualTables.length);
-      setTotalColumns(totalColumnsCount);
+      // Total columns will be calculated after we get the real schema data
 
       completed.push(`Selected ${actualTables.length} tables for processing`);
       setRecentlyCompleted([...completed]);
 
       console.log(`Processing ${actualTables.length} selected tables:`, actualTables);
 
-      // Initialize processing details for actual tables
-      actualTables.forEach(table => {
-        details.push({
-          tableName: table,
-          status: 'pending',
-          stage: 'Queued',
-          columnsProcessed: 0,
-          totalColumns: Math.floor(Math.random() * 10) + 5,
-          startTime: undefined,
-          endTime: undefined,
-          generatedTerms: 0
+      // Initialize processing details for actual tables with real schema data
+      try {
+        const schema = await ApiService.getSchema();
+        actualTables.forEach(table => {
+          // Find the actual table in schema to get real column count
+          const schemaTable = schema.tables?.find((t: any) => {
+            const fullTableName = t.schema ? `${t.schema}.${t.name}` : t.name;
+            return fullTableName === table;
+          });
+
+          const actualColumnCount = schemaTable?.columns?.length || 0;
+
+          details.push({
+            tableName: table,
+            status: 'pending',
+            stage: 'Queued',
+            columnsProcessed: 0,
+            totalColumns: actualColumnCount,
+            startTime: undefined,
+            endTime: undefined,
+            generatedTerms: 0
+          });
         });
-      });
+      } catch (error) {
+        console.error('Failed to get schema for column counts:', error);
+        // Fallback to unknown column counts
+        actualTables.forEach(table => {
+          details.push({
+            tableName: table,
+            status: 'pending',
+            stage: 'Queued',
+            columnsProcessed: 0,
+            totalColumns: 0, // Unknown
+            startTime: undefined,
+            endTime: undefined,
+            generatedTerms: 0
+          });
+        });
+      }
+
+      // Calculate total columns from real schema data
+      const totalColumnsCount = details.reduce((sum, detail) => sum + detail.totalColumns, 0);
+      setTotalColumns(totalColumnsCount);
+
       setProcessingDetails([...details]);
 
       // Stage 1: Schema Analysis (already done above)
@@ -270,18 +302,32 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
 
         await new Promise(resolve => setTimeout(resolve, 800));
 
-        // Process columns
+        // Process columns with real column names
         setCurrentStage('Processing Columns');
         tableDetail.stage = 'Processing Columns';
         setProcessingDetails([...details]);
 
+        // Get the actual column names for this table
+        const schemaTable = schema.tables?.find((t: any) => {
+          const fullTableName = t.schema ? `${t.schema}.${t.name}` : t.name;
+          return fullTableName === table;
+        });
+
+        const columnNames = schemaTable?.columns?.map((col: any) => col.name) || [];
+
         for (let col = 0; col < tableDetail.totalColumns; col++) {
+          const columnName = columnNames[col] || `Column ${col + 1}`;
+          setCurrentColumn(columnName);
+          setCurrentTask(`Processing ${table} - Column: ${columnName}`);
+
           tableDetail.columnsProcessed = col + 1;
           processedColumns++;
           setColumnsProcessed(processedColumns);
           setProcessingDetails([...details]);
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
+
+        setCurrentColumn('');
 
         // Generate business context
         setCurrentStage('Generating Business Context');
@@ -293,10 +339,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         if (generateGlossaryTerms) {
           setCurrentStage('Creating Glossary Terms');
           tableDetail.stage = 'Creating Glossary Terms';
-          const newTerms = Math.floor(Math.random() * 5) + 2;
-          tableDetail.generatedTerms = newTerms;
-          generatedTerms += newTerms;
-          setGlossaryTermsGenerated(generatedTerms);
+          // Note: Real glossary terms will be generated by the backend
           setProcessingDetails([...details]);
           await new Promise(resolve => setTimeout(resolve, 400));
         }
@@ -309,7 +352,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         setTablesProcessed(processedTables);
         setProcessingDetails([...details]);
 
-        completed.push(`✓ ${table} - Generated ${tableDetail.generatedTerms} terms, processed ${tableDetail.totalColumns} columns`);
+        completed.push(`✓ ${table} - Processed ${tableDetail.totalColumns} columns`);
         setRecentlyCompleted([...completed]);
 
         currentProgress = 10 + (processedTables / actualTables.length) * 70;
@@ -326,9 +369,8 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         setGenerationProgress(85);
 
         await new Promise(resolve => setTimeout(resolve, 1000));
-        foundRelationships = Math.floor(Math.random() * 8) + 3;
-        setRelationshipsFound(foundRelationships);
-        completed.push(`✓ Identified ${foundRelationships} table relationships`);
+        // Note: Real relationships will be analyzed by the backend
+        completed.push(`✓ Analyzing table relationships`);
         setRecentlyCompleted([...completed]);
         setGenerationProgress(90);
       }
@@ -360,8 +402,19 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       completed.push(`🎉 Auto-generation completed successfully!`);
       setRecentlyCompleted([...completed]);
 
+      // Update counters with real data from API response
+      if (response.generatedTableContexts) {
+        setTablesProcessed(response.generatedTableContexts.length);
+      }
+      if (response.generatedGlossaryTerms) {
+        setGlossaryTermsGenerated(response.generatedGlossaryTerms.length);
+      }
+      if (response.relationshipAnalysis?.relationships) {
+        setRelationshipsFound(response.relationshipAnalysis.relationships.length);
+      }
+
       if (response.success) {
-        message.success(`Auto-generation completed! Generated ${response.totalTablesProcessed || processedTables} table contexts and ${response.totalTermsGenerated || generatedTerms} glossary terms.`);
+        message.success(`Auto-generation completed! Generated ${response.generatedTableContexts?.length || 0} table contexts and ${response.generatedGlossaryTerms?.length || 0} glossary terms.`);
       } else {
         message.warning('Auto-generation completed with warnings. Please review the results.');
       }
