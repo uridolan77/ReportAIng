@@ -213,6 +213,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       let foundRelationships = 0;
       const completed: string[] = [];
       const details: any[] = [];
+      let schema: any = null;
 
       // Use selected tables for processing
       setCurrentTask('Preparing selected tables for processing...');
@@ -231,7 +232,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
 
       // Initialize processing details for actual tables with real schema data
       try {
-        const schema = await ApiService.getSchema();
+        schema = await ApiService.getSchema();
         actualTables.forEach(table => {
           // Find the actual table in schema to get real column count
           const schemaTable = schema.tables?.find((t: any) => {
@@ -381,56 +382,101 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       setGenerationProgress(95);
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Call the actual API
-      setCurrentTask('Calling AI service to generate business context...');
+      // Call the actual API with detailed progress feedback
+      setCurrentTask('Connecting to AI service...');
+      setCurrentStage('AI Processing');
       setGenerationProgress(97);
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      setCurrentTask('AI analyzing database schema...');
+      setGenerationProgress(97.2);
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      setCurrentTask(`AI processing ${selectedTables.length} table${selectedTables.length !== 1 ? 's' : ''} with ${totalColumns} columns...`);
+      setGenerationProgress(97.5);
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       console.log('Starting API call to auto-generate business context...');
-      const response = await tuningApi.autoGenerateBusinessContext(request);
-      console.log('API call completed successfully:', response);
+      console.log('Request payload:', request);
 
-      setGenerationProgress(99);
-      setCurrentTask('Processing API response...');
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Show detailed progress during API call
+      const progressInterval = setInterval(() => {
+        setCurrentTask(prev => {
+          const tasks = [
+            `AI analyzing table structures and relationships...`,
+            `AI generating business descriptions for ${selectedTables.length} tables...`,
+            `AI creating business glossary terms from column patterns...`,
+            `AI analyzing ${totalColumns} columns for business context...`,
+            `AI processing gaming/casino domain knowledge...`,
+            `AI finalizing business context and confidence scores...`
+          ];
+          const currentIndex = tasks.findIndex(task => task === prev);
+          return tasks[(currentIndex + 1) % tasks.length] || tasks[0];
+        });
+      }, 3000);
 
-      setGenerationProgress(100);
-      setCurrentTask('Auto-generation completed successfully!');
-      setCurrentStage('Completed');
-      setCurrentTable('');
-      setResults(response);
+      try {
+        const response = await tuningApi.autoGenerateBusinessContext(request);
+        clearInterval(progressInterval);
 
-      completed.push(`🎉 Auto-generation completed successfully!`);
-      setRecentlyCompleted([...completed]);
+        console.log('API call completed successfully:', response);
+        console.log('Response type:', typeof response);
+        console.log('Response keys:', Object.keys(response || {}));
 
-      // Update counters with real data from API response
-      if (response.generatedTableContexts) {
-        setTablesProcessed(response.generatedTableContexts.length);
+        setCurrentTask('Processing AI-generated business context...');
+        setGenerationProgress(98.5);
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        setCurrentTask('Validating and organizing results...');
+        setGenerationProgress(99);
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        setCurrentTask('Preparing results for review...');
+        setGenerationProgress(99.5);
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        setGenerationProgress(100);
+        setCurrentTask('Auto-generation completed successfully!');
+        setCurrentStage('Completed');
+        setCurrentTable('');
+        setCurrentColumn('');
+        setResults(response);
+
+        completed.push(`🎉 Auto-generation completed successfully!`);
+        setRecentlyCompleted([...completed]);
+
+        // Update counters with real data from API response
+        if (response.generatedTableContexts) {
+          setTablesProcessed(response.generatedTableContexts.length);
+        }
+        if (response.generatedGlossaryTerms) {
+          setGlossaryTermsGenerated(response.generatedGlossaryTerms.length);
+        }
+        if (response.relationshipAnalysis?.relationships) {
+          setRelationshipsFound(response.relationshipAnalysis.relationships.length);
+        }
+
+        if (response.success) {
+          message.success(`Auto-generation completed! Generated ${response.generatedTableContexts?.length || 0} table contexts and ${response.generatedGlossaryTerms?.length || 0} glossary terms.`);
+        } else {
+          message.warning('Auto-generation completed with warnings. Please review the results.');
+        }
+      } catch (err) {
+        clearInterval(progressInterval);
+        const errorMessage = err instanceof Error ? err.message : 'Auto-generation failed';
+        setError(errorMessage);
+        setCurrentTask('Auto-generation failed');
+        setCurrentStage('Error');
+        setCurrentTable('');
+        setCurrentColumn('');
+        message.error(errorMessage);
+        console.error('Auto-generation error:', err);
       }
-      if (response.generatedGlossaryTerms) {
-        setGlossaryTermsGenerated(response.generatedGlossaryTerms.length);
-      }
-      if (response.relationshipAnalysis?.relationships) {
-        setRelationshipsFound(response.relationshipAnalysis.relationships.length);
-      }
-
-      if (response.success) {
-        message.success(`Auto-generation completed! Generated ${response.generatedTableContexts?.length || 0} table contexts and ${response.generatedGlossaryTerms?.length || 0} glossary terms.`);
-      } else {
-        message.warning('Auto-generation completed with warnings. Please review the results.');
-      }
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Auto-generation failed';
-      setError(errorMessage);
-      setCurrentTask('Auto-generation failed');
-      setCurrentStage('Error');
-      setCurrentTable('');
-      message.error(errorMessage);
-      console.error('Auto-generation error:', err);
     } finally {
       // Ensure we always clean up and stop the generation process
       setIsGenerating(false);
       setCurrentTable('');
+      setCurrentColumn('');
 
       // Force completion if we somehow got stuck
       setTimeout(() => {
@@ -441,19 +487,20 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
           setCurrentTask('Auto-generation completed (forced)');
           setCurrentStage('Completed');
           setCurrentTable('');
+          setCurrentColumn('');
         }
       }, 2000);
     }
   }, [generateTableContexts, generateGlossaryTerms, analyzeRelationships, overwriteExisting, confidenceThreshold, selectedTables]);
 
-  const handleApplyResults = useCallback(async () => {
-    if (!results) return;
+  const handleApplyResults = useCallback(async (editedResults: any) => {
+    if (!editedResults) return;
 
     try {
       setIsGenerating(true);
       setCurrentTask('Applying auto-generated context...');
 
-      await tuningApi.applyAutoGeneratedContext(results);
+      await tuningApi.applyAutoGeneratedContext(editedResults);
 
       message.success('Auto-generated context applied successfully!');
       setResults(null);
@@ -468,7 +515,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       setIsGenerating(false);
       setCurrentTask('');
     }
-  }, [results, onRefresh]);
+  }, [onRefresh]);
 
   const handleDiscardResults = useCallback(() => {
     setResults(null);
@@ -720,6 +767,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
             currentTask={currentTask}
             currentTable={currentTable}
             currentStage={currentStage}
+            currentColumn={currentColumn}
             tablesProcessed={tablesProcessed}
             totalTables={totalTables}
             columnsProcessed={columnsProcessed}

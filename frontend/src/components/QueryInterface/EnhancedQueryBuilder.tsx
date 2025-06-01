@@ -17,6 +17,12 @@ import {
   Space,
   Flex,
   Form,
+  Steps,
+  Divider,
+  Badge,
+  Progress,
+  Empty,
+  Switch,
 } from 'antd';
 import {
   SendOutlined as SendIcon,
@@ -31,6 +37,15 @@ import {
   DashboardOutlined as SpeedIcon,
   StarOutlined as StarIcon,
   WarningOutlined as WarningIcon,
+  ToolOutlined as WandOutlined,
+  CodeOutlined,
+  HistoryOutlined,
+  BookOutlined,
+  RocketOutlined,
+  ThunderboltOutlined,
+  EyeOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import {
   ApiService,
@@ -39,22 +54,53 @@ import {
   SemanticAnalysisResponse,
   ClassificationResponse,
 } from '../../services/api';
+import { QueryWizard, QueryBuilderData } from './QueryWizard';
+import './EnhancedQueryBuilder.css';
 
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
 const { Panel } = Collapse;
 
+interface QueryTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  template: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  tags: string[];
+}
+
 const EnhancedQueryBuilder: React.FC = () => {
+  // Core query state
   const [query, setQuery] = useState('');
   const [result, setResult] = useState<EnhancedQueryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // UI state
+  const [activeTab, setActiveTab] = useState('freeform');
+  const [builderMode, setBuilderMode] = useState<'guided' | 'advanced'>('guided');
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  // Analysis state
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [tabValue, setTabValue] = useState(0);
   const [analyzing, setAnalyzing] = useState(false);
   const [semanticAnalysis, setSemanticAnalysis] = useState<SemanticAnalysisResponse | null>(null);
   const [classification, setClassification] = useState<ClassificationResponse | null>(null);
+
+  // Wizard state
+  const [wizardData, setWizardData] = useState<QueryBuilderData>({});
+  const [queryHistory, setQueryHistory] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
+
+  // Real-time validation
+  const [queryValidation, setQueryValidation] = useState<{
+    isValid: boolean;
+    confidence: number;
+    suggestions: string[];
+    warnings: string[];
+  } | null>(null);
 
   // Enhanced sample queries with AI insights - memoized to prevent re-creation
   const sampleQueries = useMemo(() => [
@@ -66,6 +112,55 @@ const EnhancedQueryBuilder: React.FC = () => {
     "Show me player activity for the last 3 days",
     "Total bets and wins for yesterday",
     "Revenue breakdown by country for last week",
+  ], []);
+
+  // Query templates for common use cases
+  const queryTemplates = useMemo((): QueryTemplate[] => [
+    {
+      id: 'revenue-analysis',
+      name: 'Revenue Analysis',
+      description: 'Analyze revenue trends and patterns',
+      category: 'Financial',
+      template: 'Show me {metric} revenue for {time_period} grouped by {dimension}',
+      difficulty: 'Beginner',
+      tags: ['revenue', 'financial', 'trends']
+    },
+    {
+      id: 'player-behavior',
+      name: 'Player Behavior Analysis',
+      description: 'Understand player gaming patterns and preferences',
+      category: 'Analytics',
+      template: 'Analyze player {behavior_type} for {segment} in {time_period}',
+      difficulty: 'Intermediate',
+      tags: ['players', 'behavior', 'segmentation']
+    },
+    {
+      id: 'performance-kpis',
+      name: 'Performance KPIs',
+      description: 'Track key performance indicators',
+      category: 'KPIs',
+      template: 'Show me {kpi_metric} performance compared to {comparison_period}',
+      difficulty: 'Beginner',
+      tags: ['kpi', 'performance', 'comparison']
+    },
+    {
+      id: 'cohort-analysis',
+      name: 'Cohort Analysis',
+      description: 'Analyze user cohorts and retention',
+      category: 'Advanced Analytics',
+      template: 'Perform cohort analysis for players registered in {period} tracking {metric}',
+      difficulty: 'Advanced',
+      tags: ['cohort', 'retention', 'advanced']
+    },
+    {
+      id: 'geographic-analysis',
+      name: 'Geographic Analysis',
+      description: 'Analyze performance by geographic regions',
+      category: 'Geographic',
+      template: 'Show me {metric} breakdown by {geographic_level} for {time_period}',
+      difficulty: 'Intermediate',
+      tags: ['geographic', 'regional', 'location']
+    }
   ], []);
 
   const loadEnhancedSuggestions = useCallback(async () => {
@@ -84,6 +179,65 @@ const EnhancedQueryBuilder: React.FC = () => {
   useEffect(() => {
     loadEnhancedSuggestions();
   }, [loadEnhancedSuggestions]);
+
+  // Real-time query validation
+  const validateQuery = useCallback(async (queryText: string) => {
+    if (!queryText.trim() || queryText.length < 10) {
+      setQueryValidation(null);
+      return;
+    }
+
+    try {
+      // Simulate API call for query validation
+      const validation = {
+        isValid: queryText.length > 5,
+        confidence: Math.min(0.9, queryText.length / 50),
+        suggestions: queryText.includes('yesterday') ? ['Consider using specific dates for better performance'] : [],
+        warnings: queryText.toLowerCase().includes('select *') ? ['Avoid SELECT * for better performance'] : []
+      };
+      setQueryValidation(validation);
+    } catch (error) {
+      console.error('Query validation error:', error);
+    }
+  }, []);
+
+  // Debounced query validation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      validateQuery(query);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [query, validateQuery]);
+
+  // Load query history from localStorage
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('queryHistory');
+    if (savedHistory) {
+      setQueryHistory(JSON.parse(savedHistory));
+    }
+
+    const savedFavorites = localStorage.getItem('queryFavorites');
+    if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites));
+    }
+  }, []);
+
+  // Save query to history
+  const saveToHistory = useCallback((queryText: string) => {
+    const newHistory = [queryText, ...queryHistory.filter(q => q !== queryText)].slice(0, 10);
+    setQueryHistory(newHistory);
+    localStorage.setItem('queryHistory', JSON.stringify(newHistory));
+  }, [queryHistory]);
+
+  // Toggle favorite
+  const toggleFavorite = useCallback((queryText: string) => {
+    const newFavorites = favorites.includes(queryText)
+      ? favorites.filter(q => q !== queryText)
+      : [...favorites, queryText];
+    setFavorites(newFavorites);
+    localStorage.setItem('queryFavorites', JSON.stringify(newFavorites));
+  }, [favorites]);
 
   const handleAnalyzeQuery = async () => {
     if (!query.trim()) return;
@@ -113,6 +267,9 @@ const EnhancedQueryBuilder: React.FC = () => {
     setResult(null);
 
     try {
+      // Save to history
+      saveToHistory(query);
+
       const request: EnhancedQueryRequest = {
         query: query,
         executeQuery: true,
@@ -132,6 +289,24 @@ const EnhancedQueryBuilder: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Handle wizard completion
+  const handleWizardComplete = useCallback((generatedQuery: string, data: QueryBuilderData) => {
+    setQuery(generatedQuery);
+    setWizardData(data);
+    setActiveTab('freeform');
+    // Auto-analyze the generated query
+    setTimeout(() => {
+      handleAnalyzeQuery();
+    }, 500);
+  }, []);
+
+  // Handle template selection
+  const handleTemplateSelect = useCallback((template: QueryTemplate) => {
+    setQuery(template.template);
+    setShowTemplates(false);
+    setActiveTab('freeform');
+  }, []);
 
   const handleSuggestionSelect = (suggestion: string | null) => {
     if (suggestion) {
@@ -373,100 +548,438 @@ const EnhancedQueryBuilder: React.FC = () => {
   };
 
   return (
-    <div>
-      <Title level={2}>Enhanced AI Query Builder</Title>
-      <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
-        Ask questions about your data with advanced AI analysis and insights
-      </Text>
+    <div className="enhanced-query-builder">
+      {/* Header Section */}
+      <div className="query-builder-header">
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
+              <RocketOutlined style={{ marginRight: '12px' }} />
+              Enhanced AI Query Builder
+            </Title>
+            <Text type="secondary" style={{ fontSize: '16px' }}>
+              Build powerful queries with AI assistance, guided wizards, and smart templates
+            </Text>
+          </Col>
+          <Col>
+            <Space>
+              <Switch
+                checkedChildren="Advanced"
+                unCheckedChildren="Guided"
+                checked={builderMode === 'advanced'}
+                onChange={(checked) => setBuilderMode(checked ? 'advanced' : 'guided')}
+              />
+              <Button
+                icon={<BookOutlined />}
+                onClick={() => setShowTemplates(!showTemplates)}
+                type={showTemplates ? 'primary' : 'default'}
+              >
+                Templates
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </div>
 
-      <Card style={{ marginBottom: 24 }}>
-        <form onSubmit={handleSubmit}>
-          <AutoComplete
-            style={{ width: '100%', marginBottom: 16 }}
-            options={suggestions.map(s => ({ value: s }))}
-            value={query}
-            onSelect={handleSuggestionSelect}
-            onSearch={setQuery}
-            placeholder="Ask a question about your data with AI-powered insights... (e.g., 'Analyze customer behavior trends')"
+      {/* Query Builder Tabs */}
+      <Card style={{ marginBottom: '24px' }}>
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          size="large"
+          tabBarStyle={{ marginBottom: '24px' }}
+        >
+          <Tabs.TabPane
+            tab={
+              <Space>
+                <ThunderboltOutlined />
+                AI Query Builder
+                <Badge count="Smart" style={{ backgroundColor: '#52c41a' }} />
+              </Space>
+            }
+            key="freeform"
           >
-            <Input.TextArea
-              rows={3}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+            {/* Freeform Query Builder */}
+            <div>
+              <form onSubmit={handleSubmit}>
+                <div style={{ marginBottom: '16px' }}>
+                  <AutoComplete
+                    style={{ width: '100%' }}
+                    options={[
+                      ...suggestions.map(s => ({ value: s, label: s })),
+                      ...queryHistory.map(q => ({ value: q, label: `🕒 ${q}` })),
+                      ...favorites.map(f => ({ value: f, label: `⭐ ${f}` }))
+                    ]}
+                    value={query}
+                    onSelect={handleSuggestionSelect}
+                    onSearch={setQuery}
+                    placeholder="Ask a question about your data with AI-powered insights... (e.g., 'Show me revenue trends by country')"
+                    size="large"
+                  >
+                    <Input.TextArea
+                      rows={4}
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      style={{
+                        fontSize: '16px',
+                        borderRadius: '8px',
+                        border: queryValidation?.isValid === false ? '2px solid #ff4d4f' : undefined
+                      }}
+                    />
+                  </AutoComplete>
+                </div>
+
+                {/* Real-time Query Validation */}
+                {queryValidation && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Space>
+                          {queryValidation.isValid ? (
+                            <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                          ) : (
+                            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+                          )}
+                          <Text strong>
+                            Query Confidence: {(queryValidation.confidence * 100).toFixed(0)}%
+                          </Text>
+                        </Space>
+                        <Progress
+                          percent={queryValidation.confidence * 100}
+                          size="small"
+                          status={queryValidation.confidence > 0.7 ? 'success' : 'normal'}
+                          showInfo={false}
+                        />
+                      </Col>
+                      <Col span={12}>
+                        <Space>
+                          <Button
+                            icon={<StarIcon />}
+                            size="small"
+                            type={favorites.includes(query) ? 'primary' : 'default'}
+                            onClick={() => toggleFavorite(query)}
+                            disabled={!query.trim()}
+                          >
+                            {favorites.includes(query) ? 'Favorited' : 'Add to Favorites'}
+                          </Button>
+                        </Space>
+                      </Col>
+                    </Row>
+
+                    {queryValidation.warnings.length > 0 && (
+                      <Alert
+                        type="warning"
+                        message="Query Optimization Suggestions"
+                        description={
+                          <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                            {queryValidation.warnings.map((warning, idx) => (
+                              <li key={idx}>{warning}</li>
+                            ))}
+                          </ul>
+                        }
+                        style={{ marginTop: '8px' }}
+                        showIcon
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <Row gutter={16}>
+                  <Col>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      icon={loading ? <Spin size="small" /> : <SendIcon />}
+                      disabled={loading || !query.trim()}
+                      size="large"
+                      style={{ minWidth: '160px' }}
+                    >
+                      {loading ? 'Processing...' : 'Execute Query'}
+                    </Button>
+                  </Col>
+                  <Col>
+                    <Button
+                      icon={analyzing ? <Spin size="small" /> : <PsychologyIcon />}
+                      disabled={analyzing || !query.trim()}
+                      onClick={handleAnalyzeQuery}
+                      size="large"
+                    >
+                      {analyzing ? 'Analyzing...' : 'Analyze Query'}
+                    </Button>
+                  </Col>
+                  <Col>
+                    <Button
+                      icon={<EyeOutlined />}
+                      disabled={!query.trim()}
+                      size="large"
+                    >
+                      Preview SQL
+                    </Button>
+                  </Col>
+                </Row>
+              </form>
+            </div>
+          </Tabs.TabPane>
+
+          <Tabs.TabPane
+            tab={
+              <Space>
+                <WandOutlined />
+                Guided Wizard
+                <Badge count="Step-by-step" style={{ backgroundColor: '#1890ff' }} />
+              </Space>
+            }
+            key="wizard"
+          >
+            <QueryWizard
+              onQueryGenerated={handleWizardComplete}
+              onClose={() => setActiveTab('freeform')}
+              initialData={wizardData}
             />
-          </AutoComplete>
+          </Tabs.TabPane>
 
-          <Space wrap>
-            <Button
-              type="primary"
-              htmlType="submit"
-              icon={loading ? <Spin size="small" /> : <SendIcon />}
-              disabled={loading || !query.trim()}
-              size="large"
-            >
-              {loading ? 'Processing...' : 'Execute Enhanced Query'}
-            </Button>
-
-            <Button
-              type="default"
-              icon={analyzing ? <Spin size="small" /> : <PsychologyIcon />}
-              disabled={analyzing || !query.trim()}
-              onClick={handleAnalyzeQuery}
-              size="large"
-            >
-              {analyzing ? 'Analyzing...' : 'Analyze Query'}
-            </Button>
-          </Space>
-        </form>
+          <Tabs.TabPane
+            tab={
+              <Space>
+                <HistoryOutlined />
+                History & Favorites
+              </Space>
+            }
+            key="history"
+          >
+            <Row gutter={24}>
+              <Col span={12}>
+                <Card title="Recent Queries" size="small">
+                  {queryHistory.length === 0 ? (
+                    <Empty description="No query history yet" />
+                  ) : (
+                    <List
+                      size="small"
+                      dataSource={queryHistory}
+                      renderItem={(item, index) => (
+                        <List.Item
+                          actions={[
+                            <Button
+                              type="link"
+                              size="small"
+                              onClick={() => setQuery(item)}
+                            >
+                              Use
+                            </Button>
+                          ]}
+                        >
+                          <Text ellipsis style={{ maxWidth: '300px' }}>
+                            {index + 1}. {item}
+                          </Text>
+                        </List.Item>
+                      )}
+                    />
+                  )}
+                </Card>
+              </Col>
+              <Col span={12}>
+                <Card title="Favorite Queries" size="small">
+                  {favorites.length === 0 ? (
+                    <Empty description="No favorite queries yet" />
+                  ) : (
+                    <List
+                      size="small"
+                      dataSource={favorites}
+                      renderItem={(item) => (
+                        <List.Item
+                          actions={[
+                            <Button
+                              type="link"
+                              size="small"
+                              onClick={() => setQuery(item)}
+                            >
+                              Use
+                            </Button>,
+                            <Button
+                              type="link"
+                              size="small"
+                              danger
+                              onClick={() => toggleFavorite(item)}
+                            >
+                              Remove
+                            </Button>
+                          ]}
+                        >
+                          <Text ellipsis style={{ maxWidth: '300px' }}>
+                            ⭐ {item}
+                          </Text>
+                        </List.Item>
+                      )}
+                    />
+                  )}
+                </Card>
+              </Col>
+            </Row>
+          </Tabs.TabPane>
+        </Tabs>
       </Card>
 
+      {/* Query Templates Modal */}
+      {showTemplates && (
+        <Card style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <Title level={4}>
+              <BookOutlined style={{ marginRight: '8px' }} />
+              Query Templates
+            </Title>
+            <Text type="secondary">
+              Choose from pre-built templates to get started quickly
+            </Text>
+          </div>
+
+          <Row gutter={[16, 16]}>
+            {queryTemplates.map((template) => (
+              <Col xs={24} sm={12} md={8} key={template.id}>
+                <Card
+                  hoverable
+                  size="small"
+                  onClick={() => handleTemplateSelect(template)}
+                  style={{ cursor: 'pointer', height: '100%' }}
+                >
+                  <Card.Meta
+                    title={
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Text strong>{template.name}</Text>
+                        <Space>
+                          <Tag color="blue">{template.category}</Tag>
+                          <Tag color={
+                            template.difficulty === 'Beginner' ? 'green' :
+                            template.difficulty === 'Intermediate' ? 'orange' : 'red'
+                          }>
+                            {template.difficulty}
+                          </Tag>
+                        </Space>
+                      </Space>
+                    }
+                    description={
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Text>{template.description}</Text>
+                        <div>
+                          {template.tags.map(tag => (
+                            <Tag key={tag} size="small">{tag}</Tag>
+                          ))}
+                        </div>
+                        <Text code style={{ fontSize: '12px' }}>
+                          {template.template}
+                        </Text>
+                      </Space>
+                    }
+                  />
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Card>
+      )}
+
+      {/* Error Display */}
       {error && (
         <Alert
           type="error"
           message={typeof error === 'string' ? error : error?.message || 'An error occurred'}
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: '16px' }}
+          showIcon
+          closable
+          onClose={() => setError(null)}
         />
       )}
 
       {/* Analysis Results */}
       {(semanticAnalysis || classification) && (
-        <div style={{ marginBottom: 24 }}>
-          {renderSemanticAnalysis()}
-          {renderClassification()}
-        </div>
+        <Card style={{ marginBottom: '24px' }}>
+          <Title level={4}>
+            <PsychologyIcon style={{ marginRight: '8px' }} />
+            AI Analysis Results
+          </Title>
+          <Row gutter={24}>
+            <Col span={12}>
+              {renderSemanticAnalysis()}
+            </Col>
+            <Col span={12}>
+              {renderClassification()}
+            </Col>
+          </Row>
+        </Card>
       )}
 
       {/* Enhanced Results */}
       {result && (
-        <div>
-          <Tabs activeKey={tabValue.toString()} onChange={(key) => setTabValue(parseInt(key))}>
-            <TabPane tab="Results" key="0">
+        <Card style={{ marginBottom: '24px' }}>
+          <Title level={4}>
+            <CheckCircleOutlined style={{ marginRight: '8px', color: '#52c41a' }} />
+            Query Results
+          </Title>
+
+          <Tabs defaultActiveKey="results" size="large">
+            <Tabs.TabPane
+              tab={
+                <Space>
+                  <TableRowsIcon />
+                  Results
+                  {result.queryResult && (
+                    <Badge
+                      count={result.queryResult.rowCount || result.queryResult.data?.length || 0}
+                      style={{ backgroundColor: '#52c41a' }}
+                    />
+                  )}
+                </Space>
+              }
+              key="results"
+            >
               {result.queryResult && (
                 <div>
-                  <Row gutter={16} style={{ marginBottom: 16 }}>
+                  <Row gutter={16} style={{ marginBottom: '16px' }}>
                     <Col xs={24} sm={8}>
-                      <Tag icon={<TimerIcon />} color="blue">
-                        {result.queryResult.executionTimeMs}ms
-                      </Tag>
+                      <Card size="small" style={{ textAlign: 'center' }}>
+                        <TimerIcon style={{ fontSize: '24px', color: '#1890ff', marginBottom: '8px' }} />
+                        <div>
+                          <Text strong style={{ fontSize: '18px' }}>
+                            {result.queryResult.executionTimeMs}ms
+                          </Text>
+                          <br />
+                          <Text type="secondary">Execution Time</Text>
+                        </div>
+                      </Card>
                     </Col>
                     <Col xs={24} sm={8}>
-                      <Tag icon={<TableRowsIcon />} color="green">
-                        {result.queryResult.rowCount || result.queryResult.data?.length || 0} rows
-                      </Tag>
+                      <Card size="small" style={{ textAlign: 'center' }}>
+                        <TableRowsIcon style={{ fontSize: '24px', color: '#52c41a', marginBottom: '8px' }} />
+                        <div>
+                          <Text strong style={{ fontSize: '18px' }}>
+                            {result.queryResult.rowCount || result.queryResult.data?.length || 0}
+                          </Text>
+                          <br />
+                          <Text type="secondary">Rows Returned</Text>
+                        </div>
+                      </Card>
                     </Col>
                     <Col xs={24} sm={8}>
-                      <Tag color="cyan">
-                        {result.queryResult.columns?.length || 0} columns
-                      </Tag>
+                      <Card size="small" style={{ textAlign: 'center' }}>
+                        <CategoryIcon style={{ fontSize: '24px', color: '#722ed1', marginBottom: '8px' }} />
+                        <div>
+                          <Text strong style={{ fontSize: '18px' }}>
+                            {result.queryResult.columns?.length || 0}
+                          </Text>
+                          <br />
+                          <Text type="secondary">Columns</Text>
+                        </div>
+                      </Card>
                     </Col>
                   </Row>
 
                   {result.processedQuery?.sql && (
-                    <Collapse style={{ marginBottom: 16 }}>
+                    <Collapse style={{ marginBottom: '16px' }}>
                       <Panel
                         header={
                           <Space>
-                            <Text strong>Generated SQL</Text>
+                            <CodeOutlined />
+                            <Text strong>Generated SQL Query</Text>
                             <Tag color={getConfidenceColor(result.processedQuery.confidence)}>
                               {(result.processedQuery.confidence * 100).toFixed(1)}% confidence
                             </Tag>
@@ -475,19 +988,27 @@ const EnhancedQueryBuilder: React.FC = () => {
                         key="sql"
                       >
                         <div style={{
-                          padding: 16,
-                          backgroundColor: '#f5f5f5',
-                          borderRadius: 6,
-                          fontFamily: 'monospace',
+                          padding: '16px',
+                          backgroundColor: '#f6f8fa',
+                          borderRadius: '8px',
+                          fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                          fontSize: '14px',
                           whiteSpace: 'pre-wrap',
-                          marginBottom: 16
+                          marginBottom: '16px',
+                          border: '1px solid #e1e4e8'
                         }}>
                           {result.processedQuery.sql}
                         </div>
                         {result.processedQuery.explanation && (
                           <div>
-                            <Text strong>Explanation</Text>
-                            <div style={{ marginTop: 8 }}>
+                            <Text strong>AI Explanation:</Text>
+                            <div style={{
+                              marginTop: '8px',
+                              padding: '12px',
+                              backgroundColor: '#f0f9ff',
+                              borderRadius: '6px',
+                              border: '1px solid #bae6fd'
+                            }}>
                               <Text>{result.processedQuery.explanation}</Text>
                             </div>
                           </div>
@@ -497,32 +1018,85 @@ const EnhancedQueryBuilder: React.FC = () => {
                   )}
                 </div>
               )}
-            </TabPane>
+            </Tabs.TabPane>
 
-            <TabPane tab="AI Insights" key="1">
-              {result.semanticAnalysis && (
-                <Card style={{ marginBottom: 16 }}>
-                  <Title level={5}>Semantic Analysis</Title>
-                  <Text>Intent: {result.semanticAnalysis.intent}</Text><br />
-                  <Text>Confidence: {(result.semanticAnalysis.confidence * 100).toFixed(1)}%</Text>
-                </Card>
-              )}
+            <Tabs.TabPane
+              tab={
+                <Space>
+                  <PsychologyIcon />
+                  AI Insights
+                </Space>
+              }
+              key="insights"
+            >
+              <Row gutter={24}>
+                <Col span={12}>
+                  {result.semanticAnalysis && (
+                    <Card size="small" title="Semantic Analysis">
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        <div>
+                          <Text strong>Intent:</Text> {result.semanticAnalysis.intent}
+                        </div>
+                        <div>
+                          <Text strong>Confidence:</Text>
+                          <Progress
+                            percent={result.semanticAnalysis.confidence * 100}
+                            size="small"
+                            status={result.semanticAnalysis.confidence > 0.7 ? 'success' : 'normal'}
+                          />
+                        </div>
+                      </Space>
+                    </Card>
+                  )}
+                </Col>
+                <Col span={12}>
+                  {result.classification && (
+                    <Card size="small" title="Query Classification">
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        <div>
+                          <Text strong>Category:</Text>
+                          <Tag color="blue" style={{ marginLeft: '8px' }}>
+                            {result.classification.category}
+                          </Tag>
+                        </div>
+                        <div>
+                          <Text strong>Complexity:</Text>
+                          <Tag
+                            color={getComplexityColor(result.classification.complexity)}
+                            style={{ marginLeft: '8px' }}
+                          >
+                            {result.classification.complexity}
+                          </Tag>
+                        </div>
+                        <div>
+                          <Text strong>Recommended Visualization:</Text>
+                          <Tag color="cyan" style={{ marginLeft: '8px' }}>
+                            {result.classification.recommendedVisualization}
+                          </Tag>
+                        </div>
+                      </Space>
+                    </Card>
+                  )}
+                </Col>
+              </Row>
+            </Tabs.TabPane>
 
-              {result.classification && (
-                <Card>
-                  <Title level={5}>Classification</Title>
-                  <Text>Category: {result.classification.category}</Text><br />
-                  <Text>Complexity: {result.classification.complexity}</Text><br />
-                  <Text>Recommended Visualization: {result.classification.recommendedVisualization}</Text>
-                </Card>
-              )}
-            </TabPane>
-
-            <TabPane tab="Alternatives" key="2">
+            <Tabs.TabPane
+              tab={
+                <Space>
+                  <CompareIcon />
+                  Alternative Queries
+                  {result.alternatives && (
+                    <Badge count={result.alternatives.length} style={{ backgroundColor: '#fa8c16' }} />
+                  )}
+                </Space>
+              }
+              key="alternatives"
+            >
               {renderAlternatives()}
-            </TabPane>
+            </Tabs.TabPane>
           </Tabs>
-        </div>
+        </Card>
       )}
     </div>
   );

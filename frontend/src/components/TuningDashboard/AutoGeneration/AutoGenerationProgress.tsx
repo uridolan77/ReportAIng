@@ -19,6 +19,7 @@ interface AutoGenerationProgressProps {
   recentlyCompleted?: string[];
   currentTable?: string;
   currentStage?: string;
+  currentColumn?: string;
   tablesProcessed?: number;
   totalTables?: number;
   columnsProcessed?: number;
@@ -47,6 +48,7 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
   recentlyCompleted = [],
   currentTable,
   currentStage,
+  currentColumn,
   tablesProcessed = 0,
   totalTables = 0,
   columnsProcessed = 0,
@@ -88,7 +90,7 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
   };
 
   return (
-    <Card style={{ marginBottom: '24px' }}>
+    <div style={{ marginBottom: '24px' }}>
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
         <Title level={4}>
           <RobotOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
@@ -173,6 +175,27 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
                     }}
                   >
                     {currentStage}
+                  </Tag>
+                </div>
+              )}
+
+              {currentColumn && (
+                <div className="status-info-item">
+                  <div className="status-info-label">
+                    <ColumnHeightOutlined style={{ color: '#52c41a', fontSize: '16px' }} />
+                    <Text strong style={{ fontSize: '14px', marginLeft: '8px' }}>Current Column:</Text>
+                  </div>
+                  <Tag
+                    color="green"
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      padding: '4px 12px',
+                      borderRadius: '6px',
+                      marginLeft: '12px'
+                    }}
+                  >
+                    {currentColumn}
                   </Tag>
                 </div>
               )}
@@ -409,6 +432,6 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
           You can review and edit all generated content before applying it.
         </Text>
       </div>
-    </Card>
+    </div>
   );
 };
