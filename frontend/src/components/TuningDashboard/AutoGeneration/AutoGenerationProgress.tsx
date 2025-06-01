@@ -26,6 +26,7 @@ interface AutoGenerationProgressProps {
   glossaryTermsGenerated?: number;
   relationshipsFound?: number;
   processingDetails?: ProcessingDetail[];
+  onCancel?: () => void;
 }
 
 interface ProcessingDetail {
@@ -213,53 +214,82 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
             size="small"
             dataSource={processingDetails}
             renderItem={(detail) => (
-              <List.Item>
-                <List.Item.Meta
-                  avatar={getStatusIcon(detail.status)}
-                  title={
-                    <Space>
-                      <Text strong>{detail.tableName}</Text>
-                      <Tag color={getStatusColor(detail.status)}>
-                        {detail.status.toUpperCase()}
-                      </Tag>
-                      {detail.stage && (
-                        <Tag color="purple">{detail.stage}</Tag>
-                      )}
-                    </Space>
-                  }
-                  description={
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      {detail.columnsProcessed !== undefined && detail.totalColumns && (
-                        <div>
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            Columns: {detail.columnsProcessed}/{detail.totalColumns}
-                          </Text>
-                          <Progress
-                            percent={Math.round((detail.columnsProcessed / detail.totalColumns) * 100)}
-                            size="small"
-                            showInfo={false}
-                            style={{ marginLeft: '8px', width: '100px' }}
-                          />
+              <List.Item className="processing-detail-item">
+                <div className="processing-detail-content">
+                  <div className="processing-detail-header">
+                    <div className="processing-detail-icon">
+                      {getStatusIcon(detail.status)}
+                    </div>
+                    <div className="processing-detail-info">
+                      <div className="processing-detail-title">
+                        <Text strong style={{ fontSize: '14px' }}>{detail.tableName}</Text>
+                        <div className="processing-detail-tags">
+                          <Tag
+                            color={getStatusColor(detail.status)}
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: '500',
+                              minWidth: '80px',
+                              textAlign: 'center',
+                              margin: '0 4px 0 0'
+                            }}
+                          >
+                            {detail.status.toUpperCase()}
+                          </Tag>
+                          {detail.stage && (
+                            <Tag
+                              color="purple"
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: '500',
+                                minWidth: '100px',
+                                textAlign: 'center',
+                                margin: '0'
+                              }}
+                            >
+                              {detail.stage}
+                            </Tag>
+                          )}
                         </div>
-                      )}
-                      {detail.generatedTerms !== undefined && detail.generatedTerms > 0 && (
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          Generated {detail.generatedTerms} glossary terms
-                        </Text>
-                      )}
-                      {detail.startTime && detail.status === 'processing' && (
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          Started: {detail.startTime.toLocaleTimeString()}
-                        </Text>
-                      )}
-                      {detail.endTime && detail.status === 'completed' && (
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          Completed: {detail.endTime.toLocaleTimeString()}
-                        </Text>
-                      )}
-                    </Space>
-                  }
-                />
+                      </div>
+
+                      <div className="processing-detail-progress">
+                        {detail.columnsProcessed !== undefined && detail.totalColumns && (
+                          <div className="progress-row">
+                            <Text type="secondary" style={{ fontSize: '12px', minWidth: '120px' }}>
+                              Columns: {detail.columnsProcessed}/{detail.totalColumns}
+                            </Text>
+                            <Progress
+                              percent={Math.round((detail.columnsProcessed / detail.totalColumns) * 100)}
+                              size="small"
+                              showInfo={false}
+                              style={{ flex: 1, maxWidth: '150px', marginLeft: '12px' }}
+                              strokeColor="#1890ff"
+                            />
+                          </div>
+                        )}
+
+                        <div className="processing-detail-meta">
+                          {detail.generatedTerms !== undefined && detail.generatedTerms > 0 && (
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              Generated {detail.generatedTerms} glossary terms
+                            </Text>
+                          )}
+                          {detail.startTime && detail.status === 'processing' && (
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              Started: {detail.startTime.toLocaleTimeString()}
+                            </Text>
+                          )}
+                          {detail.endTime && detail.status === 'completed' && (
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              Completed: {detail.endTime.toLocaleTimeString()}
+                            </Text>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </List.Item>
             )}
           />

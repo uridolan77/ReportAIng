@@ -49,24 +49,19 @@ public class TuningService : ITuningService
                 })
                 .ToListAsync();
 
-            // Get all other counts in parallel
-            var countsTask = Task.WhenAll(
-                _context.BusinessColumnInfo.Where(c => c.IsActive).CountAsync(),
-                _context.QueryPatterns.Where(p => p.IsActive).CountAsync(),
-                _context.BusinessGlossary.Where(g => g.IsActive).CountAsync(),
-                _context.PromptTemplates.Where(p => p.IsActive).CountAsync()
-            );
+            // Get all other counts sequentially to avoid DbContext concurrency issues
+            var columnCount = await _context.BusinessColumnInfo.Where(c => c.IsActive).CountAsync();
+            var patternCount = await _context.QueryPatterns.Where(p => p.IsActive).CountAsync();
+            var glossaryCount = await _context.BusinessGlossary.Where(g => g.IsActive).CountAsync();
+            var templateCount = await _context.PromptTemplates.Where(p => p.IsActive).CountAsync();
 
-            // Get pattern data in parallel
-            var patternsTask = _context.QueryPatterns
+            // Get pattern data
+            var patterns = await _context.QueryPatterns
                 .Where(p => p.IsActive)
                 .Select(p => new { p.PatternName, p.UsageCount, p.Priority })
                 .ToListAsync();
 
-            await Task.WhenAll(countsTask, patternsTask);
-
-            var counts = await countsTask;
-            var patterns = await patternsTask;
+            var counts = new[] { columnCount, patternCount, glossaryCount, templateCount };
 
             var recentlyUpdatedTables = dashboardStats
                 .Where(t => t.UpdatedDate.HasValue)
