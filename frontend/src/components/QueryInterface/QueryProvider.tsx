@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { Tag } from 'antd';
 import { useAuthStore } from '../../stores/authStore';
+import { useActiveResult, useActiveResultActions } from '../../stores/activeResultStore';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 import { getOrCreateSessionId } from '../../utils/sessionUtils';
@@ -57,6 +58,7 @@ interface QueryContextType {
   handleAddToFavorites: () => void;
   handleWizardQueryGenerated: (generatedQuery: string, wizardData: any) => Promise<void>;
   handleTemplateApply: (generatedQuery: string, template: any) => Promise<void>;
+  handleVisualizationRequest: (type: string, data: any[], columns: any[]) => void;
   handleKeyDown: (e: React.KeyboardEvent) => void;
 
   // React Query mutations
@@ -81,7 +83,6 @@ interface QueryProviderProps {
 export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   // State management
   const [query, setQuery] = useState('');
-  const [currentResult, setCurrentResult] = useState<any>(null);
   const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState('result');
   const [showExportModal, setShowExportModal] = useState(false);
@@ -89,6 +90,10 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const [showInsightsPanel, setShowInsightsPanel] = useState(true);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+
+  // Active result management
+  const { result: currentResult, query: activeQuery } = useActiveResult();
+  const { setActiveResult, clearActiveResult } = useActiveResultActions();
 
   // React Query hooks
   const executeQueryMutation = useExecuteQuery();
@@ -152,20 +157,20 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     if (!query.trim() || executeQueryMutation.isPending) return;
 
     setProgress(10);
-    setCurrentResult(null);
+    clearActiveResult(); // Clear previous result
 
     const queryRequest = createQueryRequest(query);
 
     try {
       const result = await executeQueryMutation.mutateAsync(queryRequest);
-      setCurrentResult(result);
+      setActiveResult(result, query); // Save to active result store
       setActiveTab('result');
     } catch (error) {
       console.error('Query execution failed:', error);
     } finally {
       setProgress(0);
     }
-  }, [query, executeQueryMutation, createQueryRequest]);
+  }, [query, executeQueryMutation, createQueryRequest, setActiveResult, clearActiveResult]);
 
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -185,20 +190,20 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const handleFollowUpSuggestionClick = useCallback(async (suggestion: string) => {
     setQuery(suggestion);
     setProgress(10);
-    setCurrentResult(null);
+    clearActiveResult(); // Clear previous result
 
     const queryRequest = createQueryRequest(suggestion);
 
     try {
       const result = await executeQueryMutation.mutateAsync(queryRequest);
-      setCurrentResult(result);
+      setActiveResult(result, suggestion); // Save to active result store
       setActiveTab('result');
     } catch (error) {
       console.error('Follow-up query execution failed:', error);
     } finally {
       setProgress(0);
     }
-  }, [executeQueryMutation, createQueryRequest]);
+  }, [executeQueryMutation, createQueryRequest, setActiveResult, clearActiveResult]);
 
   // Handle adding to favorites
   const handleAddToFavorites = useCallback(() => {
@@ -216,40 +221,67 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     setQuery(generatedQuery);
     setShowWizard(false);
     setProgress(10);
-    setCurrentResult(null);
+    clearActiveResult(); // Clear previous result
 
     const queryRequest = createQueryRequest(generatedQuery);
 
     try {
       const result = await executeQueryMutation.mutateAsync(queryRequest);
-      setCurrentResult(result);
+      setActiveResult(result, generatedQuery); // Save to active result store
       setActiveTab('result');
     } catch (error) {
       console.error('Wizard query execution failed:', error);
     } finally {
       setProgress(0);
     }
-  }, [executeQueryMutation, createQueryRequest]);
+  }, [executeQueryMutation, createQueryRequest, setActiveResult, clearActiveResult]);
 
   // Handle template application
   const handleTemplateApply = useCallback(async (generatedQuery: string, template: any) => {
     setQuery(generatedQuery);
     setShowTemplateLibrary(false);
     setProgress(10);
-    setCurrentResult(null);
+    clearActiveResult(); // Clear previous result
 
     const queryRequest = createQueryRequest(generatedQuery);
 
     try {
       const result = await executeQueryMutation.mutateAsync(queryRequest);
-      setCurrentResult(result);
+      setActiveResult(result, generatedQuery); // Save to active result store
       setActiveTab('result');
     } catch (error) {
       console.error('Template query execution failed:', error);
     } finally {
       setProgress(0);
     }
-  }, [executeQueryMutation, createQueryRequest]);
+  }, [executeQueryMutation, createQueryRequest, setActiveResult, clearActiveResult]);
+
+  // Handle visualization request
+  const handleVisualizationRequest = useCallback((type: string, data: any[], columns: any[]) => {
+    console.log('📊 Visualization requested:', { type, dataRows: data.length, columns: columns.length });
+
+    // Store visualization data in the active result store for persistence
+    const visualizationData = {
+      type,
+      data,
+      columns,
+      query,
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('Visualization data prepared:', visualizationData);
+
+    // For basic chart types (bar, line, pie), the inline chart will handle the display
+    // For dashboard, navigate to dashboard builder
+    if (type === 'dashboard') {
+      window.open('/dashboard', '_blank');
+    }
+    // For other advanced types, navigate to appropriate pages
+    else if (!['bar', 'line', 'pie'].includes(type)) {
+      window.open('/interactive', '_blank');
+    }
+    // For bar, line, pie - the inline chart in QueryResult will handle the display
+  }, [query]);
 
   // Keyboard navigation
   const keyboardNavigation = useKeyboardNavigation({
@@ -259,7 +291,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     onClearQuery: () => setQuery(''),
     onNewQuery: () => {
       setQuery('');
-      setCurrentResult(null);
+      clearActiveResult();
       setActiveTab('result');
     },
     onOpenTemplates: () => setShowTemplateLibrary(true),
@@ -284,7 +316,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
           break;
         case 'new-query':
           setQuery('');
-          setCurrentResult(null);
+          clearActiveResult();
           setActiveTab('result');
           break;
         case 'save-query':
@@ -375,6 +407,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     handleAddToFavorites,
     handleWizardQueryGenerated,
     handleTemplateApply,
+    handleVisualizationRequest,
     handleKeyDown,
 
     // React Query mutations

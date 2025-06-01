@@ -1,7 +1,7 @@
 import React from 'react';
-import { List, Card, Typography, Tag, Space, Empty } from 'antd';
+import { List, Card, Typography, Tag, Space, Empty, Spin, Alert } from 'antd';
 import { ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import { useQueryStore } from '../../stores/queryStore';
+import { useQueryHistory } from '../../hooks/useQueryApi';
 
 const { Text } = Typography;
 
@@ -10,7 +10,35 @@ interface QueryHistoryProps {
 }
 
 export const QueryHistory: React.FC<QueryHistoryProps> = ({ onQuerySelect }) => {
-  const { queryHistory } = useQueryStore();
+  const {
+    data: queryHistoryData,
+    isLoading,
+    error
+  } = useQueryHistory(1, 20);
+
+  if (isLoading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px' }}>
+        <Spin size="large" />
+        <div style={{ marginTop: '16px' }}>
+          <Text type="secondary">Loading query history...</Text>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert
+        message="Error Loading History"
+        description="Unable to load query history. Please try again later."
+        type="error"
+        showIcon
+      />
+    );
+  }
+
+  const queryHistory = queryHistoryData?.items || [];
 
   if (queryHistory.length === 0) {
     return (

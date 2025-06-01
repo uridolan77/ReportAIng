@@ -11,7 +11,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { DatabaseStatusIndicator } from './DatabaseStatusIndicator';
 import { AppNavigation } from '../Navigation/AppNavigation';
 
-const { Header, Content } = AntLayout;
+const { Header, Content, Sider } = AntLayout;
 const { Text } = Typography;
 
 interface LayoutProps {
@@ -53,26 +53,24 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         alignItems: 'center',
         justifyContent: 'space-between',
         borderBottom: '1px solid #f0f0f0',
-        height: '64px'
+        height: '64px',
+        position: 'relative',
+        zIndex: 1000
       }}>
-        {/* Left side - Menu and Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <AppNavigation isAdmin={isAdmin} />
-
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <RobotOutlined style={{
-              fontSize: '24px',
-              color: '#667eea',
-              marginRight: '12px'
-            }} />
-            <Text strong style={{
-              fontSize: '18px',
-              color: '#262626',
-              fontWeight: 600
-            }}>
-              BI Reporting Copilot
-            </Text>
-          </div>
+        {/* Left side - Logo */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <RobotOutlined style={{
+            fontSize: '24px',
+            color: '#667eea',
+            marginRight: '12px'
+          }} />
+          <Text strong style={{
+            fontSize: '18px',
+            color: '#262626',
+            fontWeight: 600
+          }}>
+            BI Reporting Copilot
+          </Text>
         </div>
 
         {/* Right side - Status and User */}
@@ -129,13 +127,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Space>
       </Header>
 
-      <Content style={{
-        padding: '0',
-        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-        minHeight: 'calc(100vh - 64px)'
-      }}>
-        {children}
-      </Content>
+      <AntLayout>
+        {/* Sidebar */}
+        <AppNavigation isAdmin={isAdmin} />
+
+        {/* Main Content */}
+        <Content style={{
+          padding: '0',
+          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+          minHeight: 'calc(100vh - 64px)',
+          overflow: 'auto'
+        }}>
+          {children}
+        </Content>
+      </AntLayout>
     </AntLayout>
   );
 };

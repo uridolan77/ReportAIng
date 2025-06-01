@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Alert, Button, Space, Typography } from 'antd';
 import { RocketOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useActiveResult, useActiveResultActions } from '../../stores/activeResultStore';
 import AdvancedVisualizationPanel from './AdvancedVisualizationPanel';
 
 const { Title, Text } = Typography;
@@ -14,54 +15,23 @@ interface StoredQueryResult {
 }
 
 const AdvancedVisualizationWrapper: React.FC = () => {
-  const [queryData, setQueryData] = useState<StoredQueryResult | null>(null);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const { result: activeResult, query: activeQuery, hasResult } = useActiveResult();
+  const { setActiveResult } = useActiveResultActions();
 
-  // Load data from localStorage
-  useEffect(() => {
-    const loadStoredData = () => {
-      try {
-        const storedResult = localStorage.getItem('current-query-result');
-        if (storedResult) {
-          const parsed = JSON.parse(storedResult);
-          setQueryData(parsed);
-        }
-      } catch (error) {
-        console.error('Error loading stored query result:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStoredData();
-
-    // Listen for storage changes (when new queries are executed)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'current-query-result') {
-        loadStoredData();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  // Convert active result to the format expected by the visualization panel
+  const queryData = activeResult ? {
+    data: activeResult.result?.data || [],
+    columns: activeResult.result?.metadata?.columns?.map(col => col.name) || [],
+    query: activeQuery,
+    timestamp: Date.now()
+  } : null;
 
   // Refresh data manually
   const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => {
-      const storedResult = localStorage.getItem('current-query-result');
-      if (storedResult) {
-        try {
-          const parsed = JSON.parse(storedResult);
-          setQueryData(parsed);
-        } catch (error) {
-          console.error('Error parsing stored data:', error);
-        }
-      }
-      setLoading(false);
-    }, 500);
+    // Just refresh the page or trigger a re-render since we're using the store
+    window.location.reload();
   };
 
   // Navigate to query interface
@@ -90,7 +60,7 @@ const AdvancedVisualizationWrapper: React.FC = () => {
             <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
               Create stunning visualizations with AI assistance. Execute a query first to get started.
             </Text>
-            
+
             <Alert
               message="No Data Available"
               description="To create AI-powered charts, you need to execute a query first. The system will analyze your data and suggest the best visualizations."
@@ -109,26 +79,39 @@ const AdvancedVisualizationWrapper: React.FC = () => {
               <Button
                 type="dashed"
                 onClick={() => {
-                  // Create sample data for testing
-                  const sampleData = {
-                    data: [
-                      { player_id: 'P001', deposits: 1500, country: 'US', date: '2024-01-01' },
-                      { player_id: 'P002', deposits: 2300, country: 'UK', date: '2024-01-01' },
-                      { player_id: 'P003', deposits: 800, country: 'CA', date: '2024-01-01' },
-                      { player_id: 'P004', deposits: 3200, country: 'US', date: '2024-01-02' },
-                      { player_id: 'P005', deposits: 1900, country: 'DE', date: '2024-01-02' },
-                      { player_id: 'P006', deposits: 2700, country: 'UK', date: '2024-01-02' },
-                      { player_id: 'P007', deposits: 1200, country: 'CA', date: '2024-01-03' },
-                      { player_id: 'P008', deposits: 4100, country: 'US', date: '2024-01-03' },
-                      { player_id: 'P009', deposits: 1600, country: 'DE', date: '2024-01-03' },
-                      { player_id: 'P010', deposits: 2900, country: 'UK', date: '2024-01-03' }
-                    ],
-                    columns: ['player_id', 'deposits', 'country', 'date'],
-                    query: 'SELECT player_id, deposits, country, date FROM player_deposits WHERE date >= \'2024-01-01\' ORDER BY deposits DESC LIMIT 10',
-                    timestamp: Date.now()
+                  // Create sample data for testing using the active result store
+                  const sampleResult = {
+                    success: true,
+                    queryId: 'sample-' + Date.now(),
+                    sql: 'SELECT player_id, deposits, country, date FROM player_deposits WHERE date >= \'2024-01-01\' ORDER BY deposits DESC LIMIT 10',
+                    result: {
+                      data: [
+                        { player_id: 'P001', deposits: 1500, country: 'US', date: '2024-01-01' },
+                        { player_id: 'P002', deposits: 2300, country: 'UK', date: '2024-01-01' },
+                        { player_id: 'P003', deposits: 800, country: 'CA', date: '2024-01-01' },
+                        { player_id: 'P004', deposits: 3200, country: 'US', date: '2024-01-02' },
+                        { player_id: 'P005', deposits: 1900, country: 'DE', date: '2024-01-02' },
+                        { player_id: 'P006', deposits: 2700, country: 'UK', date: '2024-01-02' },
+                        { player_id: 'P007', deposits: 1200, country: 'CA', date: '2024-01-03' },
+                        { player_id: 'P008', deposits: 4100, country: 'US', date: '2024-01-03' },
+                        { player_id: 'P009', deposits: 1600, country: 'DE', date: '2024-01-03' },
+                        { player_id: 'P010', deposits: 2900, country: 'UK', date: '2024-01-03' }
+                      ],
+                      metadata: {
+                        columns: [
+                          { name: 'player_id', type: 'string' },
+                          { name: 'deposits', type: 'number' },
+                          { name: 'country', type: 'string' },
+                          { name: 'date', type: 'string' }
+                        ],
+                        rowCount: 10
+                      }
+                    },
+                    executionTimeMs: 150,
+                    timestamp: new Date().toISOString(),
+                    confidence: 0.95
                   };
-                  localStorage.setItem('current-query-result', JSON.stringify(sampleData));
-                  setQueryData(sampleData);
+                  setActiveResult(sampleResult, 'Show me sample player deposit data');
                 }}
               >
                 Load Sample Data

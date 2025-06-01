@@ -257,57 +257,103 @@ export const TuningDashboard: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{
+      padding: '24px',
+      background: '#f5f5f5',
+      minHeight: '100vh'
+    }}>
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
         type="card"
         size="large"
+        className="tuning-dashboard-tabs"
+        style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '16px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)'
+        }}
       >
         <TabPane
-          tab={<span><BulbOutlined />Dashboard</span>}
+          tab={
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+              <BulbOutlined style={{ fontSize: '16px' }} />
+              Dashboard
+            </span>
+          }
           key="dashboard"
         >
           {renderDashboardOverview()}
         </TabPane>
 
         <TabPane
-          tab={<span><TableOutlined />Business Tables</span>}
+          tab={
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+              <TableOutlined style={{ fontSize: '16px' }} />
+              Business Tables
+            </span>
+          }
           key="tables"
         >
           <BusinessTableManager onDataChange={loadDashboardData} />
         </TabPane>
 
         <TabPane
-          tab={<span><SearchOutlined />Query Patterns</span>}
+          tab={
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+              <SearchOutlined style={{ fontSize: '16px' }} />
+              Query Patterns
+            </span>
+          }
           key="patterns"
         >
           <QueryPatternManager onDataChange={loadDashboardData} />
         </TabPane>
 
         <TabPane
-          tab={<span><BookOutlined />Business Glossary</span>}
+          tab={
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+              <BookOutlined style={{ fontSize: '16px' }} />
+              Business Glossary
+            </span>
+          }
           key="glossary"
         >
           <BusinessGlossaryManager onDataChange={loadDashboardData} />
         </TabPane>
 
         <TabPane
-          tab={<span><RobotOutlined />Auto-Generate</span>}
+          tab={
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+              <RobotOutlined style={{ fontSize: '16px' }} />
+              Auto-Generate
+            </span>
+          }
           key="auto-generation"
         >
           <AutoGenerationManager onRefresh={loadDashboardData} />
         </TabPane>
 
         <TabPane
-          tab={<span><SettingOutlined />AI Settings</span>}
+          tab={
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+              <SettingOutlined style={{ fontSize: '16px' }} />
+              AI Settings
+            </span>
+          }
           key="settings"
         >
           <AISettingsManager onDataChange={loadDashboardData} />
         </TabPane>
 
         <TabPane
-          tab={<span><BugOutlined />Prompt Logs</span>}
+          tab={
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+              <BugOutlined style={{ fontSize: '16px' }} />
+              Prompt Logs
+            </span>
+          }
           key="prompt-logs"
         >
           <PromptLogsViewer />

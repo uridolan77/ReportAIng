@@ -30,6 +30,7 @@ const SecurityDashboard = lazy(() => import('./components/Security/SecurityDashb
 const RequestSigningDemo = lazy(() => import('./components/Security/RequestSigningDemo').then(module => ({ default: module.RequestSigningDemo })));
 const TypeSafetyDemo = lazy(() => import('./components/TypeSafety/TypeSafetyDemo').then(module => ({ default: module.TypeSafetyDemo })));
 const CacheManager = lazy(() => import('./components/Admin/CacheManager').then(module => ({ default: module.CacheManager })));
+const TuningDashboard = lazy(() => import('./components/Tuning/TuningDashboard').then(module => ({ default: module.TuningDashboard })));
 
 const App: React.FC = () => {
   const { isAuthenticated, user, isAdmin } = useAuthStore();
@@ -96,7 +97,7 @@ const App: React.FC = () => {
                         <Route path="/enhanced-query" element={<EnhancedQueryBuilder />} />
 
                         {/* Admin Routes */}
-                        <Route path="/admin/tuning" element={<div style={{ padding: '40px', textAlign: 'center' }}>AI Tuning - Coming Soon</div>} />
+                        <Route path="/admin/tuning" element={<TuningDashboard />} />
                         <Route path="/admin/cache" element={<CacheManager />} />
                         <Route path="/admin/security" element={<SecurityDashboard />} />
 

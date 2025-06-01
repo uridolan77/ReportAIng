@@ -151,8 +151,10 @@ const InteractiveVisualization: React.FC = () => {
         try {
           const parsed = JSON.parse(storedResult);
           sources.push({
-            ...parsed,
-            query: parsed.query || 'Current Query Result'
+            data: parsed.data || [],
+            columns: parsed.columns || [],
+            query: parsed.query || 'Current Query Result',
+            timestamp: parsed.timestamp || Date.now()
           });
         } catch (error) {
           console.error('Error parsing stored data:', error);
@@ -186,7 +188,7 @@ const InteractiveVisualization: React.FC = () => {
 
   // Generate time series sample data
   const generateTimeSeriesData = () => {
-    const data = [];
+    const data: any[] = [];
     const regions = ['North', 'South', 'East', 'West'];
     const products = ['Product A', 'Product B', 'Product C'];
     
@@ -225,8 +227,17 @@ const InteractiveVisualization: React.FC = () => {
   // Initialize filters based on data
   const initializeFilters = (dataSource: StoredData) => {
     const newFilters: FilterConfig[] = [];
+
+    // Safety checks
+    if (!dataSource || !Array.isArray(dataSource.data) || !Array.isArray(dataSource.columns)) {
+      console.warn('Invalid data source structure:', dataSource);
+      setFilters([]);
+      setActiveFilters({});
+      return;
+    }
+
     const sampleData = dataSource.data.slice(0, 100);
-    
+
     dataSource.columns.forEach(column => {
       const values = sampleData.map(row => row[column]).filter(v => v != null);
       if (values.length === 0) return;
@@ -285,8 +296,8 @@ const InteractiveVisualization: React.FC = () => {
 
   // Apply filters to data
   const filteredData = useMemo(() => {
-    if (!currentDataSource) return [];
-    
+    if (!currentDataSource || !Array.isArray(currentDataSource.data)) return [];
+
     let data = [...currentDataSource.data];
     
     Object.entries(activeFilters).forEach(([column, filterValue]) => {
@@ -603,7 +614,7 @@ const InteractiveVisualization: React.FC = () => {
                 >
                   {availableData.map((source, index) => (
                     <Option key={index} value={source.query}>
-                      {source.query} ({source.data.length} rows)
+                      {source.query} ({Array.isArray(source.data) ? source.data.length : 0} rows)
                     </Option>
                   ))}
                 </Select>
@@ -629,7 +640,7 @@ const InteractiveVisualization: React.FC = () => {
               </div>
 
               {/* Axis Configuration */}
-              {currentDataSource && (
+              {currentDataSource && Array.isArray(currentDataSource.columns) && (
                 <>
                   <div>
                     <Text strong>X-Axis</Text>

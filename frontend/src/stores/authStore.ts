@@ -49,19 +49,17 @@ export const useAuthStore = create<AuthState>()(
 
           console.log('🔐 Full login response:', response);
 
-          if (response.Success || response.success) {
-            // Backend returns AccessToken and RefreshToken (capital A and R)
+          if (response.success) {
+            // Backend now returns camelCase properties due to JSON serialization fix
             console.log('🔐 Login response:', {
-              hasAccessToken: !!response.AccessToken,
-              hasToken: !!response.token,
-              hasRefreshToken: !!response.RefreshToken,
-              hasRefreshTokenLower: !!response.refreshToken,
-              user: response.User || response.user
+              hasAccessToken: !!response.accessToken,
+              hasRefreshToken: !!response.refreshToken,
+              user: response.user
             });
 
             // Encrypt tokens before storing (now async)
-            const accessToken = response.AccessToken || response.token || '';
-            const refreshToken = response.RefreshToken || response.refreshToken || '';
+            const accessToken = response.accessToken || '';
+            const refreshToken = response.refreshToken || '';
 
             if (!accessToken) {
               console.error('❌ No access token received from backend');
@@ -71,16 +69,16 @@ export const useAuthStore = create<AuthState>()(
             const encryptedToken = await SecurityUtils.encryptToken(accessToken);
             const encryptedRefreshToken = await SecurityUtils.encryptToken(refreshToken);
 
-            // Backend returns User (capital U), not user (lowercase)
-            const userFromResponse = response.User || response.user;
+            // Backend now returns camelCase user object
+            const userFromResponse = response.user;
 
-            // Transform user object to match frontend interface (camelCase)
+            // User object is already in camelCase format
             const transformedUser = userFromResponse ? {
-              id: userFromResponse.Id || userFromResponse.id,
-              username: userFromResponse.Username || userFromResponse.username,
-              displayName: userFromResponse.DisplayName || userFromResponse.displayName,
-              email: userFromResponse.Email || userFromResponse.email,
-              roles: userFromResponse.Roles || userFromResponse.roles || []
+              id: userFromResponse.id,
+              username: userFromResponse.username,
+              displayName: userFromResponse.displayName,
+              email: userFromResponse.email,
+              roles: userFromResponse.roles || []
             } : null;
 
             console.log('🔐 Transformed user:', transformedUser);
@@ -168,11 +166,11 @@ export const useAuthStore = create<AuthState>()(
 
           const data = await response.json();
 
-          if (data.Success || data.success) {
-            // Backend returns AccessToken and RefreshToken (capital A and R)
+          if (data.success) {
+            // Backend now returns camelCase properties
             // Encrypt new tokens
-            const encryptedToken = await SecurityUtils.encryptToken(data.AccessToken || data.accessToken);
-            const encryptedRefreshToken = await SecurityUtils.encryptToken(data.RefreshToken || data.refreshToken);
+            const encryptedToken = await SecurityUtils.encryptToken(data.accessToken);
+            const encryptedRefreshToken = await SecurityUtils.encryptToken(data.refreshToken);
 
             set({
               token: encryptedToken,

@@ -22,6 +22,7 @@ import {
   ThunderboltOutlined,
   RocketOutlined
 } from '@ant-design/icons';
+import { useLocation } from 'react-router-dom';
 import { useQueryContext } from './QueryProvider';
 import { EnhancedQueryInput } from './EnhancedQueryInput';
 import { QueryResult } from './QueryResult';
@@ -31,6 +32,7 @@ import { TipTooltip, ShortcutTooltip, FeatureTooltip } from '../Onboarding/Conte
 const { Title, Text, Paragraph } = Typography;
 
 export const MinimalQueryInterface: React.FC = () => {
+  const location = useLocation();
   const {
     query,
     setQuery,
@@ -45,6 +47,16 @@ export const MinimalQueryInterface: React.FC = () => {
 
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
+
+  // Handle navigation state (suggested queries from other pages)
+  useEffect(() => {
+    const state = location.state as { suggestedQuery?: string } | null;
+    if (state?.suggestedQuery) {
+      setQuery(state.suggestedQuery);
+      // Clear the navigation state to prevent re-setting on subsequent renders
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, setQuery]);
 
   // Check if this is user's first visit
   useEffect(() => {
@@ -92,28 +104,32 @@ export const MinimalQueryInterface: React.FC = () => {
   ];
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '60px 24px' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px' }}>
       {/* Hero Section */}
-      <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '56px' }}>
         <Title
           level={1}
           style={{
-            fontSize: '2.5rem',
-            fontWeight: 700,
-            margin: '0 0 16px 0',
-            color: '#262626',
-            lineHeight: '1.2'
+            fontSize: '3.2rem',
+            fontWeight: 800,
+            margin: '0 0 20px 0',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            lineHeight: '1.1'
           }}
         >
           Ask Your Data Anything
         </Title>
         <Paragraph
           style={{
-            fontSize: '16px',
-            color: '#595959',
-            maxWidth: '500px',
-            margin: '0 auto 24px',
-            lineHeight: '1.5'
+            fontSize: '18px',
+            color: '#6b7280',
+            maxWidth: '600px',
+            margin: '0 auto 28px',
+            lineHeight: '1.6',
+            fontWeight: 400
           }}
         >
           Get instant insights from your business data using natural language.
@@ -124,9 +140,10 @@ export const MinimalQueryInterface: React.FC = () => {
           <Tag
             color="orange"
             style={{
-              fontSize: '13px',
-              padding: '4px 12px',
-              borderRadius: '12px'
+              fontSize: '14px',
+              padding: '6px 16px',
+              borderRadius: '20px',
+              fontWeight: 500
             }}
           >
             Working in offline mode
@@ -137,12 +154,21 @@ export const MinimalQueryInterface: React.FC = () => {
       {/* Main Query Input */}
       <div
         style={{
-          marginBottom: '40px',
+          marginBottom: '48px',
           background: '#ffffff',
-          border: '1px solid #e8e8e8',
-          borderRadius: '8px',
-          padding: '24px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
+          border: '2px solid #f1f5f9',
+          borderRadius: '16px',
+          padding: '32px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+          transition: 'all 0.3s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = '#e2e8f0';
+          e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.12)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = '#f1f5f9';
+          e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.08)';
         }}
       >
         <EnhancedQueryInput
@@ -159,68 +185,109 @@ export const MinimalQueryInterface: React.FC = () => {
 
       {/* Quick Actions */}
       {showQuickActions && !currentResult && (
-        <Row gutter={[16, 16]} style={{ marginBottom: '40px' }}>
-          {quickActions.map((action, index) => (
-            <Col xs={24} sm={8} key={action.key}>
-              <div
-                style={{
-                  padding: '20px',
-                  border: '1px solid #f0f0f0',
-                  borderRadius: '8px',
-                  background: '#fafafa',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  textAlign: 'center'
-                }}
-                onClick={action.action}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = action.color;
-                  e.currentTarget.style.background = '#ffffff';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#f0f0f0';
-                  e.currentTarget.style.background = '#fafafa';
-                }}
-              >
-                <div style={{
-                  fontSize: '20px',
-                  color: action.color,
-                  marginBottom: '12px'
-                }}>
-                  {action.icon}
+        <div style={{ marginBottom: '56px' }}>
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '32px'
+          }}>
+            <Text style={{
+              fontSize: '20px',
+              fontWeight: 600,
+              color: '#374151',
+              display: 'block',
+              marginBottom: '8px'
+            }}>
+              Quick Actions
+            </Text>
+            <Text type="secondary" style={{ fontSize: '16px' }}>
+              Get started with these common tasks
+            </Text>
+          </div>
+
+          <Row gutter={[24, 24]} justify="center">
+            {quickActions.map((action, index) => (
+              <Col xs={24} sm={8} key={action.key}>
+                <div
+                  style={{
+                    padding: '28px 24px',
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                    borderRadius: '16px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    textAlign: 'center',
+                    border: '1px solid #e2e8f0',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  onClick={action.action}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.15)';
+                    e.currentTarget.style.borderColor = action.color;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                  }}
+                >
+                  <div style={{
+                    fontSize: '28px',
+                    color: action.color,
+                    marginBottom: '16px'
+                  }}>
+                    {action.icon}
+                  </div>
+                  <Text strong style={{
+                    fontSize: '16px',
+                    display: 'block',
+                    marginBottom: '8px',
+                    color: '#1f2937'
+                  }}>
+                    {action.title}
+                  </Text>
+                  <Text type="secondary" style={{
+                    fontSize: '14px',
+                    lineHeight: '1.5'
+                  }}>
+                    {action.description}
+                  </Text>
                 </div>
-                <Text strong style={{
-                  fontSize: '14px',
-                  display: 'block',
-                  marginBottom: '4px'
-                }}>
-                  {action.title}
-                </Text>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
-                  {action.description}
-                </Text>
-              </div>
-            </Col>
-          ))}
-        </Row>
+              </Col>
+            ))}
+          </Row>
+        </div>
       )}
 
       {/* Example Queries */}
       {!currentResult && (
-        <div style={{ marginBottom: '40px' }}>
+        <div style={{ marginBottom: '56px' }}>
           <div style={{
-            marginBottom: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
+            textAlign: 'center',
+            marginBottom: '32px'
           }}>
-            <ThunderboltOutlined style={{ color: '#667eea', fontSize: '16px' }} />
-            <Text strong style={{ color: '#262626', fontSize: '16px' }}>
-              Try These Examples
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              marginBottom: '8px'
+            }}>
+              <ThunderboltOutlined style={{ color: '#667eea', fontSize: '20px' }} />
+              <Text style={{
+                fontSize: '20px',
+                fontWeight: 600,
+                color: '#374151'
+              }}>
+                Try These Examples
+              </Text>
+            </div>
+            <Text type="secondary" style={{ fontSize: '16px' }}>
+              Click any example to get started
             </Text>
           </div>
 
-          <Row gutter={[12, 12]}>
+          <Row gutter={[16, 16]} justify="center">
             {exampleQueries.map((example, index) => (
               <Col xs={24} sm={12} lg={8} key={index}>
                 <Button
@@ -230,25 +297,33 @@ export const MinimalQueryInterface: React.FC = () => {
                     width: '100%',
                     textAlign: 'left',
                     height: 'auto',
-                    padding: '12px 16px',
-                    background: '#f8f9fa',
-                    border: '1px solid #e9ecef',
-                    borderRadius: '6px',
-                    color: '#495057',
+                    padding: '20px 24px',
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    color: '#374151',
                     whiteSpace: 'normal',
-                    lineHeight: '1.4',
-                    fontSize: '13px',
-                    transition: 'all 0.2s ease'
+                    lineHeight: '1.5',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    minHeight: '80px',
+                    display: 'flex',
+                    alignItems: 'center'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#667eea';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                     e.currentTarget.style.color = 'white';
                     e.currentTarget.style.borderColor = '#667eea';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.25)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#f8f9fa';
-                    e.currentTarget.style.color = '#495057';
-                    e.currentTarget.style.borderColor = '#e9ecef';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)';
+                    e.currentTarget.style.color = '#374151';
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
                   {example}
@@ -264,10 +339,10 @@ export const MinimalQueryInterface: React.FC = () => {
         <div
           style={{
             background: '#ffffff',
-            border: '1px solid #e8e8e8',
-            borderRadius: '8px',
-            padding: '24px',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
+            border: '2px solid #f1f5f9',
+            borderRadius: '16px',
+            padding: '32px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
           }}
         >
           <QueryResult
@@ -284,15 +359,19 @@ export const MinimalQueryInterface: React.FC = () => {
 
       {/* Empty State */}
       {!currentResult && !isLoading && (
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <div style={{ textAlign: 'center', padding: '60px 0' }}>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
-              <Space direction="vertical">
-                <Text type="secondary" style={{ fontSize: '16px' }}>
+              <Space direction="vertical" size="small">
+                <Text style={{
+                  fontSize: '18px',
+                  color: '#6b7280',
+                  fontWeight: 500
+                }}>
                   Ready to explore your data
                 </Text>
-                <Text type="secondary" style={{ fontSize: '14px' }}>
+                <Text type="secondary" style={{ fontSize: '16px' }}>
                   Type a question above or try one of the examples
                 </Text>
               </Space>

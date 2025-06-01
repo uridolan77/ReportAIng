@@ -3,10 +3,10 @@
  * Provides organized navigation for all features
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Menu,
-  Drawer,
+  Layout,
   Button,
   Space,
   Typography,
@@ -26,9 +26,15 @@ import {
   SafetyOutlined,
   RocketOutlined,
   BulbOutlined,
-  CodeOutlined
+  CodeOutlined,
+  LeftOutlined,
+  RightOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useApplicationState } from '../../hooks/useEnhancedState';
+import { useActiveResult } from '../../stores/activeResultStore';
+
+const { Sider } = Layout;
 
 const { Text } = Typography;
 
@@ -37,9 +43,16 @@ interface AppNavigationProps {
 }
 
 export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false }) => {
-  const [drawerVisible, setDrawerVisible] = useState(false);
+  const { appState, updateAppState } = useApplicationState();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Use application state for sidebar visibility
+  const collapsed = appState.sidebarCollapsed;
+
+  const toggleSidebar = () => {
+    updateAppState({ sidebarCollapsed: !collapsed });
+  };
 
   // Get query history from localStorage instead of context
   const getQueryHistoryCount = () => {
@@ -51,18 +64,9 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
     }
   };
 
-  // Check if there are current results
-  const hasCurrentResult = () => {
-    try {
-      const stored = localStorage.getItem('current-query-result');
-      return !!stored;
-    } catch {
-      return false;
-    }
-  };
-
+  // Use active result store instead of localStorage check
+  const { hasResult } = useActiveResult();
   const queryHistoryCount = getQueryHistoryCount();
-  const currentResult = hasCurrentResult();
 
   const menuItems = [
     {
@@ -86,9 +90,13 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
         {
           key: '/results',
           icon: <BarChartOutlined />,
-          label: 'Results & Charts',
+          label: (
+            <Badge dot={hasResult} offset={[8, 0]}>
+              Results & Charts
+            </Badge>
+          ),
           description: 'View query results and basic charts',
-          disabled: false
+          disabled: !hasResult
         },
         {
           key: '/dashboard',
@@ -190,7 +198,7 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key);
-    setDrawerVisible(false);
+    // Don't close sidebar on navigation - it stays persistent
   };
 
   const getCurrentKey = () => {
@@ -202,121 +210,138 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
   };
 
   const MenuContent = () => (
-    <div style={{ padding: '0 16px' }}>
-      <Menu
-        mode="inline"
-        selectedKeys={[getCurrentKey()]}
-        onClick={handleMenuClick}
-        style={{
-          border: 'none',
-          background: 'transparent'
-        }}
-      >
-        {menuItems.map(group => (
-          <Menu.ItemGroup
-            key={group.key}
-            title={
-              <Text
-                strong
-                style={{
-                  color: '#8c8c8c',
-                  fontSize: '12px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                {group.label}
-              </Text>
-            }
-          >
-            {group.children.map(item => (
-              <Menu.Item
-                key={item.key}
-                icon={item.icon}
-                disabled={item.disabled}
-                style={{
-                  marginBottom: '2px',
-                  borderRadius: '6px',
-                  height: 'auto',
-                  lineHeight: 'normal',
-                  padding: '8px 12px'
-                }}
-              >
-                <div style={{ minHeight: '20px' }}>
-                  <div style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#262626'
-                  }}>
-                    {item.label}
-                  </div>
-                  {item.description && (
-                    <Text
-                      type="secondary"
-                      style={{
-                        fontSize: '12px',
-                        display: 'block',
-                        marginTop: '2px',
-                        lineHeight: '1.3'
-                      }}
-                    >
-                      {item.description}
-                    </Text>
-                  )}
-                </div>
-              </Menu.Item>
-            ))}
-            <Divider style={{ margin: '12px 0 16px 0' }} />
-          </Menu.ItemGroup>
-        ))}
-      </Menu>
-    </div>
-  );
-
-  return (
-    <>
-      {/* Menu Button */}
-      <Button
-        type="text"
-        icon={<MenuOutlined />}
-        onClick={() => setDrawerVisible(true)}
-        style={{
-          color: '#595959',
-          border: '1px solid #d9d9d9',
-          borderRadius: '6px',
-          height: '32px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px'
-        }}
-      >
-        Menu
-      </Button>
-
-      {/* Navigation Drawer */}
-      <Drawer
-        title={
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Sidebar Header */}
+      <div style={{
+        padding: '16px',
+        borderBottom: '1px solid #f0f0f0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        {!collapsed && (
           <Space>
-            <RocketOutlined style={{ color: '#667eea' }} />
+            <RocketOutlined style={{ color: '#667eea', fontSize: '18px' }} />
             <Text strong style={{ color: '#262626', fontSize: '16px' }}>
               Navigation
             </Text>
           </Space>
-        }
-        placement="left"
-        onClose={() => setDrawerVisible(false)}
-        open={drawerVisible}
-        width={280}
-        styles={{
-          body: { padding: '8px 0' },
-          header: {
-            borderBottom: '1px solid #f0f0f0',
-            padding: '16px 24px'
-          }
-        }}
-      >
-        <MenuContent />
-      </Drawer>
-    </>
+        )}
+        <Button
+          type="text"
+          icon={collapsed ? <RightOutlined /> : <LeftOutlined />}
+          onClick={toggleSidebar}
+          style={{
+            color: '#595959',
+            border: 'none',
+            borderRadius: '6px',
+            height: '32px',
+            width: '32px'
+          }}
+        />
+      </div>
+
+      {/* Menu Content */}
+      <div style={{ flex: 1, overflow: 'auto', padding: collapsed ? '8px 0' : '8px 16px' }}>
+        <Menu
+          mode="inline"
+          selectedKeys={[getCurrentKey()]}
+          onClick={handleMenuClick}
+          inlineCollapsed={collapsed}
+          style={{
+            border: 'none',
+            background: 'transparent'
+          }}
+        >
+          {menuItems.map(group => (
+            <Menu.ItemGroup
+              key={group.key}
+              title={
+                !collapsed ? (
+                  <Text
+                    strong
+                    style={{
+                      color: '#8c8c8c',
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}
+                  >
+                    {group.label}
+                  </Text>
+                ) : null
+              }
+            >
+              {group.children.map(item => (
+                <Menu.Item
+                  key={item.key}
+                  icon={item.icon}
+                  disabled={item.disabled}
+                  title={collapsed ? item.label : undefined}
+                  style={{
+                    marginBottom: '2px',
+                    borderRadius: '6px',
+                    height: 'auto',
+                    lineHeight: 'normal',
+                    padding: collapsed ? '8px 24px' : '8px 12px'
+                  }}
+                >
+                  {!collapsed ? (
+                    <div style={{ minHeight: '20px' }}>
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#262626'
+                      }}>
+                        {item.label}
+                      </div>
+                      {item.description && (
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: '12px',
+                            display: 'block',
+                            marginTop: '2px',
+                            lineHeight: '1.3'
+                          }}
+                        >
+                          {item.description}
+                        </Text>
+                      )}
+                    </div>
+                  ) : (
+                    <span>{item.label}</span>
+                  )}
+                </Menu.Item>
+              ))}
+              {!collapsed && <Divider style={{ margin: '12px 0 16px 0' }} />}
+            </Menu.ItemGroup>
+          ))}
+        </Menu>
+      </div>
+    </div>
+  );
+
+  return (
+    <Sider
+      collapsible
+      collapsed={collapsed}
+      onCollapse={toggleSidebar}
+      trigger={null}
+      width={280}
+      collapsedWidth={80}
+      style={{
+        background: '#ffffff',
+        borderRight: '1px solid #f0f0f0',
+        boxShadow: '2px 0 8px rgba(0, 0, 0, 0.06)',
+        height: '100vh',
+        position: 'sticky',
+        top: 0,
+        left: 0,
+        zIndex: 100
+      }}
+    >
+      <MenuContent />
+    </Sider>
   );
 };

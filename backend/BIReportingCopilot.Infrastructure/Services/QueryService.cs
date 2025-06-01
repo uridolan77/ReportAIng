@@ -2,6 +2,8 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Infrastructure.AI;
+using BIReportingCopilot.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using CoreModels = BIReportingCopilot.Core.Models;
 
@@ -18,6 +20,7 @@ public class QueryService : IQueryService
     private readonly IPromptService _promptService;
     private readonly IAITuningSettingsService _settingsService;
     private readonly ContextManager? _contextManager;
+    private readonly BICopilotContext _context;
 
     // Legacy support removed - using IAIService instead
 
@@ -30,6 +33,7 @@ public class QueryService : IQueryService
         IAuditService auditService,
         IPromptService promptService,
         IAITuningSettingsService settingsService,
+        BICopilotContext context,
         ContextManager? contextManager = null) // Optional for backward compatibility
     {
         _logger = logger;
@@ -40,6 +44,7 @@ public class QueryService : IQueryService
         _auditService = auditService;
         _promptService = promptService;
         _settingsService = settingsService;
+        _context = context;
         _contextManager = contextManager;
     }
 
@@ -66,9 +71,16 @@ public class QueryService : IQueryService
             _logger.LogError("🔍 CACHE DEBUG - Admin setting: {AdminCache}, Request setting: {RequestCache}, Final: {FinalCache}",
                 adminCachingEnabled, requestCachingEnabled, isCachingEnabled);
 
+            // FORCE CACHE BYPASS - Clear any stale cache entries for this query when caching is disabled
+            var cacheKey = GenerateCacheKey(request.Question);
+            if (!isCachingEnabled)
+            {
+                _logger.LogError("🧹 CACHE DISABLED - Clearing any stale cache for query: {CacheKey}", cacheKey);
+                await _cacheService.RemoveAsync($"query:{cacheKey}");
+            }
+
             if (isCachingEnabled)
             {
-                var cacheKey = GenerateCacheKey(request.Question);
                 _logger.LogError("🔑 CACHE KEY DEBUG - Question: '{Question}' -> Key: {CacheKey}", request.Question, cacheKey);
                 var cachedResult = await GetCachedQueryAsync(cacheKey);
                 if (cachedResult != null)
@@ -195,7 +207,6 @@ public class QueryService : IQueryService
             // Cache the result if enabled (both in request options AND admin settings)
             if (isCachingEnabled)
             {
-                var cacheKey = GenerateCacheKey(request.Question);
                 await CacheQueryAsync(cacheKey, response, TimeSpan.FromHours(24));
                 _logger.LogError("💾 CACHE STORED - Question: '{Question}' -> Key: {CacheKey} -> SQL: {SQL}",
                     request.Question, cacheKey, generatedSQL?.Substring(0, Math.Min(100, generatedSQL?.Length ?? 0)) + "...");
@@ -231,33 +242,38 @@ public class QueryService : IQueryService
     {
         try
         {
-            _logger.LogInformation("Retrieving query history for user {UserId}, page {Page}", userId, page);
+            _logger.LogInformation("📋 RETRIEVING QUERY HISTORY - User: {UserId}, Page: {Page}, PageSize: {PageSize}", userId, page, pageSize);
 
-            // Get query history from audit logs
-            var auditLogs = await _auditService.GetAuditLogsAsync(userId, null, null, "QUERY_EXECUTED");
-
-            var queryHistory = auditLogs
-                .OrderByDescending(a => a.Timestamp)
+            // Get query history directly from QueryHistory table (not audit logs)
+            var queryHistoryEntities = await _context.QueryHistory
+                .Where(q => q.UserId == userId)
+                .OrderByDescending(q => q.QueryTimestamp)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(log => new QueryHistoryItem
+                .ToListAsync();
+
+            _logger.LogInformation("📋 FOUND {Count} QUERY HISTORY RECORDS for user {UserId}", queryHistoryEntities.Count, userId);
+
+            var queryHistory = queryHistoryEntities
+                .Select(entity => new QueryHistoryItem
                 {
-                    Id = log.Id.ToString(),
-                    UserId = log.UserId,
-                    Question = ExtractNaturalLanguageQuery(log.Details),
-                    Sql = ExtractGeneratedSQL(log.Details),
-                    Timestamp = log.Timestamp,
-                    ExecutionTimeMs = (int)ExtractExecutionTime(log.Details),
-                    Successful = ExtractSuccessStatus(log.Details),
-                    Error = ExtractErrorMessage(log.Details)
+                    Id = entity.Id.ToString(),
+                    UserId = entity.UserId,
+                    Question = entity.NaturalLanguageQuery,
+                    Sql = entity.GeneratedSQL,
+                    Timestamp = entity.QueryTimestamp,
+                    ExecutionTimeMs = entity.ExecutionTimeMs ?? 0,
+                    Successful = entity.IsSuccessful,
+                    Error = entity.ErrorMessage
                 })
                 .ToList();
 
+            _logger.LogInformation("📋 RETURNING {Count} QUERY HISTORY ITEMS for user {UserId}", queryHistory.Count, userId);
             return queryHistory;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving query history for user {UserId}", userId);
+            _logger.LogError(ex, "❌ ERROR retrieving query history for user {UserId}", userId);
             return new List<QueryHistoryItem>();
         }
     }
@@ -441,121 +457,7 @@ public class QueryService : IQueryService
         }
     }
 
-    private string ExtractNaturalLanguageQuery(object? details)
-    {
-        try
-        {
-            if (details == null) return string.Empty;
-
-            var detailsStr = details.ToString();
-            if (string.IsNullOrEmpty(detailsStr)) return string.Empty;
-
-            using var doc = System.Text.Json.JsonDocument.Parse(detailsStr);
-            if (doc.RootElement.TryGetProperty("NaturalLanguageQuery", out var queryElement))
-            {
-                return queryElement.GetString() ?? string.Empty;
-            }
-
-            return string.Empty;
-        }
-        catch
-        {
-            return string.Empty;
-        }
-    }
-
-    private string ExtractGeneratedSQL(object? details)
-    {
-        try
-        {
-            if (details == null) return string.Empty;
-
-            var detailsStr = details.ToString();
-            if (string.IsNullOrEmpty(detailsStr)) return string.Empty;
-
-            using var doc = System.Text.Json.JsonDocument.Parse(detailsStr);
-            if (doc.RootElement.TryGetProperty("GeneratedSQL", out var sqlElement))
-            {
-                return sqlElement.GetString() ?? string.Empty;
-            }
-
-            return string.Empty;
-        }
-        catch
-        {
-            return string.Empty;
-        }
-    }
-
-    private double ExtractExecutionTime(object? details)
-    {
-        try
-        {
-            if (details == null) return 0;
-
-            var detailsStr = details.ToString();
-            if (string.IsNullOrEmpty(detailsStr)) return 0;
-
-            using var doc = System.Text.Json.JsonDocument.Parse(detailsStr);
-            if (doc.RootElement.TryGetProperty("ExecutionTimeMs", out var timeElement))
-            {
-                return timeElement.GetDouble();
-            }
-
-            return 0;
-        }
-        catch
-        {
-            return 0;
-        }
-    }
-
-    private bool ExtractSuccessStatus(object? details)
-    {
-        try
-        {
-            if (details == null) return false;
-
-            var detailsStr = details.ToString();
-            if (string.IsNullOrEmpty(detailsStr)) return false;
-
-            using var doc = System.Text.Json.JsonDocument.Parse(detailsStr);
-            if (doc.RootElement.TryGetProperty("Error", out var errorElement))
-            {
-                var error = errorElement.GetString();
-                return string.IsNullOrEmpty(error);
-            }
-
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private string? ExtractErrorMessage(object? details)
-    {
-        try
-        {
-            if (details == null) return null;
-
-            var detailsStr = details.ToString();
-            if (string.IsNullOrEmpty(detailsStr)) return null;
-
-            using var doc = System.Text.Json.JsonDocument.Parse(detailsStr);
-            if (doc.RootElement.TryGetProperty("Error", out var errorElement))
-            {
-                return errorElement.GetString();
-            }
-
-            return null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
+    // Removed old audit log parsing methods - now reading directly from QueryHistory table
 
     private async Task LogPromptDetailsAsync(string userQuery, string fullPrompt, string generatedSQL, bool success, int executionTime, string? userId = null, string? sessionId = null, string? errorMessage = null)
     {

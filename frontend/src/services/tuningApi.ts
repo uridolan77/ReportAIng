@@ -250,7 +250,7 @@ class TuningApiService {
   // Dashboard
   async getDashboard(): Promise<TuningDashboardData> {
     const response = await fetch(`${this.baseUrl}/api/tuning/dashboard`, {
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -263,7 +263,7 @@ class TuningApiService {
   // Business Tables
   async getBusinessTables(): Promise<BusinessTableInfo[]> {
     const response = await fetch(`${this.baseUrl}/api/tuning/tables`, {
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -275,7 +275,7 @@ class TuningApiService {
 
   async getBusinessTable(id: number): Promise<BusinessTableInfo> {
     const response = await fetch(`${this.baseUrl}/api/tuning/tables/${id}`, {
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -289,7 +289,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/tables`, {
       method: 'POST',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
@@ -306,7 +306,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/tables/${id}`, {
       method: 'PUT',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
@@ -322,7 +322,7 @@ class TuningApiService {
   async deleteBusinessTable(id: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}/api/tuning/tables/${id}`, {
       method: 'DELETE',
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -333,7 +333,7 @@ class TuningApiService {
   // Query Patterns
   async getQueryPatterns(): Promise<QueryPattern[]> {
     const response = await fetch(`${this.baseUrl}/api/tuning/patterns`, {
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -345,7 +345,7 @@ class TuningApiService {
 
   async getQueryPattern(id: number): Promise<QueryPattern> {
     const response = await fetch(`${this.baseUrl}/api/tuning/patterns/${id}`, {
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -359,7 +359,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/patterns`, {
       method: 'POST',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
@@ -376,7 +376,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/patterns/${id}`, {
       method: 'PUT',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
@@ -392,7 +392,7 @@ class TuningApiService {
   async deleteQueryPattern(id: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}/api/tuning/patterns/${id}`, {
       method: 'DELETE',
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -404,7 +404,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/patterns/${id}/test`, {
       method: 'POST',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(naturalLanguageQuery),
@@ -420,7 +420,7 @@ class TuningApiService {
   // Business Glossary
   async getGlossaryTerms(): Promise<BusinessGlossaryTerm[]> {
     const response = await fetch(`${this.baseUrl}/api/tuning/glossary`, {
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -434,7 +434,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/glossary`, {
       method: 'POST',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
@@ -451,7 +451,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/glossary/${id}`, {
       method: 'PUT',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
@@ -467,7 +467,7 @@ class TuningApiService {
   async deleteGlossaryTerm(id: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}/api/tuning/glossary/${id}`, {
       method: 'DELETE',
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -478,7 +478,7 @@ class TuningApiService {
   // AI Settings
   async getAISettings(): Promise<AITuningSetting[]> {
     const response = await fetch(`${this.baseUrl}/api/tuning/settings`, {
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -492,7 +492,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/settings/${id}`, {
       method: 'PUT',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
@@ -524,7 +524,7 @@ class TuningApiService {
     if (params.toDate) searchParams.append('toDate', params.toDate);
 
     const response = await fetch(`${this.baseUrl}/api/tuning/prompt-logs?${searchParams}`, {
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -536,7 +536,7 @@ class TuningApiService {
 
   async getPromptLog(id: number): Promise<PromptLog> {
     const response = await fetch(`${this.baseUrl}/api/tuning/prompt-logs/${id}`, {
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -551,7 +551,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/auto-generate`, {
       method: 'POST',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
@@ -567,7 +567,7 @@ class TuningApiService {
   async autoGenerateTableContexts(): Promise<AutoGeneratedTableContext[]> {
     const response = await fetch(`${this.baseUrl}/api/tuning/auto-generate/tables`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -580,7 +580,7 @@ class TuningApiService {
   async autoGenerateGlossaryTerms(): Promise<AutoGeneratedGlossaryTerm[]> {
     const response = await fetch(`${this.baseUrl}/api/tuning/auto-generate/glossary`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -593,7 +593,7 @@ class TuningApiService {
   async autoGenerateRelationshipAnalysis(): Promise<BusinessRelationshipAnalysis> {
     const response = await fetch(`${this.baseUrl}/api/tuning/auto-generate/relationships`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -609,7 +609,7 @@ class TuningApiService {
 
     const response = await fetch(`${this.baseUrl}/api/tuning/auto-generate/table/${tableName}?${params}`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -623,7 +623,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/auto-generate/apply`, {
       method: 'POST',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(autoGenerated),
@@ -658,7 +658,7 @@ class TuningApiService {
     // This would need to be implemented on the backend
     const response = await fetch(`${this.baseUrl}/api/tuning/cache/clear`, {
       method: 'DELETE',
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -670,7 +670,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/settings/test`, {
       method: 'POST',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(settings),
@@ -687,7 +687,7 @@ class TuningApiService {
     const response = await fetch(`${this.baseUrl}/api/tuning/tables/bulk`, {
       method: 'PUT',
       headers: {
-        ...getAuthHeaders(),
+        ...(await getAuthHeaders()),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(tables),
@@ -700,7 +700,7 @@ class TuningApiService {
 
   async exportTuningData(format: 'json' | 'csv' | 'excel'): Promise<Blob> {
     const response = await fetch(`${this.baseUrl}/api/tuning/export?format=${format}`, {
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -714,12 +714,13 @@ class TuningApiService {
     const formData = new FormData();
     formData.append('file', file);
 
+    const authHeaders = await getAuthHeaders();
+    const headersWithoutContentType = { ...authHeaders };
+    delete headersWithoutContentType['Content-Type']; // Remove Content-Type for FormData
+
     const response = await fetch(`${this.baseUrl}/api/tuning/import`, {
       method: 'POST',
-      headers: {
-        ...getAuthHeaders(),
-        // Don't set Content-Type for FormData
-      },
+      headers: headersWithoutContentType,
       body: formData,
     });
 

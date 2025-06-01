@@ -15,16 +15,21 @@ import {
   Row,
   Col,
   Collapse,
-  Divider
+  Divider,
+  Switch,
+  List,
+  Tooltip
 } from 'antd';
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   TableOutlined,
-
+  ColumnHeightOutlined,
+  KeyOutlined,
+  MinusCircleOutlined
 } from '@ant-design/icons';
-import { tuningApi, BusinessTableInfo, CreateTableRequest } from '../../services/tuningApi';
+import { tuningApi, BusinessTableInfo, CreateTableRequest, BusinessColumnInfo } from '../../services/tuningApi';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -294,8 +299,9 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={() => form.submit()}
-        width={800}
+        width={1000}
         destroyOnClose
+        style={{ top: 20 }}
       >
         <Form
           form={form}
@@ -371,6 +377,126 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
               placeholder="Important business rules and constraints..."
             />
           </Form.Item>
+
+          <Divider orientation="left">
+            <Space>
+              <ColumnHeightOutlined />
+              <span>Column Documentation</span>
+            </Space>
+          </Divider>
+
+          <Form.List name="columns">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Card
+                    key={key}
+                    size="small"
+                    style={{ marginBottom: 16 }}
+                    title={
+                      <Space>
+                        <ColumnHeightOutlined />
+                        <span>Column {name + 1}</span>
+                      </Space>
+                    }
+                    extra={
+                      <Button
+                        type="link"
+                        danger
+                        icon={<MinusCircleOutlined />}
+                        onClick={() => remove(name)}
+                        size="small"
+                      >
+                        Remove
+                      </Button>
+                    }
+                  >
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'columnName']}
+                          label="Column Name"
+                          rules={[{ required: true, message: 'Please enter column name' }]}
+                        >
+                          <Input placeholder="e.g., Balance, Status, DepositCode" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'businessMeaning']}
+                          label="Business Meaning"
+                          rules={[{ required: true, message: 'Please enter business meaning' }]}
+                        >
+                          <Input placeholder="e.g., Player account balance, Bonus status" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'businessContext']}
+                      label="Business Context"
+                    >
+                      <TextArea
+                        rows={2}
+                        placeholder="Detailed explanation of how this column is used in business processes..."
+                      />
+                    </Form.Item>
+
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'dataExamples']}
+                          label="Data Examples"
+                        >
+                          <Select
+                            mode="tags"
+                            placeholder="Add example values (e.g., 100.50, Active, BONUS123)"
+                            style={{ width: '100%' }}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'validationRules']}
+                          label="Validation Rules"
+                        >
+                          <Input placeholder="e.g., Must be positive, Required field" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'isKeyColumn']}
+                      label="Key Column"
+                      valuePropName="checked"
+                    >
+                      <Switch
+                        checkedChildren={<KeyOutlined />}
+                        unCheckedChildren="No"
+                      />
+                    </Form.Item>
+                  </Card>
+                ))}
+
+                <Form.Item>
+                  <Button
+                    type="dashed"
+                    onClick={() => add()}
+                    block
+                    icon={<PlusOutlined />}
+                  >
+                    Add Column Documentation
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
         </Form>
       </Modal>
     </div>

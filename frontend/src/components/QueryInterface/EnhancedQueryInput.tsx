@@ -228,13 +228,10 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
 
   return (
     <div style={{ position: 'relative' }}>
-      <Card
-        className="enhanced-card"
-        size="small"
+      <div
         style={{
-          marginBottom: 16,
-          background: 'rgba(255, 255, 255, 0.98)',
-          border: '2px solid #e8f4fd'
+          background: 'transparent',
+          border: 'none'
         }}
       >
         <Space direction="vertical" style={{ width: '100%' }}>
@@ -268,9 +265,13 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                 className="query-textarea"
                 style={{
                   resize: 'vertical',
-                  fontSize: '16px',
+                  fontSize: '18px',
                   lineHeight: '1.6',
-                  padding: '16px'
+                  padding: '20px 24px',
+                  border: 'none',
+                  borderRadius: '12px',
+                  background: 'transparent',
+                  fontWeight: 400
                 }}
               />
             </AutoComplete>
@@ -279,23 +280,26 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
             <div
               style={{
                 position: 'absolute',
-                bottom: 12,
-                right: 12,
+                bottom: 16,
+                right: 16,
                 display: 'flex',
-                gap: 8,
+                gap: 12,
               }}
             >
               {value && (
                 <Tooltip title="Clear input">
                   <Button
-                    size="small"
+                    size="middle"
                     type="text"
                     icon={<ClearOutlined />}
                     onClick={handleClear}
                     style={{
-                      borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.9)',
-                      border: '1px solid #d9d9d9'
+                      borderRadius: '10px',
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                      height: '40px',
+                      width: '40px'
                     }}
                   />
                 </Tooltip>
@@ -303,7 +307,7 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
 
               <Tooltip title="Submit query (Ctrl+Enter)">
                 <Button
-                  size="small"
+                  size="middle"
                   type="primary"
                   icon={<SendOutlined />}
                   loading={loading}
@@ -311,9 +315,13 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                   disabled={!value.trim()}
                   className="query-submit-btn"
                   style={{
-                    height: '36px',
-                    borderRadius: '8px',
-                    fontWeight: 600
+                    height: '40px',
+                    borderRadius: '10px',
+                    fontWeight: 600,
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    border: 'none',
+                    boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
+                    minWidth: '80px'
                   }}
                 />
               </Tooltip>
@@ -327,12 +335,13 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
               alignItems: 'center',
               gap: 12,
               flexWrap: 'wrap',
-              padding: '12px',
-              background: 'linear-gradient(135deg, #f8f9ff 0%, #e8f4fd 100%)',
-              borderRadius: '8px',
-              border: '1px solid #e8f4fd'
+              padding: '16px 20px',
+              background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              marginTop: '16px'
             }}>
-              <Text type="secondary" style={{ fontSize: '13px', fontWeight: 500 }}>
+              <Text type="secondary" style={{ fontSize: '14px', fontWeight: 500 }}>
                 ⚡ Quick shortcuts:
               </Text>
               {shortcutHints.map(hint => (
@@ -341,10 +350,11 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                     color="blue"
                     style={{
                       cursor: 'pointer',
-                      fontSize: '12px',
-                      borderRadius: '6px',
+                      fontSize: '13px',
+                      borderRadius: '8px',
                       fontWeight: 500,
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      padding: '4px 8px'
                     }}
                     onClick={() => onChange(hint.shortcut)}
                   >
@@ -360,8 +370,9 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                   style={{
                     color: '#667eea',
                     border: '1px solid #667eea',
-                    borderRadius: '6px',
-                    fontWeight: 500
+                    borderRadius: '8px',
+                    fontWeight: 500,
+                    height: '28px'
                   }}
                 >
                   More
@@ -372,23 +383,25 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
 
           {/* Enhanced Help Text */}
           <div style={{
-            padding: '8px 12px',
+            padding: '12px 16px',
             background: 'rgba(102, 126, 234, 0.05)',
-            borderRadius: '6px',
-            border: '1px solid rgba(102, 126, 234, 0.1)'
+            borderRadius: '10px',
+            border: '1px solid rgba(102, 126, 234, 0.1)',
+            marginTop: '12px'
           }}>
-            <Text type="secondary" style={{ fontSize: '12px', color: '#667eea' }}>
+            <Text type="secondary" style={{ fontSize: '14px', color: '#667eea' }}>
               💡 <strong>Tip:</strong> Use shortcuts like "rev", "users", "top10" or start typing to see suggestions.
               Press <kbd style={{
                 background: '#f0f0f0',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                fontSize: '11px'
+                padding: '3px 8px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 500
               }}>Ctrl+Enter</kbd> to submit.
             </Text>
           </div>
         </Space>
-      </Card>
+      </div>
     </div>
   );
 };

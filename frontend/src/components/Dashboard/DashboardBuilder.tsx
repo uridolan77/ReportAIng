@@ -90,6 +90,7 @@ const DashboardBuilder: React.FC = () => {
   const [selectedChart, setSelectedChart] = useState<ChartConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [selectedDataSource, setSelectedDataSource] = useState<string>('');
 
   // Chart type options
   const chartTypes = [
@@ -112,8 +113,10 @@ const DashboardBuilder: React.FC = () => {
         try {
           const parsed = JSON.parse(storedResult);
           sources.push({
-            ...parsed,
-            query: parsed.query || 'Current Query Result'
+            data: parsed.data || [],
+            columns: parsed.columns || [],
+            query: parsed.query || 'Current Query Result',
+            timestamp: parsed.timestamp || Date.now()
           });
         } catch (error) {
           console.error('Error parsing stored data:', error);
@@ -143,7 +146,7 @@ const DashboardBuilder: React.FC = () => {
 
   // Generate sample data
   const generateSampleData = (type: string) => {
-    const data = [];
+    const data: any[] = [];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
     
     if (type === 'sales') {
@@ -192,6 +195,7 @@ const DashboardBuilder: React.FC = () => {
     }));
 
     setIsAddChartModalVisible(false);
+    setSelectedDataSource('');
   };
 
   // Remove chart
@@ -219,21 +223,22 @@ const DashboardBuilder: React.FC = () => {
   // Get data for chart
   const getChartData = (chart: ChartConfig) => {
     const dataSource = availableData.find(d => d.query === chart.dataSource);
-    return dataSource?.data || [];
+    return Array.isArray(dataSource?.data) ? dataSource.data : [];
   };
 
   // Render chart
   const renderChart = (chart: ChartConfig) => {
-    const data = getChartData(chart);
-    if (!data.length) {
-      return (
-        <div style={{ padding: 40, textAlign: 'center' }}>
-          <Text type="secondary">No data available</Text>
-        </div>
-      );
-    }
+    try {
+      const data = getChartData(chart);
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        return (
+          <div style={{ padding: 40, textAlign: 'center' }}>
+            <Text type="secondary">No data available</Text>
+          </div>
+        );
+      }
 
-    const chartData = data.slice(0, 100); // Limit for performance
+      const chartData = data.slice(0, 100); // Limit for performance
 
     switch (chart.type) {
       case 'bar':
@@ -241,11 +246,11 @@ const DashboardBuilder: React.FC = () => {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={chart.xAxis} />
+              <XAxis dataKey={chart.xAxis || 'name'} />
               <YAxis />
               <RechartsTooltip />
               <Legend />
-              <Bar dataKey={chart.yAxis} fill="#1890ff" />
+              <Bar dataKey={chart.yAxis || 'value'} fill="#1890ff" />
             </BarChart>
           </ResponsiveContainer>
         );
@@ -255,11 +260,11 @@ const DashboardBuilder: React.FC = () => {
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={chart.xAxis} />
+              <XAxis dataKey={chart.xAxis || 'name'} />
               <YAxis />
               <RechartsTooltip />
               <Legend />
-              <Line type="monotone" dataKey={chart.yAxis} stroke="#1890ff" />
+              <Line type="monotone" dataKey={chart.yAxis || 'value'} stroke="#1890ff" />
             </LineChart>
           </ResponsiveContainer>
         );
@@ -270,8 +275,8 @@ const DashboardBuilder: React.FC = () => {
             <PieChart>
               <Pie
                 data={chartData}
-                dataKey={chart.yAxis}
-                nameKey={chart.xAxis}
+                dataKey={chart.yAxis || 'value'}
+                nameKey={chart.xAxis || 'name'}
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
@@ -293,6 +298,14 @@ const DashboardBuilder: React.FC = () => {
             <Text>Chart type "{chart.type}" not implemented</Text>
           </div>
         );
+    }
+    } catch (error) {
+      console.error('Error rendering chart:', error);
+      return (
+        <div style={{ padding: 40, textAlign: 'center' }}>
+          <Text type="danger">Error rendering chart</Text>
+        </div>
+      );
     }
   };
 
@@ -343,7 +356,10 @@ const DashboardBuilder: React.FC = () => {
       <Modal
         title="Add New Chart"
         open={isAddChartModalVisible}
-        onCancel={() => setIsAddChartModalVisible(false)}
+        onCancel={() => {
+          setIsAddChartModalVisible(false);
+          setSelectedDataSource('');
+        }}
         footer={null}
         width={600}
       >
@@ -382,10 +398,13 @@ const DashboardBuilder: React.FC = () => {
             label="Data Source"
             rules={[{ required: true, message: 'Please select data source' }]}
           >
-            <Select placeholder="Select data source">
+            <Select
+              placeholder="Select data source"
+              onChange={(value) => setSelectedDataSource(value)}
+            >
               {availableData.map((source, index) => (
                 <Option key={index} value={source.query}>
-                  {source.query} ({source.data.length} rows)
+                  {source.query} ({source.data?.length || 0} rows)
                 </Option>
               ))}
             </Select>
@@ -395,18 +414,24 @@ const DashboardBuilder: React.FC = () => {
             <Col span={12}>
               <Form.Item name="xAxis" label="X-Axis Column">
                 <Select placeholder="Select X-axis">
-                  {availableData[0]?.columns.map(col => (
-                    <Option key={col} value={col}>{col}</Option>
-                  ))}
+                  {(() => {
+                    const selectedSource = availableData.find(d => d.query === selectedDataSource);
+                    return selectedSource?.columns?.map(col => (
+                      <Option key={col} value={col}>{col}</Option>
+                    )) || [];
+                  })()}
                 </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="yAxis" label="Y-Axis Column">
                 <Select placeholder="Select Y-axis">
-                  {availableData[0]?.columns.map(col => (
-                    <Option key={col} value={col}>{col}</Option>
-                  ))}
+                  {(() => {
+                    const selectedSource = availableData.find(d => d.query === selectedDataSource);
+                    return selectedSource?.columns?.map(col => (
+                      <Option key={col} value={col}>{col}</Option>
+                    )) || [];
+                  })()}
                 </Select>
               </Form.Item>
             </Col>
@@ -426,7 +451,10 @@ const DashboardBuilder: React.FC = () => {
               <Button type="primary" htmlType="submit">
                 Add Chart
               </Button>
-              <Button onClick={() => setIsAddChartModalVisible(false)}>
+              <Button onClick={() => {
+                setIsAddChartModalVisible(false);
+                setSelectedDataSource('');
+              }}>
                 Cancel
               </Button>
             </Space>

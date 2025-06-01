@@ -99,7 +99,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
           return;
         }
       } else {
-        console.log('Query caching disabled - skipping cache check');
+        console.log('Query caching disabled - skipping cache check and clearing any stale cache');
+        // Clear any stale cache entries when caching is disabled
+        await queryCacheService.invalidateCache();
       }
 
       // Get the current auth token (encrypted) and decrypt it
@@ -244,9 +246,23 @@ export const useQueryStore = create<QueryState>((set, get) => ({
 
   clearCache: async (pattern?: string) => {
     try {
+      // Clear IndexedDB cache
       await queryCacheService.invalidateCache(pattern);
+
+      // Clear localStorage cache items
+      if (!pattern) {
+        // Clear all cache-related localStorage items
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('cache') || key.includes('query-result') || key.includes('prompt-cache')) {
+            localStorage.removeItem(key);
+          }
+        });
+        console.log('All caches cleared (IndexedDB + localStorage)');
+      }
+
       // Cache cleared successfully
     } catch (error) {
+      console.error('Failed to clear cache:', error);
       // Failed to clear cache - error handled by service layer
     }
   },

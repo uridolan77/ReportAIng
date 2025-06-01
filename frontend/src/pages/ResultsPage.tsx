@@ -19,8 +19,7 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { QueryProvider } from '../components/QueryInterface/QueryProvider';
-import { useQueryContext } from '../components/QueryInterface/QueryProvider';
+import { useActiveResult, useActiveResultActions } from '../stores/activeResultStore';
 import { QueryResult } from '../components/QueryInterface/QueryResult';
 import { DataInsightsPanel } from '../components/Insights/DataInsightsPanel';
 
@@ -28,9 +27,15 @@ const { Title, Text } = Typography;
 
 const ResultsPageContent: React.FC = () => {
   const navigate = useNavigate();
-  const { currentResult, query, handleSubmitQuery } = useQueryContext();
+  const { result: currentResult, query, hasResult } = useActiveResult();
+  const { refreshActiveResult } = useActiveResultActions();
 
-  if (!currentResult) {
+  // Handle requery - navigate back to main page with the current query
+  const handleRequery = () => {
+    navigate('/', { state: { suggestedQuery: query } });
+  };
+
+  if (!hasResult || !currentResult) {
     return (
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
         <Breadcrumb style={{ marginBottom: '24px' }}>
@@ -61,8 +66,8 @@ const ResultsPageContent: React.FC = () => {
             }
             style={{ padding: '60px 0' }}
           >
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               icon={<ArrowLeftOutlined />}
               onClick={() => navigate('/')}
               style={{
@@ -108,16 +113,16 @@ const ResultsPageContent: React.FC = () => {
           <QueryResult
             result={currentResult}
             query={query}
-            onRequery={handleSubmitQuery}
+            onRequery={handleRequery}
             onSuggestionClick={(suggestion) => {
               // Handle suggestion click - could navigate back to main page with the suggestion
               navigate('/', { state: { suggestedQuery: suggestion } });
             }}
           />
         </Col>
-        
+
         <Col xs={24} lg={8}>
-          <Card 
+          <Card
             className="enhanced-card"
             title={
               <Space>
@@ -139,13 +144,13 @@ const ResultsPageContent: React.FC = () => {
       </Row>
 
       {/* Quick Actions */}
-      <Card 
-        className="enhanced-card" 
+      <Card
+        className="enhanced-card"
         style={{ marginTop: '24px' }}
         title="Quick Actions"
       >
         <Space wrap>
-          <Button 
+          <Button
             onClick={() => navigate('/')}
             style={{
               borderRadius: '8px',
@@ -155,7 +160,7 @@ const ResultsPageContent: React.FC = () => {
           >
             New Query
           </Button>
-          <Button 
+          <Button
             onClick={() => navigate('/dashboard')}
             disabled={!currentResult}
             style={{
@@ -166,7 +171,7 @@ const ResultsPageContent: React.FC = () => {
           >
             Create Dashboard
           </Button>
-          <Button 
+          <Button
             onClick={() => navigate('/interactive')}
             disabled={!currentResult}
             style={{
@@ -177,7 +182,7 @@ const ResultsPageContent: React.FC = () => {
           >
             Interactive Visualization
           </Button>
-          <Button 
+          <Button
             onClick={() => navigate('/advanced-viz')}
             disabled={!currentResult}
             style={{
@@ -195,9 +200,5 @@ const ResultsPageContent: React.FC = () => {
 };
 
 export const ResultsPage: React.FC = () => {
-  return (
-    <QueryProvider>
-      <ResultsPageContent />
-    </QueryProvider>
-  );
+  return <ResultsPageContent />;
 };

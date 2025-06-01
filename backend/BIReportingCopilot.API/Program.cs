@@ -93,8 +93,8 @@ builder.Services.Configure<BIReportingCopilot.Core.Configuration.AIServiceConfig
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        // Configure JSON serialization to use PascalCase to match frontend expectations
-        options.JsonSerializerOptions.PropertyNamingPolicy = null; // Use original property names (PascalCase)
+        // Configure JSON serialization to use camelCase to match frontend expectations
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.WriteIndented = builder.Environment.IsDevelopment();
     });
 

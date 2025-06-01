@@ -1,7 +1,17 @@
-import React from 'react';
-import { Card, Table, Typography, Space, Tag, Button } from 'antd';
-import { ReloadOutlined, CodeOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Card, Table, Typography, Space, Tag, Button, Divider, Row, Col } from 'antd';
+import {
+  ReloadOutlined,
+  CodeOutlined,
+  BarChartOutlined,
+  LineChartOutlined,
+  PieChartOutlined,
+  DashboardOutlined,
+  DownloadOutlined,
+  TableOutlined
+} from '@ant-design/icons';
 import { QueryResponse } from '../../types/query';
+import { InlineChart } from '../Visualization/InlineChart';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -10,9 +20,12 @@ interface QueryResultProps {
   query: string;
   onRequery: () => void;
   onSuggestionClick?: (suggestion: string) => void;
+  onVisualizationRequest?: (type: string, data: any[], columns: any[]) => void;
 }
 
-export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick }) => {
+export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick, onVisualizationRequest }) => {
+  const [showVisualizationOptions, setShowVisualizationOptions] = useState(false);
+  const [selectedChartType, setSelectedChartType] = useState<'bar' | 'line' | 'pie' | null>(null);
   if (!result.success) {
     return (
       <Card className="enhanced-card">
@@ -173,6 +186,192 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
           }}
         />
       </Card>
+
+      {/* Visualization Options */}
+      {dataSource.length > 0 && (
+        <Card className="enhanced-card">
+          <div style={{ marginBottom: '16px' }}>
+            <Title level={5} style={{ margin: 0, color: '#667eea' }}>
+              📊 Visualization Options
+            </Title>
+            <Text type="secondary" style={{ fontSize: '14px' }}>
+              Transform your data into interactive charts and graphs
+            </Text>
+          </div>
+
+          <Row gutter={[12, 12]}>
+            <Col xs={12} sm={8} md={6}>
+              <Button
+                icon={<BarChartOutlined />}
+                onClick={() => {
+                  setSelectedChartType(selectedChartType === 'bar' ? null : 'bar');
+                  if (onVisualizationRequest) {
+                    onVisualizationRequest('bar', dataSource, columns);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  height: '60px',
+                  borderRadius: '8px',
+                  border: `1px solid ${selectedChartType === 'bar' ? '#667eea' : '#667eea'}`,
+                  color: selectedChartType === 'bar' ? '#fff' : '#667eea',
+                  backgroundColor: selectedChartType === 'bar' ? '#667eea' : 'transparent',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px'
+                }}
+              >
+                Bar Chart
+              </Button>
+            </Col>
+
+            <Col xs={12} sm={8} md={6}>
+              <Button
+                icon={<LineChartOutlined />}
+                onClick={() => {
+                  setSelectedChartType(selectedChartType === 'line' ? null : 'line');
+                  if (onVisualizationRequest) {
+                    onVisualizationRequest('line', dataSource, columns);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  height: '60px',
+                  borderRadius: '8px',
+                  border: `1px solid #52c41a`,
+                  color: selectedChartType === 'line' ? '#fff' : '#52c41a',
+                  backgroundColor: selectedChartType === 'line' ? '#52c41a' : 'transparent',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px'
+                }}
+              >
+                Line Chart
+              </Button>
+            </Col>
+
+            <Col xs={12} sm={8} md={6}>
+              <Button
+                icon={<PieChartOutlined />}
+                onClick={() => {
+                  setSelectedChartType(selectedChartType === 'pie' ? null : 'pie');
+                  if (onVisualizationRequest) {
+                    onVisualizationRequest('pie', dataSource, columns);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  height: '60px',
+                  borderRadius: '8px',
+                  border: `1px solid #fa8c16`,
+                  color: selectedChartType === 'pie' ? '#fff' : '#fa8c16',
+                  backgroundColor: selectedChartType === 'pie' ? '#fa8c16' : 'transparent',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px'
+                }}
+              >
+                Pie Chart
+              </Button>
+            </Col>
+
+            <Col xs={12} sm={8} md={6}>
+              <Button
+                icon={<DashboardOutlined />}
+                onClick={() => {
+                  if (onVisualizationRequest) {
+                    onVisualizationRequest('dashboard', dataSource, columns);
+                  }
+                  setShowVisualizationOptions(true);
+                }}
+                style={{
+                  width: '100%',
+                  height: '60px',
+                  borderRadius: '8px',
+                  border: '1px solid #722ed1',
+                  color: '#722ed1',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px'
+                }}
+              >
+                Dashboard
+              </Button>
+            </Col>
+          </Row>
+
+          <Divider style={{ margin: '16px 0' }} />
+
+          <Row gutter={[12, 12]}>
+            <Col xs={24} sm={12}>
+              <Button
+                icon={<DownloadOutlined />}
+                style={{
+                  width: '100%',
+                  borderRadius: '8px',
+                  border: '1px solid #13c2c2',
+                  color: '#13c2c2'
+                }}
+                onClick={() => {
+                  // Export functionality
+                  const csvContent = [
+                    columns.map(col => col.title).join(','),
+                    ...dataSource.map(row =>
+                      columns.map(col => row[col.dataIndex] || '').join(',')
+                    )
+                  ].join('\n');
+
+                  const blob = new Blob([csvContent], { type: 'text/csv' });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `query-results-${Date.now()}.csv`;
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                }}
+              >
+                Export to CSV
+              </Button>
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <Button
+                icon={<TableOutlined />}
+                style={{
+                  width: '100%',
+                  borderRadius: '8px',
+                  border: '1px solid #eb2f96',
+                  color: '#eb2f96'
+                }}
+                onClick={() => {
+                  // Advanced table view functionality
+                  console.log('Advanced table view requested');
+                }}
+              >
+                Advanced Table View
+              </Button>
+            </Col>
+          </Row>
+        </Card>
+      )}
+
+      {/* Inline Chart Display - Positioned above suggestions */}
+      {selectedChartType && dataSource && dataSource.length > 0 && (
+        <InlineChart
+          type={selectedChartType}
+          data={dataSource}
+          columns={columns.map(col => col.dataIndex)}
+          title={`${selectedChartType.charAt(0).toUpperCase() + selectedChartType.slice(1)} Chart`}
+        />
+      )}
 
       {/* Enhanced Suggestions */}
       {result.suggestions && result.suggestions.length > 0 && (

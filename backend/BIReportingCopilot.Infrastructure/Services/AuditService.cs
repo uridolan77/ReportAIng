@@ -65,23 +65,24 @@ public class AuditService : IAuditService
 
             await LogAsync("QUERY_EXECUTED", userId, "Query", sessionId, auditDetails);
 
-            // Also log to query history
-            var queryHistory = new Core.Models.QueryHistoryEntity
+            // Also log to query history (using Infrastructure entity)
+            var queryHistory = new Data.Entities.QueryHistoryEntity
             {
                 UserId = userId,
                 SessionId = sessionId,
-                Query = naturalLanguageQuery,
-                GeneratedSql = generatedSQL,
+                NaturalLanguageQuery = naturalLanguageQuery,
+                GeneratedSQL = generatedSQL,
                 ExecutionTimeMs = executionTimeMs,
                 IsSuccessful = successful,
                 ErrorMessage = error,
-                ExecutedAt = DateTime.UtcNow
+                QueryTimestamp = DateTime.UtcNow
             };
 
-            _context.QueryHistories.Add(queryHistory);
+            _context.QueryHistory.Add(queryHistory);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Query execution logged for user: {UserId}, successful: {Successful}", userId, successful);
+            _logger.LogInformation("✅ QUERY HISTORY SAVED - User: {UserId}, Question: '{Question}', Successful: {Successful}, QueryHistoryId: {QueryHistoryId}",
+                userId, naturalLanguageQuery, successful, queryHistory.Id);
         }
         catch (Exception ex)
         {

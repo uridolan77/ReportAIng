@@ -19,7 +19,7 @@ public class GetQueryHistoryQueryHandler : IRequestHandler<GetQueryHistoryQuery,
     }
 
     public async Task<PagedResult<QueryHistoryItem>> Handle(
-        GetQueryHistoryQuery request, 
+        GetQueryHistoryQuery request,
         CancellationToken cancellationToken)
     {
         var query = _context.QueryHistory
@@ -35,7 +35,7 @@ public class GetQueryHistoryQueryHandler : IRequestHandler<GetQueryHistoryQuery,
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
-            query = query.Where(q => 
+            query = query.Where(q =>
                 q.NaturalLanguageQuery.Contains(request.SearchTerm) ||
                 q.GeneratedSQL.Contains(request.SearchTerm));
         }
