@@ -23,6 +23,8 @@ const EnhancedQueryBuilder = lazy(() => import('./components/QueryInterface/Enha
 const UserContextPanel = lazy(() => import('./components/AI/UserContextPanel'));
 const QuerySimilarityAnalyzer = lazy(() => import('./components/AI/QuerySimilarityAnalyzer'));
 const AdvancedVisualizationWrapper = lazy(() => import('./components/Visualization/AdvancedVisualizationWrapper'));
+const DashboardBuilder = lazy(() => import('./components/Dashboard/DashboardBuilder'));
+const InteractiveVisualization = lazy(() => import('./components/Interactive/InteractiveVisualization'));
 const AdvancedFeaturesDemo = lazy(() => import('./components/Demo/AdvancedFeaturesDemo').then(module => ({ default: module.AdvancedFeaturesDemo })));
 const SecurityDashboard = lazy(() => import('./components/Security/SecurityDashboard').then(module => ({ default: module.SecurityDashboard })));
 const RequestSigningDemo = lazy(() => import('./components/Security/RequestSigningDemo').then(module => ({ default: module.RequestSigningDemo })));
@@ -82,8 +84,8 @@ const App: React.FC = () => {
 
                         {/* Analytics & Visualization */}
                         <Route path="/results" element={<ResultsPage />} />
-                        <Route path="/dashboard" element={<div style={{ padding: '40px', textAlign: 'center' }}>Dashboard View - Coming Soon</div>} />
-                        <Route path="/interactive" element={<div style={{ padding: '40px', textAlign: 'center' }}>Interactive Visualization - Coming Soon</div>} />
+                        <Route path="/dashboard" element={<DashboardBuilder />} />
+                        <Route path="/interactive" element={<InteractiveVisualization />} />
                         <Route path="/advanced-viz" element={<AdvancedVisualizationWrapper />} />
 
                         {/* Query Tools */}

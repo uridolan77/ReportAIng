@@ -69,17 +69,19 @@ public class QueryService : IQueryService
             if (isCachingEnabled)
             {
                 var cacheKey = GenerateCacheKey(request.Question);
+                _logger.LogError("🔑 CACHE KEY DEBUG - Question: '{Question}' -> Key: {CacheKey}", request.Question, cacheKey);
                 var cachedResult = await GetCachedQueryAsync(cacheKey);
                 if (cachedResult != null)
                 {
-                    _logger.LogError("🎯 CACHE HIT - Returning cached result for query {QueryId}", queryId);
+                    _logger.LogError("🎯 CACHE HIT - Returning cached result for query {QueryId} with key {CacheKey}", queryId, cacheKey);
+                    _logger.LogError("🎯 CACHED QUERY WAS: '{CachedQuestion}' -> SQL: {CachedSQL}", cachedResult.Sql?.Substring(0, Math.Min(100, cachedResult.Sql?.Length ?? 0)) + "...", cachedResult.Sql?.Substring(0, Math.Min(200, cachedResult.Sql?.Length ?? 0)) + "...");
                     cachedResult.QueryId = queryId;
                     cachedResult.Cached = true;
                     return cachedResult;
                 }
                 else
                 {
-                    _logger.LogError("🎯 CACHE MISS - No cached result found for query {QueryId}", queryId);
+                    _logger.LogError("🎯 CACHE MISS - No cached result found for query {QueryId} with key {CacheKey}", queryId, cacheKey);
                 }
             }
             else
@@ -131,11 +133,15 @@ public class QueryService : IQueryService
             var generatedSQL = await _aiService.GenerateSQLAsync(prompt, cancellationToken);
             var aiExecutionTime = (int)(DateTime.UtcNow - aiStartTime).TotalMilliseconds;
 
+            _logger.LogInformation("🤖 AI GENERATED SQL: {GeneratedSQL}", generatedSQL);
+
             // Validate the generated SQL
             var isValidSQL = await _sqlQueryService.ValidateSqlAsync(generatedSQL);
             if (!isValidSQL)
             {
                 var error = "Generated SQL failed validation";
+                _logger.LogError("❌ SQL VALIDATION FAILED for query: {Question}", request.Question);
+                _logger.LogError("❌ FAILED SQL: {GeneratedSQL}", generatedSQL);
                 await LogQueryAsync(userId, request, generatedSQL, false, 0, error);
                 await LogPromptDetailsAsync(request.Question, prompt, generatedSQL, false, aiExecutionTime, userId, request.SessionId, error);
                 return CreateErrorResponse(queryId, error, generatedSQL);
@@ -191,7 +197,8 @@ public class QueryService : IQueryService
             {
                 var cacheKey = GenerateCacheKey(request.Question);
                 await CacheQueryAsync(cacheKey, response, TimeSpan.FromHours(24));
-                _logger.LogError("💾 CACHE STORED - Result cached for query {QueryId} with key {CacheKey}", queryId, cacheKey);
+                _logger.LogError("💾 CACHE STORED - Question: '{Question}' -> Key: {CacheKey} -> SQL: {SQL}",
+                    request.Question, cacheKey, generatedSQL?.Substring(0, Math.Min(100, generatedSQL?.Length ?? 0)) + "...");
             }
             else
             {
@@ -328,9 +335,82 @@ public class QueryService : IQueryService
 
     private string GenerateCacheKey(string question)
     {
+        // ROBUST cache key generation with semantic fingerprinting to prevent collisions
+        var normalizedQuestion = question.Trim().ToLowerInvariant()
+            .Replace("  ", " ") // Remove double spaces
+            .Replace("\r\n", " ")
+            .Replace("\n", " ")
+            .Replace("\t", " ");
+
+        // Extract key semantic elements for better differentiation
+        var queryType = DetermineQueryType(normalizedQuestion);
+        var keyWords = ExtractKeyWords(normalizedQuestion);
+        var questionStructure = AnalyzeQuestionStructure(normalizedQuestion);
+
+        // Add current date for time-sensitive queries
+        var currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+
+        // Create comprehensive cache key with multiple differentiators
+        var cacheKeyData = $"q:{normalizedQuestion}|type:{queryType}|keywords:{keyWords}|structure:{questionStructure}|date:{currentDate}|len:{question.Length}";
+
         using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(question.ToLowerInvariant()));
-        return Convert.ToHexString(hash);
+        var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(cacheKeyData));
+        var hexHash = Convert.ToHexString(hash);
+
+        _logger.LogError("🔑 ENHANCED CACHE KEY - Question: '{Question}' -> Type: {QueryType} -> Keywords: {Keywords} -> Hash: {Hash}",
+            question, queryType, keyWords, hexHash);
+
+        return hexHash;
+    }
+
+    private string DetermineQueryType(string question)
+    {
+        var lowerQuestion = question.ToLowerInvariant();
+
+        if (lowerQuestion.Contains("count") && (lowerQuestion.Contains("player") || lowerQuestion.Contains("user")))
+            return "player_count";
+        if (lowerQuestion.Contains("top") && lowerQuestion.Contains("player"))
+            return "top_players";
+        if (lowerQuestion.Contains("deposit"))
+            return "deposits";
+        if (lowerQuestion.Contains("revenue") || lowerQuestion.Contains("income"))
+            return "revenue";
+        if (lowerQuestion.Contains("bonus"))
+            return "bonus";
+        if (lowerQuestion.Contains("yesterday"))
+            return "yesterday";
+        if (lowerQuestion.Contains("last") && (lowerQuestion.Contains("day") || lowerQuestion.Contains("week")))
+            return "recent_period";
+
+        return "general";
+    }
+
+    private string ExtractKeyWords(string question)
+    {
+        var words = question.ToLowerInvariant()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(w => w.Length > 2) // Filter out short words
+            .Where(w => !new[] { "the", "and", "for", "are", "but", "not", "you", "all", "can", "had", "her", "was", "one", "our", "out", "day", "get", "has", "him", "his", "how", "man", "new", "now", "old", "see", "two", "way", "who", "boy", "did", "its", "let", "put", "say", "she", "too", "use" }.Contains(w))
+            .OrderBy(w => w)
+            .Take(5); // Take top 5 meaningful words
+
+        return string.Join("|", words);
+    }
+
+    private string AnalyzeQuestionStructure(string question)
+    {
+        var structure = "";
+        var lowerQuestion = question.ToLowerInvariant();
+
+        if (lowerQuestion.StartsWith("count")) structure += "count_";
+        if (lowerQuestion.StartsWith("top")) structure += "top_";
+        if (lowerQuestion.StartsWith("show")) structure += "show_";
+        if (lowerQuestion.Contains("yesterday")) structure += "yesterday_";
+        if (lowerQuestion.Contains("last")) structure += "last_";
+        if (lowerQuestion.Contains("player")) structure += "player_";
+        if (lowerQuestion.Contains("deposit")) structure += "deposit_";
+
+        return structure.TrimEnd('_');
     }
 
     private QueryResponse CreateErrorResponse(string queryId, string error, string? sql = null)

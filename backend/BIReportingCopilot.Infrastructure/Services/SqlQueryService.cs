@@ -95,6 +95,19 @@ public class SqlQueryService : ISqlQueryService
         try
         {
             var result = await _sqlValidator.ValidateAsync(sql);
+
+            if (!result.IsValid)
+            {
+                _logger.LogWarning("🔍 SQL VALIDATION FAILED - SQL: {Sql}", sql);
+                _logger.LogWarning("🔍 SQL VALIDATION ERRORS: {Errors}", string.Join(", ", result.Errors));
+                _logger.LogWarning("🔍 SQL VALIDATION WARNINGS: {Warnings}", string.Join(", ", result.Warnings));
+                _logger.LogWarning("🔍 SQL VALIDATION SECURITY LEVEL: {SecurityLevel}", result.SecurityLevel);
+            }
+            else
+            {
+                _logger.LogDebug("✅ SQL VALIDATION PASSED - SQL: {Sql}", sql);
+            }
+
             return result.IsValid;
         }
         catch (Exception ex)

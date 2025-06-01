@@ -480,8 +480,27 @@ EXAMPLES:
 
     private string CleanSQLResponse(string sql)
     {
-        // Remove markdown formatting and clean up the SQL
-        return sql.Replace("```sql", "").Replace("```", "").Trim();
+        if (string.IsNullOrWhiteSpace(sql))
+            return sql;
+
+        // Remove markdown formatting
+        sql = sql.Replace("```sql", "").Replace("```", "").Trim();
+
+        // Remove common AI response prefixes
+        var prefixes = new[] { "SQL:", "sql:", "Query:", "query:", "SELECT:", "select:" };
+        foreach (var prefix in prefixes)
+        {
+            if (sql.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                sql = sql.Substring(prefix.Length).Trim();
+                break;
+            }
+        }
+
+        // Remove any leading/trailing whitespace and newlines
+        sql = sql.Trim('\r', '\n', ' ', '\t');
+
+        return sql;
     }
 
     private string GenerateFallbackSQL(string prompt)
