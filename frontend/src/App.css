@@ -338,6 +338,97 @@
   gap: 4px;
 }
 
+/* Overall Progress Section Styling */
+.overall-progress-section {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 12px;
+  border: 1px solid #bae6fd;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.overall-progress-section .ant-progress-line {
+  border-radius: 4px;
+}
+
+.overall-progress-section .ant-progress-bg {
+  border-radius: 4px;
+}
+
+/* Current Status Card Styling */
+.current-status-card {
+  background: linear-gradient(135deg, #f6f8fa 0%, #ffffff 100%) !important;
+  border: 1px solid #e1e8ed !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+.current-task-display {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  margin-bottom: 16px;
+}
+
+.task-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(24, 144, 255, 0.1);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Current Status Info Styling */
+.current-status-info {
+  margin-bottom: 12px;
+}
+
+.status-info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-info-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  min-height: 40px;
+}
+
+.status-info-label {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.status-info-item .ant-tag {
+  margin: 0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: none;
+  font-weight: 500;
+}
+
 /* Responsive adjustments for processing details */
 @media (max-width: 768px) {
   .processing-detail-title {
@@ -360,6 +451,21 @@
     width: 100% !important;
     max-width: none !important;
     margin-left: 0 !important;
+  }
+
+  .status-info-row {
+    gap: 8px;
+  }
+
+  .status-info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .status-info-label {
+    width: 100%;
   }
 }
 

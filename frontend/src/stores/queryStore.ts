@@ -176,54 +176,13 @@ export const useQueryStore = create<QueryState>((set, get) => ({
     } catch (error) {
       console.error('Query execution error:', error);
 
-      // For development, create a mock response
-      const mockResult: QueryResponse = {
-        queryId: `mock-${Date.now()}`,
-        sql: 'SELECT COUNT(*) as TotalRecords FROM MockTable',
-        result: {
-          data: [{ TotalRecords: 42 }],
-          metadata: {
-            columnCount: 1,
-            rowCount: 1,
-            executionTimeMs: 150,
-            columns: [{ name: 'TotalRecords', dataType: 'int', isNullable: false, semanticTags: [] }],
-            queryTimestamp: new Date().toISOString(),
-          },
-        },
-        visualization: {
-          type: 'table',
-          config: {},
-        },
-        confidence: 0.85,
-        suggestions: ['Try: "Show me user statistics"', 'Try: "Display recent activity"'],
-        cached: false,
-        success: true,
-        timestamp: new Date().toISOString(),
-        executionTimeMs: 150,
-      };
-
       set({
-        currentResult: mockResult,
+        currentResult: null,
         isLoading: false,
-        error: null
+        error: error instanceof Error ? error.message : 'Query execution failed',
       });
 
-      // Add mock result to history
-      const historyItem: QueryHistoryItem = {
-        id: mockResult.queryId,
-        question: request.question,
-        sql: mockResult.sql,
-        timestamp: mockResult.timestamp,
-        successful: true,
-        executionTimeMs: 150,
-        confidence: 0.85,
-        userId: 'current-user',
-        sessionId: request.sessionId,
-      };
-
-      set(state => ({
-        queryHistory: [historyItem, ...state.queryHistory.slice(0, 49)]
-      }));
+      throw error;
     }
   },
 

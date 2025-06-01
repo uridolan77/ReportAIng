@@ -176,7 +176,7 @@ public class AIService : IAIService
             _metricsCollector?.RecordError("sql_generation", "AIService", ex);
 
             _logger.LogError(ex, "Failed to generate SQL after all retry attempts for prompt: {Prompt}", prompt);
-            return GenerateFallbackSQL(prompt);
+            throw;
         }
     }
 
@@ -503,15 +503,7 @@ EXAMPLES:
         return sql;
     }
 
-    private string GenerateFallbackSQL(string prompt)
-    {
-        return "SELECT 'Fallback response - AI service not configured' as Message";
-    }
 
-    private string GenerateFallbackInsight(string query, object[] data)
-    {
-        return "AI service not configured. Unable to generate insights.";
-    }
 
     private string GenerateDataPreview(object[] data)
     {

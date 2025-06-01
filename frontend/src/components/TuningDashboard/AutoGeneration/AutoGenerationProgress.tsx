@@ -97,50 +97,87 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
       </div>
 
       {/* Overall Progress */}
-      <div style={{ marginBottom: '24px' }}>
+      <div className="overall-progress-section">
+        <div className="progress-header">
+          <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+            Overall Progress
+          </Text>
+          <Text strong style={{ fontSize: '20px', color: '#1890ff' }}>
+            {Math.round(progress)}%
+          </Text>
+        </div>
         <Progress
           percent={Math.round(progress)}
           status={getProgressStatus()}
           strokeColor={getProgressColor()}
-          showInfo={true}
-          format={(percent) => `${percent}%`}
+          showInfo={false}
+          strokeWidth={8}
+          style={{ marginTop: '8px' }}
         />
       </div>
 
       {/* Current Status */}
-      <Card size="small" style={{ marginBottom: '16px', backgroundColor: '#f6f8fa' }}>
-        <Row gutter={16}>
-          <Col span={24}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-              <Spin
-                indicator={<LoadingOutlined style={{ fontSize: 16, marginRight: '8px' }} spin />}
-              />
-              <Text strong style={{ fontSize: '16px' }}>
-                {currentTask}
-              </Text>
-            </div>
-          </Col>
-        </Row>
+      <Card className="current-status-card" size="small" style={{ marginBottom: '16px' }}>
+        <div className="current-task-display">
+          <div className="task-indicator">
+            <Spin
+              indicator={<LoadingOutlined style={{ fontSize: 18, color: '#1890ff' }} spin />}
+            />
+          </div>
+          <div className="task-content">
+            <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>
+              Currently Processing
+            </Text>
+            <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+              {currentTask}
+            </Text>
+          </div>
+        </div>
 
         {currentTable && (
-          <Row gutter={16} style={{ marginBottom: '12px' }}>
-            <Col span={12}>
-              <Space>
-                <TableOutlined style={{ color: '#1890ff' }} />
-                <Text strong>Current Table:</Text>
-                <Tag color="blue">{currentTable}</Tag>
-              </Space>
-            </Col>
-            <Col span={12}>
+          <div className="current-status-info">
+            <div className="status-info-row">
+              <div className="status-info-item">
+                <div className="status-info-label">
+                  <TableOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
+                  <Text strong style={{ fontSize: '14px', marginLeft: '8px' }}>Current Table:</Text>
+                </div>
+                <Tag
+                  color="blue"
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    marginLeft: '12px'
+                  }}
+                >
+                  {currentTable}
+                </Tag>
+              </div>
+
               {currentStage && (
-                <Space>
-                  <DatabaseOutlined style={{ color: '#722ed1' }} />
-                  <Text strong>Stage:</Text>
-                  <Tag color="purple">{currentStage}</Tag>
-                </Space>
+                <div className="status-info-item">
+                  <div className="status-info-label">
+                    <DatabaseOutlined style={{ color: '#722ed1', fontSize: '16px' }} />
+                    <Text strong style={{ fontSize: '14px', marginLeft: '8px' }}>Stage:</Text>
+                  </div>
+                  <Tag
+                    color="purple"
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      padding: '4px 12px',
+                      borderRadius: '6px',
+                      marginLeft: '12px'
+                    }}
+                  >
+                    {currentStage}
+                  </Tag>
+                </div>
               )}
-            </Col>
-          </Row>
+            </div>
+          </div>
         )}
 
         {estimatedTimeRemaining && (

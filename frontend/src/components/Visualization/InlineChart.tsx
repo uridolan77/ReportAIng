@@ -97,46 +97,34 @@ export const InlineChart: React.FC<InlineChartProps> = ({
 
   const chartData = prepareChartData();
 
-  // Always show a test chart for debugging
-  const testData = [
-    { name: 'A', value: 100 },
-    { name: 'B', value: 200 },
-    { name: 'C', value: 150 },
-    { name: 'D', value: 300 }
-  ];
-
-  const finalChartData = chartData.length > 0 ? chartData : testData;
-
-  console.log('InlineChart: Final rendering decision', {
-    originalDataLength: chartData.length,
-    finalDataLength: finalChartData.length,
-    usingTestData: chartData.length === 0
-  });
-
-  if (!finalChartData || finalChartData.length === 0) {
+  // Don't render chart if no data
+  if (chartData.length === 0) {
     return (
-      <Card>
-        <Empty
-          image={<BarChartOutlined style={{ fontSize: 48, color: '#ccc' }} />}
-          description="No data available for visualization"
-        />
-      </Card>
+      <div className="text-center text-gray-500 py-4">
+        No data available for visualization
+      </div>
     );
   }
+
+  console.log('InlineChart: Rendering chart', {
+    dataLength: chartData.length,
+    type,
+    data: chartData
+  });
 
   const renderChart = () => {
     switch (type) {
       case 'bar':
         return (
           <ResponsiveContainer width="100%" height={height}>
-            <BarChart data={finalChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
               <Legend />
               <Bar dataKey="value" fill={colors[0]}>
-                {finalChartData.map((_, index) => (
+                {chartData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                 ))}
               </Bar>
@@ -147,7 +135,7 @@ export const InlineChart: React.FC<InlineChartProps> = ({
       case 'line':
         return (
           <ResponsiveContainer width="100%" height={height}>
-            <LineChart data={finalChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
@@ -170,7 +158,7 @@ export const InlineChart: React.FC<InlineChartProps> = ({
           <ResponsiveContainer width="100%" height={height}>
             <PieChart margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <Pie
-                data={finalChartData}
+                data={chartData}
                 dataKey="value"
                 nameKey="name"
                 cx="50%"
@@ -179,7 +167,7 @@ export const InlineChart: React.FC<InlineChartProps> = ({
                 fill={colors[0]}
                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
               >
-                {finalChartData.map((_, index) => (
+                {chartData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                 ))}
               </Pie>
@@ -209,8 +197,7 @@ export const InlineChart: React.FC<InlineChartProps> = ({
       {renderChart()}
       <div style={{ marginTop: '12px', textAlign: 'center' }}>
         <Text type="secondary" style={{ fontSize: '12px' }}>
-          Showing {finalChartData.length} data points
-          {chartData.length === 0 && ' (using test data)'}
+          Showing {chartData.length} data points
           {data.length > 20 && ` (limited from ${data.length} total)`}
         </Text>
       </div>
