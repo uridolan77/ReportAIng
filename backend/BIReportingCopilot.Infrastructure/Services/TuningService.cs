@@ -16,17 +16,23 @@ public class TuningService : ITuningService
     private readonly ILogger<TuningService> _logger;
     private readonly IBusinessContextAutoGenerator _autoGenerator;
     private readonly StreamingDataService _streamingService;
+    private readonly ISchemaService _schemaService;
+    private readonly IConfiguration _configuration;
 
     public TuningService(
         BICopilotContext context,
         ILogger<TuningService> logger,
         IBusinessContextAutoGenerator autoGenerator,
-        StreamingDataService streamingService)
+        StreamingDataService streamingService,
+        ISchemaService schemaService,
+        IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
         _autoGenerator = autoGenerator;
         _streamingService = streamingService;
+        _schemaService = schemaService;
+        _configuration = configuration;
     }
 
     #region Dashboard
@@ -760,6 +766,61 @@ public class TuningService : ITuningService
         {
             _logger.LogInformation("Starting auto-generation for user {UserId}", userId);
 
+            // Refresh schema cache to ensure we have the latest database structure
+            _logger.LogInformation("Refreshing schema cache to ensure latest database structure");
+            try
+            {
+                await _schemaService.RefreshSchemaAsync();
+                _logger.LogInformation("Schema cache refreshed successfully");
+
+                // Debug: Log actual column counts from schema
+                var schema = await _schemaService.GetSchemaMetadataAsync();
+                var tablesToProcess = request.SpecificTables ?? schema.Tables.Select(t => $"{t.Schema}.{t.Name}").ToList();
+                foreach (var table in schema.Tables.Where(t => tablesToProcess.Contains($"{t.Schema}.{t.Name}")))
+                {
+                    _logger.LogInformation("DEBUG: Table {Schema}.{Table} has {ColumnCount} columns: {Columns}",
+                        table.Schema, table.Name, table.Columns.Count,
+                        string.Join(", ", table.Columns.Take(10).Select(c => c.Name)));
+                }
+
+                // Additional debug: Test direct SQL query to verify column counts
+                try
+                {
+                    var connectionString = await GetConnectionStringAsync();
+                    if (!string.IsNullOrEmpty(connectionString))
+                    {
+                        using var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+                        await connection.OpenAsync();
+
+                        var testQuery = @"
+                            SELECT TABLE_NAME, COUNT(*) as ColumnCount
+                            FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_SCHEMA = 'common'
+                            AND TABLE_NAME IN ('tbl_Daily_actions', 'tbl_Daily_actions_players', 'tbl_Countries', 'tbl_Currencies', 'tbl_White_labels')
+                            GROUP BY TABLE_NAME
+                            ORDER BY TABLE_NAME";
+
+                        using var command = new Microsoft.Data.SqlClient.SqlCommand(testQuery, connection);
+                        using var reader = await command.ExecuteReaderAsync();
+
+                        _logger.LogInformation("DEBUG: Direct SQL column count verification:");
+                        while (await reader.ReadAsync())
+                        {
+                            _logger.LogInformation("DEBUG: {TableName} = {ColumnCount} columns (direct SQL)",
+                                reader["TABLE_NAME"], reader["ColumnCount"]);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not perform direct SQL column count verification");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not refresh schema cache, continuing with existing cache");
+            }
+
             if (request.GenerateTableContexts)
             {
                 _logger.LogInformation("Generating table contexts for {TableCount} tables...",
@@ -988,6 +1049,23 @@ public class TuningService : ITuningService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error applying glossary term: {Term}", term.Term);
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    private async Task<string?> GetConnectionStringAsync()
+    {
+        // Use the BIDatabase connection string (same as schema service)
+        try
+        {
+            return _configuration.GetConnectionString("BIDatabase");
+        }
+        catch
+        {
+            return null;
         }
     }
 

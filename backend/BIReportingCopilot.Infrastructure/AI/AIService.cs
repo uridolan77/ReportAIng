@@ -211,7 +211,7 @@ Keep insights concise and actionable.";
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating insights");
-            return GenerateFallbackInsight(query, data);
+            throw;
         }
     }
 

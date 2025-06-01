@@ -74,7 +74,8 @@ public class SchemaService : ISchemaService
     {
         try
         {
-            // Clear distributed cache first
+            // Clear both database and distributed cache first
+            await ClearCachedSchemaAsync(dataSource);
             await ClearDistributedCachedSchemaAsync(dataSource);
 
             var connectionString = await GetConnectionStringAsync(dataSource);
@@ -389,6 +390,26 @@ public class SchemaService : ISchemaService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error caching schema metadata");
+        }
+    }
+
+    private async Task ClearCachedSchemaAsync(string? dataSource)
+    {
+        try
+        {
+            var databaseName = dataSource ?? "default";
+            var oldEntries = await _context.SchemaMetadata
+                .Where(s => s.DatabaseName == databaseName)
+                .ToListAsync();
+
+            _context.SchemaMetadata.RemoveRange(oldEntries);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Cleared cached schema for data source: {DataSource}", dataSource ?? "default");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error clearing cached schema");
         }
     }
 

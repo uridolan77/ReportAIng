@@ -114,15 +114,8 @@ internal class FallbackAIProvider : IAIProvider
 
     public Task<string> GenerateCompletionAsync(string prompt, AIOptions options, CancellationToken cancellationToken)
     {
-        _logger.LogWarning("Using fallback AI provider - returning mock response");
-
-        // Return a basic SQL query based on common patterns in the prompt
-        if (prompt.ToLower().Contains("select") || prompt.ToLower().Contains("show") || prompt.ToLower().Contains("get"))
-        {
-            return Task.FromResult("SELECT * FROM [Table] WHERE 1=1 -- Fallback response: AI service not configured");
-        }
-
-        return Task.FromResult("-- Fallback response: AI service not configured. Please configure OpenAI or Azure OpenAI.");
+        _logger.LogError("AI provider not configured - cannot generate completion");
+        throw new InvalidOperationException("AI service not configured. Please configure OpenAI or Azure OpenAI.");
     }
 
     public async IAsyncEnumerable<StreamingResponse> GenerateCompletionStreamAsync(

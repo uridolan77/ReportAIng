@@ -259,31 +259,13 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
                     </div>
                     <div className="processing-detail-info">
                       <div className="processing-detail-title">
-                        <Text strong style={{ fontSize: '14px' }}>{detail.tableName}</Text>
+                        <Text strong style={{ fontSize: '14px', flex: 1 }}>{detail.tableName}</Text>
                         <div className="processing-detail-tags">
-                          <Tag
-                            color={getStatusColor(detail.status)}
-                            style={{
-                              fontSize: '11px',
-                              fontWeight: '500',
-                              minWidth: '80px',
-                              textAlign: 'center',
-                              margin: '0 4px 0 0'
-                            }}
-                          >
+                          <Tag color={getStatusColor(detail.status)}>
                             {detail.status.toUpperCase()}
                           </Tag>
                           {detail.stage && (
-                            <Tag
-                              color="purple"
-                              style={{
-                                fontSize: '11px',
-                                fontWeight: '500',
-                                minWidth: '100px',
-                                textAlign: 'center',
-                                margin: '0'
-                              }}
-                            >
+                            <Tag color="purple">
                               {detail.stage}
                             </Tag>
                           )}
