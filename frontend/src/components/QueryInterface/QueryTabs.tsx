@@ -8,6 +8,7 @@ import {
   Row,
   Col
 } from 'antd';
+import './QueryTabs.css';
 import {
   BarChartOutlined,
   HistoryOutlined,
@@ -18,7 +19,8 @@ import {
   DashboardOutlined,
   InteractionOutlined,
   SettingOutlined,
-  SafetyOutlined
+  SafetyOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { useQueryContext } from './QueryProvider';
 import { QueryResult } from './QueryResult';
@@ -32,9 +34,10 @@ import { TuningDashboard } from '../Tuning/TuningDashboard';
 import { CacheManager } from '../Performance/CacheManager';
 import { SecurityDashboard } from '../Security/SecurityDashboard';
 import { DataInsightsPanel } from '../Insights/DataInsightsPanel';
+import PromptDetailsPanel from './PromptDetailsPanel';
 
-const { TabPane } = Tabs;
 const { Text } = Typography;
+const { TabPane } = Tabs;
 
 export const QueryTabs: React.FC = () => {
   const {
@@ -59,7 +62,6 @@ export const QueryTabs: React.FC = () => {
       activeKey={activeTab}
       onChange={setActiveTab}
       className="query-tabs enhanced-query-tabs"
-      type="card"
       size="large"
       tabBarExtraContent={
         currentResult && (
@@ -157,6 +159,26 @@ export const QueryTabs: React.FC = () => {
         <QuerySuggestions
           onSuggestionClick={handleSuggestionClick}
         />
+      </TabPane>
+
+      <TabPane
+        tab={
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+            <FileTextOutlined style={{ fontSize: '18px' }} />
+            Prompt Details
+          </span>
+        }
+        key="prompt"
+      >
+        {currentResult && currentResult.promptDetails ? (
+          <PromptDetailsPanel promptDetails={currentResult.promptDetails} />
+        ) : (
+          <div className="empty-result">
+            <Text type="secondary">
+              Execute a query to see the AI prompt details
+            </Text>
+          </div>
+        )}
       </TabPane>
 
       <TabPane

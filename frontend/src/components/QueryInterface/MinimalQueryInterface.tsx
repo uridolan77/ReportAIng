@@ -22,7 +22,7 @@ import {
 import { useLocation } from 'react-router-dom';
 import { useQueryContext } from './QueryProvider';
 import { EnhancedQueryInput } from './EnhancedQueryInput';
-import { QueryResult } from './QueryResult';
+import { QueryTabs } from './QueryTabs';
 import { OnboardingTour } from '../Onboarding/OnboardingTour';
 
 const { Title, Text, Paragraph } = Typography;
@@ -100,7 +100,7 @@ export const MinimalQueryInterface: React.FC = () => {
   ];
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px' }}>
+    <div style={{ width: '100%', margin: '0', padding: '40px 24px' }}>
       {/* Hero Section */}
       <div style={{ textAlign: 'center', marginBottom: '56px' }}>
         <Title
@@ -334,6 +334,7 @@ export const MinimalQueryInterface: React.FC = () => {
       {currentResult && (
         <div
           style={{
+            width: '100%',
             background: '#ffffff',
             border: '2px solid #f1f5f9',
             borderRadius: '16px',
@@ -341,15 +342,7 @@ export const MinimalQueryInterface: React.FC = () => {
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
           }}
         >
-          <QueryResult
-            result={currentResult}
-            query={query}
-            onRequery={handleSubmitQuery}
-            onSuggestionClick={(suggestion) => {
-              setQuery(suggestion);
-              handleSubmitQuery();
-            }}
-          />
+          <QueryTabs />
         </div>
       )}
 

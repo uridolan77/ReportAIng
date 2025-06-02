@@ -32,6 +32,78 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
           <Text style={{ color: 'white', fontSize: '16px', display: 'block', marginBottom: '24px' }}>
             {typeof result.error === 'string' ? result.error : result.error?.message || 'An error occurred while processing your query. Please check your query and try again.'}
           </Text>
+
+          {/* Show SQL if available */}
+          {result.sql && (
+            <details style={{ marginBottom: '16px' }}>
+              <summary style={{
+                cursor: 'pointer',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontWeight: 500,
+                padding: '8px',
+                borderRadius: '6px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}>
+                <CodeOutlined style={{ marginRight: '8px' }} /> View Generated SQL
+              </summary>
+              <Paragraph
+                code
+                copyable
+                style={{
+                  marginTop: '12px',
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                  color: 'white'
+                }}
+              >
+                {result.sql}
+              </Paragraph>
+            </details>
+          )}
+
+          {/* Show prompt details if available */}
+          {result.promptDetails && (
+            <details style={{ marginBottom: '16px' }}>
+              <summary style={{
+                cursor: 'pointer',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontWeight: 500,
+                padding: '8px',
+                borderRadius: '6px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}>
+                🔍 View AI Prompt Details
+              </summary>
+              <div style={{
+                marginTop: '12px',
+                background: 'rgba(0, 0, 0, 0.3)',
+                padding: '16px',
+                borderRadius: '8px',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: 'white'
+              }}>
+                <Text style={{ color: 'rgba(255, 255, 255, 0.8)', display: 'block', marginBottom: '8px' }}>
+                  <strong>Full Prompt:</strong>
+                </Text>
+                <pre style={{
+                  whiteSpace: 'pre-wrap',
+                  fontSize: '12px',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  maxHeight: '300px',
+                  overflow: 'auto'
+                }}>
+                  {result.promptDetails.fullPrompt}
+                </pre>
+              </div>
+            </details>
+          )}
+
           <Space>
             <Button
               icon={<ReloadOutlined />}
@@ -153,6 +225,44 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
               {result.sql}
             </Paragraph>
           </details>
+
+          {/* Show prompt details if available */}
+          {result.promptDetails && (
+            <details style={{ marginTop: '8px' }}>
+              <summary style={{
+                cursor: 'pointer',
+                color: '#667eea',
+                fontWeight: 500,
+                padding: '8px',
+                borderRadius: '6px',
+                background: '#f8f9ff',
+                border: '1px solid #e8f4fd'
+              }}>
+                🔍 View AI Prompt Details
+              </summary>
+              <div style={{
+                marginTop: '12px',
+                background: '#f6f8fa',
+                padding: '16px',
+                borderRadius: '8px',
+                border: '1px solid #e1e4e8'
+              }}>
+                <Text style={{ color: '#595959', display: 'block', marginBottom: '8px' }}>
+                  <strong>Full Prompt:</strong>
+                </Text>
+                <pre style={{
+                  whiteSpace: 'pre-wrap',
+                  fontSize: '12px',
+                  color: '#24292e',
+                  maxHeight: '300px',
+                  overflow: 'auto',
+                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace'
+                }}>
+                  {result.promptDetails.fullPrompt}
+                </pre>
+              </div>
+            </details>
+          )}
         </Space>
       </Card>
 

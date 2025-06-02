@@ -413,6 +413,61 @@ public class UnifiedQueryController : ControllerBase
 
     #endregion
 
+    #region Admin Operations
+
+    /// <summary>
+    /// Force refresh of database schema cache
+    /// </summary>
+    /// <returns>Success message</returns>
+    [HttpPost("refresh-schema")]
+    public async Task<ActionResult<object>> RefreshSchema()
+    {
+        try
+        {
+            _logger.LogInformation("🔄 Manual schema refresh requested");
+            await _schemaService.RefreshSchemaMetadataAsync();
+            _logger.LogInformation("✅ Schema refresh completed successfully");
+            return Ok(new { message = "Schema refreshed successfully", timestamp = DateTime.UtcNow });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refreshing schema");
+            return StatusCode(500, new { error = "An error occurred while refreshing schema" });
+        }
+    }
+
+    /// <summary>
+    /// Get current database schema for debugging
+    /// </summary>
+    /// <returns>Current schema metadata</returns>
+    [HttpGet("debug-schema")]
+    public async Task<ActionResult<object>> GetDebugSchema()
+    {
+        try
+        {
+            var schema = await _schemaService.GetSchemaMetadataAsync();
+            var result = new
+            {
+                TableCount = schema.Tables.Count,
+                Tables = schema.Tables.Select(t => new
+                {
+                    t.Name,
+                    t.Schema,
+                    ColumnCount = t.Columns.Count,
+                    Columns = t.Columns.Take(10).Select(c => new { c.Name, c.DataType, c.IsPrimaryKey }).ToList()
+                }).ToList()
+            };
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting debug schema");
+            return StatusCode(500, new { error = "An error occurred while getting schema" });
+        }
+    }
+
+    #endregion
+
     #region Private Helper Methods
 
     private async Task ExecuteStreamingQueryBackground(string queryId, string userId, string sql, QueryOptions options)

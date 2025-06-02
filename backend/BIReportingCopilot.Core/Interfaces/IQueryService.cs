@@ -145,6 +145,7 @@ public interface ISqlQueryService
 public interface IPromptService
 {
     Task<string> BuildQueryPromptAsync(string naturalLanguageQuery, SchemaMetadata schema, string? context = null);
+    Task<PromptDetails> BuildDetailedQueryPromptAsync(string naturalLanguageQuery, SchemaMetadata schema, string? context = null);
     Task<string> BuildInsightPromptAsync(string query, QueryResult result);
     Task<string> BuildVisualizationPromptAsync(string query, QueryResult result);
     Task<PromptTemplate> GetPromptTemplateAsync(string templateName, string? version = null);

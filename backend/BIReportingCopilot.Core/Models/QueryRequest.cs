@@ -52,6 +52,7 @@ public class QueryResponse
     public string? Error { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public int ExecutionTimeMs { get; set; }
+    public PromptDetails? PromptDetails { get; set; }
 }
 
 public class QueryResult
@@ -195,4 +196,25 @@ public class QueryFeedback
 
     [StringLength(500, ErrorMessage = "Suggested improvement cannot exceed 500 characters")]
     public string? SuggestedImprovement { get; set; }
+}
+
+public class PromptDetails
+{
+    public string FullPrompt { get; set; } = string.Empty;
+    public string TemplateName { get; set; } = string.Empty;
+    public string TemplateVersion { get; set; } = string.Empty;
+    public PromptSection[] Sections { get; set; } = Array.Empty<PromptSection>();
+    public Dictionary<string, string> Variables { get; set; } = new();
+    public int TokenCount { get; set; }
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class PromptSection
+{
+    public string Name { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty; // schema, business_rules, examples, context, template
+    public int Order { get; set; }
+    public Dictionary<string, object>? Metadata { get; set; }
 }

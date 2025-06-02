@@ -190,6 +190,22 @@ export interface QueryResponse {
   Timestamp: string;
   ExecutionTimeMs: number;
   Error?: string;
+  PromptDetails?: {
+    FullPrompt: string;
+    TemplateName: string;
+    TemplateVersion: string;
+    Sections: Array<{
+      Name: string;
+      Title: string;
+      Content: string;
+      Type: string;
+      Order: number;
+      Metadata?: Record<string, any>;
+    }>;
+    Variables: Record<string, string>;
+    TokenCount: number;
+    GeneratedAt: string;
+  };
 
   // Also support camelCase for backward compatibility
   queryId?: string;
@@ -479,7 +495,23 @@ export class ApiService {
       success: backendResponse.Success || backendResponse.success || false,
       error: backendResponse.Error || backendResponse.error,
       timestamp: backendResponse.Timestamp || backendResponse.timestamp || new Date().toISOString(),
-      executionTimeMs: backendResponse.ExecutionTimeMs || backendResponse.executionTimeMs || 0
+      executionTimeMs: backendResponse.ExecutionTimeMs || backendResponse.executionTimeMs || 0,
+      promptDetails: backendResponse.PromptDetails ? {
+        fullPrompt: backendResponse.PromptDetails.FullPrompt,
+        templateName: backendResponse.PromptDetails.TemplateName,
+        templateVersion: backendResponse.PromptDetails.TemplateVersion,
+        sections: backendResponse.PromptDetails.Sections.map(section => ({
+          name: section.Name,
+          title: section.Title,
+          content: section.Content,
+          type: section.Type,
+          order: section.Order,
+          metadata: section.Metadata
+        })),
+        variables: backendResponse.PromptDetails.Variables,
+        tokenCount: backendResponse.PromptDetails.TokenCount,
+        generatedAt: backendResponse.PromptDetails.GeneratedAt
+      } : undefined
     };
   }
 

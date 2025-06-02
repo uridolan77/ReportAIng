@@ -246,13 +246,17 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
               }}
               options={autoCompleteOptions}
               open={showSuggestions}
-              onDropdownVisibleChange={setShowSuggestions}
+              onOpenChange={setShowSuggestions}
               style={{ width: '100%' }}
-              dropdownStyle={{
-                maxHeight: 300,
-                overflow: 'auto',
-                borderRadius: '12px',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+              styles={{
+                popup: {
+                  root: {
+                    maxHeight: 300,
+                    overflow: 'auto',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+                  }
+                }
               }}
             >
               <TextArea

@@ -29,6 +29,7 @@ export interface QueryResponse {
   error?: string;
   timestamp: string;
   executionTimeMs: number;
+  promptDetails?: PromptDetails;
 }
 
 export interface QueryResult {
@@ -139,6 +140,25 @@ export interface PaginatedResponse<T> {
     hasNext: boolean;
     hasPrevious: boolean;
   };
+}
+
+export interface PromptDetails {
+  fullPrompt: string;
+  templateName: string;
+  templateVersion: string;
+  sections: PromptSection[];
+  variables: Record<string, string>;
+  tokenCount: number;
+  generatedAt: string;
+}
+
+export interface PromptSection {
+  name: string;
+  title: string;
+  content: string;
+  type: string; // schema, business_rules, examples, context, template, user_input
+  order: number;
+  metadata?: Record<string, any>;
 }
 
 // WebSocket message types

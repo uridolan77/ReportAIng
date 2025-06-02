@@ -269,8 +269,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       footer={null}
       width={600}
       centered
-      bodyStyle={{ padding: 0 }}
-      destroyOnClose
+      styles={{ body: { padding: 0 } }}
+      destroyOnHidden
     >
       <div style={{ padding: '16px 16px 0 16px' }}>
         <Search

@@ -57,6 +57,137 @@ public class PromptService : IPromptService
         }
     }
 
+    public async Task<PromptDetails> BuildDetailedQueryPromptAsync(string naturalLanguageQuery, SchemaMetadata schema, string? context = null)
+    {
+        try
+        {
+            var template = await GetPromptTemplateAsync("sql_generation");
+
+            var schemaDescription = BuildEnhancedSchemaDescription(schema);
+            var businessRules = GetBusinessRulesForQuery(naturalLanguageQuery);
+            var exampleQueries = GetRelevantExampleQueries(naturalLanguageQuery);
+            var contextInfo = !string.IsNullOrEmpty(context) ? $"\nAdditional context: {context}" : "";
+
+            var prompt = template.Content
+                .Replace("{schema}", schemaDescription)
+                .Replace("{question}", naturalLanguageQuery)
+                .Replace("{context}", contextInfo)
+                .Replace("{business_rules}", businessRules)
+                .Replace("{examples}", exampleQueries);
+
+            var sections = new List<PromptSection>
+            {
+                new PromptSection
+                {
+                    Name = "template",
+                    Title = "Base Template",
+                    Content = template.Content,
+                    Type = "template",
+                    Order = 1,
+                    Metadata = new Dictionary<string, object>
+                    {
+                        ["templateName"] = template.Name,
+                        ["templateVersion"] = template.Version,
+                        ["description"] = template.Description ?? ""
+                    }
+                },
+                new PromptSection
+                {
+                    Name = "user_question",
+                    Title = "User Question",
+                    Content = naturalLanguageQuery,
+                    Type = "user_input",
+                    Order = 2
+                },
+                new PromptSection
+                {
+                    Name = "schema",
+                    Title = "Database Schema",
+                    Content = schemaDescription,
+                    Type = "schema",
+                    Order = 3,
+                    Metadata = new Dictionary<string, object>
+                    {
+                        ["tableCount"] = schema.Tables?.Count ?? 0,
+                        ["totalColumns"] = schema.Tables?.Sum(t => t.Columns?.Count ?? 0) ?? 0
+                    }
+                },
+                new PromptSection
+                {
+                    Name = "business_rules",
+                    Title = "Business Rules",
+                    Content = businessRules,
+                    Type = "business_rules",
+                    Order = 4
+                },
+                new PromptSection
+                {
+                    Name = "examples",
+                    Title = "Example Queries",
+                    Content = exampleQueries,
+                    Type = "examples",
+                    Order = 5
+                }
+            };
+
+            if (!string.IsNullOrEmpty(contextInfo))
+            {
+                sections.Add(new PromptSection
+                {
+                    Name = "context",
+                    Title = "Additional Context",
+                    Content = contextInfo,
+                    Type = "context",
+                    Order = 6
+                });
+            }
+
+            var variables = new Dictionary<string, string>
+            {
+                ["{schema}"] = schemaDescription,
+                ["{question}"] = naturalLanguageQuery,
+                ["{business_rules}"] = businessRules,
+                ["{examples}"] = exampleQueries,
+                ["{context}"] = contextInfo
+            };
+
+            return new PromptDetails
+            {
+                FullPrompt = prompt,
+                TemplateName = template.Name,
+                TemplateVersion = template.Version,
+                Sections = sections.ToArray(),
+                Variables = variables,
+                TokenCount = EstimateTokenCount(prompt),
+                GeneratedAt = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error building detailed query prompt");
+            return new PromptDetails
+            {
+                FullPrompt = GetFallbackQueryPrompt(naturalLanguageQuery, schema, context),
+                TemplateName = "fallback",
+                TemplateVersion = "1.0",
+                Sections = new[]
+                {
+                    new PromptSection
+                    {
+                        Name = "fallback",
+                        Title = "Fallback Prompt",
+                        Content = GetFallbackQueryPrompt(naturalLanguageQuery, schema, context),
+                        Type = "fallback",
+                        Order = 1
+                    }
+                },
+                Variables = new Dictionary<string, string>(),
+                TokenCount = 0,
+                GeneratedAt = DateTime.UtcNow
+            };
+        }
+    }
+
     public async Task<string> BuildInsightPromptAsync(string query, QueryResult result)
     {
         try
@@ -313,7 +444,9 @@ public class PromptService : IPromptService
         // Use all tables from the schema (should already be filtered by ContextManager)
         var tablesToProcess = schema.Tables ?? new List<TableMetadata>();
 
-
+        // Debug logging to see what schema we're actually using
+        _logger.LogInformation("🔍 SCHEMA DEBUG - Building schema description with {TableCount} tables: {TableNames}",
+            tablesToProcess.Count, string.Join(", ", tablesToProcess.Select(t => t.Name)));
 
         foreach (var table in tablesToProcess)
         {
@@ -334,6 +467,14 @@ public class PromptService : IPromptService
 
             // Add columns with enhanced information
             tableDesc += "\n  Columns:";
+
+            // Debug logging for tbl_Daily_actions specifically
+            if (table.Name.ToLowerInvariant().Contains("daily_actions") && !table.Name.ToLowerInvariant().Contains("players"))
+            {
+                _logger.LogInformation("🔍 SCHEMA DEBUG - tbl_Daily_actions columns: {ColumnNames}",
+                    string.Join(", ", table.Columns.Select(c => c.Name)));
+            }
+
             foreach (var column in table.Columns.Take(15))
             {
                 var columnDesc = $"    - {column.Name} ({column.DataType})";
@@ -456,6 +597,38 @@ public class PromptService : IPromptService
             rules.Add("Consider grouping by relevant dimensions (PlayerID, WhitelabelID, CountryID)");
         }
 
+        if (query.Contains("last") && (query.Contains("day") || query.Contains("week")))
+        {
+            if (query.Contains("7 days") || query.Contains("week"))
+            {
+                rules.Add("For 'last 7 days' or 'last week': Use WHERE Date >= DATEADD(day, -7, CAST(GETDATE() AS DATE))");
+            }
+            else if (query.Contains("30 days") || query.Contains("month"))
+            {
+                rules.Add("For 'last 30 days' or 'last month': Use WHERE Date >= DATEADD(day, -30, CAST(GETDATE() AS DATE))");
+            }
+            else if (query.Contains("3 days"))
+            {
+                rules.Add("For 'last 3 days': Use WHERE Date >= DATEADD(day, -3, CAST(GETDATE() AS DATE))");
+            }
+            rules.Add("Always use Date column from tbl_Daily_actions for date filtering");
+        }
+
+        if (query.Contains("deposit"))
+        {
+            rules.Add("CRITICAL: For deposit queries, ALWAYS use 'Deposits' column from tbl_Daily_actions, NEVER use 'Amount'");
+            rules.Add("CRITICAL: The column name is 'Deposits' (capital D), not 'deposits' or 'Amount'");
+            rules.Add("For deposit totals: SUM(da.Deposits) - use this exact syntax");
+            rules.Add("Deposits are financial amounts in the player's currency");
+        }
+
+        if (query.Contains("top") && query.Contains("player"))
+        {
+            rules.Add("For 'top players' queries: Use ORDER BY with the relevant metric DESC and LIMIT/TOP clause");
+            rules.Add("Join tbl_Daily_actions with tbl_Daily_actions_players for player names when needed");
+            rules.Add("Use SUM() aggregation for deposit amounts when showing top players by deposits");
+        }
+
         if (query.Contains("player"))
         {
             rules.Add("For player data: JOIN tbl_Daily_actions with tbl_Daily_actions_players on PlayerID");
@@ -497,6 +670,12 @@ public class PromptService : IPromptService
         return string.Join("\n- ", rules);
     }
 
+    private int EstimateTokenCount(string text)
+    {
+        // Simple token estimation: roughly 4 characters per token
+        return (int)Math.Ceiling(text.Length / 4.0);
+    }
+
     private string GetRelevantExampleQueries(string naturalLanguageQuery)
     {
         var query = naturalLanguageQuery.ToLower();
@@ -511,12 +690,23 @@ SQL: SELECT SUM(Deposits) as TotalDeposits, COUNT(DISTINCT PlayerID) as PlayerCo
      WHERE Date = CAST(GETDATE() AS DATE)");
         }
 
+        if (query.Contains("top") && query.Contains("player") && query.Contains("deposit"))
+        {
+            examples.Add(@"
+EXAMPLE: 'Top 10 players by deposits in the last 7 days'
+SQL: SELECT TOP 10 da.PlayerID, SUM(da.Deposits) as TotalDeposits
+     FROM common.tbl_Daily_actions da WITH (NOLOCK)
+     WHERE da.Date >= DATEADD(day, -7, CAST(GETDATE() AS DATE))
+     GROUP BY da.PlayerID
+     ORDER BY TotalDeposits DESC");
+        }
+
         if (query.Contains("deposit") && (query.Contains("brand") || query.Contains("whitelabel")))
         {
             examples.Add(@"
 EXAMPLE: 'deposits by brand today'
 SQL: SELECT da.WhiteLabelID, SUM(da.Deposits) as TotalDeposits, COUNT(DISTINCT da.PlayerID) as PlayerCount
-     FROM common.tbl_Daily_actions da
+     FROM common.tbl_Daily_actions da WITH (NOLOCK)
      WHERE da.Date = CAST(GETDATE() AS DATE)
      GROUP BY da.WhiteLabelID
      ORDER BY TotalDeposits DESC");
@@ -526,23 +716,22 @@ SQL: SELECT da.WhiteLabelID, SUM(da.Deposits) as TotalDeposits, COUNT(DISTINCT d
         {
             examples.Add(@"
 EXAMPLE: 'player activity today'
-SQL: SELECT da.PlayerID, p.Username, SUM(da.Amount) as TotalAmount,
-            SUM(da.TotalDeposits) as Deposits, SUM(da.TotalBets) as Bets
-     FROM common.tbl_Daily_actions da
-     JOIN common.tbl_Daily_actions_players p ON da.PlayerID = p.PlayerID
+SQL: SELECT da.PlayerID, p.Username, SUM(da.Deposits) as TotalDeposits, SUM(da.BetsReal + da.BetsBonus) as TotalBets
+     FROM common.tbl_Daily_actions da WITH (NOLOCK)
+     JOIN common.tbl_Daily_actions_players p WITH (NOLOCK) ON da.PlayerID = p.PlayerID
      WHERE da.Date = CAST(GETDATE() AS DATE)
      GROUP BY da.PlayerID, p.Username
-     ORDER BY TotalAmount DESC");
+     ORDER BY TotalDeposits DESC");
         }
 
         if (query.Contains("country") || query.Contains("region"))
         {
             examples.Add(@"
 EXAMPLE: 'revenue by country today'
-SQL: SELECT c.CountryName, SUM(da.Amount) as Revenue, COUNT(DISTINCT da.PlayerID) as Players
-     FROM common.tbl_Daily_actions da
-     JOIN common.tbl_Daily_actions_players p ON da.PlayerID = p.PlayerID
-     JOIN common.countries c ON p.CountryID = c.CountryID
+SQL: SELECT c.CountryName, SUM(da.Deposits) as Revenue, COUNT(DISTINCT da.PlayerID) as Players
+     FROM common.tbl_Daily_actions da WITH (NOLOCK)
+     JOIN common.tbl_Daily_actions_players p WITH (NOLOCK) ON da.PlayerID = p.PlayerID
+     JOIN common.tbl_Countries c WITH (NOLOCK) ON p.CountryID = c.CountryID
      WHERE da.Date = CAST(GETDATE() AS DATE)
      GROUP BY c.CountryName
      ORDER BY Revenue DESC");
@@ -554,7 +743,7 @@ SQL: SELECT c.CountryName, SUM(da.Amount) as Revenue, COUNT(DISTINCT da.PlayerID
 EXAMPLE: 'bonus totals'
 SQL: SELECT SUM(Amount) as TotalBonusAmount, COUNT(*) as BonusCount,
             AVG(Amount) as AverageBonusAmount
-     FROM common.tbl_Bonus_balances
+     FROM common.tbl_Bonus_balances WITH (NOLOCK)
      WHERE Status = 'Active'");
         }
 
@@ -562,9 +751,9 @@ SQL: SELECT SUM(Amount) as TotalBonusAmount, COUNT(*) as BonusCount,
         {
             examples.Add(@"
 EXAMPLE: 'revenue by brand today'
-SQL: SELECT w.Name as BrandName, SUM(da.Amount) as Revenue, COUNT(DISTINCT da.PlayerID) as Players
-     FROM common.tbl_Daily_actions da
-     JOIN common.whitelabels w ON da.WhitelabelID = w.WhitelabelID
+SQL: SELECT w.Name as BrandName, SUM(da.Deposits) as Revenue, COUNT(DISTINCT da.PlayerID) as Players
+     FROM common.tbl_Daily_actions da WITH (NOLOCK)
+     JOIN common.tbl_Whitelabels w WITH (NOLOCK) ON da.WhitelabelID = w.WhitelabelID
      WHERE da.Date = CAST(GETDATE() AS DATE)
      GROUP BY w.Name
      ORDER BY Revenue DESC");
@@ -574,8 +763,8 @@ SQL: SELECT w.Name as BrandName, SUM(da.Amount) as Revenue, COUNT(DISTINCT da.Pl
         {
             examples.Add(@"
 EXAMPLE: 'basic daily statistics'
-SQL: SELECT Date, SUM(Amount) as TotalAmount, COUNT(DISTINCT PlayerID) as PlayerCount
-     FROM common.tbl_Daily_actions
+SQL: SELECT Date, SUM(Deposits) as TotalDeposits, COUNT(DISTINCT PlayerID) as PlayerCount
+     FROM common.tbl_Daily_actions WITH (NOLOCK)
      WHERE Date >= DATEADD(day, -7, CAST(GETDATE() AS DATE))
      GROUP BY Date
      ORDER BY Date DESC");
@@ -654,15 +843,23 @@ EXAMPLE QUERIES:
 TECHNICAL RULES:
 1. Only use SELECT statements - never INSERT, UPDATE, DELETE
 2. Use proper table and column names exactly as shown in schema
-3. Include appropriate WHERE clauses for filtering
-4. Use JOINs when querying multiple tables based on foreign key relationships
-5. Add meaningful column aliases (e.g., SUM(Amount) AS TotalAmount)
-6. Add ORDER BY for logical sorting (usually by date DESC or amount DESC)
-7. Use TOP 100 to limit results unless user specifies otherwise
-8. Return only the SQL query without explanations or markdown formatting
-9. Ensure all referenced columns exist in the schema
-10. Always add WITH (NOLOCK) hint to all table references for better read performance
-11. Format table hints as: FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints",
+3. CRITICAL: For deposits, ALWAYS use 'Deposits' column, NEVER 'Amount'
+4. Include appropriate WHERE clauses for filtering
+5. Use JOINs when querying multiple tables based on foreign key relationships
+6. Add meaningful column aliases (e.g., SUM(Deposits) AS TotalDeposits)
+7. Add ORDER BY for logical sorting (usually by date DESC or amount DESC)
+8. Use SELECT TOP 100 at the beginning to limit results (NEVER put TOP at the end)
+9. Return only the SQL query without explanations or markdown formatting
+10. Ensure all referenced columns exist in the schema
+11. Always add WITH (NOLOCK) hint to all table references for better read performance
+12. Format table hints as: FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints
+
+CORRECT SQL STRUCTURE:
+SELECT TOP 100 column1, column2, column3
+FROM table1 t1 WITH (NOLOCK)
+JOIN table2 t2 WITH (NOLOCK) ON t1.id = t2.id
+WHERE condition
+ORDER BY column1 DESC",
                 Description = "Enhanced SQL generation template with business context",
                 IsActive = true,
                 CreatedBy = "System"
@@ -749,10 +946,12 @@ Generate a SQL SELECT query that:
 2. Includes appropriate WHERE clauses for date filtering
 3. Uses meaningful JOINs based on relationships
 4. Returns aggregated totals when requested
-5. Limits results with TOP 100
+5. Limits results with SELECT TOP 100 at the beginning (NEVER put TOP at the end)
 6. Uses clear column aliases
 7. Always adds WITH (NOLOCK) hint to all table references for better read performance
 8. Formats as: FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints
+
+CORRECT STRUCTURE: SELECT TOP 100 columns FROM table WITH (NOLOCK) WHERE condition ORDER BY column
 
 Return only the SQL query without explanations.";
     }

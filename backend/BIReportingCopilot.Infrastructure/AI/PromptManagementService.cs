@@ -143,19 +143,21 @@ public class PromptManagementService : IContextManager
             var relevantTables = new List<TableMetadata>();
             var lowerQuery = query.ToLowerInvariant();
 
-            _logger.LogInformation("PromptManagementService: Analyzing query with semantic analyzer");
+            _logger.LogInformation("PromptManagementService: Analyzing query '{Query}' with {TableCount} available tables", query, fullSchema.Tables.Count);
 
             foreach (var table in fullSchema.Tables)
             {
                 var relevanceScore = CalculateTableRelevance(table, semanticAnalysis, lowerQuery);
+                _logger.LogInformation("Table {TableName} relevance score: {Score}", table.Name, relevanceScore);
+
                 if (relevanceScore > 0.5) // Higher threshold for better relevance
                 {
                     relevantTables.Add(table);
-                    _logger.LogDebug("Table {TableName} included with relevance {Score}", table.Name, relevanceScore);
+                    _logger.LogInformation("✅ Table {TableName} INCLUDED with relevance {Score}", table.Name, relevanceScore);
                 }
-                else if (relevanceScore > 0.3)
+                else
                 {
-                    _logger.LogDebug("Table {TableName} excluded with low relevance {Score}", table.Name, relevanceScore);
+                    _logger.LogInformation("❌ Table {TableName} EXCLUDED with low relevance {Score}", table.Name, relevanceScore);
                 }
             }
 
@@ -540,10 +542,137 @@ public class PromptManagementService : IContextManager
         };
     }
 
-    // Placeholder methods - full implementations available in original files
-    private double CalculateTableRelevance(TableMetadata table, SemanticAnalysis semanticAnalysis, string lowerQuery) => 0.5;
-    private List<TableMetadata> FindTablesByKeywords(List<TableMetadata> tables, string lowerQuery) => tables.Take(3).ToList();
-    private List<TableMetadata> GetDefaultGamingTables(List<TableMetadata> tables) => tables.Take(3).ToList();
+    private double CalculateTableRelevance(TableMetadata table, SemanticAnalysis semanticAnalysis, string lowerQuery)
+    {
+        double score = 0.0;
+        var tableName = table.Name.ToLowerInvariant();
+
+        _logger.LogDebug("Calculating relevance for table {TableName} with query '{Query}'", table.Name, lowerQuery);
+
+        // High relevance for core gaming tables
+        if (tableName.Contains("daily_actions") && !tableName.Contains("players"))
+        {
+            score += 0.9; // Main stats table - highest priority
+            _logger.LogDebug("Table {TableName}: +0.9 for being main daily_actions table", table.Name);
+        }
+        else if (tableName.Contains("daily_actions_players"))
+        {
+            score += 0.6; // Player demographics
+            _logger.LogDebug("Table {TableName}: +0.6 for being players table", table.Name);
+        }
+        else if (tableName.Contains("countries") || tableName.Contains("currencies") || tableName.Contains("whitelabels"))
+        {
+            score += 0.4; // Lookup tables
+            _logger.LogDebug("Table {TableName}: +0.4 for being lookup table", table.Name);
+        }
+
+        // Query-specific relevance boosts
+        if ((lowerQuery.Contains("deposit") || lowerQuery.Contains("top") || lowerQuery.Contains("player")) && tableName.Contains("daily_actions") && !tableName.Contains("players"))
+        {
+            score += 0.8; // Major boost for deposit/player queries on main table
+            _logger.LogDebug("Table {TableName}: +0.8 for deposit/player query on main table", table.Name);
+        }
+
+        if (lowerQuery.Contains("player") && tableName.Contains("players"))
+        {
+            score += 0.6;
+            _logger.LogDebug("Table {TableName}: +0.6 for player query on players table", table.Name);
+        }
+
+        if (lowerQuery.Contains("bonus") && tableName.Contains("bonus"))
+        {
+            score += 0.7;
+            _logger.LogDebug("Table {TableName}: +0.7 for bonus query on bonus table", table.Name);
+        }
+
+        if (lowerQuery.Contains("country") && tableName.Contains("countries"))
+        {
+            score += 0.6;
+            _logger.LogDebug("Table {TableName}: +0.6 for country query", table.Name);
+        }
+
+        if ((lowerQuery.Contains("brand") || lowerQuery.Contains("whitelabel")) &&
+            (tableName.Contains("whitelabels") || tableName.Contains("daily_actions")))
+        {
+            score += 0.6;
+            _logger.LogDebug("Table {TableName}: +0.6 for brand/whitelabel query", table.Name);
+        }
+
+        // Strong penalties for irrelevant tables
+        if ((lowerQuery.Contains("deposit") || lowerQuery.Contains("top") || lowerQuery.Contains("player")) &&
+            tableName.Contains("bonus") && !lowerQuery.Contains("bonus"))
+        {
+            score -= 0.8; // Strong penalty for bonus tables in non-bonus queries
+            _logger.LogDebug("Table {TableName}: -0.8 penalty for bonus table in non-bonus query", table.Name);
+        }
+
+        var finalScore = Math.Max(0, Math.Min(1, score));
+        _logger.LogDebug("Table {TableName}: Final relevance score = {Score}", table.Name, finalScore);
+
+        return finalScore;
+    }
+
+    private List<TableMetadata> FindTablesByKeywords(List<TableMetadata> tables, string lowerQuery)
+    {
+        var relevantTables = new List<TableMetadata>();
+
+        foreach (var table in tables)
+        {
+            var tableName = table.Name.ToLowerInvariant();
+
+            // Always include main daily actions table for most queries
+            if (tableName.Contains("daily_actions") && !tableName.Contains("players"))
+            {
+                relevantTables.Add(table);
+                continue;
+            }
+
+            // Include player table if query mentions players
+            if (lowerQuery.Contains("player") && tableName.Contains("players"))
+            {
+                relevantTables.Add(table);
+                continue;
+            }
+
+            // Include lookup tables based on query content
+            if ((lowerQuery.Contains("country") && tableName.Contains("countries")) ||
+                (lowerQuery.Contains("currency") && tableName.Contains("currencies")) ||
+                ((lowerQuery.Contains("brand") || lowerQuery.Contains("whitelabel")) && tableName.Contains("whitelabels")))
+            {
+                relevantTables.Add(table);
+            }
+        }
+
+        return relevantTables.Take(5).ToList();
+    }
+
+    private List<TableMetadata> GetDefaultGamingTables(List<TableMetadata> tables)
+    {
+        var defaultTables = new List<TableMetadata>();
+
+        // Always include the main daily actions table
+        var dailyActionsTable = tables.FirstOrDefault(t => t.Name.ToLowerInvariant().Contains("daily_actions") && !t.Name.ToLowerInvariant().Contains("players"));
+        if (dailyActionsTable != null)
+        {
+            defaultTables.Add(dailyActionsTable);
+        }
+
+        // Include player table for demographics
+        var playersTable = tables.FirstOrDefault(t => t.Name.ToLowerInvariant().Contains("players"));
+        if (playersTable != null)
+        {
+            defaultTables.Add(playersTable);
+        }
+
+        // Include countries for geographic analysis
+        var countriesTable = tables.FirstOrDefault(t => t.Name.ToLowerInvariant().Contains("countries"));
+        if (countriesTable != null)
+        {
+            defaultTables.Add(countriesTable);
+        }
+
+        return defaultTables;
+    }
     private List<TableRelationship> FindRelevantRelationships(List<TableMetadata> tables, SchemaMetadata schema) => new();
     private List<string> GenerateSuggestedJoins(List<TableMetadata> tables, List<TableRelationship> relationships) => new();
     private Dictionary<string, string> CreateColumnMappings(List<TableMetadata> tables) => new();

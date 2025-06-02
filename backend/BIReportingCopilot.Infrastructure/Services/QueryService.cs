@@ -58,6 +58,7 @@ public class QueryService : IQueryService
     {
         var queryId = Guid.NewGuid().ToString();
         var startTime = DateTime.UtcNow;
+        PromptDetails? promptDetails = null; // Declare at method level
 
         try
         {
@@ -142,6 +143,7 @@ public class QueryService : IQueryService
 
             // Generate SQL using enhanced AI prompt with relevant business context
             var prompt = await _promptService.BuildQueryPromptAsync(request.Question, relevantSchema);
+            promptDetails = await _promptService.BuildDetailedQueryPromptAsync(request.Question, relevantSchema);
             var aiStartTime = DateTime.UtcNow;
             var generatedSQL = await _aiService.GenerateSQLAsync(prompt, cancellationToken);
             var aiExecutionTime = (int)(DateTime.UtcNow - aiStartTime).TotalMilliseconds;
@@ -157,7 +159,7 @@ public class QueryService : IQueryService
                 _logger.LogError("❌ FAILED SQL: {GeneratedSQL}", generatedSQL);
                 await LogQueryAsync(userId, request, generatedSQL, false, 0, error);
                 await LogPromptDetailsAsync(request.Question, prompt, generatedSQL, false, aiExecutionTime, userId, request.SessionId, error);
-                return CreateErrorResponse(queryId, error, generatedSQL);
+                return CreateErrorResponse(queryId, error, generatedSQL, promptDetails);
             }
 
             // Execute the SQL query
@@ -169,6 +171,29 @@ public class QueryService : IQueryService
 
             _logger.LogInformation("Database execution completed - Success: {Success}, RowCount: {RowCount}, ExecutionTime: {ExecutionTime}ms",
                 queryResult.IsSuccessful, queryResult.Metadata?.RowCount ?? 0, dbExecutionTime);
+
+            // Check if SQL execution failed
+            if (!queryResult.IsSuccessful || !string.IsNullOrEmpty(queryResult.Metadata?.Error))
+            {
+                var sqlError = queryResult.Metadata?.Error ?? "SQL execution failed";
+                _logger.LogError("❌ SQL EXECUTION FAILED: {Error}", sqlError);
+                await LogQueryAsync(userId, request, generatedSQL, false, totalExecutionTime, sqlError);
+                await LogPromptDetailsAsync(request.Question, prompt, generatedSQL, false, totalExecutionTime, userId, request.SessionId, sqlError);
+
+                return new QueryResponse
+                {
+                    QueryId = queryId,
+                    Sql = generatedSQL,
+                    Success = false,
+                    Error = $"SQL Error: {sqlError}",
+                    Timestamp = DateTime.UtcNow,
+                    ExecutionTimeMs = totalExecutionTime,
+                    PromptDetails = promptDetails,
+                    Confidence = 0,
+                    Suggestions = Array.Empty<string>(),
+                    Cached = false
+                };
+            }
 
             // Calculate confidence score
             var confidence = await _aiService.CalculateConfidenceScoreAsync(request.Question, generatedSQL);
@@ -202,7 +227,8 @@ public class QueryService : IQueryService
                 Cached = false,
                 Success = true,
                 Timestamp = DateTime.UtcNow,
-                ExecutionTimeMs = totalExecutionTime
+                ExecutionTimeMs = totalExecutionTime,
+                PromptDetails = promptDetails
             };
 
             // Cache the result if enabled (both in request options AND admin settings)
@@ -235,7 +261,7 @@ public class QueryService : IQueryService
 
             await LogQueryAsync(userId, request, "", false, errorExecutionTime, ex.Message);
 
-            return CreateErrorResponse(queryId, ex.Message);
+            return CreateErrorResponse(queryId, ex.Message, "", promptDetails);
         }
     }
 
@@ -430,7 +456,7 @@ public class QueryService : IQueryService
         return structure.TrimEnd('_');
     }
 
-    private QueryResponse CreateErrorResponse(string queryId, string error, string? sql = null)
+    private QueryResponse CreateErrorResponse(string queryId, string error, string? sql = null, PromptDetails? promptDetails = null)
     {
         return new QueryResponse
         {
@@ -442,7 +468,8 @@ public class QueryService : IQueryService
             Confidence = 0,
             Suggestions = Array.Empty<string>(),
             Cached = false,
-            ExecutionTimeMs = 0
+            ExecutionTimeMs = 0,
+            PromptDetails = promptDetails
         };
     }
 
