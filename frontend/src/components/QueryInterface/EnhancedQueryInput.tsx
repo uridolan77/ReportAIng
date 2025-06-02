@@ -3,17 +3,14 @@
  * Provides intelligent query input with shortcuts, autocomplete, and templates
  */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Input,
-  Card,
   Space,
   Typography,
   Tag,
   Button,
   Tooltip,
   Dropdown,
-  Menu,
   AutoComplete,
   message,
 } from 'antd';

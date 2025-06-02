@@ -1,18 +1,13 @@
 import React, { useState } from 'react';
-import { Card, Table, Typography, Space, Tag, Button, Divider, Row, Col, Tabs } from 'antd';
+import { Card, Table, Typography, Space, Tag, Button, Tabs } from 'antd';
 import {
   ReloadOutlined,
   CodeOutlined,
-  BarChartOutlined,
-  LineChartOutlined,
-  PieChartOutlined,
-  DashboardOutlined,
   DownloadOutlined,
   TableOutlined,
   ThunderboltOutlined
 } from '@ant-design/icons';
 import { QueryResponse } from '../../types/query';
-import { InlineChart } from '../Visualization/InlineChart';
 import AdvancedVisualizationPanel from '../Visualization/AdvancedVisualizationPanel';
 
 const { Title, Text, Paragraph } = Typography;
@@ -27,10 +22,8 @@ interface QueryResultProps {
 }
 
 export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick, onVisualizationRequest }) => {
-  const [showVisualizationOptions, setShowVisualizationOptions] = useState(false);
-  const [selectedChartType, setSelectedChartType] = useState<'bar' | 'line' | 'pie' | null>(null);
+  // Unused state variables removed
   const [activeTab, setActiveTab] = useState('data');
-  const [advancedVisualizationConfig, setAdvancedVisualizationConfig] = useState<any>(null);
   if (!result.success) {
     return (
       <Card className="enhanced-card">

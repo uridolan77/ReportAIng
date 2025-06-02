@@ -22,7 +22,7 @@ public class MfaService : IMfaService
     private readonly IEmailService _emailService;
     private readonly ISmsService _smsService;
     private readonly ILogger<MfaService> _logger;
-    private readonly SecuritySettings _securitySettings;
+    private readonly SecurityConfiguration _securitySettings;
 
     public MfaService(
         IUserEntityRepository userRepository,
@@ -30,7 +30,7 @@ public class MfaService : IMfaService
         IEmailService emailService,
         ISmsService smsService,
         ILogger<MfaService> logger,
-        IOptions<SecuritySettings> securitySettings)
+        IOptions<SecurityConfiguration> securitySettings)
     {
         _userRepository = userRepository;
         _mfaChallengeRepository = mfaChallengeRepository;
@@ -99,7 +99,7 @@ public class MfaService : IMfaService
             user.MfaSecret = setupInfo.TotpSecret;
             user.MfaMethod = method.ToString();
             // Don't enable MFA yet - wait for verification
-            
+
             await _userRepository.UpdateAsync(user);
 
             _logger.LogInformation("MFA setup initiated for user {UserId} with method {Method}", userId, method);
@@ -150,7 +150,7 @@ public class MfaService : IMfaService
                 user.IsMfaEnabled = true;
                 user.LastMfaValidationDate = DateTime.UtcNow;
                 await _userRepository.UpdateAsync(user);
-                
+
                 _logger.LogInformation("MFA setup verified and enabled for user {UserId}", userId);
             }
 
@@ -212,7 +212,7 @@ public class MfaService : IMfaService
                     user.BackupCodes = string.Join(",", remainingCodes);
                     user.LastMfaValidationDate = DateTime.UtcNow;
                     await _userRepository.UpdateAsync(user);
-                    
+
                     _logger.LogInformation("Backup code used for user {UserId}", userId);
                     return true;
                 }
@@ -255,7 +255,7 @@ public class MfaService : IMfaService
                 return false;
 
             await _mfaChallengeRepository.MarkChallengeAsUsedAsync(challenge.ChallengeId);
-            
+
             var user = await _userRepository.GetByIdAsync(Guid.Parse(challenge.UserId));
             if (user != null)
             {
@@ -400,7 +400,7 @@ public class MfaService : IMfaService
             {
                 var key = KeyGeneration.GenerateRandomKey(20);
                 var secret = Base32Encoding.ToString(key);
-                
+
                 _logger.LogInformation("Generated TOTP secret");
                 return secret;
             }
@@ -419,13 +419,13 @@ public class MfaService : IMfaService
             try
             {
                 var totpUri = $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(userEmail)}?secret={secret}&issuer={Uri.EscapeDataString(issuer)}";
-                
+
                 using var qrGenerator = new QRCodeGenerator();
                 using var qrCodeData = qrGenerator.CreateQrCode(totpUri, QRCodeGenerator.ECCLevel.Q);
                 using var qrCode = new Base64QRCode(qrCodeData);
-                
+
                 var qrCodeImageAsBase64 = qrCode.GetGraphic(20);
-                
+
                 _logger.LogInformation("Generated QR code for user: {UserEmail}", userEmail);
                 return $"data:image/png;base64,{qrCodeImageAsBase64}";
             }
@@ -450,7 +450,7 @@ public class MfaService : IMfaService
 
                 var secretBytes = Base32Encoding.ToBytes(secret);
                 var totp = new Totp(secretBytes);
-                
+
                 // Allow for time drift - check current window and ±1 window
                 var currentTime = DateTime.UtcNow;
                 var windows = new[]
@@ -489,7 +489,7 @@ public class MfaService : IMfaService
             {
                 var random = new Random();
                 var code = random.Next(100000, 999999).ToString();
-                
+
                 _logger.LogInformation("Generated SMS code");
                 return code;
             }
@@ -507,7 +507,7 @@ public class MfaService : IMfaService
         {
             var message = $"Your verification code is: {code}. This code will expire in 5 minutes.";
             var success = await _smsService.SendAsync(phoneNumber, message);
-            
+
             if (success)
             {
                 _logger.LogInformation("SMS code sent successfully to: {PhoneNumber}", MaskPhoneNumber(phoneNumber));
@@ -516,7 +516,7 @@ public class MfaService : IMfaService
             {
                 _logger.LogWarning("Failed to send SMS code to: {PhoneNumber}", MaskPhoneNumber(phoneNumber));
             }
-            
+
             return success;
         }
         catch (Exception ex)
@@ -534,7 +534,7 @@ public class MfaService : IMfaService
             {
                 var random = new Random();
                 var code = random.Next(100000, 999999).ToString();
-                
+
                 _logger.LogInformation("Generated email code");
                 return code;
             }
@@ -557,9 +557,9 @@ public class MfaService : IMfaService
                 <p>This code will expire in 5 minutes.</p>
                 <p>If you didn't request this code, please ignore this email.</p>
             ";
-            
+
             var success = await _emailService.SendAsync(email, subject, body);
-            
+
             if (success)
             {
                 _logger.LogInformation("Email code sent successfully to: {Email}", MaskEmail(email));
@@ -568,7 +568,7 @@ public class MfaService : IMfaService
             {
                 _logger.LogWarning("Failed to send email code to: {Email}", MaskEmail(email));
             }
-            
+
             return success;
         }
         catch (Exception ex)
@@ -585,20 +585,20 @@ public class MfaService : IMfaService
             try
             {
                 var codes = new string[count];
-                
+
                 for (int i = 0; i < count; i++)
                 {
                     using var rng = RandomNumberGenerator.Create();
                     var bytes = new byte[4];
                     rng.GetBytes(bytes);
-                    
+
                     // Generate 8-character alphanumeric code
                     var code = Convert.ToBase64String(bytes)
                         .Replace("+", "")
                         .Replace("/", "")
                         .Replace("=", "")
                         .ToUpper();
-                    
+
                     if (code.Length >= 8)
                     {
                         codes[i] = code.Substring(0, 8);
@@ -609,7 +609,7 @@ public class MfaService : IMfaService
                         codes[i] = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
                     }
                 }
-                
+
                 _logger.LogInformation("Generated {Count} backup codes", count);
                 return codes;
             }
@@ -626,14 +626,14 @@ public class MfaService : IMfaService
     {
         var codes = new string[10];
         using var rng = RandomNumberGenerator.Create();
-        
+
         for (int i = 0; i < codes.Length; i++)
         {
             var bytes = new byte[4];
             rng.GetBytes(bytes);
             codes[i] = Convert.ToHexString(bytes);
         }
-        
+
         return Task.FromResult(codes);
     }
 
@@ -655,7 +655,7 @@ public class MfaService : IMfaService
         if (string.IsNullOrEmpty(phoneNumber) || phoneNumber.Length < 4)
             return phoneNumber ?? "";
 
-        return phoneNumber.Length > 10 
+        return phoneNumber.Length > 10
             ? "***-***-" + phoneNumber.Substring(phoneNumber.Length - 4)
             : "***-" + phoneNumber.Substring(phoneNumber.Length - 4);
     }
@@ -669,10 +669,10 @@ public class MfaService : IMfaService
         var username = parts[0];
         var domain = parts[1];
 
-        var maskedUsername = username.Length <= 1 
-            ? username 
+        var maskedUsername = username.Length <= 1
+            ? username
             : username.Substring(0, 1) + "***";
-        
+
         return $"{maskedUsername}@{domain}";
     }
 }

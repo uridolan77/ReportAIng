@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.Metrics;
+using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Models.ML;
 using BIReportingCopilot.Infrastructure.Monitoring;
+using BIReportingCopilot.Infrastructure.Security;
 using BIReportingCopilot.Infrastructure.AI;
 using System.Diagnostics;
 
@@ -12,19 +15,25 @@ namespace BIReportingCopilot.Infrastructure.Messaging.EventHandlers;
 public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
 {
     private readonly ILogger<QueryExecutedEventHandler> _logger;
-    private readonly IMetricsCollector _metricsCollector;
+    private readonly MonitoringManagementService _monitoringService;
     private readonly ISemanticCacheService _semanticCache;
-    private readonly MLAnomalyDetector _anomalyDetector;
+    private readonly SecurityManagementService _securityService;
+    private readonly IMetricsCollector _metricsCollector;
+    private readonly IAnomalyDetector _anomalyDetector;
 
     public QueryExecutedEventHandler(
         ILogger<QueryExecutedEventHandler> logger,
-        IMetricsCollector metricsCollector,
+        MonitoringManagementService monitoringService,
         ISemanticCacheService semanticCache,
-        MLAnomalyDetector anomalyDetector)
+        SecurityManagementService securityService,
+        IMetricsCollector metricsCollector,
+        IAnomalyDetector anomalyDetector)
     {
         _logger = logger;
-        _metricsCollector = metricsCollector;
+        _monitoringService = monitoringService;
         _semanticCache = semanticCache;
+        _securityService = securityService;
+        _metricsCollector = metricsCollector;
         _anomalyDetector = anomalyDetector;
     }
 
@@ -137,12 +146,12 @@ public class FeedbackReceivedEventHandler : IEventHandler<FeedbackReceivedEvent>
 {
     private readonly ILogger<FeedbackReceivedEventHandler> _logger;
     private readonly IMetricsCollector _metricsCollector;
-    private readonly FeedbackLearningEngine _learningEngine;
+    private readonly BIReportingCopilot.Infrastructure.AI.FeedbackLearningEngine _learningEngine;
 
     public FeedbackReceivedEventHandler(
         ILogger<FeedbackReceivedEventHandler> logger,
         IMetricsCollector metricsCollector,
-        FeedbackLearningEngine learningEngine)
+        BIReportingCopilot.Infrastructure.AI.FeedbackLearningEngine learningEngine)
     {
         _logger = logger;
         _metricsCollector = metricsCollector;

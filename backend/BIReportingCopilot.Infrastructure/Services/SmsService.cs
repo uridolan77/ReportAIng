@@ -1,94 +1,159 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using BIReportingCopilot.Core.Interfaces;
-using BIReportingCopilot.Core.Configuration;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
 /// <summary>
-/// SMS service for sending MFA codes and notifications
+/// SMS service implementation
 /// </summary>
 public class SmsService : ISmsService
 {
     private readonly ILogger<SmsService> _logger;
-    private readonly SmsSettings _smsSettings;
 
-    public SmsService(
-        ILogger<SmsService> logger,
-        IOptions<SmsSettings> smsSettings)
+    public SmsService(ILogger<SmsService> logger)
     {
         _logger = logger;
-        _smsSettings = smsSettings.Value;
     }
 
+    /// <summary>
+    /// Send SMS asynchronously (interface implementation)
+    /// </summary>
+    /// <param name="phoneNumber">Recipient phone number</param>
+    /// <param name="message">SMS message</param>
+    /// <returns>True if sent successfully</returns>
     public async Task<bool> SendAsync(string phoneNumber, string message)
+    {
+        return await SendSmsAsync(phoneNumber, message);
+    }
+
+    /// <summary>
+    /// Test SMS delivery (interface implementation)
+    /// </summary>
+    /// <param name="phoneNumber">Phone number to test</param>
+    /// <returns>True if delivery test successful</returns>
+    public async Task<bool> TestDeliveryAsync(string phoneNumber)
+    {
+        return await SendSmsAsync(phoneNumber, "Test message - please ignore");
+    }
+
+    /// <summary>
+    /// Send SMS asynchronously (interface implementation)
+    /// </summary>
+    /// <param name="phoneNumber">Recipient phone number</param>
+    /// <param name="message">SMS message</param>
+    /// <returns>True if sent successfully</returns>
+    public async Task<bool> SendSmsAsync(string phoneNumber, string message)
+    {
+        return await SendSmsAsync(phoneNumber, message, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Send SMS asynchronously
+    /// </summary>
+    /// <param name="phoneNumber">Recipient phone number</param>
+    /// <param name="message">SMS message</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if sent successfully</returns>
+    public async Task<bool> SendSmsAsync(string phoneNumber, string message, CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Sending SMS to {PhoneNumber}", MaskPhoneNumber(phoneNumber));
+            _logger.LogInformation("Sending SMS to {PhoneNumber}", phoneNumber);
 
-            // TODO: Implement actual SMS sending using Twilio, AWS SNS, etc.
-            // For now, just log the SMS content for development
-            _logger.LogInformation("SMS Content:\nTo: {PhoneNumber}\nMessage: {Message}", 
-                MaskPhoneNumber(phoneNumber), message);
+            // Simulate SMS sending
+            await Task.Delay(100, cancellationToken);
 
-            // Simulate SMS sending delay
-            await Task.Delay(100);
-
-            _logger.LogInformation("SMS sent successfully to {PhoneNumber}", MaskPhoneNumber(phoneNumber));
-            
+            _logger.LogInformation("SMS sent successfully to {PhoneNumber}", phoneNumber);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send SMS to {PhoneNumber}", MaskPhoneNumber(phoneNumber));
+            _logger.LogError(ex, "Failed to send SMS to {PhoneNumber}", phoneNumber);
             return false;
         }
     }
 
     /// <summary>
-    /// Send MFA code via SMS
+    /// Send bulk SMS messages
     /// </summary>
-    public async Task<bool> SendSmsAsync(string phoneNumber, string message)
+    /// <param name="phoneNumbers">List of phone numbers</param>
+    /// <param name="message">SMS message</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Number of SMS messages sent successfully</returns>
+    public async Task<int> SendBulkSmsAsync(
+        IEnumerable<string> phoneNumbers,
+        string message,
+        CancellationToken cancellationToken = default)
     {
-        return await SendAsync(phoneNumber, message);
+        var successCount = 0;
+        var phoneNumberList = phoneNumbers.ToList();
+
+        _logger.LogInformation("Sending bulk SMS to {Count} recipients", phoneNumberList.Count);
+
+        foreach (var phoneNumber in phoneNumberList)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                break;
+
+            if (await SendSmsAsync(phoneNumber, message, cancellationToken))
+            {
+                successCount++;
+            }
+
+            // Small delay to prevent overwhelming the SMS service
+            await Task.Delay(50, cancellationToken);
+        }
+
+        _logger.LogInformation("Bulk SMS completed: {Success}/{Total} messages sent", successCount, phoneNumberList.Count);
+        return successCount;
     }
 
     /// <summary>
-    /// Test SMS delivery to a phone number
+    /// Send verification code via SMS
     /// </summary>
-    public async Task<bool> TestDeliveryAsync(string phoneNumber)
+    /// <param name="phoneNumber">Recipient phone number</param>
+    /// <param name="code">Verification code</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if sent successfully</returns>
+    public async Task<bool> SendVerificationCodeAsync(string phoneNumber, string code, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(phoneNumber))
-            {
-                _logger.LogWarning("Cannot test SMS delivery: invalid phone number");
-                return false;
-            }
-
-            // Basic phone number validation
-            if (!phoneNumber.StartsWith("+") || phoneNumber.Length < 10 || phoneNumber.Contains("invalid"))
-            {
-                _logger.LogWarning("Cannot test SMS delivery: invalid phone number format");
-                return false;
-            }
-
-            var testMessage = "Test SMS delivery from BI Reporting Copilot";
-            return await SendAsync(phoneNumber, testMessage);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error testing SMS delivery to {PhoneNumber}", MaskPhoneNumber(phoneNumber));
-            return false;
-        }
+        var message = $"Your verification code is: {code}. This code will expire in 10 minutes.";
+        return await SendSmsAsync(phoneNumber, message, cancellationToken);
     }
 
-    private static string MaskPhoneNumber(string phoneNumber)
+    /// <summary>
+    /// Send alert message via SMS
+    /// </summary>
+    /// <param name="phoneNumber">Recipient phone number</param>
+    /// <param name="alertMessage">Alert message</param>
+    /// <param name="priority">Message priority</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if sent successfully</returns>
+    public async Task<bool> SendAlertAsync(
+        string phoneNumber,
+        string alertMessage,
+        SmsPriority priority = SmsPriority.Normal,
+        CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(phoneNumber) || phoneNumber.Length < 4)
-            return "****";
-        
-        return phoneNumber.Substring(0, 3) + "****" + phoneNumber.Substring(phoneNumber.Length - 4);
+        var priorityPrefix = priority switch
+        {
+            SmsPriority.High => "[URGENT] ",
+            SmsPriority.Critical => "[CRITICAL] ",
+            _ => ""
+        };
+
+        var message = $"{priorityPrefix}{alertMessage}";
+        return await SendSmsAsync(phoneNumber, message, cancellationToken);
     }
+}
+
+/// <summary>
+/// SMS priority levels
+/// </summary>
+public enum SmsPriority
+{
+    Low,
+    Normal,
+    High,
+    Critical
 }

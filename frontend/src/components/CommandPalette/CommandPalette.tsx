@@ -185,8 +185,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     }
   ];
 
-  const allCommands = [...defaultCommands, ...customCommands];
-
   useEffect(() => {
     if (visible && searchInputRef.current) {
       setTimeout(() => {
@@ -196,6 +194,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   }, [visible]);
 
   useEffect(() => {
+    const allCommands = [...defaultCommands, ...customCommands];
+
     if (!searchTerm) {
       setFilteredCommands(allCommands);
     } else {
@@ -211,7 +211,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       setFilteredCommands(filtered);
     }
     setSelectedIndex(0);
-  }, [searchTerm, allCommands]);
+  }, [searchTerm, defaultCommands, customCommands]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     switch (e.key) {

@@ -43,6 +43,11 @@ public class BICopilotContext : DbContext
     public DbSet<Core.Models.AIFeedbackEntry> AIFeedbackEntries { get; set; }
     public DbSet<Core.Models.SemanticCacheEntry> SemanticCacheEntries { get; set; }
 
+    // Additional missing DbSets
+    public DbSet<Core.Models.QueryHistoryEntity> QueryExecutionLogs { get; set; }
+    public DbSet<SystemMetricsEntity> PerformanceMetrics { get; set; }
+    public DbSet<Core.Models.TempFile> TempFiles { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

@@ -1,3 +1,5 @@
+import { useCallback, useRef, useEffect } from 'react';
+
 // Request deduplication utility for preventing duplicate API calls
 class RequestDeduplicator {
   private pendingRequests = new Map<string, Promise<any>>();
@@ -81,7 +83,6 @@ export const deduplicatedFetch = <T>(url: string, options?: RequestInit): Promis
 };
 
 // React hook for using deduplicated fetch
-import { useCallback, useRef, useEffect } from 'react';
 
 export const useDeduplicatedFetch = () => {
   const deduplicatorRef = useRef(new RequestDeduplicator());

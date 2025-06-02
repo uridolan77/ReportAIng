@@ -23,13 +23,13 @@ using BIReportingCopilot.Infrastructure.Behaviors;
 using BIReportingCopilot.Infrastructure.Performance;
 using BIReportingCopilot.Infrastructure.Security;
 using BIReportingCopilot.Infrastructure.AI;
-using BIReportingCopilot.Infrastructure.Middleware;
+
 using BIReportingCopilot.Core.Commands;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Hangfire;
 using BIReportingCopilot.API.Versioning;
 using BIReportingCopilot.Core.Validation;
-using BIReportingCopilot.Infrastructure.Health;
+using BIReportingCopilot.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -277,21 +277,52 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Providers.OpenAI
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Providers.AzureOpenAIProvider>();
 builder.Services.AddScoped<IAIProviderFactory, BIReportingCopilot.Infrastructure.AI.Providers.AIProviderFactory>();
 
+// ===== UNIFIED SERVICES (ROUND 4, 5 & 6 CLEANUP) =====
+
+// Unified configuration service - consolidates all configuration management
+builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Configuration.UnifiedConfigurationService>();
+
+// Unified performance management service - consolidates streaming, metrics, and monitoring
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.PerformanceManagementService>();
+
+// Unified health management service - consolidates all health checks
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Health.HealthManagementService>();
+
+// Unified background job management service - consolidates all background operations
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Jobs.BackgroundJobManagementService>();
+
+// Unified monitoring management service - consolidates metrics, tracing, and logging
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Monitoring.MonitoringManagementService>();
+
+// Unified notification management service - consolidates email, SMS, and real-time notifications
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Services.NotificationManagementService>();
+
+// Unified security management service - consolidates rate limiting, SQL validation, and security monitoring
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.SecurityManagementService>();
+
 // ===== AI/ML ENHANCEMENT SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.SemanticCacheService>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.MLAnomalyDetector>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.FeedbackLearningEngine>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.PromptOptimizer>();
-builder.Services.AddScoped<ISemanticAnalyzer, BIReportingCopilot.Infrastructure.AI.SemanticAnalyzer>();
-builder.Services.AddScoped<IQueryClassifier, BIReportingCopilot.Infrastructure.AI.QueryClassifier>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ContextManager>();
-builder.Services.AddScoped<IContextManager>(provider => provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.ContextManager>());
+
+// Unified query analysis service - consolidates SemanticAnalyzer and QueryClassifier
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.QueryAnalysisService>();
+builder.Services.AddScoped<ISemanticAnalyzer>(provider =>
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.QueryAnalysisService>());
+builder.Services.AddScoped<IQueryClassifier>(provider =>
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.QueryAnalysisService>());
+
+// Unified prompt management service - consolidates ContextManager and PromptOptimizer
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.PromptManagementService>();
+builder.Services.AddScoped<IContextManager>(provider =>
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.PromptManagementService>());
+
+// Unified learning service - consolidates MLAnomalyDetector and FeedbackLearningEngine
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.LearningService>();
 builder.Services.AddScoped<IQueryOptimizer, BIReportingCopilot.Infrastructure.AI.QueryOptimizer>();
 builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.EnhancedQueryProcessor>();
 
 // ===== PERFORMANCE & MONITORING =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.StreamingDataService>();
-builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Monitoring.IMetricsCollector, BIReportingCopilot.Infrastructure.Monitoring.MetricsCollector>();
+builder.Services.AddSingleton<BIReportingCopilot.Core.Interfaces.IMetricsCollector, BIReportingCopilot.Infrastructure.Monitoring.MetricsCollector>();
 
 // ===== MESSAGING & EVENTS =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.IEventBus, BIReportingCopilot.Infrastructure.Messaging.InMemoryEventBus>();
@@ -350,8 +381,8 @@ builder.Services.AddSingleton<ICacheService, BIReportingCopilot.Infrastructure.P
 // ===== CONFIGURATION SECTIONS =====
 builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.RateLimitingConfiguration>(
     builder.Configuration.GetSection("RateLimit"));
-builder.Services.Configure<BIReportingCopilot.Infrastructure.Services.ShardingConfiguration>(
-    builder.Configuration.GetSection("Sharding"));
+builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.SqlValidationConfiguration>(
+    builder.Configuration.GetSection("SqlValidation"));
 
 // ===== EVENT HANDLERS =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHandlers.QueryExecutedEventHandler>();
@@ -398,18 +429,20 @@ builder.Services.AddScoped<IEmailService, BIReportingCopilot.Infrastructure.Serv
 builder.Services.AddScoped<ISmsService, BIReportingCopilot.Infrastructure.Services.SmsService>();
 
 // ===== SECURITY SERVICES =====
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISqlQueryValidator, BIReportingCopilot.Infrastructure.Security.SqlQueryValidator>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.IRateLimitingService, BIReportingCopilot.Infrastructure.Security.DistributedRateLimitingService>();
+// Consolidated SQL validator - EnhancedSqlQueryValidator implements both interfaces
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.EnhancedSqlQueryValidator>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISqlQueryValidator>(provider =>
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Security.EnhancedSqlQueryValidator>());
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.IEnhancedSqlQueryValidator>(provider =>
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Security.EnhancedSqlQueryValidator>());
+
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.IRateLimitingService>(provider =>
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Security.SecurityManagementService>());
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISecretsManagementService, BIReportingCopilot.Infrastructure.Security.SecretsManagementService>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.IEnhancedSqlQueryValidator, BIReportingCopilot.Infrastructure.Security.EnhancedSqlQueryValidator>();
 
 // ===== SERVICE ENHANCEMENTS =====
-// Enhanced AI service with built-in resilience, monitoring, and adaptive capabilities
-// (No decorators needed - functionality consolidated into base service)
-
-// Query service enhancements (keeping minimal decorators for now)
-builder.Services.Decorate<IQueryService, BIReportingCopilot.Infrastructure.Resilience.ResilientQueryService>();
-builder.Services.Decorate<IQueryService, BIReportingCopilot.Infrastructure.Monitoring.TracedQueryService>();
+// Simplified service registration - enhanced functionality built into base services
+// Removed complex decorator patterns for better maintainability and performance
 
 // ===== INFRASTRUCTURE SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IPasswordHasher, BIReportingCopilot.Infrastructure.Security.PasswordHasher>();
@@ -457,10 +490,7 @@ builder.Services.AddEndpointsApiExplorer();
 var healthChecks = builder.Services.AddHealthChecks();
 
 // Add fast health checks that return cached status
-healthChecks.AddCheck<FastOpenAIHealthCheck>("openai");
-healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.BIDatabaseHealthCheck>("bidatabase");
-healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.DefaultDatabaseHealthCheck>("defaultdb");
-healthChecks.AddCheck<FastRedisHealthCheck>("redis");
+healthChecks.AddCheck<BIReportingCopilot.API.HealthChecks.BIDatabaseHealthCheck>("bidatabase");
 
 // Add security health checks
 builder.Services.AddSecurityHealthChecks();

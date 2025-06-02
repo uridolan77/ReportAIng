@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Badge, Tooltip, Space, Typography, Button, Modal, Descriptions } from 'antd';
+import { Tooltip, Space, Typography, Button, Modal, Descriptions } from 'antd';
 import {
   DatabaseOutlined,
   CheckCircleOutlined,
@@ -139,10 +139,7 @@ export const DatabaseStatusIndicator: React.FC = () => {
     return <CloseCircleOutlined style={{ color: '#ff4d4f' }} />;
   };
 
-  const getStatusColor = () => {
-    if (loading) return 'processing';
-    return status.isConnected ? 'success' : 'error';
-  };
+  // Status color logic moved inline where needed
 
 
 

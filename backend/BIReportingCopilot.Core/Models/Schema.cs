@@ -147,3 +147,19 @@ public class ImpactAssessment
     public string? RecommendedAction { get; set; }
     public bool RequiresUserNotification { get; set; }
 }
+
+/// <summary>
+/// Represents a temporary file for cleanup operations
+/// </summary>
+public class TempFile
+{
+    public int Id { get; set; }
+    public string FilePath { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime ExpiresAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public long FileSize { get; set; }
+    public string? Description { get; set; }
+}
+
+

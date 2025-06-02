@@ -12,10 +12,8 @@ import {
   Table,
   Tag,
   Progress,
-  Tooltip,
   Modal,
-  Input,
-  Form
+  Input
 } from 'antd';
 import {
   SafetyOutlined,
@@ -28,13 +26,12 @@ import {
   SettingOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
-import { validateQuery, validateNaturalLanguageQuery } from '../../utils/queryValidator';
-import { SecurityUtils } from '../../utils/security';
+import { validateNaturalLanguageQuery } from '../../utils/queryValidator';
 import { tokenManager } from '../../services/tokenManager';
 import { secureApiClient, RequestMetrics } from '../../services/secureApiClient';
 import { requestSigning, SigningConfig } from '../../services/requestSigning';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 interface SecurityMetrics {

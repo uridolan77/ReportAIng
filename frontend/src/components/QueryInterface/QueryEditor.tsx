@@ -4,15 +4,12 @@ import {
   Button,
   Space,
   Typography,
-  Tooltip,
   Progress,
   Tag,
   Row,
   Col,
-  Card,
 } from 'antd';
 import {
-  SendOutlined,
   ToolOutlined,
   BookOutlined,
   ThunderboltOutlined,
@@ -22,7 +19,7 @@ import { EnhancedQueryInput } from './EnhancedQueryInput';
 import { QueryShortcuts } from './QueryShortcuts';
 import { QueryTemplate } from '../../services/queryTemplateService';
 
-const { TextArea } = Input;
+// TextArea not used in this component
 const { Text } = Typography;
 
 export const QueryEditor: React.FC = () => {
@@ -32,12 +29,9 @@ export const QueryEditor: React.FC = () => {
     isLoading,
     progress,
     isConnected,
-    textAreaRef,
     handleSubmitQuery,
-    handleKeyDown,
     setShowWizard,
-    setShowTemplateLibrary,
-    setShowCommandPalette
+    setShowTemplateLibrary
   } = useQueryContext();
 
   const [showShortcuts, setShowShortcuts] = useState(true);

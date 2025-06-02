@@ -21,7 +21,7 @@ import {
 } from 'recharts';
 import { BarChartOutlined } from '@ant-design/icons';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface InlineChartProps {
   type: 'bar' | 'line' | 'pie';

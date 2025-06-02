@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Select, Input, DatePicker, Space, Typography, Row, Col, Tag, Divider } from 'antd';
+import { Card, Button, Select, Input, DatePicker, Space, Typography, Row, Col, Tag } from 'antd';
 import { FilterOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { QueryBuilderData } from '../QueryWizard';
 import dayjs from 'dayjs';

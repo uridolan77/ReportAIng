@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { crossTabSync, reactQueryTabSync } from '../../lib/cross-tab-sync';
+import { crossTabSync } from '../../lib/cross-tab-sync';
 import { persistenceManager, persistenceConfigs } from '../../lib/enhanced-persistence';
 import { useQueryClient } from '@tanstack/react-query';
 

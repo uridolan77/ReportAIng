@@ -9,7 +9,6 @@ import {
   Tabs,
   Button,
   Space,
-  List,
   Tag,
   Statistic,
   Row,
@@ -26,10 +25,7 @@ import {
   Badge,
   Tooltip,
   Divider,
-  Timeline,
-  Tree,
   message,
-  Modal,
   Form,
   InputNumber,
 } from 'antd';
@@ -44,13 +40,11 @@ import {
   ExperimentOutlined,
   CodeOutlined,
   GlobalOutlined,
-  ClockCircleOutlined,
   WarningOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   ReloadOutlined,
   DownloadOutlined,
-  UploadOutlined,
   ClearOutlined,
   PlayCircleOutlined,
   PauseCircleOutlined,
@@ -61,7 +55,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryTemplateService } from '../../services/queryTemplateService';
 
 const { TabPane } = Tabs;
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { Panel } = Collapse;
 const { Option } = Select;
 const { TextArea } = Input;
@@ -100,11 +94,6 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
   const preferences = useVisualizationStore((state) => state.preferences);
   const queryClient = useQueryClient();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Don't render in production
-  if (process.env.NODE_ENV === 'production') {
-    return null;
-  }
 
   // Enhanced monitoring functionality
   useEffect(() => {
@@ -322,6 +311,11 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
   const currentFPS = performanceMetrics.length > 0
     ? performanceMetrics[performanceMetrics.length - 1].fps || 0
     : 0;
+
+  // Don't render in production
+  if (process.env.NODE_ENV === 'production') {
+    return null;
+  }
 
   return (
     <>

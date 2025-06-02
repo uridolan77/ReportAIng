@@ -6,7 +6,6 @@ import {
   Space,
   Typography,
   Tag,
-  Alert,
   Spin,
   Empty,
   Tooltip,
@@ -21,19 +20,16 @@ import {
 import {
   BulbOutlined,
   RiseOutlined,
-  FallOutlined,
   ExclamationCircleOutlined,
   LinkOutlined,
   BarChartOutlined,
-  EyeOutlined,
   ReloadOutlined,
-  FilterOutlined,
   ThunderboltOutlined
 } from '@ant-design/icons';
 import { insightsService, DataInsight, InsightRequest, ColumnInfo } from '../../services/insightsService';
 import { QueryResponse } from '../../types/query';
 
-const { Text, Title, Paragraph } = Typography;
+const { Text } = Typography;
 const { Panel } = Collapse;
 const { Option } = Select;
 

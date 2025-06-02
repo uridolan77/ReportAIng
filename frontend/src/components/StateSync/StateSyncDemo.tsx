@@ -19,7 +19,6 @@ import {
 import {
   SyncOutlined,
   CloudOutlined,
-  DatabaseOutlined,
   ExportOutlined,
   ImportOutlined,
   DeleteOutlined,
@@ -30,10 +29,10 @@ import { useStateSync, useSyncStatus, useStorageManagement } from '../Providers/
 import { useEnhancedState, useUserPreferences, useApplicationState } from '../../hooks/useEnhancedState';
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
+// TextArea not used in this component
 
 export const StateSyncDemo: React.FC = () => {
-  const [testValue, setTestValue] = useState('');
+  // testValue and setTestValue removed - not used
   const [broadcastMessage, setBroadcastMessage] = useState('');
 
   // State sync hooks
@@ -87,7 +86,7 @@ export const StateSyncDemo: React.FC = () => {
     autoSave: true
   });
 
-  const { appState, updateAppState } = useApplicationState();
+  // appState and updateAppState removed - not used in this component
 
   // Handlers
   const handleBroadcast = () => {

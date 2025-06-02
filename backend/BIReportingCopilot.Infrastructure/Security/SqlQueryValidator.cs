@@ -39,7 +39,7 @@ public class SqlQueryValidator : ISqlQueryValidator
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<SqlQueryValidator> _logger;
-    private readonly QuerySettings _querySettings;
+    private readonly PerformanceConfiguration _performanceSettings;
 
     // Dangerous keywords that should be blocked (enhanced list)
     private readonly string[] _dangerousKeywords;
@@ -75,15 +75,16 @@ public class SqlQueryValidator : ISqlQueryValidator
         @"(onclick\s*=)"
     };
 
-    public SqlQueryValidator(IConfiguration configuration, ILogger<SqlQueryValidator> logger, IOptions<QuerySettings> querySettings)
+    public SqlQueryValidator(IConfiguration configuration, ILogger<SqlQueryValidator> logger, IOptions<PerformanceConfiguration> performanceSettings)
     {
         _configuration = configuration;
         _logger = logger;
-        _querySettings = querySettings.Value;
+        _performanceSettings = performanceSettings.Value;
 
         // Initialize dangerous keywords from configuration or use defaults
-        _dangerousKeywords = _querySettings.BlockedKeywords.Any()
-            ? _querySettings.BlockedKeywords.ToArray()
+        var blockedKeywords = _configuration.GetSection("Database:BlockedKeywords").Get<List<string>>() ?? new List<string>();
+        _dangerousKeywords = blockedKeywords.Any()
+            ? blockedKeywords.ToArray()
             : new[] {
                 "DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE", "TRUNCATE",
                 "EXEC", "EXECUTE", "SP_", "XP_", "OPENROWSET", "OPENDATASOURCE",

@@ -25,7 +25,6 @@ import {
   Row,
   Col,
   Dropdown,
-  Menu,
 } from 'antd';
 import {
   SearchOutlined,
@@ -38,14 +37,10 @@ import {
   TagsOutlined,
   ClockCircleOutlined,
   UserOutlined,
-  MoreOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  CopyOutlined,
 } from '@ant-design/icons';
 import { queryTemplateService, QueryTemplate, QueryShortcut, QuerySuggestion } from '../../services/queryTemplateService';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
 

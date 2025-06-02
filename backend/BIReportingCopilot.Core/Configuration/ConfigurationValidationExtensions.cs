@@ -11,57 +11,51 @@ namespace BIReportingCopilot.Core.Configuration;
 public static class ConfigurationValidationExtensions
 {
     /// <summary>
-    /// Adds and validates all application configuration sections
+    /// Adds and validates all application configuration sections using unified configuration models
     /// </summary>
     public static IServiceCollection AddValidatedConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
-        // Register and validate JWT settings
-        services.AddOptions<JwtSettings>()
-            .Bind(configuration.GetSection(JwtSettings.SectionName))
+        // Register and validate unified AI configuration
+        services.AddOptions<AIConfiguration>()
+            .Bind(configuration.GetSection("AI"))
+            .ValidateDataAnnotations()
+            .Validate(ValidateOpenAISettings, "AI configuration is invalid");
+
+        // Register and validate unified security configuration
+        services.AddOptions<SecurityConfiguration>()
+            .Bind(configuration.GetSection("Security"))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        // Register and validate OpenAI settings (optional - fallback behavior if not configured)
-        services.AddOptions<OpenAISettings>()
-            .Bind(configuration.GetSection(OpenAISettings.SectionName))
+        // Register and validate unified performance configuration
+        services.AddOptions<PerformanceConfiguration>()
+            .Bind(configuration.GetSection("Performance"))
             .ValidateDataAnnotations()
-            .Validate(ValidateOpenAISettings, "OpenAI configuration is invalid");
-
-        // Register and validate rate limit settings
-        services.AddOptions<RateLimitSettings>()
-            .Bind(configuration.GetSection(RateLimitSettings.SectionName))
-            .ValidateDataAnnotations()
+            .Validate(ValidateQuerySettings, "Performance configuration is invalid")
             .ValidateOnStart();
 
-        // Register and validate query settings
-        services.AddOptions<QuerySettings>()
-            .Bind(configuration.GetSection(QuerySettings.SectionName))
-            .ValidateDataAnnotations()
-            .Validate(ValidateQuerySettings, "Query configuration is invalid")
-            .ValidateOnStart();
-
-        // Register and validate authentication settings
-        services.AddOptions<AuthenticationSettings>()
-            .Bind(configuration.GetSection(AuthenticationSettings.SectionName))
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        // Register and validate cache settings
-        services.AddOptions<CacheSettings>()
-            .Bind(configuration.GetSection(CacheSettings.SectionName))
+        // Register and validate unified cache configuration
+        services.AddOptions<CacheConfiguration>()
+            .Bind(configuration.GetSection("Cache"))
             .ValidateDataAnnotations()
             .Validate(ValidateCacheSettings, "Cache configuration is invalid")
             .ValidateOnStart();
 
-        // Register and validate background job settings
-        services.AddOptions<BackgroundJobSettings>()
-            .Bind(configuration.GetSection(BackgroundJobSettings.SectionName))
+        // Register and validate unified database configuration
+        services.AddOptions<DatabaseConfiguration>()
+            .Bind(configuration.GetSection("Database"))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        // Register feature flags (no validation needed)
-        services.AddOptions<FeatureFlagSettings>()
-            .Bind(configuration.GetSection(FeatureFlagSettings.SectionName));
+        // Register and validate unified monitoring configuration
+        services.AddOptions<MonitoringConfiguration>()
+            .Bind(configuration.GetSection("Monitoring"))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // Register unified feature configuration (no validation needed)
+        services.AddOptions<FeatureConfiguration>()
+            .Bind(configuration.GetSection("Features"));
 
         return services;
     }
@@ -69,23 +63,23 @@ public static class ConfigurationValidationExtensions
     /// <summary>
     /// Validates OpenAI-specific settings (allows empty/test configurations)
     /// </summary>
-    private static bool ValidateOpenAISettings(OpenAISettings settings)
+    private static bool ValidateOpenAISettings(AIConfiguration settings)
     {
         // Allow empty API key for testing/development
-        if (string.IsNullOrEmpty(settings.ApiKey) || settings.ApiKey == "test-api-key")
+        if (string.IsNullOrEmpty(settings.OpenAIApiKey) || settings.OpenAIApiKey == "test-api-key")
         {
             return true;
         }
 
         // Validate API key format (basic check) for real keys
-        if (!settings.ApiKey.StartsWith("sk-"))
+        if (!settings.OpenAIApiKey.StartsWith("sk-"))
         {
             return false;
         }
 
         // Validate model name
         var validModels = new[] { "gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4o" };
-        if (!validModels.Contains(settings.Model))
+        if (!validModels.Contains(settings.OpenAIModel))
         {
             return false;
         }
@@ -96,16 +90,16 @@ public static class ConfigurationValidationExtensions
     /// <summary>
     /// Validates query-specific settings
     /// </summary>
-    private static bool ValidateQuerySettings(QuerySettings settings)
+    private static bool ValidateQuerySettings(PerformanceConfiguration settings)
     {
-        // Ensure cache expiration is reasonable compared to timeout
-        if (settings.CacheExpirationSeconds < settings.DefaultTimeoutSeconds)
+        // Ensure query timeout is reasonable
+        if (settings.DefaultQueryTimeoutSeconds <= 0 || settings.DefaultQueryTimeoutSeconds > 300)
         {
             return false;
         }
 
-        // Validate blocked keywords are not empty if validation is enabled
-        if (settings.EnableQueryValidation && !settings.BlockedKeywords.Any())
+        // Validate max rows per query
+        if (settings.MaxRowsPerQuery <= 0 || settings.MaxRowsPerQuery > 1000000)
         {
             return false;
         }
@@ -116,7 +110,7 @@ public static class ConfigurationValidationExtensions
     /// <summary>
     /// Validates cache-specific settings
     /// </summary>
-    private static bool ValidateCacheSettings(CacheSettings settings)
+    private static bool ValidateCacheSettings(CacheConfiguration settings)
     {
         // If distributed cache is enabled, Redis connection string must be provided
         if (settings.EnableDistributedCache && string.IsNullOrWhiteSpace(settings.RedisConnectionString))
@@ -168,24 +162,23 @@ public static class ConfigurationValidationExtensions
     {
         try
         {
-            // Validate all critical sections
-            configuration.GetValidatedSection<JwtSettings>(JwtSettings.SectionName);
+            // Validate all critical unified configuration sections
+            configuration.GetValidatedSection<SecurityConfiguration>("Security");
+            configuration.GetValidatedSection<DatabaseConfiguration>("Database");
+            configuration.GetValidatedSection<PerformanceConfiguration>("Performance");
+            configuration.GetValidatedSection<CacheConfiguration>("Cache");
+            configuration.GetValidatedSection<MonitoringConfiguration>("Monitoring");
 
-            // OpenAI validation is optional - service will use fallback if not configured
+            // AI validation is optional - service will use fallback if not configured
             try
             {
-                configuration.GetValidatedSection<OpenAISettings>(OpenAISettings.SectionName);
+                configuration.GetValidatedSection<AIConfiguration>("AI");
             }
             catch (Exception ex)
             {
-                // Log warning but don't fail startup for OpenAI configuration issues
-                Console.WriteLine($"Warning: OpenAI configuration validation failed: {ex.Message}. Service will use fallback responses.");
+                // Log warning but don't fail startup for AI configuration issues
+                Console.WriteLine($"Warning: AI configuration validation failed: {ex.Message}. Service will use fallback responses.");
             }
-
-            configuration.GetValidatedSection<QuerySettings>(QuerySettings.SectionName);
-            configuration.GetValidatedSection<AuthenticationSettings>(AuthenticationSettings.SectionName);
-            configuration.GetValidatedSection<CacheSettings>(CacheSettings.SectionName);
-            configuration.GetValidatedSection<BackgroundJobSettings>(BackgroundJobSettings.SectionName);
 
             // Validate connection strings
             ValidateConnectionStrings(configuration);
@@ -210,7 +203,7 @@ public static class ConfigurationValidationExtensions
         }
 
         // Validate Redis connection if distributed caching is enabled
-        var cacheSettings = configuration.GetSection(CacheSettings.SectionName).Get<CacheSettings>();
+        var cacheSettings = configuration.GetSection("Cache").Get<CacheConfiguration>();
         if (cacheSettings?.EnableDistributedCache == true)
         {
             var redisConnection = connectionStrings["Redis"] ?? cacheSettings.RedisConnectionString;
@@ -242,7 +235,7 @@ public static class ConfigurationValidationExtensions
     /// </summary>
     public static bool IsFeatureEnabled(this IConfiguration configuration, string featureName)
     {
-        var featureFlags = configuration.GetSection(FeatureFlagSettings.SectionName).Get<FeatureFlagSettings>();
+        var featureFlags = configuration.GetSection("Features").Get<FeatureConfiguration>();
 
         return featureName switch
         {
@@ -252,9 +245,9 @@ public static class ConfigurationValidationExtensions
             "EnableAdvancedAnalytics" => featureFlags?.EnableAdvancedAnalytics ?? false,
             "EnableDataExport" => featureFlags?.EnableDataExport ?? true,
             "EnableSchemaInference" => featureFlags?.EnableSchemaInference ?? false,
-            "EnableAuditLogging" => featureFlags?.EnableAuditLogging ?? true,
-            "EnablePerformanceMetrics" => featureFlags?.EnablePerformanceMetrics ?? true,
-            "EnableHealthChecks" => featureFlags?.EnableHealthChecks ?? true,
+            "EnableMachineLearning" => featureFlags?.EnableMachineLearning ?? true,
+            "EnableAIOptimization" => featureFlags?.EnableAIOptimization ?? true,
+            "EnableExperimentalFeatures" => featureFlags?.EnableExperimentalFeatures ?? false,
             _ => false
         };
     }

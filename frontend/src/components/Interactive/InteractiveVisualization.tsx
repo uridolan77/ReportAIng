@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   Row,
@@ -11,11 +11,8 @@ import {
   Switch,
   Tooltip,
   Tag,
-  Alert,
-  Spin,
   Tabs,
   Collapse,
-  Form,
   Input,
   DatePicker,
   Checkbox,
@@ -118,7 +115,7 @@ const InteractiveVisualization: React.FC = () => {
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
 
   // Chart type options

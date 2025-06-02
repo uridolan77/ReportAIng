@@ -22,8 +22,7 @@ public class AuthenticationService : IAuthenticationService
     private readonly ITokenRepository _tokenRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IAuditService _auditService;
-    private readonly JwtSettings _jwtSettings;
-    private readonly SecuritySettings _securitySettings;
+    private readonly SecurityConfiguration _securitySettings;
     private readonly ICacheService _cacheService;
     private readonly IMfaService _mfaService;
     private readonly IMfaChallengeRepository _mfaChallengeRepository;
@@ -34,8 +33,7 @@ public class AuthenticationService : IAuthenticationService
         ITokenRepository tokenRepository,
         IPasswordHasher passwordHasher,
         IAuditService auditService,
-        IOptions<JwtSettings> jwtSettings,
-        IOptions<SecuritySettings> securitySettings,
+        IOptions<SecurityConfiguration> securitySettings,
         ICacheService cacheService,
         IMfaService mfaService,
         IMfaChallengeRepository mfaChallengeRepository)
@@ -45,7 +43,6 @@ public class AuthenticationService : IAuthenticationService
         _tokenRepository = tokenRepository;
         _passwordHasher = passwordHasher;
         _auditService = auditService;
-        _jwtSettings = jwtSettings.Value;
         _securitySettings = securitySettings.Value;
         _cacheService = cacheService;
         _mfaService = mfaService;
@@ -119,7 +116,7 @@ public class AuthenticationService : IAuthenticationService
                         {
                             isValid = await _mfaService.ValidateTotpAsync(user.MfaSecret!, mfaRequest.MfaCode);
                         }
-                        
+
                         if (!isValid)
                         {
                             isValid = await ValidateBackupCodeAsync(user.Id, mfaRequest.MfaCode);
@@ -141,7 +138,7 @@ public class AuthenticationService : IAuthenticationService
                 {
                     // Initiate MFA challenge
                     var mfaChallenge = await InitiateMfaAsync(user.Id);
-                    
+
                     return new AuthenticationResult
                     {
                         Success = false,
@@ -155,7 +152,7 @@ public class AuthenticationService : IAuthenticationService
             // Generate tokens
             var accessToken = await GenerateAccessTokenAsync(user);
             var refreshToken = Guid.NewGuid().ToString();
-            await _tokenRepository.StoreRefreshTokenAsync(user.Id, refreshToken, DateTime.UtcNow.AddMinutes(_jwtSettings.RefreshTokenExpirationMinutes));
+            await _tokenRepository.StoreRefreshTokenAsync(user.Id, refreshToken, DateTime.UtcNow.AddMinutes(_securitySettings.RefreshTokenExpirationMinutes));
 
             // Update last login
             user.LastLoginDate = DateTime.UtcNow;
@@ -171,7 +168,7 @@ public class AuthenticationService : IAuthenticationService
                 Success = true,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_securitySettings.AccessTokenExpirationMinutes),
                 User = new UserInfo
                 {
                     Id = user.Id,
@@ -237,7 +234,7 @@ public class AuthenticationService : IAuthenticationService
             // Generate new tokens
             var accessToken = await GenerateAccessTokenAsync(user);
             var newRefreshToken = Guid.NewGuid().ToString();
-            await _tokenRepository.StoreRefreshTokenAsync(user.Id, newRefreshToken, DateTime.UtcNow.AddMinutes(_jwtSettings.RefreshTokenExpirationMinutes));
+            await _tokenRepository.StoreRefreshTokenAsync(user.Id, newRefreshToken, DateTime.UtcNow.AddMinutes(_securitySettings.JwtRefreshTokenExpirationMinutes));
 
             // Log token refresh
             await _auditService.LogAsync(ApplicationConstants.AuditActions.TokenRefreshed, user.Id, ApplicationConstants.EntityTypes.User, user.Id);
@@ -247,7 +244,7 @@ public class AuthenticationService : IAuthenticationService
                 Success = true,
                 AccessToken = accessToken,
                 RefreshToken = newRefreshToken,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes)
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_securitySettings.JwtAccessTokenExpirationMinutes)
             };
         }
         catch (Exception ex)
@@ -266,17 +263,17 @@ public class AuthenticationService : IAuthenticationService
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret ?? throw new InvalidOperationException("JWT Secret is not configured"));
+            var key = Encoding.ASCII.GetBytes(_securitySettings.JwtSecret ?? throw new InvalidOperationException("JWT Secret is not configured"));
 
             var validationParameters = new TokenValidationParameters
             {
-                ValidateIssuerSigningKey = _jwtSettings.ValidateIssuerSigningKey,
+                ValidateIssuerSigningKey = _securitySettings.ValidateIssuerSigningKey,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = _jwtSettings.ValidateIssuer,
-                ValidIssuer = _jwtSettings.Issuer,
-                ValidateAudience = _jwtSettings.ValidateAudience,
-                ValidAudience = _jwtSettings.Audience,
-                ValidateLifetime = _jwtSettings.ValidateLifetime,
+                ValidateIssuer = _securitySettings.ValidateIssuer,
+                ValidIssuer = _securitySettings.JwtIssuer,
+                ValidateAudience = _securitySettings.ValidateAudience,
+                ValidAudience = _securitySettings.JwtAudience,
+                ValidateLifetime = _securitySettings.ValidateLifetime,
                 ClockSkew = TimeSpan.Zero
             };
 
@@ -334,16 +331,16 @@ public class AuthenticationService : IAuthenticationService
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret ?? throw new InvalidOperationException("JWT Secret is not configured"));
+            var key = Encoding.ASCII.GetBytes(_securitySettings.JwtSecret ?? throw new InvalidOperationException("JWT Secret is not configured"));
 
             var validationParameters = new TokenValidationParameters
             {
-                ValidateIssuerSigningKey = _jwtSettings.ValidateIssuerSigningKey,
+                ValidateIssuerSigningKey = _securitySettings.ValidateIssuerSigningKey,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = _jwtSettings.ValidateIssuer,
-                ValidIssuer = _jwtSettings.Issuer,
-                ValidateAudience = _jwtSettings.ValidateAudience,
-                ValidAudience = _jwtSettings.Audience,
+                ValidateIssuer = _securitySettings.ValidateIssuer,
+                ValidIssuer = _securitySettings.JwtIssuer,
+                ValidateAudience = _securitySettings.ValidateAudience,
+                ValidAudience = _securitySettings.JwtAudience,
                 ValidateLifetime = false, // Don't validate lifetime for principal extraction
                 ClockSkew = TimeSpan.Zero
             };
@@ -362,11 +359,11 @@ public class AuthenticationService : IAuthenticationService
     {
         // Debug: Log the JWT settings being used
         _logger.LogInformation("JWT Settings - Issuer: {Issuer}, Audience: {Audience}, Secret: {SecretLength} chars, SecretPrefix: {SecretPrefix}",
-            _jwtSettings.Issuer, _jwtSettings.Audience, _jwtSettings.Secret?.Length ?? 0,
-            _jwtSettings.Secret?.Substring(0, Math.Min(10, _jwtSettings.Secret?.Length ?? 0)) + "...");
+            _securitySettings.JwtIssuer, _securitySettings.JwtAudience, _securitySettings.JwtSecret?.Length ?? 0,
+            _securitySettings.JwtSecret?.Substring(0, Math.Min(10, _securitySettings.JwtSecret?.Length ?? 0)) + "...");
 
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret ?? throw new InvalidOperationException("JWT Secret is not configured"));
+        var key = Encoding.ASCII.GetBytes(_securitySettings.JwtSecret ?? throw new InvalidOperationException("JWT Secret is not configured"));
 
         var claims = new List<Claim>
         {
@@ -387,9 +384,9 @@ public class AuthenticationService : IAuthenticationService
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
-            Issuer = _jwtSettings.Issuer,
-            Audience = _jwtSettings.Audience,
+            Expires = DateTime.UtcNow.AddMinutes(_securitySettings.JwtAccessTokenExpirationMinutes),
+            Issuer = _securitySettings.JwtIssuer,
+            Audience = _securitySettings.JwtAudience,
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 
@@ -627,10 +624,10 @@ public class AuthenticationService : IAuthenticationService
             }
 
             var createdChallenge = await _mfaChallengeRepository.CreateChallengeAsync(challenge);
-            
-            _logger.LogInformation("MFA challenge initiated for user: {UserId} with method: {Method}", 
+
+            _logger.LogInformation("MFA challenge initiated for user: {UserId} with method: {Method}",
                 userId, user.MfaMethod);
-            
+
             return createdChallenge;
         }
         catch (Exception ex)
@@ -709,11 +706,11 @@ public class AuthenticationService : IAuthenticationService
             // Generate tokens
             var accessToken = await GenerateAccessTokenAsync(user);
             var refreshToken = Guid.NewGuid().ToString();
-            await _tokenRepository.StoreRefreshTokenAsync(user.Id, refreshToken, 
-                DateTime.UtcNow.AddMinutes(_jwtSettings.RefreshTokenExpirationMinutes));
+            await _tokenRepository.StoreRefreshTokenAsync(user.Id, refreshToken,
+                DateTime.UtcNow.AddMinutes(_securitySettings.JwtRefreshTokenExpirationMinutes));
 
             // Log successful MFA validation
-            await _auditService.LogAsync("MFA_VALIDATED", user.Id, "User", user.Id, 
+            await _auditService.LogAsync("MFA_VALIDATED", user.Id, "User", user.Id,
                 isBackupCode ? "Backup code used" : "MFA code validated");
 
             _logger.LogInformation("MFA validation successful for user: {UserId}", user.Id);
@@ -723,7 +720,7 @@ public class AuthenticationService : IAuthenticationService
                 Success = true,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_securitySettings.JwtAccessTokenExpirationMinutes),
                 User = new UserInfo
                 {
                     Id = user.Id,
@@ -764,7 +761,7 @@ public class AuthenticationService : IAuthenticationService
             }
 
             var backupCodes = await _mfaService.GenerateBackupCodesAsync();
-            
+
             // Hash the backup codes before storing
             user.BackupCodes = backupCodes.Select(code => _passwordHasher.HashPassword(code)).ToArray();
             await _userRepository.UpdateUserAsync(user);
@@ -772,7 +769,7 @@ public class AuthenticationService : IAuthenticationService
             await _auditService.LogAsync("BACKUP_CODES_GENERATED", userId, "User", userId);
 
             _logger.LogInformation("Generated {Count} backup codes for user: {UserId}", backupCodes.Length, userId);
-            
+
             // Return the plain text codes to the user (only time they can see them)
             return backupCodes;
         }
@@ -802,7 +799,7 @@ public class AuthenticationService : IAuthenticationService
                     var backupCodesList = user.BackupCodes.ToList();
                     backupCodesList.RemoveAt(i);
                     user.BackupCodes = backupCodesList.ToArray();
-                    
+
                     await _userRepository.UpdateUserAsync(user);
                     await _auditService.LogAsync("BACKUP_CODE_USED", userId, "User", userId);
 

@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { Tag } from 'antd';
 import { useAuthStore } from '../../stores/authStore';
 import { useActiveResult, useActiveResultActions } from '../../stores/activeResultStore';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -92,7 +91,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   // Active result management
-  const { result: currentResult, query: activeQuery } = useActiveResult();
+  const { result: currentResult } = useActiveResult();
   const { setActiveResult, clearActiveResult } = useActiveResultActions();
 
   // React Query hooks
@@ -283,8 +282,8 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     // For bar, line, pie - the inline chart in QueryResult will handle the display
   }, [query]);
 
-  // Keyboard navigation
-  const keyboardNavigation = useKeyboardNavigation({
+  // Keyboard navigation (setup only, variable not used)
+  useKeyboardNavigation({
     onExecuteQuery: handleSubmitQuery,
     onSaveQuery: () => handleAddToFavorites(),
     onFocusQueryInput: () => textAreaRef.current?.focus(),

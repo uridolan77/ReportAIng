@@ -15,7 +15,6 @@ import {
   Flex,
 } from 'antd';
 import {
-  DownOutlined as ExpandMoreIcon,
   UserOutlined as PersonIcon,
   TableOutlined as TableChartIcon,
   FilterOutlined as FilterListIcon,

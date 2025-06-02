@@ -51,17 +51,13 @@ public class SimpleAuthenticationTests : IDisposable
         _mfaChallengeRepository = new Mock<IMfaChallengeRepository>();
 
         // Setup JWT settings
-        var jwtSettings = new JwtSettings
+        var securitySettings = new BIReportingCopilot.Core.Configuration.SecurityConfiguration
         {
-            Secret = "test-super-secret-jwt-key-that-is-at-least-32-characters-long-for-testing",
-            Issuer = "TestIssuer",
-            Audience = "TestAudience",
+            JwtSecret = "test-super-secret-jwt-key-that-is-at-least-32-characters-long-for-testing",
+            JwtIssuer = "TestIssuer",
+            JwtAudience = "TestAudience",
             AccessTokenExpirationMinutes = 60,
-            RefreshTokenExpirationMinutes = 43200
-        };
-
-        var securitySettings = new SecuritySettings
-        {
+            RefreshTokenExpirationMinutes = 43200,
             MaxLoginAttempts = 5,
             LockoutDurationMinutes = 15,
             MinPasswordLength = 8,
@@ -78,7 +74,6 @@ public class SimpleAuthenticationTests : IDisposable
             _tokenRepository.Object,
             _passwordHasher,
             _auditService.Object,
-            Options.Create(jwtSettings),
             Options.Create(securitySettings),
             _cacheService.Object,
             _mfaService.Object,

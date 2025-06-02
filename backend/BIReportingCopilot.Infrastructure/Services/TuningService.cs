@@ -16,7 +16,7 @@ public class TuningService : ITuningService
     private readonly BICopilotContext _context;
     private readonly ILogger<TuningService> _logger;
     private readonly IBusinessContextAutoGenerator _autoGenerator;
-    private readonly StreamingDataService _streamingService;
+    private readonly PerformanceManagementService _performanceService;
     private readonly ISchemaService _schemaService;
     private readonly IConfiguration _configuration;
 
@@ -24,14 +24,14 @@ public class TuningService : ITuningService
         BICopilotContext context,
         ILogger<TuningService> logger,
         IBusinessContextAutoGenerator autoGenerator,
-        StreamingDataService streamingService,
+        PerformanceManagementService performanceService,
         ISchemaService schemaService,
         IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
         _autoGenerator = autoGenerator;
-        _streamingService = streamingService;
+        _performanceService = performanceService;
         _schemaService = schemaService;
         _configuration = configuration;
     }

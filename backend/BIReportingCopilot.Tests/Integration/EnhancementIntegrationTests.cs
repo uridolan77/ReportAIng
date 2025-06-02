@@ -34,7 +34,7 @@ public class EnhancementIntegrationTests : IClassFixture<WebApplicationFactory<P
         Assert.IsType<SqlQueryValidator>(services.GetService<ISqlQueryValidator>());
 
         Assert.NotNull(services.GetService<IRateLimitingService>());
-        Assert.IsType<RateLimitingService>(services.GetService<IRateLimitingService>());
+        Assert.IsType<SecurityManagementService>(services.GetService<IRateLimitingService>());
 
         Assert.NotNull(services.GetService<IMediator>());
 

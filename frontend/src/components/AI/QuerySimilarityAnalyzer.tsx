@@ -11,7 +11,6 @@ import {
   Tag,
   List,
   Progress,
-  Divider,
   Space,
   Flex,
 } from 'antd';

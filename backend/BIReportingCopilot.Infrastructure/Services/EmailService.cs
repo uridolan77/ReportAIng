@@ -1,109 +1,167 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using BIReportingCopilot.Core.Interfaces;
-using BIReportingCopilot.Core.Configuration;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
 /// <summary>
-/// Email service for sending notifications and MFA codes
+/// Email service implementation
 /// </summary>
 public class EmailService : IEmailService
 {
     private readonly ILogger<EmailService> _logger;
-    private readonly EmailSettings _emailSettings;
 
-    public EmailService(
-        ILogger<EmailService> logger,
-        IOptions<EmailSettings> emailSettings)
+    public EmailService(ILogger<EmailService> logger)
     {
         _logger = logger;
-        _emailSettings = emailSettings.Value;
     }
 
+    /// <summary>
+    /// Send email asynchronously (interface implementation)
+    /// </summary>
+    /// <param name="to">Recipient email address</param>
+    /// <param name="subject">Email subject</param>
+    /// <param name="body">Email body</param>
+    /// <returns>True if sent successfully</returns>
     public async Task<bool> SendAsync(string to, string subject, string body)
     {
-        return await SendAsync(new[] { to }, subject, body);
+        return await SendEmailAsync(to, subject, body);
     }
 
+    /// <summary>
+    /// Send email to multiple recipients (interface implementation)
+    /// </summary>
+    /// <param name="to">Recipient email addresses</param>
+    /// <param name="subject">Email subject</param>
+    /// <param name="body">Email body</param>
+    /// <returns>True if sent successfully</returns>
     public async Task<bool> SendAsync(string[] to, string subject, string body)
+    {
+        var successCount = await SendBulkEmailAsync(to, subject, body);
+        return successCount == to.Length;
+    }
+
+    /// <summary>
+    /// Send MFA code via email (interface implementation)
+    /// </summary>
+    /// <param name="toEmail">Recipient email address</param>
+    /// <param name="mfaCode">MFA code</param>
+    /// <returns>True if sent successfully</returns>
+    public async Task<bool> SendMfaCodeAsync(string toEmail, string mfaCode)
+    {
+        var subject = "Your Verification Code";
+        var body = $"Your verification code is: {mfaCode}. This code will expire in 10 minutes.";
+        return await SendEmailAsync(toEmail, subject, body);
+    }
+
+    /// <summary>
+    /// Send email asynchronously
+    /// </summary>
+    /// <param name="to">Recipient email address</param>
+    /// <param name="subject">Email subject</param>
+    /// <param name="body">Email body</param>
+    /// <param name="isHtml">Whether body is HTML</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if sent successfully</returns>
+    public async Task<bool> SendEmailAsync(string to, string subject, string body, bool isHtml = false, CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Sending email to {Recipients} with subject: {Subject}", 
-                string.Join(", ", to.Select(MaskEmail)), subject);
+            _logger.LogInformation("Sending email to {To} with subject: {Subject}", to, subject);
 
-            // TODO: Implement actual email sending using SMTP, SendGrid, etc.
-            // For now, just log the email content for development
-            _logger.LogInformation("Email Content:\nTo: {To}\nSubject: {Subject}\nBody: {Body}", 
-                string.Join(", ", to), subject, body);
+            // Simulate email sending
+            await Task.Delay(100, cancellationToken);
 
-            // Simulate email sending delay
-            await Task.Delay(100);
-
-            _logger.LogInformation("Email sent successfully to {Recipients}", 
-                string.Join(", ", to.Select(MaskEmail)));
-            
+            _logger.LogInformation("Email sent successfully to {To}", to);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email to {Recipients}", 
-                string.Join(", ", to.Select(MaskEmail)));
+            _logger.LogError(ex, "Failed to send email to {To}", to);
             return false;
         }
     }
 
     /// <summary>
-    /// Send MFA code via email
+    /// Send email with attachments
     /// </summary>
-    public async Task<bool> SendMfaCodeAsync(string toEmail, string mfaCode)
+    /// <param name="to">Recipient email address</param>
+    /// <param name="subject">Email subject</param>
+    /// <param name="body">Email body</param>
+    /// <param name="attachments">Email attachments</param>
+    /// <param name="isHtml">Whether body is HTML</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if sent successfully</returns>
+    public async Task<bool> SendEmailWithAttachmentsAsync(
+        string to,
+        string subject,
+        string body,
+        IEnumerable<EmailAttachment> attachments,
+        bool isHtml = false,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(toEmail) || string.IsNullOrWhiteSpace(mfaCode))
-            {
-                _logger.LogWarning("Cannot send MFA code: invalid email or code");
-                return false;
-            }
+            _logger.LogInformation("Sending email with attachments to {To} with subject: {Subject}", to, subject);
 
-            // Basic email validation
-            if (!toEmail.Contains("@") || !toEmail.Contains("."))
-            {
-                _logger.LogWarning("Cannot send MFA code: invalid email format");
-                return false;
-            }
+            // Simulate email sending with attachments
+            await Task.Delay(200, cancellationToken);
 
-            var subject = "Your Verification Code";
-            var body = $@"
-                <h2>Verification Code</h2>
-                <p>Your verification code is: <strong>{mfaCode}</strong></p>
-                <p>This code will expire in 5 minutes.</p>
-                <p>If you didn't request this code, please ignore this email.</p>
-            ";
-
-            return await SendAsync(toEmail, subject, body);
+            _logger.LogInformation("Email with attachments sent successfully to {To}", to);
+            return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending MFA code to {Email}", MaskEmail(toEmail));
+            _logger.LogError(ex, "Failed to send email with attachments to {To}", to);
             return false;
         }
     }
 
-    private static string MaskEmail(string email)
+    /// <summary>
+    /// Send bulk emails
+    /// </summary>
+    /// <param name="recipients">List of recipients</param>
+    /// <param name="subject">Email subject</param>
+    /// <param name="body">Email body</param>
+    /// <param name="isHtml">Whether body is HTML</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Number of emails sent successfully</returns>
+    public async Task<int> SendBulkEmailAsync(
+        IEnumerable<string> recipients,
+        string subject,
+        string body,
+        bool isHtml = false,
+        CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(email) || !email.Contains('@'))
-            return "****@****.***";
-        
-        var parts = email.Split('@');
-        var localPart = parts[0];
-        var domainPart = parts[1];
-        
-        var maskedLocal = localPart.Length > 2 
-            ? localPart.Substring(0, 2) + "****" 
-            : "****";
-        
-        return $"{maskedLocal}@{domainPart}";
+        var successCount = 0;
+        var recipientList = recipients.ToList();
+
+        _logger.LogInformation("Sending bulk email to {Count} recipients", recipientList.Count);
+
+        foreach (var recipient in recipientList)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                break;
+
+            if (await SendEmailAsync(recipient, subject, body, isHtml, cancellationToken))
+            {
+                successCount++;
+            }
+
+            // Small delay to prevent overwhelming the email service
+            await Task.Delay(50, cancellationToken);
+        }
+
+        _logger.LogInformation("Bulk email completed: {Success}/{Total} emails sent", successCount, recipientList.Count);
+        return successCount;
     }
+}
+
+/// <summary>
+/// Email attachment model
+/// </summary>
+public class EmailAttachment
+{
+    public string FileName { get; set; } = string.Empty;
+    public byte[] Content { get; set; } = Array.Empty<byte>();
+    public string ContentType { get; set; } = "application/octet-stream";
 }

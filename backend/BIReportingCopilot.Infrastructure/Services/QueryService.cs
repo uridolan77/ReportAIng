@@ -1,6 +1,7 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.DTOs;
+using BIReportingCopilot.Core.Services;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +20,7 @@ public class QueryService : IQueryService
     private readonly IAuditService _auditService;
     private readonly IPromptService _promptService;
     private readonly IAITuningSettingsService _settingsService;
-    private readonly ContextManager? _contextManager;
+    private readonly IContextManager? _contextManager;
     private readonly BICopilotContext _context;
 
     // Legacy support removed - using IAIService instead
@@ -34,7 +35,7 @@ public class QueryService : IQueryService
         IPromptService promptService,
         IAITuningSettingsService settingsService,
         BICopilotContext context,
-        ContextManager? contextManager = null) // Optional for backward compatibility
+        IContextManager? contextManager = null) // Optional for backward compatibility
     {
         _logger = logger;
         _aiService = aiService;

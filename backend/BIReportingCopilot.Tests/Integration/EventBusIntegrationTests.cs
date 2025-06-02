@@ -5,6 +5,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using BIReportingCopilot.Infrastructure.Messaging;
 using BIReportingCopilot.Infrastructure.Messaging.EventHandlers;
+using BIReportingCopilot.Infrastructure.Health;
+using BIReportingCopilot.Infrastructure.Monitoring;
+using BIReportingCopilot.Infrastructure.Security;
+using BIReportingCopilot.Infrastructure.AI;
+using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Tests.Infrastructure;
 using BIReportingCopilot.Tests.Infrastructure.Fixtures;
 
@@ -35,9 +40,11 @@ public class EventBusIntegrationTests : IntegrationTestBase
 
         _queryHandler = new QueryExecutedEventHandler(
             GetLogger<QueryExecutedEventHandler>(),
-            GetService<BIReportingCopilot.Infrastructure.Monitoring.IMetricsCollector>(),
-            GetService<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService>(),
-            GetService<BIReportingCopilot.Infrastructure.AI.MLAnomalyDetector>());
+            GetService<MonitoringManagementService>(),
+            GetService<ISemanticCacheService>(),
+            GetService<SecurityManagementService>(),
+            GetService<BIReportingCopilot.Core.Interfaces.IMetricsCollector>(),
+            GetService<IAnomalyDetector>());
     }
 
     [Fact]

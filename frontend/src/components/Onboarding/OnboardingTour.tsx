@@ -14,10 +14,7 @@ import {
 } from 'antd';
 import {
   QuestionCircleOutlined,
-  RocketOutlined,
-  BulbOutlined,
-  HistoryOutlined,
-  BarChartOutlined,
+  // Icons removed - not used in current implementation
   CloseOutlined
 } from '@ant-design/icons';
 

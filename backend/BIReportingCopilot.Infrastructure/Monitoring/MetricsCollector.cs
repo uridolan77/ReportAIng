@@ -1,317 +1,195 @@
-using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
+using BIReportingCopilot.Core.Interfaces;
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
 
 namespace BIReportingCopilot.Infrastructure.Monitoring;
 
 /// <summary>
-/// Metrics collector for performance monitoring and observability
+/// Implementation of metrics collector
 /// </summary>
-public class MetricsCollector : IMetricsCollector, IDisposable
+public class MetricsCollector : IMetricsCollector
 {
-    private readonly ILogger<MetricsCollector> _logger;
-    private readonly Meter _meter;
-    private readonly ConcurrentDictionary<string, Counter<long>> _counters;
-    private readonly ConcurrentDictionary<string, Histogram<double>> _histograms;
-    private readonly ConcurrentDictionary<string, ObservableGauge<double>> _gauges;
-    private readonly ConcurrentDictionary<string, double> _gaugeValues;
-    private readonly Timer _metricsTimer;
+    private readonly Dictionary<string, double> _metrics = new();
+    private readonly object _lock = new();
 
-    // Counters
-    private readonly Counter<long> _queryExecutionsTotal;
-    private readonly Counter<long> _aiOperationsTotal;
-    private readonly Counter<long> _cacheOperationsTotal;
-    private readonly Counter<long> _errorsTotal;
-
-    // Histograms
-    private readonly Histogram<double> _queryDuration;
-    private readonly Histogram<double> _aiOperationDuration;
-    private readonly Histogram<double> _cacheOperationDuration;
-    private readonly Histogram<double> _requestDuration;
-
-    // Gauges
-    private readonly ObservableGauge<double> _activeConnections;
-    private readonly ObservableGauge<double> _memoryUsage;
-    private readonly ObservableGauge<double> _cpuUsage;
-
-    public MetricsCollector(ILogger<MetricsCollector> logger)
+    // Interface methods from Core.Interfaces.IMetricsCollector
+    public void RecordQueryExecution(string queryType, long executionTimeMs, bool isSuccessful, int rowCount)
     {
-        _logger = logger;
-        _meter = new Meter("BIReportingCopilot", "1.0.0");
-        _counters = new ConcurrentDictionary<string, Counter<long>>();
-        _histograms = new ConcurrentDictionary<string, Histogram<double>>();
-        _gauges = new ConcurrentDictionary<string, ObservableGauge<double>>();
-        _gaugeValues = new ConcurrentDictionary<string, double>();
-
-        // Initialize standard metrics
-        _queryExecutionsTotal = _meter.CreateCounter<long>(
-            "query_executions_total",
-            "Total number of query executions");
-
-        _aiOperationsTotal = _meter.CreateCounter<long>(
-            "ai_operations_total",
-            "Total number of AI operations");
-
-        _cacheOperationsTotal = _meter.CreateCounter<long>(
-            "cache_operations_total",
-            "Total number of cache operations");
-
-        _errorsTotal = _meter.CreateCounter<long>(
-            "errors_total",
-            "Total number of errors");
-
-        _queryDuration = _meter.CreateHistogram<double>(
-            "query_duration_ms",
-            "Query execution duration in milliseconds");
-
-        _aiOperationDuration = _meter.CreateHistogram<double>(
-            "ai_operation_duration_ms",
-            "AI operation duration in milliseconds");
-
-        _cacheOperationDuration = _meter.CreateHistogram<double>(
-            "cache_operation_duration_ms",
-            "Cache operation duration in milliseconds");
-
-        _requestDuration = _meter.CreateHistogram<double>(
-            "request_duration_ms",
-            "HTTP request duration in milliseconds");
-
-        _activeConnections = _meter.CreateObservableGauge<double>(
-            "active_connections",
-            () => _gaugeValues.GetValueOrDefault("active_connections", 0),
-            "connections",
-            "Number of active database connections");
-
-        _memoryUsage = _meter.CreateObservableGauge<double>(
-            "memory_usage_mb",
-            () => GC.GetTotalMemory(false) / 1024.0 / 1024.0,
-            "MB",
-            "Memory usage in megabytes");
-
-        _cpuUsage = _meter.CreateObservableGauge<double>(
-            "cpu_usage_percent",
-            () => _gaugeValues.GetValueOrDefault("cpu_usage", 0),
-            "%",
-            "CPU usage percentage");
-
-        // Start periodic metrics collection
-        _metricsTimer = new Timer(CollectSystemMetrics, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
-
-        _logger.LogInformation("Metrics collector initialized");
-    }
-
-    public void RecordQueryExecution(string queryType, long durationMs, bool success, int rowCount = 0)
-    {
-        var tags = new TagList
+        lock (_lock)
         {
-            { "type", queryType },
-            { "success", success.ToString().ToLower() },
-            { "row_count_range", GetRowCountRange(rowCount) }
-        };
-
-        _queryExecutionsTotal.Add(1, tags);
-        _queryDuration.Record(durationMs, tags);
-
-        _logger.LogDebug("Recorded query execution: {QueryType}, {Duration}ms, Success: {Success}, Rows: {RowCount}",
-            queryType, durationMs, success, rowCount);
+            _metrics[$"query_executions_{queryType}"] = _metrics.GetValueOrDefault($"query_executions_{queryType}", 0) + 1;
+            _metrics[$"query_duration_{queryType}"] = executionTimeMs;
+            _metrics[$"query_success_{queryType}"] = isSuccessful ? 1 : 0;
+            _metrics[$"query_rows_{queryType}"] = rowCount;
+        }
     }
 
-    public void RecordAIOperation(string operation, long durationMs, bool success, double? confidence = null)
+    public void RecordHistogram(string name, double value)
     {
-        var tags = new TagList
+        lock (_lock)
         {
-            { "operation", operation },
-            { "success", success.ToString().ToLower() },
-            { "confidence_range", GetConfidenceRange(confidence) }
-        };
-
-        _aiOperationsTotal.Add(1, tags);
-        _aiOperationDuration.Record(durationMs, tags);
-
-        _logger.LogDebug("Recorded AI operation: {Operation}, {Duration}ms, Success: {Success}, Confidence: {Confidence:P1}",
-            operation, durationMs, success, confidence ?? 0.0);
-    }
-
-    public void RecordCacheOperation(string operation, bool hit, long durationMs = 0)
-    {
-        var tags = new TagList
-        {
-            { "operation", operation },
-            { "hit", hit.ToString().ToLower() }
-        };
-
-        _cacheOperationsTotal.Add(1, tags);
-        _cacheOperationDuration.Record(durationMs, tags);
-
-        _logger.LogDebug("Recorded cache operation: {Operation}, Hit: {Hit}, {Duration}ms",
-            operation, hit, durationMs);
-    }
-
-    public void RecordError(string errorType, string source, Exception? exception = null)
-    {
-        var tags = new TagList
-        {
-            { "error_type", errorType },
-            { "source", source },
-            { "exception_type", exception?.GetType().Name ?? "Unknown" }
-        };
-
-        _errorsTotal.Add(1, tags);
-
-        _logger.LogDebug("Recorded error: {ErrorType} from {Source}, Exception: {ExceptionType}",
-            errorType, source, exception?.GetType().Name ?? "Unknown");
-    }
-
-    public void RecordRequestDuration(string method, string endpoint, int statusCode, long durationMs)
-    {
-        var tags = new TagList
-        {
-            { "method", method },
-            { "endpoint", endpoint },
-            { "status_code", statusCode.ToString() },
-            { "status_class", GetStatusClass(statusCode) }
-        };
-
-        _requestDuration.Record(durationMs, tags);
-
-        _logger.LogDebug("Recorded request: {Method} {Endpoint}, {StatusCode}, {Duration}ms",
-            method, endpoint, statusCode, durationMs);
-    }
-
-    public void SetGaugeValue(string name, double value)
-    {
-        _gaugeValues.AddOrUpdate(name, value, (key, oldValue) => value);
-    }
-
-    /// <summary>
-    /// Alias for SetGaugeValue for backward compatibility
-    /// </summary>
-    public void RecordValue(string name, double value)
-    {
-        SetGaugeValue(name, value);
+            _metrics[name] = value;
+        }
     }
 
     public void IncrementCounter(string name, TagList? tags = null)
     {
-        var counter = _counters.GetOrAdd(name, key => _meter.CreateCounter<long>(key));
-        counter.Add(1, tags ?? new TagList());
+        lock (_lock)
+        {
+            var key = BuildMetricKey(name, tags);
+            _metrics[key] = _metrics.GetValueOrDefault(key, 0) + 1;
+        }
+    }
+
+    public void SetGaugeValue(string name, double value)
+    {
+        lock (_lock)
+        {
+            _metrics[name] = value;
+        }
+    }
+
+    public void RecordExecutionTime(string operationName, TimeSpan duration)
+    {
+        lock (_lock)
+        {
+            _metrics[$"{operationName}_duration_ms"] = duration.TotalMilliseconds;
+        }
+    }
+
+    public void RecordCacheOperation(string cacheType, bool isHit)
+    {
+        lock (_lock)
+        {
+            _metrics[$"cache_{cacheType}_operations"] = _metrics.GetValueOrDefault($"cache_{cacheType}_operations", 0) + 1;
+            _metrics[$"cache_{cacheType}_hits"] = _metrics.GetValueOrDefault($"cache_{cacheType}_hits", 0) + (isHit ? 1 : 0);
+        }
+    }
+
+    public void RecordError(string errorType, string? details = null)
+    {
+        lock (_lock)
+        {
+            _metrics[$"errors_{errorType}"] = _metrics.GetValueOrDefault($"errors_{errorType}", 0) + 1;
+        }
+    }
+
+    public void RecordError(string errorType, string? details, Exception? exception)
+    {
+        RecordError(errorType, details);
+    }
+
+    public void RecordUserActivity(string userId, string activityType)
+    {
+        lock (_lock)
+        {
+            _metrics[$"user_activity_{activityType}"] = _metrics.GetValueOrDefault($"user_activity_{activityType}", 0) + 1;
+        }
+    }
+
+    public async Task<Dictionary<string, object>> GetMetricsSnapshotAsync()
+    {
+        await Task.CompletedTask;
+        lock (_lock)
+        {
+            return _metrics.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value);
+        }
     }
 
     public void RecordHistogram(string name, double value, TagList? tags = null)
     {
-        var histogram = _histograms.GetOrAdd(name, key => _meter.CreateHistogram<double>(key));
-        histogram.Record(value, tags ?? new TagList());
-    }
-
-    public MetricsSnapshot GetSnapshot()
-    {
-        return new MetricsSnapshot
+        lock (_lock)
         {
-            Timestamp = DateTimeOffset.UtcNow,
-            MemoryUsageMB = GC.GetTotalMemory(false) / 1024.0 / 1024.0,
-            ActiveConnections = _gaugeValues.GetValueOrDefault("active_connections", 0),
-            CpuUsagePercent = _gaugeValues.GetValueOrDefault("cpu_usage", 0),
-            TotalQueries = _gaugeValues.GetValueOrDefault("total_queries", 0),
-            TotalAIOperations = _gaugeValues.GetValueOrDefault("total_ai_operations", 0),
-            TotalCacheOperations = _gaugeValues.GetValueOrDefault("total_cache_operations", 0),
-            TotalErrors = _gaugeValues.GetValueOrDefault("total_errors", 0)
-        };
-    }
-
-    private void CollectSystemMetrics(object? state)
-    {
-        try
-        {
-            // Collect CPU usage (simplified)
-            using var process = Process.GetCurrentProcess();
-            var cpuUsage = process.TotalProcessorTime.TotalMilliseconds / Environment.ProcessorCount / Environment.TickCount * 100;
-            SetGaugeValue("cpu_usage", Math.Min(100, Math.Max(0, cpuUsage)));
-
-            // Collect other system metrics as needed
-            SetGaugeValue("thread_count", process.Threads.Count);
-            SetGaugeValue("handle_count", process.HandleCount);
-
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to collect system metrics");
+            var key = BuildMetricKey(name, tags);
+            _metrics[key] = value;
         }
     }
 
-    private static string GetRowCountRange(int rowCount)
+    public void RecordValue(string name, double value)
     {
-        return rowCount switch
+        lock (_lock)
         {
-            0 => "0",
-            <= 10 => "1-10",
-            <= 100 => "11-100",
-            <= 1000 => "101-1000",
-            <= 10000 => "1001-10000",
-            _ => "10000+"
-        };
+            _metrics[name] = value;
+        }
     }
 
-    private static string GetConfidenceRange(double? confidence)
+    // Additional helper methods
+    public void RecordCounter(string name, double value = 1, Dictionary<string, string>? tags = null)
     {
-        if (!confidence.HasValue) return "unknown";
-
-        return confidence.Value switch
+        lock (_lock)
         {
-            < 0.3 => "low",
-            < 0.7 => "medium",
-            _ => "high"
-        };
+            var key = BuildMetricKey(name, tags);
+            _metrics[key] = _metrics.GetValueOrDefault(key, 0) + value;
+        }
     }
 
-    private static string GetStatusClass(int statusCode)
+    public void RecordGauge(string name, double value, Dictionary<string, string>? tags = null)
     {
-        return statusCode switch
+        lock (_lock)
         {
-            >= 200 and < 300 => "2xx",
-            >= 300 and < 400 => "3xx",
-            >= 400 and < 500 => "4xx",
-            >= 500 => "5xx",
-            _ => "other"
-        };
+            var key = BuildMetricKey(name, tags);
+            _metrics[key] = value;
+        }
     }
 
-    public void Dispose()
+    public void RecordExecutionTime(string name, TimeSpan duration, Dictionary<string, string>? tags = null)
     {
-        _metricsTimer?.Dispose();
-        _meter?.Dispose();
-        _logger.LogInformation("Metrics collector disposed");
+        var key = BuildMetricKey($"{name}_duration_ms", tags);
+        lock (_lock)
+        {
+            _metrics[key] = duration.TotalMilliseconds;
+        }
     }
-}
 
-/// <summary>
-/// Interface for metrics collection
-/// </summary>
-public interface IMetricsCollector
-{
-    void RecordQueryExecution(string queryType, long durationMs, bool success, int rowCount = 0);
-    void RecordAIOperation(string operation, long durationMs, bool success, double? confidence = null);
-    void RecordCacheOperation(string operation, bool hit, long durationMs = 0);
-    void RecordError(string errorType, string source, Exception? exception = null);
-    void RecordRequestDuration(string method, string endpoint, int statusCode, long durationMs);
-    void SetGaugeValue(string name, double value);
-    void RecordValue(string name, double value);
-    void IncrementCounter(string name, TagList? tags = null);
-    void RecordHistogram(string name, double value, TagList? tags = null);
-    MetricsSnapshot GetSnapshot();
-}
+    public IDisposable StartTimer(string name, Dictionary<string, string>? tags = null)
+    {
+        return new MetricTimer(this, name, tags);
+    }
 
-/// <summary>
-/// Snapshot of current metrics
-/// </summary>
-public class MetricsSnapshot
-{
-    public DateTimeOffset Timestamp { get; set; }
-    public double MemoryUsageMB { get; set; }
-    public double ActiveConnections { get; set; }
-    public double CpuUsagePercent { get; set; }
-    public double TotalQueries { get; set; }
-    public double TotalAIOperations { get; set; }
-    public double TotalCacheOperations { get; set; }
-    public double TotalErrors { get; set; }
+    public Task<Dictionary<string, double>> GetCurrentMetricsAsync()
+    {
+        lock (_lock)
+        {
+            return Task.FromResult(new Dictionary<string, double>(_metrics));
+        }
+    }
+
+    private string BuildMetricKey(string name, Dictionary<string, string>? tags)
+    {
+        if (tags == null || tags.Count == 0)
+            return name;
+
+        var tagString = string.Join(",", tags.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+        return $"{name}[{tagString}]";
+    }
+
+    private string BuildMetricKey(string name, TagList? tags)
+    {
+        if (tags == null || tags.Value.Count == 0)
+            return name;
+
+        var tagString = string.Join(",", tags.Value.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+        return $"{name}[{tagString}]";
+    }
+
+    private class MetricTimer : IDisposable
+    {
+        private readonly MetricsCollector _collector;
+        private readonly string _name;
+        private readonly Dictionary<string, string>? _tags;
+        private readonly DateTime _startTime;
+
+        public MetricTimer(MetricsCollector collector, string name, Dictionary<string, string>? tags)
+        {
+            _collector = collector;
+            _name = name;
+            _tags = tags;
+            _startTime = DateTime.UtcNow;
+        }
+
+        public void Dispose()
+        {
+            var duration = DateTime.UtcNow - _startTime;
+            _collector.RecordExecutionTime(_name, duration, _tags);
+        }
+    }
 }

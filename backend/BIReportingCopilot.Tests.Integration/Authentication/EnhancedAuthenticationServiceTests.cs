@@ -19,7 +19,7 @@ public class EnhancedAuthenticationServiceTests : IClassFixture<TestWebApplicati
     private readonly Mock<IPasswordHasher> _mockPasswordHasher;
     private readonly Mock<IAuditService> _mockAuditService;
     private readonly Mock<ICacheService> _mockCacheService;
-    private readonly EnhancedAuthenticationService _authService;
+    private readonly BIReportingCopilot.Infrastructure.Services.AuthenticationService _authService;
 
     public EnhancedAuthenticationServiceTests(TestWebApplicationFactory<Program> factory)
     {
@@ -33,21 +33,17 @@ public class EnhancedAuthenticationServiceTests : IClassFixture<TestWebApplicati
         _mockCacheService = new Mock<ICacheService>();
 
         // Setup configuration
-        var jwtSettings = new JwtSettings
+        var securitySettings = new BIReportingCopilot.Core.Configuration.SecurityConfiguration
         {
-            Secret = "test-super-secret-jwt-key-that-is-at-least-32-characters-long-for-testing",
-            Issuer = "TestIssuer",
-            Audience = "TestAudience",
+            JwtSecret = "test-super-secret-jwt-key-that-is-at-least-32-characters-long-for-testing",
+            JwtIssuer = "TestIssuer",
+            JwtAudience = "TestAudience",
             AccessTokenExpirationMinutes = 60,
             RefreshTokenExpirationMinutes = 43200,
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
-            ValidateIssuerSigningKey = true
-        };
-
-        var securitySettings = new SecuritySettings
-        {
+            ValidateIssuerSigningKey = true,
             MaxLoginAttempts = 5,
             LockoutDurationMinutes = 15,
             MinPasswordLength = 8,
@@ -57,18 +53,22 @@ public class EnhancedAuthenticationServiceTests : IClassFixture<TestWebApplicati
             RequireNonAlphanumeric = true
         };
 
-        var logger = new Mock<ILogger<EnhancedAuthenticationService>>();
+        var logger = new Mock<ILogger<BIReportingCopilot.Infrastructure.Services.AuthenticationService>>();
 
-        // Create service instance
-        _authService = new EnhancedAuthenticationService(
+        // Create service instance - using AuthenticationService instead of EnhancedAuthenticationService
+        var mockMfaService = new Mock<IMfaService>();
+        var mockMfaChallengeRepository = new Mock<IMfaChallengeRepository>();
+
+        _authService = new BIReportingCopilot.Infrastructure.Services.AuthenticationService(
             logger.Object,
             _mockUserRepository.Object,
             _mockTokenRepository.Object,
             _mockPasswordHasher.Object,
             _mockAuditService.Object,
-            Options.Create(jwtSettings),
             Options.Create(securitySettings),
-            _mockCacheService.Object
+            _mockCacheService.Object,
+            mockMfaService.Object,
+            mockMfaChallengeRepository.Object
         );
     }
 

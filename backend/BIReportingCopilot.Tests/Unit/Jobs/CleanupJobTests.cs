@@ -32,7 +32,7 @@ public class CleanupJobTests
             .Options;
         _context = new BICopilotContext(options);
 
-        _cleanupJob = new CleanupJob(_context, _mockCacheService.Object, _mockLogger.Object, _mockConfiguration.Object);
+        _cleanupJob = new CleanupJob(_mockLogger.Object);
     }
 
     [TearDown]

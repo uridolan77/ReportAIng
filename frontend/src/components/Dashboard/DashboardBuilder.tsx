@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Row,
@@ -12,18 +12,14 @@ import {
   Form,
   Switch,
   Slider,
-  Alert,
-  Tooltip,
-  Divider,
   Tag,
-  Spin,
+  Tooltip,
 } from 'antd';
 import {
   PlusOutlined,
   SettingOutlined,
   SaveOutlined,
   ShareAltOutlined,
-  FullscreenOutlined,
   DeleteOutlined,
   DragOutlined,
   BarChartOutlined,
@@ -31,8 +27,6 @@ import {
   PieChartOutlined,
   TableOutlined,
   DotChartOutlined,
-  HeatMapOutlined,
-  FundOutlined,
   AreaChartOutlined,
 } from '@ant-design/icons';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
@@ -87,8 +81,6 @@ const DashboardBuilder: React.FC = () => {
   const [availableData, setAvailableData] = useState<StoredData[]>([]);
   const [isAddChartModalVisible, setIsAddChartModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
-  const [selectedChart, setSelectedChart] = useState<ChartConfig | null>(null);
-  const [loading, setLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [selectedDataSource, setSelectedDataSource] = useState<string>('');
 

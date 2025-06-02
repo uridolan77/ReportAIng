@@ -4,6 +4,7 @@
  */
 
 import '@testing-library/jest-dom';
+import { TextEncoder, TextDecoder } from 'util';
 import { setupTestEnvironment } from './test-utils/testing-providers';
 import { ApiTestUtils } from './test-utils/api-test-utils';
 
@@ -14,7 +15,6 @@ setupTestEnvironment();
 ApiTestUtils.setupApiMocking();
 
 // Polyfill for TextEncoder/TextDecoder
-import { TextEncoder, TextDecoder } from 'util';
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as any;
 

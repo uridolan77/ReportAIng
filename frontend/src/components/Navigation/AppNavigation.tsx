@@ -3,7 +3,7 @@
  * Provides organized navigation for all features
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Menu,
   Layout,
@@ -14,7 +14,6 @@ import {
   Divider
 } from 'antd';
 import {
-  MenuOutlined,
   HomeOutlined,
   BarChartOutlined,
   HistoryOutlined,

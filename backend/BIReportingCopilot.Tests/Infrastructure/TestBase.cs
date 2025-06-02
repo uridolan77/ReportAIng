@@ -57,7 +57,7 @@ public abstract class TestBase : IDisposable
         services.AddScoped<MockServiceBuilder>();
 
         // Add mock metrics collector
-        var mockMetricsCollector = new Mock<IMetricsCollector>();
+        var mockMetricsCollector = new Mock<BIReportingCopilot.Core.Interfaces.IMetricsCollector>();
         services.AddSingleton(mockMetricsCollector.Object);
 
         // Add mock Redis connection multiplexer

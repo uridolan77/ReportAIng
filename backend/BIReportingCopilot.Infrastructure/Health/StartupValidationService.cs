@@ -1,79 +1,111 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace BIReportingCopilot.Infrastructure.Health;
 
-public class StartupValidationService : IHostedService
+/// <summary>
+/// Background service for startup validation
+/// </summary>
+public class StartupValidationService : BackgroundService
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IStartupHealthValidator _validator;
     private readonly ILogger<StartupValidationService> _logger;
-    private Timer? _refreshTimer;
 
-    public StartupValidationService(IServiceProvider serviceProvider, ILogger<StartupValidationService> logger)
+    public StartupValidationService(
+        IStartupHealthValidator validator,
+        ILogger<StartupValidationService> logger)
     {
-        _serviceProvider = serviceProvider;
+        _validator = validator;
         _logger = logger;
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Starting startup validation service...");
-
-        try
-        {
-            using var scope = _serviceProvider.CreateScope();
-            var validator = scope.ServiceProvider.GetRequiredService<IStartupHealthValidator>();
-            
-            // Run comprehensive validation at startup
-            await validator.ValidateAllServicesAsync();
-            
-            // Set up periodic refresh (every 5 minutes)
-            _refreshTimer = new Timer(RefreshHealthStatus, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
-            
-            _logger.LogInformation("Startup validation completed successfully");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Startup validation failed");
-            // Don't throw - let the application start even if some services are down
-        }
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Stopping startup validation service...");
-        
-        _refreshTimer?.Dispose();
-        
-        return Task.CompletedTask;
-    }
-
-    private async void RefreshHealthStatus(object? state)
+    /// <summary>
+    /// Execute the startup validation
+    /// </summary>
+    /// <param name="stoppingToken">Stopping token</param>
+    /// <returns>Task</returns>
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
-            _logger.LogDebug("Refreshing health status for all services...");
-            
-            using var scope = _serviceProvider.CreateScope();
-            var validator = scope.ServiceProvider.GetRequiredService<IStartupHealthValidator>();
-            
-            // Refresh all services in parallel
-            var refreshTasks = new[]
+            _logger.LogInformation("Starting startup validation service");
+
+            // Wait a bit for the application to fully start
+            await Task.Delay(1000, stoppingToken);
+
+            // Perform startup validation
+            var result = await _validator.ValidateStartupHealthAsync(stoppingToken);
+
+            if (result.IsValid)
             {
-                validator.RefreshServiceStatusAsync("openai"),
-                validator.RefreshServiceStatusAsync("defaultdb"),
-                validator.RefreshServiceStatusAsync("bidatabase"),
-                validator.RefreshServiceStatusAsync("redis")
-            };
+                _logger.LogInformation("Startup validation completed successfully");
+            }
+            else
+            {
+                _logger.LogWarning("Startup validation completed with errors: {Errors}",
+                    string.Join(", ", result.ValidationErrors));
+            }
 
-            await Task.WhenAll(refreshTasks);
-            
-            _logger.LogDebug("Health status refresh completed");
+            // Store the result for health checks to use
+            StartupValidationCache.SetResult(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to refresh health status");
+            _logger.LogError(ex, "Error in startup validation service");
+
+            // Store error result
+            var errorResult = new StartupValidationResult
+            {
+                IsValid = false,
+                ValidationErrors = { $"Startup validation service failed: {ex.Message}" },
+                CompletedAt = DateTime.UtcNow
+            };
+            StartupValidationCache.SetResult(errorResult);
+        }
+    }
+}
+
+/// <summary>
+/// Cache for startup validation results
+/// </summary>
+public static class StartupValidationCache
+{
+    private static StartupValidationResult? _cachedResult;
+    private static readonly object _lock = new();
+
+    /// <summary>
+    /// Set the validation result
+    /// </summary>
+    /// <param name="result">Validation result</param>
+    public static void SetResult(StartupValidationResult result)
+    {
+        lock (_lock)
+        {
+            _cachedResult = result;
+        }
+    }
+
+    /// <summary>
+    /// Get the cached validation result
+    /// </summary>
+    /// <returns>Cached result or null if not available</returns>
+    public static StartupValidationResult? GetResult()
+    {
+        lock (_lock)
+        {
+            return _cachedResult;
+        }
+    }
+
+    /// <summary>
+    /// Check if validation is complete
+    /// </summary>
+    /// <returns>True if validation is complete</returns>
+    public static bool IsValidationComplete()
+    {
+        lock (_lock)
+        {
+            return _cachedResult != null;
         }
     }
 }

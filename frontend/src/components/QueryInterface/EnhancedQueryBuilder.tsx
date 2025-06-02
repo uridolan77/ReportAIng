@@ -15,10 +15,7 @@ import {
   List,
   Tooltip,
   Space,
-  Flex,
-  Form,
-  Steps,
-  Divider,
+  // Form and Steps removed - not used in current implementation
   Badge,
   Progress,
   Empty,
@@ -26,7 +23,6 @@ import {
 } from 'antd';
 import {
   SendOutlined as SendIcon,
-  DownOutlined as ExpandMoreIcon,
   ClockCircleOutlined as TimerIcon,
   TableOutlined as TableRowsIcon,
   BulbOutlined as PsychologyIcon,
@@ -84,7 +80,7 @@ const EnhancedQueryBuilder: React.FC = () => {
 
   // Analysis state
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  // loadingSuggestions state removed - not used in current implementation
   const [analyzing, setAnalyzing] = useState(false);
   const [semanticAnalysis, setSemanticAnalysis] = useState<SemanticAnalysisResponse | null>(null);
   const [classification, setClassification] = useState<ClassificationResponse | null>(null);
@@ -165,15 +161,14 @@ const EnhancedQueryBuilder: React.FC = () => {
 
   const loadEnhancedSuggestions = useCallback(async () => {
     try {
-      setLoadingSuggestions(true);
+      // Loading state removed - suggestions load instantly
       const apiSuggestions = await ApiService.getEnhancedQuerySuggestions();
       setSuggestions([...sampleQueries, ...apiSuggestions]);
     } catch (err) {
       console.error('Failed to load enhanced suggestions:', err);
       setSuggestions(sampleQueries);
-    } finally {
-      setLoadingSuggestions(false);
     }
+    // Loading state cleanup removed
   }, [sampleQueries]);
 
   useEffect(() => {

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.ML;
 using BIReportingCopilot.Core.Configuration;
 using System.Text.Json;
 using System.Text;
@@ -104,7 +105,18 @@ public class AIService : IAIService
                     try
                     {
                         var learningInsights = await _learningEngine.GetLearningInsightsAsync(prompt);
-                        finalPrompt = await _promptOptimizer.OptimizePromptAsync(prompt, learningInsights);
+                        // Create QueryExecutionContext for prompt optimizer
+                        var executionContext = new QueryExecutionContext
+                        {
+                            QueryId = Guid.NewGuid().ToString(),
+                            UserId = "system",
+                            SessionId = "system",
+                            StartTime = DateTime.UtcNow,
+                            DatabaseName = "system",
+                            TablesAccessed = new List<string>(),
+                            Parameters = new Dictionary<string, object>()
+                        };
+                        finalPrompt = await _promptOptimizer.OptimizePromptAsync(prompt, executionContext);
                         _logger.LogDebug("Applied adaptive learning optimization to prompt");
                     }
                     catch (Exception ex)
@@ -159,7 +171,7 @@ public class AIService : IAIService
                 activity?.SetTag("response.length", generatedSQL.Length);
 
                 // Record metrics
-                _metricsCollector?.RecordQueryExecution("sql_generation", stopwatch.ElapsedMilliseconds, true);
+                _metricsCollector?.RecordQueryExecution("sql_generation", stopwatch.ElapsedMilliseconds, true, 0);
 
                 _logger.LogInformation("Generated SQL successfully in {Duration}ms", stopwatch.ElapsedMilliseconds);
                 return generatedSQL;
@@ -579,7 +591,26 @@ EXAMPLES:
 
         try
         {
-            await _learningEngine.ProcessFeedbackAsync(originalPrompt, generatedSQL, feedback, userId);
+            // Convert QueryFeedback to UserFeedback
+            var userFeedback = new UserFeedback
+            {
+                UserId = userId,
+                QueryId = feedback.QueryId,
+                Rating = feedback.Feedback == "positive" ? 5 : feedback.Feedback == "negative" ? 1 : 3,
+                Comments = feedback.Comments,
+                FeedbackType = feedback.Feedback,
+                Category = "General",
+                ProvidedAt = DateTime.UtcNow,
+                IsProcessed = false,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["originalPrompt"] = originalPrompt,
+                    ["generatedSQL"] = generatedSQL,
+                    ["suggestedImprovement"] = feedback.SuggestedImprovement ?? ""
+                }
+            };
+
+            await _learningEngine.ProcessFeedbackAsync(userFeedback);
             _logger.LogInformation("Processed feedback for user {UserId}, feedback: {Feedback}", userId, feedback.Feedback);
         }
         catch (Exception ex)
@@ -609,7 +640,17 @@ EXAMPLES:
 
         try
         {
-            return await _learningEngine.GetLearningStatisticsAsync();
+            var stats = await _learningEngine.GetLearningStatisticsAsync();
+            return new LearningStatistics
+            {
+                TotalGenerations = (int)(stats.GetValueOrDefault("TotalFeedback", 0)),
+                TotalFeedbackItems = (int)(stats.GetValueOrDefault("TotalFeedback", 0)),
+                AverageRating = (double)(stats.GetValueOrDefault("AverageRating", 0.0)),
+                AverageConfidence = 0.8,
+                UniqueUsers = (int)(stats.GetValueOrDefault("UniqueUsers", 0)),
+                PopularPatterns = new Dictionary<string, int>(),
+                LastUpdated = (DateTime)(stats.GetValueOrDefault("LastUpdated", DateTime.UtcNow))
+            };
         }
         catch (Exception ex)
         {

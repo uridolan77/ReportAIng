@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Space, Statistic, Row, Col, Input, message, Modal, Progress, Typography } from 'antd';
 import {
-  DeleteOutlined,
   ReloadOutlined,
   InfoCircleOutlined,
   ExportOutlined,

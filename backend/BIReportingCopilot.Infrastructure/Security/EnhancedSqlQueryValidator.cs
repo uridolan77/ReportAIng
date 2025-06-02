@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Models.ML;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Monitoring;
 
@@ -9,8 +11,9 @@ namespace BIReportingCopilot.Infrastructure.Security;
 
 /// <summary>
 /// Enhanced SQL query validator with ML-based anomaly detection and comprehensive security checks
+/// Consolidates functionality from multiple SQL validators for unified security validation
 /// </summary>
-public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator
+public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator, ISqlQueryValidator
 {
     private readonly ILogger<EnhancedSqlQueryValidator> _logger;
     private readonly MLAnomalyDetector _anomalyDetector;
@@ -281,6 +284,206 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator
 
         return recommendations;
     }
+
+    #region ISqlQueryValidator Implementation (Consolidated from EnhancedSqlValidator)
+
+    /// <summary>
+    /// Validates SQL query using the enhanced validation logic (ISqlQueryValidator interface)
+    /// </summary>
+    public async Task<SqlValidationResult> ValidateAsync(string sql)
+    {
+        var enhancedResult = await ValidateQueryAsync(sql);
+
+        // Convert enhanced result to basic SqlValidationResult for backward compatibility
+        return new SqlValidationResult
+        {
+            IsValid = enhancedResult.IsValid,
+            SecurityLevel = enhancedResult.SecurityLevel,
+            RiskScore = enhancedResult.RiskScore / 10.0, // Normalize to 0-1 scale
+            Errors = enhancedResult.Issues.Where(i => enhancedResult.SecurityLevel == SecurityLevel.Blocked)
+                                         .Select(i => i.Description).ToList(),
+            Warnings = enhancedResult.Issues.Where(i => enhancedResult.SecurityLevel == SecurityLevel.Warning)
+                                           .Select(i => i.Description).ToList(),
+            ValidationTime = enhancedResult.ValidationTimestamp
+        };
+    }
+
+    /// <summary>
+    /// Checks if query contains only SELECT statements
+    /// </summary>
+    public bool IsSelectOnlyQuery(string sql)
+    {
+        var trimmed = sql.Trim();
+        if (!trimmed.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var upperSql = sql.ToUpperInvariant();
+        var statementKeywords = new[] { "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER", "TRUNCATE" };
+
+        return !statementKeywords.Any(keyword =>
+            Regex.IsMatch(upperSql, $@"\b{keyword}\b", RegexOptions.IgnoreCase));
+    }
+
+    /// <summary>
+    /// Checks if query contains dangerous keywords
+    /// </summary>
+    public bool ContainsDangerousKeywords(string sql)
+    {
+        var upperSql = sql.ToUpperInvariant();
+        var dangerousKeywords = new[] {
+            "DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE", "TRUNCATE",
+            "EXEC", "EXECUTE", "SP_", "XP_", "OPENROWSET", "OPENDATASOURCE",
+            "BULK", "BACKUP", "RESTORE", "SHUTDOWN", "RECONFIGURE"
+        };
+
+        return dangerousKeywords.Any(keyword =>
+            Regex.IsMatch(upperSql, $@"\b{keyword}\b", RegexOptions.IgnoreCase));
+    }
+
+    /// <summary>
+    /// Validates SQL syntax (parentheses, quotes balance)
+    /// </summary>
+    public bool HasValidSyntax(string sql)
+    {
+        try
+        {
+            return HasBalancedParentheses(sql) && HasBalancedQuotes(sql);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Validates parameterized query parameters
+    /// </summary>
+    public bool ValidateParameterizedQuery(string sql, Dictionary<string, object> parameters)
+    {
+        if (parameters == null || !parameters.Any())
+            return true;
+
+        foreach (var param in parameters)
+        {
+            if (!IsValidParameterName(param.Key))
+                return false;
+            if (param.Value != null && ContainsSuspiciousContent(param.Value.ToString() ?? ""))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Validates query structure and returns detailed result
+    /// </summary>
+    public SqlValidationResult ValidateQueryStructure(string sql)
+    {
+        var result = new SqlValidationResult
+        {
+            IsValid = true,
+            SecurityLevel = SecurityLevel.Safe,
+            Errors = new List<string>(),
+            Warnings = new List<string>(),
+            ValidationTime = DateTime.UtcNow
+        };
+
+        try
+        {
+            var trimmedSql = sql.Trim();
+
+            if (!trimmedSql.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
+            {
+                result.Errors.Add("Query must start with SELECT");
+                result.SecurityLevel = SecurityLevel.Blocked;
+                result.IsValid = false;
+                return result;
+            }
+
+            if (!HasBalancedParentheses(sql))
+            {
+                result.Errors.Add("Query has unbalanced parentheses");
+                result.SecurityLevel = SecurityLevel.Dangerous;
+                result.IsValid = false;
+            }
+
+            if (!HasBalancedQuotes(sql))
+            {
+                result.Errors.Add("Query has unbalanced quotes");
+                result.SecurityLevel = SecurityLevel.Dangerous;
+                result.IsValid = false;
+            }
+
+            // Check for multiple statements
+            var statements = sql.Split(';', StringSplitOptions.RemoveEmptyEntries);
+            if (statements.Length > 1)
+            {
+                result.Warnings.Add("Multiple SQL statements detected");
+                if (result.SecurityLevel == SecurityLevel.Safe)
+                    result.SecurityLevel = SecurityLevel.Warning;
+            }
+
+            result.IsValid = !result.Errors.Any();
+        }
+        catch (Exception ex)
+        {
+            result.Errors.Add("Failed to validate query structure");
+            result.SecurityLevel = SecurityLevel.Dangerous;
+            result.IsValid = false;
+            _logger.LogError(ex, "Error validating query structure");
+        }
+
+        return result;
+    }
+
+    #endregion
+
+    #region Private Helper Methods (Consolidated)
+
+    private bool IsValidParameterName(string paramName)
+    {
+        return Regex.IsMatch(paramName, @"^@?[a-zA-Z_][a-zA-Z0-9_]*$");
+    }
+
+    private bool ContainsSuspiciousContent(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return false;
+
+        var suspiciousPatterns = new[]
+        {
+            @"'.*--", @"'.*\bOR\b.*'", @"'.*\bAND\b.*'", @"'.*\bUNION\b.*'",
+            @"<script", @"javascript:", @"vbscript:"
+        };
+
+        return suspiciousPatterns.Any(pattern =>
+            Regex.IsMatch(value, pattern, RegexOptions.IgnoreCase));
+    }
+
+    private bool HasBalancedParentheses(string sql)
+    {
+        var count = 0;
+        foreach (char c in sql)
+        {
+            if (c == '(') count++;
+            else if (c == ')') count--;
+            if (count < 0) return false;
+        }
+        return count == 0;
+    }
+
+    private bool HasBalancedQuotes(string sql)
+    {
+        var singleQuoteCount = 0;
+        for (int i = 0; i < sql.Length; i++)
+        {
+            if (sql[i] == '\'' && (i == 0 || sql[i - 1] != '\\'))
+                singleQuoteCount++;
+        }
+        return singleQuoteCount % 2 == 0;
+    }
+
+    #endregion
 
     private class SqlPattern
     {

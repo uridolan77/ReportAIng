@@ -9,7 +9,7 @@ import {
 } from '@ant-design/icons';
 import { ErrorService } from '../../services/errorService';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 const { Panel } = Collapse;
 
 interface Props {

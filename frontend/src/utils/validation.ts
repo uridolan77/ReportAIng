@@ -59,7 +59,6 @@ export class ValidationUtils {
       const {
         strict = false,
         stripUnknown = true,
-        errorFormat = 'detailed',
         customErrorMessages = {}
       } = options;
 

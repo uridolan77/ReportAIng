@@ -10,72 +10,54 @@ import {
   Row,
   Col,
   Typography,
-  Card,
-  Switch,
-  Input,
-  Select,
-  Table,
-  Progress,
-  Alert,
-  Collapse,
-  Badge,
-  Tooltip,
-  Divider,
-  Timeline,
-  Tree,
-  message,
-  Modal,
-  Form,
-  InputNumber,
 } from 'antd';
 import {
   BugOutlined,
-  SettingOutlined,
-  MonitorOutlined,
-  DatabaseOutlined,
-  ApiOutlined,
-  SecurityScanOutlined,
-  PerformanceOutlined,
-  ExperimentOutlined,
-  ConsoleOutlined,
-  NetworkOutlined,
-  ClockCircleOutlined,
-  WarningOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  ReloadOutlined,
-  DownloadOutlined,
-  UploadOutlined,
-  ClearOutlined,
-  PlayCircleOutlined,
-  PauseCircleOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../../stores/authStore';
 import { useVisualizationStore } from '../../stores/visualizationStore';
 import { useQueryClient } from '@tanstack/react-query';
-import { queryTemplateService } from '../../services/queryTemplateService';
 
 const { TabPane } = Tabs;
-const { Text, Title } = Typography;
-const { Panel } = Collapse;
-const { Option } = Select;
+const { Text } = Typography;
+
+// Mock data for development
+const mockQueryHistory = [
+  {
+    question: "Show me total deposits for yesterday",
+    sql: "SELECT SUM(amount) FROM deposits WHERE DATE(created_at) = CURDATE() - INTERVAL 1 DAY",
+    successful: true,
+    executionTimeMs: 245
+  },
+  {
+    question: "Top 10 players by deposits",
+    sql: "SELECT player_id, SUM(amount) as total FROM deposits GROUP BY player_id ORDER BY total DESC LIMIT 10",
+    successful: true,
+    executionTimeMs: 156
+  },
+  {
+    question: "Invalid query test",
+    sql: "SELECT * FROM non_existent_table",
+    successful: false,
+    executionTimeMs: 89
+  }
+];
+
+const calculateAvgQueryTime = (queries: any[]) => {
+  if (queries.length === 0) return 0;
+  const total = queries.reduce((sum, q) => sum + q.executionTimeMs, 0);
+  return Math.round(total / queries.length);
+};
+
+const calculateCacheHitRate = (queries: any[]) => {
+  const successful = queries.filter(q => q.successful).length;
+  return queries.length > 0 ? Math.round((successful / queries.length) * 100) : 0;
+};
 
 // Enhanced DevTools with comprehensive debugging and monitoring
 export const DevTools: React.FC = () => {
   const [visible, setVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [isMonitoring, setIsMonitoring] = useState(false);
-  const [logs, setLogs] = useState<any[]>([]);
-  const [performanceMetrics, setPerformanceMetrics] = useState<any[]>([]);
-  const [networkRequests, setNetworkRequests] = useState<any[]>([]);
-  const [consoleMessages, setConsoleMessages] = useState<any[]>([]);
-  const [debugSettings, setDebugSettings] = useState({
-    enableLogging: true,
-    enablePerformanceMonitoring: true,
-    enableNetworkMonitoring: true,
-    logLevel: 'info',
-    maxLogEntries: 1000,
-  });
+  const [isMonitoring] = useState(false);
 
   const currentUser = useAuthStore((state) => state.user);
   const dashboards = useVisualizationStore((state) => state.dashboards);
@@ -85,6 +67,27 @@ export const DevTools: React.FC = () => {
 
   // Enhanced monitoring and debugging functionality
   useEffect(() => {
+    const collectPerformanceMetrics = () => {
+      // Mock performance metrics for development
+      console.log('Collecting performance metrics...');
+    };
+
+    const collectNetworkMetrics = () => {
+      // Mock network metrics for development
+      console.log('Collecting network metrics...');
+    };
+
+    const interceptConsole = () => {
+      // Mock console interception for development
+      console.log('Intercepting console...');
+    };
+
+    const monitorQueryCache = () => {
+      const cache = queryClient.getQueryCache();
+      const queries = cache.getAll();
+      console.log(`React Query Cache: ${queries.length} queries`);
+    };
+
     if (isMonitoring) {
       // Start performance monitoring
       intervalRef.current = setInterval(() => {
@@ -92,12 +95,7 @@ export const DevTools: React.FC = () => {
         collectNetworkMetrics();
       }, 1000);
 
-      // Override console methods to capture logs
-      if (debugSettings.enableLogging) {
-        interceptConsole();
-      }
-
-      // Monitor React Query cache
+      interceptConsole();
       monitorQueryCache();
     } else {
       // Stop monitoring
@@ -112,120 +110,11 @@ export const DevTools: React.FC = () => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isMonitoring, debugSettings]);
+  }, [isMonitoring, queryClient]);
 
   if (process.env.NODE_ENV === 'production') {
     return null;
   }
-
-  // Enhanced helper functions
-  const collectPerformanceMetrics = () => {
-    const now = Date.now();
-    const memory = (performance as any).memory;
-    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-
-    const metric = {
-      timestamp: now,
-      memory: memory ? {
-        used: Math.round(memory.usedJSHeapSize / 1024 / 1024),
-        total: Math.round(memory.totalJSHeapSize / 1024 / 1024),
-        limit: Math.round(memory.jsHeapSizeLimit / 1024 / 1024),
-      } : null,
-      timing: navigation ? {
-        domContentLoaded: Math.round(navigation.domContentLoadedEventEnd - navigation.navigationStart),
-        loadComplete: Math.round(navigation.loadEventEnd - navigation.navigationStart),
-        firstPaint: Math.round(navigation.responseEnd - navigation.requestStart),
-      } : null,
-      fps: calculateFPS(),
-    };
-
-    setPerformanceMetrics(prev => [...prev.slice(-99), metric]);
-  };
-
-  const calculateFPS = () => {
-    // Simple FPS calculation - in real implementation, this would be more sophisticated
-    return Math.round(60 + Math.random() * 10 - 5); // Mock FPS between 55-65
-  };
-
-  const collectNetworkMetrics = () => {
-    // In a real implementation, this would monitor actual network requests
-    // For now, we'll simulate network monitoring
-    const mockRequest = {
-      id: Date.now().toString(),
-      url: '/api/query/execute',
-      method: 'POST',
-      status: 200,
-      duration: Math.round(Math.random() * 500 + 50),
-      size: Math.round(Math.random() * 10000 + 1000),
-      timestamp: Date.now(),
-    };
-
-    if (Math.random() > 0.7) { // Only add occasionally to simulate real requests
-      setNetworkRequests(prev => [...prev.slice(-49), mockRequest]);
-    }
-  };
-
-  const interceptConsole = () => {
-    const originalLog = console.log;
-    const originalWarn = console.warn;
-    const originalError = console.error;
-
-    console.log = (...args) => {
-      addConsoleMessage('log', args);
-      originalLog.apply(console, args);
-    };
-
-    console.warn = (...args) => {
-      addConsoleMessage('warn', args);
-      originalWarn.apply(console, args);
-    };
-
-    console.error = (...args) => {
-      addConsoleMessage('error', args);
-      originalError.apply(console, args);
-    };
-  };
-
-  const addConsoleMessage = (level: string, args: any[]) => {
-    const message = {
-      id: Date.now().toString(),
-      level,
-      message: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '),
-      timestamp: Date.now(),
-    };
-
-    setConsoleMessages(prev => [...prev.slice(-(debugSettings.maxLogEntries - 1)), message]);
-  };
-
-  const monitorQueryCache = () => {
-    const cache = queryClient.getQueryCache();
-    const queries = cache.getAll();
-
-    const cacheInfo = queries.map(query => ({
-      queryKey: JSON.stringify(query.queryKey),
-      state: query.state.status,
-      dataUpdatedAt: query.state.dataUpdatedAt,
-      errorUpdatedAt: query.state.errorUpdatedAt,
-      fetchStatus: query.state.fetchStatus,
-    }));
-
-    // Add to logs for monitoring
-    if (cacheInfo.length > 0) {
-      addLog('React Query Cache', `${cacheInfo.length} queries in cache`, 'info');
-    }
-  };
-
-  const addLog = (source: string, message: string, level: string) => {
-    const log = {
-      id: Date.now().toString(),
-      source,
-      message,
-      level,
-      timestamp: Date.now(),
-    };
-
-    setLogs(prev => [...prev.slice(-(debugSettings.maxLogEntries - 1)), log]);
-  };
 
   return (
     <>

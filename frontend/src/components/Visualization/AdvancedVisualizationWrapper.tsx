@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, Alert, Button, Space, Typography } from 'antd';
 import { RocketOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -7,17 +7,12 @@ import AdvancedVisualizationPanel from './AdvancedVisualizationPanel';
 
 const { Title, Text } = Typography;
 
-interface StoredQueryResult {
-  data: any[];
-  columns: string[];
-  query: string;
-  timestamp: number;
-}
+// StoredQueryResult interface removed - not used in this component
 
 const AdvancedVisualizationWrapper: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const { result: activeResult, query: activeQuery, hasResult } = useActiveResult();
+  // loading state removed - not used in current implementation
+  const { result: activeResult, query: activeQuery } = useActiveResult();
   const { setActiveResult } = useActiveResultActions();
 
   // Convert active result to the format expected by the visualization panel
@@ -39,15 +34,7 @@ const AdvancedVisualizationWrapper: React.FC = () => {
     navigate('/');
   };
 
-  if (loading) {
-    return (
-      <Card loading={true}>
-        <div style={{ textAlign: 'center', padding: 40 }}>
-          <Text>Loading visualization data...</Text>
-        </div>
-      </Card>
-    );
-  }
+  // Loading state removed - component loads instantly from store
 
   // Show welcome message if no data
   if (!queryData || !queryData.data || queryData.data.length === 0) {

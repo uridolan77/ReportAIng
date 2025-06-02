@@ -6,7 +6,7 @@ import { MinimalQueryInterface } from './MinimalQueryInterface';
 import { QueryModals } from './QueryModals';
 import { ScreenReaderAnnouncer } from '../../hooks/useKeyboardNavigation';
 
-const { Title } = Typography;
+// Title not used in this component
 
 interface QueryInterfaceProps {
   className?: string;

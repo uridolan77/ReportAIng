@@ -438,10 +438,9 @@ describe('QueryTemplateService', () => {
       // Favorites should come first
       const favoriteIndex = sortedTemplates.findIndex(t => t.isFavorite);
       const nonFavoriteIndex = sortedTemplates.findIndex(t => !t.isFavorite);
-      
-      if (favoriteIndex !== -1 && nonFavoriteIndex !== -1) {
-        expect(favoriteIndex).toBeLessThan(nonFavoriteIndex);
-      }
+
+      // Only test if both types exist
+      expect(favoriteIndex !== -1 && nonFavoriteIndex !== -1 ? favoriteIndex < nonFavoriteIndex : true).toBe(true);
     });
 
     it('sorts shortcuts by usage count', () => {

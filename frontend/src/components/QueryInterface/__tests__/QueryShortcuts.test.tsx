@@ -347,7 +347,7 @@ describe('QueryShortcuts Component', () => {
     it('updates suggestions when search term changes', async () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
-      const searchInput = screen.getByPlaceholderText(/search templates/i);
+      // searchInput variable removed - not used in this test
       
       // Type search term
       await TemplateTestUtils.searchTemplates('revenue');
@@ -358,7 +358,7 @@ describe('QueryShortcuts Component', () => {
     it('clears search when input is cleared', async () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
-      const searchInput = screen.getByPlaceholderText(/search templates/i);
+      // searchInput variable removed - not used in this test
       
       // Type and then clear
       await TemplateTestUtils.searchTemplates('revenue');
@@ -398,10 +398,10 @@ describe('QueryShortcuts Component', () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
       const firstTab = screen.getByRole('tab', { name: /suggestions/i });
-      firstTab.focus();
+      await user.click(firstTab);
 
-      // Tab navigation should work
-      expect(document.activeElement).toBe(firstTab);
+      // Tab should be focused after click
+      expect(firstTab).toHaveFocus();
     });
   });
 });

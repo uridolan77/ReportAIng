@@ -51,7 +51,8 @@ public class QueryServiceTests
             _mockCacheService.Object,
             _mockAuditService.Object,
             _mockPromptService.Object,
-            _mockSettingsService.Object
+            _mockSettingsService.Object,
+            _context
         );
     }
 

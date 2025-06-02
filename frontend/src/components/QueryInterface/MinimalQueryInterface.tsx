@@ -5,20 +5,17 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Card,
   Typography,
   Space,
   Button,
   Row,
   Col,
-  Divider,
   Empty,
   Tag
 } from 'antd';
 import {
   HistoryOutlined,
   BookOutlined,
-  BarChartOutlined,
   ThunderboltOutlined,
   RocketOutlined
 } from '@ant-design/icons';
@@ -27,7 +24,6 @@ import { useQueryContext } from './QueryProvider';
 import { EnhancedQueryInput } from './EnhancedQueryInput';
 import { QueryResult } from './QueryResult';
 import { OnboardingTour } from '../Onboarding/OnboardingTour';
-import { TipTooltip, ShortcutTooltip, FeatureTooltip } from '../Onboarding/ContextTooltip';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -45,7 +41,7 @@ export const MinimalQueryInterface: React.FC = () => {
     queryHistory
   } = useQueryContext();
 
-  const [showQuickActions, setShowQuickActions] = useState(true);
+  const [showQuickActions] = useState(true);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
 
   // Handle navigation state (suggested queries from other pages)

@@ -45,6 +45,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
   const [selectAllTables, setSelectAllTables] = useState(true);
 
   // Helper function to generate realistic business information based on table name
+  // Note: This function is defined but not currently used - kept for future enhancement
   const generateRealisticBusinessInfo = useCallback((tableName: string) => {
     const lowerName = tableName.toLowerCase();
 
@@ -209,8 +210,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       let currentProgress = 0;
       let processedTables = 0;
       let processedColumns = 0;
-      let generatedTerms = 0;
-      let foundRelationships = 0;
+      // generatedTerms and foundRelationships removed - not used in current implementation
       const completed: string[] = [];
       const details: any[] = [];
       let schema: any = null;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Steps, Card, Button, Space, Typography, Row, Col, message } from 'antd';
 import {
   DatabaseOutlined,

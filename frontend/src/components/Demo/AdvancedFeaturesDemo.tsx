@@ -4,7 +4,7 @@ import { SecurityScanOutlined, ThunderboltOutlined, TeamOutlined, ExperimentOutl
 import { HeatmapChart } from '../Visualization/D3Charts/HeatmapChart';
 import { TreemapChart } from '../Visualization/D3Charts/TreemapChart';
 import { NetworkChart } from '../Visualization/D3Charts/NetworkChart';
-import { VirtualDataTable } from '../Performance/VirtualScrollList';
+
 import { AccessibleBarChart } from '../Visualization/AccessibleChart';
 import { CollaborativeDashboard } from '../Collaboration/CollaborativeDashboard';
 import { MemoizedDataTable, PerformanceMetrics } from '../Performance/MemoizedComponents';
@@ -15,7 +15,7 @@ import { useVisualizationStore } from '../../stores/visualizationStore';
 import { useWebSocket } from '../../services/websocketService';
 import { SecurityUtils } from '../../utils/security';
 
-const { TabPane } = Tabs;
+// TabPane not used - using items prop instead
 const { Title, Text, Paragraph } = Typography;
 
 // Mock data generators
@@ -122,7 +122,7 @@ export const AdvancedFeaturesDemo: React.FC = () => {
   const [sortKey, setSortKey] = useState<'name' | 'value' | null>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [securityDemo, setSecurityDemo] = useState<any>(null);
-  const [collaborationUsers] = useState(0);
+  // collaborationUsers removed - not used in current implementation
 
   // Performance monitoring
   const { measureAsync } = usePerformanceMeasure();
@@ -303,11 +303,16 @@ export const AdvancedFeaturesDemo: React.FC = () => {
         )}
       </Card>
 
-      <Tabs activeKey={activeTab} onChange={setActiveTab} size="large">
-        <TabPane
-          tab={<span><SecurityScanOutlined />Security Enhancements</span>}
-          key="security"
-        >
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        size="large"
+        items={[
+          {
+            key: 'security',
+            label: <span><SecurityScanOutlined />Security Enhancements</span>,
+            children: (
+          <>
           <Alert
             message="🔒 Production-Ready Security"
             description="Real encryption, CSP, and secure session management implemented"
@@ -355,12 +360,14 @@ export const AdvancedFeaturesDemo: React.FC = () => {
               </Space>
             </Card>
           )}
-        </TabPane>
-
-        <TabPane
-          tab={<span><ThunderboltOutlined />Performance Optimization</span>}
-          key="performance"
-        >
+          </>
+            )
+          },
+          {
+            key: 'performance',
+            label: <span><ThunderboltOutlined />Performance Optimization</span>,
+            children: (
+          <>
           <Alert
             message="⚡ Enterprise Performance"
             description="Virtual scrolling, memoization, and bundle optimization for maximum efficiency"
@@ -417,12 +424,14 @@ export const AdvancedFeaturesDemo: React.FC = () => {
               pageSize={50}
             />
           </Card>
-        </TabPane>
-
-        <TabPane
-          tab={<span><TeamOutlined />Real-time Collaboration</span>}
-          key="collaboration"
-        >
+          </>
+            )
+          },
+          {
+            key: 'collaboration',
+            label: <span><TeamOutlined />Real-time Collaboration</span>,
+            children: (
+          <>
           <Alert
             message="👥 Live Collaboration"
             description="Real-time WebSocket communication with cursor tracking and live updates"
@@ -445,7 +454,7 @@ export const AdvancedFeaturesDemo: React.FC = () => {
               <Card>
                 <Statistic
                   title="Active Users"
-                  value={collaborationUsers}
+                  value={0}
                   prefix={<TeamOutlined />}
                 />
               </Card>
@@ -467,9 +476,14 @@ export const AdvancedFeaturesDemo: React.FC = () => {
             widgets={generateMockWidgets()}
             onWidgetUpdate={handleWidgetUpdate}
           />
-        </TabPane>
-
-        <TabPane tab="Advanced Charts" key="charts">
+          </>
+            )
+          },
+          {
+            key: 'charts',
+            label: 'Advanced Charts',
+            children: (
+          <>
           <Row gutter={[16, 16]}>
             <Col span={12}>
               <Card title="Interactive Heatmap">
@@ -514,12 +528,14 @@ export const AdvancedFeaturesDemo: React.FC = () => {
               </Card>
             </Col>
           </Row>
-        </TabPane>
-
-        <TabPane
-          tab={<span><ExperimentOutlined />Testing Infrastructure</span>}
-          key="testing"
-        >
+          </>
+            )
+          },
+          {
+            key: 'testing',
+            label: <span><ExperimentOutlined />Testing Infrastructure</span>,
+            children: (
+          <>
           <Alert
             message="🧪 Production Testing"
             description="Comprehensive E2E, visual regression, and performance testing with Playwright"
@@ -592,9 +608,14 @@ export const AdvancedFeaturesDemo: React.FC = () => {
               title="Monthly Sales (Keyboard Navigable)"
             />
           </Card>
-        </TabPane>
-
-        <TabPane tab="State Management" key="state">
+          </>
+            )
+          },
+          {
+            key: 'state',
+            label: 'State Management',
+            children: (
+          <>
           <Row gutter={[16, 16]}>
             <Col span={12}>
               <Card title="Visualization Preferences">
@@ -674,8 +695,11 @@ export const AdvancedFeaturesDemo: React.FC = () => {
               </Card>
             </Col>
           </Row>
-        </TabPane>
-      </Tabs>
+          </>
+            )
+          }
+        ]}
+      />
 
       <Card style={{ marginTop: '32px', textAlign: 'center' }}>
         <Title level={3}>🎉 Enterprise-Ready Frontend</Title>

@@ -11,7 +11,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { DatabaseStatusIndicator } from './DatabaseStatusIndicator';
 import { AppNavigation } from '../Navigation/AppNavigation';
 
-const { Header, Content, Sider } = AntLayout;
+const { Header, Content } = AntLayout;
 const { Text } = Typography;
 
 interface LayoutProps {
