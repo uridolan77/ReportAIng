@@ -88,8 +88,8 @@ export const QueryTabs: React.FC = () => {
     >
       <TabPane
         tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-            <BarChartOutlined style={{ fontSize: '16px' }} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+            <BarChartOutlined style={{ fontSize: '18px' }} />
             Results
           </span>
         }
@@ -130,8 +130,8 @@ export const QueryTabs: React.FC = () => {
 
       <TabPane
         tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-            <HistoryOutlined style={{ fontSize: '16px' }} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+            <HistoryOutlined style={{ fontSize: '18px' }} />
             History ({queryHistory.length})
           </span>
         }
@@ -147,8 +147,8 @@ export const QueryTabs: React.FC = () => {
 
       <TabPane
         tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-            <CodeOutlined style={{ fontSize: '16px' }} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+            <CodeOutlined style={{ fontSize: '18px' }} />
             Suggestions
           </span>
         }
@@ -161,8 +161,8 @@ export const QueryTabs: React.FC = () => {
 
       <TabPane
         tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-            <ThunderboltOutlined style={{ fontSize: '16px' }} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+            <ThunderboltOutlined style={{ fontSize: '18px' }} />
             Streaming
           </span>
         }
@@ -181,8 +181,8 @@ export const QueryTabs: React.FC = () => {
 
       <TabPane
         tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-            <InteractionOutlined style={{ fontSize: '16px' }} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+            <InteractionOutlined style={{ fontSize: '18px' }} />
             Interactive
           </span>
         }
@@ -208,9 +208,9 @@ export const QueryTabs: React.FC = () => {
 
       <TabPane
         tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-            <DashboardOutlined style={{ fontSize: '16px' }} />
-            Dashboard
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+            <DashboardOutlined style={{ fontSize: '18px' }} />
+            Dashboard Builder
           </span>
         }
         key="dashboard"
@@ -235,9 +235,9 @@ export const QueryTabs: React.FC = () => {
 
       <TabPane
         tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-            <ThunderboltOutlined style={{ fontSize: '16px' }} />
-            Advanced AI
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+            <ThunderboltOutlined style={{ fontSize: '18px' }} />
+            Advanced Visualizations
           </span>
         }
         key="advanced"
@@ -257,7 +257,7 @@ export const QueryTabs: React.FC = () => {
         ) : (
           <div className="empty-result">
             <Text type="secondary">
-              Execute a query first to see AI-powered advanced visualizations
+              Execute a query first to see advanced visualizations and AI recommendations
             </Text>
           </div>
         )}
@@ -266,8 +266,8 @@ export const QueryTabs: React.FC = () => {
       {isAdmin && (
         <TabPane
           tab={
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-              <SettingOutlined style={{ fontSize: '16px' }} />
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+              <SettingOutlined style={{ fontSize: '18px' }} />
               AI Tuning
             </span>
           }
@@ -280,8 +280,8 @@ export const QueryTabs: React.FC = () => {
       {isAdmin && (
         <TabPane
           tab={
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-              <ThunderboltOutlined style={{ fontSize: '16px' }} />
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+              <ThunderboltOutlined style={{ fontSize: '18px' }} />
               Cache Manager
             </span>
           }
@@ -294,8 +294,8 @@ export const QueryTabs: React.FC = () => {
       {isAdmin && (
         <TabPane
           tab={
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-              <SafetyOutlined style={{ fontSize: '16px' }} />
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+              <SafetyOutlined style={{ fontSize: '18px' }} />
               Security
             </span>
           }

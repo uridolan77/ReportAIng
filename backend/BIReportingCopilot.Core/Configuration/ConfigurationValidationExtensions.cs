@@ -23,7 +23,20 @@ public static class ConfigurationValidationExtensions
 
         // Register and validate unified security configuration
         services.AddOptions<SecurityConfiguration>()
-            .Bind(configuration.GetSection("Security"))
+            .Configure(config =>
+            {
+                // Bind JWT settings from JwtSettings section
+                var jwtSection = configuration.GetSection("JwtSettings");
+                config.JwtSecret = jwtSection["Secret"] ?? string.Empty;
+                config.JwtIssuer = jwtSection["Issuer"] ?? string.Empty;
+                config.JwtAudience = jwtSection["Audience"] ?? string.Empty;
+                config.AccessTokenExpirationMinutes = jwtSection.GetValue<int>("AccessTokenExpirationMinutes", 60);
+                config.RefreshTokenExpirationMinutes = jwtSection.GetValue<int>("RefreshTokenExpirationMinutes", 43200);
+
+                // Bind other security settings from Application:Security section
+                var securitySection = configuration.GetSection("Application:Security");
+                securitySection.Bind(config);
+            })
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
@@ -43,7 +56,15 @@ public static class ConfigurationValidationExtensions
 
         // Register and validate unified database configuration
         services.AddOptions<DatabaseConfiguration>()
-            .Bind(configuration.GetSection("Database"))
+            .Configure(config =>
+            {
+                // Bind connection string from ConnectionStrings section
+                config.ConnectionString = configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
+
+                // Bind other database settings from Application:Database section
+                var databaseSection = configuration.GetSection("Application:Database");
+                databaseSection.Bind(config);
+            })
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
@@ -162,30 +183,113 @@ public static class ConfigurationValidationExtensions
     {
         try
         {
-            // Validate all critical unified configuration sections
-            configuration.GetValidatedSection<SecurityConfiguration>("Security");
-            configuration.GetValidatedSection<DatabaseConfiguration>("Database");
-            configuration.GetValidatedSection<PerformanceConfiguration>("Performance");
-            configuration.GetValidatedSection<CacheConfiguration>("Cache");
-            configuration.GetValidatedSection<MonitoringConfiguration>("Monitoring");
+            // Validate JWT settings (critical for authentication)
+            ValidateJwtSettings(configuration);
 
-            // AI validation is optional - service will use fallback if not configured
-            try
-            {
-                configuration.GetValidatedSection<AIConfiguration>("AI");
-            }
-            catch (Exception ex)
-            {
-                // Log warning but don't fail startup for AI configuration issues
-                Console.WriteLine($"Warning: AI configuration validation failed: {ex.Message}. Service will use fallback responses.");
-            }
-
-            // Validate connection strings
+            // Validate connection strings (critical for database access)
             ValidateConnectionStrings(configuration);
+
+            // Validate optional sections with fallbacks
+            ValidateOptionalSections(configuration);
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException("Critical configuration validation failed. Please check your appsettings.json file.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Validates JWT settings which are critical for authentication
+    /// </summary>
+    private static void ValidateJwtSettings(IConfiguration configuration)
+    {
+        var jwtSection = configuration.GetSection("JwtSettings");
+
+        var secret = jwtSection["Secret"];
+        var issuer = jwtSection["Issuer"];
+        var audience = jwtSection["Audience"];
+
+        if (string.IsNullOrWhiteSpace(secret))
+        {
+            throw new InvalidOperationException("JWT Secret is required in JwtSettings section");
+        }
+
+        if (secret.Length < 32)
+        {
+            throw new InvalidOperationException("JWT Secret must be at least 32 characters long");
+        }
+
+        if (string.IsNullOrWhiteSpace(issuer))
+        {
+            throw new InvalidOperationException("JWT Issuer is required in JwtSettings section");
+        }
+
+        if (string.IsNullOrWhiteSpace(audience))
+        {
+            throw new InvalidOperationException("JWT Audience is required in JwtSettings section");
+        }
+    }
+
+    /// <summary>
+    /// Validates optional configuration sections with fallbacks
+    /// </summary>
+    private static void ValidateOptionalSections(IConfiguration configuration)
+    {
+        // These sections are optional and will use defaults if not configured
+        try
+        {
+            // Cache settings - optional, will use in-memory cache if not configured
+            var cacheSection = configuration.GetSection("Cache");
+            if (cacheSection.Exists())
+            {
+                configuration.GetValidatedSection<CacheConfiguration>("Cache");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Cache configuration validation failed: {ex.Message}. Using default cache settings.");
+        }
+
+        try
+        {
+            // Performance settings - optional, will use defaults
+            var perfSection = configuration.GetSection("Performance");
+            if (perfSection.Exists())
+            {
+                configuration.GetValidatedSection<PerformanceConfiguration>("Performance");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Performance configuration validation failed: {ex.Message}. Using default performance settings.");
+        }
+
+        try
+        {
+            // Monitoring settings - optional, will use defaults
+            var monitoringSection = configuration.GetSection("Monitoring");
+            if (monitoringSection.Exists())
+            {
+                configuration.GetValidatedSection<MonitoringConfiguration>("Monitoring");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Monitoring configuration validation failed: {ex.Message}. Using default monitoring settings.");
+        }
+
+        // AI validation is optional - service will use fallback if not configured
+        try
+        {
+            var aiSection = configuration.GetSection("AI");
+            if (aiSection.Exists())
+            {
+                configuration.GetValidatedSection<AIConfiguration>("AI");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: AI configuration validation failed: {ex.Message}. Service will use fallback responses.");
         }
     }
 
@@ -203,14 +307,23 @@ public static class ConfigurationValidationExtensions
         }
 
         // Validate Redis connection if distributed caching is enabled
-        var cacheSettings = configuration.GetSection("Cache").Get<CacheConfiguration>();
-        if (cacheSettings?.EnableDistributedCache == true)
+        try
         {
-            var redisConnection = connectionStrings["Redis"] ?? cacheSettings.RedisConnectionString;
-            if (string.IsNullOrWhiteSpace(redisConnection))
+            var cacheSection = configuration.GetSection("Cache");
+            var enableDistributedCache = cacheSection.GetValue<bool>("EnableDistributedCache", false);
+
+            if (enableDistributedCache)
             {
-                throw new InvalidOperationException("Redis connection string is required when distributed caching is enabled");
+                var redisConnection = connectionStrings["Redis"] ?? cacheSection["RedisConnectionString"];
+                if (string.IsNullOrWhiteSpace(redisConnection))
+                {
+                    Console.WriteLine("Warning: Distributed caching is enabled but Redis connection string is not configured. Falling back to in-memory cache.");
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Could not validate Redis configuration: {ex.Message}. Using in-memory cache.");
         }
     }
 

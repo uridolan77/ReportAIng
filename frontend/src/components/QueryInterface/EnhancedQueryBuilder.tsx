@@ -582,15 +582,15 @@ const EnhancedQueryBuilder: React.FC = () => {
           activeKey={activeTab}
           onChange={setActiveTab}
           size="large"
-          tabBarStyle={{ marginBottom: '24px' }}
+          className="enhanced-query-builder-tabs"
         >
           <Tabs.TabPane
             tab={
-              <Space>
-                <ThunderboltOutlined />
-                AI Query Builder
-                <Badge count="Smart" style={{ backgroundColor: '#52c41a' }} />
-              </Space>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+                <ThunderboltOutlined style={{ fontSize: '18px' }} />
+                Smart
+                <Badge count="Smart" style={{ backgroundColor: '#52c41a', fontSize: '10px' }} />
+              </span>
             }
             key="freeform"
           >
@@ -719,11 +719,11 @@ const EnhancedQueryBuilder: React.FC = () => {
 
           <Tabs.TabPane
             tab={
-              <Space>
-                <WandOutlined />
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+                <WandOutlined style={{ fontSize: '18px' }} />
                 Guided Wizard
-                <Badge count="Step-by-step" style={{ backgroundColor: '#1890ff' }} />
-              </Space>
+                <Badge count="Step-by-step" style={{ backgroundColor: '#1890ff', fontSize: '10px' }} />
+              </span>
             }
             key="wizard"
           >
@@ -736,10 +736,10 @@ const EnhancedQueryBuilder: React.FC = () => {
 
           <Tabs.TabPane
             tab={
-              <Space>
-                <HistoryOutlined />
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+                <HistoryOutlined style={{ fontSize: '18px' }} />
                 History & Favorites
-              </Space>
+              </span>
             }
             key="history"
           >

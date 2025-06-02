@@ -57,6 +57,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import dayjs from 'dayjs';
+import './InteractiveVisualization.css';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -553,9 +554,9 @@ const InteractiveVisualization: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: 24 }}>
+    <div className="interactive-visualization" style={{ padding: 24 }}>
       {/* Header */}
-      <Card style={{ marginBottom: 16 }}>
+      <Card className="hover-lift" style={{ marginBottom: 16 }}>
         <Row justify="space-between" align="middle">
           <Col>
             <Title level={3} style={{ margin: 0 }}>
@@ -593,7 +594,7 @@ const InteractiveVisualization: React.FC = () => {
       <Row gutter={16}>
         {/* Configuration Panel */}
         <Col span={6}>
-          <Card title="Configuration" size="small">
+          <Card title="Configuration" size="small" className="interactive-config-panel">
             <Space direction="vertical" style={{ width: '100%' }}>
               {/* Data Source Selection */}
               <div>
@@ -770,9 +771,18 @@ const InteractiveVisualization: React.FC = () => {
 
         {/* Main Content */}
         <Col span={18}>
-          <Tabs defaultActiveKey="chart">
-            <TabPane tab="Chart" key="chart">
+          <Tabs defaultActiveKey="chart" size="large">
+            <TabPane
+              tab={
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+                  <BarChartOutlined style={{ fontSize: '18px' }} />
+                  Chart
+                </span>
+              }
+              key="chart"
+            >
               <Card
+                className="interactive-chart-container"
                 title={
                   <Space>
                     <Text strong>{chartConfig.title}</Text>
@@ -790,11 +800,11 @@ const InteractiveVisualization: React.FC = () => {
                 style={{ height: 600 }}
               >
                 {processedData.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: 60 }}>
-                    <BarChartOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
+                  <div className="interactive-empty-state">
+                    <BarChartOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />
                     <Title level={4} type="secondary">No Data to Display</Title>
                     <Text type="secondary">
-                      {!chartConfig.xAxis || !chartConfig.yAxis 
+                      {!chartConfig.xAxis || !chartConfig.yAxis
                         ? 'Please select X and Y axis columns to create a chart'
                         : 'No data matches the current filters'
                       }
@@ -808,11 +818,19 @@ const InteractiveVisualization: React.FC = () => {
               </Card>
             </TabPane>
 
-            <TabPane tab={<span><FilterOutlined />Filters</span>} key="filters">
-              <Card title="Data Filters" style={{ height: 600, overflow: 'auto' }}>
+            <TabPane
+              tab={
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+                  <FilterOutlined style={{ fontSize: '18px' }} />
+                  Filters
+                </span>
+              }
+              key="filters"
+            >
+              <Card title="Data Filters" className="interactive-filters-panel" style={{ height: 600, overflow: 'auto' }}>
                 {filters.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: 40 }}>
-                    <FilterOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
+                  <div className="interactive-empty-state">
+                    <FilterOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />
                     <Text type="secondary">No filters available</Text>
                   </div>
                 ) : (

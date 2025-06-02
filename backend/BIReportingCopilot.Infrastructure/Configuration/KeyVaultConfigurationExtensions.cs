@@ -68,8 +68,13 @@ public class SecureConnectionStringProvider : IConnectionStringProvider
 
     public async Task<string> GetConnectionStringAsync(string name)
     {
+        _logger.LogDebug("Getting connection string for '{Name}'", name);
+
         if (_cache.TryGetValue(name, out var cached))
+        {
+            _logger.LogDebug("Using cached connection string for '{Name}'", name);
             return cached;
+        }
 
         var connectionString = _configuration.GetConnectionString(name);
 
@@ -82,6 +87,18 @@ public class SecureConnectionStringProvider : IConnectionStringProvider
         // Replace any remaining placeholders
         connectionString = await ReplacePlaceholdersAsync(connectionString);
 
+        // Log connection string details (without sensitive data)
+        try
+        {
+            var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connectionString);
+            _logger.LogInformation("Connection string resolved for '{Name}' - Server: {Server}, Database: {Database}, Length: {Length}",
+                name, builder.DataSource, builder.InitialCatalog, connectionString.Length);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not parse connection string for '{Name}', Length: {Length}", name, connectionString.Length);
+        }
+
         _cache[name] = connectionString;
         return connectionString;
     }
@@ -92,6 +109,11 @@ public class SecureConnectionStringProvider : IConnectionStringProvider
         var pattern = @"\{azurevault:([^:]+):([^}]+)\}";
         var matches = System.Text.RegularExpressions.Regex.Matches(connectionString, pattern);
 
+        if (matches.Count > 0)
+        {
+            _logger.LogInformation("Resolving {MatchCount} Azure Key Vault placeholders", matches.Count);
+        }
+
         foreach (System.Text.RegularExpressions.Match match in matches)
         {
             var vaultName = match.Groups[1].Value;
@@ -101,6 +123,7 @@ public class SecureConnectionStringProvider : IConnectionStringProvider
             {
                 var secretValue = await GetSecretFromKeyVaultAsync(vaultName, secretName);
                 connectionString = connectionString.Replace(match.Value, secretValue);
+                _logger.LogDebug("Successfully replaced placeholder for secret '{SecretName}'", secretName);
             }
             catch (Exception ex)
             {
@@ -118,7 +141,17 @@ public class SecureConnectionStringProvider : IConnectionStringProvider
         var keyVaultUrl = $"https://{vaultName}.vault.azure.net/";
         var client = new SecretClient(new Uri(keyVaultUrl), new DefaultAzureCredential());
 
-        var secret = await client.GetSecretAsync(secretName);
-        return secret.Value.Value;
+        try
+        {
+            var secret = await client.GetSecretAsync(secretName);
+            _logger.LogDebug("Successfully retrieved secret '{SecretName}' from Key Vault", secretName);
+            return secret.Value.Value;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve secret '{SecretName}' from Key Vault '{KeyVaultUrl}'",
+                secretName, keyVaultUrl);
+            throw;
+        }
     }
 }

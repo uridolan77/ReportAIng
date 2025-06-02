@@ -1,4 +1,7 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
+using BIReportingCopilot.Infrastructure.Configuration;
+using Microsoft.Data.SqlClient;
 
 namespace BIReportingCopilot.Infrastructure.Health;
 
@@ -21,10 +24,14 @@ public interface IStartupHealthValidator
 public class StartupHealthValidator : IStartupHealthValidator
 {
     private readonly ILogger<StartupHealthValidator> _logger;
+    private readonly IServiceProvider _serviceProvider;
 
-    public StartupHealthValidator(ILogger<StartupHealthValidator> logger)
+    public StartupHealthValidator(
+        ILogger<StartupHealthValidator> logger,
+        IServiceProvider serviceProvider)
     {
         _logger = logger;
+        _serviceProvider = serviceProvider;
     }
 
     /// <summary>
@@ -80,13 +87,54 @@ public class StartupHealthValidator : IStartupHealthValidator
 
     private async Task ValidateDependenciesAsync(StartupValidationResult result, CancellationToken cancellationToken)
     {
-        await Task.Delay(10, cancellationToken);
+        _logger.LogInformation("Validating database dependencies...");
 
-        // Simulate dependency validation
-        _logger.LogDebug("Validating dependencies");
+        // Test BIDatabase connection using scoped service
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var connectionStringProvider = scope.ServiceProvider.GetRequiredService<IConnectionStringProvider>();
 
-        // Add any dependency validation logic here
-        // For now, assume dependencies are valid
+            _logger.LogInformation("Testing BIDatabase connection...");
+            var connectionString = await connectionStringProvider.GetConnectionStringAsync("BIDatabase");
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                result.ValidationErrors.Add("BIDatabase connection string is not configured");
+                _logger.LogError("BIDatabase connection string is empty or null");
+                return;
+            }
+
+            _logger.LogInformation("BIDatabase connection string resolved, testing connection...");
+
+            var builder = new SqlConnectionStringBuilder(connectionString)
+            {
+                ConnectTimeout = 10 // 10 seconds for startup validation
+            };
+
+            using var connection = new SqlConnection(builder.ConnectionString);
+
+            _logger.LogInformation("Opening connection to BIDatabase server: {Server}, database: {Database}",
+                builder.DataSource, builder.InitialCatalog);
+
+            var startTime = DateTime.UtcNow;
+            await connection.OpenAsync(cancellationToken);
+            var connectionTime = DateTime.UtcNow - startTime;
+
+            _logger.LogInformation("BIDatabase connection opened successfully in {ConnectionTime}ms", connectionTime.TotalMilliseconds);
+
+            // Test a simple query
+            using var command = new SqlCommand("SELECT 1", connection) { CommandTimeout = 5 };
+            var queryResult = await command.ExecuteScalarAsync(cancellationToken);
+
+            _logger.LogInformation("BIDatabase test query successful, result: {Result}", queryResult);
+        }
+        catch (Exception ex)
+        {
+            var errorMessage = $"BIDatabase connection failed: {ex.Message}";
+            result.ValidationErrors.Add(errorMessage);
+            _logger.LogError(ex, "BIDatabase connection validation failed: {Message}", ex.Message);
+        }
     }
 
     private async Task ValidateServicesAsync(StartupValidationResult result, CancellationToken cancellationToken)

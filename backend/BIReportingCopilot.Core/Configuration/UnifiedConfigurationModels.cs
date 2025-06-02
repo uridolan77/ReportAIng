@@ -230,6 +230,7 @@ public class PerformanceConfiguration
 public class DatabaseConfiguration
 {
     [Required(ErrorMessage = "Connection string is required")]
+    [CustomValidation(typeof(DatabaseConfiguration), nameof(ValidateConnectionString))]
     public string ConnectionString { get; set; } = string.Empty;
 
     [Range(1, 300, ErrorMessage = "Command timeout must be between 1 and 300 seconds")]
@@ -244,6 +245,31 @@ public class DatabaseConfiguration
 
     public List<string> AllowedDatabases { get; set; } = new();
     public List<string> BlockedKeywords { get; set; } = new() { "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE" };
+
+    /// <summary>
+    /// Custom validation for connection string that allows Azure Key Vault placeholders
+    /// </summary>
+    public static ValidationResult? ValidateConnectionString(string connectionString, ValidationContext context)
+    {
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            return new ValidationResult("Connection string is required");
+        }
+
+        // Allow connection strings with Azure Key Vault placeholders
+        if (connectionString.Contains("{azurevault:"))
+        {
+            return ValidationResult.Success;
+        }
+
+        // For regular connection strings, perform basic validation
+        if (connectionString.Length < 10)
+        {
+            return new ValidationResult("Connection string appears to be too short");
+        }
+
+        return ValidationResult.Success;
+    }
 }
 
 /// <summary>

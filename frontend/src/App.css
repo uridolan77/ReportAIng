@@ -610,30 +610,58 @@
 }
 
 /* Enhanced Query Tabs */
+.enhanced-query-tabs {
+  background: transparent;
+}
+
+.enhanced-query-tabs .ant-tabs-nav {
+  margin-bottom: 0;
+}
+
+.enhanced-query-tabs .ant-tabs-nav-wrap {
+  background: transparent;
+}
+
 .enhanced-query-tabs .ant-tabs-tab {
-  border-radius: 10px 10px 0 0;
-  margin-right: 6px;
-  padding: 10px 16px;
-  border: 1px solid #e8e8e8;
-  background: #fafafa;
+  border-radius: 12px 12px 0 0;
+  margin-right: 4px;
+  padding: 14px 20px;
+  border: none;
+  background: #ffffff;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  min-width: 140px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.enhanced-query-tabs .ant-tabs-tab .ant-tabs-tab-btn {
+  font-size: 15px;
+  font-weight: 500;
+  color: #595959;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
 }
 
 .enhanced-query-tabs .ant-tabs-tab:hover {
-  background: #f0f0f0;
-  border-color: #d9d9d9;
+  background: #f8f9fa;
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.enhanced-query-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: #1890ff;
 }
 
 .enhanced-query-tabs .ant-tabs-tab-active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
+  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
   color: white !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.25);
 }
 
 .enhanced-query-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
@@ -641,28 +669,18 @@
   font-weight: 600;
 }
 
-.enhanced-query-tabs .ant-tabs-tab-active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #52c41a 0%, #1890ff 50%, #722ed1 100%);
-}
-
 .enhanced-query-tabs .ant-tabs-content-holder {
   background: transparent;
-  padding: 20px 0;
+  padding: 0;
 }
 
 .enhanced-query-tabs .ant-tabs-tabpane {
   background: white;
-  border-radius: 0 10px 10px 10px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 0 12px 12px 12px;
+  padding: 24px;
   border: 1px solid #e8e8e8;
   border-top: none;
+  min-height: 500px;
 }
 
 .empty-result {
@@ -672,15 +690,17 @@
   align-items: center;
   height: 300px;
   background: linear-gradient(135deg, #f8f9ff 0%, #e8f4fd 100%);
-  border-radius: 16px;
-  border: 2px dashed #d9d9d9;
+  border-radius: 12px;
+  border: 1px solid #e8e8e8;
   text-align: center;
+  padding: 40px 20px;
 }
 
 .empty-result .ant-empty-description {
   color: #8c8c8c;
   font-size: 16px;
   margin-top: 16px;
+  font-weight: 500;
 }
 
 /* Shortcuts Panel Styling */
@@ -818,6 +838,30 @@
 
   .query-tabs {
     min-height: 400px;
+  }
+
+  /* Mobile tab improvements */
+  .enhanced-query-tabs .ant-tabs-tab {
+    min-width: 100px;
+    padding: 10px 12px;
+    margin-right: 2px;
+  }
+
+  .enhanced-query-tabs .ant-tabs-tab .ant-tabs-tab-btn {
+    font-size: 13px;
+    gap: 6px;
+  }
+
+  .enhanced-query-tabs .ant-tabs-tab .ant-tabs-tab-btn span {
+    display: none;
+  }
+
+  .enhanced-query-tabs .ant-tabs-tab .ant-tabs-tab-btn .anticon {
+    margin: 0;
+  }
+
+  .enhanced-query-tabs .ant-tabs-tabpane {
+    padding: 16px;
   }
 
   .shortcuts-panel {

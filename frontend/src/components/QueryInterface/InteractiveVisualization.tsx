@@ -7,6 +7,7 @@ import {
   VisualizationRequest
 } from '../../types/query';
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import '../Interactive/InteractiveVisualization.css';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -310,9 +311,9 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
   }
 
   return (
-    <div>
+    <div className="interactive-visualization">
       {/* Chart Controls */}
-      <Card size="small" style={{ marginBottom: '16px' }}>
+      <Card size="small" className="hover-lift" style={{ marginBottom: '16px' }}>
         <Row justify="space-between" align="middle">
           <Col>
             <Title level={4} style={{ margin: 0 }}>

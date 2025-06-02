@@ -4,11 +4,9 @@ import {
   ReloadOutlined,
   CodeOutlined,
   DownloadOutlined,
-  TableOutlined,
-  ThunderboltOutlined
+  TableOutlined
 } from '@ant-design/icons';
 import { QueryResponse } from '../../types/query';
-import AdvancedVisualizationPanel from '../Visualization/AdvancedVisualizationPanel';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -22,7 +20,7 @@ interface QueryResultProps {
 }
 
 export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick, onVisualizationRequest }) => {
-  // Unused state variables removed
+  // State for active tab
   const [activeTab, setActiveTab] = useState('data');
   if (!result.success) {
     return (
@@ -224,26 +222,7 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
             />
           </TabPane>
 
-          <TabPane
-            tab={
-              <Space>
-                <ThunderboltOutlined />
-                Advanced Visualizations
-                <Tag color="green" size="small">NEW</Tag>
-              </Space>
-            }
-            key="advanced"
-          >
-            <AdvancedVisualizationPanel
-              data={dataSource}
-              columns={result.result?.metadata.columns || []}
-              query={query}
-              onConfigChange={setAdvancedVisualizationConfig}
-              onExport={(format) => {
-                console.log('Export requested:', format);
-              }}
-            />
-          </TabPane>
+
         </Tabs>
       </Card>
 

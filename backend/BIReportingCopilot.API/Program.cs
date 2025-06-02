@@ -37,12 +37,23 @@ var builder = WebApplication.CreateBuilder(args);
 var keyVaultUrl = builder.Configuration["KeyVault:Url"];
 if (!string.IsNullOrEmpty(keyVaultUrl))
 {
-    // Load Key Vault but exclude JWT settings to prevent override
-    builder.Configuration.AddAzureKeyVault(
-        new Uri(keyVaultUrl),
-        new Azure.Identity.DefaultAzureCredential(),
-        new SelectiveSecretManager());
-    Log.Information("Azure Key Vault configured with selective secret loading: {KeyVaultUrl}", keyVaultUrl);
+    try
+    {
+        // Load Key Vault but exclude JWT settings to prevent override
+        builder.Configuration.AddAzureKeyVault(
+            new Uri(keyVaultUrl),
+            new Azure.Identity.DefaultAzureCredential(),
+            new SelectiveSecretManager());
+        Log.Information("Azure Key Vault configured with selective secret loading: {KeyVaultUrl}", keyVaultUrl);
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Failed to configure Azure Key Vault: {KeyVaultUrl}", keyVaultUrl);
+    }
+}
+else
+{
+    Log.Warning("KeyVault:Url not configured - Azure Key Vault integration disabled");
 }
 
 // Use User Secrets in development
@@ -60,6 +71,9 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+// Register connection string provider before configuration validation
+builder.Services.AddScoped<IConnectionStringProvider, SecureConnectionStringProvider>();
 
 // Validate critical configuration early
 try
@@ -320,6 +334,26 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.LearningService>
 builder.Services.AddScoped<IQueryOptimizer, BIReportingCopilot.Infrastructure.AI.QueryOptimizer>();
 builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.EnhancedQueryProcessor>();
 
+// ===== ML & ANOMALY DETECTION SERVICES =====
+// Register individual ML services for backward compatibility with event handlers
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.MLAnomalyDetector>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.FeedbackLearningEngine>();
+
+// Register IAnomalyDetector interface with LearningService as implementation
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IAnomalyDetector>(provider =>
+{
+    var learningService = provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.LearningService>();
+    return new AnomalyDetectorAdapter(learningService);
+});
+
+// Register ISemanticCacheService for event handlers
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService>(provider =>
+{
+    var cacheService = provider.GetRequiredService<ICacheService>();
+    var logger = provider.GetRequiredService<ILogger<SemanticCacheAdapter>>();
+    return new SemanticCacheAdapter(cacheService, logger);
+});
+
 // ===== PERFORMANCE & MONITORING =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.StreamingDataService>();
 builder.Services.AddSingleton<BIReportingCopilot.Core.Interfaces.IMetricsCollector, BIReportingCopilot.Infrastructure.Monitoring.MetricsCollector>();
@@ -446,7 +480,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISecretsMa
 
 // ===== INFRASTRUCTURE SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IPasswordHasher, BIReportingCopilot.Infrastructure.Security.PasswordHasher>();
-builder.Services.AddScoped<IConnectionStringProvider, SecureConnectionStringProvider>();
+// IConnectionStringProvider already registered before configuration validation
 builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializationService>();
 builder.Services.AddScoped<ITuningService, TuningService>();
 builder.Services.AddScoped<IAITuningSettingsService, AITuningSettingsService>();
@@ -491,6 +525,9 @@ var healthChecks = builder.Services.AddHealthChecks();
 
 // Add fast health checks that return cached status
 healthChecks.AddCheck<BIReportingCopilot.API.HealthChecks.BIDatabaseHealthCheck>("bidatabase");
+
+// Log health check configuration
+Log.Information("Health checks configured - BIDatabase health check registered");
 
 // Add security health checks
 builder.Services.AddSecurityHealthChecks();

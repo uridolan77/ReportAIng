@@ -1,0 +1,247 @@
+/* Interactive Visualization Component Styles */
+
+.interactive-visualization {
+  width: 100%;
+  min-height: 600px;
+}
+
+.interactive-visualization .ant-card {
+  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+  box-shadow: none;
+}
+
+.interactive-visualization .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.interactive-visualization .ant-card-body {
+  padding: 24px;
+}
+
+/* Tab Styling for Interactive Visualization */
+.interactive-visualization .ant-tabs {
+  margin: 0;
+}
+
+.interactive-visualization .ant-tabs-nav {
+  margin: 0 0 16px 0;
+  background: #fafafa;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+.interactive-visualization .ant-tabs-tab {
+  font-weight: 500;
+  font-size: 15px;
+  padding: 12px 20px;
+  margin-right: 4px;
+  border-radius: 8px 8px 0 0;
+  border: none;
+  background: transparent;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  text-align: center;
+}
+
+.interactive-visualization .ant-tabs-tab .ant-tabs-tab-btn {
+  color: #595959;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.interactive-visualization .ant-tabs-tab:hover {
+  background: #f0f0f0;
+}
+
+.interactive-visualization .ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: #1890ff;
+}
+
+.interactive-visualization .ant-tabs-tab-active {
+  background: #1890ff;
+  color: white !important;
+}
+
+.interactive-visualization .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: white !important;
+  font-weight: 600;
+}
+
+.interactive-visualization .ant-tabs-content-holder {
+  padding: 0;
+}
+
+.interactive-visualization .ant-tabs-tabpane {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  min-height: 500px;
+}
+
+/* Configuration Panel Styling */
+.interactive-config-panel {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.interactive-config-panel .ant-card {
+  margin-bottom: 16px;
+}
+
+.interactive-config-panel .ant-card-head {
+  padding: 12px 16px;
+  min-height: auto;
+}
+
+.interactive-config-panel .ant-card-body {
+  padding: 16px;
+}
+
+/* Chart Container Styling */
+.interactive-chart-container {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e8e8e8;
+}
+
+.interactive-chart-container .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+}
+
+/* Filter Panel Styling */
+.interactive-filters-panel {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.interactive-filters-panel .ant-collapse {
+  border: none;
+  background: transparent;
+}
+
+.interactive-filters-panel .ant-collapse-item {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.interactive-filters-panel .ant-collapse-header {
+  padding: 16px 20px;
+  font-weight: 500;
+}
+
+.interactive-filters-panel .ant-collapse-content-box {
+  padding: 16px 20px;
+}
+
+/* Empty State Styling */
+.interactive-empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  background: linear-gradient(135deg, #f8f9ff 0%, #e8f4fd 100%);
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.interactive-empty-state .anticon {
+  margin-bottom: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .interactive-visualization .ant-tabs-tab {
+    padding: 10px 12px;
+    font-size: 13px;
+    min-width: 80px;
+  }
+
+  .interactive-visualization .ant-tabs-tab .ant-tabs-tab-btn {
+    gap: 4px;
+  }
+
+  .interactive-config-panel {
+    padding: 12px;
+  }
+
+  .interactive-chart-container {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 576px) {
+  .interactive-visualization .ant-tabs-nav {
+    padding: 4px 8px;
+  }
+
+  .interactive-visualization .ant-tabs-tab {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-width: 60px;
+  }
+
+  .interactive-config-panel {
+    padding: 8px;
+  }
+
+  .interactive-chart-container {
+    padding: 12px;
+  }
+}
+
+/* Animation Effects */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Hover Effects */
+.hover-lift {
+  transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

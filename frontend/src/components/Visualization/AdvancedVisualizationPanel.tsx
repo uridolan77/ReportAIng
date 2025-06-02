@@ -347,11 +347,11 @@ const AdvancedVisualizationPanel: React.FC<AdvancedVisualizationPanelProps> = ({
           </Space>
         }
       >
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+        <Tabs activeKey={activeTab} onChange={setActiveTab} size="large">
           <TabPane
             tab={
-              <span>
-                <BarChartOutlined />
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+                <BarChartOutlined style={{ fontSize: '16px' }} />
                 Single Chart
               </span>
             }
@@ -384,8 +384,8 @@ const AdvancedVisualizationPanel: React.FC<AdvancedVisualizationPanelProps> = ({
 
           <TabPane
             tab={
-              <span>
-                <DashboardOutlined />
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+                <DashboardOutlined style={{ fontSize: '16px' }} />
                 Dashboard Builder
               </span>
             }
@@ -408,8 +408,8 @@ const AdvancedVisualizationPanel: React.FC<AdvancedVisualizationPanelProps> = ({
 
           <TabPane
             tab={
-              <span>
-                <BulbOutlined />
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+                <BulbOutlined style={{ fontSize: '16px' }} />
                 AI Recommendations ({recommendations.length})
               </span>
             }

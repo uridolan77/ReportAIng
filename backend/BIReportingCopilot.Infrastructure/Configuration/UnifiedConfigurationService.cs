@@ -81,7 +81,83 @@ public class UnifiedConfigurationService
     /// </summary>
     public SecurityConfiguration GetSecuritySettings()
     {
-        return GetConfiguration<SecurityConfiguration>("Security");
+        lock (_cacheLock)
+        {
+            var cacheKey = $"{typeof(SecurityConfiguration).Name}_Security";
+
+            if (_configurationCache.TryGetValue(cacheKey, out var cachedValue))
+            {
+                return (SecurityConfiguration)cachedValue;
+            }
+
+            var config = new SecurityConfiguration();
+
+            // Bind JWT settings from JwtSettings section
+            var jwtSection = _configuration.GetSection("JwtSettings");
+            config.JwtSecret = jwtSection["Secret"] ?? string.Empty;
+            config.JwtIssuer = jwtSection["Issuer"] ?? string.Empty;
+            config.JwtAudience = jwtSection["Audience"] ?? string.Empty;
+            config.AccessTokenExpirationMinutes = jwtSection.GetValue<int>("AccessTokenExpirationMinutes", 60);
+            config.RefreshTokenExpirationMinutes = jwtSection.GetValue<int>("RefreshTokenExpirationMinutes", 43200);
+
+            // Bind other security settings from Application:Security section
+            var securitySection = _configuration.GetSection("Application:Security");
+            securitySection.Bind(config);
+
+            // Validate configuration
+            var validationResults = ValidateConfiguration(config);
+            if (validationResults.Any())
+            {
+                var errors = string.Join(", ", validationResults.Select(r => r.ErrorMessage));
+                _logger.LogError("Configuration validation failed for Security: {Errors}", errors);
+                throw new InvalidOperationException($"Configuration validation failed for Security: {errors}");
+            }
+
+            _configurationCache[cacheKey] = config;
+            _logger.LogDebug("Configuration loaded and cached for Security");
+
+            return config;
+        }
+    }
+
+    /// <summary>
+    /// Get database settings
+    /// </summary>
+    public DatabaseConfiguration GetDatabaseSettings()
+    {
+        lock (_cacheLock)
+        {
+            var cacheKey = $"{typeof(DatabaseConfiguration).Name}_Database";
+
+            if (_configurationCache.TryGetValue(cacheKey, out var cachedValue))
+            {
+                return (DatabaseConfiguration)cachedValue;
+            }
+
+            var config = new DatabaseConfiguration();
+
+            // Bind connection string from ConnectionStrings section
+            // Note: This will be resolved by the SecureConnectionStringProvider during DI configuration
+            config.ConnectionString = _configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
+
+            // Bind other database settings from Application:Database section
+            var databaseSection = _configuration.GetSection("Application:Database");
+            databaseSection.Bind(config);
+
+            // Validate configuration
+            var validationResults = ValidateConfiguration(config);
+            if (validationResults.Any())
+            {
+                var errors = string.Join(", ", validationResults.Select(r => r.ErrorMessage));
+                _logger.LogError("Configuration validation failed for Database: {Errors}", errors);
+                throw new InvalidOperationException($"Configuration validation failed for Database: {errors}");
+            }
+
+            _configurationCache[cacheKey] = config;
+            _logger.LogDebug("Configuration loaded and cached for Database");
+
+            return config;
+        }
     }
 
     /// <summary>
@@ -92,13 +168,7 @@ public class UnifiedConfigurationService
         return GetConfiguration<PerformanceConfiguration>("Performance");
     }
 
-    /// <summary>
-    /// Get database settings
-    /// </summary>
-    public DatabaseConfiguration GetDatabaseSettings()
-    {
-        return GetConfiguration<DatabaseConfiguration>("Database");
-    }
+
 
     /// <summary>
     /// Get caching settings
@@ -146,9 +216,9 @@ public class UnifiedConfigurationService
             {
                 ValidateConfigurationSection<UnifiedApplicationSettings>("Application"),
                 ValidateConfigurationSection<AIConfiguration>("AI"),
-                ValidateConfigurationSection<SecurityConfiguration>("Security"),
+                ValidateSecurityConfigurationSection(),
                 ValidateConfigurationSection<PerformanceConfiguration>("Performance"),
-                ValidateConfigurationSection<DatabaseConfiguration>("Database"),
+                ValidateDatabaseConfigurationSection(),
                 ValidateConfigurationSection<CacheConfiguration>("Cache"),
                 ValidateConfigurationSection<MonitoringConfiguration>("Monitoring"),
                 ValidateConfigurationSection<FeatureConfiguration>("Features"),
@@ -200,6 +270,56 @@ public class UnifiedConfigurationService
         var section = _configuration.GetSection(sectionName);
         var values = section.GetChildren().ToDictionary(x => x.Key, x => x.Value);
         return JsonSerializer.Serialize(values, new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private async Task<ConfigurationSectionValidationResult> ValidateSecurityConfigurationSection()
+    {
+        var result = new ConfigurationSectionValidationResult
+        {
+            SectionName = "Security",
+            ConfigurationType = typeof(SecurityConfiguration).Name
+        };
+
+        try
+        {
+            var config = GetSecuritySettings();
+            var validationResults = ValidateConfiguration(config);
+
+            result.IsValid = !validationResults.Any();
+            result.Errors = validationResults.Select(r => r.ErrorMessage ?? "Unknown validation error").ToList();
+        }
+        catch (Exception ex)
+        {
+            result.IsValid = false;
+            result.Errors.Add($"Failed to load configuration: {ex.Message}");
+        }
+
+        return result;
+    }
+
+    private async Task<ConfigurationSectionValidationResult> ValidateDatabaseConfigurationSection()
+    {
+        var result = new ConfigurationSectionValidationResult
+        {
+            SectionName = "Database",
+            ConfigurationType = typeof(DatabaseConfiguration).Name
+        };
+
+        try
+        {
+            var config = GetDatabaseSettings();
+            var validationResults = ValidateConfiguration(config);
+
+            result.IsValid = !validationResults.Any();
+            result.Errors = validationResults.Select(r => r.ErrorMessage ?? "Unknown validation error").ToList();
+        }
+        catch (Exception ex)
+        {
+            result.IsValid = false;
+            result.Errors.Add($"Failed to load configuration: {ex.Message}");
+        }
+
+        return result;
     }
 
     private async Task<ConfigurationSectionValidationResult> ValidateConfigurationSection<T>(string sectionName)
