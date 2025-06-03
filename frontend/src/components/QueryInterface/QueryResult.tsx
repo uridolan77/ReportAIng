@@ -4,7 +4,8 @@ import {
   ReloadOutlined,
   CodeOutlined,
   DownloadOutlined,
-  TableOutlined
+  TableOutlined,
+  BugOutlined
 } from '@ant-design/icons';
 import { QueryResponse } from '../../types/query';
 
@@ -22,6 +23,23 @@ interface QueryResultProps {
 export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick, onVisualizationRequest }) => {
   // State for active tab
   const [activeTab, setActiveTab] = useState('data');
+  // State for debug mode
+  const [debugMode, setDebugMode] = useState(false);
+
+  // Debug logging for prompt details and error handling
+  React.useEffect(() => {
+    console.log('🔍 QueryResult - Debug info:', {
+      hasResult: !!result,
+      success: result?.success,
+      error: result?.error,
+      hasPromptDetails: !!result?.promptDetails,
+      promptDetails: result?.promptDetails,
+      promptDetailsKeys: result?.promptDetails ? Object.keys(result.promptDetails) : 'N/A',
+      queryId: result?.queryId,
+      allResultKeys: result ? Object.keys(result) : 'N/A',
+      willShowError: !result?.success
+    });
+  }, [result]);
   if (!result.success) {
     return (
       <Card className="enhanced-card">
@@ -88,18 +106,98 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
                 border: '1px solid rgba(255, 255, 255, 0.2)',
                 color: 'white'
               }}>
-                <Text style={{ color: 'rgba(255, 255, 255, 0.8)', display: 'block', marginBottom: '8px' }}>
-                  <strong>Full Prompt:</strong>
-                </Text>
-                <pre style={{
-                  whiteSpace: 'pre-wrap',
-                  fontSize: '12px',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  maxHeight: '300px',
-                  overflow: 'auto'
+                {/* Prompt Overview */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '16px',
+                  marginBottom: '16px',
+                  padding: '12px',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
                 }}>
-                  {result.promptDetails.fullPrompt}
-                </pre>
+                  <div>
+                    <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '12px', display: 'block' }}>Template</Text>
+                    <Text strong style={{ color: 'rgba(255, 255, 255, 0.9)' }}>{result.promptDetails.templateName}</Text>
+                  </div>
+                  <div>
+                    <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '12px', display: 'block' }}>Version</Text>
+                    <Tag color="blue" style={{ margin: 0 }}>{result.promptDetails.templateVersion}</Tag>
+                  </div>
+                  <div>
+                    <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '12px', display: 'block' }}>Token Count</Text>
+                    <Tag color="purple" style={{ margin: 0 }}>{result.promptDetails.tokenCount} tokens</Tag>
+                  </div>
+                  <div>
+                    <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '12px', display: 'block' }}>Generated</Text>
+                    <Text style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '12px' }}>
+                      {new Date(result.promptDetails.generatedAt).toLocaleTimeString()}
+                    </Text>
+                  </div>
+                </div>
+
+                {/* Template Variables */}
+                {result.promptDetails.variables && Object.keys(result.promptDetails.variables).length > 0 && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <Text style={{ color: 'rgba(255, 255, 255, 0.8)', display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+                      📝 Template Variables:
+                    </Text>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {Object.entries(result.promptDetails.variables).map(([key, value]) => (
+                        <Tag
+                          key={key}
+                          color="geekblue"
+                          style={{ margin: 0, cursor: 'help' }}
+                          title={String(value).substring(0, 200) + (String(value).length > 200 ? '...' : '')}
+                        >
+                          {key}
+                        </Tag>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Prompt Sections */}
+                {result.promptDetails.sections && result.promptDetails.sections.length > 0 && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <Text style={{ color: 'rgba(255, 255, 255, 0.8)', display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+                      📋 Prompt Sections ({result.promptDetails.sections.length}):
+                    </Text>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                      {result.promptDetails.sections.map((section, index) => (
+                        <Tag
+                          key={index}
+                          color={section.type === 'system' ? 'red' : section.type === 'schema' ? 'green' : section.type === 'context' ? 'orange' : 'blue'}
+                          style={{ margin: 0 }}
+                        >
+                          {section.title || section.name}
+                        </Tag>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Full Prompt */}
+                <div>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.8)', display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+                    🤖 Complete AI Prompt:
+                  </Text>
+                  <pre style={{
+                    whiteSpace: 'pre-wrap',
+                    fontSize: '11px',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    maxHeight: '300px',
+                    overflow: 'auto',
+                    fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    padding: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '4px'
+                  }}>
+                    {result.promptDetails.fullPrompt}
+                  </pre>
+                </div>
               </div>
             </details>
           )}
@@ -140,11 +238,15 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
     title: col.name,
     dataIndex: col.name,
     key: col.name,
-    render: (value: any) => {
+    width: 150,
+    render: (value: any, record: any, index: number) => {
+      if (debugMode) {
+        console.log('Column render:', { columnName: col.name, value, record, index });
+      }
       if (value === null || value === undefined) {
         return <Text type="secondary">NULL</Text>;
       }
-      return String(value);
+      return <span style={{ color: '#000', fontWeight: 'normal' }}>{String(value)}</span>;
     },
   })) || [];
 
@@ -152,6 +254,41 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
     ...row,
     key: index,
   })) || [];
+
+  // Debug logging for data structure (only when debug mode is enabled)
+  if (debugMode) {
+    console.log('QueryResult Debug:', {
+      hasResult: !!result.result,
+      hasMetadata: !!result.result?.metadata,
+      hasColumns: !!result.result?.metadata?.columns,
+      columnsCount: result.result?.metadata?.columns?.length,
+      columns: result.result?.metadata?.columns,
+      hasData: !!result.result?.data,
+      dataCount: result.result?.data?.length,
+      dataSource: dataSource,
+      firstRow: dataSource[0],
+      fullResult: result.result,
+      fullMetadata: result.result?.metadata
+    });
+  }
+
+  // If no columns in metadata, generate them from the first row of data
+  const finalColumns = columns.length > 0 ? columns :
+    (dataSource.length > 0 ?
+      Object.keys(dataSource[0])
+        .filter(key => key !== 'key') // Exclude the React key
+        .map(key => ({
+          title: key,
+          dataIndex: key,
+          key: key,
+          width: 150,
+          render: (value: any) => {
+            if (value === null || value === undefined) {
+              return <Text type="secondary">NULL</Text>;
+            }
+            return <span style={{ color: '#000', fontWeight: 'normal' }}>{String(value)}</span>;
+          },
+        })) : []);
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -247,19 +384,144 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
                 borderRadius: '8px',
                 border: '1px solid #e1e4e8'
               }}>
-                <Text style={{ color: '#595959', display: 'block', marginBottom: '8px' }}>
-                  <strong>Full Prompt:</strong>
-                </Text>
-                <pre style={{
-                  whiteSpace: 'pre-wrap',
-                  fontSize: '12px',
-                  color: '#24292e',
-                  maxHeight: '300px',
-                  overflow: 'auto',
-                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace'
+                {/* Prompt Overview */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '16px',
+                  marginBottom: '16px',
+                  padding: '12px',
+                  background: '#ffffff',
+                  borderRadius: '6px',
+                  border: '1px solid #e1e4e8'
                 }}>
-                  {result.promptDetails.fullPrompt}
-                </pre>
+                  <div>
+                    <Text style={{ color: '#8c8c8c', fontSize: '12px', display: 'block' }}>Template</Text>
+                    <Text strong style={{ color: '#262626' }}>{result.promptDetails.templateName}</Text>
+                  </div>
+                  <div>
+                    <Text style={{ color: '#8c8c8c', fontSize: '12px', display: 'block' }}>Version</Text>
+                    <Tag color="blue" style={{ margin: 0 }}>{result.promptDetails.templateVersion}</Tag>
+                  </div>
+                  <div>
+                    <Text style={{ color: '#8c8c8c', fontSize: '12px', display: 'block' }}>Token Count</Text>
+                    <Tag color="purple" style={{ margin: 0 }}>{result.promptDetails.tokenCount} tokens</Tag>
+                  </div>
+                  <div>
+                    <Text style={{ color: '#8c8c8c', fontSize: '12px', display: 'block' }}>Generated</Text>
+                    <Text style={{ color: '#262626', fontSize: '12px' }}>
+                      {new Date(result.promptDetails.generatedAt).toLocaleTimeString()}
+                    </Text>
+                  </div>
+                </div>
+
+                {/* Template Variables */}
+                {result.promptDetails.variables && Object.keys(result.promptDetails.variables).length > 0 && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <Text style={{ color: '#595959', display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+                      📝 Template Variables:
+                    </Text>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {Object.entries(result.promptDetails.variables).map(([key, value]) => (
+                        <Tag
+                          key={key}
+                          color="geekblue"
+                          style={{ margin: 0, cursor: 'help' }}
+                          title={String(value).substring(0, 200) + (String(value).length > 200 ? '...' : '')}
+                        >
+                          {key}
+                        </Tag>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Prompt Sections */}
+                {result.promptDetails.sections && result.promptDetails.sections.length > 0 && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <Text style={{ color: '#595959', display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+                      📋 Prompt Sections ({result.promptDetails.sections.length}):
+                    </Text>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                      {result.promptDetails.sections.map((section, index) => (
+                        <Tag
+                          key={index}
+                          color={section.type === 'system' ? 'red' : section.type === 'schema' ? 'green' : section.type === 'context' ? 'orange' : 'blue'}
+                          style={{ margin: 0 }}
+                        >
+                          {section.title || section.name}
+                        </Tag>
+                      ))}
+                    </div>
+
+                    {/* Section Details */}
+                    <details style={{ marginTop: '8px' }}>
+                      <summary style={{
+                        cursor: 'pointer',
+                        color: '#595959',
+                        fontSize: '12px',
+                        padding: '4px 8px',
+                        background: '#ffffff',
+                        border: '1px solid #e1e4e8',
+                        borderRadius: '4px'
+                      }}>
+                        View Section Details
+                      </summary>
+                      <div style={{ marginTop: '8px', maxHeight: '200px', overflow: 'auto' }}>
+                        {result.promptDetails.sections.map((section, index) => (
+                          <div key={index} style={{
+                            marginBottom: '12px',
+                            padding: '8px',
+                            background: '#ffffff',
+                            border: '1px solid #e1e4e8',
+                            borderRadius: '4px'
+                          }}>
+                            <div style={{ marginBottom: '4px' }}>
+                              <Tag color={section.type === 'system' ? 'red' : section.type === 'schema' ? 'green' : section.type === 'context' ? 'orange' : 'blue'} size="small">
+                                {section.type}
+                              </Tag>
+                              <Text strong style={{ fontSize: '12px', marginLeft: '8px' }}>
+                                {section.title || section.name}
+                              </Text>
+                            </div>
+                            <pre style={{
+                              whiteSpace: 'pre-wrap',
+                              fontSize: '10px',
+                              color: '#595959',
+                              maxHeight: '100px',
+                              overflow: 'auto',
+                              margin: 0,
+                              fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace'
+                            }}>
+                              {section.content.substring(0, 500)}{section.content.length > 500 ? '...' : ''}
+                            </pre>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                )}
+
+                {/* Full Prompt */}
+                <div>
+                  <Text style={{ color: '#595959', display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+                    🤖 Complete AI Prompt:
+                  </Text>
+                  <pre style={{
+                    whiteSpace: 'pre-wrap',
+                    fontSize: '11px',
+                    color: '#24292e',
+                    maxHeight: '300px',
+                    overflow: 'auto',
+                    fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                    background: '#ffffff',
+                    padding: '12px',
+                    border: '1px solid #e1e4e8',
+                    borderRadius: '4px'
+                  }}>
+                    {result.promptDetails.fullPrompt}
+                  </pre>
+                </div>
               </div>
             </details>
           )}
@@ -284,36 +546,64 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
             key="data"
           >
             <div style={{ marginBottom: '16px', textAlign: 'right' }}>
-              <Button
-                icon={<DownloadOutlined />}
-                onClick={() => {
-                  // Export functionality
-                  const csvContent = [
-                    columns.map(col => col.title).join(','),
-                    ...dataSource.map(row =>
-                      columns.map(col => row[col.dataIndex] || '').join(',')
-                    )
-                  ].join('\n');
+              <Space>
+                <Button
+                  icon={<BugOutlined />}
+                  onClick={() => setDebugMode(!debugMode)}
+                  type={debugMode ? 'primary' : 'default'}
+                  style={{
+                    borderRadius: '8px',
+                    border: debugMode ? '1px solid #722ed1' : '1px solid #d9d9d9',
+                    color: debugMode ? 'white' : '#722ed1'
+                  }}
+                >
+                  {debugMode ? 'Hide Debug' : 'Show Debug'}
+                </Button>
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={() => {
+                    // Export functionality
+                    const csvContent = [
+                      finalColumns.map(col => col.title).join(','),
+                      ...dataSource.map(row =>
+                        finalColumns.map(col => row[col.dataIndex] || '').join(',')
+                      )
+                    ].join('\n');
 
-                  const blob = new Blob([csvContent], { type: 'text/csv' });
-                  const url = window.URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `query-results-${Date.now()}.csv`;
-                  a.click();
-                  window.URL.revokeObjectURL(url);
-                }}
-                style={{
-                  borderRadius: '8px',
-                  border: '1px solid #13c2c2',
-                  color: '#13c2c2'
-                }}
-              >
-                Export to CSV
-              </Button>
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `query-results-${Date.now()}.csv`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                  }}
+                  style={{
+                    borderRadius: '8px',
+                    border: '1px solid #13c2c2',
+                    color: '#13c2c2'
+                  }}
+                >
+                  Export to CSV
+                </Button>
+              </Space>
             </div>
+            {/* Debug info */}
+            {debugMode && (
+              <div style={{ marginBottom: '16px', padding: '8px', background: '#f0f0f0', borderRadius: '4px', fontSize: '12px' }}>
+                <strong>Debug Info:</strong> Original Columns: {columns.length}, Final Columns: {finalColumns.length}, Rows: {dataSource.length}
+                {dataSource.length > 0 && (
+                  <div>
+                    <div>First row keys: {Object.keys(dataSource[0]).join(', ')}</div>
+                    <div>First row data: {JSON.stringify(dataSource[0])}</div>
+                    <div>Final column dataIndex values: {finalColumns.map(c => c.dataIndex).join(', ')}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <Table
-              columns={columns}
+              columns={finalColumns}
               dataSource={dataSource}
               pagination={{
                 pageSize: 10,
@@ -327,9 +617,52 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
               size="small"
               style={{
                 borderRadius: '8px',
-                overflow: 'hidden'
+                overflow: 'visible',
+                minHeight: '200px',
+                backgroundColor: 'white',
+                ...(debugMode && { border: '2px solid blue' })
               }}
+              className={debugMode ? "debug-table" : ""}
             />
+
+            {/* Fallback simple table for debugging */}
+            {debugMode && dataSource.length > 0 && (
+              <div style={{ marginTop: '16px', padding: '16px', background: '#f9f9f9', borderRadius: '8px' }}>
+                <h4>Fallback Table (for debugging):</h4>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      {finalColumns.map(col => (
+                        <th key={col.key} style={{ border: '1px solid #ddd', padding: '8px', background: '#f0f0f0' }}>
+                          {col.title}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dataSource.map((row, index) => (
+                      <tr key={index}>
+                        {finalColumns.map(col => (
+                          <td key={`${index}-${col.key}`} style={{ border: '1px solid #ddd', padding: '8px' }}>
+                            {row[col.dataIndex] !== null && row[col.dataIndex] !== undefined
+                              ? String(row[col.dataIndex])
+                              : 'NULL'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Raw data dump for debugging */}
+                <div style={{ marginTop: '16px', padding: '8px', background: '#fff', border: '1px solid #ddd' }}>
+                  <strong>Raw Data:</strong>
+                  <pre style={{ fontSize: '10px', margin: '8px 0' }}>
+                    {JSON.stringify(dataSource, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
           </TabPane>
 
 

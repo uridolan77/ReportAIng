@@ -61,7 +61,10 @@ public class PromptService : IPromptService
     {
         try
         {
+            _logger.LogInformation("🔍 Building detailed prompt for query: {Query}", naturalLanguageQuery);
             var template = await GetPromptTemplateAsync("sql_generation");
+            _logger.LogInformation("📋 Retrieved template: {TemplateName} v{Version}, Content length: {ContentLength}",
+                template.Name, template.Version, template.Content?.Length ?? 0);
 
             var schemaDescription = BuildEnhancedSchemaDescription(schema);
             var businessRules = GetBusinessRulesForQuery(naturalLanguageQuery);
@@ -151,7 +154,7 @@ public class PromptService : IPromptService
                 ["{context}"] = contextInfo
             };
 
-            return new PromptDetails
+            var promptDetails = new PromptDetails
             {
                 FullPrompt = prompt,
                 TemplateName = template.Name,
@@ -161,11 +164,16 @@ public class PromptService : IPromptService
                 TokenCount = EstimateTokenCount(prompt),
                 GeneratedAt = DateTime.UtcNow
             };
+
+            _logger.LogInformation("✅ Prompt details created successfully: Template={TemplateName}, Sections={SectionCount}, TokenCount={TokenCount}",
+                promptDetails.TemplateName, promptDetails.Sections.Length, promptDetails.TokenCount);
+
+            return promptDetails;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error building detailed query prompt");
-            return new PromptDetails
+            _logger.LogError(ex, "Error building detailed query prompt, using fallback");
+            var fallbackPromptDetails = new PromptDetails
             {
                 FullPrompt = GetFallbackQueryPrompt(naturalLanguageQuery, schema, context),
                 TemplateName = "fallback",
@@ -185,6 +193,11 @@ public class PromptService : IPromptService
                 TokenCount = 0,
                 GeneratedAt = DateTime.UtcNow
             };
+
+            _logger.LogWarning("⚠️ Using fallback prompt details: Template={TemplateName}, Sections={SectionCount}",
+                fallbackPromptDetails.TemplateName, fallbackPromptDetails.Sections.Length);
+
+            return fallbackPromptDetails;
         }
     }
 
@@ -252,6 +265,16 @@ public class PromptService : IPromptService
                 .OrderByDescending(t => t.CreatedDate)
                 .FirstOrDefaultAsync();
 
+            // If not found and looking for sql_generation, try the legacy name
+            if (entity == null && templateName == "sql_generation")
+            {
+                _logger.LogInformation("Template 'sql_generation' not found, trying legacy name 'BasicQueryGeneration'");
+                entity = await _context.PromptTemplates
+                    .Where(t => t.Name == "BasicQueryGeneration" && t.IsActive)
+                    .OrderByDescending(t => t.CreatedDate)
+                    .FirstOrDefaultAsync();
+            }
+
             if (entity != null)
             {
                 await IncrementUsageCountAsync(entity.Id);
@@ -259,6 +282,7 @@ public class PromptService : IPromptService
             }
 
             // Return default template if not found
+            _logger.LogWarning("No template found for {TemplateName}, using default", templateName);
             return GetDefaultTemplate(templateName);
         }
         catch (Exception ex)

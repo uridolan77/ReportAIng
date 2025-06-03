@@ -766,7 +766,7 @@
   display: flex;
   flex-direction: row;
   gap: 20px;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: center;
   width: 100%;
 }
@@ -779,16 +779,69 @@
   max-width: 500px;
 }
 
+.login-form-inputs .ant-form-item {
+  margin-bottom: 0 !important;
+}
+
 .login-form-inputs .ant-input {
-  height: 48px;
-  border-radius: 8px;
-  font-size: 16px;
-  width: 100%;
+  height: 52px !important;
+  border-radius: 8px !important;
+  font-size: 16px !important;
+  width: 100% !important;
+  padding: 12px 11px !important;
+  border: 1px solid #d9d9d9 !important;
+  box-sizing: border-box !important;
+  line-height: 1.5715 !important;
+  background-color: #ffffff !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+}
+
+.login-form-inputs .ant-input-password {
+  height: 52px !important;
+  border-radius: 8px !important;
+  width: 100% !important;
+  border: 1px solid #d9d9d9 !important;
+  box-sizing: border-box !important;
+  background-color: #ffffff !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.login-form-inputs .ant-input:focus,
+.login-form-inputs .ant-input-password:focus,
+.login-form-inputs .ant-input-focused,
+.login-form-inputs .ant-input-password-focused {
+  border-color: #40a9ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+  outline: 0 !important;
+}
+
+.login-form-inputs .ant-input-password .ant-input {
+  height: 50px !important;
+  border: none !important;
+  padding: 12px 11px !important;
+  font-size: 16px !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  outline: none !important;
+  flex: 1 !important;
+}
+
+.login-form-inputs .ant-input-password .ant-input-suffix {
+  color: rgba(0, 0, 0, 0.25) !important;
+  height: 50px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding-right: 11px !important;
 }
 
 .login-button {
-  width: 120px !important;
-  height: 130px !important;
+  width: 160px !important;
+  height: 140px !important;
   border-radius: 8px !important;
   font-size: 16px !important;
   font-weight: 600 !important;
@@ -796,6 +849,7 @@
   align-items: center !important;
   justify-content: center !important;
   flex-shrink: 0 !important;
+  margin-top: 0 !important;
 }
 
 
@@ -1088,6 +1142,46 @@
 .stagger-3 { animation-delay: 0.3s; }
 .stagger-4 { animation-delay: 0.4s; }
 .stagger-5 { animation-delay: 0.5s; }
+
+/* Debug table styles to ensure visibility */
+.debug-table {
+  background: white !important;
+  border: 2px solid #1890ff !important;
+}
+
+.debug-table .ant-table-thead > tr > th {
+  background: #f0f0f0 !important;
+  color: #000 !important;
+  border: 1px solid #d9d9d9 !important;
+  padding: 8px !important;
+  font-weight: bold !important;
+}
+
+.debug-table .ant-table-tbody > tr > td {
+  background: white !important;
+  color: #000 !important;
+  border: 1px solid #d9d9d9 !important;
+  padding: 8px !important;
+  min-height: 32px !important;
+  height: auto !important;
+}
+
+.debug-table .ant-table-tbody > tr:hover > td {
+  background: #f5f5f5 !important;
+}
+
+.debug-table .ant-table-container {
+  background: white !important;
+}
+
+.debug-table .ant-table-content {
+  background: white !important;
+  min-height: 100px !important;
+}
+
+.debug-table .ant-table {
+  background: white !important;
+}
 
 /* Loading shimmer effect */
 .shimmer {

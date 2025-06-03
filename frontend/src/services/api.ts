@@ -228,6 +228,22 @@ export interface QueryResponse {
   timestamp?: string;
   executionTimeMs?: number;
   error?: string;
+  promptDetails?: {
+    fullPrompt: string;
+    templateName: string;
+    templateVersion: string;
+    sections: Array<{
+      name: string;
+      title: string;
+      content: string;
+      type: string;
+      order: number;
+      metadata?: Record<string, any>;
+    }>;
+    variables: Record<string, string>;
+    tokenCount: number;
+    generatedAt: string;
+  };
 }
 
 // Enhanced AI Types
@@ -442,6 +458,8 @@ export class ApiService {
 
   // Query Operations
   static async executeQuery(request: TypedQueryRequest | LegacyQueryRequest): Promise<FrontendQueryResponse> {
+    console.log('🚀🚀🚀 ApiService.executeQuery CALLED!', request);
+
     // Handle both new and legacy request formats
     let backendRequest;
 
@@ -466,9 +484,20 @@ export class ApiService {
     const response = await api.post('/api/query/execute', backendRequest);
     const backendResponse: QueryResponse = response.data;
 
+    // Enhanced debug logging for prompt details
+    console.log('API Service - Full backend response:', backendResponse);
+    console.log('API Service - Backend response prompt details:', {
+      hasPromptDetails: !!backendResponse.PromptDetails,
+      promptDetails: backendResponse.PromptDetails,
+      promptDetailsKeys: backendResponse.PromptDetails ? Object.keys(backendResponse.PromptDetails) : 'N/A',
+      queryId: backendResponse.QueryId,
+      success: backendResponse.Success,
+      allKeys: Object.keys(backendResponse)
+    });
+
     // Transform backend QueryResponse to match frontend QueryResponse interface
     // Note: Backend uses PascalCase (Success, Result, Data) while frontend expects camelCase
-    return {
+    const transformedResult = {
       queryId: backendResponse.QueryId || backendResponse.queryId || '',
       sql: backendResponse.Sql || backendResponse.sql || '',
       result: {
@@ -478,14 +507,14 @@ export class ApiService {
           rowCount: backendResponse.Result?.Metadata?.RowCount || backendResponse.result?.metadata?.rowCount || 0,
           executionTimeMs: backendResponse.Result?.Metadata?.ExecutionTimeMs || backendResponse.result?.metadata?.executionTimeMs || 0,
           columns: backendResponse.Result?.Metadata?.Columns?.map(col => ({
-            name: col.Name || col.name || '',
-            dataType: col.DataType || col.dataType || '',
-            isNullable: col.IsNullable || col.isNullable || false,
-            description: col.Description || col.description,
-            semanticTags: col.SemanticTags || col.semanticTags || []
-          })) || backendResponse.result?.metadata?.columns || [],
-          dataSource: backendResponse.Result?.Metadata?.DataSource || backendResponse.result?.metadata?.dataSource,
-          queryTimestamp: backendResponse.Result?.Metadata?.QueryTimestamp || backendResponse.result?.metadata?.queryTimestamp || new Date().toISOString()
+            name: col.Name,
+            dataType: col.DataType,
+            isNullable: col.IsNullable,
+            description: '',
+            semanticTags: []
+          })) || [],
+          dataSource: '',
+          queryTimestamp: new Date().toISOString()
         }
       },
       visualization: backendResponse.Visualization || backendResponse.visualization,
@@ -496,23 +525,32 @@ export class ApiService {
       error: backendResponse.Error || backendResponse.error,
       timestamp: backendResponse.Timestamp || backendResponse.timestamp || new Date().toISOString(),
       executionTimeMs: backendResponse.ExecutionTimeMs || backendResponse.executionTimeMs || 0,
-      promptDetails: backendResponse.PromptDetails ? {
-        fullPrompt: backendResponse.PromptDetails.FullPrompt,
-        templateName: backendResponse.PromptDetails.TemplateName,
-        templateVersion: backendResponse.PromptDetails.TemplateVersion,
-        sections: backendResponse.PromptDetails.Sections.map(section => ({
-          name: section.Name,
-          title: section.Title,
-          content: section.Content,
-          type: section.Type,
-          order: section.Order,
-          metadata: section.Metadata
-        })),
-        variables: backendResponse.PromptDetails.Variables,
-        tokenCount: backendResponse.PromptDetails.TokenCount,
-        generatedAt: backendResponse.PromptDetails.GeneratedAt
-      } : undefined
+      promptDetails: (backendResponse.PromptDetails || backendResponse.promptDetails) ? {
+        fullPrompt: backendResponse.PromptDetails?.FullPrompt || backendResponse.promptDetails?.fullPrompt || '',
+        templateName: backendResponse.PromptDetails?.TemplateName || backendResponse.promptDetails?.templateName || '',
+        templateVersion: backendResponse.PromptDetails?.TemplateVersion || backendResponse.promptDetails?.templateVersion || '',
+        sections: (backendResponse.PromptDetails?.Sections || backendResponse.promptDetails?.sections)?.map((section: any) => ({
+          name: section.Name || section.name || '',
+          title: section.Title || section.title || '',
+          content: section.Content || section.content || '',
+          type: section.Type || section.type || '',
+          order: section.Order || section.order || 0,
+          metadata: section.Metadata || section.metadata
+        })) || [],
+        variables: backendResponse.PromptDetails?.Variables || backendResponse.promptDetails?.variables || {},
+        tokenCount: backendResponse.PromptDetails?.TokenCount || backendResponse.promptDetails?.tokenCount || 0,
+        generatedAt: backendResponse.PromptDetails?.GeneratedAt || backendResponse.promptDetails?.generatedAt || new Date().toISOString()
+      } : (console.log('API Service - No PromptDetails in backend response'), undefined)
     };
+
+    // Debug the final transformed result
+    console.log('API Service - Transformed result prompt details:', {
+      hasPromptDetails: !!transformedResult.promptDetails,
+      promptDetails: transformedResult.promptDetails,
+      promptDetailsKeys: transformedResult.promptDetails ? Object.keys(transformedResult.promptDetails) : 'N/A'
+    });
+
+    return transformedResult;
   }
 
   static async getQueryHistory(page: number = 1, pageSize: number = 20): Promise<any> {

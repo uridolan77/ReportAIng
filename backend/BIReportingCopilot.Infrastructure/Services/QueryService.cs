@@ -143,7 +143,13 @@ public class QueryService : IQueryService
 
             // Generate SQL using enhanced AI prompt with relevant business context
             var prompt = await _promptService.BuildQueryPromptAsync(request.Question, relevantSchema);
+
+            // Debug: Generate prompt details with detailed logging
+            _logger.LogInformation("🔍 Generating prompt details for query: {Question}", request.Question);
             promptDetails = await _promptService.BuildDetailedQueryPromptAsync(request.Question, relevantSchema);
+            _logger.LogInformation("📝 Prompt details generated: {HasPromptDetails}, Template: {TemplateName}, Sections: {SectionCount}",
+                promptDetails != null, promptDetails?.TemplateName, promptDetails?.Sections?.Length ?? 0);
+
             var aiStartTime = DateTime.UtcNow;
             var generatedSQL = await _aiService.GenerateSQLAsync(prompt, cancellationToken);
             var aiExecutionTime = (int)(DateTime.UtcNow - aiStartTime).TotalMilliseconds;
@@ -230,6 +236,10 @@ public class QueryService : IQueryService
                 ExecutionTimeMs = totalExecutionTime,
                 PromptDetails = promptDetails
             };
+
+            // Debug: Log response details
+            _logger.LogInformation("📤 Query response created: QueryId={QueryId}, HasPromptDetails={HasPromptDetails}, PromptTemplate={TemplateName}",
+                response.QueryId, response.PromptDetails != null, response.PromptDetails?.TemplateName);
 
             // Cache the result if enabled (both in request options AND admin settings)
             if (isCachingEnabled)

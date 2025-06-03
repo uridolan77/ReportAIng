@@ -48,6 +48,7 @@ export const QueryTabs: React.FC = () => {
     query,
     isAdmin,
     showInsightsPanel,
+    setShowInsightsPanel,
     handleSubmitQuery,
     handleFollowUpSuggestionClick,
     handleSuggestionClick,
@@ -56,6 +57,19 @@ export const QueryTabs: React.FC = () => {
     setShowExportModal,
     setQuery
   } = useQueryContext();
+
+  // Debug logging for prompt details
+  React.useEffect(() => {
+    if (currentResult) {
+      console.log('QueryTabs - Current result:', {
+        hasResult: !!currentResult,
+        hasPromptDetails: !!currentResult.promptDetails,
+        promptDetails: currentResult.promptDetails,
+        queryId: currentResult.queryId,
+        success: currentResult.success
+      });
+    }
+  }, [currentResult]);
 
   return (
     <Tabs
@@ -90,10 +104,29 @@ export const QueryTabs: React.FC = () => {
     >
       <TabPane
         tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
             <BarChartOutlined style={{ fontSize: '18px' }} />
-            Results
-          </span>
+            <span>Results</span>
+            {currentResult && (
+              <Tooltip title={showInsightsPanel ? 'Hide AI Insights Panel' : 'Show AI Insights Panel'}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<ThunderboltOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowInsightsPanel(!showInsightsPanel);
+                  }}
+                  style={{
+                    color: showInsightsPanel ? '#52c41a' : '#8c8c8c',
+                    padding: '2px 4px',
+                    height: '20px',
+                    fontSize: '12px'
+                  }}
+                />
+              </Tooltip>
+            )}
+          </div>
         }
         key="result"
       >
@@ -108,7 +141,7 @@ export const QueryTabs: React.FC = () => {
                 onVisualizationRequest={handleVisualizationRequest}
               />
             </Col>
-            {showInsightsPanel && (
+            {showInsightsPanel && currentResult.success && (
               <Col xs={24} lg={8}>
                 <DataInsightsPanel
                   queryResult={currentResult}
@@ -166,6 +199,18 @@ export const QueryTabs: React.FC = () => {
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
             <FileTextOutlined style={{ fontSize: '18px' }} />
             Prompt Details
+            {currentResult?.promptDetails && (
+              <span style={{
+                backgroundColor: '#52c41a',
+                color: 'white',
+                fontSize: '10px',
+                padding: '2px 6px',
+                borderRadius: '10px',
+                marginLeft: '8px'
+              }}>
+                Available
+              </span>
+            )}
           </span>
         }
         key="prompt"
@@ -175,7 +220,21 @@ export const QueryTabs: React.FC = () => {
         ) : (
           <div className="empty-result">
             <Text type="secondary">
-              Execute a query to see the AI prompt details
+              {currentResult ? (
+                <>
+                  No prompt details available for this query.
+                  <br />
+                  <small style={{ color: '#999' }}>
+                    Debug: currentResult exists but promptDetails is {currentResult.promptDetails ? 'truthy' : 'falsy'}
+                    <br />
+                    currentResult keys: {Object.keys(currentResult).join(', ')}
+                    <br />
+                    promptDetails value: {JSON.stringify(currentResult.promptDetails)}
+                  </small>
+                </>
+              ) : (
+                'Execute a query to see the AI prompt details'
+              )}
             </Text>
           </div>
         )}
