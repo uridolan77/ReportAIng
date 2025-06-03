@@ -10,6 +10,7 @@ using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Core.Constants;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Services;
+using SignalRProgressReporter = BIReportingCopilot.Infrastructure.Services.SignalRProgressReporter;
 using BIReportingCopilot.API.Middleware;
 using BIReportingCopilot.API.Hubs;
 using BIReportingCopilot.API.HealthChecks;
@@ -485,6 +486,7 @@ builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializatio
 builder.Services.AddScoped<ITuningService, TuningService>();
 builder.Services.AddScoped<IAITuningSettingsService, AITuningSettingsService>();
 builder.Services.AddScoped<IBusinessContextAutoGenerator, BusinessContextAutoGenerator>();
+builder.Services.AddScoped<IProgressReporter, SignalRProgressReporter>();
 
 // ===== STARTUP & HEALTH SERVICES =====
 builder.Services.AddSingleton<IStartupHealthValidator, StartupHealthValidator>();

@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
@@ -9,7 +8,6 @@ using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Performance;
-using BIReportingCopilot.API.Hubs;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
@@ -21,7 +19,7 @@ public class TuningService : ITuningService
     private readonly PerformanceManagementService _performanceService;
     private readonly ISchemaService _schemaService;
     private readonly IConfiguration _configuration;
-    private readonly IHubContext<QueryStatusHub> _hubContext;
+    private readonly IProgressReporter _progressReporter;
 
     public TuningService(
         BICopilotContext context,
@@ -30,7 +28,7 @@ public class TuningService : ITuningService
         PerformanceManagementService performanceService,
         ISchemaService schemaService,
         IConfiguration configuration,
-        IHubContext<QueryStatusHub> hubContext)
+        IProgressReporter progressReporter)
     {
         _context = context;
         _logger = logger;
@@ -38,7 +36,7 @@ public class TuningService : ITuningService
         _performanceService = performanceService;
         _schemaService = schemaService;
         _configuration = configuration;
-        _hubContext = hubContext;
+        _progressReporter = progressReporter;
     }
 
     #region Dashboard
@@ -1132,27 +1130,7 @@ public class TuningService : ITuningService
 
     private async Task SendProgressUpdate(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null)
     {
-        try
-        {
-            _logger.LogInformation("Sending progress update to user {UserId}: {Progress}% - {Message} ({Stage})", userId, progress, message, stage);
-
-            // Use group-based messaging to match the SignalR hub setup
-            await _hubContext.Clients.Group($"user_{userId}").SendAsync("AutoGenerationProgress", new
-            {
-                Progress = progress,
-                Message = message,
-                Stage = stage,
-                CurrentTable = currentTable,
-                CurrentColumn = currentColumn,
-                Timestamp = DateTime.UtcNow
-            });
-
-            _logger.LogInformation("Progress update sent successfully to user group user_{UserId}", userId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send progress update to user {UserId}", userId);
-        }
+        await _progressReporter.SendProgressUpdateAsync(userId, progress, message, stage, currentTable, currentColumn);
     }
 
     #endregion
