@@ -173,25 +173,42 @@ export const DatabaseStatusIndicator: React.FC = () => {
         classNames={{ root: "database-status-tooltip" }}
       >
         <div
+          className={`database-status-enhanced ${status.isConnected ? 'connected' : 'disconnected'}`}
           onClick={() => setShowDetails(true)}
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '4px 8px',
-            borderRadius: '4px',
+            padding: '6px 12px',
+            borderRadius: '10px',
             cursor: 'pointer',
-            background: status.isConnected ? '#f6ffed' : '#fff2f0',
-            border: `1px solid ${status.isConnected ? '#b7eb8f' : '#ffccc7'}`,
-            transition: 'all 0.2s ease'
+            background: status.isConnected
+              ? 'rgba(34, 197, 94, 0.1)'
+              : 'rgba(239, 68, 68, 0.1)',
+            border: `1px solid ${status.isConnected ? '#22c55e' : '#ef4444'}`,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            backdropFilter: 'blur(8px)',
+            height: '36px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = status.isConnected
+              ? '0 4px 12px rgba(34, 197, 94, 0.15)'
+              : '0 4px 12px rgba(239, 68, 68, 0.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
           }}
           data-testid="database-status"
         >
           {getStatusIcon()}
           <Text style={{
-            fontSize: '12px',
-            color: status.isConnected ? '#52c41a' : '#ff4d4f',
-            fontWeight: 500
+            fontSize: '13px',
+            color: status.isConnected ? '#22c55e' : '#ef4444',
+            fontWeight: 600,
+            fontFamily: "'Inter', sans-serif"
           }}>
             {status.isConnected ? 'DB Connected' : 'DB Offline'}
           </Text>

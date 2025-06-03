@@ -91,7 +91,8 @@ export const Login: React.FC = () => {
                 },
               ]}
             >
-              <Input.Password
+              <Input
+                type="password"
                 prefix={<LockOutlined />}
                 placeholder="Password"
               />

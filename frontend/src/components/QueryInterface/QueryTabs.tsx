@@ -29,6 +29,7 @@ import { QuerySuggestions } from './QuerySuggestions';
 import { AdvancedStreamingQuery } from './AdvancedStreamingQuery';
 import { InteractiveVisualization } from './InteractiveVisualization';
 import { DashboardView } from './DashboardView';
+import { QueryLoadingState, CopilotThinking } from './LoadingStates';
 import AdvancedVisualizationPanel from '../Visualization/AdvancedVisualizationPanel';
 import { TuningDashboard } from '../Tuning/TuningDashboard';
 import { CacheManager } from '../Performance/CacheManager';
@@ -47,6 +48,8 @@ export const QueryTabs: React.FC = () => {
     queryHistory,
     query,
     isAdmin,
+    isLoading,
+    progress,
     showInsightsPanel,
     setShowInsightsPanel,
     handleSubmitQuery,
@@ -79,14 +82,36 @@ export const QueryTabs: React.FC = () => {
       size="large"
       tabBarExtraContent={
         currentResult && (
-          <Space>
+          <Space size="small">
             <Tooltip title="Add to Favorites">
               <Button
                 icon={<StarOutlined />}
                 onClick={handleAddToFavorites}
                 size="small"
                 type="text"
-                style={{ borderRadius: '8px' }}
+                style={{
+                  borderRadius: '12px',
+                  border: '1px solid #e5e7eb',
+                  background: 'white',
+                  color: '#6b7280',
+                  padding: '4px 8px',
+                  height: '32px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#f59e0b';
+                  e.currentTarget.style.color = '#f59e0b';
+                  e.currentTarget.style.background = '#fffbeb';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(245, 158, 11, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.color = '#6b7280';
+                  e.currentTarget.style.background = 'white';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               />
             </Tooltip>
             <Tooltip title="Export Results">
@@ -95,7 +120,29 @@ export const QueryTabs: React.FC = () => {
                 onClick={() => setShowExportModal(true)}
                 size="small"
                 type="text"
-                style={{ borderRadius: '8px' }}
+                style={{
+                  borderRadius: '12px',
+                  border: '1px solid #e5e7eb',
+                  background: 'white',
+                  color: '#6b7280',
+                  padding: '4px 8px',
+                  height: '32px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#3b82f6';
+                  e.currentTarget.style.color = '#3b82f6';
+                  e.currentTarget.style.background = '#eff6ff';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.color = '#6b7280';
+                  e.currentTarget.style.background = 'white';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               />
             </Tooltip>
           </Space>
@@ -104,9 +151,26 @@ export const QueryTabs: React.FC = () => {
     >
       <TabPane
         tab={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
-            <BarChartOutlined style={{ fontSize: '18px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px', fontWeight: '600' }}>
+            <BarChartOutlined style={{ fontSize: '20px', color: '#3b82f6' }} />
             <span>Results</span>
+            {currentResult && currentResult.confidence && (
+              <div style={{
+                background: currentResult.confidence > 0.8 ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' :
+                           currentResult.confidence > 0.6 ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' :
+                           'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: 'white',
+                padding: '4px 8px',
+                borderRadius: '12px',
+                fontSize: '11px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+              }}>
+                {(currentResult.confidence * 100).toFixed(0)}%
+              </div>
+            )}
             {currentResult && (
               <Tooltip title={showInsightsPanel ? 'Hide AI Insights Panel' : 'Show AI Insights Panel'}>
                 <Button
@@ -118,10 +182,14 @@ export const QueryTabs: React.FC = () => {
                     setShowInsightsPanel(!showInsightsPanel);
                   }}
                   style={{
-                    color: showInsightsPanel ? '#52c41a' : '#8c8c8c',
-                    padding: '2px 4px',
-                    height: '20px',
-                    fontSize: '12px'
+                    color: showInsightsPanel ? '#10b981' : '#6b7280',
+                    padding: '4px 6px',
+                    height: '24px',
+                    fontSize: '12px',
+                    borderRadius: '8px',
+                    background: showInsightsPanel ? '#ecfdf5' : 'transparent',
+                    border: showInsightsPanel ? '1px solid #10b981' : '1px solid transparent',
+                    transition: 'all 0.3s ease'
                   }}
                 />
               </Tooltip>
@@ -130,9 +198,15 @@ export const QueryTabs: React.FC = () => {
         }
         key="result"
       >
-        {currentResult ? (
+        {isLoading ? (
+          <QueryLoadingState
+            progress={progress}
+            stage="analyzing"
+            message="AI Copilot is analyzing your question and preparing results..."
+          />
+        ) : currentResult ? (
           <Row gutter={[16, 16]}>
-            <Col xs={24} lg={showInsightsPanel ? 16 : 24}>
+            <Col xs={24} lg={showInsightsPanel && currentResult.success ? 16 : 24}>
               <QueryResult
                 result={currentResult}
                 query={query}
@@ -143,21 +217,55 @@ export const QueryTabs: React.FC = () => {
             </Col>
             {showInsightsPanel && currentResult.success && (
               <Col xs={24} lg={8}>
-                <DataInsightsPanel
-                  queryResult={currentResult}
-                  onInsightAction={(action) => {
-                    console.log('Insight action:', action);
-                    // Handle insight actions like drill-down, filtering, etc.
-                  }}
-                  autoGenerate={true}
-                />
+                <div data-testid="insights-panel" tabIndex={0}>
+                  <DataInsightsPanel
+                    queryResult={currentResult}
+                    onInsightAction={(action) => {
+                      console.log('Insight action:', action);
+                      // Handle insight actions like drill-down, filtering, etc.
+                    }}
+                    autoGenerate={true}
+                  />
+                </div>
               </Col>
             )}
           </Row>
         ) : (
-          <div className="empty-result">
-            <Text type="secondary">
-              Submit a query to see results here
+          <div className="empty-result" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '300px',
+            textAlign: 'center',
+            padding: '40px 20px',
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+            borderRadius: '16px',
+            border: '2px dashed #e2e8f0',
+            margin: '20px 0'
+          }}>
+            <div style={{
+              fontSize: '48px',
+              marginBottom: '16px',
+              opacity: 0.6
+            }}>
+              📊
+            </div>
+            <Text style={{
+              fontSize: '18px',
+              color: '#4b5563',
+              fontWeight: 600,
+              marginBottom: '8px',
+              fontFamily: "'Inter', sans-serif"
+            }}>
+              Your query results will appear here
+            </Text>
+            <Text style={{
+              fontSize: '14px',
+              color: '#6b7280',
+              fontWeight: 400
+            }}>
+              Ask a question about your data to see visualized insights
             </Text>
           </div>
         )}
@@ -165,10 +273,22 @@ export const QueryTabs: React.FC = () => {
 
       <TabPane
         tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
-            <HistoryOutlined style={{ fontSize: '18px' }} />
-            History ({queryHistory.length})
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px', fontWeight: '600' }}>
+            <HistoryOutlined style={{ fontSize: '20px', color: '#10b981' }} />
+            <span>History</span>
+            <div style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: 'white',
+              padding: '2px 8px',
+              borderRadius: '12px',
+              fontSize: '11px',
+              fontWeight: 700,
+              minWidth: '20px',
+              textAlign: 'center'
+            }}>
+              {queryHistory.length}
+            </div>
+          </div>
         }
         key="history"
       >
@@ -182,10 +302,22 @@ export const QueryTabs: React.FC = () => {
 
       <TabPane
         tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
-            <CodeOutlined style={{ fontSize: '18px' }} />
-            Suggestions
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px', fontWeight: '600' }}>
+            <StarOutlined style={{ fontSize: '20px', color: '#8b5cf6' }} />
+            <span>Suggestions</span>
+            <div style={{
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+              color: 'white',
+              padding: '2px 6px',
+              borderRadius: '8px',
+              fontSize: '9px',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              AI
+            </div>
+          </div>
         }
         key="suggestions"
       >
@@ -196,22 +328,25 @@ export const QueryTabs: React.FC = () => {
 
       <TabPane
         tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
-            <FileTextOutlined style={{ fontSize: '18px' }} />
-            Prompt Details
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px', fontWeight: '600' }}>
+            <FileTextOutlined style={{ fontSize: '20px', color: '#f59e0b' }} />
+            <span>Prompt Details</span>
             {currentResult?.promptDetails && (
-              <span style={{
-                backgroundColor: '#52c41a',
+              <div style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                 color: 'white',
-                fontSize: '10px',
-                padding: '2px 6px',
-                borderRadius: '10px',
-                marginLeft: '8px'
+                fontSize: '9px',
+                padding: '3px 8px',
+                borderRadius: '12px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
               }}>
-                Available
-              </span>
+                ✓ Available
+              </div>
             )}
-          </span>
+          </div>
         }
         key="prompt"
       >
@@ -239,152 +374,6 @@ export const QueryTabs: React.FC = () => {
           </div>
         )}
       </TabPane>
-
-      <TabPane
-        tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
-            <ThunderboltOutlined style={{ fontSize: '18px' }} />
-            Streaming
-          </span>
-        }
-        key="streaming"
-      >
-        <AdvancedStreamingQuery
-          onStreamingComplete={(data) => {
-            // Handle streaming completion
-            console.log('Streaming completed with', data.length, 'rows');
-          }}
-          onError={(error) => {
-            console.error('Streaming error:', error);
-          }}
-        />
-      </TabPane>
-
-      <TabPane
-        tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
-            <InteractionOutlined style={{ fontSize: '18px' }} />
-            Interactive
-          </span>
-        }
-        key="interactive"
-      >
-        {currentResult && currentResult.result?.data && currentResult.result?.metadata?.columns ? (
-          <InteractiveVisualization
-            data={currentResult.result.data}
-            columns={currentResult.result.metadata.columns}
-            query={query}
-            onConfigChange={(config) => {
-              console.log('Interactive config changed:', config);
-            }}
-          />
-        ) : (
-          <div className="empty-result">
-            <Text type="secondary">
-              Execute a query first to see interactive visualizations
-            </Text>
-          </div>
-        )}
-      </TabPane>
-
-      <TabPane
-        tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
-            <DashboardOutlined style={{ fontSize: '18px' }} />
-            Dashboard Builder
-          </span>
-        }
-        key="dashboard"
-      >
-        {currentResult && currentResult.result?.data && currentResult.result?.metadata?.columns ? (
-          <DashboardView
-            data={currentResult.result.data}
-            columns={currentResult.result.metadata.columns}
-            query={query}
-            onConfigChange={(config) => {
-              console.log('Dashboard config changed:', config);
-            }}
-          />
-        ) : (
-          <div className="empty-result">
-            <Text type="secondary">
-              Execute a query first to see dashboard view
-            </Text>
-          </div>
-        )}
-      </TabPane>
-
-      <TabPane
-        tab={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
-            <ThunderboltOutlined style={{ fontSize: '18px' }} />
-            Advanced Visualizations
-          </span>
-        }
-        key="advanced"
-      >
-        {currentResult && currentResult.result?.data && currentResult.result?.metadata?.columns ? (
-          <AdvancedVisualizationPanel
-            data={currentResult.result.data}
-            columns={currentResult.result.metadata.columns}
-            query={query}
-            onConfigChange={(config) => {
-              console.log('Advanced visualization config changed:', config);
-            }}
-            onExport={(format, config) => {
-              console.log('Advanced visualization exported:', format, config);
-            }}
-          />
-        ) : (
-          <div className="empty-result">
-            <Text type="secondary">
-              Execute a query first to see advanced visualizations and AI recommendations
-            </Text>
-          </div>
-        )}
-      </TabPane>
-
-      {isAdmin && (
-        <TabPane
-          tab={
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
-              <SettingOutlined style={{ fontSize: '18px' }} />
-              AI Tuning
-            </span>
-          }
-          key="tuning"
-        >
-          <TuningDashboard />
-        </TabPane>
-      )}
-
-      {isAdmin && (
-        <TabPane
-          tab={
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
-              <ThunderboltOutlined style={{ fontSize: '18px' }} />
-              Cache Manager
-            </span>
-          }
-          key="cache"
-        >
-          <CacheManager />
-        </TabPane>
-      )}
-
-      {isAdmin && (
-        <TabPane
-          tab={
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '500' }}>
-              <SafetyOutlined style={{ fontSize: '18px' }} />
-              Security
-            </span>
-          }
-          key="security"
-        >
-          <SecurityDashboard />
-        </TabPane>
-      )}
     </Tabs>
   );
 };

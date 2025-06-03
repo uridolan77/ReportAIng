@@ -69,8 +69,74 @@ const App: React.FC = () => {
             theme={{
               algorithm: theme.defaultAlgorithm,
               token: {
-                colorPrimary: '#1890ff',
-                borderRadius: 6,
+                // Primary Colors
+                colorPrimary: '#3b82f6',
+                colorSuccess: '#10b981',
+                colorWarning: '#f59e0b',
+                colorError: '#ef4444',
+                colorInfo: '#3b82f6',
+
+                // Typography
+                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif",
+                fontSize: 16,
+                fontSizeHeading1: 36,
+                fontSizeHeading2: 30,
+                fontSizeHeading3: 24,
+                fontSizeHeading4: 20,
+                fontSizeHeading5: 16,
+
+                // Layout
+                borderRadius: 12,
+                borderRadiusLG: 16,
+                borderRadiusSM: 8,
+
+                // Spacing
+                padding: 16,
+                paddingLG: 24,
+                paddingSM: 12,
+                margin: 16,
+                marginLG: 24,
+                marginSM: 12,
+
+                // Colors
+                colorBgContainer: '#ffffff',
+                colorBgElevated: '#ffffff',
+                colorBgLayout: '#f9fafb',
+                colorBorder: '#e5e7eb',
+                colorBorderSecondary: '#f3f4f6',
+                colorText: '#374151',
+                colorTextSecondary: '#6b7280',
+                colorTextTertiary: '#9ca3af',
+
+                // Shadows
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                boxShadowSecondary: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                boxShadowTertiary: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              },
+              components: {
+                Button: {
+                  borderRadius: 12,
+                  fontWeight: 600,
+                  primaryShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)',
+                },
+                Input: {
+                  borderRadius: 12,
+                  fontSize: 16,
+                  paddingBlock: 12,
+                  paddingInline: 16,
+                },
+                Card: {
+                  borderRadius: 16,
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                },
+                Menu: {
+                  borderRadius: 12,
+                  itemBorderRadius: 8,
+                },
+                Tabs: {
+                  borderRadius: 12,
+                  cardBg: '#ffffff',
+                },
               },
             }}
           >

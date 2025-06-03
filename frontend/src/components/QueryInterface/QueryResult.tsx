@@ -5,8 +5,14 @@ import {
   CodeOutlined,
   DownloadOutlined,
   TableOutlined,
-  BugOutlined
+  BugOutlined,
+  CopyOutlined,
+  CheckOutlined,
+  BarChartOutlined,
+  LineChartOutlined,
+  PieChartOutlined
 } from '@ant-design/icons';
+import VisualizationRecommendations from '../Visualization/VisualizationRecommendations';
 import { QueryResponse } from '../../types/query';
 
 const { Title, Text, Paragraph } = Typography;
@@ -337,26 +343,46 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
           <details style={{ marginTop: '8px' }}>
             <summary style={{
               cursor: 'pointer',
-              color: '#667eea',
-              fontWeight: 500,
-              padding: '8px',
-              borderRadius: '6px',
-              background: '#f8f9ff',
-              border: '1px solid #e8f4fd'
+              color: '#3b82f6',
+              fontWeight: 600,
+              padding: '12px 16px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+              border: '2px solid #3b82f620',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.3s ease'
             }}>
-              <CodeOutlined style={{ marginRight: '8px' }} /> View Generated SQL
+              <CodeOutlined style={{ fontSize: '16px' }} />
+              <span>View Generated SQL</span>
+              <div style={{
+                background: '#3b82f6',
+                color: 'white',
+                padding: '2px 6px',
+                borderRadius: '8px',
+                fontSize: '10px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}>
+                Copy
+              </div>
             </summary>
             <Paragraph
               code
-              copyable
+              copyable={{
+                tooltips: ['Copy SQL', 'Copied!']
+              }}
               style={{
                 marginTop: '12px',
                 background: '#f6f8fa',
-                padding: '16px',
-                borderRadius: '8px',
-                fontSize: '13px',
+                padding: '20px',
+                borderRadius: '12px',
+                fontSize: '14px',
                 border: '1px solid #e1e4e8',
-                fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace'
+                fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                lineHeight: '1.6'
               }}
             >
               {result.sql}
@@ -665,6 +691,29 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
             )}
           </TabPane>
 
+          {/* Charts & Visualizations Tab */}
+          <TabPane
+            tab={
+              <Space>
+                <BarChartOutlined />
+                Charts & Visualizations
+              </Space>
+            }
+            key="charts"
+          >
+            <VisualizationRecommendations
+              data={dataSource}
+              columns={result.result?.metadata.columns || []}
+              query={query}
+              onVisualizationSelect={(config) => {
+                console.log('Visualization selected:', config);
+                // Handle visualization selection
+                if (onVisualizationRequest) {
+                  onVisualizationRequest(config.type, dataSource, result.result?.metadata.columns || []);
+                }
+              }}
+            />
+          </TabPane>
 
         </Tabs>
       </Card>

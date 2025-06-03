@@ -27,6 +27,7 @@ interface AutoGenerationProgressProps {
   glossaryTermsGenerated?: number;
   relationshipsFound?: number;
   processingDetails?: ProcessingDetail[];
+  aiPrompts?: AIPromptInfo[];
   onCancel?: () => void;
 }
 
@@ -39,6 +40,17 @@ interface ProcessingDetail {
   startTime?: Date;
   endTime?: Date;
   generatedTerms?: number;
+}
+
+interface AIPromptInfo {
+  id: string;
+  timestamp: Date;
+  table: string;
+  promptType: 'table_context' | 'glossary_terms' | 'relationships';
+  prompt: string;
+  response?: string;
+  status: 'sending' | 'completed' | 'error';
+  tokenCount?: number;
 }
 
 export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
@@ -55,7 +67,8 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
   totalColumns = 0,
   glossaryTermsGenerated = 0,
   relationshipsFound = 0,
-  processingDetails = []
+  processingDetails = [],
+  aiPrompts = []
 }) => {
   const getProgressStatus = () => {
     if (progress < 30) return 'active';
@@ -335,6 +348,115 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
               </List.Item>
             )}
           />
+        </Card>
+      )}
+
+      {/* AI Prompts Section */}
+      {aiPrompts.length > 0 && (
+        <Card
+          size="small"
+          title={
+            <Space>
+              <RobotOutlined />
+              <span>AI Communication</span>
+              <Tag color="blue">{aiPrompts.length} prompts</Tag>
+            </Space>
+          }
+          style={{ marginBottom: '16px' }}
+        >
+          <List
+            size="small"
+            dataSource={aiPrompts.slice(-3)} // Show last 3 prompts
+            renderItem={(prompt) => (
+              <List.Item>
+                <div style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <Space>
+                      <Tag color={prompt.promptType === 'table_context' ? 'blue' : prompt.promptType === 'glossary_terms' ? 'green' : 'purple'}>
+                        {prompt.promptType.replace('_', ' ').toUpperCase()}
+                      </Tag>
+                      <Text strong style={{ fontSize: '12px' }}>{prompt.table}</Text>
+                      <Tag color={prompt.status === 'completed' ? 'success' : prompt.status === 'sending' ? 'processing' : 'error'}>
+                        {prompt.status.toUpperCase()}
+                      </Tag>
+                    </Space>
+                    <Text type="secondary" style={{ fontSize: '11px' }}>
+                      {prompt.timestamp.toLocaleTimeString()}
+                      {prompt.tokenCount && ` • ${prompt.tokenCount} tokens`}
+                    </Text>
+                  </div>
+
+                  <details style={{ marginTop: '8px' }}>
+                    <summary style={{
+                      cursor: 'pointer',
+                      color: '#1890ff',
+                      fontSize: '12px',
+                      padding: '4px 8px',
+                      background: '#f0f8ff',
+                      border: '1px solid #d6e4ff',
+                      borderRadius: '4px'
+                    }}>
+                      🤖 View AI Prompt
+                    </summary>
+                    <pre style={{
+                      whiteSpace: 'pre-wrap',
+                      fontSize: '10px',
+                      color: '#595959',
+                      maxHeight: '200px',
+                      overflow: 'auto',
+                      margin: '8px 0 0 0',
+                      padding: '8px',
+                      background: '#fafafa',
+                      border: '1px solid #e8e8e8',
+                      borderRadius: '4px',
+                      fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace'
+                    }}>
+                      {prompt.prompt}
+                    </pre>
+                  </details>
+
+                  {prompt.response && (
+                    <details style={{ marginTop: '8px' }}>
+                      <summary style={{
+                        cursor: 'pointer',
+                        color: '#52c41a',
+                        fontSize: '12px',
+                        padding: '4px 8px',
+                        background: '#f6ffed',
+                        border: '1px solid #b7eb8f',
+                        borderRadius: '4px'
+                      }}>
+                        ✅ View AI Response
+                      </summary>
+                      <pre style={{
+                        whiteSpace: 'pre-wrap',
+                        fontSize: '10px',
+                        color: '#595959',
+                        maxHeight: '200px',
+                        overflow: 'auto',
+                        margin: '8px 0 0 0',
+                        padding: '8px',
+                        background: '#f6ffed',
+                        border: '1px solid #b7eb8f',
+                        borderRadius: '4px',
+                        fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace'
+                      }}>
+                        {prompt.response}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              </List.Item>
+            )}
+          />
+
+          {aiPrompts.length > 3 && (
+            <div style={{ textAlign: 'center', marginTop: '8px' }}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                Showing latest 3 of {aiPrompts.length} AI communications
+              </Text>
+            </div>
+          )}
         </Card>
       )}
 

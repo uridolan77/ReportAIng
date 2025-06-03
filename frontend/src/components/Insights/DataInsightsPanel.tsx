@@ -60,12 +60,20 @@ export const DataInsightsPanel: React.FC<DataInsightsPanelProps> = ({
 
     setLoading(true);
     try {
+      console.log('🔍 Insights Debug - Full queryResult:', queryResult);
+      console.log('🔍 Insights Debug - queryResult.result:', queryResult.result);
+      console.log('🔍 Insights Debug - queryResult.result.metadata:', queryResult.result?.metadata);
+      console.log('🔍 Insights Debug - queryResult.result.metadata.columns:', queryResult.result?.metadata?.columns);
+
       const columns: ColumnInfo[] = queryResult.result.metadata.columns?.map(col => ({
         name: col.name,
         type: inferColumnType(queryResult.result!.data, col.name),
         nullable: col.isNullable,
         description: col.description
       })) || [];
+
+      console.log('🔍 Insights Debug - Column types:', columns.map(c => ({ name: c.name, type: c.type })));
+      console.log('🔍 Insights Debug - Sample data:', queryResult.result.data.slice(0, 3));
 
       const request: InsightRequest = {
         data: queryResult.result.data,
@@ -75,7 +83,16 @@ export const DataInsightsPanel: React.FC<DataInsightsPanelProps> = ({
         valueColumns: findValueColumns(columns)
       };
 
+      console.log('🔍 Insights Debug - Request:', {
+        dataRows: request.data.length,
+        columns: request.columns.length,
+        numericColumns: request.columns.filter(c => c.type === 'numeric').length,
+        timeColumn: request.timeColumn,
+        valueColumns: request.valueColumns
+      });
+
       const generatedInsights = await insightsService.generateInsights(request);
+      console.log('🔍 Insights Debug - Generated insights:', generatedInsights.length, generatedInsights);
       setInsights(generatedInsights);
     } catch (error) {
       console.error('Failed to generate insights:', error);
@@ -89,8 +106,8 @@ export const DataInsightsPanel: React.FC<DataInsightsPanelProps> = ({
 
     if (sample.length === 0) return 'text';
 
-    // Check if all values are numbers
-    if (sample.every(val => !isNaN(val) && typeof val === 'number')) {
+    // Check if all values are numbers (including string numbers from SQL)
+    if (sample.every(val => !isNaN(Number(val)) && val !== '' && val !== null)) {
       return 'numeric';
     }
 
@@ -258,22 +275,85 @@ export const DataInsightsPanel: React.FC<DataInsightsPanelProps> = ({
       style={{ height: '100%' }}
     >
       {!queryResult?.result?.data ? (
-        <Empty
-          description="Execute a query to generate insights"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+        <div style={{
+          textAlign: 'center',
+          padding: '40px 20px',
+          background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+          borderRadius: '12px',
+          border: '2px dashed #e2e8f0'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.6 }}>
+            🧠
+          </div>
+          <Text style={{
+            fontSize: '16px',
+            color: '#4b5563',
+            fontWeight: 600,
+            display: 'block',
+            marginBottom: '8px'
+          }}>
+            AI Insights Ready
+          </Text>
+          <Text style={{
+            fontSize: '14px',
+            color: '#6b7280'
+          }}>
+            Execute a query to generate intelligent data insights
+          </Text>
+        </div>
       ) : loading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>
+        <div style={{
+          textAlign: 'center',
+          padding: '40px 20px',
+          background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+          borderRadius: '12px',
+          border: '1px solid #3b82f620'
+        }}>
           <Spin size="large" />
           <div style={{ marginTop: '16px' }}>
-            <Text>Analyzing your data...</Text>
+            <Text style={{
+              fontSize: '16px',
+              color: '#3b82f6',
+              fontWeight: 600
+            }}>
+              AI is analyzing your data...
+            </Text>
+            <br />
+            <Text style={{
+              fontSize: '14px',
+              color: '#6b7280'
+            }}>
+              Discovering patterns and generating insights
+            </Text>
           </div>
         </div>
       ) : filteredInsights.length === 0 ? (
-        <Empty
-          description="No insights found for this data"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+        <div style={{
+          textAlign: 'center',
+          padding: '40px 20px',
+          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          borderRadius: '12px',
+          border: '1px solid #f59e0b20'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.7 }}>
+            🔍
+          </div>
+          <Text style={{
+            fontSize: '16px',
+            color: '#92400e',
+            fontWeight: 600,
+            display: 'block',
+            marginBottom: '8px'
+          }}>
+            No insights found
+          </Text>
+          <Text style={{
+            fontSize: '14px',
+            color: '#a16207'
+          }}>
+            Try a different analysis depth or query more data
+          </Text>
+        </div>
       ) : (
         <List
           dataSource={filteredInsights}

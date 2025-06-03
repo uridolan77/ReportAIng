@@ -484,14 +484,20 @@ export class ApiService {
     const response = await api.post('/api/query/execute', backendRequest);
     const backendResponse: QueryResponse = response.data;
 
-    // Enhanced debug logging for prompt details
+    // Enhanced debug logging for prompt details and success handling
     console.log('API Service - Full backend response:', backendResponse);
-    console.log('API Service - Backend response prompt details:', {
+    console.log('API Service - Backend response analysis:', {
       hasPromptDetails: !!backendResponse.PromptDetails,
       promptDetails: backendResponse.PromptDetails,
       promptDetailsKeys: backendResponse.PromptDetails ? Object.keys(backendResponse.PromptDetails) : 'N/A',
       queryId: backendResponse.QueryId,
-      success: backendResponse.Success,
+      backendSuccess: backendResponse.Success,
+      backendSuccessLower: backendResponse.success,
+      backendError: backendResponse.Error,
+      backendErrorLower: backendResponse.error,
+      hasResult: !!backendResponse.Result,
+      hasResultLower: !!backendResponse.result,
+      resultData: backendResponse.Result?.Data || backendResponse.result?.data,
       allKeys: Object.keys(backendResponse)
     });
 
@@ -544,7 +550,12 @@ export class ApiService {
     };
 
     // Debug the final transformed result
-    console.log('API Service - Transformed result prompt details:', {
+    console.log('API Service - Transformed result analysis:', {
+      success: transformedResult.success,
+      error: transformedResult.error,
+      hasResult: !!transformedResult.result,
+      hasData: !!transformedResult.result?.data,
+      dataLength: transformedResult.result?.data?.length,
       hasPromptDetails: !!transformedResult.promptDetails,
       promptDetails: transformedResult.promptDetails,
       promptDetailsKeys: transformedResult.promptDetails ? Object.keys(transformedResult.promptDetails) : 'N/A'
