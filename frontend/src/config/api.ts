@@ -55,8 +55,8 @@ export const API_CONFIG = {
 
   // SignalR Hub URL
   SIGNALR_HUB_URL: process.env.NODE_ENV === 'production'
-    ? 'https://your-production-api.com/queryHub'
-    : 'http://localhost:55243/queryHub',
+    ? 'https://your-production-api.com/hubs/query-status'
+    : 'http://localhost:55243/hubs/query-status',
 
   // Request configuration
   REQUEST_CONFIG: {

@@ -27,6 +27,7 @@ import { OnboardingTour } from '../Onboarding/OnboardingTour';
 import { ProactiveSuggestions } from './ProactiveSuggestions';
 import { GuidedQueryWizard } from './GuidedQueryWizard';
 import { ErrorRecoveryPanel, QueryValidator } from './EnhancedErrorHandling';
+import { AIProcessingFeedback, useAIProcessingFeedback, createProcessingStepFromError } from './AIProcessingFeedback';
 import { AccessibilityFeatures } from './AccessibilityFeatures';
 import './animations.css';
 import './professional-polish.css';
@@ -53,6 +54,9 @@ export const MinimalQueryInterface: React.FC = () => {
   const [showProactiveSuggestions, setShowProactiveSuggestions] = useState(true);
   const [queryError, setQueryError] = useState<any>(null);
   const [validationResult, setValidationResult] = useState<any>(null);
+
+  // AI Processing feedback
+  const aiProcessing = useAIProcessingFeedback();
 
   // Accessibility action handler
   const handleAccessibilityAction = (action: string) => {
@@ -300,19 +304,33 @@ export const MinimalQueryInterface: React.FC = () => {
           onValidationResult={setValidationResult}
         />
 
-        {/* Validation Feedback */}
-        {validationResult && !validationResult.isValid && (
+        {/* AI Processing Feedback */}
+        {(isLoading || aiProcessing.isProcessing) && (
           <div style={{ marginTop: '16px' }}>
-            {validationResult.errors.map((error: any, index: number) => (
-              <ErrorRecoveryPanel
-                key={index}
-                error={error}
-                originalQuery={query}
-                onRetry={() => handleSubmitQuery()}
-                onQueryFix={(fixedQuery) => setQuery(fixedQuery)}
-                onGetHelp={() => setShowWizard(true)}
-              />
-            ))}
+            <AIProcessingFeedback
+              isProcessing={isLoading || aiProcessing.isProcessing}
+              currentStep={aiProcessing.currentStep}
+              steps={aiProcessing.steps}
+              showDetails={false}
+            />
+          </div>
+        )}
+
+        {/* Validation Feedback - Only show actual errors, not AI processing steps */}
+        {validationResult && !validationResult.isValid && !isLoading && (
+          <div style={{ marginTop: '16px' }}>
+            {validationResult.errors
+              .filter((error: any) => !error.isProcessingStep && error.type !== 'ai_processing')
+              .map((error: any, index: number) => (
+                <ErrorRecoveryPanel
+                  key={index}
+                  error={error}
+                  originalQuery={query}
+                  onRetry={() => handleSubmitQuery()}
+                  onQueryFix={(fixedQuery) => setQuery(fixedQuery)}
+                  onGetHelp={() => setShowWizard(true)}
+                />
+              ))}
           </div>
         )}
       </div>

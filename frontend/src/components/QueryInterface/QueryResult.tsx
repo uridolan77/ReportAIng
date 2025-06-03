@@ -31,6 +31,9 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
   const [activeTab, setActiveTab] = useState('data');
   // State for debug mode
   const [debugMode, setDebugMode] = useState(false);
+  // State for pagination
+  const [pageSize, setPageSize] = useState(50);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Debug logging for prompt details and error handling
   React.useEffect(() => {
@@ -632,12 +635,25 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
               columns={finalColumns}
               dataSource={dataSource}
               pagination={{
-                pageSize: 10,
+                current: currentPage,
+                pageSize: pageSize,
                 showSizeChanger: true,
                 showQuickJumper: true,
+                pageSizeOptions: ['10', '25', '50', '100', '200'],
                 showTotal: (total, range) =>
                   `${range[0]}-${range[1]} of ${total} items`,
-                style: { marginTop: '16px' }
+                style: { marginTop: '16px' },
+                onChange: (page, size) => {
+                  setCurrentPage(page);
+                  if (size !== pageSize) {
+                    setPageSize(size);
+                    setCurrentPage(1); // Reset to first page when page size changes
+                  }
+                },
+                onShowSizeChange: (current, size) => {
+                  setPageSize(size);
+                  setCurrentPage(1); // Reset to first page when page size changes
+                }
               }}
               scroll={{ x: true }}
               size="small"
@@ -721,6 +737,14 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
 
 
       {/* Enhanced Suggestions */}
+      {console.log('🔍 QueryResult Debug:', {
+        hasResult: !!result,
+        resultKeys: result ? Object.keys(result) : 'No result',
+        hasSuggestions: !!result?.suggestions,
+        suggestionsLength: result?.suggestions?.length,
+        suggestions: result?.suggestions,
+        suggestionsType: typeof result?.suggestions
+      })}
       {result.suggestions && result.suggestions.length > 0 && (
         <Card
           className="enhanced-card"
@@ -772,6 +796,69 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
           </Space>
         </Card>
       )}
+
+      {/* Fallback Suggestions - Always Show */}
+      {(!result.suggestions || result.suggestions.length === 0) && (
+        <Card
+          className="enhanced-card"
+          size="small"
+          title={
+            <Space>
+              <span style={{ color: '#667eea' }}>💡 Suggested Follow-up Queries</span>
+            </Space>
+          }
+        >
+          <Space direction="vertical" style={{ width: '100%' }} size="small">
+            {[
+              "Show me total deposits for yesterday",
+              "Top 10 players by deposits in the last 7 days",
+              "Show me daily revenue for the last week",
+              "Count of active players yesterday",
+              "Show me casino vs sports betting revenue for last week",
+              "Total bets and wins for this month",
+              "Show me player activity for the last 3 days",
+              "Revenue breakdown by country for last week"
+            ].map((suggestion, index) => (
+              <Button
+                key={index}
+                type="text"
+                style={{
+                  textAlign: 'left',
+                  padding: '12px 16px',
+                  height: 'auto',
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #f8f9ff 0%, #e8f4fd 100%)',
+                  border: '1px solid #e8f4fd',
+                  borderRadius: '8px',
+                  color: '#595959',
+                  fontWeight: 400,
+                  transition: 'all 0.3s ease'
+                }}
+                onClick={() => {
+                  if (onSuggestionClick) {
+                    onSuggestionClick(suggestion);
+                  }
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                  e.currentTarget.style.color = 'white';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(102, 126, 234, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #f8f9ff 0%, #e8f4fd 100%)';
+                  e.currentTarget.style.color = '#595959';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                {suggestion}
+              </Button>
+            ))}
+          </Space>
+        </Card>
+      )}
+
     </Space>
   );
 };

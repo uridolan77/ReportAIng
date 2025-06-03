@@ -33,7 +33,7 @@ const { Step } = Steps;
 const { TextArea } = Input;
 
 interface QueryError {
-  type: 'syntax' | 'permission' | 'timeout' | 'data' | 'connection' | 'validation';
+  type: 'syntax' | 'permission' | 'timeout' | 'data' | 'connection' | 'validation' | 'ai_processing';
   message: string;
   details?: string;
   code?: string;
@@ -41,6 +41,7 @@ interface QueryError {
   column?: number;
   suggestions?: string[];
   fixable?: boolean;
+  isProcessingStep?: boolean; // New field to indicate this is part of AI processing
 }
 
 interface ErrorRecoveryProps {
@@ -78,6 +79,7 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryProps> = ({
       case 'data': return <WarningOutlined style={{ color: '#faad14' }} />;
       case 'connection': return <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />;
       case 'validation': return <QuestionCircleOutlined style={{ color: '#1890ff' }} />;
+      case 'ai_processing': return <RobotOutlined style={{ color: '#1890ff' }} />;
       default: return <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />;
     }
   };
@@ -90,6 +92,7 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryProps> = ({
       case 'data': return 'warning';
       case 'connection': return 'error';
       case 'validation': return 'info';
+      case 'ai_processing': return 'info';
       default: return 'error';
     }
   };
@@ -116,6 +119,12 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryProps> = ({
           { title: 'Use sampling', description: 'Query a subset of the data first' },
           { title: 'Optimize joins', description: 'Review and optimize table joins' }
         ];
+      case 'ai_processing':
+        return [
+          { title: 'AI is thinking', description: 'The AI is analyzing your query and generating SQL' },
+          { title: 'Iterative refinement', description: 'Multiple attempts may be made to get the best result' },
+          { title: 'Please wait', description: 'This process usually completes within a few seconds' }
+        ];
       default:
         return [
           { title: 'Review error details', description: 'Understand the specific issue' },
@@ -127,11 +136,11 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryProps> = ({
 
   const handleAIFix = async () => {
     setFixingInProgress(true);
-    
+
     // Simulate AI fixing the query
     setTimeout(() => {
       let fixed = originalQuery;
-      
+
       if (error.type === 'syntax') {
         // Example fixes for common syntax errors
         fixed = fixed.replace(/SELCT/gi, 'SELECT');
@@ -139,7 +148,7 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryProps> = ({
         fixed = fixed.replace(/WHRE/gi, 'WHERE');
         fixed = fixed.replace(/GROPU BY/gi, 'GROUP BY');
       }
-      
+
       setFixedQuery(fixed);
       setFixingInProgress(false);
       setShowFixModal(true);
@@ -148,19 +157,31 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryProps> = ({
 
   const recoverySteps = getRecoverySteps(error.type);
 
+  // Different styling for AI processing vs actual errors
+  const isProcessingStep = error.isProcessingStep || error.type === 'ai_processing';
+  const borderColor = isProcessingStep ? '#1890ff' :
+    (error.type === 'syntax' ? '#ff4d4f' : error.type === 'permission' ? '#faad14' : '#ff4d4f');
+  const backgroundColor = isProcessingStep ?
+    'linear-gradient(135deg, #f0f8ff 0%, #e6f7ff 100%)' :
+    'linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%)';
+
+  const alertTitle = isProcessingStep ?
+    'AI Processing' :
+    `Query Error: ${error.type.charAt(0).toUpperCase() + error.type.slice(1)}`;
+
   return (
     <Card
       style={{
         borderRadius: '12px',
-        border: `2px solid ${error.type === 'syntax' ? '#ff4d4f' : error.type === 'permission' ? '#faad14' : '#ff4d4f'}`,
-        background: 'linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%)'
+        border: `2px solid ${borderColor}`,
+        background: backgroundColor
       }}
     >
       <Alert
         message={
           <Space>
             {getErrorIcon(error.type)}
-            <Text strong>Query Error: {error.type.charAt(0).toUpperCase() + error.type.slice(1)}</Text>
+            <Text strong>{alertTitle}</Text>
           </Space>
         }
         description={error.message}
@@ -218,41 +239,46 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryProps> = ({
         </Steps>
       </div>
 
-      <Divider />
+      {/* Only show action buttons for actual errors, not AI processing steps */}
+      {!isProcessingStep && (
+        <>
+          <Divider />
 
-      <Space wrap>
-        <Button
-          type="primary"
-          icon={<ReloadOutlined />}
-          onClick={onRetry}
-        >
-          Try Again
-        </Button>
-        
-        {error.fixable && (
-          <Button
-            icon={<RobotOutlined />}
-            onClick={handleAIFix}
-            loading={fixingInProgress}
-          >
-            AI Fix
-          </Button>
-        )}
-        
-        <Button
-          icon={<EditOutlined />}
-          onClick={() => setShowFixModal(true)}
-        >
-          Edit Query
-        </Button>
-        
-        <Button
-          icon={<QuestionCircleOutlined />}
-          onClick={onGetHelp}
-        >
-          Get Help
-        </Button>
-      </Space>
+          <Space wrap>
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={onRetry}
+            >
+              Try Again
+            </Button>
+
+            {error.fixable && (
+              <Button
+                icon={<RobotOutlined />}
+                onClick={handleAIFix}
+                loading={fixingInProgress}
+              >
+                AI Fix
+              </Button>
+            )}
+
+            <Button
+              icon={<EditOutlined />}
+              onClick={() => setShowFixModal(true)}
+            >
+              Edit Query
+            </Button>
+
+            <Button
+              icon={<QuestionCircleOutlined />}
+              onClick={onGetHelp}
+            >
+              Get Help
+            </Button>
+          </Space>
+        </>
+      )}
 
       <Modal
         title="Fix Your Query"
@@ -273,7 +299,7 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryProps> = ({
             readOnly
           />
         </div>
-        
+
         <div>
           <Text strong>Fixed Query:</Text>
           <TextArea
@@ -283,7 +309,7 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryProps> = ({
             style={{ marginTop: '8px', fontFamily: 'monospace' }}
           />
         </div>
-        
+
         <Alert
           message="AI Suggestions Applied"
           description="The AI has automatically fixed common syntax errors. Review and modify as needed."
@@ -304,42 +330,44 @@ export const QueryValidator: React.FC<{
 
   const validateQuery = async () => {
     if (!query.trim()) return;
-    
+
     setValidating(true);
-    
+
     // Simulate validation
     setTimeout(() => {
       const errors: QueryError[] = [];
       const warnings: string[] = [];
       const suggestions: string[] = [];
-      
+
       // Basic validation checks
       if (!query.toLowerCase().includes('select')) {
         errors.push({
-          type: 'syntax',
-          message: 'Query must start with SELECT statement',
-          suggestions: ['Add SELECT clause at the beginning']
+          type: 'ai_processing',
+          message: 'AI is refining the query structure (SELECT clause)',
+          suggestions: ['The AI will automatically add the SELECT clause'],
+          isProcessingStep: true
         });
       }
-      
+
       if (!query.toLowerCase().includes('from')) {
         errors.push({
-          type: 'syntax',
-          message: 'Missing FROM clause',
-          suggestions: ['Add FROM clause to specify table']
+          type: 'ai_processing',
+          message: 'AI is determining the data source (FROM clause)',
+          suggestions: ['The AI will automatically identify the correct tables'],
+          isProcessingStep: true
         });
       }
-      
+
       if (query.includes('*') && query.toLowerCase().includes('group by')) {
         warnings.push('Using SELECT * with GROUP BY may cause issues');
         suggestions.push('Specify exact columns instead of using *');
       }
-      
+
       if (query.length > 1000) {
         warnings.push('Query is very long and may be complex');
         suggestions.push('Consider breaking into smaller queries');
       }
-      
+
       const result: QueryValidationResult = {
         isValid: errors.length === 0,
         errors,
@@ -347,7 +375,7 @@ export const QueryValidator: React.FC<{
         suggestions,
         confidence: errors.length === 0 ? (warnings.length === 0 ? 0.95 : 0.8) : 0.3
       };
-      
+
       onValidationResult(result);
       setValidating(false);
     }, 1000);
@@ -411,11 +439,11 @@ export const IterativeQueryBuilder: React.FC<{
           ))}
         </div>
       </div>
-      
+
       <Button onClick={generateSuggestions} icon={<BulbOutlined />}>
         Get Improvement Suggestions
       </Button>
-      
+
       {suggestions.length > 0 && (
         <div style={{ marginTop: '16px' }}>
           <Text strong>Suggestions:</Text>

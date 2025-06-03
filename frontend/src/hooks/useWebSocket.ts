@@ -88,6 +88,16 @@ export const useSignalR = (): UseSignalRReturn => {
           setLastMessage(message);
         });
 
+        hubConnection.on('AutoGenerationProgress', (data) => {
+          console.log('🔄 Received AutoGenerationProgress via SignalR:', data);
+          const message: WebSocketMessage = {
+            data: JSON.stringify(data),
+            type: 'AutoGenerationProgress',
+            timestamp: new Date().toISOString(),
+          };
+          setLastMessage(message);
+        });
+
         // Connection state handlers
         hubConnection.onclose(() => {
           setIsConnected(false);
@@ -105,7 +115,9 @@ export const useSignalR = (): UseSignalRReturn => {
         await hubConnection.start();
         setIsConnected(true);
 
-        console.log('SignalR connected successfully');
+        console.log('🔗 SignalR Connected successfully');
+        console.log('🔗 SignalR Connection ID:', hubConnection.connectionId);
+        console.log('🔗 SignalR Connection State:', hubConnection.state);
       } catch (error) {
         console.error('SignalR connection error:', error);
         setIsConnected(false);

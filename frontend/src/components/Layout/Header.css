@@ -7,11 +7,16 @@
   -webkit-backdrop-filter: blur(12px);
   padding-left: 24px !important;
   padding-right: 24px !important;
+  overflow: visible !important;
+  white-space: nowrap;
 }
 
 /* Logo container hover effect */
 .app-logo-container {
   margin-left: 8px;
+  flex-shrink: 0;
+  overflow: visible;
+  white-space: nowrap;
 }
 
 .app-logo-container:hover .app-logo-icon {
@@ -132,26 +137,41 @@
     padding: 0 16px !important;
     height: 56px !important;
   }
-  
+
   .app-logo-container {
     gap: 8px !important;
+    min-width: 200px !important;
   }
-  
+
   .app-logo-icon {
     width: 32px !important;
     height: 32px !important;
   }
-  
+
   .header-button,
   .user-dropdown-button {
     height: 32px !important;
     padding: 0 8px !important;
     font-size: 12px !important;
   }
-  
+
   .database-status-enhanced {
     height: 32px !important;
     padding: 4px 8px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-logo-container {
+    min-width: 160px !important;
+  }
+
+  .app-logo-container .ant-typography {
+    font-size: 14px !important;
+  }
+
+  .app-logo-container .ant-typography:last-child {
+    font-size: 10px !important;
   }
 }
 

@@ -221,6 +221,8 @@ public class QueryService : IQueryService
 
             // Generate suggestions
             var suggestions = await _aiService.GenerateQuerySuggestionsAsync(request.Question, relevantSchema);
+            _logger.LogInformation("💡 Generated {Count} suggestions for query: {Suggestions}",
+                suggestions?.Length ?? 0, string.Join(", ", suggestions ?? Array.Empty<string>()));
 
             var response = new QueryResponse
             {

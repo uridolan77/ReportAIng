@@ -5,6 +5,7 @@ import { tuningApi, AutoGenerationRequest, AutoGenerationResponse } from '../../
 import { ApiService } from '../../../services/api';
 import { AutoGenerationResults } from './AutoGenerationResults';
 import { AutoGenerationProgress } from './AutoGenerationProgress';
+import { useSignalR } from '../../../hooks/useWebSocket';
 
 const { Title, Text, Paragraph } = Typography;
 // const { Option } = Select;
@@ -31,6 +32,9 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
   const [aiPrompts, setAiPrompts] = useState<any[]>([]);
   const [results, setResults] = useState<AutoGenerationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // SignalR connection for real-time progress updates
+  const { isConnected, lastMessage } = useSignalR();
 
   // Generation options
   const [generateTableContexts, setGenerateTableContexts] = useState(true);
@@ -126,6 +130,65 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       rules: 'Standard data integrity constraints and business validation rules apply to this table'
     };
   }, []);
+
+  // Handle real-time progress updates from SignalR
+  useEffect(() => {
+    console.log('🔄 SignalR useEffect triggered:', {
+      hasLastMessage: !!lastMessage,
+      messageType: lastMessage?.type,
+      isGenerating,
+      isConnected
+    });
+
+    if (lastMessage && lastMessage.type === 'AutoGenerationProgress' && isGenerating) {
+      try {
+        const progressData = JSON.parse(lastMessage.data);
+        console.log('🔄 Real-time progress update:', progressData);
+
+        // Update progress state with real-time data
+        setGenerationProgress(progressData.Progress || 0);
+        setCurrentTask(progressData.Message || '');
+        setCurrentStage(progressData.Stage || '');
+        setCurrentTable(progressData.CurrentTable || '');
+        setCurrentColumn(progressData.CurrentColumn || '');
+
+        // Add to recently completed if it's a completion message
+        if (progressData.Message && (
+          progressData.Message.includes('Completed') ||
+          progressData.Message.includes('Generated') ||
+          progressData.Message.includes('Found')
+        )) {
+          setRecentlyCompleted(prev => [...prev.slice(-4), progressData.Message]);
+        }
+
+        // Update processing details if we have table information
+        if (progressData.CurrentTable) {
+          setProcessingDetails(prev => prev.map(detail => {
+            if (detail.tableName === progressData.CurrentTable) {
+              return {
+                ...detail,
+                status: progressData.Stage === 'Completed' ? 'completed' : 'processing',
+                stage: progressData.Stage,
+                currentColumn: progressData.CurrentColumn
+              };
+            }
+            return detail;
+          }));
+        }
+
+        // Check if auto-generation is completed
+        if (progressData.Progress >= 100 || progressData.Stage === 'Completed') {
+          console.log('🎉 Auto-generation completed via SignalR');
+          setIsGenerating(false);
+          setCurrentTable('');
+          setCurrentColumn('');
+        }
+
+      } catch (error) {
+        console.error('Error parsing progress update:', error);
+      }
+    }
+  }, [lastMessage, isGenerating]);
 
   // Load available tables on component mount
   useEffect(() => {
@@ -298,42 +361,17 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       setGenerationProgress(30);
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Call the actual API with detailed progress feedback
-      setCurrentTask('Connecting to AI service...');
-      setCurrentStage('AI Processing');
+      // Call the actual API - progress will be handled by SignalR
+      setCurrentTask('Starting auto-generation process...');
+      setCurrentStage('API Call');
       setGenerationProgress(40);
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      setCurrentTask('AI analyzing database schema...');
-      setGenerationProgress(50);
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      setCurrentTask(`AI processing ${selectedTables.length} table${selectedTables.length !== 1 ? 's' : ''} with ${totalColumns} columns...`);
-      setGenerationProgress(60);
-      await new Promise(resolve => setTimeout(resolve, 300));
 
       console.log('Starting API call to auto-generate business context...');
       console.log('Request payload:', request);
-
-      // Show detailed progress during API call
-      const progressInterval = setInterval(() => {
-        setCurrentTask(prev => {
-          const tasks = [
-            `AI analyzing table structures and relationships...`,
-            `AI generating business descriptions for ${selectedTables.length} tables...`,
-            `AI creating business glossary terms from column patterns...`,
-            `AI analyzing ${totalColumns} columns for business context...`,
-            `AI processing gaming/casino domain knowledge...`,
-            `AI finalizing business context and confidence scores...`
-          ];
-          const currentIndex = tasks.findIndex(task => task === prev);
-          return tasks[(currentIndex + 1) % tasks.length] || tasks[0];
-        });
-      }, 3000);
+      console.log('SignalR connected:', isConnected);
 
       try {
         const response = await tuningApi.autoGenerateBusinessContext(request);
-        clearInterval(progressInterval);
 
         console.log('🔍 AUTO-GENERATION API RESPONSE:', response);
         console.log('🔍 Response type:', typeof response);
@@ -390,23 +428,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
           setAiPrompts(prev => [...prev, glossaryPrompt]);
         }
 
-        setCurrentTask('Processing AI-generated business context...');
-        setGenerationProgress(98.5);
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        setCurrentTask('Validating and organizing results...');
-        setGenerationProgress(99);
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        setCurrentTask('Preparing results for review...');
-        setGenerationProgress(99.5);
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        setGenerationProgress(100);
-        setCurrentTask('Auto-generation completed successfully!');
-        setCurrentStage('Completed');
-        setCurrentTable('');
-        setCurrentColumn('');
+        // Final completion will be handled by SignalR, just set results
         setResults(response);
 
         completed.push(`🎉 Auto-generation completed successfully!`);

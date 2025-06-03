@@ -921,7 +921,7 @@
   flex-direction: column;
   gap: 16px;
   flex: 1;
-  max-width: 600px;
+  max-width: 800px;
 }
 
 .login-form-inputs .ant-form-item {

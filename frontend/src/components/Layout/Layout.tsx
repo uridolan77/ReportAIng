@@ -64,7 +64,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '12px'
+            gap: '12px',
+            minWidth: '280px',
+            overflow: 'visible'
           }}
         >
           <div
@@ -85,14 +87,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               color: 'white'
             }} />
           </div>
-          <div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            minWidth: '200px',
+            overflow: 'visible'
+          }}>
             <Text strong style={{
               fontSize: '18px',
               color: '#1e293b',
               fontWeight: 700,
               fontFamily: "'Poppins', sans-serif",
               lineHeight: 1.2,
-              display: 'block'
+              display: 'block',
+              whiteSpace: 'nowrap'
             }}>
               BI Reporting Copilot
             </Text>
@@ -101,7 +110,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               color: '#64748b',
               fontWeight: 500,
               fontFamily: "'Inter', sans-serif",
-              lineHeight: 1
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap'
             }}>
               AI-Powered Analytics
             </Text>

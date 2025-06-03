@@ -498,6 +498,9 @@ export class ApiService {
       hasResult: !!backendResponse.Result,
       hasResultLower: !!backendResponse.result,
       resultData: backendResponse.Result?.Data || backendResponse.result?.data,
+      backendSuggestions: backendResponse.Suggestions,
+      backendSuggestionsLower: backendResponse.suggestions,
+      suggestionsLength: (backendResponse.Suggestions || backendResponse.suggestions)?.length,
       allKeys: Object.keys(backendResponse)
     });
 
@@ -525,7 +528,16 @@ export class ApiService {
       },
       visualization: backendResponse.Visualization || backendResponse.visualization,
       confidence: backendResponse.Confidence || backendResponse.confidence || 0,
-      suggestions: backendResponse.Suggestions || backendResponse.suggestions || [],
+      suggestions: backendResponse.Suggestions || backendResponse.suggestions || [
+        "Show me total deposits for yesterday",
+        "Top 10 players by deposits in the last 7 days",
+        "Show me daily revenue for the last week",
+        "Count of active players yesterday",
+        "Show me casino vs sports betting revenue for last week",
+        "Total bets and wins for this month",
+        "Show me player activity for the last 3 days",
+        "Revenue breakdown by country for last week"
+      ],
       cached: backendResponse.Cached || backendResponse.cached || false,
       success: backendResponse.Success || backendResponse.success || false,
       error: backendResponse.Error || backendResponse.error,
@@ -556,6 +568,9 @@ export class ApiService {
       hasResult: !!transformedResult.result,
       hasData: !!transformedResult.result?.data,
       dataLength: transformedResult.result?.data?.length,
+      hasSuggestions: !!transformedResult.suggestions,
+      suggestionsLength: transformedResult.suggestions?.length,
+      suggestions: transformedResult.suggestions,
       hasPromptDetails: !!transformedResult.promptDetails,
       promptDetails: transformedResult.promptDetails,
       promptDetailsKeys: transformedResult.promptDetails ? Object.keys(transformedResult.promptDetails) : 'N/A'
