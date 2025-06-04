@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button, Input, Space } from 'antd';
+import React, { useState } from 'react';
+import { Button, Input, Space, Dropdown, Modal, Upload, message, Badge, Tooltip } from 'antd';
 import {
   SearchOutlined,
   DownloadOutlined,
@@ -9,7 +9,13 @@ import {
   FullscreenOutlined,
   FullscreenExitOutlined,
   PrinterOutlined,
-  GroupOutlined
+  GroupOutlined,
+  SaveOutlined,
+  FolderOpenOutlined,
+  DeleteOutlined,
+  ExportOutlined,
+  ImportOutlined,
+  DashboardOutlined
 } from '@ant-design/icons';
 import { useToken } from 'antd/es/theme/internal';
 
@@ -22,6 +28,7 @@ interface DataTableToolbarProps {
     print: boolean;
     columnChooser: boolean;
     fullscreen: boolean;
+    saveState?: boolean;
   };
   searchText: string;
   onSearchChange: (value: string) => void;
@@ -34,6 +41,12 @@ interface DataTableToolbarProps {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   onGroupBy: () => void;
+  onSaveState?: () => void;
+  onLoadState?: () => void;
+  onClearState?: () => void;
+  onExportState?: () => string | null;
+  onImportState?: (stateJson: string) => boolean;
+  performanceMetrics?: any;
 }
 
 export const DataTableToolbar: React.FC<DataTableToolbarProps> = ({
@@ -48,9 +61,97 @@ export const DataTableToolbar: React.FC<DataTableToolbarProps> = ({
   onRefresh,
   isFullscreen,
   onToggleFullscreen,
-  onGroupBy
+  onGroupBy,
+  onSaveState,
+  onLoadState,
+  onClearState,
+  onExportState,
+  onImportState,
+  performanceMetrics
 }) => {
   const [, token] = useToken();
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importText, setImportText] = useState('');
+
+  const handleExportState = () => {
+    const stateJson = onExportState?.();
+    if (stateJson) {
+      const blob = new Blob([stateJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `datatable-state-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      message.success('State exported successfully');
+    }
+  };
+
+  const handleImportState = () => {
+    if (importText.trim()) {
+      const success = onImportState?.(importText);
+      if (success) {
+        message.success('State imported successfully');
+        setShowImportModal(false);
+        setImportText('');
+      } else {
+        message.error('Failed to import state');
+      }
+    }
+  };
+  const stateMenuItems = [
+    {
+      key: 'save',
+      label: 'Save Current State',
+      icon: <SaveOutlined />,
+      onClick: () => {
+        onSaveState?.();
+        message.success('State saved');
+      }
+    },
+    {
+      key: 'load',
+      label: 'Load Saved State',
+      icon: <FolderOpenOutlined />,
+      onClick: onLoadState
+    },
+    {
+      type: 'divider' as const
+    },
+    {
+      key: 'export',
+      label: 'Export State',
+      icon: <ExportOutlined />,
+      onClick: handleExportState
+    },
+    {
+      key: 'import',
+      label: 'Import State',
+      icon: <ImportOutlined />,
+      onClick: () => setShowImportModal(true)
+    },
+    {
+      type: 'divider' as const
+    },
+    {
+      key: 'clear',
+      label: 'Clear Saved State',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: () => {
+        Modal.confirm({
+          title: 'Clear Saved State',
+          content: 'Are you sure you want to clear the saved state? This action cannot be undone.',
+          onOk: () => {
+            onClearState?.();
+            message.success('State cleared');
+          }
+        });
+      }
+    }
+  ];
 
   return (
     <div style={{
@@ -126,12 +227,78 @@ export const DataTableToolbar: React.FC<DataTableToolbarProps> = ({
             onClick={onToggleFullscreen}
           />
         )}
-        
-        <Button
+          <Button
           icon={<ReloadOutlined />}
           onClick={onRefresh}
         />
+        
+        {enabledFeatures.saveState && (
+          <Dropdown 
+            menu={{ items: stateMenuItems }}
+            trigger={['click']}
+          >
+            <Button icon={<SaveOutlined />}>
+              State
+            </Button>
+          </Dropdown>
+        )}
+
+        {performanceMetrics && (
+          <Tooltip title={
+            <div>
+              <div>Render Time: {performanceMetrics.renderTime?.toFixed(2) || 0}ms</div>
+              <div>Visible Rows: {performanceMetrics.visibleRows || 0}</div>
+              <div>Total Rows: {performanceMetrics.totalRows || 0}</div>
+              <div>Scroll Position: {performanceMetrics.scrollTop?.toFixed(0) || 0}px</div>
+            </div>
+          }>
+            <Badge count={performanceMetrics.renderTime ? Math.round(performanceMetrics.renderTime) : 0}>
+              <Button icon={<DashboardOutlined />} size="small" />
+            </Badge>
+          </Tooltip>
+        )}
       </Space>
+
+      <Modal
+        title="Import Table State"
+        open={showImportModal}
+        onOk={handleImportState}
+        onCancel={() => {
+          setShowImportModal(false);
+          setImportText('');
+        }}
+        okText="Import"
+        cancelText="Cancel"
+      >
+        <div style={{ marginBottom: 16 }}>
+          <p>Paste the exported JSON state below:</p>
+          <Input.TextArea
+            rows={10}
+            value={importText}
+            onChange={e => setImportText(e.target.value)}
+            placeholder="Paste JSON state content here..."
+          />
+        </div>
+        <Upload
+          accept=".json"
+          beforeUpload={(file) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              try {
+                const content = e.target?.result as string;
+                setImportText(content);
+              } catch (error) {
+                message.error('Failed to read file');
+              }
+            };
+            reader.readAsText(file);
+            return false; // Prevent automatic upload
+          }}
+          showUploadList={false}
+        >
+          <Button>Upload JSON File</Button>
+        </Upload>
+      </Modal>
     </div>
   );
 };

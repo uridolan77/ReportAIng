@@ -47,7 +47,7 @@ public class AuthController : ControllerBase
                             var payload = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(
                                 System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(tokenParts[1] + "==")));
                             _logger.LogInformation("Generated token - Issuer: {Issuer}, Audience: {Audience}",
-                                payload.GetValueOrDefault("iss"), payload.GetValueOrDefault("aud"));
+                                payload?.GetValueOrDefault("iss"), payload?.GetValueOrDefault("aud"));
                         }
                     }
                     catch (Exception ex)
@@ -77,7 +77,7 @@ public class AuthController : ControllerBase
     /// <param name="request">Registration details</param>
     /// <returns>Registration result</returns>
     [HttpPost("register")]
-    public async Task<ActionResult<AuthenticationResult>> Register([FromBody] User request)
+    public ActionResult<AuthenticationResult> Register([FromBody] User request)
     {
         try
         {
@@ -182,7 +182,7 @@ public class AuthController : ControllerBase
     /// <param name="request">Password reset request</param>
     /// <returns>Success status</returns>
     [HttpPost("forgot-password")]
-    public async Task<ActionResult> ForgotPassword([FromBody] User request)
+    public ActionResult ForgotPassword([FromBody] User request)
     {
         try
         {
@@ -204,7 +204,7 @@ public class AuthController : ControllerBase
     /// <param name="request">Password reset confirmation</param>
     /// <returns>Success status</returns>
     [HttpPost("reset-password")]
-    public async Task<ActionResult> ResetPassword([FromBody] RefreshTokenRequest request)
+    public ActionResult ResetPassword([FromBody] RefreshTokenRequest request)
     {
         try
         {

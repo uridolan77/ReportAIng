@@ -1,15 +1,7 @@
 import React from 'react';
 import { useToken } from 'antd/es/theme/internal';
 import _ from 'lodash';
-
-interface DataTableColumn {
-  key: string;
-  title: string;
-  dataIndex: string;
-  aggregation?: 'sum' | 'avg' | 'min' | 'max' | 'count' | 'custom';
-  aggregationFormatter?: (value: any) => string;
-  customAggregation?: (values: any[]) => any;
-}
+import { DataTableColumn } from '../types';
 
 interface AggregationRowProps {
   columns: DataTableColumn[];

@@ -8,6 +8,10 @@ using System.Text;
 
 namespace BIReportingCopilot.API.HealthChecks;
 
+/// <summary>
+/// Health check implementations for core application services
+/// </summary>
+
 public class OpenAIHealthCheck : IHealthCheck
 {
     private readonly IAIService _aiService;
@@ -40,7 +44,7 @@ public class OpenAIHealthCheck : IHealthCheck
                 return HealthCheckResult.Degraded("OpenAI service validation failed", null, new Dictionary<string, object>
                 {
                     ["description"] = "OpenAI service validation failed",
-                    ["exception"] = (string?)null,
+                    ["exception"] = null as string,
                     ["possibleCauses"] = new[]
                     {
                         "OpenAI API key not configured",

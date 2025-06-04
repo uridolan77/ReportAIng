@@ -288,41 +288,7 @@ public class NLUTrainingData
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
-/// <summary>
-/// Entity annotation for training
-/// </summary>
-public class EntityAnnotation
-{
-    public string EntityType { get; set; } = string.Empty;
-    public string Value { get; set; } = string.Empty;
-    public int StartIndex { get; set; }
-    public int EndIndex { get; set; }
-    public double Confidence { get; set; }
-}
-
-/// <summary>
-/// Domain analysis result
-/// </summary>
-public class DomainAnalysis
-{
-    public string Domain { get; set; } = string.Empty;
-    public double DomainConfidence { get; set; }
-    public List<DomainConcept> DomainConcepts { get; set; } = new();
-    public List<BusinessRule> ApplicableBusinessRules { get; set; } = new();
-    public DomainKnowledge DomainKnowledge { get; set; } = new();
-}
-
-/// <summary>
-/// Domain concept
-/// </summary>
-public class DomainConcept
-{
-    public string ConceptId { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public List<string> Synonyms { get; set; } = new();
-    public double Relevance { get; set; }
-}
+// EntityAnnotation, DomainAnalysis, and DomainConcept classes are defined in NLUModels.cs
 
 /// <summary>
 /// Business rule

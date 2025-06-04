@@ -253,11 +253,11 @@ public class EnhancedRateLimitingMiddleware
         context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
         context.Response.ContentType = "application/json";
 
-        // Add rate limit headers
-        context.Response.Headers.Add("X-RateLimit-Limit", violatedPolicy.RequestLimit.ToString());
-        context.Response.Headers.Add("X-RateLimit-Remaining", "0");
-        context.Response.Headers.Add("X-RateLimit-Reset", violatedPolicy.ResetTime.ToUnixTimeSeconds().ToString());
-        context.Response.Headers.Add("Retry-After", ((int)violatedPolicy.RetryAfter.TotalSeconds).ToString());
+        // Add rate limit headers using indexer to avoid duplicate key exceptions
+        context.Response.Headers["X-RateLimit-Limit"] = violatedPolicy.RequestLimit.ToString();
+        context.Response.Headers["X-RateLimit-Remaining"] = "0";
+        context.Response.Headers["X-RateLimit-Reset"] = violatedPolicy.ResetTime.ToUnixTimeSeconds().ToString();
+        context.Response.Headers["Retry-After"] = ((int)violatedPolicy.RetryAfter.TotalSeconds).ToString();
 
         var errorResponse = ApiResponse<object>.CreateError(
             ApiErrorCodes.RATE_LIMITED,
@@ -301,10 +301,10 @@ public class EnhancedRateLimitingMiddleware
         {
             var remaining = Math.Max(0, mostRestrictive.RequestLimit - mostRestrictive.RequestCount);
 
-            context.Response.Headers.Add("X-RateLimit-Limit", mostRestrictive.RequestLimit.ToString());
-            context.Response.Headers.Add("X-RateLimit-Remaining", remaining.ToString());
-            context.Response.Headers.Add("X-RateLimit-Reset", mostRestrictive.ResetTime.ToUnixTimeSeconds().ToString());
-            context.Response.Headers.Add("X-RateLimit-Policy", mostRestrictive.PolicyName);
+            context.Response.Headers["X-RateLimit-Limit"] = mostRestrictive.RequestLimit.ToString();
+            context.Response.Headers["X-RateLimit-Remaining"] = remaining.ToString();
+            context.Response.Headers["X-RateLimit-Reset"] = mostRestrictive.ResetTime.ToUnixTimeSeconds().ToString();
+            context.Response.Headers["X-RateLimit-Policy"] = mostRestrictive.PolicyName;
         }
     }
 }

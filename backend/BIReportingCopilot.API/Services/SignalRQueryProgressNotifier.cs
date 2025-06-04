@@ -17,7 +17,7 @@ public class SignalRQueryProgressNotifier : IQueryProgressNotifier
         IHubContext<QueryStatusHub> hubContext,
         ILogger<SignalRQueryProgressNotifier> logger)
     {
-        _hubContext = hubContext;
+        _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
         _logger = logger;
 
         _logger.LogInformation("🔧 SignalRQueryProgressNotifier initialized with hub context: {HubContextType}",

@@ -47,7 +47,7 @@
     <Compile Remove="AI\Enhanced\RealTimeStreamingAnalytics.cs" />
     <Compile Remove="AI\Enhanced\StreamingModels.cs" />
     <Compile Remove="AI\Enhanced\AdvancedNLUService.cs" />
-    <Compile Remove="AI\Enhanced\NLU*.cs" />
+    <!-- NLU model files have been consolidated into NLUModels.cs -->
     <Compile Remove="AI\Enhanced\FederatedLearningService.cs" />
     <Compile Remove="AI\Enhanced\FederatedLearning*.cs" />
     <Compile Remove="AI\Enhanced\QuantumResistantSecurityService.cs" />

@@ -21,7 +21,7 @@ import {
 import VisualizationRecommendations from '../Visualization/VisualizationRecommendations';
 import AdvancedChart from '../Visualization/AdvancedChart';
 import ChartConfigurationPanel from '../Visualization/ChartConfigurationPanel';
-import DataTable from '../DataTable/DataTable';
+import DataTable from '../DataTable';
 import { QueryResponse } from '../../types/query';
 import { AdvancedVisualizationConfig, VisualizationRecommendation } from '../../types/visualization';
 import { useVisualizationStore } from '../../stores/visualizationStore';
@@ -745,8 +745,7 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
                 columnChooser: true,
                 fullscreen: false,
                 virtualScroll: dataSource.length > 1000,
-                keyboard: true,
-                contextMenu: false
+                contextMenu: true
               }}
               config={{
                 pageSize: pageSize,

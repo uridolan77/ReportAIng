@@ -94,7 +94,7 @@ public class SqlQueryService : ISqlQueryService
     {
         try
         {
-            var result = await _sqlValidator.ValidateAsync(sql);
+            var result = await _sqlValidator.ValidateQueryAsync(sql);
 
             if (!result.IsValid)
             {

@@ -31,16 +31,13 @@ public class RequestLoggingMiddleware
         // Define endpoints that should have their request body logged
         _queryEndpoints = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "/api/query/execute",
-            "/api/query/enhanced",
-            "/api/query/streaming/execute",
-            "/api/query/streaming/metadata",
-            "/api/query/streaming/backpressure",
-            "/api/query/streaming/ai",
-            "/api/v1/queries/execute",
-            "/api/enhanced-query/process",
-            "/api/enhanced-query/analyze",
-            "/api/enhanced-query/classify"
+            "/api/unifiedquery/execute",
+            "/api/unifiedquery/enhanced",
+            "/api/unifiedquery/streaming",
+            "/api/unifiedquery/analyze",
+            "/api/unifiedquery/classify",
+            "/api/tuning/auto-generate",
+            "/api/schema/analyze"
         };
     }
 

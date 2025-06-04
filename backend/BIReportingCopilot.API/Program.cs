@@ -8,7 +8,6 @@ using Serilog;
 using System.Text;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Configuration;
-using BIReportingCopilot.Core.Constants;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Services;
 using SignalRProgressReporter = BIReportingCopilot.Infrastructure.Services.SignalRProgressReporter;
@@ -25,11 +24,8 @@ using BIReportingCopilot.Infrastructure.Behaviors;
 using BIReportingCopilot.Infrastructure.Performance;
 using BIReportingCopilot.Infrastructure.Security;
 using BIReportingCopilot.Infrastructure.AI;
-
 using BIReportingCopilot.Core.Commands;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Hangfire;
-using BIReportingCopilot.API.Versioning;
 using BIReportingCopilot.Core.Validation;
 using BIReportingCopilot.API.Extensions;
 
@@ -114,9 +110,59 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = builder.Environment.IsDevelopment();
     });
 
-// Add API versioning support
-builder.Services.AddApiVersioningSupport();
-builder.Services.AddVersionedSwagger();
+// Add Swagger documentation
+builder.Services.AddSwaggerGen(options =>
+{
+    // Include XML comments
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+
+    // Security definitions
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "BI Reporting Copilot API",
+        Version = "v1",
+        Description = "AI-powered Business Intelligence reporting and query generation API",
+        Contact = new OpenApiContact
+        {
+            Name = "BI Reporting Copilot Team",
+            Email = "support@bireportingcopilot.com"
+        },
+        License = new OpenApiLicense
+        {
+            Name = "MIT License",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
+    });
+});
 
 // Add FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
@@ -168,7 +214,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secretKey)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secretKey!)),
             ValidateIssuer = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidateAudience = true,
@@ -232,21 +278,7 @@ builder.Services.AddSignalR(options =>
     options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
 });
 
-// Configure Redis Cache
-var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
-if (!string.IsNullOrEmpty(redisConnectionString))
-{
-    builder.Services.AddStackExchangeRedisCache(options =>
-    {
-        options.Configuration = redisConnectionString;
-        options.InstanceName = "BICopilot";
-    });
-}
-else
-{
-    builder.Services.AddMemoryCache();
-    builder.Services.AddDistributedMemoryCache(); // Fallback for enhanced services
-}
+// Redis Cache configuration is handled below in the unified caching section
 
 // Add OpenAI client for enhanced AI service
 builder.Services.AddSingleton(provider =>
@@ -319,38 +351,8 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.SecurityMa
 // ===== AI/ML ENHANCEMENT SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.SemanticCacheService>();
 
-// ===== ENHANCED AI SERVICES (ENHANCEMENTS 6 & 8) - Temporarily disabled for Phase 3A =====
-/*
-// Enhanced semantic analysis with conversation context
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ContextAwareSemanticAnalyzer>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ConversationContextManager>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.EntityLinker>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.IntentClassifier>();
-
-// Enhanced SQL generation with decomposition
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.QueryDecomposer>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SchemaAwareSQLGenerator>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SchemaRelationshipAnalyzer>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SQLOptimizer>();
-
-// Enhanced query processing and confidence scoring
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.MultiDimensionalConfidenceScorer>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.EnhancedQueryProcessorV2>();
-
-// Additional enhanced services
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.AdaptiveQueryOptimizer>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.EnhancedVisualizationService>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.VisualizationRecommendationEngine>();
-*/
-// Temporarily disable these services until logger issues are resolved
-// builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ChartConfigurationGenerator>();
-// builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.DashboardLayoutOptimizer>();
-
-// Migration services - Temporarily disabled for Phase 3A
-/*
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Migration.EnhancedAIMigrationService>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Migration.MigrationMetricsCollector>();
-*/
+// ===== ENHANCED AI SERVICES =====
+// Note: Advanced AI services are available but disabled for Phase 3A infrastructure setup
 
 // Enhanced configuration
 builder.Services.Configure<EnhancedAIConfiguration>(
@@ -364,47 +366,7 @@ builder.Services.Configure<FeatureFlags>(
 builder.Services.Configure<MigrationSettings>(
     builder.Configuration.GetSection("Migration"));
 
-// Phase 2 Enhanced Services - Temporarily disabled for Phase 3A
-/*
-// Enhancement 1: Intelligent Provider Routing
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.IntelligentProviderRouter>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ProviderPerformanceTracker>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.CostOptimizer>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ProviderHealthMonitor>();
-
-// Enhancement 19: Advanced Semantic Cache
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.AdvancedSemanticCache>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.VectorEmbeddingService>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SemanticSimilarityEngine>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.CacheOptimizer>();
-
-// Enhancement 11: Multi-Modal Anomaly Detection
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.MultiModalAnomalyDetector>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.StatisticalAnomalyDetector>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.TemporalAnomalyDetector>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.PatternAnomalyDetector>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.BusinessRuleAnomalyDetector>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.AnomalyAlertManager>();
-
-// Enhancement 25: AI-Powered Threat Detection
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.AIThreatDetectionService>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SQLInjectionDetector>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.AnomalousQueryDetector>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.UserBehaviorAnalyzer>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.DataExfiltrationDetector>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ThreatIntelligenceEngine>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SecurityAlertManager>();
-
-// Phase 2 Configuration
-builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.ProviderRoutingConfiguration>(
-    builder.Configuration.GetSection("ProviderRouting"));
-builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.SemanticCacheConfiguration>(
-    builder.Configuration.GetSection("SemanticCache"));
-builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.AnomalyConfiguration>(
-    builder.Configuration.GetSection("AnomalyDetection"));
-builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.ThreatDetectionConfiguration>(
-    builder.Configuration.GetSection("ThreatDetection"));
-*/
+// Phase 2 Enhanced Services - Available but disabled for Phase 3A infrastructure setup
 
 // Phase 3 Enhanced Services - Phase 3A: Infrastructure Ready
 // Phase 3 Status and Management Service
@@ -419,15 +381,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.Phase3S
 builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.Phase3Configuration>(
     builder.Configuration.GetSection("Phase3"));
 
-// Individual Phase 3 feature configurations (for future use)
-// builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.StreamingConfiguration>(
-//     builder.Configuration.GetSection("StreamingAnalytics"));
-// builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.NLUConfiguration>(
-//     builder.Configuration.GetSection("AdvancedNLU"));
-// builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.FederatedLearningConfiguration>(
-//     builder.Configuration.GetSection("FederatedLearning"));
-// builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.QuantumSecurityConfiguration>(
-//     builder.Configuration.GetSection("QuantumSecurity"));
+// Individual Phase 3 feature configurations will be enabled as features are activated
 
 // Unified query analysis service - consolidates SemanticAnalyzer and QueryClassifier
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.QueryAnalysisService>();
@@ -637,7 +591,7 @@ if (!builder.Environment.IsEnvironment("Test"))
 // Response compression
 builder.Services.AddOptimizedResponseCompression();
 
-// Configure Swagger/OpenAPI (already configured by AddVersionedSwagger above)
+// Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 
 // Configure Fast Health Checks (using cached status from startup validation)
@@ -668,8 +622,15 @@ var app = builder.Build();
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    var apiVersionDescriptionProvider = app.Services.GetRequiredService<Microsoft.AspNetCore.Mvc.ApiExplorer.IApiVersionDescriptionProvider>();
-    app.UseVersionedSwagger(apiVersionDescriptionProvider);
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "BI Reporting Copilot API v1");
+        options.RoutePrefix = "swagger";
+        options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
+        options.DefaultModelsExpandDepth(-1);
+        options.DisplayRequestDuration();
+    });
 }
 
 // Disable HTTPS redirection for development

@@ -73,7 +73,7 @@ public class Phase3Controller : ControllerBase
         {
             _logger.LogInformation("Enabling Phase 3 feature: {FeatureName}", featureName);
             var success = await _phase3StatusService.EnableFeatureAsync(featureName);
-            
+
             if (success)
             {
                 return Ok(new { message = $"Feature '{featureName}' enabled successfully" });
@@ -94,7 +94,7 @@ public class Phase3Controller : ControllerBase
     /// Get Phase 3 demo information
     /// </summary>
     [HttpGet("demo")]
-    public async Task<ActionResult<Phase3DemoInfo>> GetPhase3DemoAsync()
+    public ActionResult<Phase3DemoInfo> GetPhase3Demo()
     {
         try
         {
@@ -216,7 +216,7 @@ public class Phase3Controller : ControllerBase
     /// Get Phase 3 deployment roadmap
     /// </summary>
     [HttpGet("roadmap")]
-    public async Task<ActionResult<Phase3Roadmap>> GetPhase3RoadmapAsync()
+    public ActionResult<Phase3Roadmap> GetPhase3Roadmap()
     {
         try
         {

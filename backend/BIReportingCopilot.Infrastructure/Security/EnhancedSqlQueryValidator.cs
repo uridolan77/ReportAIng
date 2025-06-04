@@ -438,6 +438,35 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator, ISqlQueryVa
 
     #endregion
 
+    #region ISqlQueryValidator Implementation
+
+    /// <summary>
+    /// Validates a SQL query for security and syntax issues (ISqlQueryValidator interface)
+    /// </summary>
+    public SqlValidationResult ValidateQuery(string query)
+    {
+        return ValidateQueryStructure(query);
+    }
+
+    /// <summary>
+    /// Validates a SQL query asynchronously (ISqlQueryValidator interface)
+    /// </summary>
+    public async Task<SqlValidationResult> ValidateQueryAsync(string query)
+    {
+        return await Task.FromResult(ValidateQuery(query));
+    }
+
+    /// <summary>
+    /// Gets the security level for a query (ISqlQueryValidator interface)
+    /// </summary>
+    public SecurityLevel GetSecurityLevel(string query)
+    {
+        var result = ValidateQuery(query);
+        return result.SecurityLevel;
+    }
+
+    #endregion
+
     #region Private Helper Methods (Consolidated)
 
     private bool IsValidParameterName(string paramName)
