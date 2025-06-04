@@ -6,7 +6,11 @@ namespace BIReportingCopilot.Infrastructure.AI;
 
 /// <summary>
 /// Feedback learning engine for processing user feedback and improving AI responses
+/// DEPRECATED: This functionality has been consolidated into LearningService.cs
+/// Use LearningService for comprehensive feedback learning and anomaly detection.
+/// This class is kept for backward compatibility and will be removed in future versions.
 /// </summary>
+[Obsolete("Use LearningService instead. This class will be removed in future versions.")]
 public class FeedbackLearningEngine
 {
     private readonly ILogger<FeedbackLearningEngine> _logger;
@@ -22,7 +26,7 @@ public class FeedbackLearningEngine
     public async Task<LearningInsights> GetLearningInsightsAsync(string userId)
     {
         _logger.LogInformation("Getting learning insights for user {UserId}", userId);
-        
+
         return new LearningInsights
         {
             UserId = userId,
@@ -42,7 +46,7 @@ public class FeedbackLearningEngine
     public async Task<Dictionary<string, object>> GetLearningStatisticsAsync()
     {
         _logger.LogInformation("Getting learning statistics");
-        
+
         return new Dictionary<string, object>
         {
             ["TotalFeedback"] = 100,
@@ -59,7 +63,7 @@ public class FeedbackLearningEngine
     public async Task ProcessFeedbackAsync(string userId, string queryId, UserFeedback feedback, string additionalContext)
     {
         _logger.LogInformation("Processing feedback for user {UserId}, query {QueryId}", userId, queryId);
-        
+
         // Process the feedback
         await Task.CompletedTask;
     }
@@ -70,7 +74,7 @@ public class FeedbackLearningEngine
     public async Task ProcessFeedbackAsync(UserFeedback feedback)
     {
         _logger.LogInformation("Processing feedback {FeedbackId}", feedback.FeedbackId);
-        
+
         // Process the feedback
         await Task.CompletedTask;
     }

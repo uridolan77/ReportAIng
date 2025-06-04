@@ -8,7 +8,11 @@ namespace BIReportingCopilot.Infrastructure.AI;
 
 /// <summary>
 /// Advanced prompt template manager with sophisticated prompt engineering
+/// DEPRECATED: This class has been consolidated into PromptService.cs for better maintainability.
+/// Use PromptService for all prompt-related operations.
+/// This class is kept for backward compatibility and will be removed in future versions.
 /// </summary>
+[Obsolete("Use PromptService instead. This class will be removed in future versions.")]
 public class PromptTemplateManager
 {
     private readonly Dictionary<string, string> _templates;

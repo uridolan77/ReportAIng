@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Row, Col, Select, Button, Space, Typography, Checkbox, Card, Divider } from 'antd';
 import { BarChartOutlined, LineChartOutlined, AreaChartOutlined, PieChartOutlined } from '@ant-design/icons';
 import { AdvancedVisualizationConfig, AdvancedChartType } from '../../types/visualization';
@@ -49,27 +49,42 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
     return { dateColumns, numericColumns };
   }, [data]);
 
-  // Initialize with detected values
+  // Track if we've initialized to prevent overriding user changes
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize with detected values only once
   useEffect(() => {
-    if (currentConfig) {
-      setChartType(currentConfig.chartType);
-      setXAxis(currentConfig.xAxis || '');
-      setSelectedMetrics(currentConfig.series || [currentConfig.yAxis || '']);
-    } else {
-      // Auto-detect initial values
-      if (dateColumns.length > 0) {
-        setXAxis(dateColumns[0]);
+    console.log('ChartConfigurationPanel - Initialization effect:', {
+      isInitialized,
+      currentConfig: currentConfig?.chartType,
+      dateColumns: dateColumns.length,
+      numericColumns: numericColumns.length
+    });
+
+    if (!isInitialized) {
+      if (currentConfig) {
+        console.log('ChartConfigurationPanel - Initializing from currentConfig:', currentConfig);
+        setChartType(currentConfig.chartType);
+        setXAxis(currentConfig.xAxis || '');
+        setSelectedMetrics(currentConfig.series || [currentConfig.yAxis || '']);
+      } else {
+        console.log('ChartConfigurationPanel - Auto-detecting initial values');
+        // Auto-detect initial values
+        if (dateColumns.length > 0) {
+          setXAxis(dateColumns[0]);
+        }
+        if (numericColumns.length > 0) {
+          // Default to NetRevenue if available, otherwise first numeric column
+          const defaultMetric = numericColumns.find(col =>
+            col.toLowerCase().includes('revenue') ||
+            col.toLowerCase().includes('netrevenue')
+          ) || numericColumns[0];
+          setSelectedMetrics([defaultMetric]);
+        }
       }
-      if (numericColumns.length > 0) {
-        // Default to NetRevenue if available, otherwise first numeric column
-        const defaultMetric = numericColumns.find(col => 
-          col.toLowerCase().includes('revenue') || 
-          col.toLowerCase().includes('netrevenue')
-        ) || numericColumns[0];
-        setSelectedMetrics([defaultMetric]);
-      }
+      setIsInitialized(true);
     }
-  }, [currentConfig, dateColumns, numericColumns]);
+  }, [currentConfig, dateColumns, numericColumns, isInitialized]);
 
   const chartTypeOptions = [
     { value: 'Bar', label: 'Bar Chart', icon: <BarChartOutlined /> },
@@ -78,8 +93,9 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
     { value: 'Pie', label: 'Pie Chart', icon: <PieChartOutlined /> }
   ];
 
-  const generateConfig = () => {
-    if (!xAxis || selectedMetrics.length === 0) return;
+  const generateConfig = useCallback((overrideMetrics?: string[]) => {
+    const metricsToUse = overrideMetrics || selectedMetrics;
+    if (!xAxis || metricsToUse.length === 0) return;
 
     // Preserve existing configuration settings if available
     const existingConfig = currentConfig || {};
@@ -87,10 +103,10 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
     const config: AdvancedVisualizationConfig = {
       type: 'advanced',
       chartType: chartType,
-      title: `${chartType} Chart - ${selectedMetrics.join(', ')} by ${xAxis}`,
+      title: `${chartType} Chart - ${metricsToUse.join(', ')} by ${xAxis}`,
       xAxis: xAxis,
-      yAxis: selectedMetrics[0], // Primary metric
-      series: selectedMetrics, // All selected metrics
+      yAxis: metricsToUse[0], // Primary metric
+      series: metricsToUse, // All selected metrics
       config: existingConfig.config || {},
 
       // Preserve existing animation settings or use defaults
@@ -117,7 +133,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         tooltip: {
           enabled: true,
           position: 'auto',
-          displayFields: [xAxis, ...selectedMetrics],
+          displayFields: [xAxis, ...metricsToUse],
           showStatistics: true,
           enableHtml: false
         }
@@ -154,7 +170,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         highContrast: false,
         screenReaderSupport: true,
         keyboardNavigation: true,
-        ariaLabels: [`${chartType} chart showing ${selectedMetrics.join(', ')}`],
+        ariaLabels: [`${chartType} chart showing ${metricsToUse.join(', ')}`],
         colorBlindFriendly: true
       }
     };
@@ -166,14 +182,52 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
       animation: config.animation
     });
     onConfigChange(config);
-  };
+  }, [xAxis, selectedMetrics, chartType, currentConfig, data, onConfigChange]);
 
   const handleMetricToggle = (metric: string, checked: boolean) => {
+    console.log('ChartConfigurationPanel - Metric toggle:', { metric, checked, currentMetrics: selectedMetrics });
+
+    let newMetrics: string[];
     if (checked) {
-      setSelectedMetrics(prev => [...prev, metric]);
+      newMetrics = [...selectedMetrics, metric];
     } else {
-      setSelectedMetrics(prev => prev.filter(m => m !== metric));
+      newMetrics = selectedMetrics.filter(m => m !== metric);
     }
+
+    console.log('ChartConfigurationPanel - New metrics:', newMetrics);
+    setSelectedMetrics(newMetrics);
+
+    // Auto-generate config after state update
+    setTimeout(() => {
+      if (xAxis && newMetrics.length > 0) {
+        console.log('ChartConfigurationPanel - Generating config with metrics:', newMetrics);
+        generateConfig(newMetrics);
+      }
+    }, 50);
+  };
+
+  // Handle chart type change
+  const handleChartTypeChange = (newChartType: AdvancedChartType) => {
+    setChartType(newChartType);
+
+    // Auto-generate config after state update
+    setTimeout(() => {
+      if (xAxis && selectedMetrics.length > 0) {
+        generateConfig();
+      }
+    }, 50);
+  };
+
+  // Handle X-axis change
+  const handleXAxisChange = (newXAxis: string) => {
+    setXAxis(newXAxis);
+
+    // Auto-generate config after state update
+    setTimeout(() => {
+      if (newXAxis && selectedMetrics.length > 0) {
+        generateConfig();
+      }
+    }, 50);
   };
 
   return (
@@ -185,7 +239,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
             <Text strong style={{ display: 'block', marginBottom: 8 }}>Chart Type</Text>
             <Select
               value={chartType}
-              onChange={setChartType}
+              onChange={handleChartTypeChange}
               style={{ width: '100%' }}
               size="small"
             >
@@ -207,7 +261,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
             <Text strong style={{ display: 'block', marginBottom: 8 }}>X-Axis</Text>
             <Select
               value={xAxis}
-              onChange={setXAxis}
+              onChange={handleXAxisChange}
               style={{ width: '100%' }}
               size="small"
               placeholder="Select X-axis"
@@ -259,13 +313,14 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         <Col xs={24} sm={24} md={4}>
           <div style={{ display: 'flex', alignItems: 'end', height: '100%' }}>
             <Button
-              type="primary"
+              type="default"
               onClick={generateConfig}
               disabled={!xAxis || selectedMetrics.length === 0}
               style={{ width: '100%' }}
               size="small"
+              title="Manually refresh chart (auto-updates when you change settings)"
             >
-              Apply Chart
+              Refresh Chart
             </Button>
           </div>
         </Col>
@@ -279,9 +334,8 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
           <Button
             size="small"
             onClick={() => {
-              setChartType('Bar');
+              handleChartTypeChange('Bar');
               setSelectedMetrics(['NetRevenue']);
-              setTimeout(generateConfig, 100);
             }}
             disabled={!numericColumns.includes('NetRevenue')}
           >
@@ -290,9 +344,8 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
           <Button
             size="small"
             onClick={() => {
-              setChartType('Line');
+              handleChartTypeChange('Line');
               setSelectedMetrics(['NetRevenue']);
-              setTimeout(generateConfig, 100);
             }}
             disabled={!numericColumns.includes('NetRevenue')}
           >
@@ -301,9 +354,8 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
           <Button
             size="small"
             onClick={() => {
-              setChartType('Line');
+              handleChartTypeChange('Line');
               setSelectedMetrics(['TotalDeposits', 'TotalPaidCashouts', 'NetRevenue']);
-              setTimeout(generateConfig, 100);
             }}
             disabled={!['TotalDeposits', 'TotalPaidCashouts', 'NetRevenue'].every(m => numericColumns.includes(m))}
           >
@@ -312,9 +364,8 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
           <Button
             size="small"
             onClick={() => {
-              setChartType('Area');
+              handleChartTypeChange('Area');
               setSelectedMetrics(['TotalDeposits', 'TotalPaidCashouts']);
-              setTimeout(generateConfig, 100);
             }}
             disabled={!['TotalDeposits', 'TotalPaidCashouts'].every(m => numericColumns.includes(m))}
           >

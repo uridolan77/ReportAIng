@@ -31,7 +31,7 @@ public class EnhancementIntegrationTests : IClassFixture<WebApplicationFactory<P
         Assert.IsType<PasswordHasher>(services.GetService<IPasswordHasher>());
 
         Assert.NotNull(services.GetService<ISqlQueryValidator>());
-        Assert.IsType<SqlQueryValidator>(services.GetService<ISqlQueryValidator>());
+        Assert.IsType<EnhancedSqlQueryValidator>(services.GetService<ISqlQueryValidator>());
 
         Assert.NotNull(services.GetService<IRateLimitingService>());
         Assert.IsType<SecurityManagementService>(services.GetService<IRateLimitingService>());
@@ -71,16 +71,16 @@ public class EnhancementIntegrationTests : IClassFixture<WebApplicationFactory<P
         var validator = scope.ServiceProvider.GetRequiredService<ISqlQueryValidator>();
 
         // Act & Assert - Valid SELECT query
-        var validResult = await validator.ValidateAsync("SELECT * FROM Users WHERE Id = 1");
+        var validResult = await validator.ValidateQueryAsync("SELECT * FROM Users WHERE Id = 1");
         Assert.True(validResult.IsValid);
 
         // Act & Assert - Invalid DELETE query
-        var invalidResult = await validator.ValidateAsync("DELETE FROM Users WHERE Id = 1");
+        var invalidResult = await validator.ValidateQueryAsync("DELETE FROM Users WHERE Id = 1");
         Assert.False(invalidResult.IsValid);
-        Assert.Contains("Only SELECT queries are allowed", invalidResult.Errors);
+        Assert.Contains("Query must start with SELECT", invalidResult.Errors);
 
         // Act & Assert - Dangerous keywords
-        var dangerousResult = await validator.ValidateAsync("SELECT * FROM Users; DROP TABLE Users;");
+        var dangerousResult = await validator.ValidateQueryAsync("SELECT * FROM Users; DROP TABLE Users;");
         Assert.False(dangerousResult.IsValid);
     }
 

@@ -6,7 +6,11 @@ namespace BIReportingCopilot.Infrastructure.AI;
 
 /// <summary>
 /// Analyzes query similarity using semantic features and patterns
+/// DEPRECATED: This functionality has been consolidated into QueryAnalysisService.cs
+/// Use QueryAnalysisService.CalculateSimilarityAsync() instead.
+/// This class is kept for backward compatibility and will be removed in future versions.
 /// </summary>
+[Obsolete("Use QueryAnalysisService.CalculateSimilarityAsync() instead. This class will be removed in future versions.")]
 public class QuerySimilarityAnalyzer
 {
     private readonly ILogger _logger;
@@ -42,7 +46,7 @@ public class QuerySimilarityAnalyzer
                 ColumnReferences = ExtractColumnReferences(sqlQuery),
                 JoinTypes = ExtractJoinTypes(sqlQuery),
                 FilterConditions = ExtractFilterConditions(sqlQuery),
-                
+
                 // Combined features
                 ComplexityScore = CalculateComplexityScore(naturalLanguageQuery, sqlQuery),
                 SemanticVector = await GenerateSemanticVectorAsync(naturalLanguageQuery, sqlQuery)
@@ -85,9 +89,9 @@ public class QuerySimilarityAnalyzer
             similarities.Add(CalculateVectorSimilarity(features1.SemanticVector, features2.SemanticVector) * 0.05);
 
             var overallSimilarity = similarities.Sum();
-            
+
             _logger.LogDebug("Calculated similarity: {Similarity:P2} between queries", overallSimilarity);
-            
+
             return Math.Max(0.0, Math.Min(1.0, overallSimilarity));
         }
         catch (Exception ex)
@@ -203,7 +207,7 @@ public class QuerySimilarityAnalyzer
     private SqlStructure AnalyzeSqlStructure(string sql)
     {
         var upperSql = sql.ToUpper();
-        
+
         return new SqlStructure
         {
             HasSelect = upperSql.Contains("SELECT"),
@@ -223,13 +227,13 @@ public class QuerySimilarityAnalyzer
         var tables = new List<string>();
         var tablePattern = @"FROM\s+(\w+)|JOIN\s+(\w+)";
         var matches = Regex.Matches(sql, tablePattern, RegexOptions.IgnoreCase);
-        
+
         foreach (Match match in matches)
         {
             var tableName = match.Groups[1].Value.Trim();
             if (string.IsNullOrEmpty(tableName))
                 tableName = match.Groups[2].Value.Trim();
-            
+
             if (!string.IsNullOrEmpty(tableName))
                 tables.Add(tableName.ToLower());
         }
@@ -240,11 +244,11 @@ public class QuerySimilarityAnalyzer
     private List<string> ExtractColumnReferences(string sql)
     {
         var columns = new List<string>();
-        
+
         // Extract from SELECT clause
         var selectPattern = @"SELECT\s+(.*?)\s+FROM";
         var selectMatch = Regex.Match(sql, selectPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-        
+
         if (selectMatch.Success)
         {
             var selectClause = selectMatch.Groups[1].Value;
@@ -259,7 +263,7 @@ public class QuerySimilarityAnalyzer
     {
         var joins = new List<string>();
         var joinPatterns = new[] { "INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL JOIN", "CROSS JOIN" };
-        
+
         foreach (var joinType in joinPatterns)
         {
             if (sql.Contains(joinType, StringComparison.OrdinalIgnoreCase))
@@ -275,7 +279,7 @@ public class QuerySimilarityAnalyzer
     {
         var conditions = new List<string>();
         var conditionPatterns = new[] { "=", "!=", "<>", "<", ">", "<=", ">=", "LIKE", "IN", "BETWEEN", "IS NULL", "IS NOT NULL" };
-        
+
         foreach (var condition in conditionPatterns)
         {
             if (sql.Contains(condition, StringComparison.OrdinalIgnoreCase))
@@ -290,7 +294,7 @@ public class QuerySimilarityAnalyzer
     private double CalculateComplexityScore(string naturalLanguageQuery, string sqlQuery)
     {
         var score = 0.0;
-        
+
         // Natural language complexity
         score += naturalLanguageQuery.Split(' ').Length * 0.1;
         score += ExtractEntityMentions(naturalLanguageQuery).Count * 0.2;
@@ -312,11 +316,11 @@ public class QuerySimilarityAnalyzer
         // Simplified semantic vector generation
         // In a real implementation, you might use embeddings from a language model
         var vector = new double[50]; // 50-dimensional vector
-        
+
         var combinedText = $"{naturalLanguageQuery} {sqlQuery}".ToLower();
         var hash = combinedText.GetHashCode();
         var random = new Random(hash);
-        
+
         for (int i = 0; i < vector.Length; i++)
         {
             vector[i] = random.NextDouble() * 2 - 1; // Values between -1 and 1
@@ -328,14 +332,14 @@ public class QuerySimilarityAnalyzer
     private double CalculateIntentSimilarity(QueryIntent intent1, QueryIntent intent2)
     {
         if (intent1 == intent2) return 1.0;
-        
+
         // Define intent similarity groups
         var aggregationIntents = new[] { QueryIntent.Count, QueryIntent.Sum, QueryIntent.Average, QueryIntent.Maximum, QueryIntent.Minimum };
         var displayIntents = new[] { QueryIntent.Display, QueryIntent.Filter };
-        
+
         if (aggregationIntents.Contains(intent1) && aggregationIntents.Contains(intent2)) return 0.7;
         if (displayIntents.Contains(intent1) && displayIntents.Contains(intent2)) return 0.8;
-        
+
         return 0.0;
     }
 
@@ -346,7 +350,7 @@ public class QuerySimilarityAnalyzer
 
         var intersection = keywords1.Intersect(keywords2).Count();
         var union = keywords1.Union(keywords2).Count();
-        
+
         return (double)intersection / union; // Jaccard similarity
     }
 
@@ -372,7 +376,7 @@ public class QuerySimilarityAnalyzer
 
         var intersection = entities1.Intersect(entities2).Count();
         var union = entities1.Union(entities2).Count();
-        
+
         return (double)intersection / union;
     }
 
@@ -380,7 +384,7 @@ public class QuerySimilarityAnalyzer
     {
         var tableSim = CalculateListSimilarity(features1.TableReferences, features2.TableReferences);
         var columnSim = CalculateListSimilarity(features1.ColumnReferences, features2.ColumnReferences);
-        
+
         return (tableSim + columnSim) / 2.0;
     }
 
@@ -405,7 +409,7 @@ public class QuerySimilarityAnalyzer
 
         var intersection = list1.Intersect(list2).Count();
         var union = list1.Union(list2).Count();
-        
+
         return (double)intersection / union;
     }
 
