@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, Select, Button, Space, Row, Col, Switch, Typography, Tooltip, Alert } from 'antd';
 import {
   SettingOutlined,
@@ -52,31 +52,38 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
     colorScheme: config.theme?.colors?.primary?.[0] ?? '#1890ff'
   });
 
+  // Sync chartSettings with config changes, but preserve user modifications
+  useEffect(() => {
+    console.log('AdvancedChart - Syncing settings from config:', {
+      configCustomSettings: config.customSettings,
+      configInteraction: config.interaction,
+      configAnimation: config.animation
+    });
+
+    setChartSettings(prevSettings => {
+      const newSettings = {
+        showGrid: config.interaction?.enableCrosshair ?? config.customSettings?.showGrid ?? prevSettings.showGrid,
+        showLegend: config.interaction?.enableLegendToggle ?? config.customSettings?.showLegend ?? prevSettings.showLegend,
+        enableAnimation: config.animation?.enabled ?? config.customSettings?.enableAnimation ?? prevSettings.enableAnimation,
+        enableZoom: config.interaction?.enableZoom ?? config.customSettings?.enableZoom ?? prevSettings.enableZoom,
+        enableBrush: config.interaction?.enableBrush ?? config.customSettings?.enableBrush ?? prevSettings.enableBrush,
+        colorScheme: config.theme?.colors?.primary?.[0] ?? config.customSettings?.colorScheme ?? prevSettings.colorScheme
+      };
+
+      console.log('AdvancedChart - Settings updated:', { prevSettings, newSettings });
+      return newSettings;
+    });
+  }, [config.chartType, config.xAxis, config.yAxis]); // Only sync on major config changes, not on every config update
+
   // Memoized chart data with performance optimizations
   const chartData = useMemo(() => {
     let processedData = [...data];
-
-    // Debug logging for data structure
-    console.log('AdvancedChart - Raw data:', data.slice(0, 2));
-    console.log('AdvancedChart - Config:', {
-      xAxis: config.xAxis,
-      yAxis: config.yAxis,
-      chartType: config.chartType
-    });
 
     // Validate that the data has the expected keys
     if (data.length > 0) {
       const firstRow = data[0];
       const hasXAxis = config.xAxis && firstRow.hasOwnProperty(config.xAxis);
       const hasYAxis = config.yAxis && firstRow.hasOwnProperty(config.yAxis);
-
-      console.log('AdvancedChart - Data validation:', {
-        hasXAxis,
-        hasYAxis,
-        xAxisValue: hasXAxis ? firstRow[config.xAxis] : 'MISSING',
-        yAxisValue: hasYAxis ? firstRow[config.yAxis] : 'MISSING',
-        availableKeys: Object.keys(firstRow)
-      });
 
       if (!hasXAxis || !hasYAxis) {
         console.warn('AdvancedChart - Missing required data keys!', {
@@ -100,7 +107,6 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
       processedData = removeOutliers(processedData, config.xAxis || 'value');
     }
 
-    console.log('AdvancedChart - Processed data:', processedData.slice(0, 2));
     return processedData;
   }, [data, config]);
 
@@ -116,12 +122,49 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
 
     if (onConfigChange) {
       const updatedConfig = { ...config };
-      if (key === 'enableAnimation' && updatedConfig.animation) {
-        updatedConfig.animation.enabled = value;
+
+      // Ensure nested objects exist
+      if (!updatedConfig.animation) updatedConfig.animation = {};
+      if (!updatedConfig.interaction) updatedConfig.interaction = {};
+
+      // Update the appropriate config property based on the setting key
+      switch (key) {
+        case 'enableAnimation':
+          updatedConfig.animation.enabled = value;
+          break;
+        case 'enableZoom':
+          updatedConfig.interaction.enableZoom = value;
+          break;
+        case 'enableBrush':
+          updatedConfig.interaction.enableBrush = value;
+          break;
+        case 'showGrid':
+          updatedConfig.interaction.enableCrosshair = value;
+          break;
+        case 'showLegend':
+          updatedConfig.interaction.enableLegendToggle = value;
+          break;
+        case 'colorScheme':
+          if (!updatedConfig.theme) updatedConfig.theme = {};
+          if (!updatedConfig.theme.colors) updatedConfig.theme.colors = {};
+          updatedConfig.theme.colors.primary = [value];
+          break;
+        default:
+          // For any other settings, store them in a custom settings object
+          if (!updatedConfig.customSettings) updatedConfig.customSettings = {};
+          updatedConfig.customSettings[key] = value;
+          break;
       }
-      if (key === 'enableZoom' && updatedConfig.interaction) {
-        updatedConfig.interaction.enableZoom = value;
-      }
+
+      console.log('AdvancedChart - Setting changed:', {
+        key,
+        value,
+        updatedConfig: {
+          customSettings: updatedConfig.customSettings,
+          interaction: updatedConfig.interaction,
+          animation: updatedConfig.animation
+        }
+      });
       onConfigChange(updatedConfig);
     }
   }, [config, onConfigChange]);

@@ -81,6 +81,9 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
   const generateConfig = () => {
     if (!xAxis || selectedMetrics.length === 0) return;
 
+    // Preserve existing configuration settings if available
+    const existingConfig = currentConfig || {};
+
     const config: AdvancedVisualizationConfig = {
       type: 'advanced',
       chartType: chartType,
@@ -88,8 +91,10 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
       xAxis: xAxis,
       yAxis: selectedMetrics[0], // Primary metric
       series: selectedMetrics, // All selected metrics
-      config: {},
-      animation: {
+      config: existingConfig.config || {},
+
+      // Preserve existing animation settings or use defaults
+      animation: existingConfig.animation || {
         enabled: true,
         duration: 1000,
         easing: 'ease-in-out',
@@ -98,7 +103,9 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         animateOnDataChange: true,
         animatedProperties: ['opacity', 'transform']
       },
-      interaction: {
+
+      // Preserve existing interaction settings or use defaults
+      interaction: existingConfig.interaction || {
         enableZoom: true,
         enablePan: true,
         enableBrush: false,
@@ -115,7 +122,9 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
           enableHtml: false
         }
       },
-      theme: {
+
+      // Preserve existing theme settings or use defaults
+      theme: existingConfig.theme || {
         name: 'default',
         darkMode: false,
         colors: {
@@ -127,7 +136,9 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
           axis: '#d9d9d9'
         }
       },
-      performance: {
+
+      // Preserve existing performance settings or use defaults
+      performance: existingConfig.performance || {
         enableVirtualization: data.length > 10000,
         virtualizationThreshold: 10000,
         enableLazyLoading: true,
@@ -136,7 +147,9 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         enableWebGL: data.length > 50000,
         maxDataPoints: 100000
       },
-      accessibility: {
+
+      // Preserve existing accessibility settings or use defaults
+      accessibility: existingConfig.accessibility || {
         enabled: true,
         highContrast: false,
         screenReaderSupport: true,
@@ -146,6 +159,12 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
       }
     };
 
+    console.log('ChartConfigurationPanel - Generated config:', {
+      chartType: config.chartType,
+      preservedSettings: config.customSettings,
+      interaction: config.interaction,
+      animation: config.animation
+    });
     onConfigChange(config);
   };
 

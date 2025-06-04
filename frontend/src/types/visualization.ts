@@ -21,6 +21,7 @@ export interface AdvancedVisualizationConfig {
   export?: ExportConfig;
   accessibility?: AccessibilityConfig;
   performance?: PerformanceConfig;
+  customSettings?: Record<string, any>;
 }
 
 export interface AnimationConfig {

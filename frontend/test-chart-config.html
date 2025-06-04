@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chart Configuration Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .pass { color: green; }
+        .fail { color: red; }
+        pre { background: #f5f5f5; padding: 10px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Chart Configuration Persistence Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Scenario</h2>
+        <p>This test simulates the chart configuration issue:</p>
+        <ol>
+            <li>User creates a chart with default settings</li>
+            <li>User changes chart settings (e.g., disables grid, legend)</li>
+            <li>ChartConfigurationPanel regenerates config (simulating data change)</li>
+            <li>Check if user settings are preserved</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // Simulate the chart configuration logic
+        function createDefaultConfig(chartType, xAxis, yAxis, existingConfig = null) {
+            // This simulates the fixed generateConfig function
+            const config = {
+                type: 'advanced',
+                chartType: chartType,
+                title: `${chartType} Chart - ${yAxis} by ${xAxis}`,
+                xAxis: xAxis,
+                yAxis: yAxis,
+                
+                // Preserve existing settings or use defaults
+                animation: existingConfig?.animation || {
+                    enabled: true,
+                    duration: 1000
+                },
+                
+                interaction: existingConfig?.interaction || {
+                    enableZoom: true,
+                    enableCrosshair: true,
+                    enableLegendToggle: true
+                },
+                
+                theme: existingConfig?.theme || {
+                    colors: {
+                        primary: ['#1890ff']
+                    }
+                },
+                
+                customSettings: existingConfig?.customSettings || {}
+            };
+            
+            return config;
+        }
+
+        function updateChartSetting(config, key, value) {
+            // This simulates the fixed handleSettingChange function
+            const updatedConfig = { ...config };
+            
+            if (!updatedConfig.customSettings) updatedConfig.customSettings = {};
+            
+            switch (key) {
+                case 'showGrid':
+                    updatedConfig.interaction.enableCrosshair = value;
+                    updatedConfig.customSettings.showGrid = value;
+                    break;
+                case 'showLegend':
+                    updatedConfig.interaction.enableLegendToggle = value;
+                    updatedConfig.customSettings.showLegend = value;
+                    break;
+                case 'enableAnimation':
+                    updatedConfig.animation.enabled = value;
+                    updatedConfig.customSettings.enableAnimation = value;
+                    break;
+                default:
+                    updatedConfig.customSettings[key] = value;
+                    break;
+            }
+            
+            return updatedConfig;
+        }
+
+        // Run the test
+        function runTest() {
+            const results = [];
+            
+            try {
+                // Step 1: Create initial chart
+                let config = createDefaultConfig('Bar', 'Date', 'Revenue');
+                results.push(`✓ Initial config created with defaults`);
+                results.push(`  - Grid enabled: ${config.interaction.enableCrosshair}`);
+                results.push(`  - Legend enabled: ${config.interaction.enableLegendToggle}`);
+                results.push(`  - Animation enabled: ${config.animation.enabled}`);
+                
+                // Step 2: User changes settings
+                config = updateChartSetting(config, 'showGrid', false);
+                config = updateChartSetting(config, 'showLegend', false);
+                config = updateChartSetting(config, 'enableAnimation', false);
+                
+                results.push(`✓ User modified settings`);
+                results.push(`  - Grid enabled: ${config.interaction.enableCrosshair}`);
+                results.push(`  - Legend enabled: ${config.interaction.enableLegendToggle}`);
+                results.push(`  - Animation enabled: ${config.animation.enabled}`);
+                results.push(`  - Custom settings: ${JSON.stringify(config.customSettings)}`);
+                
+                // Step 3: Simulate ChartConfigurationPanel regenerating config
+                const newConfig = createDefaultConfig('Bar', 'Date', 'Revenue', config);
+                
+                results.push(`✓ Config regenerated (simulating data change)`);
+                results.push(`  - Grid enabled: ${newConfig.interaction.enableCrosshair}`);
+                results.push(`  - Legend enabled: ${newConfig.interaction.enableLegendToggle}`);
+                results.push(`  - Animation enabled: ${newConfig.animation.enabled}`);
+                
+                // Step 4: Verify settings are preserved
+                const gridPreserved = newConfig.interaction.enableCrosshair === false;
+                const legendPreserved = newConfig.interaction.enableLegendToggle === false;
+                const animationPreserved = newConfig.animation.enabled === false;
+                
+                if (gridPreserved && legendPreserved && animationPreserved) {
+                    results.push(`<span class="pass">✓ TEST PASSED: All user settings preserved!</span>`);
+                } else {
+                    results.push(`<span class="fail">✗ TEST FAILED: Some settings were reset</span>`);
+                    results.push(`  - Grid preserved: ${gridPreserved}`);
+                    results.push(`  - Legend preserved: ${legendPreserved}`);
+                    results.push(`  - Animation preserved: ${animationPreserved}`);
+                }
+                
+            } catch (error) {
+                results.push(`<span class="fail">✗ TEST ERROR: ${error.message}</span>`);
+            }
+            
+            document.getElementById('test-results').innerHTML = 
+                '<pre>' + results.join('\n') + '</pre>';
+        }
+
+        // Run test when page loads
+        window.onload = runTest;
+    </script>
+</body>
+</html>

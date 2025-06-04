@@ -878,8 +878,12 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
                     <AdvancedChart
                       data={dataSource}
                       config={currentVisualization}
-                      onDataPointClick={(point) => {
-                        console.log('Data point clicked:', point);
+                      onConfigChange={(config) => {
+                        setVisualization(config);
+                        localStorage.setItem('current-chart-key', resultKey);
+                      }}
+                      onExport={(format) => {
+                        console.log('Export requested:', format);
                       }}
                     />
                   </Card>
