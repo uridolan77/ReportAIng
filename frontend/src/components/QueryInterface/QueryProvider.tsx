@@ -98,10 +98,13 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const executeQueryMutation = useExecuteQuery();
   const addToFavoritesMutation = useAddToFavorites();
   const {
-    data: queryHistory = [],
+    data: queryHistoryData = [],
     isLoading: queryHistoryLoading,
     error: queryHistoryError
   } = useQueryHistory(1, 20);
+
+  // Ensure queryHistory is always an array
+  const queryHistory = Array.isArray(queryHistoryData) ? queryHistoryData : [];
   const {
     data: suggestions = [],
     isLoading: suggestionsLoading

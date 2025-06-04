@@ -4,6 +4,8 @@ using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Core.Services;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Data;
+using BIReportingCopilot.API.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using CoreModels = BIReportingCopilot.Core.Models;
@@ -22,6 +24,7 @@ public class QueryService : IQueryService
     private readonly IAITuningSettingsService _settingsService;
     private readonly IContextManager? _contextManager;
     private readonly BICopilotContext _context;
+    private readonly IHubContext<QueryStatusHub> _hubContext;
 
     // Legacy support removed - using IAIService instead
 
@@ -35,6 +38,7 @@ public class QueryService : IQueryService
         IPromptService promptService,
         IAITuningSettingsService settingsService,
         BICopilotContext context,
+        IHubContext<QueryStatusHub> hubContext,
         IContextManager? contextManager = null) // Optional for backward compatibility
     {
         _logger = logger;
@@ -47,6 +51,7 @@ public class QueryService : IQueryService
         _settingsService = settingsService;
         _context = context;
         _contextManager = contextManager;
+        _hubContext = hubContext;
     }
 
     public async Task<QueryResponse> ProcessQueryAsync(QueryRequest request, string userId)
@@ -65,7 +70,11 @@ public class QueryService : IQueryService
             _logger.LogError("🎯🎯🎯 ENHANCED QueryService.ProcessQueryAsync CALLED - Processing query {QueryId} for user {UserId}: {Question}",
                 queryId, userId, request.Question);
 
+            // Notify query processing started
+            await NotifyProcessingStage(userId, queryId, "started", "Query processing initiated", 0);
+
             // Check cache first if enabled (both in request options AND admin settings)
+            await NotifyProcessingStage(userId, queryId, "cache_check", "Checking query cache", 5);
             var adminCachingEnabled = await _settingsService.GetBooleanSettingAsync("EnableQueryCaching", true);
             var requestCachingEnabled = request.Options.EnableCache;
             var isCachingEnabled = requestCachingEnabled && adminCachingEnabled;
@@ -105,9 +114,11 @@ public class QueryService : IQueryService
             }
 
             // Get full schema metadata first
+            await NotifyProcessingStage(userId, queryId, "schema_loading", "Loading database schema", 10);
             var fullSchema = await _schemaService.GetSchemaMetadataAsync();
 
             // Get relevant schema context based on the query
+            await NotifyProcessingStage(userId, queryId, "schema_analysis", "Analyzing relevant schema for query", 15);
             SchemaMetadata relevantSchema;
 
 
@@ -142,33 +153,53 @@ public class QueryService : IQueryService
             }
 
             // Generate SQL using enhanced AI prompt with relevant business context
+            await NotifyProcessingStage(userId, queryId, "prompt_building", "Building AI prompt with business context", 25);
             var prompt = await _promptService.BuildQueryPromptAsync(request.Question, relevantSchema);
 
             // Debug: Generate prompt details with detailed logging
+            await NotifyProcessingStage(userId, queryId, "prompt_details", "Generating detailed prompt information", 30);
             _logger.LogInformation("🔍 Generating prompt details for query: {Question}", request.Question);
             promptDetails = await _promptService.BuildDetailedQueryPromptAsync(request.Question, relevantSchema);
             _logger.LogInformation("📝 Prompt details generated: {HasPromptDetails}, Template: {TemplateName}, Sections: {SectionCount}",
                 promptDetails != null, promptDetails?.TemplateName, promptDetails?.Sections?.Length ?? 0);
 
+            await NotifyProcessingStage(userId, queryId, "ai_processing", "Sending request to AI service for SQL generation", 40, new {
+                prompt = prompt?.Substring(0, Math.Min(200, prompt?.Length ?? 0)) + "...",
+                promptLength = prompt?.Length ?? 0,
+                templateName = promptDetails?.TemplateName
+            });
             var aiStartTime = DateTime.UtcNow;
             var generatedSQL = await _aiService.GenerateSQLAsync(prompt, cancellationToken);
             var aiExecutionTime = (int)(DateTime.UtcNow - aiStartTime).TotalMilliseconds;
 
             _logger.LogInformation("🤖 AI GENERATED SQL: {GeneratedSQL}", generatedSQL);
 
+            await NotifyProcessingStage(userId, queryId, "ai_completed", "AI generated SQL successfully", 50, new {
+                generatedSQL = generatedSQL?.Substring(0, Math.Min(300, generatedSQL?.Length ?? 0)) + "...",
+                aiExecutionTime = aiExecutionTime
+            });
+
             // Validate the generated SQL
+            await NotifyProcessingStage(userId, queryId, "sql_validation", "Validating generated SQL", 55);
             var isValidSQL = await _sqlQueryService.ValidateSqlAsync(generatedSQL);
             if (!isValidSQL)
             {
                 var error = "Generated SQL failed validation";
                 _logger.LogError("❌ SQL VALIDATION FAILED for query: {Question}", request.Question);
                 _logger.LogError("❌ FAILED SQL: {GeneratedSQL}", generatedSQL);
+                await NotifyProcessingStage(userId, queryId, "validation_failed", $"SQL validation failed: {error}", 100, new {
+                    error = error,
+                    sql = generatedSQL
+                });
                 await LogQueryAsync(userId, request, generatedSQL, false, 0, error);
                 await LogPromptDetailsAsync(request.Question, prompt, generatedSQL, false, aiExecutionTime, userId, request.SessionId, error);
                 return CreateErrorResponse(queryId, error, generatedSQL, promptDetails);
             }
 
             // Execute the SQL query
+            await NotifyProcessingStage(userId, queryId, "sql_execution", "Executing SQL query against database", 60, new {
+                sql = generatedSQL?.Substring(0, Math.Min(200, generatedSQL?.Length ?? 0)) + "..."
+            });
             _logger.LogInformation("Executing SQL: {SQL}", generatedSQL);
             var dbStartTime = DateTime.UtcNow;
             var queryResult = await _sqlQueryService.ExecuteSelectQueryAsync(generatedSQL, request.Options, cancellationToken);
@@ -201,13 +232,20 @@ public class QueryService : IQueryService
                 };
             }
 
+            await NotifyProcessingStage(userId, queryId, "sql_completed", "SQL execution completed successfully", 70, new {
+                rowCount = queryResult.Metadata?.RowCount ?? 0,
+                dbExecutionTime = dbExecutionTime
+            });
+
             // Calculate confidence score
+            await NotifyProcessingStage(userId, queryId, "confidence_calculation", "Calculating confidence score", 75);
             var confidence = await _aiService.CalculateConfidenceScoreAsync(request.Question, generatedSQL);
 
             // Generate visualization config if requested
             VisualizationConfig? visualization = null;
             if (request.Options.IncludeVisualization && queryResult.Data?.Length > 0)
             {
+                await NotifyProcessingStage(userId, queryId, "visualization_generation", "Generating visualization recommendations", 80);
                 var vizConfigJson = await _aiService.GenerateVisualizationConfigAsync(
                     request.Question, queryResult.Metadata.Columns, queryResult.Data);
 
@@ -220,6 +258,7 @@ public class QueryService : IQueryService
             }
 
             // Generate suggestions
+            await NotifyProcessingStage(userId, queryId, "suggestions_generation", "Generating follow-up suggestions", 85);
             var suggestions = await _aiService.GenerateQuerySuggestionsAsync(request.Question, relevantSchema);
             _logger.LogInformation("💡 Generated {Count} suggestions for query: {Suggestions}",
                 suggestions?.Length ?? 0, string.Join(", ", suggestions ?? Array.Empty<string>()));

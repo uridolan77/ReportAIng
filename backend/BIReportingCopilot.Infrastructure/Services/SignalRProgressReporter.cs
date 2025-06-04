@@ -22,10 +22,10 @@ public class SignalRProgressReporter : IProgressReporter
     {
         try
         {
-            _logger.LogInformation("Sending progress update to user {UserId}: {Progress}% - {Message} ({Stage})", userId, progress, message, stage);
+            _logger.LogInformation("📡 Sending progress update to user {UserId}: {Progress}% - {Message} ({Stage})", userId, progress, message, stage);
+            _logger.LogInformation("📡 Target group: user_{UserId}, Table: {CurrentTable}, Column: {CurrentColumn}", userId, currentTable, currentColumn);
 
-            // Use group-based messaging to match the SignalR hub setup
-            await _hubContext.Clients.Group($"user_{userId}").SendAsync("AutoGenerationProgress", new
+            var progressData = new
             {
                 Progress = progress,
                 Message = message,
@@ -33,9 +33,14 @@ public class SignalRProgressReporter : IProgressReporter
                 CurrentTable = currentTable,
                 CurrentColumn = currentColumn,
                 Timestamp = DateTime.UtcNow
-            });
+            };
 
-            _logger.LogInformation("Progress update sent successfully to user group user_{UserId}", userId);
+            _logger.LogInformation("📡 Progress data: {@ProgressData}", progressData);
+
+            // Use group-based messaging to match the SignalR hub setup
+            await _hubContext.Clients.Group($"user_{userId}").SendAsync("AutoGenerationProgress", progressData);
+
+            _logger.LogInformation("📡 Progress update sent successfully to user group user_{UserId}", userId);
         }
         catch (Exception ex)
         {

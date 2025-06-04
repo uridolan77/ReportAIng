@@ -118,6 +118,15 @@ export const useSignalR = (): UseSignalRReturn => {
         console.log('🔗 SignalR Connected successfully');
         console.log('🔗 SignalR Connection ID:', hubConnection.connectionId);
         console.log('🔗 SignalR Connection State:', hubConnection.state);
+        console.log('🔗 SignalR Auth Token (first 20 chars):', token?.substring(0, 20) + '...');
+
+        // Test the connection by sending a test message
+        try {
+          await hubConnection.invoke('SendUserNotification', 'test', { message: 'SignalR connection test' });
+          console.log('🔗 SignalR test message sent successfully');
+        } catch (testError) {
+          console.warn('🔗 SignalR test message failed:', testError);
+        }
       } catch (error) {
         console.error('SignalR connection error:', error);
         setIsConnected(false);

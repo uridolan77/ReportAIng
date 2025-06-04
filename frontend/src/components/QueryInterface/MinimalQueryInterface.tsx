@@ -116,7 +116,7 @@ export const MinimalQueryInterface: React.FC = () => {
       key: 'history',
       icon: <HistoryOutlined />,
       title: 'Recent Queries',
-      description: `${queryHistory.length} saved queries`,
+      description: `${Array.isArray(queryHistory) ? queryHistory.length : 0} saved queries`,
       action: () => setActiveTab('history'),
       color: '#10b981',
       bgGradient: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
@@ -223,7 +223,7 @@ export const MinimalQueryInterface: React.FC = () => {
             setShowProactiveSuggestions(false);
           }}
           onStartWizard={() => setShowWizard(true)}
-          recentQueries={queryHistory.map(h => h.query || '').slice(0, 5)}
+          recentQueries={Array.isArray(queryHistory) ? queryHistory.map(h => h.query || '').slice(0, 5) : []}
         />
       )}
 

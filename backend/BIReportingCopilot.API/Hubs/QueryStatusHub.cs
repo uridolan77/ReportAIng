@@ -17,13 +17,21 @@ public class QueryStatusHub : Hub
     public override async Task OnConnectedAsync()
     {
         var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        _logger.LogInformation("User {UserId} connected to QueryStatusHub with connection {ConnectionId}", 
-            userId, Context.ConnectionId);
+        var subClaim = Context.User?.FindFirst("sub")?.Value;
+        var nameClaim = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
+
+        _logger.LogInformation("User connected to QueryStatusHub - ConnectionId: {ConnectionId}, NameIdentifier: {UserId}, Sub: {SubClaim}, Name: {NameClaim}",
+            Context.ConnectionId, userId, subClaim, nameClaim);
 
         // Add user to their personal group for targeted notifications
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
+            _logger.LogInformation("Added user {UserId} to group user_{UserId}", userId, userId);
+        }
+        else
+        {
+            _logger.LogWarning("No user ID found in claims for connection {ConnectionId}", Context.ConnectionId);
         }
 
         await base.OnConnectedAsync();
@@ -32,7 +40,7 @@ public class QueryStatusHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        _logger.LogInformation("User {UserId} disconnected from QueryStatusHub with connection {ConnectionId}", 
+        _logger.LogInformation("User {UserId} disconnected from QueryStatusHub with connection {ConnectionId}",
             userId, Context.ConnectionId);
 
         if (exception != null)
@@ -48,9 +56,9 @@ public class QueryStatusHub : Hub
     {
         var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         _logger.LogDebug("User {UserId} joining query group {QueryId}", userId, queryId);
-        
+
         await Groups.AddToGroupAsync(Context.ConnectionId, $"query_{queryId}");
-        
+
         // Notify the client they've joined the group
         await Clients.Caller.SendAsync("JoinedQueryGroup", queryId);
     }
@@ -60,9 +68,9 @@ public class QueryStatusHub : Hub
     {
         var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         _logger.LogDebug("User {UserId} leaving query group {QueryId}", userId, queryId);
-        
+
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"query_{queryId}");
-        
+
         // Notify the client they've left the group
         await Clients.Caller.SendAsync("LeftQueryGroup", queryId);
     }
