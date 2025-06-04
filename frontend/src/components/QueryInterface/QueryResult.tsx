@@ -82,7 +82,7 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
     });
   }, [result]);
   if (!result.success) {
-    const isValidationError = result.validationError || (result.error && result.error.includes('validation'));
+    const isValidationError = (result.error && typeof result.error === 'string' && result.error.includes('validation'));
 
     return (
       <Card className="enhanced-card">
@@ -91,7 +91,7 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
             {isValidationError ? 'SQL Validation Failed' : 'Query Failed'}
           </Title>
           <Text style={{ color: 'white', fontSize: '16px', display: 'block', marginBottom: '24px' }}>
-            {typeof result.error === 'string' ? result.error : result.error?.message || 'An error occurred while processing your query. Please check your query and try again.'}
+            {typeof result.error === 'string' ? result.error : 'An error occurred while processing your query. Please check your query and try again.'}
           </Text>
 
           {isValidationError && (
@@ -330,9 +330,9 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
     dataIndex: col.name,
     key: col.name,
     width: 150,
-    dataType: col.type === 'number' || col.type === 'integer' || col.type === 'decimal' ? 'number' :
-              col.type === 'date' || col.type === 'datetime' || col.type === 'timestamp' ? 'date' :
-              col.type === 'boolean' ? 'boolean' : 'string',
+    dataType: col.dataType === 'number' || col.dataType === 'integer' || col.dataType === 'decimal' ? 'number' :
+              col.dataType === 'date' || col.dataType === 'datetime' || col.dataType === 'timestamp' ? 'date' :
+              col.dataType === 'boolean' ? 'boolean' : 'string',
     sortable: true,
     filterable: true,
     searchable: true,
@@ -602,7 +602,7 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
                             borderRadius: '4px'
                           }}>
                             <div style={{ marginBottom: '4px' }}>
-                              <Tag color={section.type === 'system' ? 'red' : section.type === 'schema' ? 'green' : section.type === 'context' ? 'orange' : 'blue'} size="small">
+                              <Tag color={section.type === 'system' ? 'red' : section.type === 'schema' ? 'green' : section.type === 'context' ? 'orange' : 'blue'}>
                                 {section.type}
                               </Tag>
                               <Text strong style={{ fontSize: '12px', marginLeft: '8px' }}>

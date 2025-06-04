@@ -3,6 +3,10 @@ using BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
 
+// =============================================================================
+// VISUALIZATION MODELS
+// =============================================================================
+
 /// <summary>
 /// Visualization recommendations result
 /// </summary>
@@ -228,6 +232,105 @@ public class ColumnStatistics
     public int Count { get; set; }
 }
 
+// =============================================================================
+// SQL GENERATOR MODELS
+// =============================================================================
+
+/// <summary>
+/// Generated query result with enhanced metadata
+/// </summary>
+public class GeneratedQuery
+{
+    public string SQL { get; set; } = string.Empty;
+    public string Explanation { get; set; } = string.Empty;
+    public double ConfidenceScore { get; set; }
+    public List<string> Alternatives { get; set; } = new();
+    public string ExecutionPlan { get; set; } = string.Empty;
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
+/// Sub-query SQL generation result
+/// </summary>
+public class SubQuerySQLResult
+{
+    public SubQuery SubQuery { get; set; } = new();
+    public string SQL { get; set; } = string.Empty;
+    public string Explanation { get; set; } = string.Empty;
+    public double Confidence { get; set; }
+    public List<string> UsedTables { get; set; } = new();
+    public double EstimatedCost { get; set; }
+}
+
+/// <summary>
+/// Combined SQL result
+/// </summary>
+public class CombinedSQLResult
+{
+    public string SQL { get; set; } = string.Empty;
+    public string Explanation { get; set; } = string.Empty;
+    public string CombinationStrategy { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Schema relationship definition
+/// </summary>
+public class SchemaRelationship
+{
+    public string FromTable { get; set; } = string.Empty;
+    public string FromColumn { get; set; } = string.Empty;
+    public string ToTable { get; set; } = string.Empty;
+    public string ToColumn { get; set; } = string.Empty;
+    public string RelationshipType { get; set; } = string.Empty; // "foreign_key", "one_to_many", etc.
+    public double Confidence { get; set; }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is SchemaRelationship other)
+        {
+            return FromTable == other.FromTable &&
+                   FromColumn == other.FromColumn &&
+                   ToTable == other.ToTable &&
+                   ToColumn == other.ToColumn;
+        }
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(FromTable, FromColumn, ToTable, ToColumn);
+    }
+}
+
+/// <summary>
+/// Optimized SQL result
+/// </summary>
+public class OptimizedSQLResult
+{
+    public string SQL { get; set; } = string.Empty;
+    public string Explanation { get; set; } = string.Empty;
+    public double Confidence { get; set; }
+    public List<string> Optimizations { get; set; } = new();
+}
+
+/// <summary>
+/// Sub-query information for SQL generation
+/// </summary>
+public class SubQuery
+{
+    public string Id { get; set; } = string.Empty;
+    public string Query { get; set; } = string.Empty;
+    public string Purpose { get; set; } = string.Empty;
+    public List<string> RequiredTables { get; set; } = new();
+    public List<string> RequiredColumns { get; set; } = new();
+    public QueryComplexity Complexity { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+// =============================================================================
+// ENUMERATIONS
+// =============================================================================
+
 /// <summary>
 /// Chart types supported by the visualization engine
 /// </summary>
@@ -305,209 +408,4 @@ public enum FilterType
     Numeric,
     DateTime,
     Text
-}
-
-/// <summary>
-/// Visualization recommendation engine
-/// </summary>
-public class VisualizationRecommendationEngine
-{
-    private readonly ILogger _logger;
-
-    public VisualizationRecommendationEngine(ILogger logger)
-    {
-        _logger = logger;
-    }
-
-    public async Task<List<ChartRecommendation>> GenerateChartRecommendationsAsync(
-        DataCharacteristics dataCharacteristics,
-        SemanticAnalysis semanticAnalysis)
-    {
-        var recommendations = new List<ChartRecommendation>();
-
-        try
-        {
-            // Rule-based recommendations based on data characteristics
-            if (dataCharacteristics.HasTimeSeriesData && dataCharacteristics.HasNumericData)
-            {
-                recommendations.Add(new ChartRecommendation
-                {
-                    ChartType = ChartType.LineChart,
-                    Title = "Time Series Analysis",
-                    Description = "Shows trends over time",
-                    Confidence = 0.9,
-                    Reasons = new List<string> { "Time series data detected", "Numeric values present" }
-                });
-            }
-
-            if (dataCharacteristics.HasCategoricalData && dataCharacteristics.HasNumericData)
-            {
-                recommendations.Add(new ChartRecommendation
-                {
-                    ChartType = ChartType.BarChart,
-                    Title = "Category Comparison",
-                    Description = "Compares values across categories",
-                    Confidence = 0.85,
-                    Reasons = new List<string> { "Categorical data detected", "Numeric values for comparison" }
-                });
-
-                // Add pie chart for small number of categories
-                var categoricalColumn = dataCharacteristics.Columns.FirstOrDefault(c => c.IsCategorical);
-                if (categoricalColumn != null && categoricalColumn.UniqueValueCount <= 8)
-                {
-                    recommendations.Add(new ChartRecommendation
-                    {
-                        ChartType = ChartType.PieChart,
-                        Title = "Distribution Analysis",
-                        Description = "Shows proportion of each category",
-                        Confidence = 0.75,
-                        Reasons = new List<string> { "Small number of categories", "Good for showing proportions" }
-                    });
-                }
-            }
-
-            // Multiple numeric columns suggest scatter plot
-            var numericColumns = dataCharacteristics.Columns.Where(c => c.IsNumeric).ToList();
-            if (numericColumns.Count >= 2)
-            {
-                recommendations.Add(new ChartRecommendation
-                {
-                    ChartType = ChartType.ScatterPlot,
-                    Title = "Correlation Analysis",
-                    Description = "Shows relationship between numeric variables",
-                    Confidence = 0.7,
-                    Reasons = new List<string> { "Multiple numeric columns", "Good for correlation analysis" }
-                });
-            }
-
-            // Always include table as fallback
-            recommendations.Add(new ChartRecommendation
-            {
-                ChartType = ChartType.Table,
-                Title = "Data Table",
-                Description = "Detailed view of all data",
-                Confidence = 0.6,
-                Reasons = new List<string> { "Always available", "Shows all data details" }
-            });
-
-            // Sort by confidence and return top recommendations
-            return recommendations.OrderByDescending(r => r.Confidence).Take(4).ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating chart recommendations");
-            return new List<ChartRecommendation>
-            {
-                new ChartRecommendation
-                {
-                    ChartType = ChartType.Table,
-                    Title = "Data Table",
-                    Description = "Fallback table view",
-                    Confidence = 0.5
-                }
-            };
-        }
-    }
-}
-
-/// <summary>
-/// Chart configuration generator
-/// </summary>
-public class ChartConfigurationGenerator
-{
-    private readonly ILogger _logger;
-
-    public ChartConfigurationGenerator(ILogger logger)
-    {
-        _logger = logger;
-    }
-
-    public async Task<List<ChartConfiguration>> GenerateChartConfigurationsAsync(
-        List<ChartRecommendation> recommendations,
-        QueryResult queryResult)
-    {
-        var configurations = new List<ChartConfiguration>();
-
-        foreach (var recommendation in recommendations)
-        {
-            try
-            {
-                var config = await GenerateConfigurationForChartTypeAsync(
-                    recommendation.ChartType, queryResult, recommendation);
-                configurations.Add(config);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error generating configuration for {ChartType}", recommendation.ChartType);
-            }
-        }
-
-        return configurations;
-    }
-
-    private async Task<ChartConfiguration> GenerateConfigurationForChartTypeAsync(
-        ChartType chartType,
-        QueryResult queryResult,
-        ChartRecommendation recommendation)
-    {
-        // This would contain the specific logic for each chart type
-        // For now, return a basic configuration
-        return new ChartConfiguration
-        {
-            ChartType = chartType,
-            Title = recommendation.Title,
-            ShowLegend = true,
-            ShowTooltip = true,
-            Colors = new[] { "#3B82F6", "#10B981", "#F59E0B", "#EF4444" }
-        };
-    }
-}
-
-/// <summary>
-/// Dashboard layout optimizer
-/// </summary>
-public class DashboardLayoutOptimizer
-{
-    private readonly ILogger _logger;
-
-    public DashboardLayoutOptimizer(ILogger logger)
-    {
-        _logger = logger;
-    }
-
-    public async Task<DashboardLayoutRecommendation> GenerateDashboardLayoutAsync(
-        List<ChartRecommendation> chartRecommendations,
-        DataCharacteristics dataCharacteristics)
-    {
-        return new DashboardLayoutRecommendation
-        {
-            LayoutType = LayoutType.Grid,
-            Columns = 2,
-            PanelPlacements = GeneratePanelPlacements(chartRecommendations)
-        };
-    }
-
-    public async Task<List<DashboardPanel>> OptimizeDashboardLayoutAsync(List<DashboardPanel> panels)
-    {
-        // Simple optimization - arrange panels by priority and size
-        return panels.OrderBy(p => p.Position.Row).ThenBy(p => p.Position.Column).ToList();
-    }
-
-    private List<PanelPlacement> GeneratePanelPlacements(List<ChartRecommendation> recommendations)
-    {
-        var placements = new List<PanelPlacement>();
-
-        for (int i = 0; i < recommendations.Count; i++)
-        {
-            placements.Add(new PanelPlacement
-            {
-                PanelId = $"panel_{i}",
-                Position = new PanelPosition { Row = i / 2, Column = i % 2 },
-                Size = new PanelSize { Width = 6, Height = 4 },
-                Priority = i
-            });
-        }
-
-        return placements;
-    }
 }

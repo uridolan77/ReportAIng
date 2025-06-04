@@ -469,11 +469,14 @@ else
     // Register a null implementation for IConnectionMultiplexer when Redis is disabled
     builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(provider => null!);
 
-    // Use in-memory caching instead
-    builder.Services.AddMemoryCache();
+    // Use in-memory distributed cache when Redis is disabled
+    builder.Services.AddDistributedMemoryCache();
 
-    Log.Information("Redis caching disabled - using in-memory caching");
+    Log.Information("Redis caching disabled - using in-memory distributed caching");
 }
+
+// Always register IMemoryCache for local caching needs
+builder.Services.AddMemoryCache();
 
 // Unified cache service with built-in distributed caching support
 builder.Services.AddSingleton<ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();

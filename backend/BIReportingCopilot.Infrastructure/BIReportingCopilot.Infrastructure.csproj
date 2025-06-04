@@ -45,24 +45,21 @@
   <!-- Temporarily exclude Phase 3 files with compilation errors for Phase 3A demo -->
   <ItemGroup>
     <Compile Remove="AI\Enhanced\RealTimeStreamingAnalytics.cs" />
-    <Compile Remove="AI\Enhanced\StreamingModels.cs" />
+    <Compile Remove="AI\Enhanced\Phase3Models.cs" />
     <Compile Remove="AI\Enhanced\AdvancedNLUService.cs" />
     <!-- NLU model files have been consolidated into NLUModels.cs -->
+    <!-- Phase 3 model files have been consolidated into Phase3Models.cs -->
     <Compile Remove="AI\Enhanced\FederatedLearningService.cs" />
     <Compile Remove="AI\Enhanced\FederatedLearning*.cs" />
     <Compile Remove="AI\Enhanced\QuantumResistantSecurityService.cs" />
-    <Compile Remove="AI\Enhanced\QuantumSecurity*.cs" />
     <Compile Remove="AI\Enhanced\AdvancedSemanticCache.cs" />
     <Compile Remove="AI\Enhanced\ContextAwareSemanticAnalyzer.cs" />
     <Compile Remove="AI\Enhanced\ConversationContextManager.cs" />
     <Compile Remove="AI\Enhanced\IntelligentProviderRouter.cs" />
-    <Compile Remove="AI\Enhanced\ProviderRoutingModels.cs" />
-    <Compile Remove="AI\Enhanced\SemanticCacheModels.cs" />
     <Compile Remove="AI\Enhanced\ThreatDetectors.cs" />
     <Compile Remove="AI\Enhanced\AIThreatDetectionService.cs" />
     <Compile Remove="AI\Enhanced\IntentClassifier.cs" />
     <Compile Remove="AI\Enhanced\EnhancedQueryProcessorV2.cs" />
-    <Compile Remove="AI\Enhanced\AnomalyDetectionModels.cs" />
     <Compile Remove="AI\Enhanced\EnhancedVisualizationService.cs" />
     <Compile Remove="AI\Enhanced\MultiModalAnomalyDetector.cs" />
     <Compile Remove="AI\Enhanced\SchemaAwareSQLGenerator.cs" />
