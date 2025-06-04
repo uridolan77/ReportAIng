@@ -4,8 +4,6 @@ using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Core.Services;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Data;
-using BIReportingCopilot.API.Hubs;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using CoreModels = BIReportingCopilot.Core.Models;
@@ -24,7 +22,7 @@ public class QueryService : IQueryService
     private readonly IAITuningSettingsService _settingsService;
     private readonly IContextManager? _contextManager;
     private readonly BICopilotContext _context;
-    private readonly IHubContext<QueryStatusHub> _hubContext;
+    private readonly IQueryProgressNotifier? _progressNotifier;
 
     // Legacy support removed - using IAIService instead
 
@@ -38,7 +36,7 @@ public class QueryService : IQueryService
         IPromptService promptService,
         IAITuningSettingsService settingsService,
         BICopilotContext context,
-        IHubContext<QueryStatusHub> hubContext,
+        IQueryProgressNotifier? progressNotifier = null,
         IContextManager? contextManager = null) // Optional for backward compatibility
     {
         _logger = logger;
@@ -51,7 +49,7 @@ public class QueryService : IQueryService
         _settingsService = settingsService;
         _context = context;
         _contextManager = contextManager;
-        _hubContext = hubContext;
+        _progressNotifier = progressNotifier;
     }
 
     public async Task<QueryResponse> ProcessQueryAsync(QueryRequest request, string userId)
@@ -299,6 +297,13 @@ public class QueryService : IQueryService
 
             // Log prompt details for admin debugging
             await LogPromptDetailsAsync(request.Question, prompt, generatedSQL, true, totalExecutionTime, userId, request.SessionId);
+
+            await NotifyProcessingStage(userId, queryId, "completed", "Query processing completed successfully", 100, new {
+                totalExecutionTime = totalExecutionTime,
+                rowCount = response.Result?.Metadata?.RowCount ?? 0,
+                confidence = confidence,
+                cached = false
+            });
 
             _logger.LogInformation("Query completed successfully - QueryId: {QueryId}, ExecutionTime: {ExecutionTime}ms, RowCount: {RowCount}",
                 queryId, totalExecutionTime, response.Result?.Metadata?.RowCount ?? 0);
@@ -701,4 +706,25 @@ public class QueryService : IQueryService
     }
 
     #endregion
+
+    /// <summary>
+    /// Notify processing stage via real-time communication
+    /// </summary>
+    private async Task NotifyProcessingStage(string userId, string queryId, string stage, string message, int progress, object? details = null)
+    {
+        try
+        {
+            _logger.LogInformation("📡 Query Progress - User: {UserId}, QueryId: {QueryId}, Stage: {Stage}, Progress: {Progress}%, Message: {Message}",
+                userId, queryId, stage, progress, message);
+
+            if (_progressNotifier != null)
+            {
+                await _progressNotifier.NotifyProcessingStageAsync(userId, queryId, stage, message, progress, details);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send processing stage notification for user {UserId}, query {QueryId}", userId, queryId);
+        }
+    }
 }

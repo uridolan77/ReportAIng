@@ -34,6 +34,13 @@ interface QueryContextType {
   showCommandPalette: boolean;
   setShowCommandPalette: (show: boolean) => void;
 
+  // Processing state
+  processingStages: any[];
+  currentProcessingStage: string;
+  showProcessingDetails: boolean;
+  setShowProcessingDetails: (show: boolean) => void;
+  currentQueryId: string;
+
   // React Query data
   currentResult: any;
   queryHistory: any[];
@@ -119,25 +126,86 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   // WebSocket for real-time updates
   const { isConnected, lastMessage } = useWebSocket('/ws/query-status');
 
+  // Query processing state
+  const [processingStages, setProcessingStages] = useState<any[]>([]);
+  const [currentProcessingStage, setCurrentProcessingStage] = useState<string>('');
+  const [showProcessingDetails, setShowProcessingDetails] = useState(false);
+  const [currentQueryId, setCurrentQueryId] = useState<string>('');
+
   // Refs
   const textAreaRef = useRef<any>(null);
 
   // Handle WebSocket messages for query progress
   useEffect(() => {
     if (lastMessage) {
-      const message = JSON.parse(lastMessage.data);
-      switch (message.type) {
-        case 'query_progress':
-          setProgress(message.progress * 100);
-          break;
-        case 'query_completed':
-          // setIsLoading handled by React Query mutation state
-          setProgress(0);
-          break;
-        case 'query_error':
-          // setIsLoading handled by React Query mutation state
-          setProgress(0);
-          break;
+      console.log('📨 Received WebSocket message:', lastMessage);
+
+      try {
+        const message = JSON.parse(lastMessage.data);
+
+        // Handle different message types
+        if (lastMessage.type === 'QueryProcessingProgress') {
+          console.log('🔄 Query processing progress update:', message);
+
+          // Update current query ID and stage
+          if (message.QueryId) {
+            setCurrentQueryId(message.QueryId);
+          }
+          if (message.Stage) {
+            setCurrentProcessingStage(message.Stage);
+          }
+
+          // Add or update processing stage
+          setProcessingStages(prev => {
+            const existingIndex = prev.findIndex(stage => stage.stage === message.Stage);
+            const newStage = {
+              stage: message.Stage,
+              message: message.Message,
+              progress: message.Progress,
+              timestamp: message.Timestamp,
+              details: message.Details,
+              status: message.Progress === 100 ? 'completed' : 'active'
+            };
+
+            if (existingIndex >= 0) {
+              // Update existing stage
+              const updated = [...prev];
+              updated[existingIndex] = newStage;
+              return updated;
+            } else {
+              // Add new stage
+              return [...prev, newStage];
+            }
+          });
+
+          // Auto-show processing details when query starts
+          if (message.Stage === 'started') {
+            setShowProcessingDetails(true);
+            setProcessingStages([]); // Clear previous stages
+          }
+
+          // Update overall progress
+          setProgress(message.Progress || 0);
+        } else {
+          // Handle legacy message types
+          switch (message.type) {
+            case 'query_progress':
+              setProgress(message.progress * 100);
+              break;
+            case 'query_completed':
+              // setIsLoading handled by React Query mutation state
+              setProgress(0);
+              setShowProcessingDetails(false);
+              break;
+            case 'query_error':
+              // setIsLoading handled by React Query mutation state
+              setProgress(0);
+              setShowProcessingDetails(false);
+              break;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
       }
     }
   }, [lastMessage]);
@@ -385,6 +453,13 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     setShowInsightsPanel,
     showCommandPalette,
     setShowCommandPalette,
+
+    // Processing state
+    processingStages,
+    currentProcessingStage,
+    showProcessingDetails,
+    setShowProcessingDetails,
+    currentQueryId,
 
     // React Query data
     currentResult,

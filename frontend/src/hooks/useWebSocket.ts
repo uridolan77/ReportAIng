@@ -98,6 +98,16 @@ export const useSignalR = (): UseSignalRReturn => {
           setLastMessage(message);
         });
 
+        hubConnection.on('QueryProcessingProgress', (data) => {
+          console.log('🔄 Received QueryProcessingProgress via SignalR:', data);
+          const message: WebSocketMessage = {
+            data: JSON.stringify(data),
+            type: 'QueryProcessingProgress',
+            timestamp: new Date().toISOString(),
+          };
+          setLastMessage(message);
+        });
+
         // Connection state handlers
         hubConnection.onclose(() => {
           setIsConnected(false);

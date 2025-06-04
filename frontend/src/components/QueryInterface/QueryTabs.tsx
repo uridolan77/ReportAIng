@@ -30,6 +30,7 @@ import { AdvancedStreamingQuery } from './AdvancedStreamingQuery';
 import { InteractiveVisualization } from './InteractiveVisualization';
 import { DashboardView } from './DashboardView';
 import { QueryLoadingState, CopilotThinking } from './LoadingStates';
+import { QueryProcessingViewer } from './QueryProcessingViewer';
 import AdvancedVisualizationPanel from '../Visualization/AdvancedVisualizationPanel';
 import { TuningDashboard } from '../Tuning/TuningDashboard';
 import { CacheManager } from '../Performance/CacheManager';
@@ -58,7 +59,13 @@ export const QueryTabs: React.FC = () => {
     handleAddToFavorites,
     handleVisualizationRequest,
     setShowExportModal,
-    setQuery
+    setQuery,
+    // Processing state
+    processingStages,
+    currentProcessingStage,
+    showProcessingDetails,
+    setShowProcessingDetails,
+    currentQueryId
   } = useQueryContext();
 
   // Debug logging for prompt details
@@ -199,37 +206,61 @@ export const QueryTabs: React.FC = () => {
         key="result"
       >
         {isLoading ? (
-          <QueryLoadingState
-            progress={progress}
-            stage="analyzing"
-            message="AI Copilot is analyzing your question and preparing results..."
-          />
+          <>
+            {/* Query Processing Details during loading */}
+            <QueryProcessingViewer
+              stages={processingStages}
+              isProcessing={isLoading}
+              currentStage={currentProcessingStage}
+              queryId={currentQueryId}
+              isVisible={showProcessingDetails}
+              onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
+            />
+
+            <QueryLoadingState
+              progress={progress}
+              stage="analyzing"
+              message="AI Copilot is analyzing your question and preparing results..."
+            />
+          </>
         ) : currentResult ? (
-          <Row gutter={[16, 16]}>
-            <Col xs={24} lg={showInsightsPanel && currentResult.success ? 16 : 24}>
-              <QueryResult
-                result={currentResult}
-                query={query}
-                onRequery={handleSubmitQuery}
-                onSuggestionClick={handleFollowUpSuggestionClick}
-                onVisualizationRequest={handleVisualizationRequest}
-              />
-            </Col>
-            {showInsightsPanel && currentResult.success && (
-              <Col xs={24} lg={8}>
-                <div data-testid="insights-panel" tabIndex={0}>
-                  <DataInsightsPanel
-                    queryResult={currentResult}
-                    onInsightAction={(action) => {
-                      console.log('Insight action:', action);
-                      // Handle insight actions like drill-down, filtering, etc.
-                    }}
-                    autoGenerate={true}
-                  />
-                </div>
+          <>
+            {/* Query Processing Details */}
+            <QueryProcessingViewer
+              stages={processingStages}
+              isProcessing={isLoading}
+              currentStage={currentProcessingStage}
+              queryId={currentQueryId}
+              isVisible={showProcessingDetails}
+              onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
+            />
+
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={showInsightsPanel && currentResult.success ? 16 : 24}>
+                <QueryResult
+                  result={currentResult}
+                  query={query}
+                  onRequery={handleSubmitQuery}
+                  onSuggestionClick={handleFollowUpSuggestionClick}
+                  onVisualizationRequest={handleVisualizationRequest}
+                />
               </Col>
-            )}
-          </Row>
+              {showInsightsPanel && currentResult.success && (
+                <Col xs={24} lg={8}>
+                  <div data-testid="insights-panel" tabIndex={0}>
+                    <DataInsightsPanel
+                      queryResult={currentResult}
+                      onInsightAction={(action) => {
+                        console.log('Insight action:', action);
+                        // Handle insight actions like drill-down, filtering, etc.
+                      }}
+                      autoGenerate={true}
+                    />
+                  </div>
+                </Col>
+              )}
+            </Row>
+          </>
         ) : (
           <div className="empty-result" style={{
             display: 'flex',

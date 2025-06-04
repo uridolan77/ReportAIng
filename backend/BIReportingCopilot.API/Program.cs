@@ -429,6 +429,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHand
 // ===== CORE APPLICATION SERVICES =====
 // Base services
 builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.AIService>();
+builder.Services.AddScoped<IQueryProgressNotifier, BIReportingCopilot.API.Services.SignalRQueryProgressNotifier>();
 builder.Services.AddScoped<IQueryService, QueryService>();
 builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Services.SchemaService>(); // Unified with built-in caching
 builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Services.SqlQueryService>();
