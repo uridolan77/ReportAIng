@@ -146,6 +146,14 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
             <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
               {currentTask}
             </Text>
+            {currentTable && (
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                Table: <Text code>{currentTable}</Text>
+                {currentColumn && (
+                  <span> | Column: <Text code>{currentColumn}</Text></span>
+                )}
+              </Text>
+            )}
           </div>
         </div>
 

@@ -318,6 +318,116 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.SecurityMa
 // ===== AI/ML ENHANCEMENT SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.SemanticCacheService>();
 
+// ===== ENHANCED AI SERVICES (ENHANCEMENTS 6 & 8) - Temporarily disabled for Phase 3A =====
+/*
+// Enhanced semantic analysis with conversation context
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ContextAwareSemanticAnalyzer>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ConversationContextManager>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.EntityLinker>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.IntentClassifier>();
+
+// Enhanced SQL generation with decomposition
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.QueryDecomposer>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SchemaAwareSQLGenerator>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SchemaRelationshipAnalyzer>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SQLOptimizer>();
+
+// Enhanced query processing and confidence scoring
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.MultiDimensionalConfidenceScorer>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.EnhancedQueryProcessorV2>();
+
+// Additional enhanced services
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.AdaptiveQueryOptimizer>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.EnhancedVisualizationService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.VisualizationRecommendationEngine>();
+*/
+// Temporarily disable these services until logger issues are resolved
+// builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ChartConfigurationGenerator>();
+// builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.DashboardLayoutOptimizer>();
+
+// Migration services - Temporarily disabled for Phase 3A
+/*
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Migration.EnhancedAIMigrationService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Migration.MigrationMetricsCollector>();
+*/
+
+// Enhanced configuration
+builder.Services.Configure<EnhancedAIConfiguration>(
+    builder.Configuration.GetSection("EnhancedAI"));
+
+// Feature flags for gradual rollout
+builder.Services.Configure<FeatureFlags>(
+    builder.Configuration.GetSection("FeatureFlags"));
+
+// Migration settings
+builder.Services.Configure<MigrationSettings>(
+    builder.Configuration.GetSection("Migration"));
+
+// Phase 2 Enhanced Services - Temporarily disabled for Phase 3A
+/*
+// Enhancement 1: Intelligent Provider Routing
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.IntelligentProviderRouter>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ProviderPerformanceTracker>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.CostOptimizer>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ProviderHealthMonitor>();
+
+// Enhancement 19: Advanced Semantic Cache
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.AdvancedSemanticCache>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.VectorEmbeddingService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SemanticSimilarityEngine>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.CacheOptimizer>();
+
+// Enhancement 11: Multi-Modal Anomaly Detection
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.MultiModalAnomalyDetector>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.StatisticalAnomalyDetector>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.TemporalAnomalyDetector>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.PatternAnomalyDetector>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.BusinessRuleAnomalyDetector>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.AnomalyAlertManager>();
+
+// Enhancement 25: AI-Powered Threat Detection
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.AIThreatDetectionService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SQLInjectionDetector>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.AnomalousQueryDetector>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.UserBehaviorAnalyzer>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.DataExfiltrationDetector>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.ThreatIntelligenceEngine>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.SecurityAlertManager>();
+
+// Phase 2 Configuration
+builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.ProviderRoutingConfiguration>(
+    builder.Configuration.GetSection("ProviderRouting"));
+builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.SemanticCacheConfiguration>(
+    builder.Configuration.GetSection("SemanticCache"));
+builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.AnomalyConfiguration>(
+    builder.Configuration.GetSection("AnomalyDetection"));
+builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.ThreatDetectionConfiguration>(
+    builder.Configuration.GetSection("ThreatDetection"));
+*/
+
+// Phase 3 Enhanced Services - Phase 3A: Infrastructure Ready
+// Phase 3 Status and Management Service
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.Phase3StatusService>();
+
+// TODO: Enable individual Phase 3 services after fixing compilation errors
+// Phase 3B: Streaming Analytics (Next)
+// Phase 3C: Advanced NLU (After fixing duplicates)
+// Phase 3D: Federated Learning & Quantum Security (Final)
+
+// Phase 3 Configuration
+builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.Phase3Configuration>(
+    builder.Configuration.GetSection("Phase3"));
+
+// Individual Phase 3 feature configurations (for future use)
+// builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.StreamingConfiguration>(
+//     builder.Configuration.GetSection("StreamingAnalytics"));
+// builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.NLUConfiguration>(
+//     builder.Configuration.GetSection("AdvancedNLU"));
+// builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.FederatedLearningConfiguration>(
+//     builder.Configuration.GetSection("FederatedLearning"));
+// builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.QuantumSecurityConfiguration>(
+//     builder.Configuration.GetSection("QuantumSecurity"));
+
 // Unified query analysis service - consolidates SemanticAnalyzer and QueryClassifier
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.QueryAnalysisService>();
 builder.Services.AddScoped<ISemanticAnalyzer>(provider =>

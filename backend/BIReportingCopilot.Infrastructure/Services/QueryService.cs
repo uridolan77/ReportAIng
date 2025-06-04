@@ -50,6 +50,10 @@ public class QueryService : IQueryService
         _context = context;
         _contextManager = contextManager;
         _progressNotifier = progressNotifier;
+
+        // Debug logging for progress notifier injection
+        _logger.LogInformation("🔧 QueryService initialized - ProgressNotifier: {ProgressNotifierType}",
+            _progressNotifier?.GetType().Name ?? "NULL");
     }
 
     public async Task<QueryResponse> ProcessQueryAsync(QueryRequest request, string userId)
@@ -69,7 +73,7 @@ public class QueryService : IQueryService
                 queryId, userId, request.Question);
 
             // Notify query processing started
-            await NotifyProcessingStage(userId, queryId, "started", "Query processing initiated", 0);
+            await NotifyProcessingStage(userId, queryId, "started", "Query processing initiated", 10);
 
             // Check cache first if enabled (both in request options AND admin settings)
             await NotifyProcessingStage(userId, queryId, "cache_check", "Checking query cache", 5);

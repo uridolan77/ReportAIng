@@ -28,6 +28,7 @@ import { ProactiveSuggestions } from './ProactiveSuggestions';
 import { GuidedQueryWizard } from './GuidedQueryWizard';
 import { ErrorRecoveryPanel, QueryValidator } from './EnhancedErrorHandling';
 import { AIProcessingFeedback, useAIProcessingFeedback, createProcessingStepFromError } from './AIProcessingFeedback';
+import { QueryProcessingViewer } from './QueryProcessingViewer';
 import { AccessibilityFeatures } from './AccessibilityFeatures';
 import './animations.css';
 import './professional-polish.css';
@@ -45,7 +46,12 @@ export const MinimalQueryInterface: React.FC = () => {
     handleSubmitQuery,
     setShowTemplateLibrary,
     setActiveTab,
-    queryHistory
+    queryHistory,
+    processingStages,
+    currentProcessingStage,
+    showProcessingDetails,
+    setShowProcessingDetails,
+    currentQueryId
   } = useQueryContext();
 
   const [showQuickActions] = useState(true);
@@ -213,6 +219,35 @@ export const MinimalQueryInterface: React.FC = () => {
             Working in offline mode
           </Tag>
         )}
+
+        {/* Debug: Test SignalR Button */}
+        <div style={{ marginTop: '16px' }}>
+          <Button
+            type="primary"
+            size="small"
+            onClick={async () => {
+              try {
+                // Get auth token from auth store
+                const { useAuthStore } = await import('../../stores/authStore');
+                const token = await useAuthStore.getState().getDecryptedToken();
+
+                const response = await fetch('http://localhost:55243/api/query/test-signalr', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token || ''}`
+                  }
+                });
+                const result = await response.json();
+                console.log('🧪 SignalR test result:', result);
+              } catch (error) {
+                console.error('🧪 SignalR test error:', error);
+              }
+            }}
+          >
+            🧪 Test SignalR
+          </Button>
+        </div>
       </div>
 
       {/* Proactive Suggestions - Show when no query and no results */}
@@ -304,14 +339,16 @@ export const MinimalQueryInterface: React.FC = () => {
           onValidationResult={setValidationResult}
         />
 
-        {/* AI Processing Feedback */}
+        {/* Enhanced Query Processing Viewer */}
         {(isLoading || aiProcessing.isProcessing) && (
           <div style={{ marginTop: '16px' }}>
-            <AIProcessingFeedback
+            <QueryProcessingViewer
+              stages={processingStages}
               isProcessing={isLoading || aiProcessing.isProcessing}
-              currentStep={aiProcessing.currentStep}
-              steps={aiProcessing.steps}
-              showDetails={false}
+              currentStage={currentProcessingStage}
+              queryId={currentQueryId}
+              isVisible={true}
+              onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
             />
           </div>
         )}

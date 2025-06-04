@@ -20,6 +20,11 @@ public class SignalRProgressReporter : IProgressReporter
 
     public async Task SendProgressUpdateAsync(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null)
     {
+        await SendProgressUpdateAsync(userId, progress, message, stage, currentTable, currentColumn, null, null, null, null);
+    }
+
+    public async Task SendProgressUpdateAsync(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null, int? tablesProcessed = null, int? totalTables = null, int? columnsProcessed = null, int? totalColumns = null, object? aiPrompt = null)
+    {
         try
         {
             _logger.LogInformation("📡 Sending progress update to user {UserId}: {Progress}% - {Message} ({Stage})", userId, progress, message, stage);
@@ -32,6 +37,11 @@ public class SignalRProgressReporter : IProgressReporter
                 Stage = stage,
                 CurrentTable = currentTable,
                 CurrentColumn = currentColumn,
+                TablesProcessed = tablesProcessed,
+                TotalTables = totalTables,
+                ColumnsProcessed = columnsProcessed,
+                TotalColumns = totalColumns,
+                AIPrompt = aiPrompt,
                 Timestamp = DateTime.UtcNow
             };
 

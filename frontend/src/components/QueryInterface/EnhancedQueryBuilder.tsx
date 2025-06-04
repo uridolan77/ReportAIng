@@ -548,26 +548,36 @@ const EnhancedQueryBuilder: React.FC = () => {
       <div className="query-builder-header">
         <Row justify="space-between" align="middle">
           <Col>
-            <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
-              <RocketOutlined style={{ marginRight: '12px' }} />
+            <Title level={2} style={{ margin: 0, color: 'var(--primary-600)', fontFamily: 'var(--font-family-secondary)' }}>
+              <RocketOutlined style={{ marginRight: 'var(--space-3)' }} />
               Enhanced AI Query Builder
             </Title>
-            <Text type="secondary" style={{ fontSize: '16px' }}>
+            <Text type="secondary" style={{ fontSize: 'var(--text-lg)', fontFamily: 'var(--font-family-primary)' }}>
               Build powerful queries with AI assistance, guided wizards, and smart templates
             </Text>
           </Col>
           <Col>
-            <Space>
+            <Space size="large">
               <Switch
                 checkedChildren="Advanced"
                 unCheckedChildren="Guided"
                 checked={builderMode === 'advanced'}
                 onChange={(checked) => setBuilderMode(checked ? 'advanced' : 'guided')}
+                style={{
+                  background: builderMode === 'advanced' ? 'var(--primary-500)' : 'var(--neutral-300)'
+                }}
               />
               <Button
                 icon={<BookOutlined />}
                 onClick={() => setShowTemplates(!showTemplates)}
                 type={showTemplates ? 'primary' : 'default'}
+                size="large"
+                style={{
+                  borderRadius: 'var(--radius-lg)',
+                  fontWeight: 500,
+                  height: '40px',
+                  padding: '0 var(--space-4)'
+                }}
               >
                 Templates
               </Button>
@@ -577,7 +587,7 @@ const EnhancedQueryBuilder: React.FC = () => {
       </div>
 
       {/* Query Builder Tabs */}
-      <Card style={{ marginBottom: '24px' }}>
+      <div style={{ marginBottom: 'var(--space-6)' }}>
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
@@ -615,10 +625,9 @@ const EnhancedQueryBuilder: React.FC = () => {
                       rows={4}
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
+                      className="query-textarea"
                       style={{
-                        fontSize: '16px',
-                        borderRadius: '8px',
-                        border: queryValidation?.isValid === false ? '2px solid #ff4d4f' : undefined
+                        border: queryValidation?.isValid === false ? '2px solid var(--error-500)' : undefined
                       }}
                     />
                   </AutoComplete>
@@ -680,7 +689,7 @@ const EnhancedQueryBuilder: React.FC = () => {
                 )}
 
                 {/* Action Buttons */}
-                <Row gutter={16}>
+                <Row gutter={16} style={{ marginTop: 'var(--space-4)' }}>
                   <Col>
                     <Button
                       type="primary"
@@ -688,7 +697,13 @@ const EnhancedQueryBuilder: React.FC = () => {
                       icon={loading ? <Spin size="small" /> : <SendIcon />}
                       disabled={loading || !query.trim()}
                       size="large"
-                      style={{ minWidth: '160px' }}
+                      style={{
+                        minWidth: '160px',
+                        height: '48px',
+                        borderRadius: 'var(--radius-lg)',
+                        fontWeight: 600,
+                        fontSize: 'var(--text-base)'
+                      }}
                     >
                       {loading ? 'Processing...' : 'Execute Query'}
                     </Button>
@@ -699,6 +714,11 @@ const EnhancedQueryBuilder: React.FC = () => {
                       disabled={analyzing || !query.trim()}
                       onClick={handleAnalyzeQuery}
                       size="large"
+                      style={{
+                        height: '48px',
+                        borderRadius: 'var(--radius-lg)',
+                        fontWeight: 500
+                      }}
                     >
                       {analyzing ? 'Analyzing...' : 'Analyze Query'}
                     </Button>
@@ -708,6 +728,11 @@ const EnhancedQueryBuilder: React.FC = () => {
                       icon={<EyeOutlined />}
                       disabled={!query.trim()}
                       size="large"
+                      style={{
+                        height: '48px',
+                        borderRadius: 'var(--radius-lg)',
+                        fontWeight: 500
+                      }}
                     >
                       Preview SQL
                     </Button>
@@ -813,17 +838,24 @@ const EnhancedQueryBuilder: React.FC = () => {
             </Row>
           </Tabs.TabPane>
         </Tabs>
-      </Card>
+      </div>
 
       {/* Query Templates Modal */}
       {showTemplates && (
-        <Card style={{ marginBottom: '24px' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <Title level={4}>
-              <BookOutlined style={{ marginRight: '8px' }} />
+        <div style={{
+          marginBottom: 'var(--space-6)',
+          background: 'white',
+          borderRadius: 'var(--radius-xl)',
+          padding: 'var(--space-6)',
+          border: '1px solid var(--neutral-200)',
+          boxShadow: 'var(--shadow-lg)'
+        }}>
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <Title level={4} style={{ color: 'var(--primary-600)', fontFamily: 'var(--font-family-secondary)' }}>
+              <BookOutlined style={{ marginRight: 'var(--space-2)' }} />
               Query Templates
             </Title>
-            <Text type="secondary">
+            <Text type="secondary" style={{ fontSize: 'var(--text-base)', fontFamily: 'var(--font-family-primary)' }}>
               Choose from pre-built templates to get started quickly
             </Text>
           </div>
@@ -870,7 +902,7 @@ const EnhancedQueryBuilder: React.FC = () => {
               </Col>
             ))}
           </Row>
-        </Card>
+        </div>
       )}
 
       {/* Error Display */}
@@ -878,7 +910,12 @@ const EnhancedQueryBuilder: React.FC = () => {
         <Alert
           type="error"
           message={typeof error === 'string' ? error : error?.message || 'An error occurred'}
-          style={{ marginBottom: '16px' }}
+          style={{
+            marginBottom: 'var(--space-4)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--error-200)',
+            backgroundColor: 'var(--error-50)'
+          }}
           showIcon
           closable
           onClose={() => setError(null)}
@@ -887,9 +924,16 @@ const EnhancedQueryBuilder: React.FC = () => {
 
       {/* Analysis Results */}
       {(semanticAnalysis || classification) && (
-        <Card style={{ marginBottom: '24px' }}>
-          <Title level={4}>
-            <PsychologyIcon style={{ marginRight: '8px' }} />
+        <div style={{
+          marginBottom: 'var(--space-6)',
+          background: 'white',
+          borderRadius: 'var(--radius-xl)',
+          padding: 'var(--space-6)',
+          border: '1px solid var(--neutral-200)',
+          boxShadow: 'var(--shadow-lg)'
+        }}>
+          <Title level={4} style={{ color: 'var(--primary-600)', fontFamily: 'var(--font-family-secondary)' }}>
+            <PsychologyIcon style={{ marginRight: 'var(--space-2)' }} />
             AI Analysis Results
           </Title>
           <Row gutter={24}>
@@ -900,14 +944,21 @@ const EnhancedQueryBuilder: React.FC = () => {
               {renderClassification()}
             </Col>
           </Row>
-        </Card>
+        </div>
       )}
 
       {/* Enhanced Results */}
       {result && (
-        <Card style={{ marginBottom: '24px' }}>
-          <Title level={4}>
-            <CheckCircleOutlined style={{ marginRight: '8px', color: '#52c41a' }} />
+        <div style={{
+          marginBottom: 'var(--space-6)',
+          background: 'white',
+          borderRadius: 'var(--radius-xl)',
+          padding: 'var(--space-6)',
+          border: '1px solid var(--neutral-200)',
+          boxShadow: 'var(--shadow-lg)'
+        }}>
+          <Title level={4} style={{ color: 'var(--success-600)', fontFamily: 'var(--font-family-secondary)' }}>
+            <CheckCircleOutlined style={{ marginRight: 'var(--space-2)', color: 'var(--success-500)' }} />
             Query Results
           </Title>
 
@@ -1091,7 +1142,7 @@ const EnhancedQueryBuilder: React.FC = () => {
               {renderAlternatives()}
             </Tabs.TabPane>
           </Tabs>
-        </Card>
+        </div>
       )}
     </div>
   );

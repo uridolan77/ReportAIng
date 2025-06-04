@@ -852,14 +852,14 @@ public class TuningService : ITuningService
 
                         try
                         {
-                            await SendProgressUpdate(userId, 10 + (processedTables * 40 / totalTables),
-                                $"Analyzing table {schemaName}.{tableName}...", "Table Analysis", tableName);
+                            await _progressReporter.SendProgressUpdateAsync(userId, 10 + (processedTables * 40 / totalTables),
+                                $"Analyzing table {schemaName}.{tableName}...", "Table Analysis", tableName, null, processedTables, totalTables);
 
                             // Create progress callback for field-by-field processing
                             var progressCallback = new Func<string, string, string?, Task>(async (stage, message, currentColumn) =>
                             {
-                                await SendProgressUpdate(userId, 10 + (processedTables * 40 / totalTables),
-                                    message, stage, tableName, currentColumn);
+                                await _progressReporter.SendProgressUpdateAsync(userId, 10 + (processedTables * 40 / totalTables),
+                                    message, stage, tableName, currentColumn, processedTables, totalTables);
                             });
 
                             var context = await _autoGenerator.GenerateTableContextAsync(tableName, schemaName, progressCallback);
@@ -867,7 +867,7 @@ public class TuningService : ITuningService
                             processedTables++;
 
                             await SendProgressUpdate(userId, 10 + (processedTables * 40 / totalTables),
-                                $"Completed table {schemaName}.{tableName} ({processedTables}/{totalTables})", "Table Analysis");
+                                $"Completed table {schemaName}.{tableName} ({processedTables}/{totalTables})", "Table Analysis", null, null, processedTables, totalTables);
                         }
                         catch (Exception ex)
                         {
@@ -1128,9 +1128,9 @@ public class TuningService : ITuningService
         }
     }
 
-    private async Task SendProgressUpdate(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null)
+    private async Task SendProgressUpdate(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null, int? tablesProcessed = null, int? totalTables = null, int? columnsProcessed = null, int? totalColumns = null, object? aiPrompt = null)
     {
-        await _progressReporter.SendProgressUpdateAsync(userId, progress, message, stage, currentTable, currentColumn);
+        await _progressReporter.SendProgressUpdateAsync(userId, progress, message, stage, currentTable, currentColumn, tablesProcessed, totalTables, columnsProcessed, totalColumns, aiPrompt);
     }
 
     #endregion

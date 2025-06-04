@@ -90,6 +90,8 @@ export const useSignalR = (): UseSignalRReturn => {
 
         hubConnection.on('AutoGenerationProgress', (data) => {
           console.log('🔄 Received AutoGenerationProgress via SignalR:', data);
+          console.log('🔄 AutoGenerationProgress data type:', typeof data);
+          console.log('🔄 AutoGenerationProgress data keys:', Object.keys(data || {}));
           const message: WebSocketMessage = {
             data: JSON.stringify(data),
             type: 'AutoGenerationProgress',
@@ -108,34 +110,57 @@ export const useSignalR = (): UseSignalRReturn => {
           setLastMessage(message);
         });
 
+        // Add handler for connection info debugging
+        hubConnection.on('ConnectionInfo', (data) => {
+          console.log('🔗 Received ConnectionInfo via SignalR:', data);
+        });
+
         // Connection state handlers
-        hubConnection.onclose(() => {
+        hubConnection.onclose((error) => {
+          console.log('🔗 SignalR connection closed', error);
           setIsConnected(false);
         });
 
-        hubConnection.onreconnecting(() => {
+        hubConnection.onreconnecting((error) => {
+          console.log('🔗 SignalR reconnecting...', error);
           setIsConnected(false);
         });
 
-        hubConnection.onreconnected(() => {
+        hubConnection.onreconnected((connectionId) => {
+          console.log('🔗 SignalR reconnected with ID:', connectionId);
           setIsConnected(true);
         });
 
         // Start the connection
+        console.log('🔗 Starting SignalR connection to:', API_CONFIG.SIGNALR_HUB_URL);
+        console.log('🔗 Auth Token (first 20 chars):', token?.substring(0, 20) + '...');
+
         await hubConnection.start();
         setIsConnected(true);
 
         console.log('🔗 SignalR Connected successfully');
         console.log('🔗 SignalR Connection ID:', hubConnection.connectionId);
         console.log('🔗 SignalR Connection State:', hubConnection.state);
-        console.log('🔗 SignalR Auth Token (first 20 chars):', token?.substring(0, 20) + '...');
+        console.log('🔗 SignalR Hub URL:', API_CONFIG.SIGNALR_HUB_URL);
 
-        // Test the connection by sending a test message
+        // Test the connection and get connection info
         try {
-          await hubConnection.invoke('SendUserNotification', 'test', { message: 'SignalR connection test' });
-          console.log('🔗 SignalR test message sent successfully');
+          await hubConnection.invoke('GetConnectionInfo');
+          console.log('🔗 SignalR GetConnectionInfo called successfully');
         } catch (testError) {
-          console.warn('🔗 SignalR test message failed:', testError);
+          console.warn('🔗 SignalR GetConnectionInfo failed:', testError);
+        }
+
+        // Join user group for receiving notifications
+        try {
+          const authStore = await import('../stores/authStore');
+          const user = authStore.useAuthStore.getState().user;
+          if (user?.id) {
+            console.log('🔗 Joining user group for user:', user.id);
+            // The hub automatically adds users to their group on connection
+          }
+        } catch (userError) {
+          console.warn('🔗 Could not get user info for group joining:', userError);
         }
       } catch (error) {
         console.error('SignalR connection error:', error);

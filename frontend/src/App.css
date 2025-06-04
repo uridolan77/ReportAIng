@@ -26,6 +26,7 @@
 
   /* Success Colors */
   --success-50: #ecfdf5;
+  --success-200: #bbf7d0;
   --success-500: #10b981;
   --success-600: #059669;
 
@@ -36,6 +37,7 @@
 
   /* Error Colors */
   --error-50: #fef2f2;
+  --error-200: #fecaca;
   --error-500: #ef4444;
   --error-600: #dc2626;
 

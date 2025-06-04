@@ -737,14 +737,6 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
 
 
       {/* Enhanced Suggestions */}
-      {console.log('🔍 QueryResult Debug:', {
-        hasResult: !!result,
-        resultKeys: result ? Object.keys(result) : 'No result',
-        hasSuggestions: !!result?.suggestions,
-        suggestionsLength: result?.suggestions?.length,
-        suggestions: result?.suggestions,
-        suggestionsType: typeof result?.suggestions
-      })}
       {result.suggestions && result.suggestions.length > 0 && (
         <Card
           className="enhanced-card"

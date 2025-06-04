@@ -141,30 +141,37 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
       console.log('📨 Received WebSocket message:', lastMessage);
 
       try {
-        const message = JSON.parse(lastMessage.data);
-
         // Handle different message types
         if (lastMessage.type === 'QueryProcessingProgress') {
+          // Parse the data which is already JSON stringified by the WebSocket hook
+          const message = JSON.parse(lastMessage.data);
           console.log('🔄 Query processing progress update:', message);
 
-          // Update current query ID and stage
-          if (message.QueryId) {
-            setCurrentQueryId(message.QueryId);
+          // Update current query ID and stage - handle both uppercase and lowercase field names
+          const queryId = message.QueryId || message.queryId;
+          const stage = message.Stage || message.stage;
+          const messageText = message.Message || message.message;
+          const progress = message.Progress || message.progress;
+          const timestamp = message.Timestamp || message.timestamp;
+          const details = message.Details || message.details;
+
+          if (queryId) {
+            setCurrentQueryId(queryId);
           }
-          if (message.Stage) {
-            setCurrentProcessingStage(message.Stage);
+          if (stage) {
+            setCurrentProcessingStage(stage);
           }
 
           // Add or update processing stage
           setProcessingStages(prev => {
-            const existingIndex = prev.findIndex(stage => stage.stage === message.Stage);
+            const existingIndex = prev.findIndex(stageData => stageData.stage === stage);
             const newStage = {
-              stage: message.Stage,
-              message: message.Message,
-              progress: message.Progress,
-              timestamp: message.Timestamp,
-              details: message.Details,
-              status: message.Progress === 100 ? 'completed' : 'active'
+              stage: stage,
+              message: messageText,
+              progress: progress,
+              timestamp: timestamp,
+              details: details,
+              status: progress === 100 ? 'completed' : 'active'
             };
 
             if (existingIndex >= 0) {
@@ -179,16 +186,24 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
           });
 
           // Auto-show processing details when query starts
-          if (message.Stage === 'started') {
+          if (stage === 'started') {
             setShowProcessingDetails(true);
             setProcessingStages([]); // Clear previous stages
+            console.log('🚀 Query processing started - showing processing details');
+          }
+
+          // Keep processing details visible during processing
+          if (progress < 100) {
+            setShowProcessingDetails(true);
           }
 
           // Update overall progress
-          setProgress(message.Progress || 0);
+          setProgress(progress || 0);
         } else {
-          // Handle legacy message types
-          switch (message.type) {
+          // Handle other message types
+          const message = JSON.parse(lastMessage.data);
+
+          switch (lastMessage.type) {
             case 'query_progress':
               setProgress(message.progress * 100);
               break;
@@ -202,10 +217,12 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
               setProgress(0);
               setShowProcessingDetails(false);
               break;
+            default:
+              console.log('📨 Unhandled message type:', lastMessage.type, message);
           }
         }
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error('Error parsing WebSocket message:', error, lastMessage);
       }
     }
   }, [lastMessage]);
@@ -226,7 +243,11 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const handleSubmitQuery = useCallback(async () => {
     if (!query.trim() || executeQueryMutation.isPending) return;
 
+    // Initialize processing state
     setProgress(10);
+    setShowProcessingDetails(true);
+    setProcessingStages([]);
+    setCurrentProcessingStage('started');
     clearActiveResult(); // Clear previous result
 
     const queryRequest = createQueryRequest(query);
@@ -239,6 +260,12 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
       console.error('Query execution failed:', error);
     } finally {
       setProgress(0);
+      // Keep processing details visible for a moment after completion
+      setTimeout(() => {
+        if (!executeQueryMutation.isPending) {
+          setShowProcessingDetails(false);
+        }
+      }, 3000);
     }
   }, [query, executeQueryMutation, createQueryRequest, setActiveResult, clearActiveResult]);
 

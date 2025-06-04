@@ -133,7 +133,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
 
   // Handle real-time progress updates from SignalR
   useEffect(() => {
-    console.log('🔄 SignalR useEffect triggered:', {
+    console.log('🔄 AutoGeneration SignalR useEffect triggered:', {
       hasLastMessage: !!lastMessage,
       messageType: lastMessage?.type,
       isGenerating,
@@ -143,14 +143,39 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
     if (lastMessage && lastMessage.type === 'AutoGenerationProgress' && isGenerating) {
       try {
         const progressData = JSON.parse(lastMessage.data);
-        console.log('🔄 Real-time progress update:', progressData);
+        console.log('🔄 AutoGeneration Real-time progress update:', progressData);
+
+        // Handle both uppercase and lowercase field names
+        const progress = progressData.Progress || progressData.progress || 0;
+        const message = progressData.Message || progressData.message || progressData.CurrentTask || '';
+        const stage = progressData.Stage || progressData.stage || '';
+        const currentTable = progressData.CurrentTable || progressData.currentTable || '';
+        const currentColumn = progressData.CurrentColumn || progressData.currentColumn || '';
 
         // Update progress state with real-time data
-        setGenerationProgress(progressData.Progress || 0);
-        setCurrentTask(progressData.Message || '');
-        setCurrentStage(progressData.Stage || '');
-        setCurrentTable(progressData.CurrentTable || '');
-        setCurrentColumn(progressData.CurrentColumn || '');
+        setGenerationProgress(progress);
+        setCurrentTask(message);
+        setCurrentStage(stage);
+        setCurrentTable(currentTable);
+        setCurrentColumn(currentColumn);
+
+        // Update counts if available
+        if (progressData.TablesProcessed !== undefined) setTablesProcessed(progressData.TablesProcessed);
+        if (progressData.TotalTables !== undefined) setTotalTables(progressData.TotalTables);
+        if (progressData.ColumnsProcessed !== undefined) setColumnsProcessed(progressData.ColumnsProcessed);
+        if (progressData.TotalColumns !== undefined) setTotalColumns(progressData.TotalColumns);
+
+        // Add AI prompt information if available
+        if (progressData.AIPrompt) {
+          setAiPrompts(prev => [...prev, {
+            table: currentTable || 'Unknown',
+            promptType: progressData.AIPrompt.type || 'unknown',
+            prompt: progressData.AIPrompt.prompt || '',
+            response: progressData.AIPrompt.response || '',
+            status: progressData.AIPrompt.status || 'completed',
+            timestamp: new Date().toISOString()
+          }]);
+        }
 
         // Add to recently completed if it's a completion message
         if (progressData.Message && (

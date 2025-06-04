@@ -466,6 +466,54 @@ public class UnifiedQueryController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Test SignalR connection by sending a test message
+    /// </summary>
+    /// <returns>Test result</returns>
+    [HttpPost("test-signalr")]
+    public async Task<ActionResult<object>> TestSignalR()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var queryId = Guid.NewGuid().ToString();
+
+            _logger.LogInformation("🧪 Testing SignalR for user {UserId}", userId);
+
+            // Test sending a progress notification
+            var progressData = new
+            {
+                QueryId = queryId,
+                Stage = "test",
+                Message = "This is a test SignalR message",
+                Progress = 50,
+                Details = new { test = "data" },
+                Timestamp = DateTime.UtcNow
+            };
+
+            // Send to all clients
+            await _hubContext.Clients.All.SendAsync("QueryProcessingProgress", progressData);
+
+            // Send to user group
+            await _hubContext.Clients.Group($"user_{userId}").SendAsync("QueryProcessingProgress", progressData);
+
+            _logger.LogInformation("🧪 SignalR test message sent successfully");
+
+            return Ok(new {
+                success = true,
+                message = "SignalR test message sent",
+                userId = userId,
+                queryId = queryId,
+                data = progressData
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error testing SignalR");
+            return StatusCode(500, new { error = "An error occurred while testing SignalR", details = ex.Message });
+        }
+    }
+
     #endregion
 
     #region Private Helper Methods
@@ -683,7 +731,17 @@ public class UnifiedQueryController : ControllerBase
 
     private string GetCurrentUserId()
     {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var subClaim = User.FindFirst("sub")?.Value;
+        var nameClaim = User.FindFirst(ClaimTypes.Name)?.Value;
+        var emailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
+
+        var result = userId ?? subClaim ?? nameClaim ?? emailClaim ?? "anonymous";
+
+        _logger.LogInformation("🔍 GetCurrentUserId - NameIdentifier: {UserId}, Sub: {SubClaim}, Name: {NameClaim}, Email: {Email}, Result: {Result}",
+            userId, subClaim, nameClaim, emailClaim, result);
+
+        return result;
     }
 
     #endregion

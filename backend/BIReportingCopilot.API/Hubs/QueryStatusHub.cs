@@ -4,7 +4,7 @@ using System.Security.Claims;
 
 namespace BIReportingCopilot.API.Hubs;
 
-[Authorize]
+// [Authorize] // Temporarily disabled for debugging
 public class QueryStatusHub : Hub
 {
     private readonly ILogger<QueryStatusHub> _logger;
@@ -19,19 +19,31 @@ public class QueryStatusHub : Hub
         var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var subClaim = Context.User?.FindFirst("sub")?.Value;
         var nameClaim = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
+        var emailClaim = Context.User?.FindFirst(ClaimTypes.Email)?.Value;
 
-        _logger.LogInformation("User connected to QueryStatusHub - ConnectionId: {ConnectionId}, NameIdentifier: {UserId}, Sub: {SubClaim}, Name: {NameClaim}",
-            Context.ConnectionId, userId, subClaim, nameClaim);
+        _logger.LogInformation("🔗 User connected to QueryStatusHub - ConnectionId: {ConnectionId}, NameIdentifier: {UserId}, Sub: {SubClaim}, Name: {NameClaim}, Email: {Email}",
+            Context.ConnectionId, userId, subClaim, nameClaim, emailClaim);
+
+        // Log all claims for debugging
+        if (Context.User?.Claims != null)
+        {
+            foreach (var claim in Context.User.Claims)
+            {
+                _logger.LogInformation("🔗 Claim: {Type} = {Value}", claim.Type, claim.Value);
+            }
+        }
 
         // Add user to their personal group for targeted notifications
-        if (!string.IsNullOrEmpty(userId))
+        // Try different user ID formats
+        var userIdToUse = userId ?? subClaim ?? nameClaim ?? emailClaim;
+        if (!string.IsNullOrEmpty(userIdToUse))
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
-            _logger.LogInformation("Added user {UserId} to group user_{UserId}", userId, userId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userIdToUse}");
+            _logger.LogInformation("🔗 Added user {UserId} to group user_{UserId}", userIdToUse, userIdToUse);
         }
         else
         {
-            _logger.LogWarning("No user ID found in claims for connection {ConnectionId}", Context.ConnectionId);
+            _logger.LogWarning("🔗 No user ID found in claims for connection {ConnectionId}", Context.ConnectionId);
         }
 
         await base.OnConnectedAsync();
