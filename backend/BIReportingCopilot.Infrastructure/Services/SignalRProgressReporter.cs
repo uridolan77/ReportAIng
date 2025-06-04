@@ -6,15 +6,17 @@ namespace BIReportingCopilot.Infrastructure.Services;
 
 /// <summary>
 /// SignalR-based implementation of progress reporting
+/// Uses QueryStatusHub since that's where the frontend connects
 /// </summary>
 public class SignalRProgressReporter : IProgressReporter
 {
-    private readonly IHubContext<Hub> _hubContext;
+    private readonly IHubContext _hubContext;
     private readonly ILogger<SignalRProgressReporter> _logger;
 
-    public SignalRProgressReporter(IHubContext<Hub> hubContext, ILogger<SignalRProgressReporter> logger)
+    // Constructor that accepts any hub context (for DI flexibility)
+    public SignalRProgressReporter(object hubContext, ILogger<SignalRProgressReporter> logger)
     {
-        _hubContext = hubContext;
+        _hubContext = hubContext as IHubContext ?? throw new ArgumentException("Hub context must implement IHubContext", nameof(hubContext));
         _logger = logger;
     }
 
@@ -47,7 +49,7 @@ public class SignalRProgressReporter : IProgressReporter
 
             _logger.LogInformation("📡 Progress data: {@ProgressData}", progressData);
 
-            // Use group-based messaging to match the SignalR hub setup
+            // Send progress update to user group
             await _hubContext.Clients.Group($"user_{userId}").SendAsync("AutoGenerationProgress", progressData);
 
             _logger.LogInformation("📡 Progress update sent successfully to user group user_{UserId}", userId);

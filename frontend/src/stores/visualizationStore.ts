@@ -38,19 +38,19 @@ interface ChartPerformanceMetrics {
 }
 
 interface VisualizationState {
-  currentVisualization: AdvancedVisualizationConfig | null;
+  currentVisualization: any | null; // Allow any chart config type
   dashboards: AdvancedDashboardConfig[];
   preferences: VisualizationPreferences;
   performanceMetrics: ChartPerformanceMetrics | null;
-  
+
   // Actions
-  setVisualization: (config: AdvancedVisualizationConfig) => void;
+  setVisualization: (config: any | null) => void; // Allow null to clear
   addDashboard: (dashboard: AdvancedDashboardConfig) => void;
   updateDashboard: (id: string, updates: Partial<AdvancedDashboardConfig>) => void;
   deleteDashboard: (id: string) => void;
   updatePreferences: (preferences: Partial<VisualizationPreferences>) => void;
   setPerformanceMetrics: (metrics: ChartPerformanceMetrics) => void;
-  
+
   // Selectors
   getDashboardById: (id: string) => AdvancedDashboardConfig | undefined;
   getRecentDashboards: (limit: number) => AdvancedDashboardConfig[];
@@ -71,43 +71,43 @@ export const useVisualizationStore = create<VisualizationState>()(
           theme: 'light'
         },
         performanceMetrics: null,
-        
+
         setVisualization: (config) => set({ currentVisualization: config }),
-        
+
         addDashboard: (dashboard) => set((state) => ({
           dashboards: [...state.dashboards, dashboard]
         })),
-        
+
         updateDashboard: (id, updates) => set((state) => ({
-          dashboards: state.dashboards.map(d => 
+          dashboards: state.dashboards.map(d =>
             d.id === id ? { ...d, ...updates, updatedAt: Date.now() } : d
           )
         })),
-        
+
         deleteDashboard: (id) => set((state) => ({
           dashboards: state.dashboards.filter(d => d.id !== id)
         })),
-        
+
         updatePreferences: (preferences) => set((state) => ({
           preferences: { ...state.preferences, ...preferences }
         })),
-        
+
         setPerformanceMetrics: (metrics) => set({ performanceMetrics: metrics }),
-        
+
         getDashboardById: (id) => {
           return get().dashboards.find(d => d.id === id);
         },
-        
+
         getRecentDashboards: (limit) => {
           return get().dashboards
             .sort((a, b) => b.updatedAt - a.updatedAt)
             .slice(0, limit);
         },
-        
+
         getVisualizationsByType: (type) => {
           const dashboards = get().dashboards;
           const visualizations: AdvancedVisualizationConfig[] = [];
-          
+
           dashboards.forEach(dashboard => {
             dashboard.visualizations.forEach(viz => {
               if (viz.type === type) {
@@ -115,7 +115,7 @@ export const useVisualizationStore = create<VisualizationState>()(
               }
             });
           });
-          
+
           return visualizations;
         }
       }),
@@ -123,6 +123,7 @@ export const useVisualizationStore = create<VisualizationState>()(
         name: 'visualization-storage',
         storage: createJSONStorage(() => localStorage),
         partialize: (state) => ({
+          currentVisualization: state.currentVisualization, // Include current visualization in persistence
           dashboards: state.dashboards,
           preferences: state.preferences
         })
@@ -132,14 +133,14 @@ export const useVisualizationStore = create<VisualizationState>()(
 );
 
 // Selector hooks to prevent unnecessary re-renders
-export const useVisualizationPreferences = () => 
+export const useVisualizationPreferences = () =>
   useVisualizationStore((state) => state.preferences);
 
-export const useDashboards = () => 
+export const useDashboards = () =>
   useVisualizationStore((state) => state.dashboards);
 
-export const useCurrentVisualization = () => 
+export const useCurrentVisualization = () =>
   useVisualizationStore((state) => state.currentVisualization);
 
-export const usePerformanceMetrics = () => 
+export const usePerformanceMetrics = () =>
   useVisualizationStore((state) => state.performanceMetrics);

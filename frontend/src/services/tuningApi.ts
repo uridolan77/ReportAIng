@@ -218,6 +218,7 @@ export interface AutoGenerationRequest {
   specificSchemas?: string[];
   overwriteExisting: boolean;
   minimumConfidenceThreshold: number;
+  mockMode?: boolean;
 }
 
 export interface AutoGenerationResponse {

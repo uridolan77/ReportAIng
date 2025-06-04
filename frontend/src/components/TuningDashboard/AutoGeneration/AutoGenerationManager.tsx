@@ -42,6 +42,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
   const [analyzeRelationships, setAnalyzeRelationships] = useState(true);
   const [overwriteExisting, setOverwriteExisting] = useState(false);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.6);
+  const [mockMode, setMockMode] = useState(false);
 
   // Table selection
   const [availableTables, setAvailableTables] = useState<string[]>([]);
@@ -136,14 +137,26 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
     console.log('🔄 AutoGeneration SignalR useEffect triggered:', {
       hasLastMessage: !!lastMessage,
       messageType: lastMessage?.type,
+      messageData: lastMessage?.data ? JSON.parse(lastMessage.data) : null,
       isGenerating,
       isConnected
     });
+
+    // Log ALL SignalR messages during auto-generation
+    if (lastMessage && isGenerating) {
+      console.log('🔄 AutoGeneration - Received SignalR message during generation:', {
+        type: lastMessage.type,
+        data: lastMessage.data,
+        timestamp: lastMessage.timestamp
+      });
+    }
 
     if (lastMessage && lastMessage.type === 'AutoGenerationProgress' && isGenerating) {
       try {
         const progressData = JSON.parse(lastMessage.data);
         console.log('🔄 AutoGeneration Real-time progress update:', progressData);
+        console.log('🔄 Current progress before update:', generationProgress);
+        console.log('🔄 New progress from SignalR:', progressData.Progress || progressData.progress);
 
         // Handle both uppercase and lowercase field names
         const progress = progressData.Progress || progressData.progress || 0;
@@ -151,6 +164,8 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         const stage = progressData.Stage || progressData.stage || '';
         const currentTable = progressData.CurrentTable || progressData.currentTable || '';
         const currentColumn = progressData.CurrentColumn || progressData.currentColumn || '';
+
+        console.log('🔄 Updating UI with:', { progress, message, stage, currentTable, currentColumn });
 
         // Update progress state with real-time data
         setGenerationProgress(progress);
@@ -293,7 +308,8 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         analyzeRelationships,
         overwriteExisting,
         minimumConfidenceThreshold: confidenceThreshold,
-        specificTables: selectedTables
+        specificTables: selectedTables,
+        mockMode: mockMode
       };
 
       // Initialize arrays at the beginning
@@ -391,9 +407,21 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       setCurrentStage('API Call');
       setGenerationProgress(40);
 
-      console.log('Starting API call to auto-generate business context...');
-      console.log('Request payload:', request);
-      console.log('SignalR connected:', isConnected);
+      console.log('🚀 Starting API call to auto-generate business context...');
+      console.log('🚀 Request payload:', request);
+      console.log('🚀 Mock Mode:', mockMode);
+      console.log('🚀 SignalR connected:', isConnected);
+      console.log('🚀 SignalR connection ID:', (window as any).signalRConnection?.connectionId);
+
+      // Test SignalR connection before starting
+      if ((window as any).signalRConnection) {
+        try {
+          await (window as any).signalRConnection.invoke('GetConnectionInfo');
+          console.log('✅ SignalR connection test successful before API call');
+        } catch (error) {
+          console.error('❌ SignalR connection test failed before API call:', error);
+        }
+      }
 
       try {
         const response = await tuningApi.autoGenerateBusinessContext(request);
@@ -505,7 +533,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         }
       }, 2000);
     }
-  }, [generateTableContexts, generateGlossaryTerms, analyzeRelationships, overwriteExisting, confidenceThreshold, selectedTables]);
+  }, [generateTableContexts, generateGlossaryTerms, analyzeRelationships, overwriteExisting, confidenceThreshold, selectedTables, mockMode]);
 
   const handleApplyResults = useCallback(async (editedResults: any) => {
     if (!editedResults) return;
@@ -737,7 +765,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
                 </Space>
               </Col>
 
-              <Col span={12}>
+              <Col span={8}>
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Text strong>Overwrite Existing</Text>
@@ -751,25 +779,71 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
                   </Text>
                 </Space>
               </Col>
+
+              <Col span={8}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text strong style={mockMode ? { color: '#722ed1' } : {}}>
+                      Mock Mode {mockMode && '🧪'}
+                    </Text>
+                    <Switch
+                      checked={mockMode}
+                      onChange={setMockMode}
+                      checkedChildren="Mock"
+                      unCheckedChildren="Real"
+                    />
+                  </div>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                    {mockMode
+                      ? '🧪 Test mode: Process real tables/columns but skip AI API calls'
+                      : 'Normal mode: Send actual AI API requests for business context'
+                    }
+                  </Text>
+                </Space>
+              </Col>
             </Row>
 
             <Divider />
 
             <div style={{ textAlign: 'center' }}>
-              <Button
-                type="primary"
-                size="large"
-                icon={<PlayCircleOutlined />}
-                onClick={handleAutoGenerate}
-                disabled={
-                  (!generateTableContexts && !generateGlossaryTerms && !analyzeRelationships) ||
-                  selectedTables.length === 0 ||
-                  loadingTables
-                }
-              >
-                Start Auto-Generation
-                {selectedTables.length > 0 && ` (${selectedTables.length} table${selectedTables.length !== 1 ? 's' : ''})`}
-              </Button>
+              <Space>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<PlayCircleOutlined />}
+                  onClick={handleAutoGenerate}
+                  disabled={
+                    (!generateTableContexts && !generateGlossaryTerms && !analyzeRelationships) ||
+                    selectedTables.length === 0 ||
+                    loadingTables
+                  }
+                  style={mockMode ? { backgroundColor: '#722ed1', borderColor: '#722ed1' } : {}}
+                >
+                  {mockMode ? 'Start Mock Generation' : 'Start Auto-Generation'}
+                  {selectedTables.length > 0 && ` (${selectedTables.length} table${selectedTables.length !== 1 ? 's' : ''})`}
+                  {mockMode && ' - No AI Calls'}
+                </Button>
+
+                {/* Debug button to test SignalR */}
+                <Button
+                  size="small"
+                  onClick={async () => {
+                    if ((window as any).signalRConnection) {
+                      try {
+                        console.log('🧪 Testing SignalR connection...');
+                        await (window as any).signalRConnection.invoke('GetConnectionInfo');
+                        console.log('✅ SignalR test successful');
+                      } catch (error) {
+                        console.error('❌ SignalR test failed:', error);
+                      }
+                    } else {
+                      console.warn('❌ No SignalR connection available');
+                    }
+                  }}
+                >
+                  Test SignalR
+                </Button>
+              </Space>
             </div>
           </Card>
           </>
@@ -791,6 +865,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
             recentlyCompleted={recentlyCompleted}
             processingDetails={processingDetails}
             aiPrompts={aiPrompts}
+            mockMode={mockMode}
           />
         )}
 

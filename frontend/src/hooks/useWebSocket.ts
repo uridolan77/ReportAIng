@@ -37,6 +37,28 @@ export const useSignalR = (): UseSignalRReturn => {
 
   useEffect(() => {
     const connectSignalR = async () => {
+      if (!token) {
+        console.warn('⚠️ No auth token available for SignalR connection');
+        return;
+      }
+
+      // Prevent multiple connections
+      if (connection.current?.state === 'Connected' || connection.current?.state === 'Connecting') {
+        console.log('🔗 SignalR already connected or connecting, skipping...');
+        return;
+      }
+
+      // Stop any existing connection first
+      if (connection.current) {
+        try {
+          console.log('🔗 Stopping existing SignalR connection...');
+          await connection.current.stop();
+        } catch (error) {
+          console.warn('⚠️ Error stopping existing SignalR connection:', error);
+        }
+        connection.current = null;
+      }
+
       try {
         // Create SignalR connection
         const hubConnection = new signalR.HubConnectionBuilder()
@@ -143,6 +165,10 @@ export const useSignalR = (): UseSignalRReturn => {
         console.log('🔗 SignalR Connection State:', hubConnection.state);
         console.log('🔗 SignalR Hub URL:', API_CONFIG.SIGNALR_HUB_URL);
 
+        // Expose connection globally for debugging
+        (window as any).signalRConnection = hubConnection;
+        console.log('🔗 SignalR connection exposed globally as window.signalRConnection');
+
         // Test the connection and get connection info
         try {
           await hubConnection.invoke('GetConnectionInfo');
@@ -163,22 +189,19 @@ export const useSignalR = (): UseSignalRReturn => {
           console.warn('🔗 Could not get user info for group joining:', userError);
         }
       } catch (error) {
-        console.error('SignalR connection error:', error);
+        console.error('❌ SignalR connection failed:', error);
+        console.error('❌ Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          hubUrl: API_CONFIG.SIGNALR_HUB_URL,
+          hasToken: !!token,
+          tokenLength: token?.length || 0
+        });
         setIsConnected(false);
 
-        // Fallback to mock connection for development
-        setIsConnected(true);
-        const interval = setInterval(() => {
-          const mockMessage: WebSocketMessage = {
-            data: JSON.stringify({
-              type: 'heartbeat',
-              timestamp: new Date().toISOString(),
-            }),
-          };
-          setLastMessage(mockMessage);
-        }, 30000);
-
-        return () => clearInterval(interval);
+        // Don't fall back to mock connection - let the user know it failed
+        console.warn('⚠️ SignalR connection failed - auto-generation progress will not be available');
+        return;
       }
     };
 
@@ -188,7 +211,11 @@ export const useSignalR = (): UseSignalRReturn => {
 
     return () => {
       if (connection.current) {
-        connection.current.stop();
+        console.log('🔗 Cleaning up SignalR connection...');
+        connection.current.stop().catch((error) => {
+          console.warn('⚠️ Error during SignalR cleanup:', error);
+        });
+        connection.current = null;
       }
     };
   }, [token]);

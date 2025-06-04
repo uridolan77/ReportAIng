@@ -56,6 +56,7 @@ const VisualizationRecommendations: React.FC<VisualizationRecommendationsProps> 
   const [recommendations, setRecommendations] = useState<VisualizationRecommendation[]>([]);
   const [selectedRecommendation, setSelectedRecommendation] = useState<VisualizationRecommendation | null>(null);
   const [generatingConfig, setGeneratingConfig] = useState(false);
+  const [lastFetchKey, setLastFetchKey] = useState<string>(''); // Track last fetch to prevent duplicates
 
   // Chart type icons mapping
   const getChartIcon = (chartType: AdvancedChartType) => {
@@ -89,15 +90,29 @@ const VisualizationRecommendations: React.FC<VisualizationRecommendationsProps> 
     return 'exception';
   };
 
-  // Fetch recommendations
+  // Fetch recommendations with duplicate prevention
   const fetchRecommendations = useCallback(async () => {
     if (!data.length || !query) return;
 
+    // Create a unique key for this fetch request
+    const fetchKey = `${query}-${data.length}-${columns.length}`;
+
+    // Prevent duplicate fetches
+    if (fetchKey === lastFetchKey || loading) {
+      return;
+    }
+
+    setLastFetchKey(fetchKey);
     setLoading(true);
+
     try {
+      // Create context string with current values
+      const currentColumns = columns || [];
+      const context = `Data contains ${data.length} rows and ${currentColumns.length} columns. Column types: ${currentColumns.map(c => `${c.name}(${c.type})`).join(', ')}`;
+
       const response = await advancedVisualizationService.getVisualizationRecommendations({
         query,
-        context: `Data contains ${data.length} rows and ${columns.length} columns. Column types: ${columns.map(c => `${c.name}(${c.type})`).join(', ')}`
+        context
       });
 
       if (response.success && response.recommendations) {
@@ -112,7 +127,7 @@ const VisualizationRecommendations: React.FC<VisualizationRecommendationsProps> 
     } finally {
       setLoading(false);
     }
-  }, [data, query, columns]);
+  }, [data.length, query, columns, lastFetchKey, loading]);
 
   // Generate configuration from recommendation
   const generateConfigFromRecommendation = useCallback(async (recommendation: VisualizationRecommendation) => {
@@ -120,14 +135,121 @@ const VisualizationRecommendations: React.FC<VisualizationRecommendationsProps> 
     setSelectedRecommendation(recommendation);
 
     try {
+      // Normalize chart type to proper case (capitalize first letter)
+      const normalizedChartType = recommendation.chartType.charAt(0).toUpperCase() + recommendation.chartType.slice(1).toLowerCase();
+
+      // Smart column detection for better data mapping
+      const dateColumns = columns.filter(c =>
+        c.type === 'date' ||
+        c.type === 'datetime' ||
+        c.type === 'timestamp' ||
+        c.name.toLowerCase().includes('date') ||
+        c.name.toLowerCase().includes('time')
+      );
+
+      const numericColumns = columns.filter(c =>
+        c.type === 'number' ||
+        c.type === 'integer' ||
+        c.type === 'decimal' ||
+        c.type === 'float' ||
+        c.type === 'double' ||
+        // Also check if the column name suggests it's numeric
+        c.name.toLowerCase().includes('total') ||
+        c.name.toLowerCase().includes('amount') ||
+        c.name.toLowerCase().includes('revenue') ||
+        c.name.toLowerCase().includes('count') ||
+        c.name.toLowerCase().includes('sum')
+      );
+
+      const stringColumns = columns.filter(c => c.type === 'string' || c.type === 'text');
+
+      // Determine best X-axis (prefer date, then string, then first column)
+      let xAxisColumn = dateColumns[0]?.name || stringColumns[0]?.name || columns[0]?.name;
+
+      // Determine best Y-axis (prefer numeric columns, prioritize revenue/amount columns)
+      let yAxisColumn = numericColumns.find(c =>
+        c.name.toLowerCase().includes('revenue') ||
+        c.name.toLowerCase().includes('amount') ||
+        c.name.toLowerCase().includes('total')
+      )?.name || numericColumns[0]?.name || columns[1]?.name;
+
+      // Fallback: If no proper columns detected, analyze the actual data
+      if ((dateColumns.length === 0 || numericColumns.length === 0) && data.length > 0) {
+        const sampleRow = data[0];
+        const dataKeys = Object.keys(sampleRow).filter(key => key !== 'id'); // Exclude DataTable id
+
+        // Try to detect date columns from actual data
+        const detectedDateColumns = dataKeys.filter(key => {
+          const value = sampleRow[key];
+          return (typeof value === 'string' && (
+            value.includes('T') ||
+            (value.includes('-') && value.length >= 10) ||
+            key.toLowerCase().includes('date')
+          )) || key.toLowerCase() === 'date';
+        });
+
+        // Try to detect numeric columns from actual data
+        const detectedNumericColumns = dataKeys.filter(key => {
+          const value = sampleRow[key];
+          return (typeof value === 'number' ||
+                 (typeof value === 'string' && !isNaN(parseFloat(value)))) &&
+                 key !== 'id' && // Exclude DataTable id
+                 !key.toLowerCase().includes('date'); // Exclude date columns
+        });
+
+        // Override with detected columns if original detection failed
+        if (dateColumns.length === 0 && detectedDateColumns.length > 0) {
+          xAxisColumn = detectedDateColumns[0];
+        }
+        if (numericColumns.length === 0 && detectedNumericColumns.length > 0) {
+          yAxisColumn = detectedNumericColumns.find(col =>
+            col.toLowerCase().includes('revenue') ||
+            col.toLowerCase().includes('netrevenue') ||
+            col.toLowerCase().includes('total')
+          ) || detectedNumericColumns[0];
+        }
+
+        console.log('Fallback detection:', {
+          detectedDateColumns,
+          detectedNumericColumns,
+          finalXAxis: xAxisColumn,
+          finalYAxis: yAxisColumn
+        });
+      }
+
+      // Special handling for known data structures
+      if (data.length > 0) {
+        const dataKeys = Object.keys(data[0]);
+
+        // Handle the specific case of your daily actions data
+        if (dataKeys.includes('Date') && dataKeys.includes('NetRevenue')) {
+          xAxisColumn = 'Date';
+          yAxisColumn = 'NetRevenue';
+        } else if (dataKeys.includes('Date') && dataKeys.includes('TotalDeposits')) {
+          xAxisColumn = 'Date';
+          yAxisColumn = 'TotalDeposits';
+        }
+      }
+
+      console.log('Chart mapping:', {
+        availableColumns: columns.map(c => ({ name: c.name, type: c.type })),
+        selectedXAxis: xAxisColumn,
+        selectedYAxis: yAxisColumn,
+        dateColumns: dateColumns.map(c => c.name),
+        numericColumns: numericColumns.map(c => c.name),
+        sampleDataRow: data[0],
+        dataLength: data.length,
+        dataKeys: data.length > 0 ? Object.keys(data[0]) : []
+      });
+
       // Create a basic configuration based on the recommendation
       const config: AdvancedVisualizationConfig = {
         type: 'advanced',
-        chartType: recommendation.chartType,
-        title: `${recommendation.chartType} Chart - ${query.substring(0, 50)}...`,
+        chartType: normalizedChartType as AdvancedChartType,
+        title: `${normalizedChartType} Chart - ${query.substring(0, 50)}...`,
         config: recommendation.suggestedConfig,
-        xAxis: columns.find(c => c.type === 'string' || c.type === 'date')?.name || columns[0]?.name,
-        yAxis: columns.find(c => c.type === 'number')?.name || columns[1]?.name,
+        xAxis: xAxisColumn,
+        yAxis: yAxisColumn,
         animation: {
           enabled: true,
           duration: 1000,
@@ -196,12 +318,16 @@ const VisualizationRecommendations: React.FC<VisualizationRecommendationsProps> 
     }
   }, [columns, data.length, query, onConfigGenerated, onRecommendationSelect]);
 
-  // Auto-fetch recommendations when data changes
+  // Auto-fetch recommendations when data changes (with debounce)
   useEffect(() => {
     if (data.length > 0 && query) {
-      fetchRecommendations();
+      const timeoutId = setTimeout(() => {
+        fetchRecommendations();
+      }, 500); // 500ms debounce
+
+      return () => clearTimeout(timeoutId);
     }
-  }, [data, query, fetchRecommendations]);
+  }, [data.length, query]); // Remove fetchRecommendations from dependencies to prevent infinite loop
 
   const renderRecommendationCard = (recommendation: VisualizationRecommendation, index: number) => (
     <Col span={8} key={index}>

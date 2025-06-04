@@ -31,6 +31,7 @@ const RequestSigningDemo = lazy(() => import('./components/Security/RequestSigni
 const TypeSafetyDemo = lazy(() => import('./components/TypeSafety/TypeSafetyDemo').then(module => ({ default: module.TypeSafetyDemo })));
 const CacheManager = lazy(() => import('./components/Admin/CacheManager').then(module => ({ default: module.CacheManager })));
 const TuningDashboard = lazy(() => import('./components/Tuning/TuningDashboard').then(module => ({ default: module.TuningDashboard })));
+const MinimalistQueryPage = lazy(() => import('./pages/MinimalistQueryPage'));
 
 const App: React.FC = () => {
   const { isAuthenticated, user, isAdmin } = useAuthStore();
@@ -143,45 +144,53 @@ const App: React.FC = () => {
             <Router>
               <div className="App">
                 {isAuthenticated ? (
-                  <Layout>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <Routes>
-                        {/* Main Interface */}
-                        <Route path="/" element={<QueryInterface />} />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Routes>
+                      {/* Minimalist Interface - No Layout */}
+                      <Route path="/minimal" element={<MinimalistQueryPage />} />
 
-                        {/* Analytics & Visualization */}
-                        <Route path="/results" element={<ResultsPage />} />
-                        <Route path="/dashboard" element={<DashboardBuilder />} />
-                        <Route path="/interactive" element={<InteractiveVisualization />} />
-                        <Route path="/advanced-viz" element={<AdvancedVisualizationWrapper />} />
+                      {/* Standard Interface with Layout */}
+                      <Route path="/*" element={
+                        <Layout>
+                          <Routes>
+                            {/* Main Interface */}
+                            <Route path="/" element={<QueryInterface />} />
 
-                        {/* Query Tools */}
-                        <Route path="/history" element={<HistoryPage />} />
-                        <Route path="/templates" element={<TemplatesPage />} />
-                        <Route path="/suggestions" element={<SuggestionsPage />} />
-                        <Route path="/streaming" element={<div style={{ padding: '40px', textAlign: 'center' }}>Streaming Queries - Coming Soon</div>} />
-                        <Route path="/enhanced-query" element={<EnhancedQueryBuilder />} />
+                            {/* Analytics & Visualization */}
+                            <Route path="/results" element={<ResultsPage />} />
+                            <Route path="/dashboard" element={<DashboardBuilder />} />
+                            <Route path="/interactive" element={<InteractiveVisualization />} />
+                            <Route path="/advanced-viz" element={<AdvancedVisualizationWrapper />} />
 
-                        {/* Admin Routes */}
-                        <Route path="/admin/tuning" element={<TuningDashboard />} />
-                        <Route path="/admin/cache" element={<CacheManager />} />
-                        <Route path="/admin/security" element={<SecurityDashboard />} />
+                            {/* Query Tools */}
+                            <Route path="/history" element={<HistoryPage />} />
+                            <Route path="/templates" element={<TemplatesPage />} />
+                            <Route path="/suggestions" element={<SuggestionsPage />} />
+                            <Route path="/streaming" element={<div style={{ padding: '40px', textAlign: 'center' }}>Streaming Queries - Coming Soon</div>} />
+                            <Route path="/enhanced-query" element={<EnhancedQueryBuilder />} />
 
-                        {/* Legacy Routes */}
-                        <Route path="/query" element={<Navigate to="/" replace />} />
-                        <Route path="/ai-profile" element={<UserContextPanel />} />
-                        <Route path="/similarity" element={<QuerySimilarityAnalyzer />} />
-                        <Route path="/demo" element={<AdvancedFeaturesDemo />} />
-                        <Route path="/showcase" element={<AdvancedFeaturesDemo />} />
-                        <Route path="/security" element={<Navigate to="/admin/security" replace />} />
-                        <Route path="/security/signing" element={<RequestSigningDemo />} />
-                        <Route path="/security/types" element={<TypeSafetyDemo />} />
+                            {/* Admin Routes */}
+                            <Route path="/admin/tuning" element={<TuningDashboard />} />
+                            <Route path="/admin/cache" element={<CacheManager />} />
+                            <Route path="/admin/security" element={<SecurityDashboard />} />
 
-                        {/* Catch all */}
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                      </Routes>
-                    </Suspense>
-                  </Layout>
+                            {/* Legacy Routes */}
+                            <Route path="/query" element={<Navigate to="/" replace />} />
+                            <Route path="/ai-profile" element={<UserContextPanel />} />
+                            <Route path="/similarity" element={<QuerySimilarityAnalyzer />} />
+                            <Route path="/demo" element={<AdvancedFeaturesDemo />} />
+                            <Route path="/showcase" element={<AdvancedFeaturesDemo />} />
+                            <Route path="/security" element={<Navigate to="/admin/security" replace />} />
+                            <Route path="/security/signing" element={<RequestSigningDemo />} />
+                            <Route path="/security/types" element={<TypeSafetyDemo />} />
+
+                            {/* Catch all */}
+                            <Route path="*" element={<Navigate to="/" replace />} />
+                          </Routes>
+                        </Layout>
+                      } />
+                    </Routes>
+                  </Suspense>
                 ) : (
                   <Routes>
                     <Route path="/login" element={<Login />} />

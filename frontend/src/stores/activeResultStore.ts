@@ -12,11 +12,11 @@ interface ActiveResultState {
   // Current active result
   activeResult: QueryResponse | null;
   activeQuery: string;
-  
+
   // Metadata
   lastUpdated: number;
   sessionId: string;
-  
+
   // Actions
   setActiveResult: (result: QueryResponse, query: string) => void;
   clearActiveResult: () => void;
@@ -39,6 +39,16 @@ export const useActiveResultStore = create<ActiveResultState>()(
 
         // Set active result with metadata
         setActiveResult: (result: QueryResponse, query: string) => {
+          console.log('🔍 ActiveResultStore - Setting active result:', {
+            hasResult: !!result,
+            success: result?.success,
+            query,
+            resultKeys: result ? Object.keys(result) : 'N/A',
+            hasResultData: !!result?.result,
+            hasResultDataArray: !!result?.result?.data,
+            resultDataLength: result?.result?.data?.length
+          });
+
           set((state) => {
             state.activeResult = result;
             state.activeQuery = query;

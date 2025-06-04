@@ -192,6 +192,30 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
             console.log('🚀 Query processing started - showing processing details');
           }
 
+          // Handle validation failures
+          if (stage === 'validation_failed') {
+            console.error('❌ SQL Validation Failed:', message);
+            console.error('❌ Failed SQL:', details?.sql);
+            console.error('❌ Error Details:', details);
+
+            // Keep processing details visible to show the error
+            setShowProcessingDetails(true);
+
+            // Create an error result to display in the UI
+            const errorResult = {
+              success: false,
+              error: details?.error || message || 'SQL validation failed',
+              sql: details?.sql,
+              queryId: currentQueryId,
+              timestamp: new Date().toISOString(),
+              validationError: true
+            };
+
+            // Set this as the current result so it shows in the UI
+            setActiveResult(errorResult, query);
+            setActiveTab('result');
+          }
+
           // Keep processing details visible during processing
           if (progress < 100) {
             setShowProcessingDetails(true);
@@ -254,10 +278,26 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
 
     try {
       const result = await executeQueryMutation.mutateAsync(queryRequest);
+      console.log('🔍 Query execution completed - Full result:', result);
+      console.log('🔍 Result structure:', {
+        success: result?.success,
+        hasResult: !!result?.result,
+        hasData: !!result?.result?.data,
+        dataLength: result?.result?.data?.length,
+        hasMetadata: !!result?.result?.metadata,
+        error: result?.error,
+        sql: result?.sql,
+        allKeys: result ? Object.keys(result) : 'N/A'
+      });
       setActiveResult(result, query); // Save to active result store
       setActiveTab('result');
     } catch (error) {
       console.error('Query execution failed:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status
+      });
     } finally {
       setProgress(0);
       // Keep processing details visible for a moment after completion
@@ -368,16 +408,9 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
 
     console.log('Visualization data prepared:', visualizationData);
 
-    // For basic chart types (bar, line, pie), the inline chart will handle the display
-    // For dashboard, navigate to dashboard builder
-    if (type === 'dashboard') {
-      window.open('/dashboard', '_blank');
-    }
-    // For other advanced types, navigate to appropriate pages
-    else if (!['bar', 'line', 'pie'].includes(type)) {
-      window.open('/interactive', '_blank');
-    }
-    // For bar, line, pie - the inline chart in QueryResult will handle the display
+    // All chart types will be handled inline in QueryResult
+    // No need to open new windows for any chart type
+    console.log('Visualization request handled inline for type:', type);
   }, [query]);
 
   // Keyboard navigation (setup only, variable not used)

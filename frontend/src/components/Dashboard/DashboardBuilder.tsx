@@ -83,6 +83,7 @@ const DashboardBuilder: React.FC = () => {
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [selectedDataSource, setSelectedDataSource] = useState<string>('');
+  const [selectedChart, setSelectedChart] = useState<ChartConfig | null>(null);
 
   // Chart type options
   const chartTypes = [

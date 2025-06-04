@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Card, Table, Typography, Space, Tag, Button, Tabs } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Table, Typography, Space, Tag, Button, Tabs, Input, Tooltip, Row, Col } from 'antd';
 import {
   ReloadOutlined,
   CodeOutlined,
@@ -10,10 +10,21 @@ import {
   CheckOutlined,
   BarChartOutlined,
   LineChartOutlined,
-  PieChartOutlined
+  PieChartOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  SettingOutlined,
+  FullscreenOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined
 } from '@ant-design/icons';
 import VisualizationRecommendations from '../Visualization/VisualizationRecommendations';
+import AdvancedChart from '../Visualization/AdvancedChart';
+import ChartConfigurationPanel from '../Visualization/ChartConfigurationPanel';
+import DataTable from '../DataTable/DataTable';
 import { QueryResponse } from '../../types/query';
+import { AdvancedVisualizationConfig, VisualizationRecommendation } from '../../types/visualization';
+import { useVisualizationStore } from '../../stores/visualizationStore';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -35,6 +46,21 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Use visualization store for persistent chart state
+  const { currentVisualization, setVisualization } = useVisualizationStore();
+  const [selectedRecommendation, setSelectedRecommendation] = useState<VisualizationRecommendation | null>(null);
+
+  // Create a unique key for this query result to associate with chart
+  const resultKey = `${query}-${result?.queryId || 'unknown'}`;
+
+  // Load chart config for this specific query on mount
+  useEffect(() => {
+    const savedChartKey = localStorage.getItem('current-chart-key');
+    if (savedChartKey === resultKey && currentVisualization) {
+      console.log('Restored chart configuration for query:', resultKey);
+    }
+  }, [resultKey, currentVisualization]);
+
   // Debug logging for prompt details and error handling
   React.useEffect(() => {
     console.log('🔍 QueryResult - Debug info:', {
@@ -46,19 +72,50 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
       promptDetailsKeys: result?.promptDetails ? Object.keys(result.promptDetails) : 'N/A',
       queryId: result?.queryId,
       allResultKeys: result ? Object.keys(result) : 'N/A',
-      willShowError: !result?.success
+      willShowError: !result?.success,
+      hasResultData: !!result?.result,
+      hasResultDataArray: !!result?.result?.data,
+      resultDataLength: result?.result?.data?.length,
+      hasMetadata: !!result?.result?.metadata,
+      metadataKeys: result?.result?.metadata ? Object.keys(result.result.metadata) : 'N/A',
+      fullResult: result
     });
   }, [result]);
   if (!result.success) {
+    const isValidationError = result.validationError || (result.error && result.error.includes('validation'));
+
     return (
       <Card className="enhanced-card">
         <div className="query-error">
           <Title level={4} style={{ color: 'white', marginBottom: '16px' }}>
-            Query Failed
+            {isValidationError ? 'SQL Validation Failed' : 'Query Failed'}
           </Title>
           <Text style={{ color: 'white', fontSize: '16px', display: 'block', marginBottom: '24px' }}>
             {typeof result.error === 'string' ? result.error : result.error?.message || 'An error occurred while processing your query. Please check your query and try again.'}
           </Text>
+
+          {isValidationError && (
+            <div style={{
+              background: 'rgba(255, 193, 7, 0.1)',
+              border: '1px solid rgba(255, 193, 7, 0.3)',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '16px'
+            }}>
+              <Text style={{ color: '#ffc107', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>
+                ⚠️ Security Validation Error
+              </Text>
+              <Text style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                The generated SQL query failed security validation. This could be due to:
+              </Text>
+              <ul style={{ color: 'rgba(255, 255, 255, 0.8)', marginTop: '8px', paddingLeft: '20px' }}>
+                <li>Potentially unsafe SQL operations</li>
+                <li>Access to restricted tables or columns</li>
+                <li>Query complexity exceeding security limits</li>
+                <li>Use of prohibited SQL functions or keywords</li>
+              </ul>
+            </div>
+          )}
 
           {/* Show SQL if available */}
           {result.sql && (
@@ -91,6 +148,27 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
                 {result.sql}
               </Paragraph>
             </details>
+          )}
+
+          {/* Helpful suggestions for validation errors */}
+          {isValidationError && (
+            <div style={{
+              background: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.3)',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '16px'
+            }}>
+              <Text style={{ color: '#3b82f6', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>
+                💡 Suggestions to fix this issue:
+              </Text>
+              <ul style={{ color: 'rgba(255, 255, 255, 0.9)', marginTop: '8px', paddingLeft: '20px' }}>
+                <li>Try rephrasing your question to be more specific</li>
+                <li>Avoid asking for sensitive or restricted data</li>
+                <li>Use simpler queries without complex joins or subqueries</li>
+                <li>Check if you have permission to access the requested data</li>
+              </ul>
+            </div>
           )}
 
           {/* Show prompt details if available */}
@@ -243,12 +321,24 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
     );
   }
 
+  const [searchText, setSearchText] = useState('');
+  const [sortedInfo, setSortedInfo] = useState<any>({});
+  const [filteredInfo, setFilteredInfo] = useState<any>({});
+
   const columns = result.result?.metadata.columns.map(col => ({
     title: col.name,
     dataIndex: col.name,
     key: col.name,
     width: 150,
-    render: (value: any, record: any, index: number) => {
+    dataType: col.type === 'number' || col.type === 'integer' || col.type === 'decimal' ? 'number' :
+              col.type === 'date' || col.type === 'datetime' || col.type === 'timestamp' ? 'date' :
+              col.type === 'boolean' ? 'boolean' : 'string',
+    sortable: true,
+    filterable: true,
+    searchable: true,
+    resizable: true,
+    copyable: true,
+    formatter: (value: any, record: any, index: number) => {
       if (debugMode) {
         console.log('Column render:', { columnName: col.name, value, record, index });
       }
@@ -261,7 +351,7 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
 
   const dataSource = result.result?.data.map((row, index) => ({
     ...row,
-    key: index,
+    id: index, // DataTable uses 'id' as default keyField
   })) || [];
 
   // Debug logging for data structure (only when debug mode is enabled)
@@ -285,13 +375,19 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
   const finalColumns = columns.length > 0 ? columns :
     (dataSource.length > 0 ?
       Object.keys(dataSource[0])
-        .filter(key => key !== 'key') // Exclude the React key
+        .filter(key => key !== 'id') // Exclude the DataTable id key
         .map(key => ({
           title: key,
           dataIndex: key,
           key: key,
           width: 150,
-          render: (value: any) => {
+          dataType: 'string',
+          sortable: true,
+          filterable: true,
+          searchable: true,
+          resizable: true,
+          copyable: true,
+          formatter: (value: any) => {
             if (value === null || value === undefined) {
               return <Text type="secondary">NULL</Text>;
             }
@@ -631,35 +727,45 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
               </div>
             )}
 
-            <Table
+            <DataTable
+              data={dataSource}
               columns={finalColumns}
-              dataSource={dataSource}
-              pagination={{
-                current: currentPage,
+              keyField="id"
+              features={{
+                pagination: true,
+                sorting: true,
+                filtering: true,
+                searching: true,
+                selection: false,
+                resizing: true,
+                copying: true,
+                export: true,
+                exportFormats: ['csv', 'excel', 'pdf', 'json'],
+                print: true,
+                columnChooser: true,
+                fullscreen: false,
+                virtualScroll: dataSource.length > 1000,
+                keyboard: true,
+                contextMenu: false
+              }}
+              config={{
                 pageSize: pageSize,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                pageSizeOptions: ['10', '25', '50', '100', '200'],
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total} items`,
-                style: { marginTop: '16px' },
-                onChange: (page, size) => {
-                  setCurrentPage(page);
-                  if (size !== pageSize) {
-                    setPageSize(size);
-                    setCurrentPage(1); // Reset to first page when page size changes
-                  }
-                },
-                onShowSizeChange: (current, size) => {
+                pageSizeOptions: [10, 25, 50, 100, 200],
+                stripedRows: true,
+                hoverEffect: true,
+                stickyHeader: true,
+                exportFileName: `query-results-${new Date().toISOString().split('T')[0]}`,
+                density: 'standard'
+              }}
+              onPageChange={(page, size) => {
+                setCurrentPage(page);
+                if (size !== pageSize) {
                   setPageSize(size);
-                  setCurrentPage(1); // Reset to first page when page size changes
+                  setCurrentPage(1);
                 }
               }}
-              scroll={{ x: true }}
-              size="small"
               style={{
                 borderRadius: '8px',
-                overflow: 'visible',
                 minHeight: '200px',
                 backgroundColor: 'white',
                 ...(debugMode && { border: '2px solid blue' })
@@ -717,18 +823,93 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
             }
             key="charts"
           >
-            <VisualizationRecommendations
-              data={dataSource}
-              columns={result.result?.metadata.columns || []}
-              query={query}
-              onVisualizationSelect={(config) => {
-                console.log('Visualization selected:', config);
-                // Handle visualization selection
-                if (onVisualizationRequest) {
-                  onVisualizationRequest(config.type, dataSource, result.result?.metadata.columns || []);
-                }
-              }}
-            />
+            <Row gutter={[24, 24]}>
+              {/* Chart Configuration Panel */}
+              <Col span={24}>
+                <Card
+                  title={
+                    <Space>
+                      <SettingOutlined />
+                      <span>Chart Configuration</span>
+                    </Space>
+                  }
+                  size="small"
+                  style={{ marginBottom: 16 }}
+                >
+                  <ChartConfigurationPanel
+                    data={dataSource}
+                    columns={result.result?.metadata.columns || []}
+                    currentConfig={currentVisualization}
+                    onConfigChange={(config) => {
+                      setVisualization(config);
+                      localStorage.setItem('current-chart-key', resultKey);
+                    }}
+                  />
+                </Card>
+              </Col>
+
+              {/* Chart Display Area */}
+              {currentVisualization && (
+                <Col span={24}>
+                  <Card
+                    title={
+                      <Space>
+                        <BarChartOutlined />
+                        <span>{currentVisualization.title}</span>
+                        {selectedRecommendation && (
+                          <Tag color="blue">
+                            {selectedRecommendation.chartType} - {(selectedRecommendation.confidence * 100).toFixed(0)}% confidence
+                          </Tag>
+                        )}
+                      </Space>
+                    }
+                    extra={
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setVisualization(null);
+                          setSelectedRecommendation(null);
+                          localStorage.removeItem('current-chart-key');
+                        }}
+                      >
+                        Clear Chart
+                      </Button>
+                    }
+                  >
+                    <AdvancedChart
+                      data={dataSource}
+                      config={currentVisualization}
+                      onDataPointClick={(point) => {
+                        console.log('Data point clicked:', point);
+                      }}
+                    />
+                  </Card>
+                </Col>
+              )}
+
+              {/* Recommendations */}
+              <Col span={24}>
+                <VisualizationRecommendations
+                  data={dataSource}
+                  columns={result.result?.metadata.columns || []}
+                  query={query}
+                  onRecommendationSelect={(recommendation) => {
+                    console.log('Recommendation selected:', recommendation);
+                    setSelectedRecommendation(recommendation);
+                  }}
+                  onConfigGenerated={(config) => {
+                    console.log('Config generated:', config);
+                    setVisualization(config);
+                    // Store the association between this query and the chart
+                    localStorage.setItem('current-chart-key', resultKey);
+                    // Handle visualization selection
+                    if (onVisualizationRequest) {
+                      onVisualizationRequest(config.type, dataSource, result.result?.metadata.columns || []);
+                    }
+                  }}
+                />
+              </Col>
+            </Row>
           </TabPane>
 
         </Tabs>

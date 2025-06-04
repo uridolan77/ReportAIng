@@ -25,7 +25,20 @@ public class TuningController : ControllerBase
         _context = context;
     }
 
-    private string GetCurrentUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+    private string GetCurrentUserId()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var subClaim = User.FindFirst("sub")?.Value;
+        var nameClaim = User.FindFirst(ClaimTypes.Name)?.Value;
+        var emailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
+
+        var result = userId ?? subClaim ?? nameClaim ?? emailClaim ?? "unknown";
+
+        _logger.LogInformation("🔍 TuningController GetCurrentUserId - NameIdentifier: {UserId}, Sub: {SubClaim}, Name: {NameClaim}, Email: {Email}, Result: {Result}",
+            userId, subClaim, nameClaim, emailClaim, result);
+
+        return result;
+    }
 
     #region Dashboard
 

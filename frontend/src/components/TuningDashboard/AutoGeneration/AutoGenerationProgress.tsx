@@ -29,6 +29,7 @@ interface AutoGenerationProgressProps {
   processingDetails?: ProcessingDetail[];
   aiPrompts?: AIPromptInfo[];
   onCancel?: () => void;
+  mockMode?: boolean;
 }
 
 interface ProcessingDetail {
@@ -68,7 +69,8 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
   glossaryTermsGenerated = 0,
   relationshipsFound = 0,
   processingDetails = [],
-  aiPrompts = []
+  aiPrompts = [],
+  mockMode = false
 }) => {
   const getProgressStatus = () => {
     if (progress < 30) return 'active';
@@ -106,9 +108,16 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
     <div style={{ marginBottom: '24px' }}>
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
         <Title level={4}>
-          <RobotOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-          Auto-Generation in Progress
+          <RobotOutlined style={{ marginRight: '8px', color: mockMode ? '#722ed1' : '#1890ff' }} />
+          {mockMode ? 'Mock Generation in Progress 🧪' : 'Auto-Generation in Progress'}
         </Title>
+        {mockMode && (
+          <div style={{ marginTop: '8px' }}>
+            <Tag color="purple" style={{ fontSize: '12px', padding: '4px 12px' }}>
+              🧪 Mock Mode - No AI API Calls
+            </Tag>
+          </div>
+        )}
       </div>
 
       {/* Overall Progress */}

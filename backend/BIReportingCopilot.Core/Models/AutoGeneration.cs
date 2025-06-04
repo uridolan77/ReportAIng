@@ -135,6 +135,7 @@ public class AutoGenerationRequest
     public List<string>? SpecificSchemas { get; set; }
     public bool OverwriteExisting { get; set; } = false;
     public double MinimumConfidenceThreshold { get; set; } = 0.6;
+    public bool MockMode { get; set; } = false;
 }
 
 /// <summary>

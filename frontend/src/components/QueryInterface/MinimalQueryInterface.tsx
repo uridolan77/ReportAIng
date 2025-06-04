@@ -250,8 +250,8 @@ export const MinimalQueryInterface: React.FC = () => {
         </div>
       </div>
 
-      {/* Proactive Suggestions - Show when no query and no results */}
-      {!currentResult && !query && showProactiveSuggestions && (
+      {/* Proactive Suggestions - Show when no query, no successful results, or when there's an error */}
+      {((!currentResult && !query) || (currentResult && !currentResult.success)) && showProactiveSuggestions && (
         <ProactiveSuggestions
           onQuerySelect={(selectedQuery) => {
             setQuery(selectedQuery);
@@ -372,8 +372,8 @@ export const MinimalQueryInterface: React.FC = () => {
         )}
       </div>
 
-      {/* Enhanced Quick Actions */}
-      {showQuickActions && !currentResult && (
+      {/* Enhanced Quick Actions - Show when no result or when there's an error */}
+      {showQuickActions && (!currentResult || (currentResult && !currentResult.success)) && (
         <div style={{ marginBottom: '72px' }}>
           <div style={{
             textAlign: 'center',
@@ -481,8 +481,8 @@ export const MinimalQueryInterface: React.FC = () => {
         </div>
       )}
 
-      {/* Enhanced Example Queries by Category */}
-      {!currentResult && (
+      {/* Enhanced Example Queries by Category - Show when no result or when there's an error */}
+      {(!currentResult || (currentResult && !currentResult.success)) && (
         <div style={{ marginBottom: '72px' }}>
           <div style={{
             textAlign: 'center',

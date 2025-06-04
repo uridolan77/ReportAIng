@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -597,7 +598,13 @@ builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializatio
 builder.Services.AddScoped<ITuningService, TuningService>();
 builder.Services.AddScoped<IAITuningSettingsService, AITuningSettingsService>();
 builder.Services.AddScoped<IBusinessContextAutoGenerator, BusinessContextAutoGenerator>();
-builder.Services.AddScoped<IProgressReporter, SignalRProgressReporter>();
+// Register SignalRProgressReporter with QueryStatusHub context
+builder.Services.AddScoped<IProgressReporter>(provider =>
+{
+    var hubContext = provider.GetRequiredService<IHubContext<QueryStatusHub>>();
+    var logger = provider.GetRequiredService<ILogger<SignalRProgressReporter>>();
+    return new SignalRProgressReporter(hubContext, logger);
+});
 
 // ===== STARTUP & HEALTH SERVICES =====
 builder.Services.AddSingleton<IStartupHealthValidator, StartupHealthValidator>();

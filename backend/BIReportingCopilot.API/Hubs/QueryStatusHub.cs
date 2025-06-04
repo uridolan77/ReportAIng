@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using BIReportingCopilot.Core.Interfaces;
 
 namespace BIReportingCopilot.API.Hubs;
 
 // [Authorize] // Temporarily disabled for debugging
-public class QueryStatusHub : Hub
+public class QueryStatusHub : Hub, IProgressHub
 {
     private readonly ILogger<QueryStatusHub> _logger;
 
@@ -103,6 +104,49 @@ public class QueryStatusHub : Hub
     public async Task SendSystemNotification(object notification)
     {
         await Clients.All.SendAsync("SystemNotification", notification);
+    }
+
+    /// <summary>
+    /// Get connection info for debugging
+    /// </summary>
+    public async Task GetConnectionInfo()
+    {
+        var userId = GetCurrentUserId();
+
+        await Clients.Caller.SendAsync("ConnectionInfo", new
+        {
+            ConnectionId = Context.ConnectionId,
+            UserId = userId,
+            UserAgent = Context.GetHttpContext()?.Request.Headers["User-Agent"].ToString(),
+            RemoteIpAddress = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString(),
+            Timestamp = DateTime.UtcNow
+        });
+    }
+
+    /// <summary>
+    /// Get current user ID using the same logic as controllers
+    /// </summary>
+    private string GetCurrentUserId()
+    {
+        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var subClaim = Context.User?.FindFirst("sub")?.Value;
+        var nameClaim = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
+        var emailClaim = Context.User?.FindFirst(ClaimTypes.Email)?.Value;
+
+        var result = userId ?? subClaim ?? nameClaim ?? emailClaim ?? "anonymous";
+
+        _logger.LogInformation("🔍 QueryStatusHub GetCurrentUserId - NameIdentifier: {UserId}, Sub: {SubClaim}, Name: {NameClaim}, Email: {Email}, Result: {Result}",
+            userId, subClaim, nameClaim, emailClaim, result);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Implementation of IProgressHub interface
+    /// </summary>
+    public async Task SendAutoGenerationProgressAsync(string userId, object progressData)
+    {
+        await Clients.Group($"user_{userId}").SendAsync("AutoGenerationProgress", progressData);
     }
 }
 

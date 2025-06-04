@@ -56,6 +56,37 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
   const chartData = useMemo(() => {
     let processedData = [...data];
 
+    // Debug logging for data structure
+    console.log('AdvancedChart - Raw data:', data.slice(0, 2));
+    console.log('AdvancedChart - Config:', {
+      xAxis: config.xAxis,
+      yAxis: config.yAxis,
+      chartType: config.chartType
+    });
+
+    // Validate that the data has the expected keys
+    if (data.length > 0) {
+      const firstRow = data[0];
+      const hasXAxis = config.xAxis && firstRow.hasOwnProperty(config.xAxis);
+      const hasYAxis = config.yAxis && firstRow.hasOwnProperty(config.yAxis);
+
+      console.log('AdvancedChart - Data validation:', {
+        hasXAxis,
+        hasYAxis,
+        xAxisValue: hasXAxis ? firstRow[config.xAxis] : 'MISSING',
+        yAxisValue: hasYAxis ? firstRow[config.yAxis] : 'MISSING',
+        availableKeys: Object.keys(firstRow)
+      });
+
+      if (!hasXAxis || !hasYAxis) {
+        console.warn('AdvancedChart - Missing required data keys!', {
+          expectedXAxis: config.xAxis,
+          expectedYAxis: config.yAxis,
+          actualKeys: Object.keys(firstRow)
+        });
+      }
+    }
+
     // Apply data sampling if enabled
     if (config.dataProcessing?.enableSampling && data.length > (config.dataProcessing.sampleSize || 1000)) {
       const sampleSize = config.dataProcessing.sampleSize || 1000;
@@ -69,6 +100,7 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
       processedData = removeOutliers(processedData, config.xAxis || 'value');
     }
 
+    console.log('AdvancedChart - Processed data:', processedData.slice(0, 2));
     return processedData;
   }, [data, config]);
 
@@ -126,25 +158,67 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
           <ResponsiveContainer {...commonProps}>
             <BarChart data={chartData} {...animationProps}>
               {chartSettings.showGrid && <CartesianGrid strokeDasharray="3 3" />}
-              <XAxis dataKey={config.xAxis} />
-              <YAxis />
+              <XAxis
+                dataKey={config.xAxis}
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => {
+                  // Format date values for better display
+                  if (typeof value === 'string' && value.includes('T')) {
+                    return new Date(value).toLocaleDateString();
+                  }
+                  return value;
+                }}
+              />
+              <YAxis
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => {
+                  // Format large numbers
+                  if (typeof value === 'number' && value > 1000) {
+                    return (value / 1000).toFixed(0) + 'K';
+                  }
+                  return value;
+                }}
+              />
               <RechartsTooltip
                 content={<CustomTooltip config={config.interaction?.tooltip} />}
+                formatter={(value, name) => [
+                  typeof value === 'number' ? value.toLocaleString() : value,
+                  name
+                ]}
+                labelFormatter={(label) => {
+                  if (typeof label === 'string' && label.includes('T')) {
+                    return new Date(label).toLocaleDateString();
+                  }
+                  return label;
+                }}
               />
               {chartSettings.showLegend && <Legend />}
               {chartSettings.enableBrush && <Brush dataKey={config.xAxis} height={30} />}
-              <Bar
-                dataKey={config.yAxis || 'value'}
-                fill={chartSettings.colorScheme}
-                onClick={handleDataPointClick}
-              >
-                {chartData.map((_entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
+              {/* Render multiple bars if series is defined, otherwise single bar */}
+              {config.series && config.series.length > 1 ? (
+                config.series.map((series, index) => (
+                  <Bar
+                    key={series}
+                    dataKey={series}
                     fill={colorPalette[index % colorPalette.length]}
+                    onClick={handleDataPointClick}
+                    name={series}
                   />
-                ))}
-              </Bar>
+                ))
+              ) : (
+                <Bar
+                  dataKey={config.yAxis || 'value'}
+                  fill={chartSettings.colorScheme}
+                  onClick={handleDataPointClick}
+                >
+                  {chartData.map((_entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={colorPalette[index % colorPalette.length]}
+                    />
+                  ))}
+                </Bar>
+              )}
             </BarChart>
           </ResponsiveContainer>
         );
@@ -161,15 +235,32 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
               />
               {chartSettings.showLegend && <Legend />}
               {chartSettings.enableBrush && <Brush dataKey={config.xAxis} height={30} />}
-              <Line
-                type="monotone"
-                dataKey={config.yAxis || 'value'}
-                stroke={chartSettings.colorScheme}
-                strokeWidth={2}
-                dot={{ fill: chartSettings.colorScheme, strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6 }}
-                onClick={handleDataPointClick}
-              />
+              {/* Render multiple lines if series is defined, otherwise single line */}
+              {config.series && config.series.length > 1 ? (
+                config.series.map((series, index) => (
+                  <Line
+                    key={series}
+                    type="monotone"
+                    dataKey={series}
+                    stroke={colorPalette[index % colorPalette.length]}
+                    strokeWidth={2}
+                    dot={{ fill: colorPalette[index % colorPalette.length], strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6 }}
+                    onClick={handleDataPointClick}
+                    name={series}
+                  />
+                ))
+              ) : (
+                <Line
+                  type="monotone"
+                  dataKey={config.yAxis || 'value'}
+                  stroke={chartSettings.colorScheme}
+                  strokeWidth={2}
+                  dot={{ fill: chartSettings.colorScheme, strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6 }}
+                  onClick={handleDataPointClick}
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
         );
@@ -186,14 +277,30 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
               />
               {chartSettings.showLegend && <Legend />}
               {chartSettings.enableBrush && <Brush dataKey={config.xAxis} height={30} />}
-              <Area
-                type="monotone"
-                dataKey={config.yAxis || 'value'}
-                stroke={chartSettings.colorScheme}
-                fill={chartSettings.colorScheme}
-                fillOpacity={0.6}
-                onClick={handleDataPointClick}
-              />
+              {/* Render multiple areas if series is defined, otherwise single area */}
+              {config.series && config.series.length > 1 ? (
+                config.series.map((series, index) => (
+                  <Area
+                    key={series}
+                    type="monotone"
+                    dataKey={series}
+                    stroke={colorPalette[index % colorPalette.length]}
+                    fill={colorPalette[index % colorPalette.length]}
+                    fillOpacity={0.6}
+                    onClick={handleDataPointClick}
+                    name={series}
+                  />
+                ))
+              ) : (
+                <Area
+                  type="monotone"
+                  dataKey={config.yAxis || 'value'}
+                  stroke={chartSettings.colorScheme}
+                  fill={chartSettings.colorScheme}
+                  fillOpacity={0.6}
+                  onClick={handleDataPointClick}
+                />
+              )}
             </AreaChart>
           </ResponsiveContainer>
         );
