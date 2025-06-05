@@ -89,8 +89,19 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
     columnsProcessed,
     totalColumns,
     glossaryTermsGenerated,
-    relationshipsFound
+    relationshipsFound,
+    progress,
+    currentTask,
+    currentStage
   });
+
+  // Ensure we don't display negative or invalid values
+  const safeTablesProcessed = Math.max(0, tablesProcessed || 0);
+  const safeTotalTables = Math.max(0, totalTables || 0);
+  const safeColumnsProcessed = Math.max(0, columnsProcessed || 0);
+  const safeTotalColumns = Math.max(0, totalColumns || 0);
+  const safeGlossaryTerms = Math.max(0, glossaryTermsGenerated || 0);
+  const safeRelationships = Math.max(0, relationshipsFound || 0);
   const getProgressStatus = () => {
     if (progress < 30) return 'active';
     if (progress < 70) return 'active';
@@ -282,8 +293,8 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
           <Card size="small">
             <Statistic
               title="Tables"
-              value={tablesProcessed}
-              suffix={`/ ${totalTables}`}
+              value={safeTablesProcessed}
+              suffix={safeTotalTables > 0 ? `/ ${safeTotalTables}` : ''}
               prefix={<TableOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
@@ -293,8 +304,8 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
           <Card size="small">
             <Statistic
               title="Columns"
-              value={columnsProcessed}
-              suffix={`/ ${totalColumns}`}
+              value={safeColumnsProcessed}
+              suffix={safeTotalColumns > 0 ? `/ ${safeTotalColumns}` : ''}
               prefix={<ColumnHeightOutlined />}
               valueStyle={{ color: '#52c41a' }}
             />
@@ -304,7 +315,7 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
           <Card size="small">
             <Statistic
               title="Glossary Terms"
-              value={glossaryTermsGenerated}
+              value={safeGlossaryTerms}
               prefix={<DatabaseOutlined />}
               valueStyle={{ color: '#722ed1' }}
             />
@@ -314,7 +325,7 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
           <Card size="small">
             <Statistic
               title="Relationships"
-              value={relationshipsFound}
+              value={safeRelationships}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#fa8c16' }}
             />

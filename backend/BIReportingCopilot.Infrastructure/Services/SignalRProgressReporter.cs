@@ -31,22 +31,39 @@ public class SignalRProgressReporter : IProgressReporter
         {
             _logger.LogInformation("📡 Sending progress update to user {UserId}: {Progress}% - {Message} ({Stage})", userId, progress, message, stage);
             _logger.LogInformation("📡 Target group: user_{UserId}, Table: {CurrentTable}, Column: {CurrentColumn}", userId, currentTable, currentColumn);
+            _logger.LogInformation("📡 Statistics: Tables {TablesProcessed}/{TotalTables}, Columns {ColumnsProcessed}/{TotalColumns}, Glossary {GlossaryTerms}, Relationships {Relationships}",
+                tablesProcessed, totalTables, columnsProcessed, totalColumns, glossaryTermsGenerated, relationshipsFound);
 
+            // Use consistent field naming (PascalCase for C# convention, but also include camelCase for frontend compatibility)
             var progressData = new
             {
+                // Primary fields (PascalCase)
                 Progress = progress,
                 Message = message,
                 Stage = stage,
                 CurrentTable = currentTable,
                 CurrentColumn = currentColumn,
-                TablesProcessed = tablesProcessed,
-                TotalTables = totalTables,
-                ColumnsProcessed = columnsProcessed,
-                TotalColumns = totalColumns,
-                GlossaryTermsGenerated = glossaryTermsGenerated,
-                RelationshipsFound = relationshipsFound,
+                TablesProcessed = tablesProcessed ?? 0,
+                TotalTables = totalTables ?? 0,
+                ColumnsProcessed = columnsProcessed ?? 0,
+                TotalColumns = totalColumns ?? 0,
+                GlossaryTermsGenerated = glossaryTermsGenerated ?? 0,
+                RelationshipsFound = relationshipsFound ?? 0,
                 AIPrompt = aiPrompt,
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
+
+                // Duplicate fields in camelCase for frontend compatibility
+                progress = progress,
+                message = message,
+                stage = stage,
+                currentTable = currentTable,
+                currentColumn = currentColumn,
+                tablesProcessed = tablesProcessed ?? 0,
+                totalTables = totalTables ?? 0,
+                columnsProcessed = columnsProcessed ?? 0,
+                totalColumns = totalColumns ?? 0,
+                glossaryTermsGenerated = glossaryTermsGenerated ?? 0,
+                relationshipsFound = relationshipsFound ?? 0
             };
 
             _logger.LogInformation("📡 Progress data: {@ProgressData}", progressData);

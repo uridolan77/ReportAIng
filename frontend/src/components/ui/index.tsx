@@ -1,9 +1,26 @@
-import { Button as AntButton, ButtonProps as AntButtonProps } from 'antd';
+import {
+  Button as AntButton,
+  ButtonProps as AntButtonProps,
+  Card as AntCard,
+  CardProps as AntCardProps,
+  Input as AntInput,
+  InputProps as AntInputProps,
+  Badge as AntBadge,
+  BadgeProps as AntBadgeProps,
+  Tabs as AntTabs,
+  TabsProps as AntTabsProps,
+  Switch as AntSwitch,
+  SwitchProps as AntSwitchProps,
+  Select as AntSelect,
+  SelectProps as AntSelectProps
+} from 'antd';
 import React from 'react';
+
+const { TextArea } = AntInput;
 
 // Unified Button component
 export interface ButtonProps extends Omit<AntButtonProps, 'variant'> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'default';
 }
 
 export const Button: React.FC<ButtonProps> = ({ variant, style, ...props }) => {
@@ -26,6 +43,18 @@ export const Button: React.FC<ButtonProps> = ({ variant, style, ...props }) => {
           borderColor: '#ff4d4f',
           color: 'white',
         };
+      case 'outline':
+        return {
+          background: 'transparent',
+          borderColor: '#d9d9d9',
+          color: '#262626',
+        };
+      case 'default':
+        return {
+          background: '#1890ff',
+          borderColor: '#1890ff',
+          color: 'white',
+        };
       default:
         return {};
     }
@@ -42,6 +71,456 @@ export const Button: React.FC<ButtonProps> = ({ variant, style, ...props }) => {
   );
 };
 
+// Card components
+export interface CardProps extends AntCardProps {
+  children: React.ReactNode;
+}
+
+export const Card: React.FC<CardProps> = ({ children, style, ...props }) => (
+  <AntCard
+    {...props}
+    style={{
+      background: 'white',
+      borderRadius: 8,
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+      marginBottom: 16,
+      ...style,
+    }}
+  >
+    {children}
+  </AntCard>
+);
+
+export const CardContent: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
+  children,
+  className,
+  style
+}) => (
+  <div className={className} style={{ padding: '16px', ...style }}>
+    {children}
+  </div>
+);
+
+export const CardHeader: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
+  children,
+  className,
+  style
+}) => (
+  <div className={className} style={{ padding: '16px 16px 0 16px', borderBottom: '1px solid #f0f0f0', marginBottom: '16px', ...style }}>
+    {children}
+  </div>
+);
+
+export const CardTitle: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
+  children,
+  className,
+  style
+}) => (
+  <h3 className={className} style={{ margin: 0, fontSize: '16px', fontWeight: 600, ...style }}>
+    {children}
+  </h3>
+);
+
+// Input components
+export interface InputProps extends AntInputProps {}
+
+export const Input: React.FC<InputProps> = (props) => (
+  <AntInput {...props} />
+);
+
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+
+export const Textarea: React.FC<TextareaProps> = (props) => (
+  <TextArea {...props} />
+);
+
+// Badge component
+export interface BadgeProps extends AntBadgeProps {
+  variant?: 'default' | 'secondary' | 'outline';
+}
+
+export const Badge: React.FC<BadgeProps> = ({ variant, style, children, ...props }) => {
+  const getVariantStyle = () => {
+    switch (variant) {
+      case 'secondary':
+        return {
+          background: '#f0f0f0',
+          color: '#262626',
+          border: 'none',
+        };
+      case 'outline':
+        return {
+          background: 'transparent',
+          color: '#262626',
+          border: '1px solid #d9d9d9',
+        };
+      default:
+        return {
+          background: '#1890ff',
+          color: 'white',
+        };
+    }
+  };
+
+  if (children) {
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        borderRadius: 4,
+        fontSize: '12px',
+        fontWeight: 500,
+        ...getVariantStyle(),
+        ...style,
+      }}>
+        {children}
+      </span>
+    );
+  }
+
+  return <AntBadge {...props} style={style} />;
+};
+
+// Tabs components
+export interface TabsProps extends AntTabsProps {}
+
+export const Tabs: React.FC<TabsProps> = (props) => (
+  <AntTabs {...props} />
+);
+
+export const TabsContent: React.FC<{
+  children: React.ReactNode;
+  value: string;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, value, className, style }) => (
+  <div className={className} style={style}>
+    {children}
+  </div>
+);
+
+export const TabsList: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, className, style }) => (
+  <div className={className} style={{ display: 'flex', borderBottom: '1px solid #f0f0f0', marginBottom: '16px', ...style }}>
+    {children}
+  </div>
+);
+
+export const TabsTrigger: React.FC<{
+  children: React.ReactNode;
+  value: string;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, value, className, style }) => (
+  <button className={className} style={{
+    padding: '8px 16px',
+    border: 'none',
+    background: 'transparent',
+    cursor: 'pointer',
+    borderBottom: '2px solid transparent',
+    ...style
+  }}>
+    {children}
+  </button>
+);
+
+// Switch component
+export interface SwitchProps extends AntSwitchProps {}
+
+export const Switch: React.FC<SwitchProps> = (props) => (
+  <AntSwitch {...props} />
+);
+
+// Label component
+export const Label: React.FC<{
+  children: React.ReactNode;
+  htmlFor?: string;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, htmlFor, className, style }) => (
+  <label htmlFor={htmlFor} className={className} style={{
+    display: 'block',
+    marginBottom: '4px',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#262626',
+    ...style
+  }}>
+    {children}
+  </label>
+);
+
+// Dialog components (using Ant Design Modal)
+import { Modal } from 'antd';
+
+export interface DialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}
+
+export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => (
+  <Modal
+    open={open}
+    onCancel={() => onOpenChange(false)}
+    footer={null}
+    destroyOnClose
+  >
+    {children}
+  </Modal>
+);
+
+export const DialogContent: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, className, style }) => (
+  <div className={className} style={style}>
+    {children}
+  </div>
+);
+
+export const DialogHeader: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, className, style }) => (
+  <div className={className} style={{ marginBottom: '16px', ...style }}>
+    {children}
+  </div>
+);
+
+export const DialogTitle: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, className, style }) => (
+  <h2 className={className} style={{ margin: 0, fontSize: '18px', fontWeight: 600, ...style }}>
+    {children}
+  </h2>
+);
+
+export const DialogDescription: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, className, style }) => (
+  <p className={className} style={{ margin: '8px 0 0 0', color: '#8c8c8c', fontSize: '14px', ...style }}>
+    {children}
+  </p>
+);
+
+export const DialogFooter: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, className, style }) => (
+  <div className={className} style={{
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '8px',
+    marginTop: '24px',
+    paddingTop: '16px',
+    borderTop: '1px solid #f0f0f0',
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+// Accordion components (using Ant Design Collapse)
+import { Collapse } from 'antd';
+
+export const Accordion: React.FC<{
+  children: React.ReactNode;
+  type?: 'single' | 'multiple';
+  collapsible?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ children, type, collapsible, className, style }) => (
+  <Collapse
+    accordion={type === 'single'}
+    className={className}
+    style={style}
+  >
+    {children}
+  </Collapse>
+);
+
+export const AccordionItem: React.FC<{
+  children: React.ReactNode;
+  value: string;
+  key?: string;
+}> = ({ children, value, key }) => (
+  <Collapse.Panel header="" key={key || value}>
+    {children}
+  </Collapse.Panel>
+);
+
+export const AccordionTrigger: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ children, className, style }) => (
+  <div className={className} style={style}>
+    {children}
+  </div>
+);
+
+export const AccordionContent: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ children, className, style }) => (
+  <div className={className} style={style}>
+    {children}
+  </div>
+);
+
+// Alert Dialog components (using Ant Design Modal)
+export interface AlertDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}
+
+export const AlertDialog: React.FC<AlertDialogProps> = ({ open, onOpenChange, children }) => (
+  <Modal
+    open={open}
+    onCancel={() => onOpenChange(false)}
+    footer={null}
+    destroyOnClose
+    centered
+  >
+    {children}
+  </Modal>
+);
+
+export const AlertDialogContent: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, className, style }) => (
+  <div className={className} style={style}>
+    {children}
+  </div>
+);
+
+export const AlertDialogHeader: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, className, style }) => (
+  <div className={className} style={{ marginBottom: '16px', ...style }}>
+    {children}
+  </div>
+);
+
+export const AlertDialogTitle: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, className, style }) => (
+  <h2 className={className} style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#ff4d4f', ...style }}>
+    {children}
+  </h2>
+);
+
+export const AlertDialogDescription: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, className, style }) => (
+  <p className={className} style={{ margin: '8px 0 0 0', color: '#8c8c8c', fontSize: '14px', ...style }}>
+    {children}
+  </p>
+);
+
+export const AlertDialogFooter: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties
+}> = ({ children, className, style }) => (
+  <div className={className} style={{
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '8px',
+    marginTop: '24px',
+    paddingTop: '16px',
+    borderTop: '1px solid #f0f0f0',
+    ...style
+  }}>
+    {children}
+  </div>
+);
+
+export const AlertDialogAction: React.FC<ButtonProps> = (props) => (
+  <Button {...props} />
+);
+
+export const AlertDialogCancel: React.FC<ButtonProps> = (props) => (
+  <Button variant="outline" {...props} />
+);
+
+// Dropdown Menu components (using Ant Design Dropdown)
+import { Dropdown } from 'antd';
+
+export const DropdownMenu: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => (
+  <div>{children}</div>
+);
+
+export const DropdownMenuTrigger: React.FC<{
+  children: React.ReactNode;
+  asChild?: boolean;
+}> = ({ children, asChild }) => (
+  <div>{children}</div>
+);
+
+export const DropdownMenuContent: React.FC<{
+  children: React.ReactNode;
+  align?: 'start' | 'center' | 'end';
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ children, align, className, style }) => (
+  <div className={className} style={style}>
+    {children}
+  </div>
+);
+
+export const DropdownMenuItem: React.FC<{
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ children, onClick, disabled, className, style }) => (
+  <div
+    className={className}
+    style={{
+      padding: '8px 12px',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? 0.5 : 1,
+      ...style
+    }}
+    onClick={disabled ? undefined : onClick}
+  >
+    {children}
+  </div>
+);
+
+export const DropdownMenuSeparator: React.FC<{
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ className, style }) => (
+  <div className={className} style={{ height: '1px', background: '#f0f0f0', margin: '4px 0', ...style }} />
+);
+
 // Loading Fallback Component
 export const LoadingFallback: React.FC = () => (
   <div style={{
@@ -54,24 +533,7 @@ export const LoadingFallback: React.FC = () => (
   </div>
 );
 
-// Common Card wrapper
-interface CardProps {
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}
 
-export const Card: React.FC<CardProps> = ({ children, style }) => (
-  <div style={{
-    background: 'white',
-    borderRadius: 8,
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    padding: 24,
-    marginBottom: 16,
-    ...style,
-  }}>
-    {children}
-  </div>
-);
 
 // Common spacing utilities
 interface SpacerProps {

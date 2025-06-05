@@ -31,6 +31,7 @@ const RequestSigningDemo = lazy(() => import('./components/Security/RequestSigni
 const TypeSafetyDemo = lazy(() => import('./components/TypeSafety/TypeSafetyDemo').then(module => ({ default: module.TypeSafetyDemo })));
 const CacheManager = lazy(() => import('./components/Admin/CacheManager').then(module => ({ default: module.CacheManager })));
 const TuningDashboard = lazy(() => import('./components/Tuning/TuningDashboard').then(module => ({ default: module.TuningDashboard })));
+const SchemaManagementDashboard = lazy(() => import('./components/SchemaManagement/SchemaManagementDashboard').then(module => ({ default: module.SchemaManagementDashboard })));
 const MinimalistQueryPage = lazy(() => import('./pages/MinimalistQueryPage'));
 
 const App: React.FC = () => {
@@ -171,6 +172,7 @@ const App: React.FC = () => {
 
                             {/* Admin Routes */}
                             <Route path="/admin/tuning" element={<TuningDashboard />} />
+                            <Route path="/admin/schemas" element={<SchemaManagementDashboard />} />
                             <Route path="/admin/cache" element={<CacheManager />} />
                             <Route path="/admin/security" element={<SecurityDashboard />} />
 

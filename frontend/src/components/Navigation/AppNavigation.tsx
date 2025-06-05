@@ -27,7 +27,8 @@ import {
   BulbOutlined,
   CodeOutlined,
   LeftOutlined,
-  RightOutlined
+  RightOutlined,
+  DatabaseOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApplicationState } from '../../hooks/useEnhancedState';
@@ -178,6 +179,12 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
           icon: <SettingOutlined />,
           label: 'AI Tuning',
           description: 'Configure AI models and prompts'
+        },
+        {
+          key: '/admin/schemas',
+          icon: <DatabaseOutlined />,
+          label: 'Schema Management',
+          description: 'Manage business context schemas'
         },
         {
           key: '/admin/cache',

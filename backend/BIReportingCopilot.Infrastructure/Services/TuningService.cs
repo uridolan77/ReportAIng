@@ -1198,7 +1198,19 @@ public class TuningService : ITuningService
 
     private async Task SendProgressUpdate(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null, int? tablesProcessed = null, int? totalTables = null, int? columnsProcessed = null, int? totalColumns = null, int? glossaryTermsGenerated = null, int? relationshipsFound = null, object? aiPrompt = null)
     {
-        await _progressReporter.SendProgressUpdateAsync(userId, progress, message, stage, currentTable, currentColumn, tablesProcessed, totalTables, columnsProcessed, totalColumns, glossaryTermsGenerated, relationshipsFound, aiPrompt);
+        // Ensure we don't send negative or null values that could cause UI issues
+        var safeTablesProcessed = Math.Max(0, tablesProcessed ?? 0);
+        var safeTotalTables = Math.Max(0, totalTables ?? 0);
+        var safeColumnsProcessed = Math.Max(0, columnsProcessed ?? 0);
+        var safeTotalColumns = Math.Max(0, totalColumns ?? 0);
+        var safeGlossaryTerms = Math.Max(0, glossaryTermsGenerated ?? 0);
+        var safeRelationships = Math.Max(0, relationshipsFound ?? 0);
+
+        _logger.LogInformation("📡 TuningService sending progress: {Progress}% - {Message} | Tables: {TablesProcessed}/{TotalTables} | Columns: {ColumnsProcessed}/{TotalColumns} | Glossary: {GlossaryTerms} | Relationships: {Relationships}",
+            progress, message, safeTablesProcessed, safeTotalTables, safeColumnsProcessed, safeTotalColumns, safeGlossaryTerms, safeRelationships);
+
+        await _progressReporter.SendProgressUpdateAsync(userId, progress, message, stage, currentTable, currentColumn,
+            safeTablesProcessed, safeTotalTables, safeColumnsProcessed, safeTotalColumns, safeGlossaryTerms, safeRelationships, aiPrompt);
     }
 
     #endregion

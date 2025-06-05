@@ -221,47 +221,72 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         setCurrentColumn(currentColumn);
 
         // Update counts if available and add logging (check both camelCase and PascalCase)
-        const tablesProcessedValue = progressData.tablesProcessed !== undefined ? progressData.tablesProcessed : progressData.TablesProcessed;
-        if (tablesProcessedValue !== undefined) {
-          console.log('🔄 Setting TablesProcessed to:', tablesProcessedValue);
+        // Use a helper function to get the value, preferring non-zero values to prevent flickering
+        const getValuePreferringNonZero = (camelCase: any, pascalCase: any, currentValue: number) => {
+          const camelValue = camelCase !== undefined ? camelCase : null;
+          const pascalValue = pascalCase !== undefined ? pascalCase : null;
+
+          // If both are available, prefer the non-zero one, or the newer one if both are non-zero
+          if (camelValue !== null && pascalValue !== null) {
+            if (camelValue === 0 && pascalValue > 0) return pascalValue;
+            if (pascalValue === 0 && camelValue > 0) return camelValue;
+            return Math.max(camelValue, pascalValue); // Prefer the larger value
+          }
+
+          // If only one is available, use it (but don't go backwards to 0 unless it's explicitly set)
+          const newValue = camelValue !== null ? camelValue : pascalValue;
+          if (newValue !== null && (newValue > currentValue || currentValue === 0)) {
+            return newValue;
+          }
+
+          return currentValue; // Keep current value if new value would be a step backwards
+        };
+
+        const tablesProcessedValue = getValuePreferringNonZero(progressData.tablesProcessed, progressData.TablesProcessed, tablesProcessed);
+        if (tablesProcessedValue !== tablesProcessed) {
+          console.log('🔄 Setting TablesProcessed from', tablesProcessed, 'to:', tablesProcessedValue);
           setTablesProcessed(tablesProcessedValue);
           const totalTablesForLog = progressData.totalTables !== undefined ? progressData.totalTables : (progressData.TotalTables || 'unknown');
           addLogEntry('info', `Tables processed: ${tablesProcessedValue}/${totalTablesForLog}`);
         }
 
-        const totalTablesValue = progressData.totalTables !== undefined ? progressData.totalTables : progressData.TotalTables;
-        if (totalTablesValue !== undefined) {
-          console.log('🔄 Setting TotalTables to:', totalTablesValue);
+        const totalTablesValue = getValuePreferringNonZero(progressData.totalTables, progressData.TotalTables, totalTables);
+        if (totalTablesValue !== totalTables) {
+          console.log('🔄 Setting TotalTables from', totalTables, 'to:', totalTablesValue);
           setTotalTables(totalTablesValue);
         }
 
-        const columnsProcessedValue = progressData.columnsProcessed !== undefined ? progressData.columnsProcessed : progressData.ColumnsProcessed;
-        if (columnsProcessedValue !== undefined) {
-          console.log('🔄 Setting ColumnsProcessed to:', columnsProcessedValue);
+        const columnsProcessedValue = getValuePreferringNonZero(progressData.columnsProcessed, progressData.ColumnsProcessed, columnsProcessed);
+        if (columnsProcessedValue !== columnsProcessed) {
+          console.log('🔄 Setting ColumnsProcessed from', columnsProcessed, 'to:', columnsProcessedValue);
           setColumnsProcessed(columnsProcessedValue);
           const totalColumnsForLog = progressData.totalColumns !== undefined ? progressData.totalColumns : (progressData.TotalColumns || 'unknown');
           addLogEntry('info', `Columns processed: ${columnsProcessedValue}/${totalColumnsForLog}`);
         }
 
-        const totalColumnsValue = progressData.totalColumns !== undefined ? progressData.totalColumns : progressData.TotalColumns;
-        if (totalColumnsValue !== undefined) {
-          console.log('🔄 Setting TotalColumns to:', totalColumnsValue);
+        const totalColumnsValue = getValuePreferringNonZero(progressData.totalColumns, progressData.TotalColumns, totalColumns);
+        if (totalColumnsValue !== totalColumns) {
+          console.log('🔄 Setting TotalColumns from', totalColumns, 'to:', totalColumnsValue);
           setTotalColumns(totalColumnsValue);
         }
 
         // Update glossary terms and relationships counts
-        const glossaryTermsValue = progressData.glossaryTermsGenerated !== undefined ? progressData.glossaryTermsGenerated : progressData.GlossaryTermsGenerated;
-        if (glossaryTermsValue !== undefined) {
-          console.log('🔄 Setting GlossaryTermsGenerated to:', glossaryTermsValue);
+        const glossaryTermsValue = getValuePreferringNonZero(progressData.glossaryTermsGenerated, progressData.GlossaryTermsGenerated, glossaryTermsGenerated);
+        if (glossaryTermsValue !== glossaryTermsGenerated) {
+          console.log('🔄 Setting GlossaryTermsGenerated from', glossaryTermsGenerated, 'to:', glossaryTermsValue);
           setGlossaryTermsGenerated(glossaryTermsValue);
-          addLogEntry('success', `Generated ${glossaryTermsValue} glossary terms`);
+          if (glossaryTermsValue > 0) {
+            addLogEntry('success', `Generated ${glossaryTermsValue} glossary terms`);
+          }
         }
 
-        const relationshipsValue = progressData.relationshipsFound !== undefined ? progressData.relationshipsFound : progressData.RelationshipsFound;
-        if (relationshipsValue !== undefined) {
-          console.log('🔄 Setting RelationshipsFound to:', relationshipsValue);
+        const relationshipsValue = getValuePreferringNonZero(progressData.relationshipsFound, progressData.RelationshipsFound, relationshipsFound);
+        if (relationshipsValue !== relationshipsFound) {
+          console.log('🔄 Setting RelationshipsFound from', relationshipsFound, 'to:', relationshipsValue);
           setRelationshipsFound(relationshipsValue);
-          addLogEntry('success', `Found ${relationshipsValue} relationships`);
+          if (relationshipsValue > 0) {
+            addLogEntry('success', `Found ${relationshipsValue} relationships`);
+          }
         }
 
         // Add AI prompt information if available
@@ -294,30 +319,80 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
 
         // Update processing details if we have table information
         if (progressData.currentTable || progressData.CurrentTable) {
-          const currentTable = progressData.currentTable || progressData.CurrentTable;
-          console.log('🔄 Updating processing details for table:', currentTable);
+          const currentTableName = progressData.currentTable || progressData.CurrentTable;
+          console.log('🔄 Updating processing details for table:', currentTableName);
           setProcessingDetails(prev => {
             const updated = prev.map(detail => {
-              if (detail.tableName === currentTable) {
+              if (detail.tableName === currentTableName) {
+                // Determine status based on stage and progress
+                let newStatus = detail.status;
+                const stage = progressData.stage || progressData.Stage;
+                if (stage === 'Completed' || progressData.Progress >= 100) {
+                  newStatus = 'completed';
+                } else if (stage && stage !== 'Initialization') {
+                  newStatus = 'processing';
+                }
+
+                // Update columns processed, preferring non-zero values
+                const newColumnsProcessed = Math.max(
+                  progressData.columnsProcessed || 0,
+                  progressData.ColumnsProcessed || 0,
+                  detail.columnsProcessed || 0
+                );
+
+                // Update generated terms, preferring non-zero values
+                const newGeneratedTerms = Math.max(
+                  progressData.glossaryTermsGenerated || 0,
+                  progressData.GlossaryTermsGenerated || 0,
+                  detail.generatedTerms || 0
+                );
+
                 const updatedDetail = {
                   ...detail,
-                  status: progressData.Stage === 'Completed' ? 'completed' : 'processing',
-                  stage: progressData.stage || progressData.Stage,
-                  currentColumn: progressData.currentColumn || progressData.CurrentColumn,
-                  columnsProcessed: progressData.columnsProcessed || progressData.ColumnsProcessed || detail.columnsProcessed,
-                  generatedTerms: progressData.glossaryTermsGenerated || progressData.GlossaryTermsGenerated || detail.generatedTerms
+                  status: newStatus,
+                  stage: stage || detail.stage,
+                  currentColumn: progressData.currentColumn || progressData.CurrentColumn || detail.currentColumn,
+                  columnsProcessed: newColumnsProcessed,
+                  generatedTerms: newGeneratedTerms
                 };
 
-                console.log('🔄 Updated detail for table:', detail.tableName, updatedDetail);
+                console.log('🔄 Updated detail for table:', detail.tableName, {
+                  oldStatus: detail.status,
+                  newStatus: updatedDetail.status,
+                  oldColumnsProcessed: detail.columnsProcessed,
+                  newColumnsProcessed: updatedDetail.columnsProcessed,
+                  oldGeneratedTerms: detail.generatedTerms,
+                  newGeneratedTerms: updatedDetail.generatedTerms
+                });
 
-                if (updatedDetail.status === 'completed') {
+                if (updatedDetail.status === 'completed' && detail.status !== 'completed') {
+                  updatedDetail.endTime = new Date();
                   addLogEntry('success', `Completed processing table: ${detail.tableName}`);
+                  console.log('🎉 Table completed:', currentTableName);
                 }
 
                 return updatedDetail;
               }
               return detail;
             });
+
+            // If no existing detail found for this table, create one
+            const existingDetail = prev.find(d => d.tableName === currentTableName);
+            if (!existingDetail && currentTableName) {
+              console.log('🔄 Creating new processing detail for table:', currentTableName);
+              const newDetail = {
+                tableName: currentTableName,
+                status: 'processing' as const,
+                stage: progressData.stage || progressData.Stage || 'Processing',
+                currentColumn: progressData.currentColumn || progressData.CurrentColumn,
+                columnsProcessed: progressData.columnsProcessed || progressData.ColumnsProcessed || 0,
+                totalColumns: progressData.totalColumns || progressData.TotalColumns || 0,
+                generatedTerms: progressData.glossaryTermsGenerated || progressData.GlossaryTermsGenerated || 0,
+                startTime: new Date()
+              };
+              updated.push(newDetail);
+            }
+
             console.log('🔄 All processing details after update:', updated);
             return updated;
           });

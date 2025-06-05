@@ -49,6 +49,23 @@ export const API_CONFIG = {
       PDF: '/api/export/pdf',
     },
 
+    // Schema Management endpoints
+    SCHEMA_MANAGEMENT: {
+      SCHEMAS: '/api/SchemaManagement/schemas',
+      SCHEMA_BY_ID: '/api/SchemaManagement/schemas',
+      VERSIONS: '/api/SchemaManagement/versions',
+      VERSION_BY_ID: '/api/SchemaManagement/versions',
+      TABLE_CONTEXTS: '/api/SchemaManagement/table-contexts',
+      COLUMN_CONTEXTS: '/api/SchemaManagement/column-contexts',
+      GLOSSARY_TERMS: '/api/SchemaManagement/glossary-terms',
+      RELATIONSHIPS: '/api/SchemaManagement/relationships',
+      USER_PREFERENCES: '/api/SchemaManagement/user-preferences',
+      APPLY_CONTENT: '/api/SchemaManagement/apply',
+      COMPARE: '/api/SchemaManagement/compare',
+      EXPORT: '/api/SchemaManagement/export',
+      IMPORT: '/api/SchemaManagement/import',
+    },
+
     // Health check
     HEALTH: '/health',
   },
