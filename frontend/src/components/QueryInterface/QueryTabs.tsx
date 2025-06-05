@@ -11,7 +11,6 @@ import {
 import './QueryTabs.css';
 import {
   BarChartOutlined,
-  HistoryOutlined,
   StarOutlined,
   DownloadOutlined,
   FileTextOutlined,
@@ -19,10 +18,7 @@ import {
 } from '@ant-design/icons';
 import { useQueryContext } from './QueryProvider';
 import { QueryResult } from './QueryResult';
-import { QueryHistory } from './QueryHistory';
-import { QuerySuggestions } from './QuerySuggestions';
 import { QueryLoadingState } from './LoadingStates';
-import { QueryProcessingViewer } from './QueryProcessingViewer';
 import { DataInsightsPanel } from '../Insights/DataInsightsPanel';
 import PromptDetailsPanel from './PromptDetailsPanel';
 
@@ -34,28 +30,16 @@ export const QueryTabs: React.FC = () => {
     activeTab,
     setActiveTab,
     currentResult,
-    queryHistory,
     query,
-
     isLoading,
     progress,
     showInsightsPanel,
     setShowInsightsPanel,
     handleSubmitQuery,
     handleFollowUpSuggestionClick,
-    handleSuggestionClick,
     handleAddToFavorites,
     handleVisualizationRequest,
-    setShowExportModal,
-    setQuery,
-    // Processing state
-    processingStages,
-    currentProcessingStage,
-    showProcessingDetails,
-    setShowProcessingDetails,
-    processingViewMode,
-    setProcessingViewMode,
-    currentQueryId
+    setShowExportModal
   } = useQueryContext();
 
   // Debug logging for prompt details
@@ -196,65 +180,37 @@ export const QueryTabs: React.FC = () => {
         key="result"
       >
         {isLoading ? (
-          <>
-            {/* Query Processing Details during loading */}
-            <QueryProcessingViewer
-              stages={processingStages}
-              isProcessing={isLoading}
-              currentStage={currentProcessingStage}
-              queryId={currentQueryId}
-              isVisible={processingViewMode !== 'hidden'}
-              mode={processingViewMode}
-              onModeChange={setProcessingViewMode}
-              onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
-            />
-
-            <QueryLoadingState
-              progress={progress}
-              stage="analyzing"
-              message="AI Copilot is analyzing your question and preparing results..."
-            />
-          </>
+          <QueryLoadingState
+            progress={progress}
+            stage="analyzing"
+            message="AI Copilot is analyzing your question and preparing results..."
+          />
         ) : currentResult ? (
-          <>
-            {/* Query Processing Details */}
-            <QueryProcessingViewer
-              stages={processingStages}
-              isProcessing={isLoading}
-              currentStage={currentProcessingStage}
-              queryId={currentQueryId}
-              isVisible={processingViewMode !== 'hidden'}
-              mode={processingViewMode}
-              onModeChange={setProcessingViewMode}
-              onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
-            />
-
-            <Row gutter={[16, 16]}>
-              <Col xs={24} lg={showInsightsPanel && currentResult.success ? 16 : 24}>
-                <QueryResult
-                  result={currentResult}
-                  query={query}
-                  onRequery={handleSubmitQuery}
-                  onSuggestionClick={handleFollowUpSuggestionClick}
-                  onVisualizationRequest={handleVisualizationRequest}
-                />
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={showInsightsPanel && currentResult.success ? 16 : 24}>
+              <QueryResult
+                result={currentResult}
+                query={query}
+                onRequery={handleSubmitQuery}
+                onSuggestionClick={handleFollowUpSuggestionClick}
+                onVisualizationRequest={handleVisualizationRequest}
+              />
+            </Col>
+            {showInsightsPanel && currentResult.success && (
+              <Col xs={24} lg={8}>
+                <div data-testid="insights-panel" tabIndex={0}>
+                  <DataInsightsPanel
+                    queryResult={currentResult}
+                    onInsightAction={(action) => {
+                      console.log('Insight action:', action);
+                      // Handle insight actions like drill-down, filtering, etc.
+                    }}
+                    autoGenerate={true}
+                  />
+                </div>
               </Col>
-              {showInsightsPanel && currentResult.success && (
-                <Col xs={24} lg={8}>
-                  <div data-testid="insights-panel" tabIndex={0}>
-                    <DataInsightsPanel
-                      queryResult={currentResult}
-                      onInsightAction={(action) => {
-                        console.log('Insight action:', action);
-                        // Handle insight actions like drill-down, filtering, etc.
-                      }}
-                      autoGenerate={true}
-                    />
-                  </div>
-                </Col>
-              )}
-            </Row>
-          </>
+            )}
+          </Row>
         ) : (
           <div className="empty-result" style={{
             display: 'flex',
@@ -294,61 +250,6 @@ export const QueryTabs: React.FC = () => {
             </Text>
           </div>
         )}
-      </TabPane>
-
-      <TabPane
-        tab={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px', fontWeight: '600' }}>
-            <HistoryOutlined style={{ fontSize: '20px', color: '#10b981' }} />
-            <span>History</span>
-            <div style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: 'white',
-              padding: '2px 8px',
-              borderRadius: '12px',
-              fontSize: '11px',
-              fontWeight: 700,
-              minWidth: '20px',
-              textAlign: 'center'
-            }}>
-              {queryHistory.length}
-            </div>
-          </div>
-        }
-        key="history"
-      >
-        <QueryHistory
-          onQuerySelect={(selectedQuery) => {
-            setQuery(selectedQuery);
-            setActiveTab('result');
-          }}
-        />
-      </TabPane>
-
-      <TabPane
-        tab={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px', fontWeight: '600' }}>
-            <StarOutlined style={{ fontSize: '20px', color: '#8b5cf6' }} />
-            <span>Suggestions</span>
-            <div style={{
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-              color: 'white',
-              padding: '2px 6px',
-              borderRadius: '8px',
-              fontSize: '9px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em'
-            }}>
-              AI
-            </div>
-          </div>
-        }
-        key="suggestions"
-      >
-        <QuerySuggestions
-          onSuggestionClick={handleSuggestionClick}
-        />
       </TabPane>
 
       <TabPane

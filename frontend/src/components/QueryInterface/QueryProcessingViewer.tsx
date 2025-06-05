@@ -48,6 +48,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
   mode = 'minimal',
   onModeChange
 }) => {
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const [expandedPanels, setExpandedPanels] = useState<string[]>([]);
 
   // Debug logging
@@ -66,6 +67,40 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
       }))
     });
   }, [stages, isProcessing, currentStage, queryId, isVisible]);
+
+  // Helper function to format stage titles
+  const formatStageTitle = (stage: string) => {
+    if (!stage || typeof stage !== 'string') {
+      return 'Unknown Stage';
+    }
+    return stage.split('_').map(word =>
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
+  // Calculate values used in different modes
+  const currentProgress = stages.length > 0 ? Math.max(...stages.map(s => s.progress)) : 0;
+  const completedStages = stages.filter(s => s.progress === 100).length;
+  const totalStages = stages.length;
+  const overallProgress = totalStages > 0 ? Math.round((completedStages / totalStages) * 100) : 100;
+  const lastStage = stages.length > 0 ? stages[stages.length - 1] : null;
+  const currentStateText = lastStage ? formatStageTitle(lastStage.stage) : 'Complete';
+
+  // Debug logging for hidden mode (only when stages actually change)
+  React.useEffect(() => {
+    if (mode === 'hidden' || !isVisible) {
+      console.log('🔍 QueryProcessingViewer Hidden Mode:', {
+        stages: stages.length,
+        completedStages,
+        totalStages,
+        overallProgress,
+        lastStage: lastStage?.stage,
+        currentStateText,
+        queryId,
+        onModeChange: !!onModeChange
+      });
+    }
+  }, [mode, isVisible, stages.length, queryId]); // Reduced dependencies to prevent infinite loops
 
   const getStageIcon = (stage: string, status: string = 'pending') => {
     const iconProps = { style: { fontSize: '16px' } };
@@ -128,14 +163,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
     }
   };
 
-  const formatStageTitle = (stage: string) => {
-    if (!stage || typeof stage !== 'string') {
-      return 'Unknown Stage';
-    }
-    return stage.split('_').map(word =>
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
-  };
+
 
   const renderStageDetails = (stageData: ProcessingStage) => {
     if (!stageData.details) return null;
@@ -200,30 +228,80 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
     );
   };
 
-  const currentProgress = stages.length > 0 ? Math.max(...stages.map(s => s.progress)) : 0;
-
   const handleModeChange = (newMode: ProcessingViewMode) => {
     if (onModeChange) {
       onModeChange(newMode);
     }
   };
 
-  // Hidden mode
+  // Hidden mode - show as closed panel
   if (mode === 'hidden' || !isVisible) {
+
     return (
-      <Button
-        type="text"
-        icon={<EyeOutlined />}
-        onClick={() => handleModeChange('minimal')}
-        style={{ marginBottom: '16px' }}
+      <Card
+        size="small"
+        style={{
+          borderRadius: '8px',
+          border: '1px solid #e8f4fd',
+          background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+          marginBottom: '16px',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease'
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('🔍 Processing panel clicked, changing mode to minimal');
+          console.log('🔍 Current mode:', mode, 'onModeChange available:', !!onModeChange);
+          if (onModeChange) {
+            onModeChange('minimal');
+            console.log('🔍 Mode change called');
+          } else {
+            console.error('🔍 onModeChange not available!');
+          }
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
       >
-        Show Processing Details
-      </Button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Space>
+            <RobotOutlined style={{ color: '#6b7280', fontSize: '16px' }} />
+            <Text style={{ color: '#6b7280', fontSize: '14px', fontWeight: 500 }}>
+              AI Processing - {currentStateText}
+            </Text>
+            {queryId && (
+              <Tag color="blue" style={{ fontSize: '10px' }}>
+                ID: {queryId.substring(0, 8)}...
+              </Tag>
+            )}
+          </Space>
+
+          <Space size="small">
+            {totalStages > 0 && (
+              <Tag color="green" style={{ fontSize: '10px', fontWeight: 500 }}>
+                {completedStages}/{totalStages} stages
+              </Tag>
+            )}
+            <Tag color="blue" style={{ fontSize: '10px', fontWeight: 500 }}>
+              {overallProgress}% complete
+            </Tag>
+            <EyeOutlined style={{ color: '#6b7280', fontSize: '12px' }} />
+          </Space>
+        </div>
+      </Card>
     );
   }
 
   // Minimal mode - only progress bar
   if (mode === 'minimal') {
+    const minimalStateText = currentStage ? formatStageTitle(currentStage) : 'Processing';
+
     return (
       <Card
         size="small"
@@ -238,7 +316,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
           <Space>
             <RobotOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
             <Text strong style={{ color: '#1890ff', fontSize: '14px' }}>
-              🤖 AI Processing
+              🤖 AI Processing - {minimalStateText}
             </Text>
             {isProcessing && (
               <Tag color="processing" style={{ fontSize: '10px' }}>
@@ -279,11 +357,6 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
             showInfo={false}
             size="small"
           />
-          {currentStage && (
-            <Text style={{ fontSize: '11px', color: '#666', marginTop: '4px', display: 'block' }}>
-              {currentStage}
-            </Text>
-          )}
         </div>
       </Card>
     );

@@ -237,7 +237,41 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
             case 'query_completed':
               // setIsLoading handled by React Query mutation state
               setProgress(0);
-              setShowProcessingDetails(false);
+              // Don't clear processing details immediately - let them be available for the hidden panel
+              // setShowProcessingDetails(false);
+              console.log('🔍 Query completed via WebSocket - marking all stages as complete');
+
+              // Mark all processing stages as completed
+              setProcessingStages(prev => {
+                console.log('🔍 WebSocket completion - Processing stages before update:', prev.length, prev.map(s => `${s.stage}:${s.progress}%`));
+
+                // Mark all existing stages as 100% complete
+                const updatedStages = prev.map(stage => ({
+                  ...stage,
+                  progress: 100
+                }));
+
+                // Add completion stage if it doesn't exist
+                const hasCompletionStage = updatedStages.some(s => s.stage === 'completed');
+                if (!hasCompletionStage) {
+                  const completionStage = {
+                    stage: 'completed',
+                    message: 'Query completed successfully',
+                    progress: 100,
+                    timestamp: new Date().toISOString(),
+                    details: {
+                      success: true,
+                      completedViaWebSocket: true
+                    }
+                  };
+                  updatedStages.push(completionStage);
+                }
+
+                console.log('🔍 WebSocket completion - Updated stages:', updatedStages.length, updatedStages.map(s => `${s.stage}:${s.progress}%`));
+                return updatedStages;
+              });
+
+              setCurrentProcessingStage('completed');
               break;
             case 'query_error':
               // setIsLoading handled by React Query mutation state
@@ -292,6 +326,72 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
         sql: result?.sql,
         allKeys: result ? Object.keys(result) : 'N/A'
       });
+
+      // Mark all stages as completed and add a completion stage
+      setProcessingStages(prev => {
+        console.log('🔍 Processing stages before completion update:', prev.length, prev.map(s => `${s.stage}:${s.progress}%`));
+
+        // If no stages exist, create some default ones
+        if (prev.length === 0) {
+          console.log('🔍 No processing stages found, creating default stages');
+          const defaultStages = [
+            {
+              stage: 'started',
+              message: 'Query processing started',
+              progress: 100,
+              timestamp: new Date().toISOString(),
+              details: {}
+            },
+            {
+              stage: 'ai_processing',
+              message: 'AI analyzing query',
+              progress: 100,
+              timestamp: new Date().toISOString(),
+              details: {}
+            },
+            {
+              stage: 'sql_execution',
+              message: 'Executing SQL query',
+              progress: 100,
+              timestamp: new Date().toISOString(),
+              details: {}
+            }
+          ];
+          prev = defaultStages;
+        }
+
+        // Mark all existing stages as 100% complete
+        const updatedStages = prev.map(stage => ({
+          ...stage,
+          progress: 100
+        }));
+
+        const completionStage = {
+          stage: 'completed',
+          message: result?.success ? 'Query completed successfully' : 'Query completed with errors',
+          progress: 100,
+          timestamp: new Date().toISOString(),
+          details: {
+            success: result?.success,
+            executionTime: result?.executionTimeMs,
+            rowCount: result?.result?.data?.length || 0
+          }
+        };
+
+        // Check if completion stage already exists
+        const existingIndex = updatedStages.findIndex(s => s.stage === 'completed');
+        if (existingIndex >= 0) {
+          updatedStages[existingIndex] = completionStage;
+          console.log('🔍 Updated existing completion stage, total stages:', updatedStages.length);
+          return updatedStages;
+        } else {
+          const finalStages = [...updatedStages, completionStage];
+          console.log('🔍 Added new completion stage, total stages:', finalStages.length);
+          return finalStages;
+        }
+      });
+
+      setCurrentProcessingStage('completed');
       setActiveResult(result, query); // Save to active result store
       setActiveTab('result');
     } catch (error) {
@@ -303,12 +403,9 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
       });
     } finally {
       setProgress(0);
-      // Keep processing details visible for a moment after completion
-      setTimeout(() => {
-        if (!executeQueryMutation.isPending) {
-          setShowProcessingDetails(false);
-        }
-      }, 3000);
+      // Don't automatically hide processing details - let the UI manage this
+      // The processing stages will be available for the hidden panel
+      console.log('🔍 Query execution finished - processing stages preserved');
     }
   }, [query, executeQueryMutation, createQueryRequest, setActiveResult, clearActiveResult]);
 

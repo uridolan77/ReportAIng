@@ -383,25 +383,7 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
             </div>
           )}
 
-          {/* Enhanced Help Text */}
-          <div style={{
-            padding: '12px 16px',
-            background: 'rgba(102, 126, 234, 0.05)',
-            borderRadius: '10px',
-            border: '1px solid rgba(102, 126, 234, 0.1)',
-            marginTop: '12px'
-          }}>
-            <Text type="secondary" style={{ fontSize: '14px', color: '#667eea' }}>
-              💡 <strong>Tip:</strong> Use shortcuts like "rev", "users", "top10" or start typing to see suggestions.
-              Press <kbd style={{
-                background: '#f0f0f0',
-                padding: '3px 8px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 500
-              }}>Ctrl+Enter</kbd> to submit.
-            </Text>
-          </div>
+
         </Space>
       </div>
     </div>

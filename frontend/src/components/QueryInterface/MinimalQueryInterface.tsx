@@ -9,12 +9,20 @@ import {
   Button,
   Row,
   Col,
-  Tag
+  Tag,
+  Card,
+  Space,
+  Collapse
 } from 'antd';
 import {
   HistoryOutlined,
   BookOutlined,
-  RocketOutlined
+  RocketOutlined,
+  DownOutlined,
+  UpOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
 import { useQueryContext } from './QueryProvider';
@@ -57,6 +65,7 @@ export const MinimalQueryInterface: React.FC = () => {
   const [isFirstVisit, setIsFirstVisit] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [showProactiveSuggestions, setShowProactiveSuggestions] = useState(true);
+  const [isResultsCollapsed, setIsResultsCollapsed] = useState(true); // Results panel closed by default
 
   const [validationResult, setValidationResult] = useState<any>(null);
 
@@ -167,158 +176,38 @@ export const MinimalQueryInterface: React.FC = () => {
       className="query-interface-container"
       style={{ width: '100%', margin: '0', padding: '40px 24px' }}
     >
-      {/* Enhanced Hero Section */}
-      <div style={{ textAlign: 'center', marginBottom: '72px', padding: '0 16px' }}>
+      {/* Main Title */}
+      <div style={{
+        textAlign: 'center',
+        marginBottom: '48px',
+        padding: '0 24px'
+      }}>
         <Title
           level={1}
           style={{
-            fontSize: '4.5rem',
-            fontWeight: 900,
-            margin: '0 0 24px 0',
-            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #7c3aed 100%)',
+            fontSize: '48px',
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            lineHeight: '1.1',
-            fontFamily: "'Poppins', sans-serif",
-            letterSpacing: '-0.02em',
-            textShadow: '0 4px 8px rgba(59, 130, 246, 0.1)'
+            marginBottom: '16px',
+            fontFamily: "'Poppins', sans-serif"
           }}
         >
-          ✨ Ask Your Data Anything
+          Ask your data anything
         </Title>
-        <Paragraph
-          style={{
-            fontSize: '20px',
-            color: '#4b5563',
-            maxWidth: '700px',
-            margin: '0 auto 32px',
-            lineHeight: '1.7',
-            fontWeight: 500,
-            fontFamily: "'Inter', sans-serif"
-          }}
-        >
-          Transform your business questions into powerful insights using natural language.
-          <br />
-          <span style={{ color: '#6b7280', fontSize: '18px', fontWeight: 400 }}>
-            No SQL knowledge required • Powered by AI
-          </span>
-        </Paragraph>
-
-        {!isConnected && (
-          <Tag
-            color="orange"
-            style={{
-              fontSize: '14px',
-              padding: '6px 16px',
-              borderRadius: '20px',
-              fontWeight: 500
-            }}
-          >
-            Working in offline mode
-          </Tag>
-        )}
-
-        {/* Debug: Test SignalR Button */}
-        <div style={{ marginTop: '16px' }}>
-          <Button
-            type="primary"
-            size="small"
-            onClick={async () => {
-              try {
-                // Get auth token from auth store
-                const { useAuthStore } = await import('../../stores/authStore');
-                const token = await useAuthStore.getState().getDecryptedToken();
-
-                const response = await fetch('http://localhost:55243/api/query/test-signalr', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token || ''}`
-                  }
-                });
-                const result = await response.json();
-                console.log('🧪 SignalR test result:', result);
-              } catch (error) {
-                console.error('🧪 SignalR test error:', error);
-              }
-            }}
-          >
-            🧪 Test SignalR
-          </Button>
-        </div>
+        <Text style={{
+          fontSize: '20px',
+          color: '#6b7280',
+          fontWeight: 500,
+          display: 'block'
+        }}>
+          Get instant insights with natural language queries
+        </Text>
       </div>
 
-      {/* Proactive Suggestions - Show when no query, no successful results, or when there's an error */}
-      {((!currentResult && !query) || (currentResult && !currentResult.success)) && showProactiveSuggestions && (
-        <ProactiveSuggestions
-          onQuerySelect={(selectedQuery) => {
-            setQuery(selectedQuery);
-            setShowProactiveSuggestions(false);
-          }}
-          onStartWizard={() => setShowWizard(true)}
-          recentQueries={Array.isArray(queryHistory) ? queryHistory.map(h => h.query || '').slice(0, 5) : []}
-        />
-      )}
-
-      {/* Enhanced Query Input Area */}
-      <div
-        style={{
-          marginBottom: '64px',
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-          border: '2px solid #e2e8f0',
-          borderRadius: '24px',
-          padding: '40px',
-          boxShadow: '0 8px 32px rgba(59, 130, 246, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05)',
-          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = '#3b82f6';
-          e.currentTarget.style.boxShadow = '0 12px 48px rgba(59, 130, 246, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1)';
-          e.currentTarget.style.transform = 'translateY(-2px)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#e2e8f0';
-          e.currentTarget.style.boxShadow = '0 8px 32px rgba(59, 130, 246, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05)';
-          e.currentTarget.style.transform = 'translateY(0)';
-        }}
-      >
-        {/* AI Indicator */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '20px',
-          gap: '8px'
-        }}>
-          <div style={{
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-            animation: 'pulse 2s infinite'
-          }} />
-          <Text style={{
-            fontSize: '14px',
-            color: '#059669',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            fontFamily: "'Inter', sans-serif"
-          }}>
-            AI-Powered Natural Language Query
-          </Text>
-          <div style={{
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-            animation: 'pulse 2s infinite 1s'
-          }} />
-        </div>
-
+      {/* Simple Query Input */}
+      <div style={{ marginBottom: '32px' }}>
         <div data-testid="query-input">
           <EnhancedQueryInput
             value={query}
@@ -332,14 +221,8 @@ export const MinimalQueryInterface: React.FC = () => {
           />
         </div>
 
-        {/* Query Validator */}
-        <QueryValidator
-          query={query}
-          onValidationResult={setValidationResult}
-        />
-
-        {/* Enhanced Query Processing Viewer */}
-        {(isLoading || aiProcessing.isProcessing) && (
+        {/* Query Processing Viewer - Show as closed panel when not processing */}
+        {(isLoading || aiProcessing.isProcessing) ? (
           <div style={{ marginTop: '16px' }}>
             <QueryProcessingViewer
               stages={processingStages}
@@ -352,9 +235,26 @@ export const MinimalQueryInterface: React.FC = () => {
               onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
             />
           </div>
+        ) : currentResult && (
+          <div style={{ marginTop: '16px' }}>
+
+            <QueryProcessingViewer
+              stages={processingStages}
+              isProcessing={false}
+              currentStage={currentProcessingStage}
+              queryId={currentQueryId}
+              isVisible={true}
+              mode="hidden"
+              onModeChange={(newMode) => {
+                console.log('🔍 MinimalQueryInterface: Mode change requested from', processingViewMode, 'to', newMode);
+                setProcessingViewMode(newMode);
+              }}
+              onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
+            />
+          </div>
         )}
 
-        {/* Validation Feedback - Only show actual errors, not AI processing steps */}
+        {/* Validation Feedback */}
         {validationResult && !validationResult.isValid && !isLoading && (
           <div style={{ marginTop: '16px' }}>
             {validationResult.errors
@@ -372,6 +272,104 @@ export const MinimalQueryInterface: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Results Section - Collapsible */}
+      {currentResult && (
+        <div style={{ marginBottom: '32px' }}>
+          <Card
+            style={{
+              borderRadius: '16px',
+              border: '2px solid #f1f5f9',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+            }}
+          >
+            {/* Results Header - Always Visible */}
+            <div
+              onClick={() => setIsResultsCollapsed(!isResultsCollapsed)}
+              style={{
+                cursor: 'pointer',
+                padding: '16px 24px',
+                borderBottom: isResultsCollapsed ? 'none' : '1px solid #f1f5f9',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: isResultsCollapsed ? 'transparent' : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                borderRadius: isResultsCollapsed ? '16px' : '16px 16px 0 0',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <Space>
+                <BarChartOutlined style={{ fontSize: '20px', color: '#3b82f6' }} />
+                <Text strong style={{ fontSize: '16px', color: '#1f2937' }}>
+                  Query Results
+                </Text>
+                {currentResult.success && (
+                  <CheckCircleOutlined style={{ color: '#10b981', fontSize: '16px' }} />
+                )}
+              </Space>
+
+              <Space>
+                {/* Key Metrics - Always Visible */}
+                <Tag
+                  color={currentResult.confidence > 0.8 ? 'green' : currentResult.confidence > 0.6 ? 'orange' : 'red'}
+                  style={{ borderRadius: '6px', fontWeight: 500 }}
+                >
+                  {(currentResult.confidence * 100).toFixed(0)}%
+                </Tag>
+                <Tag color="blue" style={{ borderRadius: '6px', fontWeight: 500 }}>
+                  <ClockCircleOutlined style={{ marginRight: '4px' }} />
+                  {currentResult.executionTimeMs}ms
+                </Tag>
+                {currentResult.cached && (
+                  <Tag color="purple" style={{ borderRadius: '6px', fontWeight: 500 }}>
+                    Cached
+                  </Tag>
+                )}
+                {currentResult.result?.data && (
+                  <Tag color="cyan" style={{ borderRadius: '6px', fontWeight: 500 }}>
+                    {currentResult.result.data.length} rows
+                  </Tag>
+                )}
+
+                {/* Expand/Collapse Icon */}
+                {isResultsCollapsed ? (
+                  <DownOutlined style={{ color: '#6b7280', fontSize: '14px' }} />
+                ) : (
+                  <UpOutlined style={{ color: '#6b7280', fontSize: '14px' }} />
+                )}
+              </Space>
+            </div>
+
+            {/* Collapsible Content */}
+            {!isResultsCollapsed && (
+              <div
+                data-testid="results-area"
+                tabIndex={0}
+                style={{
+                  padding: '24px',
+                  background: '#ffffff'
+                }}
+              >
+                <QueryTabs />
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* Proactive Suggestions - Show when no query, no successful results, or when there's an error */}
+      {((!currentResult && !query) || (currentResult && !currentResult.success)) && showProactiveSuggestions && (
+        <ProactiveSuggestions
+          onQuerySelect={(selectedQuery) => {
+            setQuery(selectedQuery);
+            setShowProactiveSuggestions(false);
+          }}
+          onStartWizard={() => setShowWizard(true)}
+          recentQueries={Array.isArray(queryHistory) ? queryHistory.map(h => h.query || '').slice(0, 5) : []}
+        />
+      )}
+
+
 
       {/* Enhanced Quick Actions - Show when no result or when there's an error */}
       {showQuickActions && (!currentResult || (currentResult && !currentResult.success)) && (
@@ -588,23 +586,7 @@ export const MinimalQueryInterface: React.FC = () => {
         </div>
       )}
 
-      {/* Results Section */}
-      {currentResult && (
-        <div
-          data-testid="results-area"
-          tabIndex={0}
-          style={{
-            width: '100%',
-            background: '#ffffff',
-            border: '2px solid #f1f5f9',
-            borderRadius: '16px',
-            padding: '32px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
-          }}
-        >
-          <QueryTabs />
-        </div>
-      )}
+
 
       {/* Enhanced Empty State */}
       {!currentResult && !isLoading && (
