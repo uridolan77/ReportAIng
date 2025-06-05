@@ -156,7 +156,7 @@ export class VirtualizationService {
     const itemOffset = this.getScrollToOffset(index);
     const itemSize = this.getItemSize(index);
 
-    let scrollOffset;
+    let scrollOffset: number;
     switch (align) {
       case 'start':
         scrollOffset = itemOffset;
@@ -194,8 +194,9 @@ export const useVirtualization = (
   }, [config]);
 
   useEffect(() => {
+    const currentService = service.current;
     return () => {
-      service.current.destroy();
+      currentService.destroy();
     };
   }, []);
 

@@ -116,7 +116,7 @@ const InteractiveVisualization: React.FC = () => {
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [loading] = useState(false);
+
   const [zoomLevel, setZoomLevel] = useState(100);
 
   // Chart type options
@@ -842,7 +842,7 @@ const InteractiveVisualization: React.FC = () => {
                           <Space>
                             {filter.label}
                             {activeFilters[filter.column] && (
-                              <Tag color="blue" size="small">Active</Tag>
+                              <Tag color="blue">Active</Tag>
                             )}
                           </Space>
                         }

@@ -5,6 +5,7 @@ using BIReportingCopilot.Infrastructure.Data.Entities;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using CoreModels = BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
@@ -1068,5 +1069,165 @@ Return JSON with visualization config.";
         {
             _logger.LogError(ex, "Error logging prompt details for type: {PromptType}", promptType);
         }
+    }
+
+    /// <summary>
+    /// Build SQL generation prompt for streaming operations
+    /// </summary>
+    public async Task<string> BuildSQLGenerationPromptAsync(string prompt, SchemaMetadata? schema = null, CoreModels.QueryContext? context = null)
+    {
+        try
+        {
+            _logger.LogDebug("Building SQL generation prompt for streaming: {Prompt}", prompt);
+
+            if (schema != null)
+            {
+                // Use the existing detailed prompt building logic
+                var contextInfo = context?.BusinessDomain ?? "";
+                return await BuildQueryPromptAsync(prompt, schema, contextInfo);
+            }
+
+            // Fallback for when no schema is provided
+            var template = await GetPromptTemplateAsync("sql_generation");
+            var businessDomain = context?.BusinessDomain ?? "";
+            var enhancedPrompt = template.Content
+                .Replace("{schema}", "No schema information available")
+                .Replace("{question}", prompt)
+                .Replace("{context}", businessDomain)
+                .Replace("{business_rules}", GetBusinessRulesForQuery(prompt))
+                .Replace("{examples}", GetRelevantExampleQueries(prompt));
+
+            return enhancedPrompt;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error building SQL generation prompt");
+            return $"Generate SQL for: {prompt}";
+        }
+    }
+
+    /// <summary>
+    /// Build insight generation prompt for streaming operations
+    /// </summary>
+    public async Task<string> BuildInsightGenerationPromptAsync(string query, object[] data, CoreModels.AnalysisContext? context = null)
+    {
+        try
+        {
+            _logger.LogDebug("Building insight generation prompt for query: {Query}", query);
+
+            var template = await GetPromptTemplateAsync("insight_generation");
+            var dataPreview = GenerateDataPreview(data);
+
+            var prompt = template.Content
+                .Replace("{query}", query)
+                .Replace("{data_preview}", dataPreview)
+                .Replace("{column_info}", "Column information not available")
+                .Replace("{row_count}", data.Length.ToString());
+
+            // Add context-specific information if available
+            if (context != null)
+            {
+                var contextInfo = "";
+                if (!string.IsNullOrEmpty(context.BusinessGoal))
+                {
+                    contextInfo += $"\nBusiness Goal: {context.BusinessGoal}";
+                }
+                if (!string.IsNullOrEmpty(context.TimeFrame))
+                {
+                    contextInfo += $"\nTime Frame: {context.TimeFrame}";
+                }
+                if (context.KeyMetrics.Any())
+                {
+                    contextInfo += $"\nKey Metrics: {string.Join(", ", context.KeyMetrics)}";
+                }
+                if (contextInfo.Length > 0)
+                {
+                    prompt += contextInfo;
+                }
+            }
+
+            return prompt;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error building insight generation prompt");
+            return $"Analyze the following query and provide insights: {query}";
+        }
+    }
+
+    /// <summary>
+    /// Build SQL explanation prompt for streaming operations
+    /// </summary>
+    public async Task<string> BuildSQLExplanationPromptAsync(string sql, CoreModels.StreamingQueryComplexity complexity = CoreModels.StreamingQueryComplexity.Medium)
+    {
+        try
+        {
+            _logger.LogDebug("Building SQL explanation prompt for complexity: {Complexity}", complexity);
+
+            var template = await GetPromptTemplateAsync("sql_explanation");
+
+            // If template doesn't exist, create a default one
+            if (template.Content.Contains("Default template content"))
+            {
+                template = GetDefaultSQLExplanationTemplate();
+            }
+
+            var complexityLevel = complexity switch
+            {
+                CoreModels.StreamingQueryComplexity.Simple => "basic",
+                CoreModels.StreamingQueryComplexity.Medium => "intermediate",
+                CoreModels.StreamingQueryComplexity.Complex => "advanced",
+                _ => "intermediate"
+            };
+
+            var detailLevel = complexity switch
+            {
+                CoreModels.StreamingQueryComplexity.Simple => "Provide a simple, high-level explanation suitable for beginners.",
+                CoreModels.StreamingQueryComplexity.Medium => "Provide a detailed explanation with moderate technical depth.",
+                CoreModels.StreamingQueryComplexity.Complex => "Provide a comprehensive, technical explanation with advanced details.",
+                _ => "Provide a balanced explanation with appropriate technical detail."
+            };
+
+            var prompt = template.Content
+                .Replace("{sql}", sql)
+                .Replace("{complexity_level}", complexityLevel)
+                .Replace("{detail_level}", detailLevel);
+
+            return prompt;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error building SQL explanation prompt");
+            return $"Explain the following SQL query in {complexity.ToString().ToLower()} terms: {sql}";
+        }
+    }
+
+    /// <summary>
+    /// Get default SQL explanation template
+    /// </summary>
+    private PromptTemplate GetDefaultSQLExplanationTemplate()
+    {
+        return new PromptTemplate
+        {
+            Name = "sql_explanation",
+            Version = "1.0",
+            Content = @"Explain the following SQL query in {complexity_level} terms:
+
+SQL Query:
+{sql}
+
+{detail_level}
+
+Focus on:
+1. What the query does (purpose and goal)
+2. How it works (step-by-step breakdown)
+3. Key components (tables, joins, conditions, aggregations)
+4. Expected results and business meaning
+
+Provide a clear, structured explanation that matches the requested complexity level.",
+            Description = "Default SQL explanation template",
+            IsActive = true,
+            CreatedBy = "System"
+        };
     }
 }

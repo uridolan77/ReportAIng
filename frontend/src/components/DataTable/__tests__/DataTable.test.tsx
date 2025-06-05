@@ -1,37 +1,37 @@
 // Comprehensive DataTable Test Suite
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import '@testing-library/jest-dom';
 import DataTable, { DataTableProps, DataTableColumn } from '../DataTable';
 
 // Mock dependencies
-vi.mock('react-window', () => ({
+jest.mock('react-window', () => ({
   FixedSizeList: ({ children, itemData, itemCount }: any) => (
     <div data-testid="virtual-list">
-      {Array.from({ length: Math.min(itemCount, 10) }, (_, index) => 
+      {Array.from({ length: Math.min(itemCount, 10) }, (_, index) =>
         children({ index, style: {}, data: itemData })
       )}
     </div>
   ),
   VariableSizeList: ({ children, itemData, itemCount }: any) => (
     <div data-testid="variable-virtual-list">
-      {Array.from({ length: Math.min(itemCount, 10) }, (_, index) => 
+      {Array.from({ length: Math.min(itemCount, 10) }, (_, index) =>
         children({ index, style: {}, data: itemData })
       )}
     </div>
   )
 }));
 
-vi.mock('react-virtualized-auto-sizer', () => ({
+jest.mock('react-virtualized-auto-sizer', () => ({
   default: ({ children }: any) => children({ width: 800, height: 600 })
 }));
 
-vi.mock('react-hotkeys-hook', () => ({
-  useHotkeys: vi.fn()
+jest.mock('react-hotkeys-hook', () => ({
+  useHotkeys: jest.fn()
 }));
 
-vi.mock('use-debounce', () => ({
+jest.mock('use-debounce', () => ({
   useDebounce: (value: any) => [value]
 }));
 
@@ -94,11 +94,11 @@ describe('DataTable Component', () => {
 
   beforeEach(() => {
     user = userEvent.setup();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('Basic Rendering', () => {
@@ -142,8 +142,8 @@ describe('DataTable Component', () => {
       
       await waitFor(() => {
         expect(screen.getByText('John Doe')).toBeInTheDocument();
-        expect(screen.queryByText('Jane Smith')).not.toBeInTheDocument();
       });
+      expect(screen.queryByText('Jane Smith')).not.toBeInTheDocument();
     });
 
     it('shows no results when search yields no matches', async () => {
@@ -158,12 +158,12 @@ describe('DataTable Component', () => {
     });
 
     it('calls onSearch callback when searching', async () => {
-      const onSearch = vi.fn();
+      const onSearch = jest.fn();
       render(<DataTable {...defaultProps} onSearch={onSearch} />);
-      
+
       const searchInput = screen.getByPlaceholderText(/search/i);
       await user.type(searchInput, 'test');
-      
+
       await waitFor(() => {
         expect(onSearch).toHaveBeenCalledWith('test');
       });
@@ -205,12 +205,12 @@ describe('DataTable Component', () => {
     });
 
     it('calls onSort callback when sorting', async () => {
-      const onSort = vi.fn();
+      const onSort = jest.fn();
       render(<DataTable {...defaultProps} onSort={onSort} />);
-      
+
       const nameHeader = screen.getByText('Name');
       await user.click(nameHeader);
-      
+
       expect(onSort).toHaveBeenCalledWith([{ column: 'name', order: 'asc' }]);
     });
   });
@@ -238,22 +238,22 @@ describe('DataTable Component', () => {
       
       await waitFor(() => {
         expect(screen.getByText('John Doe')).toBeInTheDocument();
-        expect(screen.queryByText('Jane Smith')).not.toBeInTheDocument();
       });
+      expect(screen.queryByText('Jane Smith')).not.toBeInTheDocument();
     });
 
     it('calls onFilter callback when filtering', async () => {
-      const onFilter = vi.fn();
+      const onFilter = jest.fn();
       render(<DataTable {...defaultProps} onFilter={onFilter} />);
-      
+
       // Open filter panel
       const filterButton = screen.getByLabelText(/filter/i);
       await user.click(filterButton);
-      
+
       // Apply filter
       const statusFilter = screen.getByLabelText('Status');
       await user.selectOptions(statusFilter, 'active');
-      
+
       expect(onFilter).toHaveBeenCalledWith({ status: 'active' });
     });
   });
@@ -281,12 +281,12 @@ describe('DataTable Component', () => {
     });
 
     it('calls onSelectionChange when selection changes', async () => {
-      const onSelectionChange = vi.fn();
+      const onSelectionChange = jest.fn();
       render(<DataTable {...defaultProps} onSelectionChange={onSelectionChange} />);
-      
+
       const checkboxes = screen.getAllByRole('checkbox');
       await user.click(checkboxes[1]);
-      
+
       expect(onSelectionChange).toHaveBeenCalledWith([sampleData[0]]);
     });
   });
@@ -343,15 +343,15 @@ describe('DataTable Component', () => {
     });
 
     it('calls onExport when export format is selected', async () => {
-      const onExport = vi.fn();
+      const onExport = jest.fn();
       render(<DataTable {...defaultProps} onExport={onExport} />);
-      
+
       const exportButton = screen.getByLabelText(/export/i);
       await user.click(exportButton);
-      
+
       const csvButton = screen.getByText('CSV');
       await user.click(csvButton);
-      
+
       expect(onExport).toHaveBeenCalledWith('csv', expect.any(Array));
     });
   });
@@ -443,14 +443,14 @@ describe('DataTable Component', () => {
     });
 
     it('debounces search input', async () => {
-      const onSearch = vi.fn();
+      const onSearch = jest.fn();
       render(<DataTable {...defaultProps} onSearch={onSearch} />);
-      
+
       const searchInput = screen.getByPlaceholderText(/search/i);
-      
+
       // Type multiple characters quickly
       await user.type(searchInput, 'test');
-      
+
       // Should only call onSearch once due to debouncing
       await waitFor(() => {
         expect(onSearch).toHaveBeenCalledTimes(1);
@@ -483,9 +483,9 @@ describe('DataTable Component', () => {
 describe('DataTable Integration', () => {
   it('handles complex user interactions', async () => {
     const user = userEvent.setup();
-    const onSelectionChange = vi.fn();
-    const onSort = vi.fn();
-    const onFilter = vi.fn();
+    const onSelectionChange = jest.fn();
+    const onSort = jest.fn();
+    const onFilter = jest.fn();
 
     render(
       <DataTable 

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using BIReportingCopilot.Infrastructure.Configuration;
 using BIReportingCopilot.Core.Configuration;
+using BIReportingCopilot.Core.Interfaces;
 
 namespace BIReportingCopilot.Infrastructure.Monitoring;
 
@@ -11,7 +12,7 @@ namespace BIReportingCopilot.Infrastructure.Monitoring;
 /// Unified monitoring management service consolidating metrics collection, tracing, and logging
 /// Replaces MetricsCollector, TracedQueryService, and CorrelatedLogger
 /// </summary>
-public class MonitoringManagementService : IDisposable
+public class MonitoringManagementService : IMetricsCollector, IDisposable
 {
     private readonly ILogger<MonitoringManagementService> _logger;
     private readonly UnifiedConfigurationService _configurationService;
@@ -200,6 +201,129 @@ public class MonitoringManagementService : IDisposable
             IsHealthy = _gaugeValues.GetValueOrDefault("total_errors", 0) < 10 // Simple health check
         };
     }
+
+    #region IMetricsCollector Implementation
+
+    /// <summary>
+    /// Record query execution (IMetricsCollector interface)
+    /// </summary>
+    void IMetricsCollector.RecordQueryExecution(string queryType, long executionTimeMs, bool isSuccessful, int rowCount)
+    {
+        RecordQueryExecution(queryType, executionTimeMs, isSuccessful, rowCount);
+    }
+
+    /// <summary>
+    /// Record histogram value (IMetricsCollector interface)
+    /// </summary>
+    public void RecordHistogram(string name, double value)
+    {
+        if (!_monitoringConfig.EnableMetrics) return;
+
+        var histogram = _histograms.GetOrAdd(name, _ => _meter.CreateHistogram<double>(name));
+        histogram.Record(value);
+    }
+
+    /// <summary>
+    /// Record histogram value with tags (IMetricsCollector interface)
+    /// </summary>
+    public void RecordHistogram(string name, double value, TagList? tags = null)
+    {
+        if (!_monitoringConfig.EnableMetrics) return;
+
+        var histogram = _histograms.GetOrAdd(name, _ => _meter.CreateHistogram<double>(name));
+        histogram.Record(value, tags ?? new TagList());
+    }
+
+    /// <summary>
+    /// Increment counter (IMetricsCollector interface)
+    /// </summary>
+    public void IncrementCounter(string name, TagList? tags = null)
+    {
+        if (!_monitoringConfig.EnableMetrics) return;
+
+        var counter = _counters.GetOrAdd(name, _ => _meter.CreateCounter<long>(name));
+        counter.Add(1, tags ?? new TagList());
+    }
+
+    /// <summary>
+    /// Record execution time (IMetricsCollector interface)
+    /// </summary>
+    public void RecordExecutionTime(string operationName, TimeSpan duration)
+    {
+        RecordHistogram($"{operationName}_duration_ms", duration.TotalMilliseconds);
+    }
+
+    /// <summary>
+    /// Record cache operation (IMetricsCollector interface)
+    /// </summary>
+    public void RecordCacheOperation(string cacheType, bool isHit)
+    {
+        RecordCacheOperation(cacheType, isHit, 0);
+    }
+
+    /// <summary>
+    /// Record error (IMetricsCollector interface)
+    /// </summary>
+    void IMetricsCollector.RecordError(string errorType, string? details)
+    {
+        RecordError(errorType, details ?? "application", null);
+    }
+
+    /// <summary>
+    /// Record error with exception (IMetricsCollector interface)
+    /// </summary>
+    void IMetricsCollector.RecordError(string errorType, string? details, Exception? exception)
+    {
+        RecordError(errorType, details ?? "application", exception);
+    }
+
+    /// <summary>
+    /// Record user activity (IMetricsCollector interface)
+    /// </summary>
+    public void RecordUserActivity(string userId, string activityType)
+    {
+        if (!_monitoringConfig.EnableMetrics) return;
+
+        var tags = new TagList
+        {
+            { "user_id", userId },
+            { "activity_type", activityType }
+        };
+
+        IncrementCounter("user_activity_total", tags);
+    }
+
+    /// <summary>
+    /// Get metrics snapshot (IMetricsCollector interface)
+    /// </summary>
+    public async Task<Dictionary<string, object>> GetMetricsSnapshotAsync()
+    {
+        await Task.CompletedTask;
+
+        var snapshot = GetSnapshot();
+        return new Dictionary<string, object>
+        {
+            ["timestamp"] = snapshot.Timestamp,
+            ["memory_usage_mb"] = snapshot.MemoryUsageMB,
+            ["active_connections"] = snapshot.ActiveConnections,
+            ["cpu_usage_percent"] = snapshot.CpuUsagePercent,
+            ["total_queries"] = snapshot.TotalQueries,
+            ["total_ai_operations"] = snapshot.TotalAIOperations,
+            ["total_cache_operations"] = snapshot.TotalCacheOperations,
+            ["total_errors"] = snapshot.TotalErrors,
+            ["is_healthy"] = snapshot.IsHealthy
+        };
+    }
+
+    /// <summary>
+    /// Record value (IMetricsCollector interface)
+    /// </summary>
+    public void RecordValue(string name, double value)
+    {
+        SetGaugeValue(name, value);
+    }
+
+    #endregion
 
     #endregion
 

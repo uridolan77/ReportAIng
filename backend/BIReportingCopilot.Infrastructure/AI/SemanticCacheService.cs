@@ -18,8 +18,9 @@ public class SemanticCacheService : ISemanticCacheService
     private readonly IMemoryCache _memoryCache;
     private readonly BICopilotContext _context;
     private readonly ILogger<SemanticCacheService> _logger;
-    private readonly QuerySimilarityAnalyzer _similarityAnalyzer;
+    private readonly QueryAnalysisService _queryAnalysisService;
     private readonly SemanticCacheConfiguration _config;
+    private readonly QuerySimilarityAnalyzer _similarityAnalyzer;
 
     public SemanticCacheService(
         IMemoryCache memoryCache,
@@ -375,6 +376,234 @@ public class SimilarQueryResult
     public string SqlQuery { get; set; } = string.Empty;
     public string CachedResponse { get; set; } = string.Empty;
     public double SimilarityScore { get; set; }
+    public DateTime Timestamp { get; set; }
+}
+
+/// <summary>
+/// Query similarity analyzer for semantic understanding
+/// </summary>
+public class QuerySimilarityAnalyzer
+{
+    private readonly ILogger _logger;
+
+    public QuerySimilarityAnalyzer(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Extract semantic features from a query
+    /// </summary>
+    public async Task<SemanticFeatures> ExtractSemanticsAsync(string naturalLanguageQuery, string sqlQuery)
+    {
+        try
+        {
+            var features = new SemanticFeatures
+            {
+                Keywords = ExtractKeywords(naturalLanguageQuery),
+                Entities = ExtractEntities(naturalLanguageQuery),
+                Intent = ClassifyIntent(naturalLanguageQuery),
+                Complexity = CalculateComplexity(sqlQuery),
+                TableReferences = ExtractTableReferences(sqlQuery),
+                ColumnReferences = ExtractColumnReferences(sqlQuery),
+                QueryType = DetermineQueryType(sqlQuery),
+                Timestamp = DateTime.UtcNow
+            };
+
+            return features;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting semantic features");
+            return new SemanticFeatures();
+        }
+    }
+
+    /// <summary>
+    /// Calculate similarity between two semantic feature sets
+    /// </summary>
+    public double CalculateSimilarity(SemanticFeatures features1, SemanticFeatures features2)
+    {
+        try
+        {
+            var keywordSimilarity = CalculateKeywordSimilarity(features1.Keywords, features2.Keywords);
+            var entitySimilarity = CalculateEntitySimilarity(features1.Entities, features2.Entities);
+            var intentSimilarity = features1.Intent == features2.Intent ? 1.0 : 0.0;
+            var tableSimilarity = CalculateTableSimilarity(features1.TableReferences, features2.TableReferences);
+
+            // Weighted average of different similarity components
+            var similarity = (keywordSimilarity * 0.3) +
+                           (entitySimilarity * 0.3) +
+                           (intentSimilarity * 0.2) +
+                           (tableSimilarity * 0.2);
+
+            return Math.Max(0.0, Math.Min(1.0, similarity));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating similarity");
+            return 0.0;
+        }
+    }
+
+    private List<string> ExtractKeywords(string query)
+    {
+        var keywords = new List<string>();
+        var words = query.ToLowerInvariant()
+            .Split(new[] { ' ', '\t', '\n', '\r', ',', '.', '?', '!' }, StringSplitOptions.RemoveEmptyEntries);
+
+        var importantWords = words.Where(w => w.Length > 2 && !IsStopWord(w)).ToList();
+        keywords.AddRange(importantWords);
+
+        return keywords.Distinct().ToList();
+    }
+
+    private List<string> ExtractEntities(string query)
+    {
+        var entities = new List<string>();
+        var lowerQuery = query.ToLowerInvariant();
+
+        // Simple entity extraction - look for common business terms
+        var businessTerms = new[] { "revenue", "profit", "sales", "customer", "order", "product", "deposit", "withdrawal", "player", "bet", "win" };
+        entities.AddRange(businessTerms.Where(term => lowerQuery.Contains(term)));
+
+        return entities.Distinct().ToList();
+    }
+
+    private string ClassifyIntent(string query)
+    {
+        var lowerQuery = query.ToLowerInvariant();
+
+        if (lowerQuery.Contains("show") || lowerQuery.Contains("list") || lowerQuery.Contains("display"))
+            return "display";
+        if (lowerQuery.Contains("count") || lowerQuery.Contains("how many"))
+            return "count";
+        if (lowerQuery.Contains("sum") || lowerQuery.Contains("total"))
+            return "aggregate";
+        if (lowerQuery.Contains("average") || lowerQuery.Contains("mean"))
+            return "average";
+        if (lowerQuery.Contains("compare") || lowerQuery.Contains("vs"))
+            return "compare";
+
+        return "general";
+    }
+
+    private double CalculateComplexity(string sqlQuery)
+    {
+        var complexity = 0.0;
+        var lowerSql = sqlQuery.ToLowerInvariant();
+
+        // Count joins
+        complexity += System.Text.RegularExpressions.Regex.Matches(lowerSql, @"\bjoin\b").Count * 0.2;
+
+        // Count subqueries
+        complexity += System.Text.RegularExpressions.Regex.Matches(lowerSql, @"\bselect\b").Count * 0.1;
+
+        // Count aggregations
+        complexity += System.Text.RegularExpressions.Regex.Matches(lowerSql, @"\b(sum|count|avg|max|min)\b").Count * 0.1;
+
+        return Math.Min(1.0, complexity);
+    }
+
+    private List<string> ExtractTableReferences(string sqlQuery)
+    {
+        var tables = new List<string>();
+        var matches = System.Text.RegularExpressions.Regex.Matches(
+            sqlQuery, @"\bFROM\s+(\w+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        foreach (System.Text.RegularExpressions.Match match in matches)
+        {
+            tables.Add(match.Groups[1].Value.ToLowerInvariant());
+        }
+
+        return tables.Distinct().ToList();
+    }
+
+    private List<string> ExtractColumnReferences(string sqlQuery)
+    {
+        var columns = new List<string>();
+        // Simple column extraction - this could be enhanced
+        var matches = System.Text.RegularExpressions.Regex.Matches(
+            sqlQuery, @"\bSELECT\s+(.*?)\s+FROM", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        foreach (System.Text.RegularExpressions.Match match in matches)
+        {
+            var columnList = match.Groups[1].Value;
+            var columnNames = columnList.Split(',').Select(c => c.Trim()).ToList();
+            columns.AddRange(columnNames);
+        }
+
+        return columns.Distinct().ToList();
+    }
+
+    private string DetermineQueryType(string sqlQuery)
+    {
+        var lowerSql = sqlQuery.ToLowerInvariant();
+
+        if (lowerSql.StartsWith("select"))
+            return "select";
+        if (lowerSql.StartsWith("insert"))
+            return "insert";
+        if (lowerSql.StartsWith("update"))
+            return "update";
+        if (lowerSql.StartsWith("delete"))
+            return "delete";
+
+        return "unknown";
+    }
+
+    private double CalculateKeywordSimilarity(List<string> keywords1, List<string> keywords2)
+    {
+        if (!keywords1.Any() && !keywords2.Any()) return 1.0;
+        if (!keywords1.Any() || !keywords2.Any()) return 0.0;
+
+        var intersection = keywords1.Intersect(keywords2).Count();
+        var union = keywords1.Union(keywords2).Count();
+
+        return (double)intersection / union;
+    }
+
+    private double CalculateEntitySimilarity(List<string> entities1, List<string> entities2)
+    {
+        if (!entities1.Any() && !entities2.Any()) return 1.0;
+        if (!entities1.Any() || !entities2.Any()) return 0.0;
+
+        var intersection = entities1.Intersect(entities2).Count();
+        var union = entities1.Union(entities2).Count();
+
+        return (double)intersection / union;
+    }
+
+    private double CalculateTableSimilarity(List<string> tables1, List<string> tables2)
+    {
+        if (!tables1.Any() && !tables2.Any()) return 1.0;
+        if (!tables1.Any() || !tables2.Any()) return 0.0;
+
+        var intersection = tables1.Intersect(tables2).Count();
+        var union = tables1.Union(tables2).Count();
+
+        return (double)intersection / union;
+    }
+
+    private bool IsStopWord(string word)
+    {
+        var stopWords = new[] { "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "is", "are", "was", "were", "be", "been", "have", "has", "had", "do", "does", "did", "will", "would", "could", "should", "may", "might", "can", "a", "an" };
+        return stopWords.Contains(word);
+    }
+}
+
+/// <summary>
+/// Semantic features extracted from queries
+/// </summary>
+public class SemanticFeatures
+{
+    public List<string> Keywords { get; set; } = new();
+    public List<string> Entities { get; set; } = new();
+    public string Intent { get; set; } = string.Empty;
+    public double Complexity { get; set; }
+    public List<string> TableReferences { get; set; } = new();
+    public List<string> ColumnReferences { get; set; } = new();
+    public string QueryType { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
 }
 

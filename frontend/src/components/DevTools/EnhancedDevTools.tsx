@@ -3,7 +3,7 @@
  * Advanced debugging, monitoring, and development utilities
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Drawer,
   Tabs,
@@ -95,34 +95,8 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
   const queryClient = useQueryClient();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Enhanced monitoring functionality
-  useEffect(() => {
-    if (isMonitoring) {
-      intervalRef.current = setInterval(() => {
-        collectPerformanceMetrics();
-        collectNetworkMetrics();
-        monitorQueryCache();
-      }, 1000);
-
-      if (debugSettings.enableLogging) {
-        interceptConsole();
-      }
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isMonitoring, debugSettings]);
-
   // Helper functions
-  const collectPerformanceMetrics = () => {
+  const collectPerformanceMetrics = useCallback(() => {
     const now = Date.now();
     const memory = (performance as any).memory;
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
@@ -135,15 +109,15 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
         limit: Math.round(memory.jsHeapSizeLimit / 1024 / 1024),
       } : null,
       timing: navigation ? {
-        domContentLoaded: Math.round(navigation.domContentLoadedEventEnd - navigation.navigationStart),
-        loadComplete: Math.round(navigation.loadEventEnd - navigation.navigationStart),
+        domContentLoaded: Math.round(navigation.domContentLoadedEventEnd - navigation.fetchStart),
+        loadComplete: Math.round(navigation.loadEventEnd - navigation.fetchStart),
         firstPaint: Math.round(navigation.responseEnd - navigation.requestStart),
       } : null,
       fps: calculateFPS(),
     };
 
     setPerformanceMetrics(prev => [...prev.slice(-99), metric]);
-  };
+  }, []);
 
   const calculateFPS = () => {
     return Math.round(60 + Math.random() * 10 - 5);
@@ -164,7 +138,7 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
     }
   };
 
-  const interceptConsole = () => {
+  const interceptConsole = useCallback(() => {
     const originalMethods = {
       log: console.log,
       warn: console.warn,
@@ -178,7 +152,7 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
         originalMethod.apply(console, args);
       };
     });
-  };
+  }, [debugSettings.maxLogEntries]);
 
   const addConsoleMessage = (level: string, args: any[]) => {
     const message = {
@@ -193,14 +167,14 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
     setConsoleMessages(prev => [...prev.slice(-(debugSettings.maxLogEntries - 1)), message]);
   };
 
-  const monitorQueryCache = () => {
+  const monitorQueryCache = useCallback(() => {
     const cache = queryClient.getQueryCache();
     const queries = cache.getAll();
 
     if (queries.length > 0) {
       addLog('React Query', `Cache contains ${queries.length} queries`, 'info');
     }
-  };
+  }, [queryClient]);
 
   const addLog = (source: string, message: string, level: string) => {
     const log = {
@@ -294,6 +268,32 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
       default: return '#666';
     }
   };
+
+  // Enhanced monitoring functionality
+  useEffect(() => {
+    if (isMonitoring) {
+      intervalRef.current = setInterval(() => {
+        collectPerformanceMetrics();
+        collectNetworkMetrics();
+        monitorQueryCache();
+      }, 1000);
+
+      if (debugSettings.enableLogging) {
+        interceptConsole();
+      }
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isMonitoring, debugSettings, collectPerformanceMetrics, interceptConsole, monitorQueryCache]);
 
   // Calculate statistics
   const avgResponseTime = networkRequests.length > 0
@@ -536,7 +536,6 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
                         description="Memory usage is above 150MB"
                         type="warning"
                         showIcon
-                        size="small"
                       />
                     )}
                     {currentFPS < 30 && (
@@ -545,7 +544,6 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
                         description="FPS is below 30"
                         type="error"
                         showIcon
-                        size="small"
                       />
                     )}
                     {avgResponseTime > 1000 && (
@@ -554,7 +552,6 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
                         description="Average response time is above 1 second"
                         type="warning"
                         showIcon
-                        size="small"
                       />
                     )}
                     {performanceMetrics.length === 0 && (
@@ -563,7 +560,6 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
                         description="Start monitoring to see performance metrics"
                         type="info"
                         showIcon
-                        size="small"
                       />
                     )}
                   </Space>
@@ -669,7 +665,7 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
                       <Text type="secondary" style={{ fontSize: 10 }}>
                         {formatTimestamp(msg.timestamp)}
                       </Text>
-                      <Tag color={msg.level === 'error' ? 'red' : msg.level === 'warn' ? 'orange' : 'blue'} size="small">
+                      <Tag color={msg.level === 'error' ? 'red' : msg.level === 'warn' ? 'orange' : 'blue'}>
                         {msg.level.toUpperCase()}
                       </Tag>
                       <Text style={{ color: getLevelColor(msg.level) }}>

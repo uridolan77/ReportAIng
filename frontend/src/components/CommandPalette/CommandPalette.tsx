@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Modal, Input, List, Typography, Space, Tag, Divider } from 'antd';
 import {
   SearchOutlined,
@@ -43,8 +43,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const [filteredCommands, setFilteredCommands] = useState<Command[]>([]);
   const searchInputRef = useRef<any>(null);
 
-  // Default commands
-  const defaultCommands: Command[] = [
+  // Default commands - memoized to prevent recreation on every render
+  const defaultCommands = useMemo(() => [
     {
       id: 'execute-query',
       title: 'Execute Query',
@@ -183,7 +183,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       },
       keywords: ['visualization', 'charts', 'graphs', 'visual', 'panel']
     }
-  ];
+  ], [onClose]); // Dependencies for useMemo
 
   useEffect(() => {
     if (visible && searchInputRef.current) {

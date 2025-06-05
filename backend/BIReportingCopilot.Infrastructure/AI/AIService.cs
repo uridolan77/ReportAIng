@@ -27,7 +27,7 @@ public class AIService : IAIService
     private readonly IAIProviderFactory _providerFactory;
     private readonly ILogger<AIService> _logger;
     private readonly ICacheService _cacheService;
-    private readonly PromptTemplateManager _promptManager;
+    private readonly IPromptService _promptService;
     private readonly IContextManager _contextManager;
     private readonly List<QueryExample> _examples;
     private readonly IAIProvider _provider;
@@ -42,7 +42,7 @@ public class AIService : IAIService
     private readonly IMetricsCollector? _metricsCollector;
 
     // Adaptive learning components
-    private readonly FeedbackLearningEngine? _learningEngine;
+    private readonly LearningService? _learningService;
     private readonly PromptOptimizer? _promptOptimizer;
 
     public AIService(
@@ -50,19 +50,20 @@ public class AIService : IAIService
         ILogger<AIService> logger,
         ICacheService cacheService,
         IContextManager contextManager,
+        IPromptService promptService,
         IMetricsCollector? metricsCollector = null,
-        FeedbackLearningEngine? learningEngine = null,
+        LearningService? learningService = null,
         PromptOptimizer? promptOptimizer = null)
     {
         _providerFactory = providerFactory;
         _logger = logger;
         _cacheService = cacheService;
         _contextManager = contextManager;
+        _promptService = promptService;
         _metricsCollector = metricsCollector;
-        _learningEngine = learningEngine;
+        _learningService = learningService;
         _promptOptimizer = promptOptimizer;
         _examples = InitializeExamples();
-        _promptManager = new PromptTemplateManager();
 
         // Get the appropriate provider
         _provider = _providerFactory.GetProvider();
@@ -100,11 +101,11 @@ public class AIService : IAIService
 
                 // Apply adaptive learning if available
                 string finalPrompt = prompt;
-                if (_learningEngine != null && _promptOptimizer != null)
+                if (_learningService != null && _promptOptimizer != null)
                 {
                     try
                     {
-                        var learningInsights = await _learningEngine.GetLearningInsightsAsync(prompt);
+                        var learningInsights = await _learningService.GetLearningInsightsAsync("system");
                         // Create QueryExecutionContext for prompt optimizer
                         var executionContext = new QueryExecutionContext
                         {
@@ -349,16 +350,16 @@ Return only valid JSON.";
             yield break;
         }
 
-        if (_promptManager == null)
+        if (_promptService == null)
         {
-            yield return new StreamingResponse { Content = "Prompt manager not configured", IsComplete = true };
+            yield return new StreamingResponse { Content = "Prompt service not configured", IsComplete = true };
             yield break;
         }
 
         string enhancedPrompt;
         try
         {
-            enhancedPrompt = await _promptManager.BuildSQLGenerationPromptAsync(prompt, schema, context);
+            enhancedPrompt = await _promptService.BuildSQLGenerationPromptAsync(prompt, schema, context);
         }
         catch (Exception ex)
         {
@@ -392,16 +393,16 @@ Return only valid JSON.";
             yield break;
         }
 
-        if (_promptManager == null)
+        if (_promptService == null)
         {
-            yield return new StreamingResponse { Content = "Prompt manager not configured", IsComplete = true };
+            yield return new StreamingResponse { Content = "Prompt service not configured", IsComplete = true };
             yield break;
         }
 
         string insightPrompt;
         try
         {
-            insightPrompt = await _promptManager.BuildInsightGenerationPromptAsync(query, data, context);
+            insightPrompt = await _promptService.BuildInsightGenerationPromptAsync(query, data, context);
         }
         catch (Exception ex)
         {
@@ -434,16 +435,16 @@ Return only valid JSON.";
             yield break;
         }
 
-        if (_promptManager == null)
+        if (_promptService == null)
         {
-            yield return new StreamingResponse { Content = "Prompt manager not configured", IsComplete = true };
+            yield return new StreamingResponse { Content = "Prompt service not configured", IsComplete = true };
             yield break;
         }
 
         string explanationPrompt;
         try
         {
-            explanationPrompt = await _promptManager.BuildSQLExplanationPromptAsync(sql, complexity);
+            explanationPrompt = await _promptService.BuildSQLExplanationPromptAsync(sql, complexity);
         }
         catch (Exception ex)
         {
@@ -583,9 +584,9 @@ EXAMPLES:
     /// </summary>
     public async Task ProcessFeedbackAsync(string originalPrompt, string generatedSQL, QueryFeedback feedback, string userId)
     {
-        if (_learningEngine == null)
+        if (_learningService == null)
         {
-            _logger.LogDebug("Learning engine not available, skipping feedback processing");
+            _logger.LogDebug("Learning service not available, skipping feedback processing");
             return;
         }
 
@@ -610,7 +611,7 @@ EXAMPLES:
                 }
             };
 
-            await _learningEngine.ProcessFeedbackAsync(userFeedback);
+            await _learningService.ProcessFeedbackAsync(userFeedback);
             _logger.LogInformation("Processed feedback for user {UserId}, feedback: {Feedback}", userId, feedback.Feedback);
         }
         catch (Exception ex)
@@ -624,7 +625,7 @@ EXAMPLES:
     /// </summary>
     public async Task<LearningStatistics> GetLearningStatisticsAsync()
     {
-        if (_learningEngine == null)
+        if (_learningService == null)
         {
             return new LearningStatistics
             {
@@ -640,16 +641,17 @@ EXAMPLES:
 
         try
         {
-            var stats = await _learningEngine.GetLearningStatisticsAsync();
+            // Use the learning service to get insights and derive statistics
+            var insights = await _learningService.GenerateLearningInsightsAsync();
             return new LearningStatistics
             {
-                TotalGenerations = (int)(stats.GetValueOrDefault("TotalFeedback", 0)),
-                TotalFeedbackItems = (int)(stats.GetValueOrDefault("TotalFeedback", 0)),
-                AverageRating = (double)(stats.GetValueOrDefault("AverageRating", 0.0)),
+                TotalGenerations = insights.SuccessfulPatterns.Count,
+                TotalFeedbackItems = insights.CommonMistakes.Count,
+                AverageRating = insights.PerformanceInsights.Values.Any() ? insights.PerformanceInsights.Values.Average() : 0.0,
                 AverageConfidence = 0.8,
-                UniqueUsers = (int)(stats.GetValueOrDefault("UniqueUsers", 0)),
-                PopularPatterns = new Dictionary<string, int>(),
-                LastUpdated = (DateTime)(stats.GetValueOrDefault("LastUpdated", DateTime.UtcNow))
+                UniqueUsers = 1, // Placeholder - would need additional tracking
+                PopularPatterns = insights.SuccessfulPatterns.ToDictionary(p => p, p => 1),
+                LastUpdated = insights.GeneratedAt
             };
         }
         catch (Exception ex)

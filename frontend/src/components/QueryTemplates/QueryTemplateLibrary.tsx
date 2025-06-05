@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Input,
@@ -14,25 +14,21 @@ import {
   Col,
   Tooltip,
   Badge,
-  Empty,
-  Divider
+  Empty
 } from 'antd';
 import {
   SearchOutlined,
-  FilterOutlined,
   StarOutlined,
   StarFilled,
   PlayCircleOutlined,
   CopyOutlined,
-  EditOutlined,
-  PlusOutlined,
   BookOutlined
 } from '@ant-design/icons';
 
 const { Text, Title, Paragraph } = Typography;
 const { Search } = Input;
 const { Option } = Select;
-const { TextArea } = Input;
+
 
 export interface QueryTemplate {
   id: string;
@@ -311,7 +307,7 @@ export const QueryTemplateLibrary: React.FC<QueryTemplateLibraryProps> = ({
     }
   };
 
-  const filterTemplates = () => {
+  const filterTemplates = useCallback(() => {
     let filtered = templates;
 
     if (searchTerm) {
@@ -331,7 +327,7 @@ export const QueryTemplateLibrary: React.FC<QueryTemplateLibraryProps> = ({
     }
 
     setFilteredTemplates(filtered);
-  };
+  }, [templates, searchTerm, selectedCategory, selectedDifficulty]);
 
   const getCategories = () => {
     const categories = [...new Set(templates.map(t => t.category))];

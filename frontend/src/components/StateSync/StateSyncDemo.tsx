@@ -26,7 +26,7 @@ import {
   TagsOutlined
 } from '@ant-design/icons';
 import { useStateSync, useSyncStatus, useStorageManagement } from '../Providers/StateSyncProvider';
-import { useEnhancedState, useUserPreferences, useApplicationState } from '../../hooks/useEnhancedState';
+import { useEnhancedState, useUserPreferences } from '../../hooks/useEnhancedState';
 
 const { Title, Text } = Typography;
 // TextArea not used in this component

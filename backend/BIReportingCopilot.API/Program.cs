@@ -401,9 +401,8 @@ builder.Services.AddScoped<IQueryOptimizer, BIReportingCopilot.Infrastructure.AI
 builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.EnhancedQueryProcessor>();
 
 // ===== ML & ANOMALY DETECTION SERVICES =====
-// Register individual ML services for backward compatibility with event handlers
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.MLAnomalyDetector>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.FeedbackLearningEngine>();
+// Unified learning service provides all ML functionality including anomaly detection and feedback learning
+// Individual services consolidated into LearningService for better maintainability
 
 // Register IAnomalyDetector interface with LearningService as implementation
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IAnomalyDetector>(provider =>
@@ -421,8 +420,11 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ISemanticCacheSe
 });
 
 // ===== PERFORMANCE & MONITORING =====
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.StreamingDataService>();
-builder.Services.AddSingleton<BIReportingCopilot.Core.Interfaces.IMetricsCollector, BIReportingCopilot.Infrastructure.Monitoring.MetricsCollector>();
+// StreamingDataService functionality consolidated into PerformanceManagementService
+// MetricsCollector functionality consolidated into MonitoringManagementService
+// Register IMetricsCollector interface to use MonitoringManagementService
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IMetricsCollector>(provider =>
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Monitoring.MonitoringManagementService>());
 
 // ===== MESSAGING & EVENTS =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.IEventBus, BIReportingCopilot.Infrastructure.Messaging.InMemoryEventBus>();
@@ -529,8 +531,11 @@ builder.Services.AddScoped<IUserService, BIReportingCopilot.Infrastructure.Servi
 builder.Services.AddScoped<IAuditService, BIReportingCopilot.Infrastructure.Services.AuditService>();
 builder.Services.AddScoped<IAuthenticationService, BIReportingCopilot.Infrastructure.Services.AuthenticationService>();
 builder.Services.AddScoped<IMfaService, BIReportingCopilot.Infrastructure.Services.MfaService>();
-builder.Services.AddScoped<IEmailService, BIReportingCopilot.Infrastructure.Services.EmailService>();
-builder.Services.AddScoped<ISmsService, BIReportingCopilot.Infrastructure.Services.SmsService>();
+// Unified notification services - NotificationManagementService implements both IEmailService and ISmsService
+builder.Services.AddScoped<IEmailService>(provider =>
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Services.NotificationManagementService>());
+builder.Services.AddScoped<ISmsService>(provider =>
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Services.NotificationManagementService>());
 
 // ===== SECURITY SERVICES =====
 // Consolidated SQL validator - EnhancedSqlQueryValidator implements both interfaces
@@ -564,8 +569,7 @@ builder.Services.AddScoped<IProgressReporter>(provider =>
 });
 
 // ===== STARTUP & HEALTH SERVICES =====
-builder.Services.AddSingleton<IStartupHealthValidator, StartupHealthValidator>();
-builder.Services.AddHostedService<StartupValidationService>();
+// StartupHealthValidator and StartupValidationService functionality consolidated into HealthManagementService
 
 // ===== FRAMEWORK SERVICES =====
 // AutoMapper

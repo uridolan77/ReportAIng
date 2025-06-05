@@ -1,5 +1,5 @@
 // Advanced Virtualization Service for DataTable
-import React, { useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useMemo, useCallback, useRef } from 'react';
 import { FixedSizeList as List, VariableSizeList, ListChildComponentProps } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { DataTableColumn } from '../DataTable';
@@ -248,7 +248,7 @@ export const EnhancedVirtualTable: React.FC<EnhancedVirtualTableProps> = ({
   onColumnResize,
   onColumnReorder
 }) => {
-  const defaultConfig: VirtualizationConfig = {
+  const defaultConfig = useMemo((): VirtualizationConfig => ({
     itemSize: 40,
     overscan: 5,
     threshold: 100,
@@ -256,7 +256,7 @@ export const EnhancedVirtualTable: React.FC<EnhancedVirtualTableProps> = ({
     buffer: 10,
     scrollBehavior: 'smooth',
     ...config
-  };
+  }), [config]);
 
   const shouldVirtualize = data.length >= defaultConfig.threshold!;
   

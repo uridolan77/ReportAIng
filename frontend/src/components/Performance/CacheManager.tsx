@@ -42,7 +42,7 @@ export const CacheManager: React.FC = () => {
 
   useEffect(() => {
     loadMetrics();
-  }, []);
+  }, [loadMetrics]);
 
   const handleClearAll = () => {
     Modal.confirm({

@@ -14,27 +14,15 @@ import {
   HistoryOutlined,
   StarOutlined,
   DownloadOutlined,
-  CodeOutlined,
-  ThunderboltOutlined,
-  DashboardOutlined,
-  InteractionOutlined,
-  SettingOutlined,
-  SafetyOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons';
 import { useQueryContext } from './QueryProvider';
 import { QueryResult } from './QueryResult';
 import { QueryHistory } from './QueryHistory';
 import { QuerySuggestions } from './QuerySuggestions';
-import { AdvancedStreamingQuery } from './AdvancedStreamingQuery';
-import { InteractiveVisualization } from './InteractiveVisualization';
-import { DashboardView } from './DashboardView';
-import { QueryLoadingState, CopilotThinking } from './LoadingStates';
+import { QueryLoadingState } from './LoadingStates';
 import { QueryProcessingViewer } from './QueryProcessingViewer';
-import AdvancedVisualizationPanel from '../Visualization/AdvancedVisualizationPanel';
-import { TuningDashboard } from '../Tuning/TuningDashboard';
-import { CacheManager } from '../Performance/CacheManager';
-import { SecurityDashboard } from '../Security/SecurityDashboard';
 import { DataInsightsPanel } from '../Insights/DataInsightsPanel';
 import PromptDetailsPanel from './PromptDetailsPanel';
 
@@ -48,7 +36,7 @@ export const QueryTabs: React.FC = () => {
     currentResult,
     queryHistory,
     query,
-    isAdmin,
+
     isLoading,
     progress,
     showInsightsPanel,

@@ -16,7 +16,7 @@ namespace BIReportingCopilot.Infrastructure.Security;
 public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator, ISqlQueryValidator
 {
     private readonly ILogger<EnhancedSqlQueryValidator> _logger;
-    private readonly MLAnomalyDetector _anomalyDetector;
+    private readonly IAnomalyDetector _anomalyDetector;
     private readonly IMetricsCollector _metricsCollector;
     private readonly SqlValidationConfiguration _config;
 
@@ -58,7 +58,7 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator, ISqlQueryVa
 
     public EnhancedSqlQueryValidator(
         ILogger<EnhancedSqlQueryValidator> logger,
-        MLAnomalyDetector anomalyDetector,
+        IAnomalyDetector anomalyDetector,
         IMetricsCollector metricsCollector,
         IOptions<SqlValidationConfiguration> config)
     {
@@ -411,6 +411,14 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator, ISqlQueryVa
             {
                 result.Errors.Add("Query has unbalanced quotes");
                 result.SecurityLevel = SecurityLevel.Dangerous;
+                result.IsValid = false;
+            }
+
+            // Check for dangerous keywords
+            if (ContainsDangerousKeywords(sql))
+            {
+                result.Errors.Add("Query contains dangerous keywords");
+                result.SecurityLevel = SecurityLevel.Blocked;
                 result.IsValid = false;
             }
 

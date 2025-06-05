@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   List,
@@ -7,7 +7,6 @@ import {
   Typography,
   Tag,
   Spin,
-  Empty,
   Tooltip,
   Progress,
   Row,
@@ -49,13 +48,7 @@ export const DataInsightsPanel: React.FC<DataInsightsPanelProps> = ({
   const [analysisDepth, setAnalysisDepth] = useState<'quick' | 'standard' | 'comprehensive'>('standard');
   const [filterType, setFilterType] = useState<string>('all');
 
-  useEffect(() => {
-    if (autoGenerate && queryResult?.result?.data && queryResult.result.data.length > 0) {
-      generateInsights();
-    }
-  }, [queryResult, autoGenerate]);
-
-  const generateInsights = async () => {
+  const generateInsights = useCallback(async () => {
     if (!queryResult?.result?.data || queryResult.result.data.length === 0) return;
 
     setLoading(true);
@@ -99,7 +92,13 @@ export const DataInsightsPanel: React.FC<DataInsightsPanelProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [queryResult, analysisDepth]);
+
+  useEffect(() => {
+    if (autoGenerate && queryResult?.result?.data && queryResult.result.data.length > 0) {
+      generateInsights();
+    }
+  }, [queryResult, autoGenerate, generateInsights]);
 
   const inferColumnType = (data: any[], columnName: string): 'numeric' | 'text' | 'date' | 'boolean' => {
     const sample = data.slice(0, 10).map(row => row[columnName]).filter(val => val != null);

@@ -85,6 +85,7 @@ const DashboardBuilder: React.FC = () => {
   const [selectedDataSource, setSelectedDataSource] = useState<string>('');
   const [selectedChart, setSelectedChart] = useState<ChartConfig | null>(null);
 
+
   // Chart type options
   const chartTypes = [
     { value: 'bar', label: 'Bar Chart', icon: <BarChartOutlined /> },
@@ -216,7 +217,7 @@ const DashboardBuilder: React.FC = () => {
   // Get data for chart
   const getChartData = (chart: ChartConfig) => {
     const dataSource = availableData.find(d => d.query === chart.dataSource);
-    return Array.isArray(dataSource?.data) ? dataSource.data : [];
+    return (dataSource && Array.isArray(dataSource.data)) ? dataSource.data : [];
   };
 
   // Render chart

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography } from 'antd';
+
 import { DatabaseConnectionBanner } from '../Layout/DatabaseConnectionBanner';
 import { QueryProvider } from './QueryProvider';
 import { MinimalQueryInterface } from './MinimalQueryInterface';

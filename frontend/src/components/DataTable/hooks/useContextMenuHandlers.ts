@@ -104,12 +104,11 @@ export const useContextMenuHandlers = ({
         break;
     }
   }, [
-    visibleColumns, 
-    enabledFeatures, 
-    onCellClick, 
-    processedData, 
-    onSelectionChange, 
-    handleExport, 
+    visibleColumns,
+    enabledFeatures,
+    processedData,
+    onSelectionChange,
+    handleExport,
     handleRefresh,
     handleCopy
   ]);

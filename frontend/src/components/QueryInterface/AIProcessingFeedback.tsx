@@ -48,7 +48,6 @@ export const AIProcessingFeedback: React.FC<AIProcessingFeedbackProps> = ({
   showDetails = false
 }) => {
   const [progress, setProgress] = useState(0);
-  const [showAdvanced, setShowAdvanced] = useState(showDetails);
 
   useEffect(() => {
     if (steps.length > 0) {

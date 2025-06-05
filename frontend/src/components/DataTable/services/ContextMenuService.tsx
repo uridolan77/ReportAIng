@@ -1,6 +1,6 @@
 // Context Menu Service for DataTable
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Menu, Dropdown } from 'antd';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { Menu } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   CopyOutlined,
@@ -15,7 +15,7 @@ import {
   ExportOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
-import { DataTableColumn } from '../DataTable';
+import { DataTableColumn } from '../types/index';
 
 export interface ContextMenuAction {
   key: string;
@@ -211,7 +211,7 @@ export const ContextMenuProvider: React.FC<ContextMenuServiceProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const features = {
+  const features = useMemo(() => ({
     copy: true,
     edit: true,
     delete: true,
@@ -221,7 +221,7 @@ export const ContextMenuProvider: React.FC<ContextMenuServiceProps> = ({
     export: true,
     columnOperations: true,
     ...enabledFeatures
-  };
+  }), [enabledFeatures]);
 
   const filterActions = useCallback((actions: ContextMenuAction[], context: ContextMenuContext) => {
     return actions.filter(action => {

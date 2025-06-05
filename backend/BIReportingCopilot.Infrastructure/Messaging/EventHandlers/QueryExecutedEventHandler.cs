@@ -146,16 +146,16 @@ public class FeedbackReceivedEventHandler : IEventHandler<FeedbackReceivedEvent>
 {
     private readonly ILogger<FeedbackReceivedEventHandler> _logger;
     private readonly IMetricsCollector _metricsCollector;
-    private readonly BIReportingCopilot.Infrastructure.AI.FeedbackLearningEngine _learningEngine;
+    private readonly LearningService _learningService;
 
     public FeedbackReceivedEventHandler(
         ILogger<FeedbackReceivedEventHandler> logger,
         IMetricsCollector metricsCollector,
-        BIReportingCopilot.Infrastructure.AI.FeedbackLearningEngine learningEngine)
+        LearningService learningService)
     {
         _logger = logger;
         _metricsCollector = metricsCollector;
-        _learningEngine = learningEngine;
+        _learningService = learningService;
     }
 
     public async Task HandleAsync(FeedbackReceivedEvent @event, CancellationToken cancellationToken = default)

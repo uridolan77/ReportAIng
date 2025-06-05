@@ -26,7 +26,7 @@ import {
   QuestionCircleOutlined,
   SettingOutlined
 } from '@ant-design/icons';
-import { PromptDetails, PromptSection } from '../../types/query';
+import { PromptDetails } from '../../types/query';
 
 const { Panel } = Collapse;
 const { Title, Text, Paragraph } = Typography;

@@ -12,11 +12,9 @@ import {
   createMockShortcut,
   setupTestEnvironment 
 } from '../../../test-utils/testing-providers';
-import { 
-  QueryInterfaceTestUtils, 
-  TemplateTestUtils, 
-  ShortcutTestUtils,
-  ModalTestUtils 
+import {
+  QueryInterfaceTestUtils,
+  TemplateTestUtils
 } from '../../../test-utils/component-test-utils';
 import { queryTemplateService } from '../../../services/queryTemplateService';
 
@@ -131,8 +129,7 @@ describe('QueryShortcuts Component', () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
       await TemplateTestUtils.filterByCategory('all');
-      
-      const templatesTab = screen.getByRole('tab', { name: /templates/i });
+
       await QueryInterfaceTestUtils.selectTemplate('templates');
 
       expect(screen.getByText('Revenue Analysis')).toBeInTheDocument();
@@ -143,7 +140,6 @@ describe('QueryShortcuts Component', () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
       // Navigate to templates tab
-      const templatesTab = screen.getByRole('tab', { name: /templates/i });
       await QueryInterfaceTestUtils.selectTemplate('templates');
 
       // Filter by financial category
@@ -157,12 +153,10 @@ describe('QueryShortcuts Component', () => {
     it('handles template selection without variables', async () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
-      const templatesTab = screen.getByRole('tab', { name: /templates/i });
       await QueryInterfaceTestUtils.selectTemplate('templates');
 
       // Click on template without variables
       await TemplateTestUtils.searchTemplates('User Activity');
-      const template = screen.getByText('User Activity');
       await QueryInterfaceTestUtils.selectTemplate('User Activity');
 
       expect(mockProps.onQuerySelect).toHaveBeenCalledWith(mockTemplates[1].template);
@@ -172,11 +166,9 @@ describe('QueryShortcuts Component', () => {
     it('opens modal for template with variables', async () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
-      const templatesTab = screen.getByRole('tab', { name: /templates/i });
       await QueryInterfaceTestUtils.selectTemplate('templates');
 
       // Click on template with variables
-      const template = screen.getByText('Revenue Analysis');
       await QueryInterfaceTestUtils.selectTemplate('Revenue Analysis');
 
       // Should open modal
@@ -193,11 +185,9 @@ describe('QueryShortcuts Component', () => {
 
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
-      const templatesTab = screen.getByRole('tab', { name: /templates/i });
       await QueryInterfaceTestUtils.selectTemplate('templates');
 
       // Open template modal
-      const template = screen.getByText('Revenue Analysis');
       await QueryInterfaceTestUtils.selectTemplate('Revenue Analysis');
 
       // Fill variables
@@ -216,7 +206,6 @@ describe('QueryShortcuts Component', () => {
     it('toggles template favorite status', async () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
-      const templatesTab = screen.getByRole('tab', { name: /templates/i });
       await QueryInterfaceTestUtils.selectTemplate('templates');
 
       // Toggle favorite
@@ -230,7 +219,6 @@ describe('QueryShortcuts Component', () => {
     it('displays shortcuts when shortcuts tab is active', async () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
-      const shortcutsTab = screen.getByRole('tab', { name: /shortcuts/i });
       await QueryInterfaceTestUtils.selectTemplate('shortcuts');
 
       expect(screen.getByText('Today Revenue')).toBeInTheDocument();
@@ -242,11 +230,9 @@ describe('QueryShortcuts Component', () => {
     it('handles shortcut selection', async () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
-      const shortcutsTab = screen.getByRole('tab', { name: /shortcuts/i });
       await QueryInterfaceTestUtils.selectTemplate('shortcuts');
 
       // Click on shortcut
-      const shortcut = screen.getByText('Today Revenue');
       await QueryInterfaceTestUtils.selectTemplate('Today Revenue');
 
       expect(mockProps.onQuerySelect).toHaveBeenCalledWith('Show me revenue for today');
@@ -304,7 +290,7 @@ describe('QueryShortcuts Component', () => {
 
       // Click on suggestion
       await waitFor(() => {
-        const suggestion = screen.getByText('Revenue shortcut');
+        screen.getByText('Revenue shortcut');
         return QueryInterfaceTestUtils.selectTemplate('Revenue shortcut');
       });
 
@@ -325,7 +311,6 @@ describe('QueryShortcuts Component', () => {
     it('displays popular templates', async () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
-      const popularTab = screen.getByRole('tab', { name: /popular/i });
       await QueryInterfaceTestUtils.selectTemplate('popular');
 
       expect(screen.getByText('Revenue Analysis')).toBeInTheDocument();
@@ -336,7 +321,6 @@ describe('QueryShortcuts Component', () => {
 
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
-      const popularTab = screen.getByRole('tab', { name: /popular/i });
       await QueryInterfaceTestUtils.selectTemplate('popular');
 
       expect(screen.getByText(/no popular templates yet/i)).toBeInTheDocument();

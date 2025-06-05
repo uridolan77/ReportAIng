@@ -238,8 +238,8 @@ public class BackgroundJobManagementService
 
         try
         {
-            // Get configured data sources (for now, just default)
-            var dataSources = new[] { "default" };
+            // Get configured data sources - use BIDatabase as the primary data source
+            var dataSources = new[] { "BIDatabase" };
 
             foreach (var dataSource in dataSources)
             {

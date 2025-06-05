@@ -302,6 +302,47 @@ public class LearningService
         }
     }
 
+    /// <summary>
+    /// Get learning insights for a specific user or category
+    /// </summary>
+    public async Task<LearningInsights> GetLearningInsightsAsync(string? userId = null, string? category = null)
+    {
+        try
+        {
+            _logger.LogDebug("Getting learning insights for user: {UserId}, category: {Category}", userId, category);
+
+            // Check cache first
+            var cacheKey = $"learning_insights:{userId ?? "global"}:{category ?? "all"}";
+            var cachedInsights = await _cacheService.GetAsync<LearningInsights>(cacheKey);
+            if (cachedInsights != null)
+            {
+                _logger.LogDebug("Returning cached learning insights");
+                return cachedInsights;
+            }
+
+            // Generate new insights
+            var insights = await GenerateLearningInsightsAsync(userId, category);
+
+            _logger.LogDebug("Generated learning insights with {SuccessfulPatterns} patterns",
+                insights.SuccessfulPatterns.Count);
+
+            return insights;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting learning insights for user {UserId}", userId);
+            return new LearningInsights
+            {
+                GeneratedAt = DateTime.UtcNow,
+                SuccessfulPatterns = new List<string>(),
+                CommonMistakes = new List<string>(),
+                OptimizationSuggestions = new List<string>(),
+                UserPreferences = new Dictionary<string, object>(),
+                PerformanceInsights = new Dictionary<string, double>()
+            };
+        }
+    }
+
     #endregion
 
     #region Private Helper Methods - Anomaly Detection

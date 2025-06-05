@@ -37,7 +37,7 @@ const DataTable: React.FC<DataTableProps> = (props) => {
     keyField = 'id',
     loading = false,
     error = null,
-    tableId,
+
     features = {},
     config = {},
     components = {},
@@ -55,15 +55,13 @@ const DataTable: React.FC<DataTableProps> = (props) => {
     state,
     actions,
     enabledFeatures,
-    persistenceOptions,
     visibleColumns,
     debouncedSearchText,
-    virtualizationServiceRef,
-    autoSaveTimeoutRef
+    virtualizationServiceRef
   } = useDataTableState({ columns, features, config });
 
   // Data processing
-  const { processedData, paginatedData, totalRecords, totalPages } = useDataProcessing({
+  const { processedData, paginatedData, totalRecords } = useDataProcessing({
     data,
     debouncedSearchText,
     sortConfig: state.sortConfig,
@@ -87,7 +85,7 @@ const DataTable: React.FC<DataTableProps> = (props) => {
   });
 
   // Context menu handlers
-  const { handleContextMenuAction, handleTableContextMenu } = useContextMenuHandlers({
+  const { handleTableContextMenu } = useContextMenuHandlers({
     enabledFeatures,
     visibleColumns,
     processedData,
@@ -122,7 +120,7 @@ const DataTable: React.FC<DataTableProps> = (props) => {
         dynamicHeight: config.virtualization?.enableDynamicSizing || enabledFeatures.dynamicRowHeight
       });
     }
-  }, [enabledFeatures.advancedVirtualization, config]);
+  }, [enabledFeatures.advancedVirtualization, enabledFeatures.dynamicRowHeight, config, virtualizationServiceRef]);
   // Enhanced virtualization hook
   const { visibleData } = useEnhancedVirtualization({
     data: paginatedData,

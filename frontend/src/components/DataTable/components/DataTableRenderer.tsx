@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Table } from 'antd';
 import { VariableSizeGrid as Grid } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
+
 import { VirtualizationService, createPerformanceMonitor } from '../services/VirtualizationService';
 import { DataTableColumn } from '../types';
 
@@ -58,8 +58,9 @@ export const VirtualizedTable: React.FC<VirtualizedTableProps> = ({
   useEffect(() => {
     if (enablePerformanceMonitoring) {
       const startTime = perfMonitor.current.startRender();
+      const currentPerfMonitor = perfMonitor.current;
       return () => {
-        perfMonitor.current.endRender(startTime, data.length);
+        currentPerfMonitor.endRender(startTime, data.length);
       };
     }
   }, [data.length, enablePerformanceMonitoring]);

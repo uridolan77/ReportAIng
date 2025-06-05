@@ -21,7 +21,6 @@ import {
   HomeOutlined,
   BulbOutlined,
   RobotOutlined,
-  ThunderboltOutlined,
   ClockCircleOutlined,
   RiseOutlined,
   UserOutlined,
@@ -35,7 +34,7 @@ const { Title, Text } = Typography;
 
 const SuggestionsPageContent: React.FC = () => {
   const navigate = useNavigate();
-  const { setQuery, queryHistory } = useQueryContext();
+  const { setQuery } = useQueryContext();
   const [loading, setLoading] = useState(true);
   const [suggestions, setSuggestions] = useState<any[]>([]);
 

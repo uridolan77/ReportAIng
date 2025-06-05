@@ -21,7 +21,6 @@ import {
   HomeOutlined,
   BookOutlined,
   SearchOutlined,
-  ThunderboltOutlined,
   StarOutlined,
   StarFilled,
   FireOutlined

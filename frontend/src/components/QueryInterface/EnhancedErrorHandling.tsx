@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Alert,
   Card,
@@ -8,7 +8,7 @@ import {
   Collapse,
   Steps,
   Tag,
-  Tooltip,
+
   Divider,
   List,
   Input,
@@ -22,12 +22,12 @@ import {
   BulbOutlined,
   QuestionCircleOutlined,
   RobotOutlined,
-  CheckCircleOutlined,
+
   CloseCircleOutlined,
   WarningOutlined
 } from '@ant-design/icons';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { Panel } = Collapse;
 const { Step } = Steps;
 const { TextArea } = Input;
@@ -326,9 +326,9 @@ export const QueryValidator: React.FC<{
   query: string;
   onValidationResult: (result: QueryValidationResult) => void;
 }> = ({ query, onValidationResult }) => {
-  const [validating, setValidating] = useState(false);
+  const [, setValidating] = useState(false);
 
-  const validateQuery = async () => {
+  const validateQuery = useCallback(async () => {
     if (!query.trim()) return;
 
     setValidating(true);
@@ -379,14 +379,14 @@ export const QueryValidator: React.FC<{
       onValidationResult(result);
       setValidating(false);
     }, 1000);
-  };
+  }, [query, onValidationResult]);
 
   React.useEffect(() => {
     if (query.trim()) {
       const debounceTimer = setTimeout(validateQuery, 500);
       return () => clearTimeout(debounceTimer);
     }
-  }, [query]);
+  }, [query, validateQuery]);
 
   return null; // This is a utility component that doesn't render anything
 };
@@ -395,16 +395,11 @@ export const IterativeQueryBuilder: React.FC<{
   initialQuery: string;
   onQueryUpdate: (query: string) => void;
 }> = ({ initialQuery, onQueryUpdate }) => {
-  const [queryHistory, setQueryHistory] = useState<string[]>([initialQuery]);
+  const [queryHistory] = useState<string[]>([initialQuery]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
-  const addIteration = (newQuery: string) => {
-    const newHistory = [...queryHistory.slice(0, currentIndex + 1), newQuery];
-    setQueryHistory(newHistory);
-    setCurrentIndex(newHistory.length - 1);
-    onQueryUpdate(newQuery);
-  };
+
 
   const goToVersion = (index: number) => {
     setCurrentIndex(index);
@@ -412,7 +407,6 @@ export const IterativeQueryBuilder: React.FC<{
   };
 
   const generateSuggestions = () => {
-    const currentQuery = queryHistory[currentIndex];
     const newSuggestions = [
       'Add ORDER BY clause for better sorting',
       'Include LIMIT to control result size',

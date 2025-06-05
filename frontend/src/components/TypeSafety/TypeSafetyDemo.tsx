@@ -8,7 +8,6 @@ import {
   Alert,
   Typography,
   Space,
-  Divider,
   Tag,
   Collapse,
   message,
@@ -18,7 +17,6 @@ import {
 } from 'antd';
 import {
   CheckCircleOutlined,
-  CloseCircleOutlined,
   WarningOutlined,
   CodeOutlined,
   BugOutlined,

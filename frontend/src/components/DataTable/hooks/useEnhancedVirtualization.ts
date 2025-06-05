@@ -120,11 +120,12 @@ export const useEnhancedVirtualization = ({
   // Performance monitoring
   useEffect(() => {
     if (enablePerformanceMonitoring) {
-      const startTime = perfMonitorRef.current.startRender();
-      
+      const perfMonitor = perfMonitorRef.current;
+      const startTime = perfMonitor.startRender();
+
       return () => {
-        perfMonitorRef.current.endRender(startTime, virtualItems.length);
-        const metrics = perfMonitorRef.current.getMetrics();
+        perfMonitor.endRender(startTime, virtualItems.length);
+        const metrics = perfMonitor.getMetrics();
         onPerformanceUpdate?.(metrics);
       };
     }

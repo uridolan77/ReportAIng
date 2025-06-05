@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   Steps,
@@ -10,13 +10,9 @@ import {
   Typography,
   Select,
   Input,
-  Checkbox,
-  Radio,
   Tag,
-  Tooltip,
   Progress,
-  Alert,
-  Divider
+  Alert
 } from 'antd';
 import {
   RocketOutlined,
@@ -29,7 +25,7 @@ import {
   ThunderboltOutlined
 } from '@ant-design/icons';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { Step } = Steps;
 const { Option } = Select;
 const { TextArea } = Input;
@@ -73,10 +69,10 @@ export const GuidedQueryWizard: React.FC<GuidedQueryWizardProps> = ({
   const [selectedGoal, setSelectedGoal] = useState<string>('');
   const [selectedDataSources, setSelectedDataSources] = useState<string[]>([]);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
-  const [filters, setFilters] = useState<any[]>([]);
-  const [groupBy, setGroupBy] = useState<string[]>([]);
-  const [orderBy, setOrderBy] = useState<string>('');
-  const [limit, setLimit] = useState<number>(100);
+  const [filters] = useState<any[]>([]);
+  const [groupBy] = useState<string[]>([]);
+  const [orderBy] = useState<string>('');
+  const [limit] = useState<number>(100);
   const [generatedQuery, setGeneratedQuery] = useState<string>('');
   const [generating, setGenerating] = useState(false);
 
@@ -184,7 +180,6 @@ export const GuidedQueryWizard: React.FC<GuidedQueryWizardProps> = ({
     
     // Simulate AI query generation
     setTimeout(() => {
-      const goal = queryGoals.find(g => g.id === selectedGoal);
       const sources = dataSources.filter(ds => selectedDataSources.includes(ds.id));
       
       let query = '';

@@ -1,19 +1,11 @@
 import React from 'react';
 import { Space, Tooltip } from 'antd';
-import { 
-  SortAscendingOutlined, 
-  SortDescendingOutlined, 
-  CopyOutlined 
+import {
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
-
-interface DataTableColumn {
-  key: string;
-  title: string;
-  dataIndex: string;
-  sortable?: boolean;
-  headerRender?: () => React.ReactNode;
-  headerStyle?: React.CSSProperties;
-}
+import { DataTableColumn } from '../types/index';
 
 interface DataTableHeaderCellProps {
   column: DataTableColumn;

@@ -89,7 +89,7 @@ const UserContextPanel: React.FC = () => {
   if (error) {
     return (
       <Alert
-        message={typeof error === 'string' ? error : error?.message || 'An error occurred'}
+        message={error}
         type="error"
         style={{ marginBottom: 16 }}
         showIcon
@@ -268,7 +268,6 @@ const UserContextPanel: React.FC = () => {
                               {pattern.associatedTables.map((table, tableIndex) => (
                                 <Tag
                                   key={tableIndex}
-                                  size="small"
                                   style={{ fontSize: '11px' }}
                                 >
                                   {table}

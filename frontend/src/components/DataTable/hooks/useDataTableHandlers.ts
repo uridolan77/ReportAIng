@@ -26,6 +26,18 @@ export const useDataTableHandlers = ({
   tableRef,
   props
 }: UseDataTableHandlersProps) => {
+  // Destructure props to avoid React Hook dependency warnings
+  const {
+    onSort,
+    onFilter,
+    onSearch,
+    onPageChange,
+    onSelectionChange,
+    onColumnReorder,
+    onExport,
+    onError,
+    onRefresh
+  } = props;
 
   const handleSort = useCallback((column: DataTableColumn) => {
     if (!enabledFeatures.sorting || column.sortable === false) return;
@@ -44,39 +56,39 @@ export const useDataTableHandlers = ({
     }
     
     actions.setSortConfig(newSortConfig);
-    props.onSort?.(newSortConfig);
-  }, [state.sortConfig, enabledFeatures.sorting, props.onSort, actions]);
+    onSort?.(newSortConfig);
+  }, [state.sortConfig, enabledFeatures.sorting, onSort, actions]);
 
   const handleFilter = useCallback((columnKey: string, value: any) => {
     const newFilterConfig = { ...state.filterConfig, [columnKey]: value };
     actions.setFilterConfig(newFilterConfig);
-    props.onFilter?.(newFilterConfig);
+    onFilter?.(newFilterConfig);
     actions.setCurrentPage(1); // Reset to first page when filtering
-  }, [state.filterConfig, props.onFilter, actions]);
+  }, [state.filterConfig, onFilter, actions]);
 
   const handleSearch = useCallback((value: string) => {
     actions.setSearchText(value);
-    props.onSearch?.(value);
+    onSearch?.(value);
     actions.setCurrentPage(1); // Reset to first page when searching
-  }, [props.onSearch, actions]);
+  }, [onSearch, actions]);
 
   const handlePageChange = useCallback((page: number, size?: number) => {
     actions.setCurrentPage(page);
     if (size && size !== state.pageSize) {
       actions.setPageSize(size);
     }
-    props.onPageChange?.(page, size || state.pageSize);
-  }, [state.pageSize, props.onPageChange, actions]);
+    onPageChange?.(page, size || state.pageSize);
+  }, [state.pageSize, onPageChange, actions]);
 
-  const handleSelectionChange = useCallback((selectedRowKeys: React.Key[], selectedRowsData: any[]) => {
+  const handleSelectionChange = useCallback((_selectedRowKeys: React.Key[], selectedRowsData: any[]) => {
     actions.setSelectedRows(selectedRowsData);
-    props.onSelectionChange?.(selectedRowsData);
-  }, [props.onSelectionChange, actions]);
+    onSelectionChange?.(selectedRowsData);
+  }, [onSelectionChange, actions]);
 
   const handleColumnReorder = useCallback((newColumns: DataTableColumn[]) => {
     actions.setDisplayColumns(newColumns);
-    props.onColumnReorder?.(newColumns);
-  }, [props.onColumnReorder, actions]);
+    onColumnReorder?.(newColumns);
+  }, [onColumnReorder, actions]);
 
   const handleExport = useCallback(async (format: string) => {
     try {
@@ -116,12 +128,12 @@ export const useDataTableHandlers = ({
       
       message.success(`Data exported as ${format.toUpperCase()}`);
       actions.setShowExportModal(false);
-      props.onExport?.(format, exportData);
+      onExport?.(format, exportData);
     } catch (error) {
       message.error('Export failed');
-      props.onError?.(error as Error);
+      onError?.(error as Error);
     }
-  }, [processedData, visibleColumns, config.exportFileName, props.onExport, props.onError, actions]);
+  }, [processedData, visibleColumns, config.exportFileName, onExport, onError, actions]);
 
   const handlePrint = useCallback(() => {
     window.print();
@@ -133,9 +145,9 @@ export const useDataTableHandlers = ({
     actions.setSortConfig([]);
     actions.setSearchText('');
     actions.setCurrentPage(1);
-    props.onRefresh?.();
+    onRefresh?.();
     message.success('Table refreshed');
-  }, [actions, props.onRefresh]);
+  }, [actions, onRefresh]);
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -150,10 +162,10 @@ export const useDataTableHandlers = ({
   const handleSelectAll = useCallback(() => {
     if (enabledFeatures.selection) {
       actions.setSelectedRows([...processedData]);
-      props.onSelectionChange?.([...processedData]);
+      onSelectionChange?.([...processedData]);
       message.success('All rows selected');
     }
-  }, [enabledFeatures.selection, processedData, actions, props.onSelectionChange]);
+  }, [enabledFeatures.selection, processedData, actions, onSelectionChange]);
 
   const handleCopy = useCallback((value: any) => {
     if (navigator.clipboard) {

@@ -9,7 +9,6 @@ import {
   Tag,
   Tooltip,
   Badge,
-  Divider,
   Spin,
   Empty
 } from 'antd';
@@ -18,9 +17,7 @@ import {
   FireOutlined,
   ClockCircleOutlined,
   DatabaseOutlined,
-  UserOutlined,
   BarChartOutlined,
-  ThunderboltOutlined,
   BulbOutlined,
   RocketOutlined,
   StarOutlined

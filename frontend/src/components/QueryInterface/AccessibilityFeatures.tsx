@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Typography, List, Tag, Space, Button, Tooltip } from 'antd';
 import {
   ControlOutlined,
-  QuestionCircleOutlined,
-  EyeOutlined,
-  SoundOutlined
+  EyeOutlined
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;

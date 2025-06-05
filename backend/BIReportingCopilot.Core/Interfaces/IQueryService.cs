@@ -162,6 +162,11 @@ public interface IPromptService
     Task<PromptTemplate> CreatePromptTemplateAsync(PromptTemplate template);
     Task<PromptTemplate> UpdatePromptTemplateAsync(PromptTemplate template);
     Task<List<PromptTemplate>> GetPromptTemplatesAsync();
+
+    // Enhanced streaming prompt methods
+    Task<string> BuildSQLGenerationPromptAsync(string prompt, SchemaMetadata? schema = null, CoreModels.QueryContext? context = null);
+    Task<string> BuildInsightGenerationPromptAsync(string query, object[] data, CoreModels.AnalysisContext? context = null);
+    Task<string> BuildSQLExplanationPromptAsync(string sql, CoreModels.StreamingQueryComplexity complexity = CoreModels.StreamingQueryComplexity.Medium);
     Task<PromptPerformanceMetrics> GetPromptPerformanceAsync(string templateName);
 }
 

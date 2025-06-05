@@ -18,7 +18,6 @@ import {
 import {
   SafetyOutlined,
   WarningOutlined,
-  CheckCircleOutlined,
   ExclamationCircleOutlined,
   LockOutlined,
   KeyOutlined,
@@ -93,7 +92,7 @@ export const SecurityDashboard: React.FC = () => {
   const [testResult, setTestResult] = useState<any>(null);
 
   // New state for request signing features
-  const [requestMetrics, setRequestMetrics] = useState<RequestMetrics[]>([]);
+  const [, setRequestMetrics] = useState<RequestMetrics[]>([]);
   const [signingConfig, setSigningConfig] = useState<SigningConfig | null>(null);
   const [signingConfigVisible, setSigningConfigVisible] = useState(false);
 

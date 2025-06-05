@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Timeline, Progress, Typography, Space, Tag, Collapse, Button, Divider } from 'antd';
+import React, { useState } from 'react';
+import { Card, Timeline, Progress, Typography, Space, Tag, Collapse, Button } from 'antd';
 import {
   ClockCircleOutlined,
   CheckCircleOutlined,
@@ -13,7 +13,7 @@ import {
   BarChartOutlined
 } from '@ant-design/icons';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 const { Panel } = Collapse;
 
 export interface ProcessingStage {

@@ -195,7 +195,7 @@ const QuerySimilarityAnalyzer: React.FC = () => {
 
       {error && (
         <Alert
-          message={typeof error === 'string' ? error : error?.message || 'An error occurred'}
+          message={error}
           type="error"
           style={{ marginBottom: 16 }}
           showIcon

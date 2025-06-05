@@ -66,7 +66,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         console.log('ChartConfigurationPanel - Initializing from currentConfig:', currentConfig);
         setChartType(currentConfig.chartType);
         setXAxis(currentConfig.xAxis || '');
-        setSelectedMetrics(currentConfig.series || [currentConfig.yAxis || '']);
+        setSelectedMetrics(Array.isArray(currentConfig.series) ? currentConfig.series : [currentConfig.yAxis || ''].filter(Boolean));
       } else {
         console.log('ChartConfigurationPanel - Auto-detecting initial values');
         // Auto-detect initial values
@@ -94,7 +94,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
   ];
 
   const generateConfig = useCallback((overrideMetrics?: string[]) => {
-    const metricsToUse = overrideMetrics || selectedMetrics;
+    const metricsToUse = Array.isArray(overrideMetrics) ? overrideMetrics : Array.isArray(selectedMetrics) ? selectedMetrics : [];
     if (!xAxis || metricsToUse.length === 0) return;
 
     // Preserve existing configuration settings if available
@@ -188,10 +188,11 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
     console.log('ChartConfigurationPanel - Metric toggle:', { metric, checked, currentMetrics: selectedMetrics });
 
     let newMetrics: string[];
+    const currentMetrics = Array.isArray(selectedMetrics) ? selectedMetrics : [];
     if (checked) {
-      newMetrics = [...selectedMetrics, metric];
+      newMetrics = [...currentMetrics, metric];
     } else {
-      newMetrics = selectedMetrics.filter(m => m !== metric);
+      newMetrics = currentMetrics.filter(m => m !== metric);
     }
 
     console.log('ChartConfigurationPanel - New metrics:', newMetrics);
@@ -212,7 +213,8 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
 
     // Auto-generate config after state update
     setTimeout(() => {
-      if (xAxis && selectedMetrics.length > 0) {
+      const currentMetrics = Array.isArray(selectedMetrics) ? selectedMetrics : [];
+      if (xAxis && currentMetrics.length > 0) {
         generateConfig();
       }
     }, 50);
@@ -224,7 +226,8 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
 
     // Auto-generate config after state update
     setTimeout(() => {
-      if (newXAxis && selectedMetrics.length > 0) {
+      const currentMetrics = Array.isArray(selectedMetrics) ? selectedMetrics : [];
+      if (newXAxis && currentMetrics.length > 0) {
         generateConfig();
       }
     }, 50);
@@ -280,7 +283,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         <Col xs={24} sm={24} md={8}>
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Metrics to Display ({selectedMetrics.length} selected)
+              Metrics to Display ({Array.isArray(selectedMetrics) ? selectedMetrics.length : 0} selected)
             </Text>
             <div style={{ 
               maxHeight: '120px', 
@@ -293,7 +296,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
               {numericColumns.map(metric => (
                 <div key={metric} style={{ marginBottom: 4 }}>
                   <Checkbox
-                    checked={selectedMetrics.includes(metric)}
+                    checked={Array.isArray(selectedMetrics) ? selectedMetrics.includes(metric) : false}
                     onChange={(e) => handleMetricToggle(metric, e.target.checked)}
                   >
                     <Text style={{ fontSize: '12px' }}>{metric}</Text>
@@ -315,7 +318,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
             <Button
               type="default"
               onClick={generateConfig}
-              disabled={!xAxis || selectedMetrics.length === 0}
+              disabled={!xAxis || !Array.isArray(selectedMetrics) || selectedMetrics.length === 0}
               style={{ width: '100%' }}
               size="small"
               title="Manually refresh chart (auto-updates when you change settings)"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   Row,
@@ -8,12 +8,10 @@ import {
   Typography,
   Select,
   Table,
-  Tabs,
   Tooltip,
   Dropdown,
   Menu,
   Modal,
-  message,
   Tag,
   Statistic,
   Progress
@@ -27,10 +25,8 @@ import {
   ShareAltOutlined,
   FullscreenOutlined,
   SettingOutlined,
-  EyeOutlined,
   FileExcelOutlined,
-  FilePdfOutlined,
-  LinkOutlined
+  FilePdfOutlined
 } from '@ant-design/icons';
 // Note: Recharts dependency temporarily removed for compatibility
 // import {
@@ -81,25 +77,10 @@ export const InteractiveResultsDisplay: React.FC<InteractiveResultsDisplayProps>
     yAxis: data.columns[1] || '',
     groupBy: ''
   });
-  const [showExportModal, setShowExportModal] = useState(false);
+
   const [fullscreen, setFullscreen] = useState(false);
 
-  // Transform data for charts
-  const chartData = React.useMemo(() => {
-    if (!data.rows || data.rows.length === 0) return [];
-    
-    const xIndex = data.columns.indexOf(chartConfig.xAxis);
-    const yIndex = data.columns.indexOf(chartConfig.yAxis);
-    
-    if (xIndex === -1 || yIndex === -1) return [];
-    
-    return data.rows.map(row => ({
-      name: row[xIndex],
-      value: Number(row[yIndex]) || 0,
-      [chartConfig.xAxis]: row[xIndex],
-      [chartConfig.yAxis]: row[yIndex]
-    }));
-  }, [data, chartConfig]);
+
 
   // Table columns configuration
   const tableColumns = data.columns.map((col, index) => ({
@@ -130,7 +111,7 @@ export const InteractiveResultsDisplay: React.FC<InteractiveResultsDisplayProps>
     }, {} as any)
   }));
 
-  const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#ff00ff'];
+
 
   const renderChart = () => {
     switch (activeView) {

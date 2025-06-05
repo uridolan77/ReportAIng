@@ -1,29 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Typography, Space, Tag, Button, Tabs, Input, Tooltip, Row, Col } from 'antd';
+import { Card, Typography, Space, Tag, Button, Tabs, Row, Col } from 'antd';
 import {
   ReloadOutlined,
   CodeOutlined,
   DownloadOutlined,
   TableOutlined,
   BugOutlined,
-  CopyOutlined,
-  CheckOutlined,
   BarChartOutlined,
-  LineChartOutlined,
-  PieChartOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  SettingOutlined,
-  FullscreenOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined
+  SettingOutlined
 } from '@ant-design/icons';
 import VisualizationRecommendations from '../Visualization/VisualizationRecommendations';
 import AdvancedChart from '../Visualization/AdvancedChart';
 import ChartConfigurationPanel from '../Visualization/ChartConfigurationPanel';
 import DataTable from '../DataTable';
 import { QueryResponse } from '../../types/query';
-import { AdvancedVisualizationConfig, VisualizationRecommendation } from '../../types/visualization';
+import { VisualizationRecommendation } from '../../types/visualization';
 import { useVisualizationStore } from '../../stores/visualizationStore';
 
 const { Title, Text, Paragraph } = Typography;
@@ -38,13 +29,14 @@ interface QueryResultProps {
 }
 
 export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick, onVisualizationRequest }) => {
+  // All hooks must be called at the top level before any conditional returns
   // State for active tab
   const [activeTab, setActiveTab] = useState('data');
   // State for debug mode
   const [debugMode, setDebugMode] = useState(false);
   // State for pagination
   const [pageSize, setPageSize] = useState(50);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [, setCurrentPage] = useState(1);
 
   // Use visualization store for persistent chart state
   const { currentVisualization, setVisualization } = useVisualizationStore();
@@ -81,6 +73,8 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
       fullResult: result
     });
   }, [result]);
+
+  // Conditional returns after all hooks
   if (!result.success) {
     const isValidationError = (result.error && typeof result.error === 'string' && result.error.includes('validation'));
 
@@ -320,10 +314,6 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
       </Card>
     );
   }
-
-  const [searchText, setSearchText] = useState('');
-  const [sortedInfo, setSortedInfo] = useState<any>({});
-  const [filteredInfo, setFilteredInfo] = useState<any>({});
 
   const columns = result.result?.metadata.columns.map(col => ({
     title: col.name,

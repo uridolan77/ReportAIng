@@ -30,25 +30,24 @@ public static class HangfireConfiguration
             options.Queues = new[] { "critical", "default", "low" };
         });
 
-        // Register job services
-        services.AddScoped<ISchemaRefreshJob, SchemaRefreshJob>();
-        services.AddScoped<ICleanupJob, CleanupJob>();
+        // Register unified background job management service
+        services.AddScoped<BackgroundJobManagementService>();
     }
 
     public static void ConfigureRecurringJobs(this IApplicationBuilder app)
     {
         var recurringJobManager = app.ApplicationServices.GetRequiredService<IRecurringJobManager>();
 
-        // Schema refresh - daily at 2 AM
-        recurringJobManager.AddOrUpdate<ISchemaRefreshJob>(
+        // Schema refresh - hourly using unified service
+        recurringJobManager.AddOrUpdate<BackgroundJobManagementService>(
             "schema-refresh",
-            job => job.RefreshAllSchemas(),
-            Cron.Daily(2));
+            service => service.RefreshAllSchemasAsync(),
+            Cron.Hourly());
 
-        // Cleanup job - daily at 4 AM
-        recurringJobManager.AddOrUpdate<ICleanupJob>(
-            "cleanup",
-            job => job.PerformCleanup(),
-            Cron.Daily(4));
+        // System cleanup - daily at 2 AM using unified service
+        recurringJobManager.AddOrUpdate<BackgroundJobManagementService>(
+            "system-cleanup",
+            service => service.PerformSystemCleanupAsync(),
+            Cron.Daily(2));
     }
 }

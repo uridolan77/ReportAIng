@@ -17,16 +17,13 @@ import {
   Form,
   Input,
   Select,
-  Switch,
   Divider,
   Row,
   Col,
   Statistic,
-  Progress,
 } from 'antd';
 import {
   KeyOutlined,
-  LockOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   EyeOutlined,
@@ -35,9 +32,8 @@ import {
   SecurityScanOutlined,
 } from '@ant-design/icons';
 import { requestSigning, SignedRequest } from '../../services/requestSigning';
-import { secureApiClient } from '../../services/secureApiClient';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 interface DemoRequest {

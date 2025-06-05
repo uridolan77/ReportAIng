@@ -10,7 +10,7 @@ namespace BIReportingCopilot.Infrastructure.Services;
 /// Unified notification management service consolidating email, SMS, and real-time notifications
 /// Replaces EmailService, SmsService, and Hub notification functionality
 /// </summary>
-public class NotificationManagementService
+public class NotificationManagementService : IEmailService, ISmsService
 {
     private readonly ILogger<NotificationManagementService> _logger;
     private readonly UnifiedConfigurationService _configurationService;
@@ -28,7 +28,23 @@ public class NotificationManagementService
         _notificationConfig = configurationService.GetNotificationSettings();
     }
 
-    #region Email Notifications
+    #region Email Notifications (IEmailService Implementation)
+
+    /// <summary>
+    /// Send email asynchronously (IEmailService interface)
+    /// </summary>
+    public async Task<bool> SendAsync(string to, string subject, string body)
+    {
+        return await SendEmailAsync(to, subject, body);
+    }
+
+    /// <summary>
+    /// Send email to multiple recipients (IEmailService interface)
+    /// </summary>
+    public async Task<bool> SendAsync(string[] to, string subject, string body)
+    {
+        return await SendEmailAsync(to, subject, body);
+    }
 
     /// <summary>
     /// Send email notification to single recipient
@@ -117,7 +133,31 @@ public class NotificationManagementService
 
     #endregion
 
-    #region SMS Notifications
+    #region SMS Notifications (ISmsService Implementation)
+
+    /// <summary>
+    /// Send SMS asynchronously (ISmsService interface)
+    /// </summary>
+    async Task<bool> ISmsService.SendAsync(string phoneNumber, string message)
+    {
+        return await SendSmsAsync(phoneNumber, message);
+    }
+
+    /// <summary>
+    /// Test SMS delivery (ISmsService interface)
+    /// </summary>
+    public async Task<bool> TestDeliveryAsync(string phoneNumber)
+    {
+        return await TestSmsDeliveryAsync(phoneNumber);
+    }
+
+    /// <summary>
+    /// Send SMS asynchronously (ISmsService interface)
+    /// </summary>
+    async Task<bool> ISmsService.SendSmsAsync(string phoneNumber, string message)
+    {
+        return await SendSmsAsync(phoneNumber, message);
+    }
 
     /// <summary>
     /// Send SMS notification

@@ -6,17 +6,14 @@
 import React, { useState, useEffect } from 'react';
 import {
   Typography,
-  Space,
   Button,
   Row,
   Col,
-  Empty,
   Tag
 } from 'antd';
 import {
   HistoryOutlined,
   BookOutlined,
-  ThunderboltOutlined,
   RocketOutlined
 } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
@@ -27,7 +24,7 @@ import { OnboardingTour } from '../Onboarding/OnboardingTour';
 import { ProactiveSuggestions } from './ProactiveSuggestions';
 import { GuidedQueryWizard } from './GuidedQueryWizard';
 import { ErrorRecoveryPanel, QueryValidator } from './EnhancedErrorHandling';
-import { AIProcessingFeedback, useAIProcessingFeedback, createProcessingStepFromError } from './AIProcessingFeedback';
+import { useAIProcessingFeedback } from './AIProcessingFeedback';
 import { QueryProcessingViewer } from './QueryProcessingViewer';
 import { AccessibilityFeatures } from './AccessibilityFeatures';
 import './animations.css';
@@ -58,7 +55,7 @@ export const MinimalQueryInterface: React.FC = () => {
   const [isFirstVisit, setIsFirstVisit] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [showProactiveSuggestions, setShowProactiveSuggestions] = useState(true);
-  const [queryError, setQueryError] = useState<any>(null);
+
   const [validationResult, setValidationResult] = useState<any>(null);
 
   // AI Processing feedback
