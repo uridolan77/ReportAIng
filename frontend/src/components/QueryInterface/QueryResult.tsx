@@ -1,24 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Space, Tag, Button, Tabs, Row, Col } from 'antd';
+import { Card, Typography, Space, Tag, Button } from 'antd';
 import {
   ReloadOutlined,
   CodeOutlined,
   DownloadOutlined,
   TableOutlined,
-  BugOutlined,
-  BarChartOutlined,
-  SettingOutlined
+  BugOutlined
 } from '@ant-design/icons';
-import VisualizationRecommendations from '../Visualization/VisualizationRecommendations';
-import AdvancedChart from '../Visualization/AdvancedChart';
-import ChartConfigurationPanel from '../Visualization/ChartConfigurationPanel';
 import DataTable from '../DataTable';
 import { QueryResponse } from '../../types/query';
-import { VisualizationRecommendation } from '../../types/visualization';
-import { useVisualizationStore } from '../../stores/visualizationStore';
 
 const { Title, Text, Paragraph } = Typography;
-const { TabPane } = Tabs;
 
 interface QueryResultProps {
   result: QueryResponse;
@@ -30,28 +22,13 @@ interface QueryResultProps {
 
 export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick, onVisualizationRequest }) => {
   // All hooks must be called at the top level before any conditional returns
-  // State for active tab
-  const [activeTab, setActiveTab] = useState('data');
   // State for debug mode
   const [debugMode, setDebugMode] = useState(false);
   // State for pagination
   const [pageSize, setPageSize] = useState(50);
   const [, setCurrentPage] = useState(1);
-
-  // Use visualization store for persistent chart state
-  const { currentVisualization, setVisualization } = useVisualizationStore();
-  const [selectedRecommendation, setSelectedRecommendation] = useState<VisualizationRecommendation | null>(null);
-
-  // Create a unique key for this query result to associate with chart
-  const resultKey = `${query}-${result?.queryId || 'unknown'}`;
-
-  // Load chart config for this specific query on mount
-  useEffect(() => {
-    const savedChartKey = localStorage.getItem('current-chart-key');
-    if (savedChartKey === resultKey && currentVisualization) {
-      console.log('Restored chart configuration for query:', resultKey);
-    }
-  }, [resultKey, currentVisualization]);
+  // State for Query Generation section (collapsed by default)
+  const [isQueryGenerationCollapsed, setIsQueryGenerationCollapsed] = useState(true);
 
   // Debug logging for prompt details and error handling
   React.useEffect(() => {
@@ -387,36 +364,52 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      {/* Enhanced Query Info */}
+      {/* Enhanced Query Generation Info - Collapsible */}
       <Card className="enhanced-card" size="small">
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '12px'
-          }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+          cursor: 'pointer',
+          padding: '8px 0'
+        }}
+        onClick={() => setIsQueryGenerationCollapsed(!isQueryGenerationCollapsed)}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Title level={5} style={{ margin: 0, color: '#667eea' }}>
-              Query Results
+              🤖 Query Generation
             </Title>
-            <Space wrap>
-              <Tag
-                color={result.confidence > 0.8 ? 'green' : result.confidence > 0.6 ? 'orange' : 'red'}
-                style={{ borderRadius: '6px', fontWeight: 500 }}
-              >
-                Confidence: {(result.confidence * 100).toFixed(0)}%
-              </Tag>
-              <Tag color="blue" style={{ borderRadius: '6px', fontWeight: 500 }}>
-                {result.executionTimeMs}ms
-              </Tag>
-              {result.cached && (
-                <Tag color="purple" style={{ borderRadius: '6px', fontWeight: 500 }}>
-                  Cached
-                </Tag>
-              )}
-            </Space>
+            <div style={{
+              transform: isQueryGenerationCollapsed ? 'rotate(0deg)' : 'rotate(90deg)',
+              transition: 'transform 0.3s ease',
+              color: '#6b7280',
+              fontSize: '12px'
+            }}>
+              ▶
+            </div>
           </div>
+          <Space wrap>
+            <Tag
+              color={result.confidence > 0.8 ? 'green' : result.confidence > 0.6 ? 'orange' : 'red'}
+              style={{ borderRadius: '6px', fontWeight: 500 }}
+            >
+              Confidence: {(result.confidence * 100).toFixed(0)}%
+            </Tag>
+            <Tag color="blue" style={{ borderRadius: '6px', fontWeight: 500 }}>
+              {result.executionTimeMs}ms
+            </Tag>
+            {result.cached && (
+              <Tag color="purple" style={{ borderRadius: '6px', fontWeight: 500 }}>
+                Cached
+              </Tag>
+            )}
+          </Space>
+        </div>
+
+        {!isQueryGenerationCollapsed && (
+        <Space direction="vertical" style={{ width: '100%', marginTop: '16px' }}>
 
           <div style={{
             background: 'linear-gradient(135deg, #f8f9ff 0%, #e8f4fd 100%)',
@@ -641,25 +634,17 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
             </details>
           )}
         </Space>
+        )}
       </Card>
 
-      {/* Results & Charts Tabs */}
+      {/* Data Results */}
       <Card className="enhanced-card">
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          size="large"
-          style={{ minHeight: '500px' }}
-        >
-          <TabPane
-            tab={
-              <Space>
-                <TableOutlined />
-                Data Results ({dataSource.length} rows)
-              </Space>
-            }
-            key="data"
-          >
+        <div style={{ marginBottom: '16px' }}>
+          <Space>
+            <TableOutlined />
+            <span style={{ fontWeight: 600, fontSize: '16px' }}>Data Results ({dataSource.length} rows)</span>
+          </Space>
+        </div>
             <div style={{ marginBottom: '16px', textAlign: 'right' }}>
               <Space>
                 <Button
@@ -800,112 +785,6 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
                 </div>
               </div>
             )}
-          </TabPane>
-
-          {/* Charts & Visualizations Tab */}
-          <TabPane
-            tab={
-              <Space>
-                <BarChartOutlined />
-                Charts & Visualizations
-              </Space>
-            }
-            key="charts"
-          >
-            <Row gutter={[24, 24]}>
-              {/* Chart Configuration Panel */}
-              <Col span={24}>
-                <Card
-                  title={
-                    <Space>
-                      <SettingOutlined />
-                      <span>Chart Configuration</span>
-                    </Space>
-                  }
-                  size="small"
-                  style={{ marginBottom: 16 }}
-                >
-                  <ChartConfigurationPanel
-                    data={dataSource}
-                    columns={result.result?.metadata.columns || []}
-                    currentConfig={currentVisualization}
-                    onConfigChange={(config) => {
-                      setVisualization(config);
-                      localStorage.setItem('current-chart-key', resultKey);
-                    }}
-                  />
-                </Card>
-              </Col>
-
-              {/* Chart Display Area */}
-              {currentVisualization && (
-                <Col span={24}>
-                  <Card
-                    title={
-                      <Space>
-                        <BarChartOutlined />
-                        <span>{currentVisualization.title}</span>
-                        {selectedRecommendation && (
-                          <Tag color="blue">
-                            {selectedRecommendation.chartType} - {(selectedRecommendation.confidence * 100).toFixed(0)}% confidence
-                          </Tag>
-                        )}
-                      </Space>
-                    }
-                    extra={
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          setVisualization(null);
-                          setSelectedRecommendation(null);
-                          localStorage.removeItem('current-chart-key');
-                        }}
-                      >
-                        Clear Chart
-                      </Button>
-                    }
-                  >
-                    <AdvancedChart
-                      data={dataSource}
-                      config={currentVisualization}
-                      onConfigChange={(config) => {
-                        setVisualization(config);
-                        localStorage.setItem('current-chart-key', resultKey);
-                      }}
-                      onExport={(format) => {
-                        console.log('Export requested:', format);
-                      }}
-                    />
-                  </Card>
-                </Col>
-              )}
-
-              {/* Recommendations */}
-              <Col span={24}>
-                <VisualizationRecommendations
-                  data={dataSource}
-                  columns={result.result?.metadata.columns || []}
-                  query={query}
-                  onRecommendationSelect={(recommendation) => {
-                    console.log('Recommendation selected:', recommendation);
-                    setSelectedRecommendation(recommendation);
-                  }}
-                  onConfigGenerated={(config) => {
-                    console.log('Config generated:', config);
-                    setVisualization(config);
-                    // Store the association between this query and the chart
-                    localStorage.setItem('current-chart-key', resultKey);
-                    // Handle visualization selection
-                    if (onVisualizationRequest) {
-                      onVisualizationRequest(config.type, dataSource, result.result?.metadata.columns || []);
-                    }
-                  }}
-                />
-              </Col>
-            </Row>
-          </TabPane>
-
-        </Tabs>
       </Card>
 
 

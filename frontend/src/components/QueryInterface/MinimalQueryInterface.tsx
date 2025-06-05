@@ -17,12 +17,7 @@ import {
 import {
   HistoryOutlined,
   BookOutlined,
-  RocketOutlined,
-  DownOutlined,
-  UpOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  BarChartOutlined
+  RocketOutlined
 } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
 import { useQueryContext } from './QueryProvider';
@@ -65,7 +60,6 @@ export const MinimalQueryInterface: React.FC = () => {
   const [isFirstVisit, setIsFirstVisit] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [showProactiveSuggestions, setShowProactiveSuggestions] = useState(true);
-  const [isResultsCollapsed, setIsResultsCollapsed] = useState(true); // Results panel closed by default
 
   const [validationResult, setValidationResult] = useState<any>(null);
 
@@ -237,17 +231,22 @@ export const MinimalQueryInterface: React.FC = () => {
           </div>
         ) : currentResult && (
           <div style={{ marginTop: '16px' }}>
-
             <QueryProcessingViewer
               stages={processingStages}
               isProcessing={false}
               currentStage={currentProcessingStage}
               queryId={currentQueryId}
               isVisible={true}
-              mode="hidden"
+              mode={processingViewMode === 'hidden' ? 'hidden' : processingViewMode}
               onModeChange={(newMode) => {
                 console.log('🔍 MinimalQueryInterface: Mode change requested from', processingViewMode, 'to', newMode);
+                console.log('🔍 Available processing stages:', processingStages.length, processingStages.map(s => s.stage));
                 setProcessingViewMode(newMode);
+
+                // If expanding to show details, ensure we show processing details
+                if (newMode !== 'hidden') {
+                  setShowProcessingDetails(true);
+                }
               }}
               onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
             />
@@ -273,87 +272,10 @@ export const MinimalQueryInterface: React.FC = () => {
         )}
       </div>
 
-      {/* Results Section - Collapsible */}
+      {/* Results Section - Direct Content */}
       {currentResult && (
         <div style={{ marginBottom: '32px' }}>
-          <Card
-            style={{
-              borderRadius: '16px',
-              border: '2px solid #f1f5f9',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-            }}
-          >
-            {/* Results Header - Always Visible */}
-            <div
-              onClick={() => setIsResultsCollapsed(!isResultsCollapsed)}
-              style={{
-                cursor: 'pointer',
-                padding: '16px 24px',
-                borderBottom: isResultsCollapsed ? 'none' : '1px solid #f1f5f9',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                background: isResultsCollapsed ? 'transparent' : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                borderRadius: isResultsCollapsed ? '16px' : '16px 16px 0 0',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              <Space>
-                <BarChartOutlined style={{ fontSize: '20px', color: '#3b82f6' }} />
-                <Text strong style={{ fontSize: '16px', color: '#1f2937' }}>
-                  Query Results
-                </Text>
-                {currentResult.success && (
-                  <CheckCircleOutlined style={{ color: '#10b981', fontSize: '16px' }} />
-                )}
-              </Space>
-
-              <Space>
-                {/* Key Metrics - Always Visible */}
-                <Tag
-                  color={currentResult.confidence > 0.8 ? 'green' : currentResult.confidence > 0.6 ? 'orange' : 'red'}
-                  style={{ borderRadius: '6px', fontWeight: 500 }}
-                >
-                  {(currentResult.confidence * 100).toFixed(0)}%
-                </Tag>
-                <Tag color="blue" style={{ borderRadius: '6px', fontWeight: 500 }}>
-                  <ClockCircleOutlined style={{ marginRight: '4px' }} />
-                  {currentResult.executionTimeMs}ms
-                </Tag>
-                {currentResult.cached && (
-                  <Tag color="purple" style={{ borderRadius: '6px', fontWeight: 500 }}>
-                    Cached
-                  </Tag>
-                )}
-                {currentResult.result?.data && (
-                  <Tag color="cyan" style={{ borderRadius: '6px', fontWeight: 500 }}>
-                    {currentResult.result.data.length} rows
-                  </Tag>
-                )}
-
-                {/* Expand/Collapse Icon */}
-                {isResultsCollapsed ? (
-                  <DownOutlined style={{ color: '#6b7280', fontSize: '14px' }} />
-                ) : (
-                  <UpOutlined style={{ color: '#6b7280', fontSize: '14px' }} />
-                )}
-              </Space>
-            </div>
-
-            {/* Collapsible Content */}
-            {!isResultsCollapsed && (
-              <div
-                data-testid="results-area"
-                tabIndex={0}
-                style={{
-                  padding: '24px',
-                  background: '#ffffff'
-                }}
-              >
-                <QueryTabs />
-              </div>
-            )}
-          </Card>
+          <QueryTabs />
         </div>
       )}
 

@@ -536,6 +536,8 @@ public class PromptService : IPromptService
         {
             "tbl_daily_actions" => "Main statistics table holding all player statistics aggregated by player by day. Core table for daily reporting and player activity analysis.",
             "tbl_daily_actions_players" => "Player master data table containing all player information, demographics, and account details.",
+            "tbl_daily_actions_games" => "Game-specific daily statistics table holding gaming metrics by player by game by day. Contains RealBetAmount, RealWinAmount, BonusBetAmount, BonusWinAmount, NetGamingRevenue, and session counts.",
+            "games" => "Games master table containing game metadata including GameName, Provider, SubProvider, GameType. Join with tbl_Daily_actions_games using GameID - 1000000.",
             "tbl_bonus_balances" => "Tracks bonus amounts and balances for players, linked to daily actions that trigger bonus calculations.",
             "whitelabels" => "Metadata table defining different casino brands/operators within the platform.",
             "countries" => "Reference table for country codes, names, and geographical information for player segmentation.",
@@ -610,9 +612,24 @@ public class PromptService : IPromptService
         var query = naturalLanguageQuery.ToLower();
         var rules = new List<string>();
 
+        // Game-specific business rules
+        if (IsGameRelatedQuery(query))
+        {
+            rules.Add("CRITICAL: For game analytics, use tbl_Daily_actions_games as the primary table");
+            rules.Add("CRITICAL: ALWAYS join with Games table using: INNER JOIN dbo.Games g WITH (NOLOCK) ON g.GameID = dag.GameID - 1000000");
+            rules.Add("CRITICAL: NEVER show GameID numbers - ALWAYS show GameName from Games table");
+            rules.Add("Games table contains: GameName, Provider, SubProvider, GameType - use these for readable results");
+            rules.Add("Gaming metrics: RealBetAmount, RealWinAmount, BonusBetAmount, BonusWinAmount, NetGamingRevenue");
+            rules.Add("Count metrics: NumberofRealBets, NumberofBonusBets, NumberofSessions, NumberofRealWins, NumberofBonusWins");
+            rules.Add("For game analysis: SELECT g.GameName, g.Provider, g.GameType and GROUP BY these fields");
+            rules.Add("Use SUM() for all gaming amount and count metrics");
+            rules.Add("NetGamingRevenue = total bets - total wins (house edge calculation)");
+            rules.Add("MANDATORY: Include Games table join for any query mentioning 'games', 'top games', or 'game performance'");
+        }
+
         if (query.Contains("today"))
         {
-            rules.Add("For 'today': Use WHERE Date = CAST(GETDATE() AS DATE)");
+            rules.Add("For 'today': Use WHERE Date = CAST(GETDATE() AS DATE) or WHERE GameDate = CAST(GETDATE() AS DATE)");
             rules.Add("Focus on tbl_Daily_actions as the primary source for today's data");
         }
 
@@ -636,7 +653,7 @@ public class PromptService : IPromptService
             {
                 rules.Add("For 'last 3 days': Use WHERE Date >= DATEADD(day, -3, CAST(GETDATE() AS DATE))");
             }
-            rules.Add("Always use Date column from tbl_Daily_actions for date filtering");
+            rules.Add("Always use Date column from tbl_Daily_actions or GameDate from tbl_Daily_actions_games for date filtering");
         }
 
         if (query.Contains("deposit"))
@@ -695,6 +712,26 @@ public class PromptService : IPromptService
         return string.Join("\n- ", rules);
     }
 
+    /// <summary>
+    /// Determines if a query is related to games/gaming analytics
+    /// </summary>
+    private bool IsGameRelatedQuery(string lowerQuery)
+    {
+        var gameKeywords = new[]
+        {
+            "game", "games", "gaming", "provider", "providers", "slot", "slots", "casino",
+            "netent", "microgaming", "pragmatic", "evolution", "playtech", "yggdrasil",
+            "gametype", "game type", "rtp", "volatility", "jackpot", "progressive",
+            "table games", "live casino", "sports betting", "virtual", "scratch",
+            "gamename", "game name", "gameshow", "game show", "bingo", "keno",
+            "realbetamount", "realwinamount", "bonusbetamount", "bonuswinamount",
+            "netgamingrevenue", "numberofrealbets", "numberofbonusbets",
+            "numberofrealwins", "numberofbonuswins", "numberofsessions"
+        };
+
+        return gameKeywords.Any(keyword => lowerQuery.Contains(keyword));
+    }
+
     private int EstimateTokenCount(string text)
     {
         // Simple token estimation: roughly 4 characters per token
@@ -705,6 +742,48 @@ public class PromptService : IPromptService
     {
         var query = naturalLanguageQuery.ToLower();
         var examples = new List<string>();
+
+        // Game-specific examples
+        if (IsGameRelatedQuery(query))
+        {
+            examples.Add(@"
+EXAMPLE: 'game performance by provider'
+SQL: SELECT g.Provider, g.SubProvider, g.GameType,
+            SUM(dag.RealBetAmount) AS RealBetAmount,
+            SUM(dag.RealWinAmount) AS RealWinAmount,
+            SUM(dag.NetGamingRevenue) AS NetGamingRevenue,
+            SUM(dag.NumberofRealBets) AS NumberofRealBets
+     FROM [DailyActionsDB].[common].[tbl_Daily_actions_games] dag WITH (NOLOCK)
+     INNER JOIN dbo.Games g WITH (NOLOCK) ON g.GameID = dag.GameID - 1000000
+     WHERE dag.GameDate >= '2025-01-01'
+     GROUP BY g.Provider, g.SubProvider, g.GameType
+     ORDER BY NetGamingRevenue DESC");
+
+            examples.Add(@"
+EXAMPLE: 'top games by revenue'
+SQL: SELECT TOP 10 g.GameName, g.Provider, g.GameType,
+            SUM(dag.RealBetAmount) AS TotalBets,
+            SUM(dag.RealWinAmount) AS TotalWins,
+            SUM(dag.NetGamingRevenue) AS NetRevenue
+     FROM [DailyActionsDB].[common].[tbl_Daily_actions_games] dag WITH (NOLOCK)
+     INNER JOIN dbo.Games g WITH (NOLOCK) ON g.GameID = dag.GameID - 1000000
+     WHERE dag.GameDate >= DATEADD(day, -7, CAST(GETDATE() AS DATE))
+     GROUP BY g.GameName, g.Provider, g.GameType
+     ORDER BY NetRevenue DESC");
+
+            examples.Add(@"
+EXAMPLE: 'top 10 games by revenue this month'
+SQL: SELECT TOP 10 g.GameName, g.Provider, g.GameType,
+            SUM(dag.NetGamingRevenue) AS TotalRevenue,
+            SUM(dag.RealBetAmount) AS TotalBets,
+            SUM(dag.NumberofSessions) AS TotalSessions
+     FROM [DailyActionsDB].[common].[tbl_Daily_actions_games] dag WITH (NOLOCK)
+     INNER JOIN dbo.Games g WITH (NOLOCK) ON g.GameID = dag.GameID - 1000000
+     WHERE dag.GameDate >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0)
+       AND dag.GameDate < DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) + 1, 0)
+     GROUP BY g.GameName, g.Provider, g.GameType
+     ORDER BY TotalRevenue DESC");
+        }
 
         if (query.Contains("total") && query.Contains("today"))
         {
@@ -869,15 +948,19 @@ TECHNICAL RULES:
 1. Only use SELECT statements - never INSERT, UPDATE, DELETE
 2. Use proper table and column names exactly as shown in schema
 3. CRITICAL: For deposits, ALWAYS use 'Deposits' column, NEVER 'Amount'
-4. Include appropriate WHERE clauses for filtering
-5. Use JOINs when querying multiple tables based on foreign key relationships
-6. Add meaningful column aliases (e.g., SUM(Deposits) AS TotalDeposits)
-7. Add ORDER BY for logical sorting (usually by date DESC or amount DESC)
-8. Use SELECT TOP 100 at the beginning to limit results (NEVER put TOP at the end)
-9. Return only the SQL query without explanations or markdown formatting
-10. Ensure all referenced columns exist in the schema
-11. Always add WITH (NOLOCK) hint to all table references for better read performance
-12. Format table hints as: FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints
+4. CRITICAL: For game analytics, use tbl_Daily_actions_games and ALWAYS join with Games table
+5. CRITICAL: Games table join: INNER JOIN dbo.Games g WITH (NOLOCK) ON g.GameID = dag.GameID - 1000000
+6. CRITICAL: For game queries, NEVER show GameID - ALWAYS show g.GameName, g.Provider, g.GameType
+7. Include appropriate WHERE clauses for filtering (Date or GameDate)
+8. Use JOINs when querying multiple tables based on foreign key relationships
+9. Add meaningful column aliases (e.g., SUM(RealBetAmount) AS TotalBets)
+10. Add ORDER BY for logical sorting (usually by date DESC or amount DESC)
+11. Use SELECT TOP 100 at the beginning to limit results (NEVER put TOP at the end)
+12. Return only the SQL query without explanations or markdown formatting
+13. Ensure all referenced columns exist in the schema
+14. Always add WITH (NOLOCK) hint to all table references for better read performance
+15. Format table hints as: FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints
+16. For game queries: SELECT g.GameName, g.Provider, g.GameType and GROUP BY these fields for readable results
 
 CORRECT SQL STRUCTURE:
 SELECT TOP 100 column1, column2, column3

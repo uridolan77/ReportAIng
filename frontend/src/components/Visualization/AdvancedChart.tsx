@@ -19,6 +19,7 @@ import {
   Brush
 } from 'recharts';
 import { AdvancedVisualizationConfig, ChartPerformanceMetrics } from '../../types/visualization';
+import { useGamingChartProcessor, processGamingChartData, GAMING_COLOR_SCHEMES } from './GamingChartProcessor';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -75,13 +76,28 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
     });
   }, [config.chartType, config.xAxis, config.yAxis]); // Only sync on major config changes, not on every config update
 
-  // Memoized chart data with performance optimizations
+  // Gaming data processing
+  const gamingData = useGamingChartProcessor(data, data.length > 0 ? Object.keys(data[0]) : []);
+  const processedGamingData = useMemo(() => processGamingChartData(gamingData), [gamingData]);
+
+  // Memoized chart data with performance optimizations and gaming enhancements
   const chartData = useMemo(() => {
     let processedData = [...data];
 
+    // Apply gaming-specific processing if detected
+    if (processedGamingData.chartData.length > 0) {
+      processedData = processedGamingData.chartData;
+      console.log('AdvancedChart - Using gaming-processed data:', {
+        originalLength: data.length,
+        processedLength: processedData.length,
+        isGamingData: gamingData.isGamingData,
+        recommendations: processedGamingData.recommendations.length
+      });
+    }
+
     // Validate that the data has the expected keys
-    if (data.length > 0) {
-      const firstRow = data[0];
+    if (processedData.length > 0) {
+      const firstRow = processedData[0];
       const hasXAxis = config.xAxis && firstRow.hasOwnProperty(config.xAxis);
       const hasYAxis = config.yAxis && firstRow.hasOwnProperty(config.yAxis);
 
@@ -89,7 +105,8 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
         console.warn('AdvancedChart - Missing required data keys!', {
           expectedXAxis: config.xAxis,
           expectedYAxis: config.yAxis,
-          actualKeys: Object.keys(firstRow)
+          actualKeys: Object.keys(firstRow),
+          isGamingData: gamingData.isGamingData
         });
       }
     }
@@ -110,12 +127,24 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
     return processedData;
   }, [data, config]);
 
-  // Color palette based on theme
+  // Color palette based on theme with gaming-specific enhancements
   const colorPalette = useMemo(() => {
+    // Use gaming-specific colors if this is gaming data
+    if (gamingData.isGamingData) {
+      // Determine which gaming color scheme to use based on X-axis
+      if (config.xAxis === 'Provider') {
+        return GAMING_COLOR_SCHEMES.provider;
+      } else if (config.xAxis === 'GameType') {
+        return GAMING_COLOR_SCHEMES.gameType;
+      } else {
+        return GAMING_COLOR_SCHEMES.gaming;
+      }
+    }
+
     return config.theme?.colors?.primary || [
       '#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2'
     ];
-  }, [config.theme]);
+  }, [config.theme, gamingData.isGamingData, config.xAxis]);
 
   const handleSettingChange = useCallback((key: string, value: any) => {
     setChartSettings(prev => ({ ...prev, [key]: value }));
@@ -655,36 +684,55 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
 
   return (
     <div className={`advanced-chart ${isFullscreen ? 'fullscreen' : ''}`}>
-      <Card
-        title={
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Title level={4} style={{ margin: 0 }}>{config.title}</Title>
-            <Space>
-              <Tooltip title="Chart Settings">
-                <Button
-                  icon={<SettingOutlined />}
-                  size="small"
-                  onClick={() => setShowSettings(!showSettings)}
-                />
-              </Tooltip>
-              <Tooltip title="Fullscreen">
-                <Button
-                  icon={<FullscreenOutlined />}
-                  size="small"
-                  onClick={() => setIsFullscreen(!isFullscreen)}
-                />
-              </Tooltip>
-              <Tooltip title="Export">
-                <Button
-                  icon={<DownloadOutlined />}
-                  size="small"
-                  onClick={() => onExport?.('png')}
-                />
-              </Tooltip>
-            </Space>
-          </div>
-        }
-        loading={loading}
+      {/* Chart Controls Bar */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+        padding: '8px 12px',
+        background: '#f8fafc',
+        borderRadius: '8px',
+        border: '1px solid #e5e7eb'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {chartData.length} data points
+            {performanceMetrics && (
+              <> • {performanceMetrics.renderTime}ms</>
+            )}
+          </Text>
+        </div>
+        <Space>
+          <Tooltip title="Chart Settings">
+            <Button
+              icon={<SettingOutlined />}
+              size="small"
+              onClick={() => setShowSettings(!showSettings)}
+              type={showSettings ? 'primary' : 'default'}
+              style={{ borderRadius: '6px' }}
+            />
+          </Tooltip>
+          <Tooltip title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+            <Button
+              icon={<FullscreenOutlined />}
+              size="small"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              style={{ borderRadius: '6px' }}
+            />
+          </Tooltip>
+          <Tooltip title="Export Chart">
+            <Button
+              icon={<DownloadOutlined />}
+              size="small"
+              onClick={() => onExport?.('png')}
+              style={{ borderRadius: '6px' }}
+            />
+          </Tooltip>
+        </Space>
+      </div>
+
+      <div
         style={{
           height: isFullscreen ? '100vh' : 'auto',
           position: isFullscreen ? 'fixed' : 'relative',
@@ -692,7 +740,10 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
           left: isFullscreen ? 0 : 'auto',
           right: isFullscreen ? 0 : 'auto',
           bottom: isFullscreen ? 0 : 'auto',
-          zIndex: isFullscreen ? 1000 : 'auto'
+          zIndex: isFullscreen ? 1000 : 'auto',
+          background: 'white',
+          borderRadius: isFullscreen ? 0 : '8px',
+          padding: isFullscreen ? '20px' : '0'
         }}
       >
         {showSettings && renderSettings()}
@@ -716,44 +767,100 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
 
         {/* Selected Data Points */}
         {selectedDataPoints.length > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <Text strong>Selected: </Text>
-            <Text>{selectedDataPoints.map(p => p.name).join(', ')}</Text>
+          <div style={{ marginTop: 16, padding: '12px', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+            <Text strong style={{ color: '#0369a1' }}>Selected Data Points: </Text>
+            <Text style={{ color: '#0c4a6e' }}>{selectedDataPoints.map(p => p.name).join(', ')}</Text>
             <Button
               size="small"
               onClick={() => setSelectedDataPoints([])}
-              style={{ marginLeft: 8 }}
+              style={{ marginLeft: 8, borderRadius: '6px' }}
             >
-              Clear
+              Clear Selection
             </Button>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 };
 
-// Custom tooltip component
+// Enhanced custom tooltip component with gaming-specific formatting
 const CustomTooltip = ({ active, payload, label, config }: any) => {
   if (active && payload && payload.length) {
+    const formatValue = (value: any, name: string) => {
+      if (typeof value === 'number') {
+        // Gaming-specific formatting
+        if (name.includes('Revenue') || name.includes('Amount')) {
+          return `$${value.toLocaleString()}`;
+        } else if (name.includes('Sessions') || name.includes('Bets') || name.includes('Number')) {
+          return value.toLocaleString();
+        } else if (value > 1000) {
+          return `${(value / 1000).toFixed(1)}K`;
+        }
+        return value.toLocaleString();
+      }
+      return value;
+    };
+
     return (
       <div style={{
         backgroundColor: 'white',
-        padding: '8px',
-        border: '1px solid #ccc',
-        borderRadius: '4px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        padding: '12px',
+        border: '1px solid #d1d5db',
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        minWidth: '200px'
       }}>
-        <p style={{ margin: 0, fontWeight: 'bold' }}>{`${label}`}</p>
+        <p style={{
+          margin: '0 0 8px 0',
+          fontWeight: 'bold',
+          fontSize: '14px',
+          color: '#1f2937',
+          borderBottom: '1px solid #e5e7eb',
+          paddingBottom: '4px'
+        }}>
+          {`${label}`}
+        </p>
         {payload.map((entry: any, index: number) => (
-          <p key={index} style={{ margin: 0, color: entry.color }}>
-            {`${entry.name}: ${entry.value}`}
+          <p key={index} style={{
+            margin: '4px 0',
+            color: entry.color,
+            fontSize: '13px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span style={{ fontWeight: 500 }}>{entry.name}:</span>
+            <span style={{ fontWeight: 600, marginLeft: '8px' }}>
+              {formatValue(entry.value, entry.name)}
+            </span>
           </p>
         ))}
         {config?.showStatistics && payload.length > 1 && (
-          <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>
-            <p style={{ margin: 0 }}>
-              Avg: {(payload.reduce((sum: number, p: any) => sum + p.value, 0) / payload.length).toFixed(2)}
+          <div style={{
+            marginTop: '8px',
+            fontSize: '12px',
+            color: '#6b7280',
+            borderTop: '1px solid #e5e7eb',
+            paddingTop: '4px'
+          }}>
+            <p style={{ margin: 0, display: 'flex', justifyContent: 'space-between' }}>
+              <span>Average:</span>
+              <span style={{ fontWeight: 600 }}>
+                {formatValue(
+                  payload.reduce((sum: number, p: any) => sum + p.value, 0) / payload.length,
+                  'Average'
+                )}
+              </span>
+            </p>
+            <p style={{ margin: 0, display: 'flex', justifyContent: 'space-between' }}>
+              <span>Total:</span>
+              <span style={{ fontWeight: 600 }}>
+                {formatValue(
+                  payload.reduce((sum: number, p: any) => sum + p.value, 0),
+                  'Total'
+                )}
+              </span>
             </p>
           </div>
         )}

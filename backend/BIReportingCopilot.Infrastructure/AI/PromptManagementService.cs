@@ -150,7 +150,7 @@ public class PromptManagementService : IContextManager
                 var relevanceScore = CalculateTableRelevance(table, semanticAnalysis, lowerQuery);
                 _logger.LogInformation("Table {TableName} relevance score: {Score}", table.Name, relevanceScore);
 
-                if (relevanceScore > 0.5) // Higher threshold for better relevance
+                if (relevanceScore > 0.4) // Lower threshold to ensure Games table is included
                 {
                     relevantTables.Add(table);
                     _logger.LogInformation("✅ Table {TableName} INCLUDED with relevance {Score}", table.Name, relevanceScore);
@@ -175,8 +175,27 @@ public class PromptManagementService : IContextManager
                 relevantTables = GetDefaultGamingTables(fullSchema.Tables);
             }
 
-            // Limit to top 5 most relevant tables
-            schemaContext.RelevantTables = relevantTables.Take(5).ToList();
+            // For game queries, ensure both game tables are included
+            if (IsGameRelatedQuery(lowerQuery))
+            {
+                var hasGameDaily = relevantTables.Any(t => t.Name.ToLowerInvariant().Contains("daily_actions_games"));
+                var hasGamesMaster = relevantTables.Any(t => t.Name.ToLowerInvariant().Contains("games") && !t.Name.ToLowerInvariant().Contains("daily_actions"));
+
+                if (hasGameDaily && !hasGamesMaster)
+                {
+                    // Find and add Games table if missing
+                    var gamesTable = fullSchema.Tables.FirstOrDefault(t =>
+                        t.Name.ToLowerInvariant().Contains("games") && !t.Name.ToLowerInvariant().Contains("daily_actions"));
+                    if (gamesTable != null && !relevantTables.Contains(gamesTable))
+                    {
+                        relevantTables.Add(gamesTable);
+                        _logger.LogInformation("🎮 FORCED INCLUSION: Added Games table for game query");
+                    }
+                }
+            }
+
+            // Limit to top 7 most relevant tables (increased to accommodate game tables)
+            schemaContext.RelevantTables = relevantTables.Take(7).ToList();
 
             // Find relationships between relevant tables
             var tableRelationships = FindRelevantRelationships(schemaContext.RelevantTables, fullSchema);
@@ -550,7 +569,7 @@ public class PromptManagementService : IContextManager
         _logger.LogDebug("Calculating relevance for table {TableName} with query '{Query}'", table.Name, lowerQuery);
 
         // High relevance for core gaming tables
-        if (tableName.Contains("daily_actions") && !tableName.Contains("players"))
+        if (tableName.Contains("daily_actions") && !tableName.Contains("players") && !tableName.Contains("games"))
         {
             score += 0.9; // Main stats table - highest priority
             _logger.LogDebug("Table {TableName}: +0.9 for being main daily_actions table", table.Name);
@@ -560,14 +579,45 @@ public class PromptManagementService : IContextManager
             score += 0.6; // Player demographics
             _logger.LogDebug("Table {TableName}: +0.6 for being players table", table.Name);
         }
+        else if (tableName.Contains("daily_actions_games"))
+        {
+            score += 0.7; // Game-specific daily actions
+            _logger.LogDebug("Table {TableName}: +0.7 for being games daily actions table", table.Name);
+        }
+        else if (tableName.Contains("games") && !tableName.Contains("daily_actions"))
+        {
+            score += 0.5; // Games master table
+            _logger.LogDebug("Table {TableName}: +0.5 for being games master table", table.Name);
+        }
         else if (tableName.Contains("countries") || tableName.Contains("currencies") || tableName.Contains("whitelabels"))
         {
             score += 0.4; // Lookup tables
             _logger.LogDebug("Table {TableName}: +0.4 for being lookup table", table.Name);
         }
 
+        // Game-specific query relevance boosts
+        if (IsGameRelatedQuery(lowerQuery))
+        {
+            if (tableName.Contains("daily_actions_games"))
+            {
+                score += 0.9; // Highest priority for game queries
+                _logger.LogDebug("Table {TableName}: +0.9 for game query on games daily actions table", table.Name);
+            }
+            else if (tableName.Contains("games") && !tableName.Contains("daily_actions"))
+            {
+                score += 0.8; // High priority for games master table
+                _logger.LogDebug("Table {TableName}: +0.8 for game query on games master table", table.Name);
+            }
+            else if (tableName.Contains("daily_actions") && !tableName.Contains("players") && !tableName.Contains("games"))
+            {
+                score += 0.3; // Lower priority for main table in game queries
+                _logger.LogDebug("Table {TableName}: +0.3 for game query on main daily actions table", table.Name);
+            }
+        }
+
         // Query-specific relevance boosts
-        if ((lowerQuery.Contains("deposit") || lowerQuery.Contains("top") || lowerQuery.Contains("player")) && tableName.Contains("daily_actions") && !tableName.Contains("players"))
+        if ((lowerQuery.Contains("deposit") || lowerQuery.Contains("top") || lowerQuery.Contains("player")) &&
+            tableName.Contains("daily_actions") && !tableName.Contains("players") && !tableName.Contains("games"))
         {
             score += 0.8; // Major boost for deposit/player queries on main table
             _logger.LogDebug("Table {TableName}: +0.8 for deposit/player query on main table", table.Name);
@@ -606,22 +656,65 @@ public class PromptManagementService : IContextManager
             _logger.LogDebug("Table {TableName}: -0.8 penalty for bonus table in non-bonus query", table.Name);
         }
 
+        // Penalty for game tables in non-game queries
+        if (!IsGameRelatedQuery(lowerQuery) && (tableName.Contains("games") || tableName.Contains("daily_actions_games")))
+        {
+            score -= 0.5; // Penalty for game tables in non-game queries
+            _logger.LogDebug("Table {TableName}: -0.5 penalty for game table in non-game query", table.Name);
+        }
+
         var finalScore = Math.Max(0, Math.Min(1, score));
         _logger.LogDebug("Table {TableName}: Final relevance score = {Score}", table.Name, finalScore);
 
         return finalScore;
     }
 
+    /// <summary>
+    /// Determines if a query is related to games/gaming analytics
+    /// </summary>
+    private bool IsGameRelatedQuery(string lowerQuery)
+    {
+        var gameKeywords = new[]
+        {
+            "game", "games", "gaming", "provider", "providers", "slot", "slots", "casino",
+            "netent", "microgaming", "pragmatic", "evolution", "playtech", "yggdrasil",
+            "gametype", "game type", "rtp", "volatility", "jackpot", "progressive",
+            "table games", "live casino", "sports betting", "virtual", "scratch",
+            "gamename", "game name", "gameshow", "game show", "bingo", "keno",
+            "realbetamount", "realwinamount", "bonusbetamount", "bonuswinamount",
+            "netgamingrevenue", "numberofrealbets", "numberofbonusbets",
+            "numberofrealwins", "numberofbonuswins", "numberofsessions"
+        };
+
+        return gameKeywords.Any(keyword => lowerQuery.Contains(keyword));
+    }
+
     private List<TableMetadata> FindTablesByKeywords(List<TableMetadata> tables, string lowerQuery)
     {
         var relevantTables = new List<TableMetadata>();
+        var isGameQuery = IsGameRelatedQuery(lowerQuery);
 
         foreach (var table in tables)
         {
             var tableName = table.Name.ToLowerInvariant();
 
-            // Always include main daily actions table for most queries
-            if (tableName.Contains("daily_actions") && !tableName.Contains("players"))
+            // For game-related queries, prioritize game tables
+            if (isGameQuery)
+            {
+                if (tableName.Contains("daily_actions_games"))
+                {
+                    relevantTables.Add(table);
+                    continue;
+                }
+                if (tableName.Contains("games") && !tableName.Contains("daily_actions"))
+                {
+                    relevantTables.Add(table);
+                    continue;
+                }
+            }
+
+            // Always include main daily actions table for most queries (but lower priority for game queries)
+            if (tableName.Contains("daily_actions") && !tableName.Contains("players") && !tableName.Contains("games"))
             {
                 relevantTables.Add(table);
                 continue;
@@ -643,7 +736,7 @@ public class PromptManagementService : IContextManager
             }
         }
 
-        return relevantTables.Take(5).ToList();
+        return relevantTables.Take(7).ToList(); // Increased limit to accommodate game tables
     }
 
     private List<TableMetadata> GetDefaultGamingTables(List<TableMetadata> tables)
@@ -651,10 +744,26 @@ public class PromptManagementService : IContextManager
         var defaultTables = new List<TableMetadata>();
 
         // Always include the main daily actions table
-        var dailyActionsTable = tables.FirstOrDefault(t => t.Name.ToLowerInvariant().Contains("daily_actions") && !t.Name.ToLowerInvariant().Contains("players"));
+        var dailyActionsTable = tables.FirstOrDefault(t => t.Name.ToLowerInvariant().Contains("daily_actions") &&
+            !t.Name.ToLowerInvariant().Contains("players") && !t.Name.ToLowerInvariant().Contains("games"));
         if (dailyActionsTable != null)
         {
             defaultTables.Add(dailyActionsTable);
+        }
+
+        // Include game-specific daily actions table
+        var gamesTable = tables.FirstOrDefault(t => t.Name.ToLowerInvariant().Contains("daily_actions_games"));
+        if (gamesTable != null)
+        {
+            defaultTables.Add(gamesTable);
+        }
+
+        // Include games master table
+        var gamesMasterTable = tables.FirstOrDefault(t => t.Name.ToLowerInvariant().Contains("games") &&
+            !t.Name.ToLowerInvariant().Contains("daily_actions"));
+        if (gamesMasterTable != null)
+        {
+            defaultTables.Add(gamesMasterTable);
         }
 
         // Include player table for demographics

@@ -272,6 +272,9 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
               });
 
               setCurrentProcessingStage('completed');
+
+              // Set processing view mode to hidden after completion to show the collapsed panel
+              setProcessingViewMode('hidden');
               break;
             case 'query_error':
               // setIsLoading handled by React Query mutation state
@@ -394,6 +397,9 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
       setCurrentProcessingStage('completed');
       setActiveResult(result, query); // Save to active result store
       setActiveTab('result');
+
+      // Set processing view mode to hidden after completion to show the collapsed panel
+      setProcessingViewMode('hidden');
     } catch (error) {
       console.error('Query execution failed:', error);
       console.error('Error details:', {

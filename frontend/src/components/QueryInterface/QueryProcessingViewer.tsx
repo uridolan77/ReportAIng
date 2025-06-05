@@ -236,14 +236,19 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
 
   // Hidden mode - show as closed panel
   if (mode === 'hidden' || !isVisible) {
+    // Show completion status with proper data
+    const completionText = !isProcessing && stages.length > 0 ? 'Completed' : currentStateText;
+    const hasValidData = stages.length > 0;
 
     return (
       <Card
         size="small"
         style={{
           borderRadius: '8px',
-          border: '1px solid #e8f4fd',
-          background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+          border: hasValidData ? '1px solid #d1fae5' : '1px solid #e8f4fd',
+          background: hasValidData
+            ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)'
+            : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
           marginBottom: '16px',
           cursor: 'pointer',
           transition: 'all 0.3s ease'
@@ -251,11 +256,12 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('🔍 Processing panel clicked, changing mode to minimal');
+          console.log('🔍 Processing panel clicked, changing mode to processing');
           console.log('🔍 Current mode:', mode, 'onModeChange available:', !!onModeChange);
+          console.log('🔍 Available stages:', stages.length, stages.map(s => s.stage));
           if (onModeChange) {
-            onModeChange('minimal');
-            console.log('🔍 Mode change called');
+            onModeChange('processing');
+            console.log('🔍 Mode change called to processing');
           } else {
             console.error('🔍 onModeChange not available!');
           }
@@ -263,17 +269,26 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-2px)';
           e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+          e.currentTarget.style.borderColor = hasValidData ? '#10b981' : '#3b82f6';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = hasValidData ? '#d1fae5' : '#e8f4fd';
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Space>
-            <RobotOutlined style={{ color: '#6b7280', fontSize: '16px' }} />
-            <Text style={{ color: '#6b7280', fontSize: '14px', fontWeight: 500 }}>
-              AI Processing - {currentStateText}
+            <RobotOutlined style={{
+              color: hasValidData ? '#10b981' : '#6b7280',
+              fontSize: '16px'
+            }} />
+            <Text style={{
+              color: hasValidData ? '#065f46' : '#6b7280',
+              fontSize: '14px',
+              fontWeight: 500
+            }}>
+              🤖 AI Processing - {completionText}
             </Text>
             {queryId && (
               <Tag color="blue" style={{ fontSize: '10px' }}>
@@ -283,16 +298,33 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
           </Space>
 
           <Space size="small">
-            {totalStages > 0 && (
+            {hasValidData && totalStages > 0 && (
               <Tag color="green" style={{ fontSize: '10px', fontWeight: 500 }}>
                 {completedStages}/{totalStages} stages
               </Tag>
             )}
-            <Tag color="blue" style={{ fontSize: '10px', fontWeight: 500 }}>
-              {overallProgress}% complete
+            <Tag color={hasValidData ? "green" : "blue"} style={{ fontSize: '10px', fontWeight: 500 }}>
+              {hasValidData ? '100% complete' : `${overallProgress}% complete`}
             </Tag>
-            <EyeOutlined style={{ color: '#6b7280', fontSize: '12px' }} />
+            <EyeOutlined style={{
+              color: hasValidData ? '#10b981' : '#6b7280',
+              fontSize: '12px'
+            }} />
           </Space>
+        </div>
+
+        {/* Show hint text */}
+        <div style={{ marginTop: '8px' }}>
+          <Text style={{
+            fontSize: '11px',
+            color: hasValidData ? '#047857' : '#9ca3af',
+            fontStyle: 'italic'
+          }}>
+            {hasValidData
+              ? 'Click to view processing details and AI insights'
+              : 'Processing information will appear here'
+            }
+          </Text>
         </div>
       </Card>
     );
