@@ -1133,9 +1133,9 @@ public class TuningService : ITuningService
         }
     }
 
-    private async Task SendProgressUpdate(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null, int? tablesProcessed = null, int? totalTables = null, int? columnsProcessed = null, int? totalColumns = null, object? aiPrompt = null)
+    private async Task SendProgressUpdate(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null, int? tablesProcessed = null, int? totalTables = null, int? columnsProcessed = null, int? totalColumns = null, int? glossaryTermsGenerated = null, int? relationshipsFound = null, object? aiPrompt = null)
     {
-        await _progressReporter.SendProgressUpdateAsync(userId, progress, message, stage, currentTable, currentColumn, tablesProcessed, totalTables, columnsProcessed, totalColumns, aiPrompt);
+        await _progressReporter.SendProgressUpdateAsync(userId, progress, message, stage, currentTable, currentColumn, tablesProcessed, totalTables, columnsProcessed, totalColumns, glossaryTermsGenerated, relationshipsFound, aiPrompt);
     }
 
     #endregion

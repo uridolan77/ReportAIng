@@ -48,6 +48,8 @@ export const MinimalQueryInterface: React.FC = () => {
     currentProcessingStage,
     showProcessingDetails,
     setShowProcessingDetails,
+    processingViewMode,
+    setProcessingViewMode,
     currentQueryId
   } = useQueryContext();
 
@@ -345,6 +347,8 @@ export const MinimalQueryInterface: React.FC = () => {
               currentStage={currentProcessingStage}
               queryId={currentQueryId}
               isVisible={true}
+              mode={processingViewMode}
+              onModeChange={setProcessingViewMode}
               onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
             />
           </div>

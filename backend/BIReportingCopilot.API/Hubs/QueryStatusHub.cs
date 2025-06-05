@@ -5,7 +5,7 @@ using BIReportingCopilot.Core.Interfaces;
 
 namespace BIReportingCopilot.API.Hubs;
 
-// [Authorize] // Temporarily disabled for debugging
+[Authorize]
 public class QueryStatusHub : Hub, IProgressHub
 {
     private readonly ILogger<QueryStatusHub> _logger;
@@ -120,6 +120,25 @@ public class QueryStatusHub : Hub, IProgressHub
             UserAgent = Context.GetHttpContext()?.Request.Headers["User-Agent"].ToString(),
             RemoteIpAddress = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString(),
             Timestamp = DateTime.UtcNow
+        });
+    }
+
+    /// <summary>
+    /// Test connection method for debugging
+    /// </summary>
+    public async Task TestConnection()
+    {
+        var userId = GetCurrentUserId();
+        _logger.LogInformation("🔗 TestConnection called by user {UserId} with connection {ConnectionId}", userId, Context.ConnectionId);
+
+        await Clients.Caller.SendAsync("TestConnectionResponse", new
+        {
+            ConnectionId = Context.ConnectionId,
+            UserId = userId,
+            Message = "Connection test successful",
+            Timestamp = DateTime.UtcNow,
+            IsAuthenticated = Context.User?.Identity?.IsAuthenticated ?? false,
+            UserGroups = new[] { $"user_{userId}" }
         });
     }
 

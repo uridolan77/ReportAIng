@@ -29,6 +29,8 @@ public interface IProgressReporter
     /// <param name="totalTables">Total number of tables (optional)</param>
     /// <param name="columnsProcessed">Number of columns processed (optional)</param>
     /// <param name="totalColumns">Total number of columns (optional)</param>
+    /// <param name="glossaryTermsGenerated">Number of glossary terms generated (optional)</param>
+    /// <param name="relationshipsFound">Number of relationships found (optional)</param>
     /// <param name="aiPrompt">AI prompt information (optional)</param>
-    Task SendProgressUpdateAsync(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null, int? tablesProcessed = null, int? totalTables = null, int? columnsProcessed = null, int? totalColumns = null, object? aiPrompt = null);
+    Task SendProgressUpdateAsync(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null, int? tablesProcessed = null, int? totalTables = null, int? columnsProcessed = null, int? totalColumns = null, int? glossaryTermsGenerated = null, int? relationshipsFound = null, object? aiPrompt = null);
 }

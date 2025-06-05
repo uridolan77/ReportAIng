@@ -25,6 +25,8 @@ export interface ProcessingStage {
   status?: 'pending' | 'active' | 'completed' | 'error';
 }
 
+type ProcessingViewMode = 'minimal' | 'processing' | 'advanced' | 'hidden';
+
 interface QueryProcessingViewerProps {
   stages: ProcessingStage[];
   isProcessing: boolean;
@@ -32,6 +34,8 @@ interface QueryProcessingViewerProps {
   queryId?: string;
   onToggleVisibility?: () => void;
   isVisible?: boolean;
+  mode?: ProcessingViewMode;
+  onModeChange?: (mode: ProcessingViewMode) => void;
 }
 
 export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
@@ -40,7 +44,9 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
   currentStage,
   queryId,
   onToggleVisibility,
-  isVisible = true
+  isVisible = true,
+  mode = 'minimal',
+  onModeChange
 }) => {
   const [expandedPanels, setExpandedPanels] = useState<string[]>([]);
 
@@ -196,12 +202,19 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
 
   const currentProgress = stages.length > 0 ? Math.max(...stages.map(s => s.progress)) : 0;
 
-  if (!isVisible) {
+  const handleModeChange = (newMode: ProcessingViewMode) => {
+    if (onModeChange) {
+      onModeChange(newMode);
+    }
+  };
+
+  // Hidden mode
+  if (mode === 'hidden' || !isVisible) {
     return (
       <Button
         type="text"
         icon={<EyeOutlined />}
-        onClick={onToggleVisibility}
+        onClick={() => handleModeChange('minimal')}
         style={{ marginBottom: '16px' }}
       >
         Show Processing Details
@@ -209,6 +222,74 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
     );
   }
 
+  // Minimal mode - only progress bar
+  if (mode === 'minimal') {
+    return (
+      <Card
+        size="small"
+        style={{
+          borderRadius: '8px',
+          border: '1px solid #e8f4fd',
+          background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+          marginBottom: '16px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Space>
+            <RobotOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
+            <Text strong style={{ color: '#1890ff', fontSize: '14px' }}>
+              🤖 AI Processing
+            </Text>
+            {isProcessing && (
+              <Tag color="processing" style={{ fontSize: '10px' }}>
+                <LoadingOutlined style={{ marginRight: '4px' }} />
+                PROCESSING
+              </Tag>
+            )}
+          </Space>
+
+          <Space size="small">
+            <Button
+              type="text"
+              size="small"
+              onClick={() => handleModeChange('processing')}
+              style={{ fontSize: '10px', padding: '2px 6px', height: '20px' }}
+            >
+              ADVANCED
+            </Button>
+            <Button
+              type="text"
+              size="small"
+              onClick={() => handleModeChange('hidden')}
+              style={{ fontSize: '10px', padding: '2px 6px', height: '20px' }}
+            >
+              HIDE
+            </Button>
+          </Space>
+        </div>
+
+        <div style={{ marginTop: '8px' }}>
+          <Progress
+            percent={currentProgress}
+            status={isProcessing ? 'active' : 'success'}
+            strokeColor={{
+              '0%': '#1890ff',
+              '100%': '#52c41a',
+            }}
+            showInfo={false}
+            size="small"
+          />
+          {currentStage && (
+            <Text style={{ fontSize: '11px', color: '#666', marginTop: '4px', display: 'block' }}>
+              {currentStage}
+            </Text>
+          )}
+        </div>
+      </Card>
+    );
+  }
+
+  // Processing mode - current view with mode buttons
   return (
     <Card
       size="small"
@@ -227,16 +308,34 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
               PROCESSING
             </Tag>
           )}
-          {onToggleVisibility && (
-            <Button
-              type="text"
-              size="small"
-              icon={<EyeInvisibleOutlined />}
-              onClick={onToggleVisibility}
-            >
-              Hide
-            </Button>
-          )}
+        </Space>
+      }
+      extra={
+        <Space size="small">
+          <Button
+            type={mode === 'advanced' ? 'primary' : 'text'}
+            size="small"
+            onClick={() => handleModeChange('advanced')}
+            style={{ fontSize: '10px', padding: '2px 8px', height: '24px' }}
+          >
+            ADVANCED
+          </Button>
+          <Button
+            type={mode === 'processing' ? 'primary' : 'text'}
+            size="small"
+            onClick={() => handleModeChange('processing')}
+            style={{ fontSize: '10px', padding: '2px 8px', height: '24px' }}
+          >
+            PROCESSING
+          </Button>
+          <Button
+            type="text"
+            size="small"
+            onClick={() => handleModeChange('hidden')}
+            style={{ fontSize: '10px', padding: '2px 8px', height: '24px' }}
+          >
+            HIDE
+          </Button>
         </Space>
       }
       style={{
@@ -276,11 +375,12 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         )}
       </div>
 
-      {/* Processing Timeline */}
-      <div style={{ marginTop: '16px' }}>
-        <Text strong style={{ fontSize: '14px', color: '#1f2937', marginBottom: '12px', display: 'block' }}>
-          🔄 Processing Steps
-        </Text>
+      {/* Processing Timeline - only show in processing and advanced modes */}
+      {(mode === 'processing' || mode === 'advanced') && (
+        <div style={{ marginTop: '16px' }}>
+          <Text strong style={{ fontSize: '14px', color: '#1f2937', marginBottom: '12px', display: 'block' }}>
+            🔄 Processing Steps
+          </Text>
 
         {stages.length === 0 && isProcessing ? (
           <div style={{
@@ -351,7 +451,8 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
                       {stageData.message || 'Processing...'}
                     </Text>
 
-                    {stageData.details && (
+                    {/* Technical details only in advanced mode */}
+                    {mode === 'advanced' && stageData.details && (
                       <Collapse
                         ghost
                         size="small"
@@ -378,7 +479,8 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
           })}
           </Timeline>
         )}
-      </div>
+        </div>
+      )}
 
       {isProcessing && (
         <div style={{

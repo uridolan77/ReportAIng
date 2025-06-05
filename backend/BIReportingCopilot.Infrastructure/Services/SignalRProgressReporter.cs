@@ -22,10 +22,10 @@ public class SignalRProgressReporter : IProgressReporter
 
     public async Task SendProgressUpdateAsync(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null)
     {
-        await SendProgressUpdateAsync(userId, progress, message, stage, currentTable, currentColumn, null, null, null, null);
+        await SendProgressUpdateAsync(userId, progress, message, stage, currentTable, currentColumn, null, null, null, null, null, null);
     }
 
-    public async Task SendProgressUpdateAsync(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null, int? tablesProcessed = null, int? totalTables = null, int? columnsProcessed = null, int? totalColumns = null, object? aiPrompt = null)
+    public async Task SendProgressUpdateAsync(string userId, double progress, string message, string stage, string? currentTable = null, string? currentColumn = null, int? tablesProcessed = null, int? totalTables = null, int? columnsProcessed = null, int? totalColumns = null, int? glossaryTermsGenerated = null, int? relationshipsFound = null, object? aiPrompt = null)
     {
         try
         {
@@ -43,6 +43,8 @@ public class SignalRProgressReporter : IProgressReporter
                 TotalTables = totalTables,
                 ColumnsProcessed = columnsProcessed,
                 TotalColumns = totalColumns,
+                GlossaryTermsGenerated = glossaryTermsGenerated,
+                RelationshipsFound = relationshipsFound,
                 AIPrompt = aiPrompt,
                 Timestamp = DateTime.UtcNow
             };

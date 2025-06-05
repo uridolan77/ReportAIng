@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Card, Button, Space, Typography, Alert, Divider, Row, Col, Switch, InputNumber, message, Select, Spin, Tag } from 'antd';
-import { RobotOutlined, TableOutlined, BookOutlined, ShareAltOutlined, PlayCircleOutlined, DatabaseOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { RobotOutlined, TableOutlined, BookOutlined, ShareAltOutlined, PlayCircleOutlined, DatabaseOutlined, CheckCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import { tuningApi, AutoGenerationRequest, AutoGenerationResponse } from '../../../services/tuningApi';
 import { ApiService } from '../../../services/api';
 import { AutoGenerationResults } from './AutoGenerationResults';
 import { AutoGenerationProgress } from './AutoGenerationProgress';
+import { ProcessingLogViewer } from './ProcessingLogViewer';
 import { useSignalR } from '../../../hooks/useWebSocket';
 
 const { Title, Text, Paragraph } = Typography;
@@ -33,6 +34,16 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
   const [results, setResults] = useState<AutoGenerationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Add comprehensive logging state
+  const [processingLog, setProcessingLog] = useState<Array<{
+    timestamp: string;
+    level: 'info' | 'success' | 'warning' | 'error';
+    message: string;
+    details?: any;
+  }>>([]);
+  const [showLogViewer, setShowLogViewer] = useState(false);
+  const [localProgressOffset, setLocalProgressOffset] = useState(0);
+
   // SignalR connection for real-time progress updates
   const { isConnected, lastMessage } = useSignalR();
 
@@ -49,6 +60,18 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
   const [loadingTables, setLoadingTables] = useState(false);
   const [selectAllTables, setSelectAllTables] = useState(true);
+
+  // Helper function to add log entries
+  const addLogEntry = useCallback((level: 'info' | 'success' | 'warning' | 'error', message: string, details?: any) => {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      details
+    };
+    setProcessingLog(prev => [...prev, logEntry]);
+    console.log(`📝 [${level.toUpperCase()}] ${message}`, details || '');
+  }, []);
 
   // Helper function to generate realistic business information based on table name
   // Note: This function is defined but not currently used - kept for future enhancement
@@ -167,29 +190,66 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
 
         console.log('🔄 Updating UI with:', { progress, message, stage, currentTable, currentColumn });
 
+        // Fix progress restart issue: ensure SignalR progress continues from local offset
+        const adjustedProgress = Math.max(progress, localProgressOffset);
+
+        // Add log entry for this progress update
+        addLogEntry('info', message, {
+          progress: adjustedProgress,
+          stage,
+          currentTable,
+          currentColumn,
+          tablesProcessed: progressData.TablesProcessed,
+          totalTables: progressData.TotalTables,
+          columnsProcessed: progressData.ColumnsProcessed,
+          totalColumns: progressData.TotalColumns
+        });
+
         // Update progress state with real-time data
-        setGenerationProgress(progress);
+        setGenerationProgress(adjustedProgress);
         setCurrentTask(message);
         setCurrentStage(stage);
         setCurrentTable(currentTable);
         setCurrentColumn(currentColumn);
 
-        // Update counts if available
-        if (progressData.TablesProcessed !== undefined) setTablesProcessed(progressData.TablesProcessed);
+        // Update counts if available and add logging
+        if (progressData.TablesProcessed !== undefined) {
+          setTablesProcessed(progressData.TablesProcessed);
+          addLogEntry('info', `Tables processed: ${progressData.TablesProcessed}/${progressData.TotalTables || 'unknown'}`);
+        }
         if (progressData.TotalTables !== undefined) setTotalTables(progressData.TotalTables);
-        if (progressData.ColumnsProcessed !== undefined) setColumnsProcessed(progressData.ColumnsProcessed);
+        if (progressData.ColumnsProcessed !== undefined) {
+          setColumnsProcessed(progressData.ColumnsProcessed);
+          addLogEntry('info', `Columns processed: ${progressData.ColumnsProcessed}/${progressData.TotalColumns || 'unknown'}`);
+        }
         if (progressData.TotalColumns !== undefined) setTotalColumns(progressData.TotalColumns);
+
+        // Update glossary terms and relationships counts
+        if (progressData.GlossaryTermsGenerated !== undefined) {
+          setGlossaryTermsGenerated(progressData.GlossaryTermsGenerated);
+          addLogEntry('success', `Generated ${progressData.GlossaryTermsGenerated} glossary terms`);
+        }
+        if (progressData.RelationshipsFound !== undefined) {
+          setRelationshipsFound(progressData.RelationshipsFound);
+          addLogEntry('success', `Found ${progressData.RelationshipsFound} relationships`);
+        }
 
         // Add AI prompt information if available
         if (progressData.AIPrompt) {
-          setAiPrompts(prev => [...prev, {
+          const aiPrompt = {
             table: currentTable || 'Unknown',
             promptType: progressData.AIPrompt.type || 'unknown',
             prompt: progressData.AIPrompt.prompt || '',
             response: progressData.AIPrompt.response || '',
             status: progressData.AIPrompt.status || 'completed',
             timestamp: new Date().toISOString()
-          }]);
+          };
+          setAiPrompts(prev => [...prev, aiPrompt]);
+          addLogEntry('info', `AI ${aiPrompt.promptType} prompt sent for ${aiPrompt.table}`, {
+            promptLength: aiPrompt.prompt.length,
+            responseLength: aiPrompt.response.length,
+            status: aiPrompt.status
+          });
         }
 
         // Add to recently completed if it's a completion message
@@ -199,18 +259,27 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
           progressData.Message.includes('Found')
         )) {
           setRecentlyCompleted(prev => [...prev.slice(-4), progressData.Message]);
+          addLogEntry('success', progressData.Message);
         }
 
         // Update processing details if we have table information
         if (progressData.CurrentTable) {
           setProcessingDetails(prev => prev.map(detail => {
             if (detail.tableName === progressData.CurrentTable) {
-              return {
+              const updatedDetail = {
                 ...detail,
                 status: progressData.Stage === 'Completed' ? 'completed' : 'processing',
                 stage: progressData.Stage,
-                currentColumn: progressData.CurrentColumn
+                currentColumn: progressData.CurrentColumn,
+                columnsProcessed: progressData.ColumnsProcessed || detail.columnsProcessed,
+                generatedTerms: progressData.GlossaryTermsGenerated || detail.generatedTerms
               };
+
+              if (updatedDetail.status === 'completed') {
+                addLogEntry('success', `Completed processing table: ${detail.tableName}`);
+              }
+
+              return updatedDetail;
             }
             return detail;
           }));
@@ -219,9 +288,11 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         // Check if auto-generation is completed
         if (progressData.Progress >= 100 || progressData.Stage === 'Completed') {
           console.log('🎉 Auto-generation completed via SignalR');
+          addLogEntry('success', '🎉 Auto-generation process completed successfully!');
           setIsGenerating(false);
           setCurrentTable('');
           setCurrentColumn('');
+          setShowLogViewer(true); // Show log viewer when completed
         }
 
       } catch (error) {
@@ -300,6 +371,18 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
     setAiPrompts([]);
     setError(null);
     setResults(null);
+    setProcessingLog([]); // Clear previous logs
+    setShowLogViewer(false);
+    setLocalProgressOffset(0);
+
+    // Add initial log entry
+    addLogEntry('info', '🚀 Starting auto-generation process', {
+      selectedTables: selectedTables.length,
+      generateTableContexts,
+      generateGlossaryTerms,
+      analyzeRelationships,
+      mockMode
+    });
 
     try {
       const request: AutoGenerationRequest = {
@@ -325,6 +408,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       setCurrentTask('Preparing selected tables for processing...');
       setCurrentStage('Table Selection');
       setGenerationProgress(2);
+      addLogEntry('info', `Preparing ${selectedTables.length} selected tables for processing`);
 
       const actualTables = [...selectedTables];
 
@@ -333,6 +417,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
 
       completed.push(`Selected ${actualTables.length} tables for processing`);
       setRecentlyCompleted([...completed]);
+      addLogEntry('info', `Selected tables: ${actualTables.join(', ')}`);
 
       console.log(`Processing ${actualTables.length} selected tables:`, actualTables);
 
@@ -386,26 +471,32 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       setCurrentTask('Analyzing database schema and extracting metadata...');
       setCurrentStage('Schema Analysis');
       setGenerationProgress(5);
+      addLogEntry('info', 'Analyzing database schema and extracting metadata');
 
       await new Promise(resolve => setTimeout(resolve, 1000));
       completed.push(`Database schema analyzed - found ${actualTables.length} tables`);
       setRecentlyCompleted([...completed]);
       setGenerationProgress(10);
+      addLogEntry('success', `Database schema analyzed - found ${actualTables.length} tables with ${totalColumnsCount} total columns`);
 
       // Stage 2: Prepare for AI Processing
       setCurrentTask('Preparing for AI analysis...');
       setCurrentStage('Preparing');
       setGenerationProgress(20);
+      addLogEntry('info', 'Preparing for AI analysis');
       await new Promise(resolve => setTimeout(resolve, 500));
 
       setCurrentTask('Validating table selection and schema...');
       setGenerationProgress(30);
+      addLogEntry('info', 'Validating table selection and schema');
       await new Promise(resolve => setTimeout(resolve, 300));
 
       // Call the actual API - progress will be handled by SignalR
       setCurrentTask('Starting auto-generation process...');
       setCurrentStage('API Call');
       setGenerationProgress(40);
+      setLocalProgressOffset(40); // Set offset so SignalR progress continues from here
+      addLogEntry('info', 'Starting auto-generation API call - progress will be handled by SignalR');
 
       console.log('🚀 Starting API call to auto-generate business context...');
       console.log('🚀 Request payload:', request);
@@ -498,14 +589,31 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
           setRelationshipsFound(response.relationshipAnalysis.relationships.length);
         }
 
+        // Add final completion log entry
+        addLogEntry('success', `🎉 Auto-generation completed successfully! Generated ${response.generatedTableContexts?.length || 0} table contexts and ${response.generatedGlossaryTerms?.length || 0} glossary terms.`, {
+          tableContexts: response.generatedTableContexts?.length || 0,
+          glossaryTerms: response.generatedGlossaryTerms?.length || 0,
+          relationships: response.relationshipAnalysis?.relationships?.length || 0,
+          processingTime: response.processingTime,
+          success: response.success
+        });
+
         if (response.success) {
           message.success(`Auto-generation completed! Generated ${response.generatedTableContexts?.length || 0} table contexts and ${response.generatedGlossaryTerms?.length || 0} glossary terms.`);
         } else {
           message.warning('Auto-generation completed with warnings. Please review the results.');
         }
+
+        // Show log viewer automatically when completed
+        setTimeout(() => {
+          setShowLogViewer(true);
+        }, 1000);
       } catch (err) {
-        clearInterval(progressInterval);
         const errorMessage = err instanceof Error ? err.message : 'Auto-generation failed';
+        addLogEntry('error', `❌ Auto-generation failed: ${errorMessage}`, {
+          error: err instanceof Error ? err.stack : err,
+          timestamp: new Date().toISOString()
+        });
         setError(errorMessage);
         setCurrentTask('Auto-generation failed');
         setCurrentStage('Error');
@@ -513,6 +621,11 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         setCurrentColumn('');
         message.error(errorMessage);
         console.error('Auto-generation error:', err);
+
+        // Show log viewer on error as well
+        setTimeout(() => {
+          setShowLogViewer(true);
+        }, 1000);
       }
     } finally {
       // Ensure we always clean up and stop the generation process
@@ -866,16 +979,51 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
             processingDetails={processingDetails}
             aiPrompts={aiPrompts}
             mockMode={mockMode}
+            processingLog={processingLog}
+            onShowLogViewer={() => setShowLogViewer(true)}
           />
         )}
 
         {results && !isGenerating && (
-          <AutoGenerationResults
-            results={results}
-            onApply={handleApplyResults}
-            onDiscard={handleDiscardResults}
-          />
+          <>
+            {/* Completion notification with log viewer button */}
+            {processingLog.length > 0 && (
+              <Alert
+                message="Auto-Generation Completed"
+                description={
+                  <div>
+                    <p>The auto-generation process has completed successfully. You can review the detailed processing log to see all the steps that were performed.</p>
+                    <Button
+                      type="link"
+                      icon={<FileTextOutlined />}
+                      onClick={() => setShowLogViewer(true)}
+                      style={{ padding: 0 }}
+                    >
+                      View Complete Processing Log ({processingLog.length} entries)
+                    </Button>
+                  </div>
+                }
+                type="success"
+                showIcon
+                style={{ marginBottom: '24px' }}
+              />
+            )}
+
+            <AutoGenerationResults
+              results={results}
+              onApply={handleApplyResults}
+              onDiscard={handleDiscardResults}
+            />
+          </>
         )}
+
+        {/* Processing Log Viewer */}
+        <ProcessingLogViewer
+          visible={showLogViewer}
+          onClose={() => setShowLogViewer(false)}
+          logs={processingLog}
+          title="Auto-Generation Processing Log"
+        />
       </Card>
     </div>
   );

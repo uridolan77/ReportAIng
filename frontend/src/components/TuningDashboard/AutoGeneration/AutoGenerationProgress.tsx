@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Progress, Typography, Space, Spin, Row, Col, Tag, List, Statistic } from 'antd';
+import { Card, Progress, Typography, Space, Spin, Row, Col, Tag, List, Statistic, Button } from 'antd';
 import {
   LoadingOutlined,
   RobotOutlined,
@@ -7,7 +7,8 @@ import {
   ColumnHeightOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  DatabaseOutlined
+  DatabaseOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -30,6 +31,13 @@ interface AutoGenerationProgressProps {
   aiPrompts?: AIPromptInfo[];
   onCancel?: () => void;
   mockMode?: boolean;
+  processingLog?: Array<{
+    timestamp: string;
+    level: 'info' | 'success' | 'warning' | 'error';
+    message: string;
+    details?: any;
+  }>;
+  onShowLogViewer?: () => void;
 }
 
 interface ProcessingDetail {
@@ -70,7 +78,9 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
   relationshipsFound = 0,
   processingDetails = [],
   aiPrompts = [],
-  mockMode = false
+  mockMode = false,
+  processingLog = [],
+  onShowLogViewer
 }) => {
   const getProgressStatus = () => {
     if (progress < 30) return 'active';
@@ -107,10 +117,25 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
   return (
     <div style={{ marginBottom: '24px' }}>
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <Title level={4}>
-          <RobotOutlined style={{ marginRight: '8px', color: mockMode ? '#722ed1' : '#1890ff' }} />
-          {mockMode ? 'Mock Generation in Progress 🧪' : 'Auto-Generation in Progress'}
-        </Title>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ flex: 1 }} />
+          <Title level={4} style={{ margin: 0, flex: 1, textAlign: 'center' }}>
+            <RobotOutlined style={{ marginRight: '8px', color: mockMode ? '#722ed1' : '#1890ff' }} />
+            {mockMode ? 'Mock Generation in Progress 🧪' : 'Auto-Generation in Progress'}
+          </Title>
+          <div style={{ flex: 1, textAlign: 'right' }}>
+            {processingLog.length > 0 && onShowLogViewer && (
+              <Button
+                size="small"
+                icon={<FileTextOutlined />}
+                onClick={onShowLogViewer}
+                title="View detailed processing log"
+              >
+                View Log ({processingLog.length})
+              </Button>
+            )}
+          </div>
+        </div>
         {mockMode && (
           <div style={{ marginTop: '8px' }}>
             <Tag color="purple" style={{ fontSize: '12px', padding: '4px 12px' }}>

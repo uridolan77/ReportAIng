@@ -116,3 +116,6 @@ export const HistoryPage: React.FC = () => {
     </QueryProvider>
   );
 };
+
+// Default export for lazy loading
+export default HistoryPage;

@@ -63,7 +63,52 @@ export const useSignalR = (): UseSignalRReturn => {
         // Create SignalR connection
         const hubConnection = new signalR.HubConnectionBuilder()
           .withUrl(API_CONFIG.SIGNALR_HUB_URL, {
-            accessTokenFactory: () => token || '',
+            accessTokenFactory: async () => {
+              // Get the latest token from auth store
+              const authStore = await import('../stores/authStore');
+              const currentToken = authStore.useAuthStore.getState().token;
+
+              console.log('🔗 SignalR accessTokenFactory called');
+              console.log('🔗 Current encrypted token available:', !!currentToken);
+              console.log('🔗 Current encrypted token length:', currentToken?.length || 0);
+
+              if (!currentToken) {
+                console.warn('⚠️ No token available for SignalR connection');
+                return '';
+              }
+
+              // Decrypt the token if it's encrypted
+              try {
+                const { SecurityUtils } = await import('../utils/security');
+                const decryptedToken = await SecurityUtils.decryptToken(currentToken);
+
+                console.log('🔗 Token decryption successful');
+                console.log('🔗 Decrypted token length:', decryptedToken?.length || 0);
+                console.log('🔗 Decrypted token format check:', decryptedToken?.includes('.') ? 'Valid JWT format' : 'Invalid JWT format');
+                console.log('🔗 SignalR using decrypted token (first 50 chars):', decryptedToken?.substring(0, 50) + '...');
+
+                // Validate JWT format
+                if (decryptedToken && decryptedToken.split('.').length === 3) {
+                  console.log('✅ JWT token format is valid');
+                  return decryptedToken;
+                } else {
+                  console.error('❌ JWT token format is invalid - expected 3 parts separated by dots');
+                  return '';
+                }
+              } catch (error) {
+                console.error('❌ Failed to decrypt token for SignalR:', error);
+                console.log('🔗 Attempting to use original token as fallback...');
+
+                // Check if the original token might already be decrypted
+                if (currentToken.includes('.') && currentToken.split('.').length === 3) {
+                  console.log('🔗 Original token appears to be a valid JWT, using as-is');
+                  return currentToken;
+                } else {
+                  console.error('❌ Original token is also not a valid JWT format');
+                  return '';
+                }
+              }
+            },
             skipNegotiation: true,
             transport: signalR.HttpTransportType.WebSockets,
           })
@@ -137,6 +182,11 @@ export const useSignalR = (): UseSignalRReturn => {
           console.log('🔗 Received ConnectionInfo via SignalR:', data);
         });
 
+        // Add handler for test connection response
+        hubConnection.on('TestConnectionResponse', (data) => {
+          console.log('🔗 Received TestConnectionResponse via SignalR:', data);
+        });
+
         // Connection state handlers
         hubConnection.onclose((error) => {
           console.log('🔗 SignalR connection closed', error);
@@ -155,7 +205,6 @@ export const useSignalR = (): UseSignalRReturn => {
 
         // Start the connection
         console.log('🔗 Starting SignalR connection to:', API_CONFIG.SIGNALR_HUB_URL);
-        console.log('🔗 Auth Token (first 20 chars):', token?.substring(0, 20) + '...');
 
         await hubConnection.start();
         setIsConnected(true);
@@ -177,16 +226,34 @@ export const useSignalR = (): UseSignalRReturn => {
           console.warn('🔗 SignalR GetConnectionInfo failed:', testError);
         }
 
-        // Join user group for receiving notifications
+        // Get user info and verify authentication
         try {
           const authStore = await import('../stores/authStore');
           const user = authStore.useAuthStore.getState().user;
+          const currentToken = authStore.useAuthStore.getState().token;
+
+          console.log('🔗 Current user info:', {
+            userId: user?.id,
+            username: user?.username,
+            hasToken: !!currentToken,
+            tokenLength: currentToken?.length || 0
+          });
+
           if (user?.id) {
-            console.log('🔗 Joining user group for user:', user.id);
-            // The hub automatically adds users to their group on connection
+            console.log('🔗 User authenticated - should be automatically added to group user_' + user.id);
+
+            // Test sending a message to verify the connection works
+            try {
+              await hubConnection.invoke('TestConnection');
+              console.log('🔗 SignalR TestConnection called successfully');
+            } catch (testConnError) {
+              console.warn('🔗 SignalR TestConnection failed:', testConnError);
+            }
+          } else {
+            console.warn('🔗 No user ID found - SignalR connection may not receive user-specific messages');
           }
         } catch (userError) {
-          console.warn('🔗 Could not get user info for group joining:', userError);
+          console.warn('🔗 Could not get user info for group verification:', userError);
         }
       } catch (error) {
         console.error('❌ SignalR connection failed:', error);

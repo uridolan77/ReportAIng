@@ -39,6 +39,8 @@ interface QueryContextType {
   currentProcessingStage: string;
   showProcessingDetails: boolean;
   setShowProcessingDetails: (show: boolean) => void;
+  processingViewMode: 'minimal' | 'processing' | 'advanced' | 'hidden';
+  setProcessingViewMode: (mode: 'minimal' | 'processing' | 'advanced' | 'hidden') => void;
   currentQueryId: string;
 
   // React Query data
@@ -130,6 +132,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const [processingStages, setProcessingStages] = useState<any[]>([]);
   const [currentProcessingStage, setCurrentProcessingStage] = useState<string>('');
   const [showProcessingDetails, setShowProcessingDetails] = useState(false);
+  const [processingViewMode, setProcessingViewMode] = useState<'minimal' | 'processing' | 'advanced' | 'hidden'>('minimal');
   const [currentQueryId, setCurrentQueryId] = useState<string>('');
 
   // Refs
@@ -519,6 +522,8 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     currentProcessingStage,
     showProcessingDetails,
     setShowProcessingDetails,
+    processingViewMode,
+    setProcessingViewMode,
     currentQueryId,
 
     // React Query data

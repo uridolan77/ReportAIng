@@ -347,3 +347,6 @@ export const TemplatesPage: React.FC = () => {
     </QueryProvider>
   );
 };
+
+// Default export for lazy loading
+export default TemplatesPage;

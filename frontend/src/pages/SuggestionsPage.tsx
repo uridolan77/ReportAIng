@@ -362,3 +362,6 @@ export const SuggestionsPage: React.FC = () => {
     </QueryProvider>
   );
 };
+
+// Default export for lazy loading
+export default SuggestionsPage;

@@ -202,3 +202,6 @@ const ResultsPageContent: React.FC = () => {
 export const ResultsPage: React.FC = () => {
   return <ResultsPageContent />;
 };
+
+// Default export for lazy loading
+export default ResultsPage;

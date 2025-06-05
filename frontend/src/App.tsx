@@ -15,10 +15,10 @@ import './App.css';
 
 // Lazy load heavy components
 const QueryInterface = lazy(() => import('./components/QueryInterface/QueryInterface').then(module => ({ default: module.QueryInterface })));
-const ResultsPage = lazy(() => import('./pages/ResultsPage').then(module => ({ default: module.ResultsPage })));
-const HistoryPage = lazy(() => import('./pages/HistoryPage').then(module => ({ default: module.HistoryPage })));
-const TemplatesPage = lazy(() => import('./pages/TemplatesPage').then(module => ({ default: module.TemplatesPage })));
-const SuggestionsPage = lazy(() => import('./pages/SuggestionsPage').then(module => ({ default: module.SuggestionsPage })));
+const ResultsPage = lazy(() => import('./pages/ResultsPage'));
+const HistoryPage = lazy(() => import('./pages/HistoryPage'));
+const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
+const SuggestionsPage = lazy(() => import('./pages/SuggestionsPage'));
 const EnhancedQueryBuilder = lazy(() => import('./components/QueryInterface/EnhancedQueryBuilder'));
 const UserContextPanel = lazy(() => import('./components/AI/UserContextPanel'));
 const QuerySimilarityAnalyzer = lazy(() => import('./components/AI/QuerySimilarityAnalyzer'));
