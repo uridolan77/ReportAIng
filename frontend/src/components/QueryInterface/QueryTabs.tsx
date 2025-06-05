@@ -203,7 +203,7 @@ export const QueryTabs: React.FC = () => {
               isProcessing={isLoading}
               currentStage={currentProcessingStage}
               queryId={currentQueryId}
-              isVisible={showProcessingDetails}
+              isVisible={processingViewMode !== 'hidden'}
               mode={processingViewMode}
               onModeChange={setProcessingViewMode}
               onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
@@ -223,7 +223,7 @@ export const QueryTabs: React.FC = () => {
               isProcessing={isLoading}
               currentStage={currentProcessingStage}
               queryId={currentQueryId}
-              isVisible={showProcessingDetails}
+              isVisible={processingViewMode !== 'hidden'}
               mode={processingViewMode}
               onModeChange={setProcessingViewMode}
               onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}

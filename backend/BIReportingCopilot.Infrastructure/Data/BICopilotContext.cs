@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.SchemaManagement;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Infrastructure.Data.Configurations;
 
 namespace BIReportingCopilot.Infrastructure.Data;
 
@@ -47,6 +49,15 @@ public class BICopilotContext : DbContext
     public DbSet<Core.Models.QueryHistoryEntity> QueryExecutionLogs { get; set; }
     public DbSet<SystemMetricsEntity> PerformanceMetrics { get; set; }
     public DbSet<Core.Models.TempFile> TempFiles { get; set; }
+
+    // Schema Management entities
+    public DbSet<BusinessSchema> BusinessSchemas { get; set; }
+    public DbSet<BusinessSchemaVersion> BusinessSchemaVersions { get; set; }
+    public DbSet<SchemaTableContext> SchemaTableContexts { get; set; }
+    public DbSet<SchemaColumnContext> SchemaColumnContexts { get; set; }
+    public DbSet<SchemaGlossaryTerm> SchemaGlossaryTerms { get; set; }
+    public DbSet<SchemaRelationship> SchemaRelationships { get; set; }
+    public DbSet<UserSchemaPreference> UserSchemaPreferences { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -311,6 +322,15 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.UserId).HasMaxLength(500);
             entity.Property(e => e.Query).HasMaxLength(2000);
         });
+
+        // Apply schema management configurations
+        modelBuilder.ApplyConfiguration(new BusinessSchemaConfiguration());
+        modelBuilder.ApplyConfiguration(new BusinessSchemaVersionConfiguration());
+        modelBuilder.ApplyConfiguration(new SchemaTableContextConfiguration());
+        modelBuilder.ApplyConfiguration(new SchemaColumnContextConfiguration());
+        modelBuilder.ApplyConfiguration(new SchemaGlossaryTermConfiguration());
+        modelBuilder.ApplyConfiguration(new SchemaRelationshipConfiguration());
+        modelBuilder.ApplyConfiguration(new UserSchemaPreferenceConfiguration());
 
         // Seed default data
         SeedDefaultData(modelBuilder);

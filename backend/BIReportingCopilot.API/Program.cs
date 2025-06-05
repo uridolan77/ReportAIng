@@ -557,6 +557,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISecretsMa
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IPasswordHasher, BIReportingCopilot.Infrastructure.Security.PasswordHasher>();
 // IConnectionStringProvider already registered before configuration validation
 builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializationService>();
+builder.Services.AddScoped<ISchemaManagementService, SchemaManagementService>();
 builder.Services.AddScoped<ITuningService, TuningService>();
 builder.Services.AddScoped<IAITuningSettingsService, AITuningSettingsService>();
 builder.Services.AddScoped<IBusinessContextAutoGenerator, BusinessContextAutoGenerator>();

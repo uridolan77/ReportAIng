@@ -14,7 +14,7 @@ import { secureApiClient } from './services/secureApiClient';
 import './App.css';
 
 // Lazy load heavy components
-const QueryInterface = lazy(() => import('./components/QueryInterface/QueryInterface').then(module => ({ default: module.QueryInterface })));
+const QueryInterface = lazy(() => import('./components/QueryInterface/QueryInterface'));
 const ResultsPage = lazy(() => import('./pages/ResultsPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));

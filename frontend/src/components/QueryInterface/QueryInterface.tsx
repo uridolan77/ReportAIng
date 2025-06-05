@@ -28,4 +28,7 @@ export const QueryInterface: React.FC<QueryInterfaceProps> = ({ className }) => 
   );
 };
 
+// Default export for lazy loading
+export default QueryInterface;
+
 

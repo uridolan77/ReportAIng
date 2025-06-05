@@ -82,6 +82,15 @@ export const AutoGenerationProgress: React.FC<AutoGenerationProgressProps> = ({
   processingLog = [],
   onShowLogViewer
 }) => {
+  // Debug logging for statistics
+  console.log('📊 AutoGenerationProgress render with stats:', {
+    tablesProcessed,
+    totalTables,
+    columnsProcessed,
+    totalColumns,
+    glossaryTermsGenerated,
+    relationshipsFound
+  });
   const getProgressStatus = () => {
     if (progress < 30) return 'active';
     if (progress < 70) return 'active';

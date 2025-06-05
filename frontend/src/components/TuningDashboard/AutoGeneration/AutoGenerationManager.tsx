@@ -189,6 +189,14 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         const currentColumn = progressData.CurrentColumn || progressData.currentColumn || '';
 
         console.log('🔄 Updating UI with:', { progress, message, stage, currentTable, currentColumn });
+        console.log('🔄 Raw SignalR data fields:', Object.keys(progressData));
+        console.log('🔄 Full SignalR progressData:', progressData);
+        console.log('🔄 TablesProcessed:', progressData.TablesProcessed, typeof progressData.TablesProcessed);
+        console.log('🔄 TotalTables:', progressData.TotalTables, typeof progressData.TotalTables);
+        console.log('🔄 ColumnsProcessed:', progressData.ColumnsProcessed, typeof progressData.ColumnsProcessed);
+        console.log('🔄 TotalColumns:', progressData.TotalColumns, typeof progressData.TotalColumns);
+        console.log('🔄 GlossaryTermsGenerated:', progressData.GlossaryTermsGenerated, typeof progressData.GlossaryTermsGenerated);
+        console.log('🔄 RelationshipsFound:', progressData.RelationshipsFound, typeof progressData.RelationshipsFound);
 
         // Fix progress restart issue: ensure SignalR progress continues from local offset
         const adjustedProgress = Math.max(progress, localProgressOffset);
@@ -212,26 +220,48 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         setCurrentTable(currentTable);
         setCurrentColumn(currentColumn);
 
-        // Update counts if available and add logging
-        if (progressData.TablesProcessed !== undefined) {
-          setTablesProcessed(progressData.TablesProcessed);
-          addLogEntry('info', `Tables processed: ${progressData.TablesProcessed}/${progressData.TotalTables || 'unknown'}`);
+        // Update counts if available and add logging (check both camelCase and PascalCase)
+        const tablesProcessedValue = progressData.tablesProcessed !== undefined ? progressData.tablesProcessed : progressData.TablesProcessed;
+        if (tablesProcessedValue !== undefined) {
+          console.log('🔄 Setting TablesProcessed to:', tablesProcessedValue);
+          setTablesProcessed(tablesProcessedValue);
+          const totalTablesForLog = progressData.totalTables !== undefined ? progressData.totalTables : (progressData.TotalTables || 'unknown');
+          addLogEntry('info', `Tables processed: ${tablesProcessedValue}/${totalTablesForLog}`);
         }
-        if (progressData.TotalTables !== undefined) setTotalTables(progressData.TotalTables);
-        if (progressData.ColumnsProcessed !== undefined) {
-          setColumnsProcessed(progressData.ColumnsProcessed);
-          addLogEntry('info', `Columns processed: ${progressData.ColumnsProcessed}/${progressData.TotalColumns || 'unknown'}`);
+
+        const totalTablesValue = progressData.totalTables !== undefined ? progressData.totalTables : progressData.TotalTables;
+        if (totalTablesValue !== undefined) {
+          console.log('🔄 Setting TotalTables to:', totalTablesValue);
+          setTotalTables(totalTablesValue);
         }
-        if (progressData.TotalColumns !== undefined) setTotalColumns(progressData.TotalColumns);
+
+        const columnsProcessedValue = progressData.columnsProcessed !== undefined ? progressData.columnsProcessed : progressData.ColumnsProcessed;
+        if (columnsProcessedValue !== undefined) {
+          console.log('🔄 Setting ColumnsProcessed to:', columnsProcessedValue);
+          setColumnsProcessed(columnsProcessedValue);
+          const totalColumnsForLog = progressData.totalColumns !== undefined ? progressData.totalColumns : (progressData.TotalColumns || 'unknown');
+          addLogEntry('info', `Columns processed: ${columnsProcessedValue}/${totalColumnsForLog}`);
+        }
+
+        const totalColumnsValue = progressData.totalColumns !== undefined ? progressData.totalColumns : progressData.TotalColumns;
+        if (totalColumnsValue !== undefined) {
+          console.log('🔄 Setting TotalColumns to:', totalColumnsValue);
+          setTotalColumns(totalColumnsValue);
+        }
 
         // Update glossary terms and relationships counts
-        if (progressData.GlossaryTermsGenerated !== undefined) {
-          setGlossaryTermsGenerated(progressData.GlossaryTermsGenerated);
-          addLogEntry('success', `Generated ${progressData.GlossaryTermsGenerated} glossary terms`);
+        const glossaryTermsValue = progressData.glossaryTermsGenerated !== undefined ? progressData.glossaryTermsGenerated : progressData.GlossaryTermsGenerated;
+        if (glossaryTermsValue !== undefined) {
+          console.log('🔄 Setting GlossaryTermsGenerated to:', glossaryTermsValue);
+          setGlossaryTermsGenerated(glossaryTermsValue);
+          addLogEntry('success', `Generated ${glossaryTermsValue} glossary terms`);
         }
-        if (progressData.RelationshipsFound !== undefined) {
-          setRelationshipsFound(progressData.RelationshipsFound);
-          addLogEntry('success', `Found ${progressData.RelationshipsFound} relationships`);
+
+        const relationshipsValue = progressData.relationshipsFound !== undefined ? progressData.relationshipsFound : progressData.RelationshipsFound;
+        if (relationshipsValue !== undefined) {
+          console.log('🔄 Setting RelationshipsFound to:', relationshipsValue);
+          setRelationshipsFound(relationshipsValue);
+          addLogEntry('success', `Found ${relationshipsValue} relationships`);
         }
 
         // Add AI prompt information if available
@@ -263,35 +293,49 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         }
 
         // Update processing details if we have table information
-        if (progressData.CurrentTable) {
-          setProcessingDetails(prev => prev.map(detail => {
-            if (detail.tableName === progressData.CurrentTable) {
-              const updatedDetail = {
-                ...detail,
-                status: progressData.Stage === 'Completed' ? 'completed' : 'processing',
-                stage: progressData.Stage,
-                currentColumn: progressData.CurrentColumn,
-                columnsProcessed: progressData.ColumnsProcessed || detail.columnsProcessed,
-                generatedTerms: progressData.GlossaryTermsGenerated || detail.generatedTerms
-              };
+        if (progressData.currentTable || progressData.CurrentTable) {
+          const currentTable = progressData.currentTable || progressData.CurrentTable;
+          console.log('🔄 Updating processing details for table:', currentTable);
+          setProcessingDetails(prev => {
+            const updated = prev.map(detail => {
+              if (detail.tableName === currentTable) {
+                const updatedDetail = {
+                  ...detail,
+                  status: progressData.Stage === 'Completed' ? 'completed' : 'processing',
+                  stage: progressData.stage || progressData.Stage,
+                  currentColumn: progressData.currentColumn || progressData.CurrentColumn,
+                  columnsProcessed: progressData.columnsProcessed || progressData.ColumnsProcessed || detail.columnsProcessed,
+                  generatedTerms: progressData.glossaryTermsGenerated || progressData.GlossaryTermsGenerated || detail.generatedTerms
+                };
 
-              if (updatedDetail.status === 'completed') {
-                addLogEntry('success', `Completed processing table: ${detail.tableName}`);
+                console.log('🔄 Updated detail for table:', detail.tableName, updatedDetail);
+
+                if (updatedDetail.status === 'completed') {
+                  addLogEntry('success', `Completed processing table: ${detail.tableName}`);
+                }
+
+                return updatedDetail;
               }
-
-              return updatedDetail;
-            }
-            return detail;
-          }));
+              return detail;
+            });
+            console.log('🔄 All processing details after update:', updated);
+            return updated;
+          });
+        } else {
+          console.log('🔄 No currentTable in progressData, not updating processing details');
         }
 
         // Check if auto-generation is completed
         if (progressData.Progress >= 100 || progressData.Stage === 'Completed') {
           console.log('🎉 Auto-generation completed via SignalR');
           addLogEntry('success', '🎉 Auto-generation process completed successfully!');
-          setIsGenerating(false);
+          // Don't reset statistics when completing - preserve final values
           setCurrentTable('');
           setCurrentColumn('');
+          setCurrentTask('Auto-generation completed successfully!');
+          setCurrentStage('Completed');
+          setGenerationProgress(100);
+          // Keep isGenerating true to show progress view, will be set to false after API response
           setShowLogViewer(true); // Show log viewer when completed
         }
 
@@ -578,16 +622,24 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
         completed.push(`🎉 Auto-generation completed successfully!`);
         setRecentlyCompleted([...completed]);
 
-        // Update counters with real data from API response
+        // Update counters with real data from API response (preserve final values)
         if (response.generatedTableContexts) {
           setTablesProcessed(response.generatedTableContexts.length);
+          console.log('🔄 Final TablesProcessed set to:', response.generatedTableContexts.length);
         }
         if (response.generatedGlossaryTerms) {
           setGlossaryTermsGenerated(response.generatedGlossaryTerms.length);
+          console.log('🔄 Final GlossaryTermsGenerated set to:', response.generatedGlossaryTerms.length);
         }
         if (response.relationshipAnalysis?.relationships) {
           setRelationshipsFound(response.relationshipAnalysis.relationships.length);
+          console.log('🔄 Final RelationshipsFound set to:', response.relationshipAnalysis.relationships.length);
         }
+
+        // Ensure final progress and completion state
+        setGenerationProgress(100);
+        setCurrentTask('Auto-generation completed successfully!');
+        setCurrentStage('Completed');
 
         // Add final completion log entry
         addLogEntry('success', `🎉 Auto-generation completed successfully! Generated ${response.generatedTableContexts?.length || 0} table contexts and ${response.generatedGlossaryTerms?.length || 0} glossary terms.`, {
@@ -629,7 +681,12 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       }
     } finally {
       // Ensure we always clean up and stop the generation process
-      setIsGenerating(false);
+      // Only set isGenerating to false after a delay to allow final statistics to be displayed
+      setTimeout(() => {
+        setIsGenerating(false);
+        console.log('🔄 Generation process completed, isGenerating set to false');
+      }, 1000);
+
       setCurrentTable('');
       setCurrentColumn('');
 
@@ -644,7 +701,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
           setCurrentTable('');
           setCurrentColumn('');
         }
-      }, 2000);
+      }, 3000);
     }
   }, [generateTableContexts, generateGlossaryTerms, analyzeRelationships, overwriteExisting, confidenceThreshold, selectedTables, mockMode]);
 
@@ -962,19 +1019,19 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
           </>
         )}
 
-        {isGenerating && (
+        {(isGenerating || (results && generationProgress >= 100)) && (
           <AutoGenerationProgress
             progress={generationProgress}
             currentTask={currentTask}
             currentTable={currentTable}
             currentStage={currentStage}
             currentColumn={currentColumn}
-            tablesProcessed={tablesProcessed}
-            totalTables={totalTables}
-            columnsProcessed={columnsProcessed}
-            totalColumns={totalColumns}
-            glossaryTermsGenerated={glossaryTermsGenerated}
-            relationshipsFound={relationshipsFound}
+            tablesProcessed={tablesProcessed || 0}
+            totalTables={totalTables || 0}
+            columnsProcessed={columnsProcessed || 0}
+            totalColumns={totalColumns || 0}
+            glossaryTermsGenerated={glossaryTermsGenerated || 0}
+            relationshipsFound={relationshipsFound || 0}
             recentlyCompleted={recentlyCompleted}
             processingDetails={processingDetails}
             aiPrompts={aiPrompts}

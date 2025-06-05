@@ -20,6 +20,7 @@ public class TuningService : ITuningService
     private readonly ISchemaService _schemaService;
     private readonly IConfiguration _configuration;
     private readonly IProgressReporter _progressReporter;
+    private readonly ISchemaManagementService _schemaManagementService;
 
     public TuningService(
         BICopilotContext context,
@@ -28,7 +29,8 @@ public class TuningService : ITuningService
         PerformanceManagementService performanceService,
         ISchemaService schemaService,
         IConfiguration configuration,
-        IProgressReporter progressReporter)
+        IProgressReporter progressReporter,
+        ISchemaManagementService schemaManagementService)
     {
         _context = context;
         _logger = logger;
@@ -37,6 +39,7 @@ public class TuningService : ITuningService
         _schemaService = schemaService;
         _configuration = configuration;
         _progressReporter = progressReporter;
+        _schemaManagementService = schemaManagementService;
     }
 
     #region Dashboard
@@ -854,7 +857,7 @@ public class TuningService : ITuningService
                         {
                             // Calculate progress: Table processing takes 10% to 60% (50% total)
                             var tableProgress = 10 + (processedTables * 50.0 / totalTables);
-                            await _progressReporter.SendProgressUpdateAsync(userId, tableProgress,
+                            await SendProgressUpdate(userId, tableProgress,
                                 $"Analyzing table {schemaName}.{tableName}...", "Table Analysis", tableName, null, processedTables, totalTables);
 
                             // Create progress callback for field-by-field processing
@@ -862,8 +865,25 @@ public class TuningService : ITuningService
                             {
                                 // Use a slightly higher progress for detailed field processing
                                 var detailedProgress = 10 + (processedTables * 50.0 / totalTables) + (5.0 / totalTables);
-                                await _progressReporter.SendProgressUpdateAsync(userId, detailedProgress,
-                                    message, stage, tableName, currentColumn, processedTables, totalTables);
+
+                                // Extract column counts from the message if available
+                                int? columnsProcessed = null;
+                                int? totalColumns = null;
+
+                                // Parse messages like "Processing column ColumnName (5/12)" or "Completed column ColumnName (5/12)"
+                                var match = System.Text.RegularExpressions.Regex.Match(message, @"\((\d+)/(\d+)\)");
+                                if (match.Success)
+                                {
+                                    if (int.TryParse(match.Groups[1].Value, out var processed) &&
+                                        int.TryParse(match.Groups[2].Value, out var total))
+                                    {
+                                        columnsProcessed = processed;
+                                        totalColumns = total;
+                                    }
+                                }
+
+                                await SendProgressUpdate(userId, detailedProgress,
+                                    message, stage, tableName, currentColumn, processedTables, totalTables, columnsProcessed, totalColumns);
                             });
 
                             var context = await _autoGenerator.GenerateTableContextAsync(tableName, schemaName, progressCallback, request.MockMode);
@@ -908,9 +928,16 @@ public class TuningService : ITuningService
                     await SendProgressUpdate(userId, 65, $"Extracting terms from {request.SpecificTables.Count} selected tables...", "Glossary Generation");
 
                     // Create progress callback for glossary generation
+                    var glossaryTermCount = 0;
                     var glossaryProgressCallback = new Func<string, string, string?, Task>(async (stage, message, currentItem) =>
                     {
-                        await SendProgressUpdate(userId, 70, message, stage, null, currentItem);
+                        // Increment count when a term is completed (both mock and real modes)
+                        if ((stage == "AI Generation" && (message.Contains("completed") || message.Contains("definition completed"))) ||
+                            message.Contains("Generated definition"))
+                        {
+                            glossaryTermCount++;
+                        }
+                        await SendProgressUpdate(userId, 70, message, stage, null, currentItem, null, null, null, null, glossaryTermCount);
                     });
 
                     glossaryTerms = await _autoGenerator.GenerateGlossaryTermsAsync(request.SpecificTables!, glossaryProgressCallback, request.MockMode);
@@ -922,7 +949,7 @@ public class TuningService : ITuningService
                     glossaryTerms = await _autoGenerator.GenerateGlossaryTermsAsync();
                 }
 
-                await SendProgressUpdate(userId, 80, $"Generated {glossaryTerms.Count} glossary terms", "Glossary Generation");
+                await SendProgressUpdate(userId, 80, $"Generated {glossaryTerms.Count} glossary terms", "Glossary Generation", null, null, null, null, null, null, glossaryTerms.Count);
                 response.GeneratedGlossaryTerms = glossaryTerms;
                 response.TotalTermsGenerated = glossaryTerms.Count;
                 _logger.LogInformation("Generated {Count} glossary terms", glossaryTerms.Count);
@@ -933,7 +960,8 @@ public class TuningService : ITuningService
                 _logger.LogInformation("Analyzing table relationships...");
                 await SendProgressUpdate(userId, 85, "Analyzing table relationships...", "Relationship Analysis");
                 response.RelationshipAnalysis = await _autoGenerator.AnalyzeTableRelationshipsAsync();
-                await SendProgressUpdate(userId, 92, "Completed relationship analysis", "Relationship Analysis");
+                var relationshipCount = response.RelationshipAnalysis?.Relationships?.Count ?? 0;
+                await SendProgressUpdate(userId, 92, $"Found {relationshipCount} relationships", "Relationship Analysis", null, null, null, null, null, null, null, relationshipCount);
             }
 
             await SendProgressUpdate(userId, 95, "Finalizing results...", "Completion");
@@ -1014,27 +1042,62 @@ public class TuningService : ITuningService
     {
         try
         {
-            _logger.LogInformation("Applying auto-generated context for user {UserId}", userId);
+            _logger.LogInformation("Applying auto-generated context to schema management system for user {UserId}", userId);
 
-            // Apply table contexts
-            foreach (var tableContext in autoGenerated.GeneratedTableContexts)
-            {
-                await ApplyTableContextAsync(tableContext, userId);
-            }
+            // Convert auto-generation results to schema management format
+            var applyRequest = AutoGenerationToSchemaMapper.MapToApplyRequest(
+                autoGenerated,
+                schemaName: "Auto-Generated Schema",
+                schemaDescription: "Schema created from auto-generation process",
+                versionName: $"v1.0-{DateTime.UtcNow:yyyyMMdd-HHmmss}",
+                versionDescription: $"Auto-generated on {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC"
+            );
 
-            // Apply glossary terms
-            foreach (var glossaryTerm in autoGenerated.GeneratedGlossaryTerms)
-            {
-                await ApplyGlossaryTermAsync(glossaryTerm, userId);
-            }
+            // Apply to schema management system
+            var schemaVersion = await _schemaManagementService.ApplyToSchemaAsync(applyRequest, userId);
 
-            _logger.LogInformation("Applied {TableCount} table contexts and {TermCount} glossary terms",
-                autoGenerated.GeneratedTableContexts.Count, autoGenerated.GeneratedGlossaryTerms.Count);
+            _logger.LogInformation("Successfully applied auto-generated context to schema {SchemaId}, version {VersionId}. " +
+                                 "Applied {TableCount} table contexts, {TermCount} glossary terms, and {RelationshipCount} relationships",
+                schemaVersion.SchemaId, schemaVersion.Id,
+                autoGenerated.GeneratedTableContexts.Count,
+                autoGenerated.GeneratedGlossaryTerms.Count,
+                autoGenerated.RelationshipAnalysis?.Relationships.Count ?? 0);
+
+            // Also apply to legacy tuning tables for backward compatibility
+            await ApplyToLegacyTuningTablesAsync(autoGenerated, userId);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error applying auto-generated context");
             throw;
+        }
+    }
+
+    private async Task ApplyToLegacyTuningTablesAsync(AutoGenerationResponse autoGenerated, string userId)
+    {
+        try
+        {
+            _logger.LogInformation("Applying auto-generated context to legacy tuning tables for backward compatibility");
+
+            // Apply table contexts to legacy tables
+            foreach (var tableContext in autoGenerated.GeneratedTableContexts)
+            {
+                await ApplyTableContextAsync(tableContext, userId);
+            }
+
+            // Apply glossary terms to legacy tables
+            foreach (var glossaryTerm in autoGenerated.GeneratedGlossaryTerms)
+            {
+                await ApplyGlossaryTermAsync(glossaryTerm, userId);
+            }
+
+            _logger.LogInformation("Applied {TableCount} table contexts and {TermCount} glossary terms to legacy tables",
+                autoGenerated.GeneratedTableContexts.Count, autoGenerated.GeneratedGlossaryTerms.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error applying auto-generated context to legacy tuning tables (non-critical)");
+            // Don't throw - this is for backward compatibility only
         }
     }
 
