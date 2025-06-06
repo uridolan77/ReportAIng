@@ -54,15 +54,17 @@ export const MinimalQueryInterface: React.FC = () => {
   const { clearActiveResult } = useActiveResultActions();
 
   // Debug: Log current state
-  console.log('🔍 MinimalQueryInterface State:', {
-    hasSubmittedQuery,
-    currentResult: !!currentResult,
-    isLoading,
-    forceInitialState,
-    processingStagesLength: processingStages?.length || 0,
-    query: query?.substring(0, 50) + (query?.length > 50 ? '...' : '') || '',
-    willShowSuggestions: forceInitialState && !isLoading
-  });
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 MinimalQueryInterface State:', {
+      hasSubmittedQuery,
+      currentResult: !!currentResult,
+      isLoading,
+      forceInitialState,
+      processingStagesLength: processingStages?.length || 0,
+      query: query?.substring(0, 50) + (query?.length > 50 ? '...' : '') || '',
+      willShowSuggestions: forceInitialState && !isLoading
+    });
+  }
 
 
 

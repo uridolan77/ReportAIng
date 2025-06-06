@@ -167,7 +167,9 @@ export const apiRequest = async <T>(
 
     return await response.json();
   } catch (error) {
-    console.error(`API request failed for ${endpoint}:`, error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`API request failed for ${endpoint}:`, error);
+    }
     throw error;
   }
 };

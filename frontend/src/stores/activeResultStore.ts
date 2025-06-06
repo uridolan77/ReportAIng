@@ -39,15 +39,17 @@ export const useActiveResultStore = create<ActiveResultState>()(
 
         // Set active result with metadata
         setActiveResult: (result: QueryResponse, query: string) => {
-          console.log('🔍 ActiveResultStore - Setting active result:', {
-            hasResult: !!result,
-            success: result?.success,
-            query,
-            resultKeys: result ? Object.keys(result) : 'N/A',
-            hasResultData: !!result?.result,
-            hasResultDataArray: !!result?.result?.data,
-            resultDataLength: result?.result?.data?.length
-          });
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 ActiveResultStore - Setting active result:', {
+              hasResult: !!result,
+              success: result?.success,
+              query,
+              resultKeys: result ? Object.keys(result) : 'N/A',
+              hasResultData: !!result?.result,
+              hasResultDataArray: !!result?.result?.data,
+              resultDataLength: result?.result?.data?.length
+            });
+          }
 
           set((state) => {
             state.activeResult = result;
@@ -131,11 +133,15 @@ export const useActiveResultStore = create<ActiveResultState>()(
                   state.activeQuery = parsed.query || '';
                   state.lastUpdated = parsed.timestamp || Date.now();
                   state.sessionId = parsed.sessionId || '';
-                  console.log('Migrated legacy result to active result store');
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('Migrated legacy result to active result store');
+                  }
                 }
               }
             } catch (error) {
-              console.warn('Failed to migrate legacy result:', error);
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('Failed to migrate legacy result:', error);
+              }
             }
           }
         }

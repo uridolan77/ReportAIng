@@ -103,7 +103,9 @@ const AdvancedVisualizationPanel: React.FC<AdvancedVisualizationPanelProps> = ({
         message.error(response.errorMessage || 'Failed to generate visualization');
       }
     } catch (error) {
-      console.error('Error generating visualization:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error generating visualization:', error);
+      }
       message.error('Failed to generate visualization');
     } finally {
       setLoading(false);

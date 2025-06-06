@@ -69,23 +69,31 @@ export const DevTools: React.FC = () => {
   useEffect(() => {
     const collectPerformanceMetrics = () => {
       // Mock performance metrics for development
-      console.log('Collecting performance metrics...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Collecting performance metrics...');
+      }
     };
 
     const collectNetworkMetrics = () => {
       // Mock network metrics for development
-      console.log('Collecting network metrics...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Collecting network metrics...');
+      }
     };
 
     const interceptConsole = () => {
       // Mock console interception for development
-      console.log('Intercepting console...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Intercepting console...');
+      }
     };
 
     const monitorQueryCache = () => {
       const cache = queryClient.getQueryCache();
       const queries = cache.getAll();
-      console.log(`React Query Cache: ${queries.length} queries`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`React Query Cache: ${queries.length} queries`);
+      }
     };
 
     if (isMonitoring) {

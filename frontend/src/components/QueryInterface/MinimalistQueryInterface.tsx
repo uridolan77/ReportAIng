@@ -32,7 +32,9 @@ export const MinimalistQueryInterface: React.FC<MinimalistQueryInterfaceProps> =
       const response = await onQuery(query.trim());
       setResult(response);
     } catch (error) {
-      console.error('Query failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Query failed:', error);
+      }
       setResult({
         success: false,
         error: error instanceof Error ? error.message : 'Query failed',

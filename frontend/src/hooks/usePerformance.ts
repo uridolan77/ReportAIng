@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // Debounce hook
 export const useDebounce = <T>(value: T, delay: number): T => {
@@ -51,6 +51,12 @@ export const useIntersectionObserver = (
   const [entry, setEntry] = useState<IntersectionObserverEntry | null>(null);
   const elementRef = useRef<HTMLElement | null>(null);
 
+  // Memoize options to prevent unnecessary re-renders
+  const memoizedOptions = useMemo(() => ({
+    threshold: 0.1,
+    ...options,
+  }), [options]);
+
   useEffect(() => {
     const element = elementRef.current;
     if (!element) return;
@@ -60,10 +66,7 @@ export const useIntersectionObserver = (
         setIsIntersecting(entry.isIntersecting);
         setEntry(entry);
       },
-      {
-        threshold: 0.1,
-        ...options,
-      }
+      memoizedOptions
     );
 
     observer.observe(element);
@@ -71,7 +74,7 @@ export const useIntersectionObserver = (
     return () => {
       observer.unobserve(element);
     };
-  }, [options]);
+  }, [memoizedOptions]);
 
   return { elementRef, isIntersecting, entry };
 };
@@ -143,7 +146,9 @@ export const usePerformanceMeasure = () => {
   const endMeasure = useCallback((name: string): number => {
     const startTime = measureRef.current[name];
     if (startTime === undefined) {
-      console.warn(`No start time found for measure: ${name}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`No start time found for measure: ${name}`);
+      }
       return 0;
     }
 

@@ -66,7 +66,7 @@ export const useProcessedData = <TInput, TOutput>(
     const result = processor(data);
     const endTime = performance.now();
 
-    if (endTime - startTime > 10) {
+    if (endTime - startTime > 10 && process.env.NODE_ENV === 'development') {
       console.warn(`Data processing took ${(endTime - startTime).toFixed(2)}ms for ${data.length} items`);
     }
 
@@ -238,7 +238,7 @@ export const usePerformanceMonitor = (componentName: string) => {
     const currentTime = performance.now();
     const timeSinceLastRender = currentTime - lastRenderTime.current;
 
-    if (renderCount.current > 1 && timeSinceLastRender < 16) {
+    if (renderCount.current > 1 && timeSinceLastRender < 16 && process.env.NODE_ENV === 'development') {
       console.warn(`${componentName} rendered ${renderCount.current} times in ${timeSinceLastRender.toFixed(2)}ms`);
     }
 

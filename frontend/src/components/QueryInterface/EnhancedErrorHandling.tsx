@@ -399,8 +399,6 @@ export const IterativeQueryBuilder: React.FC<{
   const [currentIndex, setCurrentIndex] = useState(0);
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
-
-
   const goToVersion = (index: number) => {
     setCurrentIndex(index);
     onQueryUpdate(queryHistory[index]);

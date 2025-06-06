@@ -76,12 +76,14 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      console.warn('🔒 401 Unauthorized - logging out user');
-      console.log('❌ Request details:', {
-        url: error.config?.url,
-        method: error.config?.method,
-        hasAuthHeader: !!error.config?.headers?.Authorization
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('🔒 401 Unauthorized - logging out user');
+        console.log('❌ Request details:', {
+          url: error.config?.url,
+          method: error.config?.method,
+          hasAuthHeader: !!error.config?.headers?.Authorization
+        });
+      }
 
       // Import and call the auth store logout method
       try {
@@ -89,7 +91,9 @@ api.interceptors.response.use(
         const authStore = useAuthStore.getState();
         authStore.logout();
       } catch (importError) {
-        console.error('Failed to import auth store for logout:', importError);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to import auth store for logout:', importError);
+        }
         // Fallback to manual cleanup
         localStorage.removeItem('authToken');
         localStorage.removeItem('auth-storage');
@@ -469,7 +473,9 @@ export class ApiService {
 
   // Query Operations
   static async executeQuery(request: TypedQueryRequest | LegacyQueryRequest): Promise<FrontendQueryResponse> {
-    console.log('🚀🚀🚀 ApiService.executeQuery CALLED!', request);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🚀🚀🚀 ApiService.executeQuery CALLED!', request);
+    }
 
     // Handle both new and legacy request formats
     let backendRequest;

@@ -244,7 +244,9 @@ const DataTable: React.FC<DataTableProps> = (props) => {
                 enableSelection={enabledFeatures.selection}
                 position="top"
               />
-            )}            {/* Main Table */}
+            )}
+
+            {/* Main Table */}
             {enabledFeatures.virtualScroll || enabledFeatures.advancedVirtualization ? (
               <VirtualizedTable
                 data={finalData}
@@ -299,7 +301,9 @@ const DataTable: React.FC<DataTableProps> = (props) => {
           </div>
 
           {/* Footer */}
-          {components.footer && <components.footer />}          {/* Modals */}
+          {components.footer && <components.footer />}
+
+          {/* Modals */}
           <ColumnChooserModal
             visible={state.showColumnChooser}
             columns={state.displayColumns}

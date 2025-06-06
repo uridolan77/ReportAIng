@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, Button, Space, Input, InputNumber, DatePicker, Select, Radio, Typography } from 'antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { useToken } from 'antd/es/theme/internal';
-import moment from 'moment';
+import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
 
@@ -75,7 +75,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       case 'date':
         return (
           <DatePicker
-            value={filterValue ? moment(filterValue) : null}
+            value={filterValue ? dayjs(filterValue) : null}
             onChange={date => onFilterChange(column.key, date?.toISOString())}
             style={{ marginTop: 8, width: '100%' }}
           />

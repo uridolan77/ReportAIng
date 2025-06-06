@@ -330,7 +330,9 @@ export function usePrefetchQueries() {
 export function useValidationErrorHandler() {
   return {
     handleValidationError: (error: Error, context?: string) => {
-      console.error(`Validation error${context ? ` in ${context}` : ''}:`, error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Validation error${context ? ` in ${context}` : ''}:`, error);
+      }
 
       // You can add custom error handling logic here
       // For example, showing a toast notification or logging to an external service

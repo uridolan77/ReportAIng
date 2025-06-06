@@ -24,15 +24,19 @@ export class ErrorService {
   }
 
   static logWarning(message: string, context?: Record<string, any>) {
-    console.warn('Warning:', message, context);
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Warning:', message, context);
+    }
+
     if (process.env.NODE_ENV === 'production') {
       // Sentry.captureMessage(message, 'warning');
     }
   }
 
   static logInfo(message: string, context?: Record<string, any>) {
-    console.info('Info:', message, context);
+    if (process.env.NODE_ENV === 'development') {
+      console.info('Info:', message, context);
+    }
   }
 
   // Custom error types

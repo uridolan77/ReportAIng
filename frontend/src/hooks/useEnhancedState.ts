@@ -37,7 +37,7 @@ export const useEnhancedState = <T>(
       setIsLoading(false);
       isInitializedRef.current = true;
     }
-  }, []);
+  }, [persistence, loadPersistedState]);
 
   // Setup cross-tab sync
   useEffect(() => {
@@ -63,15 +63,15 @@ export const useEnhancedState = <T>(
     return unsubscribe;
   }, [key, crossTabSync, state, lastSyncTimestamp, onConflict, subscribe]);
 
-  const loadPersistedState = async () => {
+  const loadPersistedState = useCallback(async () => {
     if (!persistence) return;
 
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const persistedValue = await persistenceManager.loadState(persistence);
-      
+
       if (persistedValue !== null) {
         setState(persistedValue);
         setLastSyncTimestamp(Date.now());
@@ -83,9 +83,9 @@ export const useEnhancedState = <T>(
       setIsLoading(false);
       isInitializedRef.current = true;
     }
-  };
+  }, [persistence]);
 
-  const savePersistedState = async (value: T) => {
+  const savePersistedState = useCallback(async (value: T) => {
     if (!persistence) return;
 
     try {
@@ -94,7 +94,7 @@ export const useEnhancedState = <T>(
       setError(err instanceof Error ? err.message : 'Failed to save state');
       console.error('Failed to save persisted state:', err);
     }
-  };
+  }, [persistence]);
 
   const debouncedSave = useCallback((value: T) => {
     if (debounceTimerRef.current) {
@@ -104,7 +104,7 @@ export const useEnhancedState = <T>(
     debounceTimerRef.current = setTimeout(() => {
       savePersistedState(value);
     }, debounceMs);
-  }, [debounceMs]);
+  }, [debounceMs, savePersistedState]);
 
   const updateState = useCallback((newValue: T | ((prev: T) => T)) => {
     setState(prevState => {

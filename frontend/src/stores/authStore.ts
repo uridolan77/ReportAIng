@@ -47,7 +47,9 @@ export const useAuthStore = create<AuthState>()(
             password
           });
 
-          console.log('🔐 Full login response:', response);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔐 Full login response:', response);
+          }
 
           if (response.success) {
             // Backend now returns camelCase properties due to JSON serialization fix

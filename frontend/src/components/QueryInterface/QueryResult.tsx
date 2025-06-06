@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons';
 import DataTable from '../DataTable';
 import { QueryResponse } from '../../types/query';
-import { ApiService, FrontendQueryResponse } from '../../services/api';
+import { ApiService } from '../../services/api';
 import SqlEditor from './SqlEditor';
 
 const { Title, Text, Paragraph } = Typography;
@@ -23,7 +23,7 @@ interface QueryResultProps {
   onSuggestionClick?: (suggestion: string) => void;
   onVisualizationRequest?: (type: string, data: any[], columns: any[]) => void;
   onDataFiltering?: (hiddenRows: any[], visibleData: any[]) => void;
-  onSqlExecute?: (result: FrontendQueryResponse) => void;
+  onSqlExecute?: (result: QueryResponse) => void;
 }
 
 export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick, onVisualizationRequest, onDataFiltering, onSqlExecute }) => {
@@ -35,32 +35,31 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
   const [, setCurrentPage] = useState(1);
   // State for Query Generation section (collapsed by default)
   const [isQueryGenerationCollapsed, setIsQueryGenerationCollapsed] = useState(true);
-  // State for hidden rows
-  const [hiddenRows, setHiddenRows] = useState<any[]>([]);
-  // State for visible data (filtered data excluding hidden rows)
-  const [visibleData, setVisibleData] = useState<any[]>([]);
+
   // State for SQL editor
   const [showSqlEditor, setShowSqlEditor] = useState(false);
 
   // Debug logging for prompt details and error handling
   React.useEffect(() => {
-    console.log('🔍 QueryResult - Debug info:', {
-      hasResult: !!result,
-      success: result?.success,
-      error: result?.error,
-      hasPromptDetails: !!result?.promptDetails,
-      promptDetails: result?.promptDetails,
-      promptDetailsKeys: result?.promptDetails ? Object.keys(result.promptDetails) : 'N/A',
-      queryId: result?.queryId,
-      allResultKeys: result ? Object.keys(result) : 'N/A',
-      willShowError: !result?.success,
-      hasResultData: !!result?.result,
-      hasResultDataArray: !!result?.result?.data,
-      resultDataLength: result?.result?.data?.length,
-      hasMetadata: !!result?.result?.metadata,
-      metadataKeys: result?.result?.metadata ? Object.keys(result.result.metadata) : 'N/A',
-      fullResult: result
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 QueryResult - Debug info:', {
+        hasResult: !!result,
+        success: result?.success,
+        error: result?.error,
+        hasPromptDetails: !!result?.promptDetails,
+        promptDetails: result?.promptDetails,
+        promptDetailsKeys: result?.promptDetails ? Object.keys(result.promptDetails) : 'N/A',
+        queryId: result?.queryId,
+        allResultKeys: result ? Object.keys(result) : 'N/A',
+        willShowError: !result?.success,
+        hasResultData: !!result?.result,
+        hasResultDataArray: !!result?.result?.data,
+        resultDataLength: result?.result?.data?.length,
+        hasMetadata: !!result?.result?.metadata,
+        metadataKeys: result?.result?.metadata ? Object.keys(result.result.metadata) : 'N/A',
+        fullResult: result
+      });
+    }
 
     // Additional debugging for error cases
     if (result && !result.success) {
@@ -90,8 +89,10 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
   };
 
   // Handle SQL editor execution
-  const handleSqlExecute = (sqlResult: FrontendQueryResponse) => {
-    console.log('🔍 QueryResult - SQL Editor result:', sqlResult);
+  const handleSqlExecute = (sqlResult: QueryResponse) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 QueryResult - SQL Editor result:', sqlResult);
+    }
     setShowSqlEditor(false);
     if (onSqlExecute) {
       onSqlExecute(sqlResult);
@@ -100,9 +101,6 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
 
   // Handle row hiding callbacks
   const handleHiddenRowsChange = React.useCallback((newHiddenRows: any[], newVisibleData: any[]) => {
-    setHiddenRows(newHiddenRows);
-    setVisibleData(newVisibleData);
-
     // Notify parent component about data filtering
     if (onDataFiltering) {
       onDataFiltering(newHiddenRows, newVisibleData);
@@ -119,12 +117,14 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
 
   // Conditional returns after all hooks
   if (!result.success) {
-    console.log('🚨 QueryResult - RENDERING ERROR UI:', {
-      success: result.success,
-      error: result.error,
-      errorType: typeof result.error,
-      isValidationError: (result.error && typeof result.error === 'string' && result.error.includes('validation'))
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🚨 QueryResult - RENDERING ERROR UI:', {
+        success: result.success,
+        error: result.error,
+        errorType: typeof result.error,
+        isValidationError: (result.error && typeof result.error === 'string' && result.error.includes('validation'))
+      });
+    }
 
     const isValidationError = (result.error && typeof result.error === 'string' && result.error.includes('validation'));
 
@@ -354,7 +354,9 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
               }}
               onClick={() => {
                 // Could open help modal or documentation
-                console.log('Help requested');
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('Help requested');
+                }
               }}
             >
               Need Help?
@@ -379,7 +381,7 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
     resizable: true,
     copyable: true,
     formatter: (value: any, record: any, index: number) => {
-      if (debugMode) {
+      if (debugMode && process.env.NODE_ENV === 'development') {
         console.log('Column render:', { columnName: col.name, value, record, index });
       }
       if (value === null || value === undefined) {
@@ -394,16 +396,10 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
     id: index, // DataTable uses 'id' as default keyField
   })) || [];
 
-  // Initialize visible data when result changes
-  React.useEffect(() => {
-    if (dataSource.length > 0) {
-      setVisibleData(dataSource);
-      setHiddenRows([]); // Reset hidden rows when new data arrives
-    }
-  }, [dataSource]);
+
 
   // Debug logging for data structure (only when debug mode is enabled)
-  if (debugMode) {
+  if (debugMode && process.env.NODE_ENV === 'development') {
     console.log('QueryResult Debug:', {
       hasResult: !!result.result,
       hasMetadata: !!result.result?.metadata,

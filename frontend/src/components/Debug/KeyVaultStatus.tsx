@@ -215,7 +215,9 @@ export const KeyVaultStatus: React.FC<KeyVaultStatusProps> = ({ showDetails = tr
       setTests(results);
       setLastCheckTime(new Date().toLocaleString());
     } catch (error) {
-      console.error('Error running configuration tests:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error running configuration tests:', error);
+      }
     } finally {
       setIsLoading(false);
     }

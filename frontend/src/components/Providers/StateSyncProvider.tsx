@@ -161,7 +161,9 @@ export const StateSyncProvider: React.FC<StateSyncProviderProps> = ({ children }
       24 * 60 * 60 * 1000 // 24 hours
     );
 
-    console.log(`Cleaned up ${totalCleaned} expired state entries`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Cleaned up ${totalCleaned} expired state entries`);
+    }
     return totalCleaned;
   }, []);
 

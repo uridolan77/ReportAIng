@@ -29,10 +29,8 @@ import { useStateSync, useSyncStatus, useStorageManagement } from '../Providers/
 import { useEnhancedState, useUserPreferences } from '../../hooks/useEnhancedState';
 
 const { Title, Text } = Typography;
-// TextArea not used in this component
 
 export const StateSyncDemo: React.FC = () => {
-  // testValue and setTestValue removed - not used
   const [broadcastMessage, setBroadcastMessage] = useState('');
 
   // State sync hooks
@@ -85,8 +83,6 @@ export const StateSyncDemo: React.FC = () => {
     notifications: true,
     autoSave: true
   });
-
-  // appState and updateAppState removed - not used in this component
 
   // Handlers
   const handleBroadcast = () => {
@@ -411,7 +407,6 @@ export const StateSyncDemo: React.FC = () => {
                 description="Importing state will reload the page to apply changes."
                 type="warning"
                 showIcon
-
               />
             </Space>
           </Card>

@@ -174,7 +174,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
         });
       }
     } catch (error) {
-      console.error('Query execution error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Query execution error:', error);
+      }
 
       set({
         currentResult: null,
@@ -188,7 +190,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
 
   addToFavorites: (query) => {
     // For now, just log it. In a real app, this would save to backend
-    console.log('Added to favorites:', query);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Added to favorites:', query);
+    }
   },
 
   clearCurrentResult: () => {

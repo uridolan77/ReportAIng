@@ -49,9 +49,13 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
         }
       };
 
-      console.log('🔍 SQL Editor - Executing SQL:', request);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 SQL Editor - Executing SQL:', request);
+      }
       const result = await ApiService.executeRawSQL(request);
-      console.log('🔍 SQL Editor - Result:', result);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 SQL Editor - Result:', result);
+      }
 
       if (result.success) {
         message.success('SQL executed successfully');

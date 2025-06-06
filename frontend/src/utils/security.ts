@@ -163,7 +163,9 @@ export class SecurityUtils {
       };
       sessionStorage.setItem(key, JSON.stringify(sessionData));
     } catch (error) {
-      console.error('Failed to set secure session storage:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to set secure session storage:', error);
+      }
     }
   }
 
@@ -177,7 +179,9 @@ export class SecurityUtils {
       // Verify integrity
       const expectedIntegrity = this.generateIntegrityHash(sessionData.value);
       if (expectedIntegrity !== sessionData.integrity) {
-        console.warn('Session storage integrity check failed');
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Session storage integrity check failed');
+        }
         sessionStorage.removeItem(key);
         return null;
       }
@@ -191,7 +195,9 @@ export class SecurityUtils {
 
       return sessionData.value;
     } catch (error) {
-      console.error('Failed to get secure session storage:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to get secure session storage:', error);
+      }
       return null;
     }
   }
@@ -200,11 +206,11 @@ export class SecurityUtils {
     try {
       sessionStorage.removeItem(key);
     } catch (error) {
-      console.error('Failed to clear secure session storage:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to clear secure session storage:', error);
+      }
     }
   }
-
-
 
   private static generateIntegrityHash(data: string): string {
     // Simple hash for integrity check (not cryptographically secure)
@@ -301,7 +307,9 @@ export class SecurityUtils {
 
       return btoa(String.fromCharCode(...combined));
     } catch (error) {
-      console.error('Encryption failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Encryption failed:', error);
+      }
       throw new Error('Data encryption failed');
     }
   }
@@ -342,7 +350,9 @@ export class SecurityUtils {
 
       return decoder.decode(decrypted);
     } catch (error) {
-      console.error('Decryption failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Decryption failed:', error);
+      }
       throw new Error('Data decryption failed');
     }
   }
@@ -362,13 +372,13 @@ export class SecurityUtils {
     return key;
   }
 
-
-
   static removeSecureSessionStorage(key: string): void {
     try {
       sessionStorage.removeItem(`secure_${key}`);
     } catch (error) {
-      console.warn('Failed to remove secure session storage:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Failed to remove secure session storage:', error);
+      }
     }
   }
 
@@ -402,7 +412,9 @@ export class SecurityUtils {
         payloadData
       );
     } catch (error) {
-      console.error('Integrity verification failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Integrity verification failed:', error);
+      }
       return false;
     }
   }

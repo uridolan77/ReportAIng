@@ -337,18 +337,188 @@ public class QuerySuggestionService : IQuerySuggestionService
         await _context.SaveChangesAsync();
     }
 
-    // Placeholder implementations for remaining methods
-    public Task<QuerySuggestionDto?> GetSuggestionAsync(long id) => throw new NotImplementedException();
-    public Task<QuerySuggestionDto> CreateSuggestionAsync(CreateUpdateQuerySuggestionDto dto, string userId) => throw new NotImplementedException();
-    public Task<QuerySuggestionDto?> UpdateSuggestionAsync(long id, CreateUpdateQuerySuggestionDto dto, string userId) => throw new NotImplementedException();
-    public Task<bool> DeleteSuggestionAsync(long id, string userId) => throw new NotImplementedException();
-    public Task<SuggestionSearchResultDto> SearchSuggestionsAsync(SuggestionSearchDto searchDto) => throw new NotImplementedException();
-    public Task<List<QuerySuggestionDto>> GetPopularSuggestionsAsync(int count = 10) => throw new NotImplementedException();
-    public Task<List<QuerySuggestionDto>> GetRecentSuggestionsAsync(int count = 10) => throw new NotImplementedException();
+    // Individual Suggestion Management
+    public async Task<QuerySuggestionDto?> GetSuggestionAsync(long id)
+    {
+        var suggestion = await _context.QuerySuggestions
+            .Include(s => s.Category)
+            .Where(s => s.Id == id)
+            .FirstOrDefaultAsync();
+
+        return suggestion != null ? MapToDto(suggestion) : null;
+    }
+
+    public async Task<QuerySuggestionDto> CreateSuggestionAsync(CreateUpdateQuerySuggestionDto dto, string userId)
+    {
+        var suggestion = new QuerySuggestion
+        {
+            CategoryId = dto.CategoryId,
+            QueryText = dto.QueryText,
+            Description = dto.Description,
+            DefaultTimeFrame = dto.DefaultTimeFrame,
+            SortOrder = dto.SortOrder,
+            IsActive = dto.IsActive,
+            TargetTables = JsonSerializer.Serialize(dto.TargetTables),
+            Complexity = dto.Complexity,
+            RequiredPermissions = JsonSerializer.Serialize(dto.RequiredPermissions),
+            Tags = JsonSerializer.Serialize(dto.Tags),
+            UsageCount = 0,
+            CreatedBy = userId,
+            CreatedDate = DateTime.UtcNow
+        };
+
+        _context.QuerySuggestions.Add(suggestion);
+        await _context.SaveChangesAsync();
+
+        // Load the category for the response
+        await _context.Entry(suggestion)
+            .Reference(s => s.Category)
+            .LoadAsync();
+
+        return MapToDto(suggestion);
+    }
+
+    public async Task<QuerySuggestionDto?> UpdateSuggestionAsync(long id, CreateUpdateQuerySuggestionDto dto, string userId)
+    {
+        var suggestion = await _context.QuerySuggestions
+            .Include(s => s.Category)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (suggestion == null) return null;
+
+        suggestion.CategoryId = dto.CategoryId;
+        suggestion.QueryText = dto.QueryText;
+        suggestion.Description = dto.Description;
+        suggestion.DefaultTimeFrame = dto.DefaultTimeFrame;
+        suggestion.SortOrder = dto.SortOrder;
+        suggestion.IsActive = dto.IsActive;
+        suggestion.TargetTables = JsonSerializer.Serialize(dto.TargetTables);
+        suggestion.Complexity = dto.Complexity;
+        suggestion.RequiredPermissions = JsonSerializer.Serialize(dto.RequiredPermissions);
+        suggestion.Tags = JsonSerializer.Serialize(dto.Tags);
+        suggestion.UpdatedBy = userId;
+        suggestion.UpdatedDate = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return MapToDto(suggestion);
+    }
+
+    public async Task<bool> DeleteSuggestionAsync(long id, string userId)
+    {
+        var suggestion = await _context.QuerySuggestions.FindAsync(id);
+        if (suggestion == null) return false;
+
+        _context.QuerySuggestions.Remove(suggestion);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    // Search and Filtering
+    public async Task<SuggestionSearchResultDto> SearchSuggestionsAsync(SuggestionSearchDto searchDto)
+    {
+        var query = _context.QuerySuggestions
+            .Include(s => s.Category)
+            .AsQueryable();
+
+        // Apply filters
+        if (searchDto.IsActive.HasValue)
+            query = query.Where(s => s.IsActive == searchDto.IsActive.Value);
+
+        if (!string.IsNullOrEmpty(searchDto.SearchTerm))
+        {
+            var searchTerm = searchDto.SearchTerm.ToLower();
+            query = query.Where(s =>
+                s.QueryText.ToLower().Contains(searchTerm) ||
+                s.Description.ToLower().Contains(searchTerm) ||
+                s.Category.Title.ToLower().Contains(searchTerm));
+        }
+
+        if (!string.IsNullOrEmpty(searchDto.CategoryKey))
+            query = query.Where(s => s.Category.CategoryKey == searchDto.CategoryKey);
+
+        if (searchDto.MinComplexity.HasValue)
+            query = query.Where(s => s.Complexity >= searchDto.MinComplexity.Value);
+
+        if (searchDto.MaxComplexity.HasValue)
+            query = query.Where(s => s.Complexity <= searchDto.MaxComplexity.Value);
+
+        if (searchDto.Tags.Any())
+        {
+            foreach (var tag in searchDto.Tags)
+            {
+                query = query.Where(s => s.Tags.Contains(tag));
+            }
+        }
+
+        // Get total count before pagination
+        var totalCount = await query.CountAsync();
+
+        // Apply sorting
+        query = searchDto.SortBy.ToLower() switch
+        {
+            "querytext" => searchDto.SortDescending ? query.OrderByDescending(s => s.QueryText) : query.OrderBy(s => s.QueryText),
+            "description" => searchDto.SortDescending ? query.OrderByDescending(s => s.Description) : query.OrderBy(s => s.Description),
+            "complexity" => searchDto.SortDescending ? query.OrderByDescending(s => s.Complexity) : query.OrderBy(s => s.Complexity),
+            "usagecount" => searchDto.SortDescending ? query.OrderByDescending(s => s.UsageCount) : query.OrderBy(s => s.UsageCount),
+            "lastused" => searchDto.SortDescending ? query.OrderByDescending(s => s.LastUsed) : query.OrderBy(s => s.LastUsed),
+            "createddate" => searchDto.SortDescending ? query.OrderByDescending(s => s.CreatedDate) : query.OrderBy(s => s.CreatedDate),
+            _ => searchDto.SortDescending ? query.OrderByDescending(s => s.SortOrder) : query.OrderBy(s => s.SortOrder)
+        };
+
+        // Apply pagination
+        var suggestions = await query
+            .Skip(searchDto.Skip)
+            .Take(searchDto.Take)
+            .Select(s => MapToDto(s))
+            .ToListAsync();
+
+        return new SuggestionSearchResultDto
+        {
+            Suggestions = suggestions,
+            TotalCount = totalCount,
+            Skip = searchDto.Skip,
+            Take = searchDto.Take
+        };
+    }
+
+    // Popular and Recent Suggestions
+    public async Task<List<QuerySuggestionDto>> GetPopularSuggestionsAsync(int count = 10)
+    {
+        var suggestions = await _context.QuerySuggestions
+            .Include(s => s.Category)
+            .Where(s => s.IsActive)
+            .OrderByDescending(s => s.UsageCount)
+            .ThenByDescending(s => s.LastUsed)
+            .Take(count)
+            .Select(s => MapToDto(s))
+            .ToListAsync();
+
+        return suggestions;
+    }
+
+    public async Task<List<QuerySuggestionDto>> GetRecentSuggestionsAsync(int count = 10)
+    {
+        var suggestions = await _context.QuerySuggestions
+            .Include(s => s.Category)
+            .Where(s => s.IsActive && s.LastUsed.HasValue)
+            .OrderByDescending(s => s.LastUsed)
+            .Take(count)
+            .Select(s => MapToDto(s))
+            .ToListAsync();
+
+        return suggestions;
+    }
+
+    // Analytics Methods (Placeholder implementations)
     public Task<List<SuggestionUsageAnalyticsDto>> GetUsageAnalyticsAsync(DateTime? fromDate = null, DateTime? toDate = null) => throw new NotImplementedException();
     public Task<SuggestionUsageAnalyticsDto?> GetSuggestionAnalyticsAsync(long suggestionId, DateTime? fromDate = null, DateTime? toDate = null) => throw new NotImplementedException();
+
+    // Bulk Operations (Placeholder implementations)
     public Task<int> BulkUpdateSortOrderAsync(Dictionary<long, int> suggestionSortOrders, string userId) => throw new NotImplementedException();
     public Task<int> BulkToggleActiveStatusAsync(List<long> suggestionIds, bool isActive, string userId) => throw new NotImplementedException();
+
+    // Import/Export (Placeholder implementations)
     public Task<List<QuerySuggestionDto>> ImportSuggestionsAsync(List<CreateUpdateQuerySuggestionDto> suggestions, string userId) => throw new NotImplementedException();
     public Task<byte[]> ExportSuggestionsAsync(string? categoryKey = null) => throw new NotImplementedException();
 }

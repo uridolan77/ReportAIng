@@ -157,7 +157,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
 
   // Debug logging for hidden mode (only when stages actually change)
   React.useEffect(() => {
-    if (mode === 'hidden' || !isVisible) {
+    if ((mode === 'hidden' || !isVisible) && process.env.NODE_ENV === 'development') {
       console.log('🔍 QueryProcessingViewer Hidden Mode:', {
         stages: stages.length,
         completedStages,

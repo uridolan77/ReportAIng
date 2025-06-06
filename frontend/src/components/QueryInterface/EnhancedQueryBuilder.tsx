@@ -164,7 +164,9 @@ const EnhancedQueryBuilder: React.FC = () => {
       const apiSuggestions = await ApiService.getEnhancedQuerySuggestions();
       setSuggestions([...sampleQueries, ...apiSuggestions]);
     } catch (err) {
-      console.error('Failed to load enhanced suggestions:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load enhanced suggestions:', err);
+      }
       setSuggestions(sampleQueries);
     }
     // Loading state cleanup removed

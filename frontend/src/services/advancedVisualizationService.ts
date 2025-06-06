@@ -283,7 +283,9 @@ class AdvancedVisualizationService {
     errorMessage?: string;
   }> {
     try {
-      console.log('Optimizing visualization:', { config, dataSize });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Optimizing visualization:', { config, dataSize });
+      }
 
       // Since /optimize endpoint doesn't exist, provide client-side optimization
       const optimizedConfig = { ...config };
@@ -607,7 +609,9 @@ class AdvancedVisualizationService {
     };
   }> {
     try {
-      console.log('Getting performance metrics:', { config, dataSize });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Getting performance metrics:', { config, dataSize });
+      }
 
       // Since /performance-metrics endpoint doesn't exist, provide client-side estimation
       const baseRenderTime = {

@@ -518,7 +518,9 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
             }
           };
 
-          console.log('ChartConfigurationPanel - Auto-generating gaming chart:', config);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('ChartConfigurationPanel - Auto-generating gaming chart:', config);
+          }
           onConfigChange(config);
           setIsInitialized(true);
         }, 100);

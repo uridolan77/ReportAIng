@@ -510,7 +510,9 @@ export function createValidatedStorage<T>(
         assertType(schema, value, `localStorage:${key}`);
         localStorage.setItem(key, JSON.stringify(value));
       } catch (error) {
-        console.error(`Failed to store value in localStorage:${key}:`, error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error(`Failed to store value in localStorage:${key}:`, error);
+        }
       }
     },
 

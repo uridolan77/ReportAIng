@@ -1,6 +1,6 @@
 import React from 'react';
 import { Input, InputNumber, DatePicker, Select, Switch } from 'antd';
-import moment from 'moment';
+import dayjs from 'dayjs';
 
 interface DataTableColumn {
   editor?: 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'boolean' | 'custom';
@@ -53,7 +53,7 @@ export const CellEditor: React.FC<CellEditorProps> = ({
     case 'date':
       return (
         <DatePicker
-          defaultValue={value ? moment(value) : undefined}
+          defaultValue={value ? dayjs(value) : undefined}
           autoFocus={autoFocus}
           onChange={date => onSave(date?.toISOString())}
           style={{ width: '100%' }}

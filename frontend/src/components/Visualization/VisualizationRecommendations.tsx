@@ -300,7 +300,9 @@ const VisualizationRecommendations: React.FC<VisualizationRecommendationsProps> 
       onRecommendationSelect?.(recommendation);
       message.success(`Generated ${recommendation.chartType} configuration!`);
     } catch (error) {
-      console.error('Error generating config:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error generating config:', error);
+      }
       message.error('Failed to generate configuration');
     } finally {
       setGeneratingConfig(false);

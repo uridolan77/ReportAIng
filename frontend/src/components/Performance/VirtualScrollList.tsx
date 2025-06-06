@@ -164,7 +164,7 @@ export const PerformanceMonitoredVirtualList = <T,>({
     const endTime = performance.now();
     const renderTime = endTime - startTime;
 
-    if (renderTime > 16) { // More than one frame (60fps)
+    if (renderTime > 16 && process.env.NODE_ENV === 'development') { // More than one frame (60fps)
       console.warn(`Virtual list render took ${renderTime.toFixed(2)}ms for ${items.length} items`);
     }
   }, [items.length, startTime]);

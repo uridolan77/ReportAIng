@@ -136,7 +136,9 @@ export class SecureApiClient {
             // Add signing headers
             Object.assign(config.headers, signedRequest.headers);
           } catch (error) {
-            console.warn('Request signing failed:', error);
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('Request signing failed:', error);
+            }
             // Continue without signing in case of error
           }
         }
@@ -147,7 +149,9 @@ export class SecureApiClient {
             config.data = await this.encryptRequestData(config.data);
             config.headers['X-Content-Encrypted'] = 'true';
           } catch (error) {
-            console.warn('Request encryption failed:', error);
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('Request encryption failed:', error);
+            }
           }
         }
 
@@ -201,7 +205,7 @@ export class SecureApiClient {
         // Handle rate limiting
         if (error.response?.status === 429) {
           const retryAfter = error.response.headers['retry-after'];
-          if (retryAfter) {
+          if (retryAfter && process.env.NODE_ENV === 'development') {
             console.warn(`Rate limited. Retry after ${retryAfter} seconds`);
           }
         }
