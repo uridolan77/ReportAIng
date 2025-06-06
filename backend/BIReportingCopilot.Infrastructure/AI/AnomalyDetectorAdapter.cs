@@ -25,8 +25,8 @@ public class AnomalyDetectorAdapter : IAnomalyDetector
             // Create basic query metrics for analysis
             var metrics = new QueryMetrics
             {
-                ExecutionTime = 100, // Default value
-                ResultCount = 0,
+                ExecutionTimeMs = 100, // Default value
+                RowCount = 0,
                 IsSuccessful = true
             };
 
@@ -43,8 +43,7 @@ public class AnomalyDetectorAdapter : IAnomalyDetector
                 RiskLevel = result.IsAnomalous ? RiskLevel.Medium : RiskLevel.Low,
                 IsAnomalous = result.IsAnomalous,
                 DetectedAnomalies = result.DetectedAnomalies,
-                AnalyzedAt = DateTime.UtcNow,
-                Timestamp = DateTime.UtcNow
+                AnalyzedAt = DateTime.UtcNow
             };
         }
         catch (Exception ex)
@@ -59,8 +58,7 @@ public class AnomalyDetectorAdapter : IAnomalyDetector
                 RiskLevel = RiskLevel.Low,
                 IsAnomalous = false,
                 DetectedAnomalies = new List<DetectedAnomaly>(),
-                AnalyzedAt = DateTime.UtcNow,
-                Timestamp = DateTime.UtcNow
+                AnalyzedAt = DateTime.UtcNow
             };
         }
     }

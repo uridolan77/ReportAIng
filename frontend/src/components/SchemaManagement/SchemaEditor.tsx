@@ -11,14 +11,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '../ui';
-import { 
-  Save, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Database, 
-  Columns, 
-  BookOpen, 
+import {
+  Save,
+  Edit,
+  Database,
+  Columns,
+  BookOpen,
   Link,
   Search,
   Filter

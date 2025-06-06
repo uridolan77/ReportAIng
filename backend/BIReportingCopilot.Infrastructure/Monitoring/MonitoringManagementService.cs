@@ -25,13 +25,13 @@ public class MonitoringManagementService : IMetricsCollector, IDisposable
     private readonly ActivitySource _activitySource;
 
     // Standard metrics
-    private Counter<long> _queryExecutionsTotal;
-    private Counter<long> _aiOperationsTotal;
-    private Counter<long> _cacheOperationsTotal;
-    private Counter<long> _errorsTotal;
-    private Histogram<double> _queryDuration;
-    private Histogram<double> _aiOperationDuration;
-    private Histogram<double> _requestDuration;
+    private Counter<long> _queryExecutionsTotal = null!;
+    private Counter<long> _aiOperationsTotal = null!;
+    private Counter<long> _cacheOperationsTotal = null!;
+    private Counter<long> _errorsTotal = null!;
+    private Histogram<double> _queryDuration = null!;
+    private Histogram<double> _aiOperationDuration = null!;
+    private Histogram<double> _requestDuration = null!;
 
     public MonitoringManagementService(
         ILogger<MonitoringManagementService> logger,
@@ -263,14 +263,6 @@ public class MonitoringManagementService : IMetricsCollector, IDisposable
 
     /// <summary>
     /// Record error (IMetricsCollector interface)
-    /// </summary>
-    void IMetricsCollector.RecordError(string errorType, string? details)
-    {
-        RecordError(errorType, details ?? "application", null);
-    }
-
-    /// <summary>
-    /// Record error with exception (IMetricsCollector interface)
     /// </summary>
     void IMetricsCollector.RecordError(string errorType, string? details, Exception? exception)
     {

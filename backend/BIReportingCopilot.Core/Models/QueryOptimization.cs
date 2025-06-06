@@ -29,11 +29,7 @@ public class QueryOptimizationResult
 
     public string? Metadata { get; set; } // JSON for additional data
 
-    // Compatibility aliases for different naming conventions
-    public string OriginalSql => OriginalQuery;
-    public string OptimizedSql => OptimizedQuery;
-    public double EstimatedImprovement => ImprovementScore;
-    public bool OptimizationApplied => AppliedOptimizations.Any();
+
 }
 
 /// <summary>
@@ -83,7 +79,7 @@ public class QuerySuggestion
 
     public double Relevance { get; set; } = 1.0;
 
-    public double Confidence { get; set; } = 1.0; // Alias for Relevance for compatibility
+
 
     public int Priority { get; set; } = 0;
 

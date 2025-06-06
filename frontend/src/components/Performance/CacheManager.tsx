@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Button, Space, Statistic, Row, Col, Input, message, Modal, Progress, Typography } from 'antd';
 import {
   ReloadOutlined,
@@ -27,7 +27,7 @@ export const CacheManager: React.FC = () => {
   const [clearPattern, setClearPattern] = useState('');
   const { clearCache, getCacheMetrics } = useQueryStore();
 
-  const loadMetrics = async () => {
+  const loadMetrics = useCallback(async () => {
     setLoading(true);
     try {
       const cacheMetrics = await getCacheMetrics();
@@ -38,7 +38,7 @@ export const CacheManager: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getCacheMetrics]);
 
   useEffect(() => {
     loadMetrics();

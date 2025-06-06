@@ -130,7 +130,7 @@ public class UnifiedVisualizationController : ControllerBase
     /// <param name="request">Validation request</param>
     /// <returns>Validation result with recommendations</returns>
     [HttpPost("validate")]
-    public async Task<ActionResult<VisualizationValidationResponse>> ValidateVisualization([FromBody] VisualizationValidationRequest request)
+    public Task<ActionResult<VisualizationValidationResponse>> ValidateVisualization([FromBody] VisualizationValidationRequest request)
     {
         try
         {
@@ -141,18 +141,18 @@ public class UnifiedVisualizationController : ControllerBase
 
             var recommendations = GetAlternativeRecommendations(request.VisualizationType, request.Columns, request.RowCount);
 
-            return Ok(new VisualizationValidationResponse
+            return Task.FromResult<ActionResult<VisualizationValidationResponse>>(Ok(new VisualizationValidationResponse
             {
                 IsSuitable = isSuitable,
                 RecommendationScore = isSuitable ? 1.0 : 0.3,
                 Recommendations = recommendations.ToArray(),
                 Issues = isSuitable ? Array.Empty<string>() : GetVisualizationIssues(request.VisualizationType, request.Columns, request.RowCount)
-            });
+            }));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating visualization");
-            return StatusCode(500, new { error = "Failed to validate visualization", details = ex.Message });
+            return Task.FromResult<ActionResult<VisualizationValidationResponse>>(StatusCode(500, new { error = "Failed to validate visualization", details = ex.Message }));
         }
     }
 

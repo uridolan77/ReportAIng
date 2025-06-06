@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Row, Col, Select, Button, Space, Typography, Checkbox, Card, Divider, Tag, Tooltip } from 'antd';
+import { Row, Col, Select, Button, Space, Typography, Checkbox, Divider, Tag, Tooltip } from 'antd';
 import {
   BarChartOutlined,
   LineChartOutlined,
@@ -65,7 +65,6 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
   const [chartType, setChartType] = useState<AdvancedChartType>('Bar');
   const [xAxis, setXAxis] = useState<string>('');
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Detect if this is gaming data
   const isGamingData = useMemo(() => {

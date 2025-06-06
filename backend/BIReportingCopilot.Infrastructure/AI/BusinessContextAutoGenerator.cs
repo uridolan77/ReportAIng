@@ -57,7 +57,8 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
 
         try
         {
-            await progressCallback?.Invoke("Schema Loading", "Loading database schema...", null);
+            if (progressCallback != null)
+                await progressCallback("Schema Loading", "Loading database schema...", null);
 
             var schema = await _schemaService.GetSchemaMetadataAsync();
             var processedTables = 0;
@@ -66,7 +67,8 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
             {
                 try
                 {
-                    await progressCallback?.Invoke("Table Processing", $"Processing table {table.Schema}.{table.Name} ({processedTables + 1}/{schema.Tables.Count})", table.Name);
+                    if (progressCallback != null)
+                        await progressCallback("Table Processing", $"Processing table {table.Schema}.{table.Name} ({processedTables + 1}/{schema.Tables.Count})", table.Name);
 
                     var context = await GenerateTableContextAsync(table.Name, table.Schema, progressCallback);
                     results.Add(context);
@@ -106,7 +108,8 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
 
         try
         {
-            await progressCallback?.Invoke("Table Analysis", $"Loading metadata for {schemaName}.{tableName}...", null);
+            if (progressCallback != null)
+                await progressCallback("Table Analysis", $"Loading metadata for {schemaName}.{tableName}...", null);
 
             var tableMetadata = await _schemaService.GetTableMetadataAsync(tableName, schemaName);
             if (tableMetadata == null)
@@ -114,7 +117,8 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
                 throw new ArgumentException($"Table {schemaName}.{tableName} not found");
             }
 
-            await progressCallback?.Invoke("Table Analysis", $"Building AI prompt for {schemaName}.{tableName}...", null);
+            if (progressCallback != null)
+                await progressCallback("Table Analysis", $"Building AI prompt for {schemaName}.{tableName}...", null);
 
             // Build AI prompt for table analysis
             var prompt = BuildTableAnalysisPrompt(tableMetadata);
@@ -123,45 +127,54 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
 
             if (mockMode)
             {
-                await progressCallback?.Invoke("Table Analysis", $"Generating mock response for {schemaName}.{tableName} (no AI call)...", null);
+                if (progressCallback != null)
+                    await progressCallback("Table Analysis", $"Generating mock response for {schemaName}.{tableName} (no AI call)...", null);
 
                 // Simulate AI processing with multiple progress updates
                 await Task.Delay(200);
-                await progressCallback?.Invoke("Table Analysis", $"Analyzing table structure for {schemaName}.{tableName}...", null);
+                if (progressCallback != null)
+                    await progressCallback("Table Analysis", $"Analyzing table structure for {schemaName}.{tableName}...", null);
                 await Task.Delay(200);
-                await progressCallback?.Invoke("Table Analysis", $"Generating business context for {schemaName}.{tableName}...", null);
+                if (progressCallback != null)
+                    await progressCallback("Table Analysis", $"Generating business context for {schemaName}.{tableName}...", null);
                 await Task.Delay(200);
 
                 // Generate mock context without AI call
                 context = GenerateMockTableContext(tableMetadata);
 
-                await progressCallback?.Invoke("Table Analysis", $"Mock context generated for {schemaName}.{tableName}", null);
+                if (progressCallback != null)
+                    await progressCallback("Table Analysis", $"Mock context generated for {schemaName}.{tableName}", null);
                 await Task.Delay(100);
             }
             else
             {
-                await progressCallback?.Invoke("Table Analysis", $"Sending AI request for {schemaName}.{tableName}...", null);
+                if (progressCallback != null)
+                    await progressCallback("Table Analysis", $"Sending AI request for {schemaName}.{tableName}...", null);
 
                 // Get AI analysis using the correct method for business context generation
                 var aiResponse = await _aiService.GenerateInsightAsync(prompt, new object[0]);
 
-                await progressCallback?.Invoke("Table Analysis", $"Parsing AI response for {schemaName}.{tableName}...", null);
+                if (progressCallback != null)
+                    await progressCallback("Table Analysis", $"Parsing AI response for {schemaName}.{tableName}...", null);
 
                 // Parse AI response and create context
                 context = ParseTableContextResponse(aiResponse, tableMetadata);
             }
 
-            await progressCallback?.Invoke("Column Analysis", $"Analyzing {tableMetadata.Columns.Count} columns...", null);
+            if (progressCallback != null)
+                await progressCallback("Column Analysis", $"Analyzing {tableMetadata.Columns.Count} columns...", null);
 
             // Generate column contexts with progress reporting
             context.Columns = await GenerateColumnContextsAsync(tableMetadata, progressCallback, mockMode);
 
-            await progressCallback?.Invoke("Relationship Analysis", $"Finding related tables for {schemaName}.{tableName}...", null);
+            if (progressCallback != null)
+                await progressCallback("Relationship Analysis", $"Finding related tables for {schemaName}.{tableName}...", null);
 
             // Analyze relationships
             context.RelatedTables = await FindRelatedTablesAsync(tableMetadata);
 
-            await progressCallback?.Invoke("Finalization", $"Calculating confidence score for {schemaName}.{tableName}...", null);
+            if (progressCallback != null)
+                await progressCallback("Finalization", $"Calculating confidence score for {schemaName}.{tableName}...", null);
 
             // Calculate confidence score
             context.ConfidenceScore = CalculateTableConfidenceScore(context, tableMetadata);
@@ -192,14 +205,21 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
         return await GenerateGlossaryTermsAsync(specificTables, progressCallback, false);
     }
 
-    public async Task<List<AutoGeneratedGlossaryTerm>> GenerateGlossaryTermsAsync(List<string> specificTables, Func<string, string, string?, Task>? progressCallback = null, bool mockMode = false)
+    public async Task<List<AutoGeneratedGlossaryTerm>> GenerateGlossaryTermsAsync(List<string>? specificTables = null, Func<string, string, string?, Task>? progressCallback = null, bool mockMode = false)
     {
+        // Handle null case - if no specific tables provided, generate for all tables
+        if (specificTables == null)
+        {
+            return await GenerateGlossaryTermsAsync();
+        }
+
         _logger.LogInformation("Starting auto-generation of glossary terms for {TableCount} specific tables (MockMode: {MockMode})", specificTables.Count, mockMode);
         var results = new List<AutoGeneratedGlossaryTerm>();
 
         try
         {
-            await progressCallback?.Invoke("Schema Loading", "Loading database schema...", null);
+            if (progressCallback != null)
+                await progressCallback("Schema Loading", "Loading database schema...", null);
 
             var schema = await _schemaService.GetSchemaMetadataAsync();
             var allTerms = new HashSet<string>();
@@ -214,7 +234,8 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
             _logger.LogInformation("Processing {ProcessCount} tables out of {TotalCount} available tables",
                 tablesToProcess.Count, schema.Tables.Count);
 
-            await progressCallback?.Invoke("Term Extraction", $"Extracting terms from {tablesToProcess.Count} tables...", null);
+            if (progressCallback != null)
+                await progressCallback("Term Extraction", $"Extracting terms from {tablesToProcess.Count} tables...", null);
 
             // Extract terms from selected table and column names only
             var processedTables = 0;
@@ -222,7 +243,8 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
             {
                 _logger.LogDebug("Processing table {Schema}.{Table} for glossary terms", table.Schema, table.Name);
 
-                await progressCallback?.Invoke("Term Extraction", $"Processing table {table.Schema}.{table.Name} ({processedTables + 1}/{tablesToProcess.Count})", table.Name);
+                if (progressCallback != null)
+                    await progressCallback("Term Extraction", $"Processing table {table.Schema}.{table.Name} ({processedTables + 1}/{tablesToProcess.Count})", table.Name);
 
                 // Add table name terms
                 var tableTerms = ExtractBusinessTerms(table.Name);
@@ -235,7 +257,8 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
                 var processedColumns = 0;
                 foreach (var column in table.Columns)
                 {
-                    await progressCallback?.Invoke("Column Processing", $"Processing column {column.Name} in {table.Name} ({processedColumns + 1}/{table.Columns.Count})", column.Name);
+                    if (progressCallback != null)
+                        await progressCallback("Column Processing", $"Processing column {column.Name} in {table.Name} ({processedColumns + 1}/{table.Columns.Count})", column.Name);
 
                     var columnTerms = ExtractBusinessTerms(column.Name);
                     foreach (var term in columnTerms)
@@ -249,7 +272,8 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
 
             _logger.LogInformation("Extracted {TermCount} unique terms from selected tables", allTerms.Count);
 
-            await progressCallback?.Invoke("AI Generation", $"Generating definitions for {allTerms.Count} terms...", null);
+            if (progressCallback != null)
+                await progressCallback("AI Generation", $"Generating definitions for {allTerms.Count} terms...", null);
 
             // Generate definitions for unique terms
             var processedTerms = 0;
@@ -259,19 +283,23 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
             {
                 try
                 {
-                    await progressCallback?.Invoke("AI Generation", $"Generating definition for '{term}' ({processedTerms + 1}/{validTerms.Count})", term);
+                    if (progressCallback != null)
+                        await progressCallback("AI Generation", $"Generating definition for '{term}' ({processedTerms + 1}/{validTerms.Count})", term);
 
                     AutoGeneratedGlossaryTerm glossaryTerm;
                     if (mockMode)
                     {
-                        await progressCallback?.Invoke("AI Generation", $"Analyzing term '{term}' (mock mode)...", term);
+                        if (progressCallback != null)
+                            await progressCallback("AI Generation", $"Analyzing term '{term}' (mock mode)...", term);
                         await Task.Delay(100);
-                        await progressCallback?.Invoke("AI Generation", $"Generating mock definition for '{term}'...", term);
+                        if (progressCallback != null)
+                            await progressCallback("AI Generation", $"Generating mock definition for '{term}'...", term);
                         await Task.Delay(100);
 
                         glossaryTerm = GenerateMockGlossaryTerm(term);
 
-                        await progressCallback?.Invoke("AI Generation", $"Mock definition completed for '{term}'", term);
+                        if (progressCallback != null)
+                            await progressCallback("AI Generation", $"Mock definition completed for '{term}'", term);
                         await Task.Delay(50);
                     }
                     else

@@ -18,7 +18,6 @@ public class SemanticCacheService : ISemanticCacheService
     private readonly IMemoryCache _memoryCache;
     private readonly BICopilotContext _context;
     private readonly ILogger<SemanticCacheService> _logger;
-    private readonly QueryAnalysisService _queryAnalysisService;
     private readonly SemanticCacheConfiguration _config;
     private readonly QuerySimilarityAnalyzer _similarityAnalyzer;
 
@@ -394,7 +393,7 @@ public class QuerySimilarityAnalyzer
     /// <summary>
     /// Extract semantic features from a query
     /// </summary>
-    public async Task<SemanticFeatures> ExtractSemanticsAsync(string naturalLanguageQuery, string sqlQuery)
+    public Task<SemanticFeatures> ExtractSemanticsAsync(string naturalLanguageQuery, string sqlQuery)
     {
         try
         {
@@ -410,12 +409,12 @@ public class QuerySimilarityAnalyzer
                 Timestamp = DateTime.UtcNow
             };
 
-            return features;
+            return Task.FromResult(features);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error extracting semantic features");
-            return new SemanticFeatures();
+            return Task.FromResult(new SemanticFeatures());
         }
     }
 

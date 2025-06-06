@@ -1,7 +1,6 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.DTOs;
-using BIReportingCopilot.Core.Services;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -644,7 +643,7 @@ public class QueryService : IQueryService
             return new QueryPerformanceMetrics
             {
                 ExecutionTime = TimeSpan.FromMilliseconds(100),
-                RowCount = 0,
+                RowsAffected = 0,
                 FromCache = false
             };
         }
@@ -677,9 +676,9 @@ public class QueryService : IQueryService
             // Basic implementation - return some default suggestions
             return new List<QuerySuggestion>
             {
-                new QuerySuggestion { Text = "Show me all data", Confidence = 0.8 },
-                new QuerySuggestion { Text = "Count total records", Confidence = 0.7 },
-                new QuerySuggestion { Text = "Show recent data", Confidence = 0.6 }
+                new QuerySuggestion { Text = "Show me all data" },
+                new QuerySuggestion { Text = "Count total records" },
+                new QuerySuggestion { Text = "Show recent data" }
             };
         }
         catch (Exception ex)

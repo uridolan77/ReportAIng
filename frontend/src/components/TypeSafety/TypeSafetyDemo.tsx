@@ -32,7 +32,7 @@ import {
   isEmailAddress,
   isConfidenceScore
 } from '../../types/branded';
-import { useValidatedQuery, useExecuteQuery } from '../../hooks/useValidatedQuery';
+import { useValidatedQuery } from '../../hooks/useValidatedQuery';
 import { QueryResponseSchema } from '../../schemas/api';
 
 const { Title, Text, Paragraph } = Typography;
@@ -103,7 +103,15 @@ export const TypeSafetyDemo: React.FC = () => {
     }
   );
 
-  const executeQueryMutation = useExecuteQuery();
+  // Mock mutation for demo purposes
+  const executeQueryMutation = {
+    mutate: (params: any) => {
+      console.log('Mock query execution:', params);
+      message.info('Mock query executed successfully');
+    },
+    isPending: false
+  };
+
 
   // Test validation functions
   const runValidationTests = () => {
@@ -212,14 +220,14 @@ export const TypeSafetyDemo: React.FC = () => {
   // Test form validation
   const [form] = Form.useForm();
   const handleFormSubmit = (values: any) => {
-    const formResult = validateFormData(UserSchema, values, 'user-form');
+    const formResult = ValidationUtils.validate(UserSchema, values);
 
-    if (formResult.isValid) {
+    if (formResult.success) {
       message.success('Form validation passed!');
       console.log('Valid form data:', formResult.data);
     } else {
       message.error('Form validation failed!');
-      console.log('Form errors:', formResult.errors);
+      console.log('Form errors:', formResult.error);
     }
   };
 

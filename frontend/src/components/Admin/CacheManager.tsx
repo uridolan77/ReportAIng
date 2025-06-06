@@ -3,7 +3,7 @@
  * Provides admin interface for managing query caching
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Switch,
@@ -69,9 +69,9 @@ export const CacheManager: React.FC = () => {
     loadAISettings();
     loadCacheStats();
     loadCacheEntries();
-  }, []);
+  }, [loadAISettings, loadCacheStats, loadCacheEntries]);
 
-  const loadAISettings = async () => {
+  const loadAISettings = useCallback(async () => {
     try {
       const settings = await tuningApi.getAISettings();
       setAiSettings(settings);
@@ -99,9 +99,9 @@ export const CacheManager: React.FC = () => {
         setPromptCacheEnabled(JSON.parse(savedPromptCacheEnabled));
       }
     }
-  };
+  }, []);
 
-  const loadCacheStats = () => {
+  const loadCacheStats = useCallback(() => {
     // Mock cache stats - in real implementation, this would call an API
     const mockStats: CacheStats = {
       totalEntries: 45,
@@ -111,9 +111,9 @@ export const CacheManager: React.FC = () => {
       lastCleared: localStorage.getItem('cache-last-cleared')
     };
     setStats(mockStats);
-  };
+  }, []);
 
-  const loadCacheEntries = () => {
+  const loadCacheEntries = useCallback(() => {
     // Mock cache entries - in real implementation, this would call an API
     const mockEntries: CacheEntry[] = [
       {
@@ -142,7 +142,7 @@ export const CacheManager: React.FC = () => {
       }
     ];
     setCacheEntries(mockEntries);
-  };
+  }, []);
 
   const handleCacheToggle = async (enabled: boolean) => {
     try {

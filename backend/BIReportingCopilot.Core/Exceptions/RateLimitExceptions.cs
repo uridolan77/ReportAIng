@@ -12,11 +12,11 @@ public class RateLimitExceededException : Exception
     public string? UserId { get; }
 
     public RateLimitExceededException(
-        string limitType, 
-        int currentCount, 
-        int maxAllowed, 
+        string limitType,
+        int currentCount,
+        int maxAllowed,
         TimeSpan retryAfter,
-        string? userId = null) 
+        string? userId = null)
         : base($"Rate limit exceeded for {limitType}. Current: {currentCount}, Max: {maxAllowed}. Retry after: {retryAfter}")
     {
         LimitType = limitType;
@@ -27,12 +27,12 @@ public class RateLimitExceededException : Exception
     }
 
     public RateLimitExceededException(
-        string limitType, 
-        int currentCount, 
-        int maxAllowed, 
+        string limitType,
+        int currentCount,
+        int maxAllowed,
         TimeSpan retryAfter,
         string? userId,
-        Exception innerException) 
+        Exception innerException)
         : base($"Rate limit exceeded for {limitType}. Current: {currentCount}, Max: {maxAllowed}. Retry after: {retryAfter}", innerException)
     {
         LimitType = limitType;
@@ -50,13 +50,13 @@ public class RateLimitServiceUnavailableException : Exception
 {
     public string ServiceName { get; }
 
-    public RateLimitServiceUnavailableException(string serviceName) 
+    public RateLimitServiceUnavailableException(string serviceName)
         : base($"Rate limiting service '{serviceName}' is unavailable")
     {
         ServiceName = serviceName;
     }
 
-    public RateLimitServiceUnavailableException(string serviceName, Exception innerException) 
+    public RateLimitServiceUnavailableException(string serviceName, Exception innerException)
         : base($"Rate limiting service '{serviceName}' is unavailable", innerException)
     {
         ServiceName = serviceName;
@@ -70,13 +70,13 @@ public class InvalidRateLimitConfigurationException : Exception
 {
     public string ConfigurationKey { get; }
 
-    public InvalidRateLimitConfigurationException(string configurationKey, string message) 
+    public InvalidRateLimitConfigurationException(string configurationKey, string message)
         : base($"Invalid rate limit configuration for '{configurationKey}': {message}")
     {
         ConfigurationKey = configurationKey;
     }
 
-    public InvalidRateLimitConfigurationException(string configurationKey, string message, Exception innerException) 
+    public InvalidRateLimitConfigurationException(string configurationKey, string message, Exception innerException)
         : base($"Invalid rate limit configuration for '{configurationKey}': {message}", innerException)
     {
         ConfigurationKey = configurationKey;

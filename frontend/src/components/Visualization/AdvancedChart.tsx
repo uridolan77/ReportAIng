@@ -22,7 +22,7 @@ import { AdvancedVisualizationConfig, ChartPerformanceMetrics } from '../../type
 import { useGamingChartProcessor, processGamingChartData, GAMING_COLOR_SCHEMES } from './GamingChartProcessor';
 import ChartDebugPanel from './ChartDebugPanel';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 interface AdvancedChartProps {

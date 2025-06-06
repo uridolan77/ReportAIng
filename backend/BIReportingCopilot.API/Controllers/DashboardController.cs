@@ -557,20 +557,20 @@ public class DashboardController : ControllerBase
         }
     }
 
-    private async Task<ResourceUsage> GetResourceUsageAsync()
+    private Task<ResourceUsage> GetResourceUsageAsync()
     {
-        return new ResourceUsage
+        return Task.FromResult(new ResourceUsage
         {
             CpuUsage = 45.2,
             MemoryUsage = 68.7,
             DiskUsage = 34.1,
             NetworkUsage = 12.5
-        };
+        });
     }
 
-    private async Task<List<Recommendation>> GenerateRecommendationsAsync(string userId)
+    private Task<List<Recommendation>> GenerateRecommendationsAsync(string userId)
     {
-        return new List<Recommendation>
+        return Task.FromResult(new List<Recommendation>
         {
             new Recommendation
             {
@@ -579,7 +579,7 @@ public class DashboardController : ControllerBase
                 Description = "Consider adding indexes to frequently queried columns",
                 Priority = "medium"
             }
-        };
+        });
     }
 
     private string GetCurrentUserId()
@@ -587,17 +587,17 @@ public class DashboardController : ControllerBase
         return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
     }
 
-    private async Task<int> GetActiveDatabaseConnections()
+    private Task<int> GetActiveDatabaseConnections()
     {
         try
         {
             // This would typically query the database for active connections
             // For now, return a reasonable estimate
-            return 1;
+            return Task.FromResult(1);
         }
         catch
         {
-            return 1;
+            return Task.FromResult(1);
         }
     }
 

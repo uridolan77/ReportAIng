@@ -22,7 +22,7 @@ import { QueryTabs } from './QueryTabs';
 import { OnboardingTour } from '../Onboarding/OnboardingTour';
 import { ProactiveSuggestions } from './ProactiveSuggestions';
 import { GuidedQueryWizard } from './GuidedQueryWizard';
-import { ErrorRecoveryPanel } from './EnhancedErrorHandling';
+
 import { useAIProcessingFeedback } from './AIProcessingFeedback';
 import { QueryProcessingViewer } from './QueryProcessingViewer';
 import { AccessibilityFeatures } from './AccessibilityFeatures';
@@ -56,7 +56,7 @@ export const MinimalQueryInterface: React.FC = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [showProactiveSuggestions, setShowProactiveSuggestions] = useState(true);
 
-  const [validationResult] = useState<any>(null);
+
 
   // AI Processing feedback
   const aiProcessing = useAIProcessingFeedback();
@@ -248,23 +248,7 @@ export const MinimalQueryInterface: React.FC = () => {
           </div>
         )}
 
-        {/* Validation Feedback */}
-        {validationResult && !validationResult.isValid && !isLoading && (
-          <div style={{ marginTop: '16px' }}>
-            {validationResult.errors
-              .filter((error: any) => !error.isProcessingStep && error.type !== 'ai_processing')
-              .map((error: any, index: number) => (
-                <ErrorRecoveryPanel
-                  key={index}
-                  error={error}
-                  originalQuery={query}
-                  onRetry={() => handleSubmitQuery()}
-                  onQueryFix={(fixedQuery) => setQuery(fixedQuery)}
-                  onGetHelp={() => setShowWizard(true)}
-                />
-              ))}
-          </div>
-        )}
+
       </div>
 
       {/* Results Section - Direct Content */}

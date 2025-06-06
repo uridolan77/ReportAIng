@@ -781,7 +781,7 @@ public class TuningService : ITuningService
             _logger.LogInformation("Refreshing schema cache to ensure latest database structure");
             try
             {
-                await _schemaService.RefreshSchemaAsync();
+                await _schemaService.RefreshSchemaMetadataAsync();
                 _logger.LogInformation("Schema cache refreshed successfully");
 
                 // Debug: Log actual column counts from schema

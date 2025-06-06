@@ -4,6 +4,7 @@ using BIReportingCopilot.Core.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
+using System.Runtime.CompilerServices;
 
 namespace BIReportingCopilot.Infrastructure.AI.Providers;
 
@@ -121,7 +122,7 @@ internal class FallbackAIProvider : IAIProvider
     public async IAsyncEnumerable<StreamingResponse> GenerateCompletionStreamAsync(
         string prompt,
         AIOptions options,
-        CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         _logger.LogWarning("Using fallback AI provider for streaming - returning mock response");
 

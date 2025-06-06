@@ -426,7 +426,6 @@ public class StreamingSqlQueryService : IStreamingSqlQueryService
         ChannelWriter<StreamingQueryChunk> writer,
         CancellationToken cancellationToken)
     {
-        var chunkIndex = 0;
         var chunkSize = options.ChunkSize ?? 1000;
 
         await foreach (var chunk in ExecuteSelectQueryChunkedAsync(sql, options, cancellationToken))

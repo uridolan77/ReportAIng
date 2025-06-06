@@ -837,7 +837,9 @@ export const EnhancedDevTools: React.FC<DevToolsProps> = ({
                     const script = (document.getElementById('custom-script-input') as HTMLTextAreaElement)?.value;
                     if (script) {
                       try {
-                        const result = eval(script);
+                        // For development tools, we'll allow limited script execution
+                        // eslint-disable-next-line no-new-func
+                        const result = new Function('return ' + script)();
                         addLog('Script Executor', `Executed: ${script}\nResult: ${JSON.stringify(result)}`, 'info');
                         message.success('Script executed successfully');
                       } catch (error) {

@@ -84,7 +84,6 @@ public class QueryPerformanceMetrics
 {
     public TimeSpan ExecutionTime { get; set; }
     public int RowsAffected { get; set; }
-    public int RowCount { get; set; } // Alias for RowsAffected for compatibility
     public long MemoryUsed { get; set; }
     public bool FromCache { get; set; }
     public string QueryHash { get; set; } = string.Empty;

@@ -73,87 +73,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
     console.log(`📝 [${level.toUpperCase()}] ${message}`, details || '');
   }, []);
 
-  // Helper function to generate realistic business information based on table name
-  // Note: This function is defined but not currently used - kept for future enhancement
-  const generateRealisticBusinessInfo = useCallback((tableName: string) => {
-    const lowerName = tableName.toLowerCase();
 
-    if (lowerName.includes('daily_actions') || lowerName.includes('dailyactions')) {
-      return {
-        purpose: 'Tracks daily player activities and gaming statistics for business intelligence and reporting',
-        context: 'Central table for daily aggregated player data including deposits, bets, wins, and other key gaming metrics',
-        useCase: 'Generate daily, weekly, and monthly reports on player activity and platform performance',
-        metrics: ['Daily Active Players', 'Total Deposits', 'Total Bets', 'Total Wins', 'Player Retention'],
-        patterns: ['Daily activity summaries', 'Player performance analysis', 'Revenue tracking queries'],
-        rules: 'Data is aggregated daily and should maintain referential integrity with player and transaction tables'
-      };
-    }
-
-    if (lowerName.includes('bonus')) {
-      return {
-        purpose: 'Manages player bonus campaigns, promotions, and reward distributions',
-        context: 'Tracks all bonus-related activities including bonus types, amounts, conditions, and player eligibility',
-        useCase: 'Monitor bonus effectiveness, player engagement with promotions, and bonus liability management',
-        metrics: ['Bonus Conversion Rate', 'Total Bonus Amount', 'Active Bonuses', 'Bonus ROI'],
-        patterns: ['Bonus eligibility checks', 'Promotion performance analysis', 'Player bonus history'],
-        rules: 'Bonus amounts must be positive, expiration dates must be future dates, and bonus conditions must be met'
-      };
-    }
-
-    if (lowerName.includes('player')) {
-      return {
-        purpose: 'Stores comprehensive player profile information and account details',
-        context: 'Master table containing player demographics, registration data, and account status information',
-        useCase: 'Player management, KYC compliance, customer support, and personalized gaming experiences',
-        metrics: ['Total Players', 'Active Players', 'New Registrations', 'Player Lifetime Value'],
-        patterns: ['Player lookup queries', 'Demographics analysis', 'Account status updates'],
-        rules: 'Email addresses must be unique, registration dates cannot be future dates, player status must be valid'
-      };
-    }
-
-    if (lowerName.includes('countries') || lowerName.includes('country')) {
-      return {
-        purpose: 'Reference table for country codes, names, and regional gaming regulations',
-        context: 'Supports geo-location services, compliance requirements, and regional business rules',
-        useCase: 'Player registration validation, regulatory compliance, and regional market analysis',
-        metrics: ['Players by Country', 'Revenue by Region', 'Market Penetration'],
-        patterns: ['Country-based filtering', 'Regional compliance checks', 'Geographic reporting'],
-        rules: 'Country codes must follow ISO standards, country names must be unique and properly formatted'
-      };
-    }
-
-    if (lowerName.includes('currencies') || lowerName.includes('currency')) {
-      return {
-        purpose: 'Manages supported currencies, exchange rates, and multi-currency transactions',
-        context: 'Enables global operations with proper currency conversion and financial reporting',
-        useCase: 'Multi-currency deposits, withdrawals, and financial reporting across different markets',
-        metrics: ['Transactions by Currency', 'Exchange Rate Variations', 'Currency Distribution'],
-        patterns: ['Currency conversion queries', 'Multi-currency reporting', 'Exchange rate updates'],
-        rules: 'Currency codes must be valid ISO codes, exchange rates must be positive, base currency must be defined'
-      };
-    }
-
-    if (lowerName.includes('whitelabel') || lowerName.includes('white_label')) {
-      return {
-        purpose: 'Manages white-label partner configurations and brand-specific settings',
-        context: 'Supports multi-brand operations with customized gaming experiences for different partners',
-        useCase: 'Brand management, partner-specific configurations, and revenue sharing calculations',
-        metrics: ['Revenue by Brand', 'Players by White Label', 'Brand Performance'],
-        patterns: ['Brand-specific queries', 'Partner reporting', 'Configuration management'],
-        rules: 'White label IDs must be unique, brand configurations must be valid, partner agreements must be active'
-      };
-    }
-
-    // Default fallback for unknown table types
-    return {
-      purpose: `Manages ${tableName.replace(/tbl_|_/g, ' ').trim()} data for gaming platform operations`,
-      context: `Supporting table for ${tableName.replace(/tbl_|_/g, ' ').trim()} functionality within the gaming ecosystem`,
-      useCase: `Store and retrieve ${tableName.replace(/tbl_|_/g, ' ').trim()} information for business operations`,
-      metrics: [`${tableName} Count`, `${tableName} Activity`, 'Data Quality Score'],
-      patterns: [`${tableName} lookup queries`, `${tableName} reporting`, `${tableName} management`],
-      rules: 'Standard data integrity constraints and business validation rules apply to this table'
-    };
-  }, []);
 
   // Handle real-time progress updates from SignalR
   useEffect(() => {
@@ -515,12 +435,7 @@ export const AutoGenerationManager: React.FC<AutoGenerationManagerProps> = ({ on
       };
 
       // Initialize arrays at the beginning
-      let currentProgress = 0;
-      let processedTables = 0;
-      let processedColumns = 0;
-      // generatedTerms and foundRelationships removed - not used in current implementation
       const completed: string[] = [];
-      const details: any[] = [];
       let schema: any = null;
 
       // Use selected tables for processing

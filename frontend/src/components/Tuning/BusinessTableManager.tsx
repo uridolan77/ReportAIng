@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -17,8 +17,7 @@ import {
   Collapse,
   Divider,
   Switch,
-  List,
-  Tooltip
+  Select
 } from 'antd';
 import {
   PlusOutlined,
@@ -29,12 +28,11 @@ import {
   KeyOutlined,
   MinusCircleOutlined
 } from '@ant-design/icons';
-import { tuningApi, BusinessTableInfo, CreateTableRequest, BusinessColumnInfo } from '../../services/tuningApi';
+import { tuningApi, BusinessTableInfo, CreateTableRequest } from '../../services/tuningApi';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { Panel } = Collapse;
-// const { Option } = Select;
 
 interface BusinessTableManagerProps {
   onDataChange?: () => void;
@@ -49,9 +47,9 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
 
   useEffect(() => {
     loadTables();
-  }, []);
+  }, [loadTables]);
 
-  const loadTables = async () => {
+  const loadTables = useCallback(async () => {
     try {
       setLoading(true);
       const data = await tuningApi.getBusinessTables();
@@ -62,7 +60,7 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleCreate = () => {
     setEditingTable(null);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Tabs,
@@ -60,12 +60,12 @@ export const SchemaManagementDashboard: React.FC = () => {
     loadDatabaseSchema();
   }, []);
 
-  const loadSchemas = async () => {
+  const loadSchemas = useCallback(async () => {
     try {
       setLoading(true);
       const data = await schemaManagementApi.getSchemas();
       setSchemas(data);
-      
+
       // Select default schema if available
       const defaultSchema = data.find(s => s.isDefault);
       if (defaultSchema && !selectedSchema) {
@@ -79,7 +79,7 @@ export const SchemaManagementDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSchema]);
 
   const loadDatabaseSchema = async () => {
     try {

@@ -44,7 +44,6 @@ public class OpenAIHealthCheck : IHealthCheck
                 return HealthCheckResult.Degraded("OpenAI service validation failed", null, new Dictionary<string, object>
                 {
                     ["description"] = "OpenAI service validation failed",
-                    ["exception"] = null as string,
                     ["possibleCauses"] = new[]
                     {
                         "OpenAI API key not configured",

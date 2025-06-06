@@ -49,11 +49,11 @@ public class LearningService
                 IsAnomalous = false,
                 AnomalyScore = 0.0,
                 DetectedAnomalies = new List<DetectedAnomaly>(),
-                Timestamp = DateTime.UtcNow
+                AnalyzedAt = DateTime.UtcNow
             };
 
             // Check execution time anomalies
-            var executionTimeAnomaly = await DetectExecutionTimeAnomalyAsync(TimeSpan.FromMilliseconds(metrics.ExecutionTime));
+            var executionTimeAnomaly = await DetectExecutionTimeAnomalyAsync(TimeSpan.FromMilliseconds(metrics.ExecutionTimeMs));
             if (executionTimeAnomaly != null)
             {
                 result.DetectedAnomalies.Add(executionTimeAnomaly);
@@ -61,7 +61,7 @@ public class LearningService
             }
 
             // Check result size anomalies
-            var resultSizeAnomaly = await DetectResultSizeAnomalyAsync(metrics.ResultCount);
+            var resultSizeAnomaly = await DetectResultSizeAnomalyAsync(metrics.RowCount);
             if (resultSizeAnomaly != null)
             {
                 result.DetectedAnomalies.Add(resultSizeAnomaly);
@@ -101,7 +101,7 @@ public class LearningService
                 IsAnomalous = false,
                 AnomalyScore = 0.0,
                 DetectedAnomalies = new List<DetectedAnomaly>(),
-                Timestamp = DateTime.UtcNow
+                AnalyzedAt = DateTime.UtcNow
             };
         }
     }
@@ -289,7 +289,7 @@ public class LearningService
             // Sort by relevance and confidence
             recommendations = recommendations
                 .OrderByDescending(r => r.Confidence)
-                .ThenByDescending(r => r.Relevance)
+                .ThenByDescending(r => r.Confidence)
                 .Take(10)
                 .ToList();
 
@@ -597,7 +597,7 @@ public class LearningService
             {
                 return new BehaviorAnomaly
                 {
-                    Type = "HighQueryFrequency",
+                    AnomalyType = "HighQueryFrequency",
                     Description = $"User executed {queryCount} queries in {timeSpan.TotalHours:F1} hours ({queriesPerHour:F1} queries/hour)",
                     Severity = queriesPerHour > 200 ? (double)AnomalySeverity.High : (double)AnomalySeverity.Medium,
                     UserId = userId,
@@ -618,7 +618,7 @@ public class LearningService
         {
             return new BehaviorAnomaly
             {
-                Type = "HighErrorRate",
+                AnomalyType = "HighErrorRate",
                 Description = $"User has {errorRate:P0} error rate in recent queries",
                 Severity = errorRate > 0.8 ? (double)AnomalySeverity.High : (double)AnomalySeverity.Medium,
                 UserId = userId,
@@ -640,7 +640,7 @@ public class LearningService
         {
             return new BehaviorAnomaly
             {
-                Type = "HighErrorRate",
+                AnomalyType = "HighErrorRate",
                 Description = $"High error rate: {errorCount} errors out of {activities.Count} queries ({errorRate:P0})",
                 Severity = errorRate > 0.6 ? (double)AnomalySeverity.High : (double)AnomalySeverity.Medium,
                 UserId = userId,

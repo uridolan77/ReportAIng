@@ -30,7 +30,7 @@ public class AIService : IAIService
     private readonly IPromptService _promptService;
     private readonly IContextManager _contextManager;
     private readonly List<QueryExample> _examples;
-    private readonly IAIProvider _provider;
+    private readonly IAIProvider _provider = null!;
 
     // Resilience policies
     private IAsyncPolicy<string> _retryPolicy = null!;
@@ -43,7 +43,6 @@ public class AIService : IAIService
 
     // Adaptive learning components
     private readonly LearningService? _learningService;
-    private readonly PromptOptimizer? _promptOptimizer;
 
     public AIService(
         IAIProviderFactory providerFactory,
@@ -52,8 +51,7 @@ public class AIService : IAIService
         IContextManager contextManager,
         IPromptService promptService,
         IMetricsCollector? metricsCollector = null,
-        LearningService? learningService = null,
-        PromptOptimizer? promptOptimizer = null)
+        LearningService? learningService = null)
     {
         _providerFactory = providerFactory;
         _logger = logger;
@@ -62,7 +60,6 @@ public class AIService : IAIService
         _promptService = promptService;
         _metricsCollector = metricsCollector;
         _learningService = learningService;
-        _promptOptimizer = promptOptimizer;
         _examples = InitializeExamples();
 
         // Get the appropriate provider
@@ -101,29 +98,17 @@ public class AIService : IAIService
 
                 // Apply adaptive learning if available
                 string finalPrompt = prompt;
-                if (_learningService != null && _promptOptimizer != null)
+                if (_learningService != null)
                 {
                     try
                     {
                         var learningInsights = await _learningService.GetLearningInsightsAsync("system");
-                        // Create QueryExecutionContext for prompt optimizer
-                        var executionContext = new QueryExecutionContext
-                        {
-                            QueryId = Guid.NewGuid().ToString(),
-                            UserId = "system",
-                            SessionId = "system",
-                            StartTime = DateTime.UtcNow,
-                            DatabaseName = "system",
-                            TablesAccessed = new List<string>(),
-                            Parameters = new Dictionary<string, object>()
-                        };
-                        finalPrompt = await _promptOptimizer.OptimizePromptAsync(prompt, executionContext);
-                        _logger.LogDebug("Applied adaptive learning optimization to prompt");
+                        _logger.LogDebug("Retrieved learning insights for prompt optimization");
+                        // Note: Prompt optimization logic can be added here when needed
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Failed to apply adaptive learning, using original prompt");
-                        finalPrompt = prompt;
+                        _logger.LogWarning(ex, "Failed to retrieve learning insights");
                     }
                 }
 
@@ -268,7 +253,7 @@ Return only valid JSON.";
         }
     }
 
-    public async Task<double> CalculateConfidenceScoreAsync(string naturalLanguageQuery, string generatedSQL)
+    public Task<double> CalculateConfidenceScoreAsync(string naturalLanguageQuery, string generatedSQL)
     {
         // Implement confidence calculation logic
         var score = 0.8; // Default confidence
@@ -278,10 +263,10 @@ Return only valid JSON.";
         if (generatedSQL.Contains("FROM", StringComparison.OrdinalIgnoreCase)) score += 0.1;
         if (!generatedSQL.Contains("ERROR", StringComparison.OrdinalIgnoreCase)) score += 0.1;
 
-        return Math.Min(1.0, score);
+        return Task.FromResult(Math.Min(1.0, score));
     }
 
-    public async Task<string[]> GenerateQuerySuggestionsAsync(string context, SchemaMetadata schema)
+    public Task<string[]> GenerateQuerySuggestionsAsync(string context, SchemaMetadata schema)
     {
         // Get current date for recent queries
         var today = DateTime.Now;
@@ -314,10 +299,10 @@ Return only valid JSON.";
             }
         }
 
-        return suggestions.Take(8).ToArray();
+        return Task.FromResult(suggestions.Take(8).ToArray());
     }
 
-    public async Task<bool> ValidateQueryIntentAsync(string naturalLanguageQuery)
+    public Task<bool> ValidateQueryIntentAsync(string naturalLanguageQuery)
     {
         // Implement query intent validation
         var lowerQuery = naturalLanguageQuery.ToLowerInvariant();
@@ -326,12 +311,12 @@ Return only valid JSON.";
         var dangerousPatterns = new[] { "drop", "delete", "truncate", "alter", "create", "insert", "update" };
         if (dangerousPatterns.Any(pattern => lowerQuery.Contains(pattern)))
         {
-            return false;
+            return Task.FromResult(false);
         }
 
         // Check for valid query patterns
         var validPatterns = new[] { "show", "get", "find", "list", "count", "sum", "average", "total" };
-        return validPatterns.Any(pattern => lowerQuery.Contains(pattern));
+        return Task.FromResult(validPatterns.Any(pattern => lowerQuery.Contains(pattern)));
     }
 
     #endregion

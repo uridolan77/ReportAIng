@@ -218,7 +218,7 @@ public class CacheService : ICacheService
         }
     }
 
-    public async Task<TimeSpan?> GetTtlAsync(string key)
+    public Task<TimeSpan?> GetTtlAsync(string key)
     {
         try
         {
@@ -227,15 +227,15 @@ public class CacheService : ICacheService
                 var elapsed = DateTime.UtcNow - timestamp;
                 var defaultExpiry = TimeSpan.FromMinutes(_config.DefaultExpiryMinutes);
                 var remaining = defaultExpiry - elapsed;
-                return remaining > TimeSpan.Zero ? remaining : null;
+                return Task.FromResult<TimeSpan?>(remaining > TimeSpan.Zero ? remaining : null);
             }
 
-            return null;
+            return Task.FromResult<TimeSpan?>(null);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting TTL for key: {Key}", key);
-            return null;
+            return Task.FromResult<TimeSpan?>(null);
         }
     }
 
@@ -280,7 +280,7 @@ public class CacheService : ICacheService
 
     #region Cache Management
 
-    public async Task ClearAllAsync()
+    public Task ClearAllAsync()
     {
         try
         {
@@ -308,26 +308,28 @@ public class CacheService : ICacheService
         {
             _logger.LogError(ex, "Error clearing cache");
         }
+
+        return Task.CompletedTask;
     }
 
-    public async Task<CacheStatistics> GetStatisticsAsync()
+    public Task<CacheStatistics> GetStatisticsAsync()
     {
         lock (_statsLock)
         {
             _statistics.TotalKeys = _keyTimestamps.Count;
             _statistics.LastUpdated = DateTime.UtcNow;
-            return new CacheStatistics
+            return Task.FromResult(new CacheStatistics
             {
                 TotalKeys = _statistics.TotalKeys,
                 HitCount = _statistics.HitCount,
                 MissCount = _statistics.MissCount,
                 MemoryUsage = _statistics.MemoryUsage,
                 LastUpdated = _statistics.LastUpdated
-            };
+            });
         }
     }
 
-    public async Task<bool> RefreshAsync(string key, TimeSpan? newExpiry = null)
+    public Task<bool> RefreshAsync(string key, TimeSpan? newExpiry = null)
     {
         try
         {
@@ -340,16 +342,16 @@ public class CacheService : ICacheService
                 {
                     var expiry = newExpiry ?? TimeSpan.FromMinutes(_config.DefaultExpiryMinutes);
                     _memoryCache.Set(key, value, expiry);
-                    return true;
+                    return Task.FromResult(true);
                 }
             }
 
-            return false;
+            return Task.FromResult(false);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error refreshing cache for key: {Key}", key);
-            return false;
+            return Task.FromResult(false);
         }
     }
 

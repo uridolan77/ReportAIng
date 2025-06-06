@@ -148,14 +148,14 @@ public class CreateBusinessSchemaRequest
     [Required]
     [StringLength(100)]
     public string Name { get; set; } = string.Empty;
-    
+
     [StringLength(500)]
     public string? Description { get; set; }
-    
+
     public List<string> Tags { get; set; } = new();
-    
+
     public bool IsDefault { get; set; } = false;
-    
+
     // Optional: Create with initial version
     public CreateSchemaVersionRequest? InitialVersion { get; set; }
 }
@@ -166,17 +166,17 @@ public class CreateBusinessSchemaRequest
 public class CreateSchemaVersionRequest
 {
     public Guid SchemaId { get; set; }
-    
+
     [StringLength(50)]
     public string? VersionName { get; set; }
-    
+
     [StringLength(1000)]
     public string? Description { get; set; }
-    
+
     public bool IsCurrent { get; set; } = true;
-    
+
     public List<ChangeLogEntry> ChangeLog { get; set; } = new();
-    
+
     // Content for the version
     public List<SchemaTableContextDto> TableContexts { get; set; } = new();
     public List<SchemaGlossaryTermDto> GlossaryTerms { get; set; } = new();
@@ -191,14 +191,14 @@ public class UpdateBusinessSchemaRequest
     [Required]
     [StringLength(100)]
     public string Name { get; set; } = string.Empty;
-    
+
     [StringLength(500)]
     public string? Description { get; set; }
-    
+
     public List<string> Tags { get; set; } = new();
-    
+
     public bool IsActive { get; set; } = true;
-    
+
     public bool IsDefault { get; set; } = false;
 }
 
@@ -208,21 +208,21 @@ public class UpdateBusinessSchemaRequest
 public class ApplyToSchemaRequest
 {
     public Guid? SchemaId { get; set; } // If null, create new schema
-    
+
     public string? NewSchemaName { get; set; } // Required if SchemaId is null
-    
+
     public string? NewSchemaDescription { get; set; }
-    
+
     public string? VersionName { get; set; }
-    
+
     public string? VersionDescription { get; set; }
-    
+
     public bool CreateNewVersion { get; set; } = true;
-    
+
     public bool SetAsCurrent { get; set; } = true;
-    
+
     public List<ChangeLogEntry> ChangeLog { get; set; } = new();
-    
+
     // Auto-generated content to apply
     public List<SchemaTableContextDto> TableContexts { get; set; } = new();
     public List<SchemaGlossaryTermDto> GlossaryTerms { get; set; } = new();
@@ -298,7 +298,7 @@ public class SchemaComparisonSummary
     public int RelationshipsAdded { get; set; }
     public int RelationshipsModified { get; set; }
     public int RelationshipsRemoved { get; set; }
-    public int TotalChanges => TablesAdded + TablesModified + TablesRemoved + 
+    public int TotalChanges => TablesAdded + TablesModified + TablesRemoved +
                               ColumnsAdded + ColumnsModified + ColumnsRemoved +
                               GlossaryTermsAdded + GlossaryTermsModified + GlossaryTermsRemoved +
                               RelationshipsAdded + RelationshipsModified + RelationshipsRemoved;

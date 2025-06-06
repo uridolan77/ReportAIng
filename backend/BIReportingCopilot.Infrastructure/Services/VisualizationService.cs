@@ -138,7 +138,7 @@ public class VisualizationService : IVisualizationService
         }
     }
 
-    public async Task<VisualizationConfig> OptimizeVisualizationForDataSizeAsync(VisualizationConfig config, int dataSize)
+    public Task<VisualizationConfig> OptimizeVisualizationForDataSizeAsync(VisualizationConfig config, int dataSize)
     {
         var optimizedConfig = new VisualizationConfig
         {
@@ -178,7 +178,7 @@ public class VisualizationService : IVisualizationService
         // Disable animations for large datasets
         optimizedConfig.EnableAnimation = dataSize <= 1000;
 
-        return optimizedConfig;
+        return Task.FromResult(optimizedConfig);
     }
 
     public bool IsVisualizationSuitableForData(string visualizationType, ColumnMetadata[] columns, int rowCount)
@@ -318,7 +318,7 @@ public class VisualizationService : IVisualizationService
         }
     }
 
-    public async Task<VisualizationRecommendation[]> GetVisualizationRecommendationsAsync(
+    public Task<VisualizationRecommendation[]> GetVisualizationRecommendationsAsync(
         ColumnMetadata[] columns,
         object[] data,
         string? context = null)
@@ -349,16 +349,16 @@ public class VisualizationService : IVisualizationService
                 });
             }
 
-            return recommendations.ToArray();
+            return Task.FromResult(recommendations.ToArray());
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating recommendations");
-            return Array.Empty<VisualizationRecommendation>();
+            return Task.FromResult(Array.Empty<VisualizationRecommendation>());
         }
     }
 
-    public async Task<AdvancedVisualizationConfig> OptimizeVisualizationForPerformanceAsync(
+    public Task<AdvancedVisualizationConfig> OptimizeVisualizationForPerformanceAsync(
         AdvancedVisualizationConfig config,
         int dataSize)
     {
@@ -389,12 +389,12 @@ public class VisualizationService : IVisualizationService
                 optimizedConfig.DataProcessing.SampleSize = 5000;
             }
 
-            return optimizedConfig;
+            return Task.FromResult(optimizedConfig);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error optimizing visualization");
-            return config;
+            return Task.FromResult(config);
         }
     }
 

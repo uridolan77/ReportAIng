@@ -10,7 +10,7 @@ namespace BIReportingCopilot.API.Services;
 /// </summary>
 public class SignalRQueryProgressNotifier : IQueryProgressNotifier
 {
-    private readonly IHubContext<QueryStatusHub> _hubContext;
+    private readonly IHubContext<QueryStatusHub> _hubContext = null!;
     private readonly ILogger<SignalRQueryProgressNotifier> _logger;
 
     public SignalRQueryProgressNotifier(

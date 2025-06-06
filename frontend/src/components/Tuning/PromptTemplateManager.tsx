@@ -16,8 +16,7 @@ import {
   Col,
   Statistic,
   Tooltip,
-  Alert,
-  Select
+  Alert
 } from 'antd';
 import {
   PlusOutlined,
@@ -58,7 +57,7 @@ export const PromptTemplateManager: React.FC<PromptTemplateManagerProps> = ({ on
   const [testForm] = Form.useForm();
 
   // React Query hooks
-  const { data: templates = [], isLoading: loading, refetch } = usePromptTemplates();
+  const { data: templates = [], isLoading: loading } = usePromptTemplates();
   const createMutation = useCreatePromptTemplate();
   const updateMutation = useUpdatePromptTemplate();
   const deleteMutation = useDeletePromptTemplate();

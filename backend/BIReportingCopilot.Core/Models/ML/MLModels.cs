@@ -13,9 +13,7 @@ public class QueryMetrics
     public string GeneratedSQL { get; set; } = string.Empty;
     public DateTime ExecutedAt { get; set; }
     public long ExecutionTimeMs { get; set; }
-    public long ExecutionTime { get; set; } // Alias for ExecutionTimeMs
     public int RowCount { get; set; }
-    public int ResultCount { get; set; } // Alias for RowCount
     public bool IsSuccessful { get; set; }
     public double? ConfidenceScore { get; set; }
     public string? ErrorMessage { get; set; }
@@ -35,7 +33,6 @@ public class AnomalyDetectionResult
     public bool IsAnomalous { get; set; }
     public List<DetectedAnomaly> DetectedAnomalies { get; set; } = new();
     public DateTime AnalyzedAt { get; set; }
-    public DateTime Timestamp { get; set; }
     public string? Recommendations { get; set; }
 }
 
@@ -47,7 +44,6 @@ public class BehaviorAnomaly
     public string AnomalyId { get; set; } = Guid.NewGuid().ToString();
     public string UserId { get; set; } = string.Empty;
     public string AnomalyType { get; set; } = string.Empty;
-    public string Type { get; set; } = string.Empty; // Alias for AnomalyType
     public double Severity { get; set; }
     public DateTime DetectedAt { get; set; }
     public string Description { get; set; } = string.Empty;
@@ -120,8 +116,7 @@ public class PersonalizedRecommendation
     public string Type { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public double Relevance { get; set; }
-    public double Confidence { get; set; } // Alias for Relevance
+    public double Confidence { get; set; }
     public DateTime GeneratedAt { get; set; }
     public DateTime? ExpiresAt { get; set; }
     public bool IsViewed { get; set; }
@@ -174,11 +169,8 @@ public enum RiskLevel
 public enum AnomalySeverity
 {
     Low = 1,
-    Info = 1, // Alias for Low
     Medium = 2,
-    Warning = 2, // Alias for Medium
     High = 3,
-    Error = 3, // Alias for High
     Critical = 4
 }
 

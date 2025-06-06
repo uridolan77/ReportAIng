@@ -15,8 +15,7 @@ interface SchemaVersionsProps {
 export const SchemaVersions: React.FC<SchemaVersionsProps> = ({
   schema,
   selectedVersion,
-  onVersionSelect,
-  onVersionUpdated
+  onVersionSelect
 }) => {
   // Mock versions for now - in real implementation, fetch from API
   const versions: BusinessSchemaVersionDto[] = schema.currentVersion ? [schema.currentVersion] : [];
