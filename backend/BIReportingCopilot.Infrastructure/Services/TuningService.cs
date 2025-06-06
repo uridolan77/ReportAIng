@@ -1181,18 +1181,331 @@ public class TuningService : ITuningService
 
     #endregion
 
+    #region Prompt Templates
+
+    public async Task<List<PromptTemplateDto>> GetPromptTemplatesAsync()
+    {
+        try
+        {
+            var templates = await _context.PromptTemplates
+                .OrderBy(t => t.Name)
+                .ThenByDescending(t => t.CreatedDate)
+                .ToListAsync();
+
+            return templates.Select(MapToPromptTemplateDto).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting prompt templates");
+            throw;
+        }
+    }
+
+    public async Task<PromptTemplateDto?> GetPromptTemplateAsync(long id)
+    {
+        try
+        {
+            var template = await _context.PromptTemplates
+                .FirstOrDefaultAsync(t => t.Id == id && t.IsActive);
+
+            return template != null ? MapToPromptTemplateDto(template) : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting prompt template {TemplateId}", id);
+            throw;
+        }
+    }
+
+    public async Task<PromptTemplateDto> CreatePromptTemplateAsync(CreatePromptTemplateRequest request, string userId)
+    {
+        try
+        {
+            // Check if template with same name and version already exists
+            var existingTemplate = await _context.PromptTemplates
+                .FirstOrDefaultAsync(t => t.Name == request.Name && t.Version == request.Version);
+
+            if (existingTemplate != null)
+            {
+                throw new InvalidOperationException($"Template '{request.Name}' version '{request.Version}' already exists");
+            }
+
+            var entity = new PromptTemplateEntity
+            {
+                Name = request.Name,
+                Version = request.Version,
+                Content = request.Content,
+                Description = request.Description,
+                IsActive = request.IsActive,
+                CreatedBy = userId,
+                CreatedDate = DateTime.UtcNow,
+                UsageCount = 0,
+                Parameters = request.Parameters != null ? JsonSerializer.Serialize(request.Parameters) : null
+            };
+
+            _context.PromptTemplates.Add(entity);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Created prompt template: {TemplateName} v{Version} by {UserId}",
+                request.Name, request.Version, userId);
+
+            return MapToPromptTemplateDto(entity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating prompt template");
+            throw;
+        }
+    }
+
+    public async Task<PromptTemplateDto?> UpdatePromptTemplateAsync(long id, CreatePromptTemplateRequest request, string userId)
+    {
+        try
+        {
+            var entity = await _context.PromptTemplates
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (entity == null)
+                return null;
+
+            entity.Content = request.Content;
+            entity.Description = request.Description;
+            entity.IsActive = request.IsActive;
+            entity.UpdatedDate = DateTime.UtcNow;
+            entity.UpdatedBy = userId;
+            entity.Parameters = request.Parameters != null ? JsonSerializer.Serialize(request.Parameters) : null;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Updated prompt template: {TemplateId} by {UserId}", id, userId);
+
+            return MapToPromptTemplateDto(entity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating prompt template {TemplateId}", id);
+            throw;
+        }
+    }
+
+    public async Task<bool> DeletePromptTemplateAsync(long id)
+    {
+        try
+        {
+            var entity = await _context.PromptTemplates
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (entity == null)
+                return false;
+
+            entity.IsActive = false;
+            entity.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Deleted prompt template: {TemplateId}", id);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting prompt template {TemplateId}", id);
+            throw;
+        }
+    }
+
+    public async Task<bool> ActivatePromptTemplateAsync(long id, string userId)
+    {
+        try
+        {
+            var entity = await _context.PromptTemplates
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (entity == null)
+                return false;
+
+            // Deactivate other versions of the same template
+            var otherVersions = await _context.PromptTemplates
+                .Where(t => t.Name == entity.Name && t.Id != id && t.IsActive)
+                .ToListAsync();
+
+            foreach (var version in otherVersions)
+            {
+                version.IsActive = false;
+                version.UpdatedDate = DateTime.UtcNow;
+                version.UpdatedBy = userId;
+            }
+
+            // Activate this version
+            entity.IsActive = true;
+            entity.UpdatedDate = DateTime.UtcNow;
+            entity.UpdatedBy = userId;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Activated prompt template: {TemplateId} ({TemplateName} v{Version}) by {UserId}",
+                id, entity.Name, entity.Version, userId);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error activating prompt template {TemplateId}", id);
+            throw;
+        }
+    }
+
+    public async Task<bool> DeactivatePromptTemplateAsync(long id, string userId)
+    {
+        try
+        {
+            var entity = await _context.PromptTemplates
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (entity == null)
+                return false;
+
+            entity.IsActive = false;
+            entity.UpdatedDate = DateTime.UtcNow;
+            entity.UpdatedBy = userId;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Deactivated prompt template: {TemplateId} ({TemplateName} v{Version}) by {UserId}",
+                id, entity.Name, entity.Version, userId);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deactivating prompt template {TemplateId}", id);
+            throw;
+        }
+    }
+
+    public async Task<PromptTemplateTestResult> TestPromptTemplateAsync(long id, PromptTemplateTestRequest request)
+    {
+        try
+        {
+            var template = await _context.PromptTemplates
+                .FirstOrDefaultAsync(t => t.Id == id && t.IsActive);
+
+            if (template == null)
+            {
+                return new PromptTemplateTestResult
+                {
+                    Success = false,
+                    ErrorMessage = "Template not found or inactive"
+                };
+            }
+
+            var startTime = DateTime.UtcNow;
+            var replacedVariables = new Dictionary<string, string>();
+
+            // Process the template content with test data
+            var processedPrompt = template.Content;
+
+            // Replace common placeholders
+            if (!string.IsNullOrEmpty(request.Question))
+            {
+                processedPrompt = processedPrompt.Replace("{question}", request.Question);
+                replacedVariables["question"] = request.Question;
+            }
+
+            if (!string.IsNullOrEmpty(request.Schema))
+            {
+                processedPrompt = processedPrompt.Replace("{schema}", request.Schema);
+                replacedVariables["schema"] = request.Schema;
+            }
+
+            if (!string.IsNullOrEmpty(request.Context))
+            {
+                processedPrompt = processedPrompt.Replace("{context}", request.Context);
+                replacedVariables["context"] = request.Context;
+            }
+
+            // Replace any additional parameters
+            if (request.AdditionalParameters != null)
+            {
+                foreach (var param in request.AdditionalParameters)
+                {
+                    var placeholder = $"{{{param.Key}}}";
+                    var value = param.Value?.ToString() ?? "";
+                    processedPrompt = processedPrompt.Replace(placeholder, value);
+                    replacedVariables[param.Key] = value;
+                }
+            }
+
+            var processingTime = DateTime.UtcNow - startTime;
+
+            // Simple token count estimation (rough approximation)
+            var tokenCount = processedPrompt.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+
+            return new PromptTemplateTestResult
+            {
+                ProcessedPrompt = processedPrompt,
+                TemplateName = template.Name,
+                TemplateVersion = template.Version,
+                ReplacedVariables = replacedVariables,
+                TokenCount = tokenCount,
+                ProcessingTime = processingTime,
+                Success = true
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error testing prompt template {TemplateId}", id);
+            return new PromptTemplateTestResult
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    private static PromptTemplateDto MapToPromptTemplateDto(PromptTemplateEntity entity)
+    {
+        var parameters = new Dictionary<string, object>();
+        if (!string.IsNullOrEmpty(entity.Parameters))
+        {
+            try
+            {
+                parameters = JsonSerializer.Deserialize<Dictionary<string, object>>(entity.Parameters) ?? [];
+            }
+            catch { /* Ignore deserialization errors */ }
+        }
+
+        return new PromptTemplateDto
+        {
+            Id = entity.Id,
+            Name = entity.Name,
+            Version = entity.Version,
+            Content = entity.Content,
+            Description = entity.Description,
+            IsActive = entity.IsActive,
+            CreatedBy = entity.CreatedBy ?? "Unknown",
+            CreatedDate = entity.CreatedDate,
+            UpdatedDate = entity.UpdatedDate,
+            SuccessRate = entity.SuccessRate,
+            UsageCount = entity.UsageCount,
+            Parameters = parameters
+        };
+    }
+
+    #endregion
+
     #region Helper Methods
 
-    private async Task<string?> GetConnectionStringAsync()
+    private Task<string?> GetConnectionStringAsync()
     {
         // Use the BIDatabase connection string (same as schema service)
         try
         {
-            return _configuration.GetConnectionString("BIDatabase");
+            return Task.FromResult(_configuration.GetConnectionString("BIDatabase"));
         }
         catch
         {
-            return null;
+            return Task.FromResult<string?>(null);
         }
     }
 

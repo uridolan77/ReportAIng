@@ -86,8 +86,10 @@ export const queryKeys = {
     tables: () => [...queryKeys.tuning.all, 'tables'] as const,
     glossary: () => [...queryKeys.tuning.all, 'glossary'] as const,
     patterns: () => [...queryKeys.tuning.all, 'patterns'] as const,
-    prompts: (page?: number, pageSize?: number) => 
+    prompts: (page?: number, pageSize?: number) =>
       [...queryKeys.tuning.all, 'prompts', { page, pageSize }] as const,
+    promptTemplates: () => [...queryKeys.tuning.all, 'prompt-templates'] as const,
+    promptTemplate: (id: number) => [...queryKeys.tuning.promptTemplates(), id] as const,
   },
   
   // Health and status keys

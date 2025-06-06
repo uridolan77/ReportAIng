@@ -466,6 +466,149 @@ public class TuningController : ControllerBase
 
     #endregion
 
+    #region Prompt Templates
+
+    [HttpGet("prompt-templates")]
+    public async Task<ActionResult<List<PromptTemplateDto>>> GetPromptTemplates()
+    {
+        try
+        {
+            var templates = await _tuningService.GetPromptTemplatesAsync();
+            return Ok(templates);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting prompt templates");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpGet("prompt-templates/{id}")]
+    public async Task<ActionResult<PromptTemplateDto>> GetPromptTemplate(long id)
+    {
+        try
+        {
+            var template = await _tuningService.GetPromptTemplateAsync(id);
+            if (template == null)
+                return NotFound();
+
+            return Ok(template);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting prompt template {TemplateId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPost("prompt-templates")]
+    public async Task<ActionResult<PromptTemplateDto>> CreatePromptTemplate([FromBody] CreatePromptTemplateRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var template = await _tuningService.CreatePromptTemplateAsync(request, userId);
+            return CreatedAtAction(nameof(GetPromptTemplate), new { id = template.Id }, template);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating prompt template");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPut("prompt-templates/{id}")]
+    public async Task<ActionResult<PromptTemplateDto>> UpdatePromptTemplate(long id, [FromBody] CreatePromptTemplateRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var template = await _tuningService.UpdatePromptTemplateAsync(id, request, userId);
+            if (template == null)
+                return NotFound();
+
+            return Ok(template);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating prompt template {TemplateId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpDelete("prompt-templates/{id}")]
+    public async Task<ActionResult> DeletePromptTemplate(long id)
+    {
+        try
+        {
+            var success = await _tuningService.DeletePromptTemplateAsync(id);
+            if (!success)
+                return NotFound();
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting prompt template {TemplateId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPost("prompt-templates/{id}/activate")]
+    public async Task<ActionResult> ActivatePromptTemplate(long id)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var success = await _tuningService.ActivatePromptTemplateAsync(id, userId);
+            if (!success)
+                return NotFound();
+
+            return Ok(new { message = "Template activated successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error activating prompt template {TemplateId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPost("prompt-templates/{id}/deactivate")]
+    public async Task<ActionResult> DeactivatePromptTemplate(long id)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var success = await _tuningService.DeactivatePromptTemplateAsync(id, userId);
+            if (!success)
+                return NotFound();
+
+            return Ok(new { message = "Template deactivated successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deactivating prompt template {TemplateId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPost("prompt-templates/{id}/test")]
+    public async Task<ActionResult<PromptTemplateTestResult>> TestPromptTemplate(long id, [FromBody] PromptTemplateTestRequest request)
+    {
+        try
+        {
+            var result = await _tuningService.TestPromptTemplateAsync(id, request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error testing prompt template {TemplateId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    #endregion
+
     #region Prompt Logs (Admin Debugging)
 
     [HttpPost("update-sql-template")]

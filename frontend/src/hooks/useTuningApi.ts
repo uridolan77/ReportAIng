@@ -226,6 +226,114 @@ export const useImportTuningData = () => {
   });
 };
 
+// Hook for fetching prompt templates
+export const usePromptTemplates = () => {
+  return useQuery({
+    queryKey: queryKeys.tuning.promptTemplates(),
+    queryFn: () => tuningApiService.getPromptTemplates(),
+
+    // Templates change infrequently
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
+
+    onError: errorHandlers.defaultQueryError,
+  });
+};
+
+// Hook for creating prompt templates
+export const useCreatePromptTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (template: any) => tuningApiService.createPromptTemplate(template),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tuning.promptTemplates() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tuning.dashboard() });
+    },
+
+    onError: errorHandlers.defaultMutationError,
+  });
+};
+
+// Hook for updating prompt templates
+export const useUpdatePromptTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, template }: { id: number; template: any }) =>
+      tuningApiService.updatePromptTemplate(id, template),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tuning.promptTemplates() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tuning.dashboard() });
+    },
+
+    onError: errorHandlers.defaultMutationError,
+  });
+};
+
+// Hook for deleting prompt templates
+export const useDeletePromptTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => tuningApiService.deletePromptTemplate(id),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tuning.promptTemplates() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tuning.dashboard() });
+    },
+
+    onError: errorHandlers.defaultMutationError,
+  });
+};
+
+// Hook for activating prompt templates
+export const useActivatePromptTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => tuningApiService.activatePromptTemplate(id),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tuning.promptTemplates() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tuning.dashboard() });
+    },
+
+    onError: errorHandlers.defaultMutationError,
+  });
+};
+
+// Hook for deactivating prompt templates
+export const useDeactivatePromptTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => tuningApiService.deactivatePromptTemplate(id),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tuning.promptTemplates() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tuning.dashboard() });
+    },
+
+    onError: errorHandlers.defaultMutationError,
+  });
+};
+
+// Hook for testing prompt templates
+export const useTestPromptTemplate = () => {
+  return useMutation({
+    mutationFn: ({ id, testData }: { id: number; testData: any }) =>
+      tuningApiService.testPromptTemplate(id, testData),
+
+    // Don't retry template tests automatically
+    retry: false,
+
+    onError: errorHandlers.defaultMutationError,
+  });
+};
+
 // Hook for prefetching tuning data
 export const usePrefetchTuningData = () => {
   const queryClient = useQueryClient();

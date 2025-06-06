@@ -24,13 +24,15 @@ import {
   TrophyOutlined,
   ClockCircleOutlined,
   BugOutlined,
-  RobotOutlined
+  RobotOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { BusinessTableManager } from './BusinessTableManager';
 import { QueryPatternManager } from './QueryPatternManager';
 import { BusinessGlossaryManager } from './BusinessGlossaryManager';
 import { AISettingsManager } from './AISettingsManager';
 import { PromptLogsViewer } from './PromptLogsViewer';
+import { PromptTemplateManager } from './PromptTemplateManager';
 import { AutoGenerationManager } from '../TuningDashboard/AutoGeneration/AutoGenerationManager';
 import { tuningApi } from '../../services/tuningApi';
 
@@ -218,6 +220,12 @@ export const TuningDashboard: React.FC = () => {
                   AI Settings
                 </Button>
                 <Button
+                  icon={<FileTextOutlined />}
+                  onClick={() => setActiveTab('prompt-templates')}
+                >
+                  Prompt Templates
+                </Button>
+                <Button
                   icon={<BulbOutlined />}
                   onClick={loadDashboardData}
                 >
@@ -345,6 +353,18 @@ export const TuningDashboard: React.FC = () => {
           key="settings"
         >
           <AISettingsManager onDataChange={loadDashboardData} />
+        </TabPane>
+
+        <TabPane
+          tab={
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+              <FileTextOutlined style={{ fontSize: '16px' }} />
+              Prompt Templates
+            </span>
+          }
+          key="prompt-templates"
+        >
+          <PromptTemplateManager onDataChange={loadDashboardData} />
         </TabPane>
 
         <TabPane

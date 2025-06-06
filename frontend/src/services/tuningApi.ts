@@ -76,6 +76,30 @@ export interface PromptLog {
   metadata?: string;
 }
 
+export interface PromptTemplate {
+  id?: number;
+  name: string;
+  version: string;
+  content: string;
+  description?: string;
+  isActive: boolean;
+  createdBy: string;
+  createdDate: string;
+  updatedDate?: string;
+  successRate?: number;
+  usageCount: number;
+  parameters: Record<string, any>;
+}
+
+export interface CreatePromptTemplateRequest {
+  name: string;
+  version: string;
+  content: string;
+  description?: string;
+  isActive: boolean;
+  parameters?: Record<string, any>;
+}
+
 export interface TuningDashboardData {
   totalTables: number;
   totalColumns: number;
@@ -697,6 +721,115 @@ class TuningApiService {
     if (!response.ok) {
       throw new Error(`Failed to bulk update tables: ${response.statusText}`);
     }
+  }
+
+  // Prompt Templates
+  async getPromptTemplates(): Promise<PromptTemplate[]> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/prompt-templates`, {
+      headers: await getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get prompt templates: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async getPromptTemplate(id: number): Promise<PromptTemplate> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/prompt-templates/${id}`, {
+      headers: await getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get prompt template: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async createPromptTemplate(request: CreatePromptTemplateRequest): Promise<PromptTemplate> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/prompt-templates`, {
+      method: 'POST',
+      headers: {
+        ...(await getAuthHeaders()),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create prompt template: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async updatePromptTemplate(id: number, request: CreatePromptTemplateRequest): Promise<PromptTemplate> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/prompt-templates/${id}`, {
+      method: 'PUT',
+      headers: {
+        ...(await getAuthHeaders()),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update prompt template: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async deletePromptTemplate(id: number): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/prompt-templates/${id}`, {
+      method: 'DELETE',
+      headers: await getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete prompt template: ${response.statusText}`);
+    }
+  }
+
+  async activatePromptTemplate(id: number): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/prompt-templates/${id}/activate`, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to activate prompt template: ${response.statusText}`);
+    }
+  }
+
+  async deactivatePromptTemplate(id: number): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/prompt-templates/${id}/deactivate`, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to deactivate prompt template: ${response.statusText}`);
+    }
+  }
+
+  async testPromptTemplate(id: number, testData: any): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/api/tuning/prompt-templates/${id}/test`, {
+      method: 'POST',
+      headers: {
+        ...(await getAuthHeaders()),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(testData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to test prompt template: ${response.statusText}`);
+    }
+
+    return response.json();
   }
 
   async exportTuningData(format: 'json' | 'csv' | 'excel'): Promise<Blob> {
