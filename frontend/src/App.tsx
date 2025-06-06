@@ -32,6 +32,7 @@ const TypeSafetyDemo = lazy(() => import('./components/TypeSafety/TypeSafetyDemo
 const CacheManager = lazy(() => import('./components/Admin/CacheManager').then(module => ({ default: module.CacheManager })));
 const TuningDashboard = lazy(() => import('./components/Tuning/TuningDashboard').then(module => ({ default: module.TuningDashboard })));
 const SchemaManagementDashboard = lazy(() => import('./components/SchemaManagement/SchemaManagementDashboard').then(module => ({ default: module.SchemaManagementDashboard })));
+const QuerySuggestionsManager = lazy(() => import('./components/Admin/QuerySuggestionsManager').then(module => ({ default: module.QuerySuggestionsManager })));
 const MinimalistQueryPage = lazy(() => import('./pages/MinimalistQueryPage'));
 
 const App: React.FC = () => {
@@ -175,6 +176,7 @@ const App: React.FC = () => {
                             <Route path="/admin/schemas" element={<SchemaManagementDashboard />} />
                             <Route path="/admin/cache" element={<CacheManager />} />
                             <Route path="/admin/security" element={<SecurityDashboard />} />
+                            <Route path="/admin/suggestions" element={<QuerySuggestionsManager />} />
 
                             {/* Legacy Routes */}
                             <Route path="/query" element={<Navigate to="/" replace />} />

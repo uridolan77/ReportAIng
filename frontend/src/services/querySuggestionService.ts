@@ -159,6 +159,10 @@ class QuerySuggestionService {
     return response.data;
   }
 
+  async deleteCategory(id: number): Promise<void> {
+    await api.delete(`${this.baseUrl}/categories/${id}`);
+  }
+
   async createSuggestion(suggestion: CreateUpdateSuggestion): Promise<QuerySuggestion> {
     const response = await api.post(`${this.baseUrl}`, suggestion);
     return response.data;

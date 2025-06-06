@@ -42,7 +42,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
         id: 1,
         categoryKey: 'financial',
         title: 'Financial & Revenue',
-        icon: '💰',
+        icon: '💎',
         description: 'Revenue, deposits, withdrawals, and financial performance metrics',
         sortOrder: 1,
         isActive: true,
@@ -110,7 +110,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
         id: 2,
         categoryKey: 'players',
         title: 'Player Analytics',
-        icon: '👥',
+        icon: '🎯',
         description: 'Player behavior, demographics, and lifecycle analysis',
         sortOrder: 2,
         isActive: true,
@@ -178,7 +178,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
         id: 3,
         categoryKey: 'gaming',
         title: 'Gaming & Products',
-        icon: '🎮',
+        icon: '🎲',
         description: 'Game performance, provider analysis, and product metrics',
         sortOrder: 3,
         isActive: true,
@@ -308,6 +308,306 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           createdBy: 'System'
         }
       ]
+    },
+    {
+      category: {
+        id: 5,
+        categoryKey: 'demographics',
+        title: 'Demographics & Behavior',
+        icon: '🌍',
+        description: 'Player demographics, behavior patterns, and segmentation analysis',
+        sortOrder: 5,
+        isActive: true,
+        suggestionCount: 3
+      },
+      suggestions: [
+        {
+          id: 13,
+          categoryId: 5,
+          categoryKey: 'demographics',
+          categoryTitle: 'Demographics & Behavior',
+          queryText: 'Player age distribution by country this month',
+          description: 'Demographic analysis by geography',
+          defaultTimeFrame: 'this_month',
+          sortOrder: 1,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_players', 'tbl_Countries'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['demographics', 'age', 'geography'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 14,
+          categoryId: 5,
+          categoryKey: 'demographics',
+          categoryTitle: 'Demographics & Behavior',
+          queryText: 'Player session duration patterns this week',
+          description: 'Behavioral pattern analysis',
+          defaultTimeFrame: 'this_week',
+          sortOrder: 2,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_players'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['behavior', 'sessions', 'patterns'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        }
+      ]
+    },
+    {
+      category: {
+        id: 6,
+        categoryKey: 'account',
+        title: 'Account & Status',
+        icon: '🔐',
+        description: 'Account management, player status, and lifecycle tracking',
+        sortOrder: 6,
+        isActive: true,
+        suggestionCount: 3
+      },
+      suggestions: [
+        {
+          id: 15,
+          categoryId: 6,
+          categoryKey: 'account',
+          categoryTitle: 'Account & Status',
+          queryText: 'New player conversion rates by registration channel',
+          description: 'Account lifecycle and conversion analysis',
+          defaultTimeFrame: 'this_month',
+          sortOrder: 1,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_players'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['conversion', 'registration', 'lifecycle'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 16,
+          categoryId: 6,
+          categoryKey: 'account',
+          categoryTitle: 'Account & Status',
+          queryText: 'Player verification status breakdown today',
+          description: 'Account verification and compliance tracking',
+          defaultTimeFrame: 'today',
+          sortOrder: 2,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_players'],
+          complexity: 1,
+          requiredPermissions: [],
+          tags: ['verification', 'compliance', 'status'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        }
+      ]
+    },
+    {
+      category: {
+        id: 7,
+        categoryKey: 'bonus',
+        title: 'Bonus & Promotions',
+        icon: '🎁',
+        description: 'Bonus campaigns, promotional effectiveness, and reward analysis',
+        sortOrder: 7,
+        isActive: true,
+        suggestionCount: 3
+      },
+      suggestions: [
+        {
+          id: 17,
+          categoryId: 7,
+          categoryKey: 'bonus',
+          categoryTitle: 'Bonus & Promotions',
+          queryText: 'Bonus utilization rates by promotion type this week',
+          description: 'Promotional campaign effectiveness analysis',
+          defaultTimeFrame: 'this_week',
+          sortOrder: 1,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_bonuses'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['bonuses', 'promotions', 'utilization'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 18,
+          categoryId: 7,
+          categoryKey: 'bonus',
+          categoryTitle: 'Bonus & Promotions',
+          queryText: 'Top performing bonus campaigns by revenue impact',
+          description: 'Bonus campaign ROI and performance tracking',
+          defaultTimeFrame: 'this_month',
+          sortOrder: 2,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_bonuses', 'tbl_Daily_actions'],
+          complexity: 3,
+          requiredPermissions: [],
+          tags: ['campaigns', 'roi', 'performance'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        }
+      ]
+    },
+    {
+      category: {
+        id: 8,
+        categoryKey: 'compliance',
+        title: 'Compliance & Risk',
+        icon: '⚖️',
+        description: 'Risk management, compliance monitoring, and regulatory reporting',
+        sortOrder: 8,
+        isActive: true,
+        suggestionCount: 3
+      },
+      suggestions: [
+        {
+          id: 19,
+          categoryId: 8,
+          categoryKey: 'compliance',
+          categoryTitle: 'Compliance & Risk',
+          queryText: 'High-risk transaction patterns this week',
+          description: 'Risk assessment and fraud detection analysis',
+          defaultTimeFrame: 'this_week',
+          sortOrder: 1,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_transactions'],
+          complexity: 3,
+          requiredPermissions: ['risk_analysis'],
+          tags: ['risk', 'fraud', 'compliance'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 20,
+          categoryId: 8,
+          categoryKey: 'compliance',
+          categoryTitle: 'Compliance & Risk',
+          queryText: 'Regulatory reporting metrics for last month',
+          description: 'Compliance reporting and regulatory metrics',
+          defaultTimeFrame: 'last_month',
+          sortOrder: 2,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions', 'tbl_Daily_actions_players'],
+          complexity: 2,
+          requiredPermissions: ['compliance_reports'],
+          tags: ['regulatory', 'reporting', 'compliance'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        }
+      ]
+    },
+    {
+      category: {
+        id: 9,
+        categoryKey: 'business',
+        title: 'Business Intelligence',
+        icon: '📈',
+        description: 'Strategic insights, KPI tracking, and business performance analysis',
+        sortOrder: 9,
+        isActive: true,
+        suggestionCount: 3
+      },
+      suggestions: [
+        {
+          id: 21,
+          categoryId: 9,
+          categoryKey: 'business',
+          categoryTitle: 'Business Intelligence',
+          queryText: 'Key performance indicators dashboard for this quarter',
+          description: 'Strategic KPI tracking and business metrics',
+          defaultTimeFrame: 'this_quarter',
+          sortOrder: 1,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions', 'tbl_Daily_actions_players'],
+          complexity: 3,
+          requiredPermissions: [],
+          tags: ['kpi', 'dashboard', 'strategic'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 22,
+          categoryId: 9,
+          categoryKey: 'business',
+          categoryTitle: 'Business Intelligence',
+          queryText: 'Market share analysis by product vertical',
+          description: 'Competitive analysis and market positioning',
+          defaultTimeFrame: 'this_month',
+          sortOrder: 2,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions'],
+          complexity: 3,
+          requiredPermissions: [],
+          tags: ['market_share', 'competitive', 'analysis'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        }
+      ]
+    },
+    {
+      category: {
+        id: 10,
+        categoryKey: 'operations',
+        title: 'Operations & Trends',
+        icon: '⚙️',
+        description: 'Operational metrics, trends, and performance monitoring',
+        sortOrder: 10,
+        isActive: true,
+        suggestionCount: 3
+      },
+      suggestions: [
+        {
+          id: 23,
+          categoryId: 10,
+          categoryKey: 'operations',
+          categoryTitle: 'Operations & Trends',
+          queryText: 'Hourly revenue patterns for weekends this month',
+          description: 'Peak activity analysis and operational insights',
+          defaultTimeFrame: 'this_month',
+          sortOrder: 1,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['hourly', 'patterns', 'operations'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 24,
+          categoryId: 10,
+          categoryKey: 'operations',
+          categoryTitle: 'Operations & Trends',
+          queryText: 'System performance metrics and uptime this week',
+          description: 'Operational health and system monitoring',
+          defaultTimeFrame: 'this_week',
+          sortOrder: 2,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['performance', 'uptime', 'monitoring'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        }
+      ]
     }
   ];
 
@@ -317,10 +617,51 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
       const suggestions = await querySuggestionService.getGroupedSuggestions();
 
       if (suggestions && suggestions.length > 0) {
+        // Fix any missing or invalid icons with fallback icons
+        const fixedSuggestions = suggestions.map(group => {
+          let icon = group.category.icon;
+
+          // Fix missing or placeholder icons
+          if (!icon || icon === '??' || icon === '?' || icon.trim() === '') {
+            // Map category keys to appropriate icons
+            const iconMap: Record<string, string> = {
+              'financial': '💎',        // Financial & Revenue - Diamond for premium/value
+              'players': '🎯',         // Player Analytics - Target for precision analytics
+              'gaming': '🎲',          // Gaming & Products - Dice for gaming
+              'transactions': '💳',     // Transactions & Payments - Credit card
+              'demographics': '🌍',     // Demographics & Behavior - Globe for global demographics
+              'account': '🔐',         // Account & Status - Lock for security/accounts
+              'bonus': '🎁',          // Bonus & Promotions - Gift box
+              'compliance': '⚖️',      // Compliance & Risk - Scales of justice
+              'business': '📊',        // Business Intelligence - Chart for BI
+              'operations': '⚙️',      // Operations & Trends - Gear for operations
+              'revenue': '💎',
+              'analytics': '🎯',
+              'payments': '💳',
+              'behavior': '🌍',
+              'status': '🔐',
+              'promotions': '🎁',
+              'risk': '⚖️',
+              'intelligence': '📊',
+              'trends': '⚙️'
+            };
+
+            icon = iconMap[group.category.categoryKey] || iconMap[group.category.categoryKey.toLowerCase()] || '📊';
+          }
+
+          return {
+            ...group,
+            category: {
+              ...group.category,
+              icon
+            }
+          };
+        });
+
         // Store all suggestions for randomization
-        setAllSuggestions(suggestions);
+        setAllSuggestions(fixedSuggestions);
         // Randomly select 2 suggestions from each category
-        const randomizedSuggestions = suggestions.map(group => ({
+        const randomizedSuggestions = fixedSuggestions.map(group => ({
           ...group,
           suggestions: getRandomSuggestions(group.suggestions, Math.min(2, group.suggestions.length))
         }));
@@ -614,7 +955,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
                 />
               </Tooltip>
 
-              {group.category.icon && group.category.icon !== '??' && (
+              {group.category.icon && (
                 <div style={{
                   fontSize: '32px',
                   marginBottom: '8px',

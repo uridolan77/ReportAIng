@@ -46,7 +46,7 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
 
   useEffect(() => {
     loadTables();
-  }, [loadTables]);
+  }, []);
 
   const loadTables = useCallback(async () => {
     try {

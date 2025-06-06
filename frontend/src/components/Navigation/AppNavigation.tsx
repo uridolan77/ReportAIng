@@ -197,6 +197,12 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
           icon: <SafetyOutlined />,
           label: 'Security Dashboard',
           description: 'Security monitoring and settings'
+        },
+        {
+          key: '/admin/suggestions',
+          icon: <BulbOutlined />,
+          label: 'Query Suggestions',
+          description: 'Manage AI query suggestions and categories'
         }
       ]
     });
