@@ -8,11 +8,7 @@ import {
   Typography,
   Button,
   Row,
-  Col,
-  Tag,
-  Card,
-  Space,
-  Collapse
+  Col
 } from 'antd';
 import {
   HistoryOutlined,
@@ -26,14 +22,14 @@ import { QueryTabs } from './QueryTabs';
 import { OnboardingTour } from '../Onboarding/OnboardingTour';
 import { ProactiveSuggestions } from './ProactiveSuggestions';
 import { GuidedQueryWizard } from './GuidedQueryWizard';
-import { ErrorRecoveryPanel, QueryValidator } from './EnhancedErrorHandling';
+import { ErrorRecoveryPanel } from './EnhancedErrorHandling';
 import { useAIProcessingFeedback } from './AIProcessingFeedback';
 import { QueryProcessingViewer } from './QueryProcessingViewer';
 import { AccessibilityFeatures } from './AccessibilityFeatures';
 import './animations.css';
 import './professional-polish.css';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 export const MinimalQueryInterface: React.FC = () => {
   const location = useLocation();
@@ -42,7 +38,6 @@ export const MinimalQueryInterface: React.FC = () => {
     setQuery,
     currentResult,
     isLoading,
-    isConnected,
     handleSubmitQuery,
     setShowTemplateLibrary,
     setActiveTab,
@@ -61,7 +56,7 @@ export const MinimalQueryInterface: React.FC = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [showProactiveSuggestions, setShowProactiveSuggestions] = useState(true);
 
-  const [validationResult, setValidationResult] = useState<any>(null);
+  const [validationResult] = useState<any>(null);
 
   // AI Processing feedback
   const aiProcessing = useAIProcessingFeedback();

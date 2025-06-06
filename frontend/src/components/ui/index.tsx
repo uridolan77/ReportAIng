@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Button as AntButton,
   ButtonProps as AntButtonProps,
@@ -11,10 +12,9 @@ import {
   TabsProps as AntTabsProps,
   Switch as AntSwitch,
   SwitchProps as AntSwitchProps,
-  Select as AntSelect,
-  SelectProps as AntSelectProps
+  Modal,
+  Collapse
 } from 'antd';
-import React from 'react';
 
 const { TextArea } = AntInput;
 
@@ -255,7 +255,6 @@ export const Label: React.FC<{
 );
 
 // Dialog components (using Ant Design Modal)
-import { Modal } from 'antd';
 
 export interface DialogProps {
   open: boolean;
@@ -333,7 +332,6 @@ export const DialogFooter: React.FC<{
 );
 
 // Accordion components (using Ant Design Collapse)
-import { Collapse } from 'antd';
 
 export const Accordion: React.FC<{
   children: React.ReactNode;
@@ -467,7 +465,6 @@ export const AlertDialogCancel: React.FC<ButtonProps> = (props) => (
 );
 
 // Dropdown Menu components (using Ant Design Dropdown)
-import { Dropdown } from 'antd';
 
 export const DropdownMenu: React.FC<{
   children: React.ReactNode;

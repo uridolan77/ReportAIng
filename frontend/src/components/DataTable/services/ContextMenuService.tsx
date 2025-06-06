@@ -404,13 +404,13 @@ export const useContextMenuActions = () => {
 };
 
 // Context for sharing context menu state
-export const ContextMenuContext = React.createContext<{
+export const ContextMenuReactContext = React.createContext<{
   showContextMenu: (event: React.MouseEvent, context: Omit<ContextMenuContext, 'event'>) => void;
   hideContextMenu: () => void;
 } | null>(null);
 
 export const useContextMenu = () => {
-  const context = React.useContext(ContextMenuContext);
+  const context = React.useContext(ContextMenuReactContext);
   if (!context) {
     throw new Error('useContextMenu must be used within ContextMenuProvider');
   }

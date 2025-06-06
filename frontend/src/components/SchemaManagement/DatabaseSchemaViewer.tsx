@@ -10,7 +10,6 @@ import {
   Row,
   Col,
   Statistic,
-  Tooltip,
   Button,
   Alert,
   Spin,
@@ -27,7 +26,6 @@ import {
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
-const { Panel } = Collapse;
 const { Search } = Input;
 
 interface DatabaseSchemaViewerProps {
@@ -42,7 +40,6 @@ export const DatabaseSchemaViewer: React.FC<DatabaseSchemaViewerProps> = ({
   onRefresh
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTable, setSelectedTable] = useState<string | null>(null);
 
   const filteredTables = useMemo(() => {
     if (!schema?.tables) return [];

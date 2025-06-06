@@ -12,10 +12,6 @@ import {
   Spin,
   Empty,
   Divider,
-  Table,
-  Tag,
-  Tooltip,
-  Alert,
   Switch
 } from 'antd';
 import {
@@ -24,10 +20,7 @@ import {
   HistoryOutlined,
   DownloadOutlined,
   UploadOutlined,
-  StarOutlined,
-  UserOutlined,
   DatabaseOutlined,
-  TableOutlined,
   ReloadOutlined,
   EyeOutlined,
   EyeInvisibleOutlined

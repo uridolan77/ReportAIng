@@ -1,18 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Card,
-  Row,
-  Col,
   Button,
   Space,
   Typography,
   Spin,
-  Alert,
-  Badge,
   Progress,
-  Tooltip,
-  Tag,
-  Divider,
   message
 } from 'antd';
 import {
@@ -23,10 +15,7 @@ import {
   DotChartOutlined,
   HeatMapOutlined,
   FunnelPlotOutlined,
-  RadarChartOutlined,
-  CheckCircleOutlined,
-  InfoCircleOutlined,
-  WarningOutlined
+  RadarChartOutlined
 } from '@ant-design/icons';
 import {
   VisualizationRecommendation,
@@ -35,7 +24,7 @@ import {
 } from '../../types/visualization';
 import advancedVisualizationService from '../../services/advancedVisualizationService';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 interface VisualizationRecommendationsProps {
   data: any[];

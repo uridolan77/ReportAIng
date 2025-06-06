@@ -17,25 +17,20 @@ import {
 } from 'antd';
 import {
   CheckCircleOutlined,
-  WarningOutlined,
   CodeOutlined,
   BugOutlined,
   SafetyOutlined
 } from '@ant-design/icons';
 import { z } from 'zod';
 import { ValidationUtils } from '../../utils/validation';
-import { assertType, validateWithFallback } from '../../utils/validation';
+import { validateWithFallback } from '../../utils/validation';
 import {
   createUserId,
   createQueryId,
   createConfidenceScore,
   createEmailAddress,
   isEmailAddress,
-  isConfidenceScore,
-  UserId,
-  QueryId,
-  ConfidenceScore,
-  EmailAddress
+  isConfidenceScore
 } from '../../types/branded';
 import { useValidatedQuery, useExecuteQuery } from '../../hooks/useValidatedQuery';
 import { QueryResponseSchema } from '../../schemas/api';
