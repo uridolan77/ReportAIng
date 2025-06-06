@@ -54,6 +54,7 @@ export const QueryTabs: React.FC = () => {
   // Use visualization store for persistent chart state
   const { currentVisualization, setVisualization } = useVisualizationStore();
   const [selectedRecommendation, setSelectedRecommendation] = useState<VisualizationRecommendation | null>(null);
+  const [filteredData, setFilteredData] = useState<any[]>([]);
 
   // Create a unique key for this query result to associate with chart
   const resultKey = `${query}-${currentResult?.queryId || 'unknown'}`;
@@ -66,6 +67,18 @@ export const QueryTabs: React.FC = () => {
       ['GameName', 'Provider', 'GameType', 'TotalRevenue', 'NetGamingRevenue', 'TotalSessions', 'TotalNetGamingRevenue'].includes(col)
     );
   }, [currentResult?.result?.metadata?.columns]);
+
+  // Initialize filtered data when result changes
+  useEffect(() => {
+    if (currentResult?.result?.data) {
+      setFilteredData(currentResult.result.data.map((row, index) => ({ ...row, id: index })));
+    }
+  }, [currentResult]);
+
+  // Handle data filtering from table
+  const handleDataFiltering = (hiddenRows: any[], visibleData: any[]) => {
+    setFilteredData(visibleData);
+  };
 
   // Debug logging for current visualization
   useEffect(() => {
@@ -241,6 +254,7 @@ export const QueryTabs: React.FC = () => {
                 onRequery={handleSubmitQuery}
                 onSuggestionClick={handleFollowUpSuggestionClick}
                 onVisualizationRequest={handleVisualizationRequest}
+                onDataFiltering={handleDataFiltering}
               />
             </Col>
             {showInsightsPanel && currentResult.success && (
@@ -369,7 +383,12 @@ export const QueryTabs: React.FC = () => {
                     fontSize: '14px',
                     color: '#6b7280'
                   }}>
-                    {currentResult.result.data.length} rows • {currentResult.result?.metadata.columns?.length || 0} columns
+                    {filteredData.length > 0 ? filteredData.length : currentResult.result.data.length} rows • {currentResult.result?.metadata.columns?.length || 0} columns
+                    {filteredData.length > 0 && filteredData.length < currentResult.result.data.length && (
+                      <span style={{ color: '#f59e0b', fontWeight: 500 }}>
+                        {' '}(filtered from {currentResult.result.data.length})
+                      </span>
+                    )}
                   </Text>
                 </div>
               </div>
@@ -426,7 +445,7 @@ export const QueryTabs: React.FC = () => {
                     bodyStyle={{ padding: '16px' }}
                   >
                     <ChartConfigurationPanel
-                      data={currentResult.result.data.map((row, index) => ({ ...row, id: index }))}
+                      data={filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }))}
                       columns={currentResult.result?.metadata.columns || []}
                       currentConfig={currentVisualization}
                       onConfigChange={(config) => {
@@ -453,7 +472,7 @@ export const QueryTabs: React.FC = () => {
                     bodyStyle={{ padding: '16px' }}
                   >
                     <VisualizationRecommendations
-                      data={currentResult.result.data.map((row, index) => ({ ...row, id: index }))}
+                      data={filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }))}
                       columns={currentResult.result?.metadata.columns || []}
                       query={query}
                       onRecommendationSelect={(recommendation) => {
@@ -464,7 +483,8 @@ export const QueryTabs: React.FC = () => {
                         console.log('Config generated:', config);
                         setVisualization(config);
                         if (handleVisualizationRequest) {
-                          handleVisualizationRequest(config.type, currentResult.result.data, currentResult.result?.metadata.columns || []);
+                          const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data;
+                          handleVisualizationRequest(config.type, dataToUse, currentResult.result?.metadata.columns || []);
                         }
                       }}
                     />
@@ -517,7 +537,7 @@ export const QueryTabs: React.FC = () => {
                     </div>
 
                     <AdvancedChart
-                      data={currentResult.result.data.map((row, index) => ({ ...row, id: index }))}
+                      data={filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }))}
                       config={currentVisualization}
                       onConfigChange={(config) => {
                         setVisualization(config);

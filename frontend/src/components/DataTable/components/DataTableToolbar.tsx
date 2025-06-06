@@ -15,7 +15,9 @@ import {
   DeleteOutlined,
   ExportOutlined,
   ImportOutlined,
-  DashboardOutlined
+  DashboardOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined
 } from '@ant-design/icons';
 import { useToken } from 'antd/es/theme/internal';
 
@@ -29,6 +31,8 @@ interface DataTableToolbarProps {
     columnChooser: boolean;
     fullscreen: boolean;
     saveState?: boolean;
+    selection?: boolean;
+    rowHiding?: boolean;
   };
   searchText: string;
   onSearchChange: (value: string) => void;
@@ -47,6 +51,11 @@ interface DataTableToolbarProps {
   onExportState?: () => string | null;
   onImportState?: (stateJson: string) => boolean;
   performanceMetrics?: any;
+  // Row hiding props
+  selectedRowsCount?: number;
+  hiddenRowsCount?: number;
+  onHideSelectedRows?: () => void;
+  onShowAllHiddenRows?: () => void;
 }
 
 export const DataTableToolbar: React.FC<DataTableToolbarProps> = ({
@@ -67,7 +76,11 @@ export const DataTableToolbar: React.FC<DataTableToolbarProps> = ({
   onClearState,
   onExportState,
   onImportState,
-  performanceMetrics
+  performanceMetrics,
+  selectedRowsCount = 0,
+  hiddenRowsCount = 0,
+  onHideSelectedRows,
+  onShowAllHiddenRows
 }) => {
   const [, token] = useToken();
   const [showImportModal, setShowImportModal] = useState(false);
@@ -190,6 +203,29 @@ export const DataTableToolbar: React.FC<DataTableToolbarProps> = ({
           <Button icon={<GroupOutlined />} onClick={onGroupBy}>
             Group By
           </Button>
+        )}
+
+        {/* Row Hiding Controls */}
+        {enabledFeatures.rowHiding && enabledFeatures.selection && (
+          <Space.Compact>
+            <Button
+              icon={<EyeInvisibleOutlined />}
+              onClick={onHideSelectedRows}
+              disabled={selectedRowsCount === 0}
+              title={`Hide ${selectedRowsCount} selected row(s)`}
+            >
+              Hide Selected {selectedRowsCount > 0 && `(${selectedRowsCount})`}
+            </Button>
+            {hiddenRowsCount > 0 && (
+              <Button
+                icon={<EyeOutlined />}
+                onClick={onShowAllHiddenRows}
+                title={`Show ${hiddenRowsCount} hidden row(s)`}
+              >
+                Show Hidden ({hiddenRowsCount})
+              </Button>
+            )}
+          </Space.Compact>
         )}
       </Space>
       

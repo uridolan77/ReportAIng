@@ -5,7 +5,8 @@ import {
   StarOutlined,
   RocketOutlined,
   ReloadOutlined,
-  FireOutlined
+  FireOutlined,
+  SendOutlined
 } from '@ant-design/icons';
 import { querySuggestionService, GroupedSuggestions, QuerySuggestion } from '../../services/querySuggestionService';
 
@@ -13,18 +14,22 @@ const { Text, Title } = Typography;
 
 interface ProactiveSuggestionsProps {
   onQuerySelect: (query: string) => void;
+  onSubmitQuery?: (query: string) => void;
   onStartWizard?: () => void;
   userRole?: string;
   recentQueries?: string[];
 }
 
 export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
-  onQuerySelect
+  onQuerySelect,
+  onSubmitQuery
 }) => {
   const [groupedSuggestions, setGroupedSuggestions] = useState<GroupedSuggestions[]>([]);
   const [allSuggestions, setAllSuggestions] = useState<GroupedSuggestions[]>([]);
   const [loading, setLoading] = useState(true);
   const [randomizing, setRandomizing] = useState(false);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [shufflingCategory, setShufflingCategory] = useState<string | null>(null);
 
   useEffect(() => {
     loadSuggestions();
@@ -359,6 +364,33 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
     setRandomizing(false);
   };
 
+  const shuffleCategory = async (categoryKey: string) => {
+    if (shufflingCategory === categoryKey) return;
+
+    setShufflingCategory(categoryKey);
+
+    // Add a small delay for visual feedback
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    try {
+      const categoryData = allSuggestions.find(cat => cat.category.categoryKey === categoryKey);
+      if (categoryData) {
+        const newSuggestions = getRandomSuggestions(categoryData.suggestions, Math.min(3, categoryData.suggestions.length));
+        setGroupedSuggestions(prev =>
+          prev.map(cat =>
+            cat.category.categoryKey === categoryKey
+              ? { ...cat, suggestions: newSuggestions }
+              : cat
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error shuffling category:', error);
+    } finally {
+      setShufflingCategory(null);
+    }
+  };
+
   const handleQuerySelect = async (suggestion: QuerySuggestion) => {
     try {
       // Record usage analytics
@@ -458,6 +490,27 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           }}>
             Try These Examples
           </Title>
+          <Tooltip title="Shuffle all examples">
+            <Button
+              type="text"
+              size="small"
+              icon={<ReloadOutlined spin={randomizing} />}
+              onClick={randomizeSuggestions}
+              loading={randomizing}
+              style={{
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid #e2e8f0',
+                backgroundColor: '#ffffff',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease'
+              }}
+            />
+          </Tooltip>
           <FireOutlined style={{
             fontSize: '24px',
             color: '#f59e0b',
@@ -472,28 +525,6 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
         }}>
           Organized by category for easy discovery
         </Text>
-
-        {/* Randomize Button */}
-        <Tooltip title="Get new random examples from each category">
-          <Button
-            type="primary"
-            icon={<ReloadOutlined spin={randomizing} />}
-            onClick={randomizeSuggestions}
-            loading={randomizing}
-            style={{
-              borderRadius: '20px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-              border: 'none',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
-              fontWeight: 600,
-              height: '36px',
-              paddingLeft: '16px',
-              paddingRight: '16px'
-            }}
-          >
-            {randomizing ? 'Shuffling...' : 'Shuffle Examples'}
-          </Button>
-        </Tooltip>
       </div>
 
       {/* Categories Grid */}
@@ -506,24 +537,36 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           alignItems: 'start',
           width: '100%'
         }}>
-        {groupedSuggestions.map((group, index) => (
-          <Card
-            key={`${group.category.id}-${index}`}
-            style={{
-              borderRadius: '20px',
-              border: '1px solid #e1e5e9',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              height: 'fit-content',
-              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-              position: 'relative',
-              overflow: 'hidden',
-              animation: randomizing ? 'cardShuffle 0.6s ease-in-out' : 'none'
-            }}
-            styles={{ body: { padding: '28px' } }}
-            hoverable
-            className="suggestion-card"
-          >
+        {groupedSuggestions.map((group, index) => {
+          const isHovered = hoveredCategory === group.category.categoryKey;
+          const displaySuggestions = isHovered
+            ? allSuggestions.find(cat => cat.category.categoryKey === group.category.categoryKey)?.suggestions || group.suggestions
+            : group.suggestions;
+
+          return (
+            <Card
+              key={`${group.category.id}-${index}`}
+              onMouseEnter={() => setHoveredCategory(group.category.categoryKey)}
+              onMouseLeave={() => setHoveredCategory(null)}
+              style={{
+                borderRadius: '20px',
+                border: '1px solid #e1e5e9',
+                boxShadow: isHovered
+                  ? '0 16px 48px rgba(0, 0, 0, 0.15)'
+                  : '0 8px 32px rgba(0, 0, 0, 0.08)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                height: 'fit-content',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: randomizing ? 'cardShuffle 0.6s ease-in-out' : 'none',
+                transform: isHovered ? 'scale(1.02) translateY(-8px)' : 'scale(1) translateY(0)',
+                zIndex: isHovered ? 10 : 1
+              }}
+              styles={{ body: { padding: '28px' } }}
+              hoverable
+              className="suggestion-card"
+            >
             {/* Decorative gradient overlay */}
             <div style={{
               position: 'absolute',
@@ -541,6 +584,36 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
               textAlign: 'center',
               position: 'relative'
             }}>
+              {/* Individual shuffle button */}
+              <Tooltip title={`Shuffle ${group.category.title} examples`}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<ReloadOutlined spin={shufflingCategory === group.category.categoryKey} />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    shuffleCategory(group.category.categoryKey);
+                  }}
+                  loading={shufflingCategory === group.category.categoryKey}
+                  style={{
+                    position: 'absolute',
+                    top: '0',
+                    right: '0',
+                    borderRadius: '50%',
+                    width: '28px',
+                    height: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid #e2e8f0',
+                    backgroundColor: '#ffffff',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.3s ease',
+                    zIndex: 10
+                  }}
+                />
+              </Tooltip>
+
               <div style={{
                 fontSize: '32px',
                 marginBottom: '8px',
@@ -575,7 +648,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
 
             {/* Suggestions */}
             <Space direction="vertical" style={{ width: '100%' }} size={12}>
-              {group.suggestions.map((suggestion, suggestionIndex) => (
+              {displaySuggestions.map((suggestion, suggestionIndex) => (
                 <Button
                   key={`${suggestion.id}-${suggestionIndex}`}
                   type="text"
@@ -630,8 +703,34 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
                       <div style={{
                         marginLeft: '12px',
                         display: 'flex',
-                        alignItems: 'center'
+                        alignItems: 'center',
+                        gap: '8px'
                       }}>
+                        {onSubmitQuery && (
+                          <Tooltip title="Submit this query">
+                            <Button
+                              type="primary"
+                              size="small"
+                              icon={<SendOutlined />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSubmitQuery(suggestion.queryText);
+                              }}
+                              style={{
+                                borderRadius: '8px',
+                                height: '24px',
+                                width: '24px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '10px',
+                                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                                border: 'none',
+                                boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+                              }}
+                            />
+                          </Tooltip>
+                        )}
                         {getComplexityIcon(suggestion.complexity)}
                       </div>
                     </div>
@@ -677,7 +776,8 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
               ))}
             </Space>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {/* Add CSS animations and responsive styles */}
@@ -694,8 +794,13 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
         }
 
         .suggestion-card:hover {
-          transform: translateY(-4px) !important;
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+          transform: scale(1.02) translateY(-8px) !important;
+          box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15) !important;
+          z-index: 10 !important;
+        }
+
+        .suggestion-card {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
 
         .modern-suggestion-button:hover {
@@ -713,12 +818,6 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
         }
 
         /* Responsive grid adjustments */
-        @media (max-width: 1400px) {
-          .suggestions-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-          }
-        }
-
         @media (max-width: 1200px) {
           .suggestions-grid {
             grid-template-columns: repeat(2, 1fr) !important;

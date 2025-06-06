@@ -69,6 +69,7 @@ export interface DataTableFeatures {
   grouping?: boolean;
   aggregation?: boolean;
   selection?: boolean;
+  rowHiding?: boolean;
   editing?: boolean;
   reordering?: boolean;
   resizing?: boolean;
@@ -145,6 +146,9 @@ export interface DataTableProps {
   onRowDoubleClick?: (record: any, index: number) => void;
   onCellClick?: (value: any, record: any, column: DataTableColumn, index: number) => void;
   onSelectionChange?: (selectedRows: any[]) => void;
+  onRowHide?: (hiddenRows: any[]) => void;
+  onRowShow?: (shownRows: any[]) => void;
+  onHiddenRowsChange?: (hiddenRows: any[], visibleData: any[]) => void;
   onSort?: (sortConfig: any) => void;
   onFilter?: (filterConfig: any) => void;
   onSearch?: (searchText: string) => void;
@@ -168,6 +172,7 @@ export interface DataTableState {
   currentPage: number;
   pageSize: number;
   selectedRows: any[];
+  hiddenRows: any[];
   showFilterPanel: boolean;
   showColumnChooser: boolean;
   showExportModal: boolean;

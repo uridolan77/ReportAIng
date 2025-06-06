@@ -13,6 +13,8 @@ interface UseDataProcessingProps {
   enabledFeatures: DataTableFeatures;
   currentPage: number;
   pageSize: number;
+  hiddenRows?: any[];
+  keyField?: string;
 }
 
 export const useDataProcessing = ({
@@ -23,13 +25,22 @@ export const useDataProcessing = ({
   visibleColumns,
   enabledFeatures,
   currentPage,
-  pageSize
+  pageSize,
+  hiddenRows = [],
+  keyField = 'id'
 }: UseDataProcessingProps) => {
   
-  // Process data: search, filter, sort
+  // Process data: filter hidden rows, search, filter, sort
   const processedData = useMemo(() => {
     let result = [...data];
-    
+
+    // Filter out hidden rows first
+    if (hiddenRows.length > 0 && enabledFeatures.rowHiding) {
+      result = result.filter(row =>
+        !hiddenRows.some(hiddenRow => hiddenRow[keyField] === row[keyField])
+      );
+    }
+
     // Apply search
     if (debouncedSearchText && enabledFeatures.searching) {
       const searchLower = debouncedSearchText.toLowerCase();
@@ -102,7 +113,7 @@ export const useDataProcessing = ({
     }
     
     return result;
-  }, [data, debouncedSearchText, filterConfig, sortConfig, visibleColumns, enabledFeatures]);
+  }, [data, debouncedSearchText, filterConfig, sortConfig, visibleColumns, enabledFeatures, hiddenRows, keyField]);
 
   // Paginated data
   const paginatedData = useMemo(() => {

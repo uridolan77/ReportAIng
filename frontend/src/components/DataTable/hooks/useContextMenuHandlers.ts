@@ -13,6 +13,9 @@ interface UseContextMenuHandlersProps {
   handleExport: (format: string) => void;
   handleRefresh: () => void;
   handleCopy: (value: any) => void;
+  handleHideRow?: (row: any) => void;
+  handleHideSelectedRows?: () => void;
+  handleShowAllHiddenRows?: () => void;
 }
 
 export const useContextMenuHandlers = ({
@@ -24,7 +27,10 @@ export const useContextMenuHandlers = ({
   onCellClick,
   handleExport,
   handleRefresh,
-  handleCopy
+  handleCopy,
+  handleHideRow,
+  handleHideSelectedRows,
+  handleShowAllHiddenRows
 }: UseContextMenuHandlersProps) => {
 
   const handleContextMenuAction = useCallback((action: string, context: ContextMenuContext) => {
@@ -98,7 +104,25 @@ export const useContextMenuHandlers = ({
       case 'refresh':
         handleRefresh();
         break;
-      
+
+      case 'hide-row':
+        if (context.record && enabledFeatures.rowHiding) {
+          handleHideRow?.(context.record);
+        }
+        break;
+
+      case 'hide-selected':
+        if (enabledFeatures.rowHiding && selectedRows.length > 0) {
+          handleHideSelectedRows?.();
+        }
+        break;
+
+      case 'show-all-hidden':
+        if (enabledFeatures.rowHiding) {
+          handleShowAllHiddenRows?.();
+        }
+        break;
+
       default:
         // Custom actions can be handled by parent component
         break;
@@ -107,10 +131,14 @@ export const useContextMenuHandlers = ({
     visibleColumns,
     enabledFeatures,
     processedData,
+    selectedRows,
     onSelectionChange,
     handleExport,
     handleRefresh,
-    handleCopy
+    handleCopy,
+    handleHideRow,
+    handleHideSelectedRows,
+    handleShowAllHiddenRows
   ]);
 
   // Context menu wrapper for table renderers

@@ -294,7 +294,7 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                   resize: 'vertical',
                   fontSize: '18px',
                   lineHeight: '1.6',
-                  padding: '20px 80px 20px 20px',
+                  padding: '20px 120px 20px 20px', // Increased right padding to accommodate submit button
                   border: 'none',
                   borderRadius: '16px',
                   background: 'transparent',
@@ -313,6 +313,7 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                 right: 20,
                 display: 'flex',
                 gap: 8,
+                alignItems: 'center'
               }}
             >
               {value && (

@@ -58,8 +58,10 @@ export const MinimalQueryInterface: React.FC = () => {
     hasSubmittedQuery,
     currentResult: !!currentResult,
     isLoading,
+    forceInitialState,
     processingStagesLength: processingStages?.length || 0,
-    query: query?.substring(0, 50) + (query?.length > 50 ? '...' : '') || ''
+    query: query?.substring(0, 50) + (query?.length > 50 ? '...' : '') || '',
+    willShowSuggestions: forceInitialState && !isLoading
   });
 
 
@@ -121,13 +123,12 @@ export const MinimalQueryInterface: React.FC = () => {
     }
   }, [isLoading, processingStages]);
 
-  // Also exit initial state when we have a successful result
+  // Also exit initial state when we have a successful result AND user is actively viewing it
   useEffect(() => {
-    if (currentResult && currentResult.success) {
+    if (currentResult && currentResult.success && hasSubmittedQuery) {
       setForceInitialState(false);
-      setHasSubmittedQuery(true);
     }
-  }, [currentResult]);
+  }, [currentResult, hasSubmittedQuery]);
 
   // Reset hasSubmittedQuery when query is cleared completely
   useEffect(() => {
@@ -332,6 +333,11 @@ export const MinimalQueryInterface: React.FC = () => {
             <ProactiveSuggestions
               onQuerySelect={(selectedQuery) => {
                 setQuery(selectedQuery);
+              }}
+              onSubmitQuery={(selectedQuery) => {
+                setQuery(selectedQuery);
+                setForceInitialState(false);
+                setTimeout(() => handleCustomSubmitQuery(), 100);
               }}
               onStartWizard={() => setShowWizard(true)}
               recentQueries={Array.isArray(queryHistory) ? queryHistory.map(h => h.query || '').slice(0, 5) : []}

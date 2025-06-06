@@ -69,7 +69,9 @@ const DataTable: React.FC<DataTableProps> = (props) => {
     visibleColumns,
     enabledFeatures,
     currentPage: state.currentPage,
-    pageSize: state.pageSize
+    pageSize: state.pageSize,
+    hiddenRows: state.hiddenRows,
+    keyField
   });
 
   // Event handlers
@@ -81,6 +83,7 @@ const DataTable: React.FC<DataTableProps> = (props) => {
     visibleColumns,
     config,
     tableRef,
+    keyField,
     props
   });
 
@@ -94,7 +97,10 @@ const DataTable: React.FC<DataTableProps> = (props) => {
     onCellClick: props.onCellClick,
     handleExport: handlers.handleExport,
     handleRefresh: handlers.handleRefresh,
-    handleCopy: handlers.handleCopy
+    handleCopy: handlers.handleCopy,
+    handleHideRow: handlers.handleHideRow,
+    handleHideSelectedRows: handlers.handleHideSelectedRows,
+    handleShowAllHiddenRows: handlers.handleShowAllHiddenRows
   });
 
   // Keyboard shortcuts
@@ -205,6 +211,10 @@ const DataTable: React.FC<DataTableProps> = (props) => {
                 isFullscreen={state.isFullscreen}
                 onToggleFullscreen={handlers.toggleFullscreen}
                 onGroupBy={() => {}}
+                selectedRowsCount={state.selectedRows.length}
+                hiddenRowsCount={state.hiddenRows.length}
+                onHideSelectedRows={handlers.handleHideSelectedRows}
+                onShowAllHiddenRows={handlers.handleShowAllHiddenRows}
               />
             )
           ) : null}

@@ -28,6 +28,7 @@ export const useDataTableState = ({ columns, features, config }: UseDataTableSta
     grouping: false,
     aggregation: false,
     selection: true,
+    rowHiding: true,
     editing: false,
     reordering: true,
     resizing: true,
@@ -59,6 +60,7 @@ export const useDataTableState = ({ columns, features, config }: UseDataTableSta
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(config.pageSize || 20);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [hiddenRows, setHiddenRows] = useState<any[]>([]);
   
   // UI state
   const [showFilterPanel, setShowFilterPanel] = useState(false);
@@ -83,6 +85,7 @@ export const useDataTableState = ({ columns, features, config }: UseDataTableSta
     currentPage,
     pageSize,
     selectedRows,
+    hiddenRows,
     showFilterPanel,
     showColumnChooser,
     showExportModal,
@@ -97,6 +100,7 @@ export const useDataTableState = ({ columns, features, config }: UseDataTableSta
     setCurrentPage,
     setPageSize,
     setSelectedRows,
+    setHiddenRows,
     setShowFilterPanel,
     setShowColumnChooser,
     setShowExportModal,

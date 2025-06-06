@@ -20,9 +20,10 @@ interface QueryResultProps {
   onRequery: () => void;
   onSuggestionClick?: (suggestion: string) => void;
   onVisualizationRequest?: (type: string, data: any[], columns: any[]) => void;
+  onDataFiltering?: (hiddenRows: any[], visibleData: any[]) => void;
 }
 
-export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick, onVisualizationRequest }) => {
+export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick, onVisualizationRequest, onDataFiltering }) => {
   // All hooks must be called at the top level before any conditional returns
   // State for debug mode
   const [debugMode, setDebugMode] = useState(false);
@@ -31,6 +32,10 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
   const [, setCurrentPage] = useState(1);
   // State for Query Generation section (collapsed by default)
   const [isQueryGenerationCollapsed, setIsQueryGenerationCollapsed] = useState(true);
+  // State for hidden rows
+  const [hiddenRows, setHiddenRows] = useState<any[]>([]);
+  // State for visible data (filtered data excluding hidden rows)
+  const [visibleData, setVisibleData] = useState<any[]>([]);
 
   // Debug logging for prompt details and error handling
   React.useEffect(() => {
@@ -78,6 +83,25 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
       console.error('Error clearing cache:', error);
     }
   };
+
+  // Handle row hiding callbacks
+  const handleHiddenRowsChange = React.useCallback((newHiddenRows: any[], newVisibleData: any[]) => {
+    setHiddenRows(newHiddenRows);
+    setVisibleData(newVisibleData);
+
+    // Notify parent component about data filtering
+    if (onDataFiltering) {
+      onDataFiltering(newHiddenRows, newVisibleData);
+    }
+
+    // Update visualization data if callback is provided
+    if (onVisualizationRequest && newVisibleData.length > 0) {
+      // Get the columns for visualization
+      const vizColumns = result.result?.metadata?.columns || [];
+      // Trigger visualization update with filtered data
+      onVisualizationRequest('update', newVisibleData, vizColumns);
+    }
+  }, [onDataFiltering, onVisualizationRequest, result.result?.metadata?.columns]);
 
   // Conditional returns after all hooks
   if (!result.success) {
@@ -355,6 +379,14 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
     ...row,
     id: index, // DataTable uses 'id' as default keyField
   })) || [];
+
+  // Initialize visible data when result changes
+  React.useEffect(() => {
+    if (dataSource.length > 0) {
+      setVisibleData(dataSource);
+      setHiddenRows([]); // Reset hidden rows when new data arrives
+    }
+  }, [dataSource]);
 
   // Debug logging for data structure (only when debug mode is enabled)
   if (debugMode) {
@@ -777,7 +809,8 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
                 sorting: true,
                 filtering: true,
                 searching: true,
-                selection: false,
+                selection: true,
+                rowHiding: true,
                 resizing: true,
                 copying: true,
                 export: true,
@@ -804,6 +837,7 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
                   setCurrentPage(1);
                 }
               }}
+              onHiddenRowsChange={handleHiddenRowsChange}
               style={{
                 borderRadius: '8px',
                 minHeight: '200px',

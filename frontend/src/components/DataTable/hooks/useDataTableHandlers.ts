@@ -13,6 +13,7 @@ interface UseDataTableHandlersProps {
   visibleColumns: DataTableColumn[];
   config: any;
   tableRef: React.RefObject<HTMLDivElement>;
+  keyField: string;
   props: DataTableProps;
 }
 
@@ -24,6 +25,7 @@ export const useDataTableHandlers = ({
   visibleColumns,
   config,
   tableRef,
+  keyField,
   props
 }: UseDataTableHandlersProps) => {
   // Destructure props to avoid React Hook dependency warnings
@@ -36,7 +38,10 @@ export const useDataTableHandlers = ({
     onColumnReorder,
     onExport,
     onError,
-    onRefresh
+    onRefresh,
+    onRowHide,
+    onRowShow,
+    onHiddenRowsChange
   } = props;
 
   const handleSort = useCallback((column: DataTableColumn) => {
@@ -174,6 +179,41 @@ export const useDataTableHandlers = ({
     }
   }, []);
 
+  const handleHideSelectedRows = useCallback(() => {
+    if (enabledFeatures.rowHiding && state.selectedRows.length > 0) {
+      const newHiddenRows = [...state.hiddenRows, ...state.selectedRows];
+      actions.setHiddenRows(newHiddenRows);
+      actions.setSelectedRows([]); // Clear selection after hiding
+      onRowHide?.(state.selectedRows);
+      onHiddenRowsChange?.(newHiddenRows, processedData.filter(row =>
+        !newHiddenRows.some(hiddenRow => hiddenRow[keyField] === row[keyField])
+      ));
+      message.success(`Hidden ${state.selectedRows.length} row(s)`);
+    }
+  }, [enabledFeatures.rowHiding, state.selectedRows, state.hiddenRows, actions, onRowHide, onHiddenRowsChange, processedData, keyField]);
+
+  const handleShowAllHiddenRows = useCallback(() => {
+    if (enabledFeatures.rowHiding && state.hiddenRows.length > 0) {
+      const shownRows = [...state.hiddenRows];
+      actions.setHiddenRows([]);
+      onRowShow?.(shownRows);
+      onHiddenRowsChange?.([], processedData);
+      message.success(`Restored ${shownRows.length} hidden row(s)`);
+    }
+  }, [enabledFeatures.rowHiding, state.hiddenRows, actions, onRowShow, onHiddenRowsChange, processedData]);
+
+  const handleHideRow = useCallback((row: any) => {
+    if (enabledFeatures.rowHiding) {
+      const newHiddenRows = [...state.hiddenRows, row];
+      actions.setHiddenRows(newHiddenRows);
+      onRowHide?.(row);
+      onHiddenRowsChange?.(newHiddenRows, processedData.filter(r =>
+        !newHiddenRows.some(hiddenRow => hiddenRow[keyField] === r[keyField])
+      ));
+      message.success('Row hidden');
+    }
+  }, [enabledFeatures.rowHiding, state.hiddenRows, actions, onRowHide, onHiddenRowsChange, processedData, keyField]);
+
   return {
     handleSort,
     handleFilter,
@@ -186,6 +226,9 @@ export const useDataTableHandlers = ({
     handleRefresh,
     toggleFullscreen,
     handleSelectAll,
-    handleCopy
+    handleCopy,
+    handleHideSelectedRows,
+    handleShowAllHiddenRows,
+    handleHideRow
   };
 };
