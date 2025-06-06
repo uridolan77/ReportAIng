@@ -16,8 +16,7 @@ import {
   Col,
   Collapse,
   Divider,
-  Switch,
-  Select
+  Switch
 } from 'antd';
 import {
   PlusOutlined,

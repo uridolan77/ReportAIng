@@ -71,11 +71,11 @@ public class QueryService : IQueryService
             _logger.LogError("🎯🎯🎯 ENHANCED QueryService.ProcessQueryAsync CALLED - Processing query {QueryId} for user {UserId}: {Question}",
                 queryId, userId, request.Question);
 
-            // Notify query processing started
-            await NotifyProcessingStage(userId, queryId, "started", "Query processing initiated", 10);
+            // Notify query processing started with immediate feedback
+            await NotifyProcessingStage(userId, queryId, "started", "Query processing initiated", 5);
 
             // Check cache first if enabled (both in request options AND admin settings)
-            await NotifyProcessingStage(userId, queryId, "cache_check", "Checking query cache", 5);
+            await NotifyProcessingStage(userId, queryId, "cache_check", "Checking query cache", 8);
             var adminCachingEnabled = await _settingsService.GetBooleanSettingAsync("EnableQueryCaching", true);
             var requestCachingEnabled = request.Options.EnableCache;
             var isCachingEnabled = requestCachingEnabled && adminCachingEnabled;
@@ -115,11 +115,11 @@ public class QueryService : IQueryService
             }
 
             // Get full schema metadata first
-            await NotifyProcessingStage(userId, queryId, "schema_loading", "Loading database schema", 10);
+            await NotifyProcessingStage(userId, queryId, "schema_loading", "Loading database schema", 12);
             var fullSchema = await _schemaService.GetSchemaMetadataAsync();
 
             // Get relevant schema context based on the query
-            await NotifyProcessingStage(userId, queryId, "schema_analysis", "Analyzing relevant schema for query", 15);
+            await NotifyProcessingStage(userId, queryId, "schema_analysis", "Analyzing relevant schema for query", 18);
             SchemaMetadata relevantSchema;
 
 
@@ -164,24 +164,51 @@ public class QueryService : IQueryService
             _logger.LogInformation("📝 Prompt details generated: {HasPromptDetails}, Template: {TemplateName}, Sections: {SectionCount}",
                 promptDetails != null, promptDetails?.TemplateName, promptDetails?.Sections?.Length ?? 0);
 
-            await NotifyProcessingStage(userId, queryId, "ai_processing", "Sending request to AI service for SQL generation", 40, new {
+            await NotifyProcessingStage(userId, queryId, "ai_processing", "Sending request to AI service for SQL generation", 35, new {
                 prompt = prompt?.Substring(0, Math.Min(200, prompt?.Length ?? 0)) + "...",
                 promptLength = prompt?.Length ?? 0,
                 templateName = promptDetails?.TemplateName
             });
+
+            // Add intermediate progress during AI processing
             var aiStartTime = DateTime.UtcNow;
+
+            // Simulate progress updates during AI processing for better UX
+            var progressTask = Task.Run(async () =>
+            {
+                var progressSteps = new[] { 40, 45, 50, 55 };
+                var messages = new[] {
+                    "AI analyzing query structure...",
+                    "AI mapping to database schema...",
+                    "AI generating SQL logic...",
+                    "AI optimizing query..."
+                };
+
+                for (int i = 0; i < progressSteps.Length; i++)
+                {
+                    await Task.Delay(300, cancellationToken); // Shorter delay for more responsive progress
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        await NotifyProcessingStage(userId, queryId, "ai_processing", messages[i], progressSteps[i]);
+                    }
+                }
+            });
+
             var generatedSQL = await _aiService.GenerateSQLAsync(prompt, cancellationToken);
             var aiExecutionTime = (int)(DateTime.UtcNow - aiStartTime).TotalMilliseconds;
 
+            // Cancel the progress task since AI processing is complete
+            try { progressTask.Wait(100); } catch { /* Ignore timeout */ }
+
             _logger.LogInformation("🤖 AI GENERATED SQL: {GeneratedSQL}", generatedSQL);
 
-            await NotifyProcessingStage(userId, queryId, "ai_completed", "AI generated SQL successfully", 50, new {
+            await NotifyProcessingStage(userId, queryId, "ai_completed", "AI generated SQL successfully", 60, new {
                 generatedSQL = generatedSQL?.Substring(0, Math.Min(300, generatedSQL?.Length ?? 0)) + "...",
                 aiExecutionTime = aiExecutionTime
             });
 
             // Validate the generated SQL
-            await NotifyProcessingStage(userId, queryId, "sql_validation", "Validating generated SQL", 55);
+            await NotifyProcessingStage(userId, queryId, "sql_validation", "Validating generated SQL", 65);
             var isValidSQL = await _sqlQueryService.ValidateSqlAsync(generatedSQL);
             if (!isValidSQL)
             {
@@ -198,7 +225,7 @@ public class QueryService : IQueryService
             }
 
             // Execute the SQL query
-            await NotifyProcessingStage(userId, queryId, "sql_execution", "Executing SQL query against database", 60, new {
+            await NotifyProcessingStage(userId, queryId, "sql_execution", "Executing SQL query against database", 70, new {
                 sql = generatedSQL?.Substring(0, Math.Min(200, generatedSQL?.Length ?? 0)) + "..."
             });
             _logger.LogInformation("Executing SQL: {SQL}", generatedSQL);
@@ -207,18 +234,39 @@ public class QueryService : IQueryService
             var dbExecutionTime = (int)(DateTime.UtcNow - dbStartTime).TotalMilliseconds;
             var totalExecutionTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
 
-            _logger.LogInformation("Database execution completed - Success: {Success}, RowCount: {RowCount}, ExecutionTime: {ExecutionTime}ms",
+            _logger.LogInformation("✅ DATABASE EXECUTION COMPLETED - Success: {Success}, RowCount: {RowCount}, ExecutionTime: {ExecutionTime}ms",
                 queryResult.IsSuccessful, queryResult.Metadata?.RowCount ?? 0, dbExecutionTime);
+
+            // Log detailed query result information
+            if (queryResult.IsSuccessful && queryResult.Data?.Length > 0)
+            {
+                _logger.LogInformation("📊 QUERY RESULT SUMMARY - Rows: {RowCount}, Columns: {ColumnCount}, First Row Sample: {FirstRowSample}",
+                    queryResult.Metadata?.RowCount ?? 0,
+                    queryResult.Metadata?.ColumnCount ?? 0,
+                    System.Text.Json.JsonSerializer.Serialize(queryResult.Data.FirstOrDefault(), new System.Text.Json.JsonSerializerOptions { WriteIndented = false }));
+            }
+            else if (queryResult.IsSuccessful)
+            {
+                _logger.LogInformation("📊 QUERY RESULT: No data returned (empty result set)");
+            }
 
             // Check if SQL execution failed
             if (!queryResult.IsSuccessful || !string.IsNullOrEmpty(queryResult.Metadata?.Error))
             {
                 var sqlError = queryResult.Metadata?.Error ?? "SQL execution failed";
                 _logger.LogError("❌ SQL EXECUTION FAILED: {Error}", sqlError);
+
+                // Notify UI about SQL execution failure
+                await NotifyProcessingStage(userId, queryId, "sql_error", $"SQL execution failed: {sqlError}", 0, new {
+                    sql = generatedSQL?.Substring(0, Math.Min(200, generatedSQL?.Length ?? 0)) + "...",
+                    error = sqlError,
+                    executionTime = dbExecutionTime
+                });
+
                 await LogQueryAsync(userId, request, generatedSQL, false, totalExecutionTime, sqlError);
                 await LogPromptDetailsAsync(request.Question, prompt, generatedSQL, false, totalExecutionTime, userId, request.SessionId, sqlError);
 
-                return new QueryResponse
+                var errorResponse = new QueryResponse
                 {
                     QueryId = queryId,
                     Sql = generatedSQL,
@@ -231,22 +279,27 @@ public class QueryService : IQueryService
                     Suggestions = Array.Empty<string>(),
                     Cached = false
                 };
+
+                _logger.LogError("❌ RETURNING SQL ERROR RESPONSE - QueryId: {QueryId}, SQL: {SQL}, Error: {Error}",
+                    queryId, generatedSQL?.Substring(0, Math.Min(100, generatedSQL?.Length ?? 0)) + "...", sqlError);
+
+                return errorResponse;
             }
 
-            await NotifyProcessingStage(userId, queryId, "sql_completed", "SQL execution completed successfully", 70, new {
+            await NotifyProcessingStage(userId, queryId, "sql_completed", "SQL execution completed successfully", 80, new {
                 rowCount = queryResult.Metadata?.RowCount ?? 0,
                 dbExecutionTime = dbExecutionTime
             });
 
             // Calculate confidence score
-            await NotifyProcessingStage(userId, queryId, "confidence_calculation", "Calculating confidence score", 75);
+            await NotifyProcessingStage(userId, queryId, "confidence_calculation", "Calculating confidence score", 85);
             var confidence = await _aiService.CalculateConfidenceScoreAsync(request.Question, generatedSQL);
 
             // Generate visualization config if requested
             VisualizationConfig? visualization = null;
             if (request.Options.IncludeVisualization && queryResult.Data?.Length > 0)
             {
-                await NotifyProcessingStage(userId, queryId, "visualization_generation", "Generating visualization recommendations", 80);
+                await NotifyProcessingStage(userId, queryId, "visualization_generation", "Generating visualization recommendations", 90);
                 var vizConfigJson = await _aiService.GenerateVisualizationConfigAsync(
                     request.Question, queryResult.Metadata.Columns, queryResult.Data);
 
@@ -259,7 +312,7 @@ public class QueryService : IQueryService
             }
 
             // Generate suggestions
-            await NotifyProcessingStage(userId, queryId, "suggestions_generation", "Generating follow-up suggestions", 85);
+            await NotifyProcessingStage(userId, queryId, "suggestions_generation", "Generating follow-up suggestions", 95);
             var suggestions = await _aiService.GenerateQuerySuggestionsAsync(request.Question, relevantSchema);
             _logger.LogInformation("💡 Generated {Count} suggestions for query: {Suggestions}",
                 suggestions?.Length ?? 0, string.Join(", ", suggestions ?? Array.Empty<string>()));
@@ -316,11 +369,23 @@ public class QueryService : IQueryService
         catch (Exception ex)
         {
             var errorExecutionTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
-            _logger.LogError(ex, "Error processing query {QueryId} for user {UserId}", queryId, userId);
+            _logger.LogError(ex, "❌ QUERY PROCESSING FAILED - QueryId: {QueryId}, User: {UserId}, Error: {Error}", queryId, userId, ex.Message);
+
+            // Notify UI about the error via SignalR
+            await NotifyProcessingStage(userId, queryId, "error", $"Query processing failed: {ex.Message}", 0, new {
+                error = ex.Message,
+                errorType = ex.GetType().Name,
+                executionTime = errorExecutionTime
+            });
 
             await LogQueryAsync(userId, request, "", false, errorExecutionTime, ex.Message);
 
-            return CreateErrorResponse(queryId, ex.Message, "", promptDetails);
+            var errorResponse = CreateErrorResponse(queryId, ex.Message, "", promptDetails);
+
+            // Log the error response details
+            _logger.LogError("❌ RETURNING ERROR RESPONSE - QueryId: {QueryId}, Error: {Error}", queryId, ex.Message);
+
+            return errorResponse;
         }
     }
 

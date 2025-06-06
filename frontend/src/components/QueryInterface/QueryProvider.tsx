@@ -224,8 +224,22 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
             setShowProcessingDetails(true);
           }
 
-          // Update overall progress
-          setProgress(progress || 0);
+          // Update overall progress with smooth transition and interpolation
+          const newProgress = progress || 0;
+          setProgress(prev => {
+            // Ensure progress never goes backwards (except on reset)
+            if (newProgress === 0) return 0;
+
+            // Smooth progress interpolation for better UX
+            const currentProgress = Math.max(prev, newProgress);
+
+            // Add small incremental progress for stages that might take longer
+            if (stage === 'ai_processing' && currentProgress < 60) {
+              return Math.min(currentProgress + 2, newProgress);
+            }
+
+            return currentProgress;
+          });
         } else {
           // Handle other message types
           const message = JSON.parse(lastMessage.data);
@@ -307,12 +321,39 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const handleSubmitQuery = useCallback(async () => {
     if (!query.trim() || executeQueryMutation.isPending) return;
 
-    // Initialize processing state
-    setProgress(10);
+    // Initialize processing state with immediate feedback
+    setProgress(0);
     setShowProcessingDetails(true);
     setProcessingStages([]);
-    setCurrentProcessingStage('started');
+    setCurrentProcessingStage('initializing');
     clearActiveResult(); // Clear previous result
+
+    // Provide immediate visual feedback with smooth progress
+    const startTime = Date.now();
+
+    // Add initial stage immediately
+    setProcessingStages([{
+      stage: 'initializing',
+      message: 'Preparing your query...',
+      progress: 5,
+      timestamp: new Date().toISOString(),
+      details: { startTime },
+      status: 'active'
+    }]);
+    setProgress(5);
+
+    // Quick progress updates for better UX
+    setTimeout(() => {
+      setProcessingStages(prev => [...prev, {
+        stage: 'connecting',
+        message: 'Connecting to AI service...',
+        progress: 10,
+        timestamp: new Date().toISOString(),
+        details: {},
+        status: 'active'
+      }]);
+      setProgress(10);
+    }, 100);
 
     const queryRequest = createQueryRequest(query);
 

@@ -1,413 +1,546 @@
 import React, { useState, useEffect } from 'react';
+import { Button, Typography, Spin, Tag, Card, Space } from 'antd';
 import {
-  Card,
-  Row,
-  Col,
-  Button,
-  Space,
-  Typography,
-  Tag,
-  Tooltip,
-  Badge,
-  Spin,
-  Empty
-} from 'antd';
-import {
-  ArrowUpOutlined,
-  FireOutlined,
-  ClockCircleOutlined,
-  DatabaseOutlined,
-  BarChartOutlined,
-  BulbOutlined,
-  RocketOutlined,
-  StarOutlined
+  ThunderboltOutlined,
+  StarOutlined,
+  RocketOutlined
 } from '@ant-design/icons';
+import { querySuggestionService, GroupedSuggestions, QuerySuggestion } from '../../services/querySuggestionService';
 
-const { Title, Text } = Typography;
-
-interface TrendingQuery {
-  id: string;
-  query: string;
-  category: string;
-  popularity: number;
-  lastUsed: string;
-  avgExecutionTime: number;
-  successRate: number;
-  description: string;
-  tags: string[];
-}
-
-interface SchemaBasedSuggestion {
-  id: string;
-  query: string;
-  description: string;
-  tables: string[];
-  columns: string[];
-  complexity: 'beginner' | 'intermediate' | 'advanced';
-  estimatedRows: number;
-}
+const { Text, Title } = Typography;
 
 interface ProactiveSuggestionsProps {
   onQuerySelect: (query: string) => void;
-  onStartWizard: () => void;
+  onStartWizard?: () => void;
   userRole?: string;
   recentQueries?: string[];
 }
 
 export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
-  onQuerySelect,
-  onStartWizard,
-  userRole = 'user',
-  recentQueries = []
+  onQuerySelect
 }) => {
-  const [loading, setLoading] = useState(false);
-  const [trendingQueries, setTrendingQueries] = useState<TrendingQuery[]>([]);
-  const [schemaBasedSuggestions, setSchemaBasedSuggestions] = useState<SchemaBasedSuggestion[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [groupedSuggestions, setGroupedSuggestions] = useState<GroupedSuggestions[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock trending queries - in real app, fetch from API
   useEffect(() => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setTrendingQueries([
-        {
-          id: '1',
-          query: 'Show me total deposits for yesterday',
-          category: 'Revenue',
-          popularity: 95,
-          lastUsed: '2 hours ago',
-          avgExecutionTime: 1.2,
-          successRate: 98,
-          description: 'Daily deposit analysis',
-          tags: ['deposits', 'daily', 'revenue']
-        },
-        {
-          id: '2',
-          query: 'Top 10 players by deposits in the last 7 days',
-          category: 'Players',
-          popularity: 87,
-          lastUsed: '4 hours ago',
-          avgExecutionTime: 2.1,
-          successRate: 95,
-          description: 'High-value player identification',
-          tags: ['players', 'top10', 'deposits']
-        },
-        {
-          id: '3',
-          query: 'Revenue breakdown by country for last week',
-          category: 'Geography',
-          popularity: 82,
-          lastUsed: '1 day ago',
-          avgExecutionTime: 3.5,
-          successRate: 92,
-          description: 'Geographic revenue analysis',
-          tags: ['revenue', 'country', 'geographic']
-        },
-        {
-          id: '4',
-          query: 'Casino vs sports betting revenue comparison',
-          category: 'Products',
-          popularity: 78,
-          lastUsed: '6 hours ago',
-          avgExecutionTime: 1.8,
-          successRate: 96,
-          description: 'Product performance comparison',
-          tags: ['casino', 'sports', 'comparison']
-        }
-      ]);
-
-      setSchemaBasedSuggestions([
-        {
-          id: 's1',
-          query: 'Show me user registration trends by month',
-          description: 'Analyze user growth patterns over time',
-          tables: ['users', 'registrations'],
-          columns: ['created_at', 'user_id', 'registration_date'],
-          complexity: 'beginner',
-          estimatedRows: 15000
-        },
-        {
-          id: 's2',
-          query: 'Calculate average session duration by device type',
-          description: 'Understand user engagement across platforms',
-          tables: ['sessions', 'devices'],
-          columns: ['session_duration', 'device_type', 'start_time'],
-          complexity: 'intermediate',
-          estimatedRows: 45000
-        },
-        {
-          id: 's3',
-          query: 'Find correlation between deposit amount and player lifetime value',
-          description: 'Advanced analytics for player value prediction',
-          tables: ['deposits', 'players', 'transactions'],
-          columns: ['amount', 'player_id', 'lifetime_value'],
-          complexity: 'advanced',
-          estimatedRows: 120000
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
+    loadSuggestions();
   }, []);
 
-  const categories = ['all', 'Revenue', 'Players', 'Geography', 'Products'];
+  // Fallback suggestions when API fails
+  const getFallbackSuggestions = (): GroupedSuggestions[] => [
+    {
+      category: {
+        id: 1,
+        categoryKey: 'financial',
+        title: '💰 Financial & Revenue',
+        icon: '💰',
+        description: 'Revenue, deposits, withdrawals, and financial performance metrics',
+        sortOrder: 1,
+        isActive: true,
+        suggestionCount: 5
+      },
+      suggestions: [
+        {
+          id: 1,
+          categoryId: 1,
+          categoryKey: 'financial',
+          categoryTitle: '💰 Financial & Revenue',
+          queryText: 'Show me total deposits for yesterday',
+          description: 'Daily deposit performance tracking',
+          defaultTimeFrame: 'yesterday',
+          sortOrder: 1,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions'],
+          complexity: 1,
+          requiredPermissions: [],
+          tags: ['deposits', 'daily', 'financial'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 2,
+          categoryId: 1,
+          categoryKey: 'financial',
+          categoryTitle: '💰 Financial & Revenue',
+          queryText: 'Revenue breakdown by country for last week',
+          description: 'Geographic revenue analysis and performance',
+          defaultTimeFrame: 'last_7_days',
+          sortOrder: 2,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions', 'tbl_Daily_actions_players', 'tbl_Countries'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['revenue', 'geography', 'countries'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 3,
+          categoryId: 1,
+          categoryKey: 'financial',
+          categoryTitle: '💰 Financial & Revenue',
+          queryText: 'Net gaming revenue trends last 30 days',
+          description: 'Revenue trend analysis and performance tracking',
+          defaultTimeFrame: 'last_30_days',
+          sortOrder: 3,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['ngr', 'trends', 'performance'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        }
+      ]
+    },
+    {
+      category: {
+        id: 2,
+        categoryKey: 'players',
+        title: '👥 Player Analytics',
+        icon: '👥',
+        description: 'Player behavior, demographics, and lifecycle analysis',
+        sortOrder: 2,
+        isActive: true,
+        suggestionCount: 5
+      },
+      suggestions: [
+        {
+          id: 4,
+          categoryId: 2,
+          categoryKey: 'players',
+          categoryTitle: '👥 Player Analytics',
+          queryText: 'Top 10 players by deposits in the last 7 days',
+          description: 'High-value player identification and analysis',
+          defaultTimeFrame: 'last_7_days',
+          sortOrder: 1,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions', 'tbl_Daily_actions_players'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['high_value', 'players', 'deposits', 'top_performers'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 5,
+          categoryId: 2,
+          categoryKey: 'players',
+          categoryTitle: '👥 Player Analytics',
+          queryText: 'New player registrations by country this week',
+          description: 'Player acquisition analysis by geography',
+          defaultTimeFrame: 'this_week',
+          sortOrder: 2,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions', 'tbl_Daily_actions_players', 'tbl_Countries'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['registrations', 'acquisition', 'geography'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 6,
+          categoryId: 2,
+          categoryKey: 'players',
+          categoryTitle: '👥 Player Analytics',
+          queryText: 'Active players by white label brand yesterday',
+          description: 'Brand performance comparison and analysis',
+          defaultTimeFrame: 'yesterday',
+          sortOrder: 3,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions', 'tbl_White_labels'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['active_players', 'brands', 'performance'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        }
+      ]
+    },
+    {
+      category: {
+        id: 3,
+        categoryKey: 'gaming',
+        title: '🎮 Gaming & Products',
+        icon: '🎮',
+        description: 'Game performance, provider analysis, and product metrics',
+        sortOrder: 3,
+        isActive: true,
+        suggestionCount: 5
+      },
+      suggestions: [
+        {
+          id: 7,
+          categoryId: 3,
+          categoryKey: 'gaming',
+          categoryTitle: '🎮 Gaming & Products',
+          queryText: 'Top performing games by net gaming revenue this month',
+          description: 'Game performance ranking and analysis',
+          defaultTimeFrame: 'this_month',
+          sortOrder: 1,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_games', 'Games'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['games', 'performance', 'ngr'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 8,
+          categoryId: 3,
+          categoryKey: 'gaming',
+          categoryTitle: '🎮 Gaming & Products',
+          queryText: 'Slot vs table games revenue comparison this week',
+          description: 'Game type performance analysis',
+          defaultTimeFrame: 'this_week',
+          sortOrder: 2,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_games', 'Games'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['game_types', 'slots', 'tables', 'comparison'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 9,
+          categoryId: 3,
+          categoryKey: 'gaming',
+          categoryTitle: '🎮 Gaming & Products',
+          queryText: 'Casino vs sports betting revenue split this month',
+          description: 'Product vertical comparison and analysis',
+          defaultTimeFrame: 'this_month',
+          sortOrder: 3,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['casino', 'sports', 'verticals', 'comparison'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        }
+      ]
+    },
+    {
+      category: {
+        id: 4,
+        categoryKey: 'transactions',
+        title: '💳 Transactions & Payments',
+        icon: '💳',
+        description: 'Payment methods, transaction analysis, and processing metrics',
+        sortOrder: 4,
+        isActive: true,
+        suggestionCount: 3
+      },
+      suggestions: [
+        {
+          id: 10,
+          categoryId: 4,
+          categoryKey: 'transactions',
+          categoryTitle: '💳 Transactions & Payments',
+          queryText: 'Transaction volumes by payment method today',
+          description: 'Payment method usage analysis',
+          defaultTimeFrame: 'today',
+          sortOrder: 1,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_transactions'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['transactions', 'payment_methods', 'volumes'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 11,
+          categoryId: 4,
+          categoryKey: 'transactions',
+          categoryTitle: '💳 Transactions & Payments',
+          queryText: 'Failed vs successful transactions by payment type this week',
+          description: 'Payment success rate analysis',
+          defaultTimeFrame: 'this_week',
+          sortOrder: 2,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_transactions'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['transaction_status', 'success_rates', 'payment_types'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        },
+        {
+          id: 12,
+          categoryId: 4,
+          categoryKey: 'transactions',
+          categoryTitle: '💳 Transactions & Payments',
+          queryText: 'Average transaction amount by payment method this month',
+          description: 'Payment method value insights',
+          defaultTimeFrame: 'this_month',
+          sortOrder: 3,
+          isActive: true,
+          targetTables: ['tbl_Daily_actions_transactions'],
+          complexity: 2,
+          requiredPermissions: [],
+          tags: ['transaction_amounts', 'payment_methods', 'averages'],
+          usageCount: 0,
+          createdDate: new Date().toISOString(),
+          createdBy: 'System'
+        }
+      ]
+    }
+  ];
 
-  const filteredTrendingQueries = selectedCategory === 'all' 
-    ? trendingQueries 
-    : trendingQueries.filter(q => q.category === selectedCategory);
+  const loadSuggestions = async () => {
+    try {
+      setLoading(true);
+      const suggestions = await querySuggestionService.getGroupedSuggestions();
 
-  const getComplexityColor = (complexity: string) => {
-    switch (complexity) {
-      case 'beginner': return '#52c41a';
-      case 'intermediate': return '#faad14';
-      case 'advanced': return '#f5222d';
-      default: return '#1890ff';
+      if (suggestions && suggestions.length > 0) {
+        // Randomly select 2-3 suggestions from each category
+        const randomizedSuggestions = suggestions.map(group => ({
+          ...group,
+          suggestions: getRandomSuggestions(group.suggestions, Math.min(3, group.suggestions.length))
+        }));
+        setGroupedSuggestions(randomizedSuggestions);
+      } else {
+        // Use fallback data if no suggestions returned
+        setGroupedSuggestions(getFallbackSuggestions());
+      }
+    } catch (err) {
+      console.error('Failed to load suggestions:', err);
+      // Use fallback data instead of showing error
+      setGroupedSuggestions(getFallbackSuggestions());
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getPopularityIcon = (popularity: number) => {
-    if (popularity >= 90) return <FireOutlined style={{ color: '#ff4d4f' }} />;
-    if (popularity >= 80) return <ArrowUpOutlined style={{ color: '#faad14' }} />;
-    return <BarChartOutlined style={{ color: '#1890ff' }} />;
+  // Helper function to get random suggestions
+  const getRandomSuggestions = (suggestions: QuerySuggestion[], count: number): QuerySuggestion[] => {
+    const shuffled = [...suggestions].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
   };
 
-  const renderTrendingQuery = (query: TrendingQuery) => (
-    <Card
-      key={query.id}
-      size="small"
-      hoverable
-      className="trending-query-card"
-      style={{
-        marginBottom: '12px',
-        borderRadius: '12px',
-        border: '1px solid #f0f0f0',
-        transition: 'all 0.3s ease'
-      }}
-      bodyStyle={{ padding: '16px' }}
-      onClick={() => onQuerySelect(query.query)}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-        <Space>
-          {getPopularityIcon(query.popularity)}
-          <Text strong style={{ fontSize: '14px' }}>{query.query}</Text>
-        </Space>
-        <Badge count={`${query.popularity}%`} style={{ backgroundColor: '#52c41a' }} />
-      </div>
+  const handleQuerySelect = async (suggestion: QuerySuggestion) => {
+    try {
+      // Record usage analytics
+      await querySuggestionService.recordUsage({
+        suggestionId: suggestion.id,
+        sessionId: sessionStorage.getItem('sessionId') || undefined,
+        timeFrameUsed: suggestion.defaultTimeFrame,
+        wasSuccessful: true
+      });
       
-      <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '8px' }}>
-        {query.description}
-      </Text>
+      // Apply time frame to query if specified
+      let queryText = suggestion.queryText;
+      if (suggestion.defaultTimeFrame && suggestion.defaultTimeFrame !== 'all_time') {
+        const timeFrameDisplay = querySuggestionService.formatTimeFrame(suggestion.defaultTimeFrame);
+        if (!queryText.toLowerCase().includes(timeFrameDisplay.toLowerCase())) {
+          queryText = `${queryText} (${timeFrameDisplay})`;
+        }
+      }
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-        <Space size="small">
-          <Tag color="blue">{query.category}</Tag>
-          <Tooltip title="Average execution time">
-            <Tag icon={<ClockCircleOutlined />}>{query.avgExecutionTime}s</Tag>
-          </Tooltip>
-          <Tooltip title="Success rate">
-            <Tag color="green">{query.successRate}%</Tag>
-          </Tooltip>
-        </Space>
-        <Text type="secondary" style={{ fontSize: '11px' }}>
-          Used {query.lastUsed}
-        </Text>
-      </div>
-      
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-        {query.tags.map(tag => (
-          <Tag key={tag} size="small" style={{ fontSize: '10px' }}>{tag}</Tag>
-        ))}
-      </div>
-    </Card>
-  );
+      onQuerySelect(queryText);
+    } catch (err) {
+      console.error('Failed to record usage:', err);
+      // Still execute the query even if analytics fail
+      onQuerySelect(suggestion.queryText);
+    }
+  };
 
-  const renderSchemaBasedSuggestion = (suggestion: SchemaBasedSuggestion) => (
-    <Card
-      key={suggestion.id}
-      size="small"
-      hoverable
-      style={{
-        marginBottom: '12px',
-        borderRadius: '12px',
-        border: '1px solid #f0f0f0'
-      }}
-      bodyStyle={{ padding: '16px' }}
-      onClick={() => onQuerySelect(suggestion.query)}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-        <Space>
-          <DatabaseOutlined style={{ color: '#1890ff' }} />
-          <Text strong style={{ fontSize: '14px' }}>{suggestion.query}</Text>
-        </Space>
-        <Tag color={getComplexityColor(suggestion.complexity)}>
-          {suggestion.complexity}
-        </Tag>
+  const getComplexityIcon = (complexity: number) => {
+    switch (complexity) {
+      case 1: return <StarOutlined style={{ color: '#52c41a' }} />;
+      case 2: return <ThunderboltOutlined style={{ color: '#faad14' }} />;
+      case 3: return <RocketOutlined style={{ color: '#f5222d' }} />;
+      default: return <StarOutlined style={{ color: '#d9d9d9' }} />;
+    }
+  };
+
+
+
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        padding: '40px 0' 
+      }}>
+        <Spin size="large" />
+        <Text style={{ marginLeft: '12px' }}>Loading suggestions...</Text>
       </div>
-      
-      <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '8px' }}>
-        {suggestion.description}
-      </Text>
-      
-      <div style={{ marginBottom: '8px' }}>
-        <Text style={{ fontSize: '11px', color: '#666' }}>
-          <strong>Tables:</strong> {suggestion.tables.join(', ')}
-        </Text>
+    );
+  }
+
+
+
+  if (groupedSuggestions.length === 0) {
+    return (
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '40px 0' 
+      }}>
+        <Text type="secondary">No suggestions available</Text>
       </div>
-      
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontSize: '11px', color: '#666' }}>
-          ~{suggestion.estimatedRows.toLocaleString()} rows
-        </Text>
-        <Button size="small" type="link" style={{ padding: 0, height: 'auto' }}>
-          Try it →
-        </Button>
-      </div>
-    </Card>
-  );
+    );
+  }
 
   return (
-    <div style={{ padding: '24px 0' }}>
+    <div style={{
+      padding: '0 24px 24px 24px',
+      maxWidth: '1200px',
+      margin: '0 auto'
+    }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+      <div style={{
+        textAlign: 'center',
+        marginBottom: '32px'
+      }}>
         <Title level={3} style={{
-          margin: '0 0 8px 0',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          fontFamily: "'Poppins', sans-serif"
+          margin: 0,
+          color: '#1f2937',
+          fontWeight: 600
         }}>
-          🚀 Get Started with AI-Powered Insights
+          ⚡ Try These Examples
         </Title>
-        <Text style={{ fontSize: '16px', color: '#6b7280' }}>
-          Discover trending queries and smart suggestions based on your data
+        <Text type="secondary" style={{ fontSize: '14px' }}>
+          Organized by category for easy discovery
         </Text>
       </div>
 
-      {/* Quick Actions */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '32px' }}>
-        <Col xs={24} sm={8}>
-          <Button
-            type="primary"
-            size="large"
-            icon={<RocketOutlined />}
-            onClick={onStartWizard}
-            style={{
-              width: '100%',
-              height: '60px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none',
-              fontSize: '16px',
-              fontWeight: 600
-            }}
-          >
-            Start Query Wizard
-          </Button>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Button
-            size="large"
-            icon={<BulbOutlined />}
-            style={{
-              width: '100%',
-              height: '60px',
-              borderRadius: '12px',
-              fontSize: '16px',
-              fontWeight: 600
-            }}
-          >
-            Browse Templates
-          </Button>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Button
-            size="large"
-            icon={<StarOutlined />}
-            style={{
-              width: '100%',
-              height: '60px',
-              borderRadius: '12px',
-              fontSize: '16px',
-              fontWeight: 600
-            }}
-          >
-            My Favorites
-          </Button>
-        </Col>
-      </Row>
-
-      <Row gutter={[24, 24]}>
-        {/* Trending Queries */}
-        <Col xs={24} lg={12}>
+      {/* Categories Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: '20px',
+        alignItems: 'start',
+        justifyContent: 'center'
+      }}>
+        {groupedSuggestions.map((group) => (
           <Card
-            title={
-              <Space>
-                <ArrowUpOutlined style={{ color: '#ff4d4f' }} />
-                <span>Trending Queries</span>
-                <Badge count={trendingQueries.length} style={{ backgroundColor: '#ff4d4f' }} />
-              </Space>
-            }
-            extra={
-              <Space>
-                {categories.map(category => (
-                  <Button
-                    key={category}
-                    size="small"
-                    type={selectedCategory === category ? 'primary' : 'text'}
-                    onClick={() => setSelectedCategory(category)}
-                    style={{ borderRadius: '6px' }}
-                  >
-                    {category}
-                  </Button>
-                ))}
-              </Space>
-            }
-            style={{ height: '100%' }}
+            key={group.category.id}
+            style={{
+              borderRadius: '16px',
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+              transition: 'all 0.3s ease',
+              height: 'fit-content',
+              background: 'linear-gradient(135deg, #ffffff 0%, #fafbfc 100%)'
+            }}
+            styles={{ body: { padding: '24px' } }}
+            hoverable
           >
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <Spin size="large" />
-                <div style={{ marginTop: '16px' }}>
-                  <Text>Loading trending queries...</Text>
-                </div>
+            {/* Category Header */}
+            <div style={{
+              marginBottom: '16px',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                fontSize: '24px',
+                marginBottom: '4px'
+              }}>
+                {group.category.icon}
               </div>
-            ) : filteredTrendingQueries.length > 0 ? (
-              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                {filteredTrendingQueries.map(renderTrendingQuery)}
-              </div>
-            ) : (
-              <Empty description="No trending queries found" />
-            )}
-          </Card>
-        </Col>
+              <Title level={5} style={{
+                margin: 0,
+                color: '#374151',
+                fontWeight: 600
+              }}>
+                {group.category.title}
+              </Title>
+              {group.category.description && (
+                <Text type="secondary" style={{
+                  fontSize: '12px',
+                  display: 'block',
+                  marginTop: '4px'
+                }}>
+                  {group.category.description}
+                </Text>
+              )}
+            </div>
 
-        {/* Schema-Based Suggestions */}
-        <Col xs={24} lg={12}>
-          <Card
-            title={
-              <Space>
-                <DatabaseOutlined style={{ color: '#1890ff' }} />
-                <span>Smart Suggestions</span>
-                <Tag color="blue">Based on your data</Tag>
-              </Space>
-            }
-            style={{ height: '100%' }}
-          >
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <Spin size="large" />
-                <div style={{ marginTop: '16px' }}>
-                  <Text>Analyzing your data schema...</Text>
-                </div>
-              </div>
-            ) : (
-              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                {schemaBasedSuggestions.map(renderSchemaBasedSuggestion)}
-              </div>
-            )}
+            {/* Suggestions */}
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              {group.suggestions.map((suggestion) => (
+                <Button
+                  key={suggestion.id}
+                  type="text"
+                  onClick={() => handleQuerySelect(suggestion)}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    padding: '14px 16px',
+                    textAlign: 'left',
+                    borderRadius: '10px',
+                    border: '1px solid #e5e7eb',
+                    backgroundColor: '#ffffff',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+                  }}
+                  className="modern-suggestion-button"
+                >
+                  <div style={{ width: '100%' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '4px'
+                    }}>
+                      <Text strong style={{
+                        fontSize: '13px',
+                        color: '#374151',
+                        flex: 1
+                      }}>
+                        {suggestion.queryText}
+                      </Text>
+                      <div style={{ marginLeft: '8px' }}>
+                        {getComplexityIcon(suggestion.complexity)}
+                      </div>
+                    </div>
+                    <Text type="secondary" style={{
+                      fontSize: '11px',
+                      lineHeight: '1.4'
+                    }}>
+                      {suggestion.description}
+                    </Text>
+                    {(suggestion.usageCount > 0 || suggestion.defaultTimeFrame) && (
+                      <div style={{
+                        marginTop: '6px',
+                        display: 'flex',
+                        gap: '4px'
+                      }}>
+                        {suggestion.usageCount > 0 && (
+                          <Tag color="orange" style={{ fontSize: '10px', margin: 0 }}>
+                            {suggestion.usageCount} uses
+                          </Tag>
+                        )}
+                        {suggestion.defaultTimeFrame && suggestion.defaultTimeFrame !== 'all_time' && (
+                          <Tag color="blue" style={{ fontSize: '10px', margin: 0 }}>
+                            {querySuggestionService.formatTimeFrame(suggestion.defaultTimeFrame)}
+                          </Tag>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </Button>
+              ))}
+            </Space>
           </Card>
-        </Col>
-      </Row>
+        ))}
+      </div>
     </div>
   );
 };

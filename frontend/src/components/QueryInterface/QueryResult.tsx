@@ -775,14 +775,6 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
                     ))}
                   </tbody>
                 </table>
-
-                {/* Raw data dump for debugging */}
-                <div style={{ marginTop: '16px', padding: '8px', background: '#fff', border: '1px solid #ddd' }}>
-                  <strong>Raw Data:</strong>
-                  <pre style={{ fontSize: '10px', margin: '8px 0' }}>
-                    {JSON.stringify(dataSource, null, 2)}
-                  </pre>
-                </div>
               </div>
             )}
       </Card>

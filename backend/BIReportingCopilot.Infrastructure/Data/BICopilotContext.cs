@@ -50,6 +50,12 @@ public class BICopilotContext : DbContext
     public DbSet<SystemMetricsEntity> PerformanceMetrics { get; set; }
     public DbSet<Core.Models.TempFile> TempFiles { get; set; }
 
+    // Query Suggestions System
+    public DbSet<Core.Models.QuerySuggestions.SuggestionCategory> SuggestionCategories { get; set; }
+    public DbSet<Core.Models.QuerySuggestions.QuerySuggestion> QuerySuggestions { get; set; }
+    public DbSet<Core.Models.QuerySuggestions.SuggestionUsageAnalytics> SuggestionUsageAnalytics { get; set; }
+    public DbSet<Core.Models.QuerySuggestions.TimeFrameDefinition> TimeFrameDefinitions { get; set; }
+
     // Schema Management entities
     public DbSet<BusinessSchema> BusinessSchemas { get; set; }
     public DbSet<BusinessSchemaVersion> BusinessSchemaVersions { get; set; }
@@ -332,6 +338,9 @@ public class BICopilotContext : DbContext
         modelBuilder.ApplyConfiguration(new SchemaRelationshipConfiguration());
         modelBuilder.ApplyConfiguration(new UserSchemaPreferenceConfiguration());
 
+        // Configure Query Suggestions entities
+        ConfigureQuerySuggestions(modelBuilder);
+
         // Seed default data
         SeedDefaultData(modelBuilder);
     }
@@ -433,5 +442,77 @@ Return only the SQL query without any explanation or markdown formatting.",
                 CreatedBy = "System"
             }
         );
+    }
+
+    private static void ConfigureQuerySuggestions(ModelBuilder modelBuilder)
+    {
+        // SuggestionCategory configuration
+        modelBuilder.Entity<Core.Models.QuerySuggestions.SuggestionCategory>(entity =>
+        {
+            entity.ToTable("SuggestionCategories");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CategoryKey).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Icon).HasMaxLength(10);
+            entity.Property(e => e.Description).HasMaxLength(200);
+            entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(256);
+            entity.HasIndex(e => e.CategoryKey).IsUnique();
+            entity.HasIndex(e => new { e.IsActive, e.SortOrder });
+        });
+
+        // QuerySuggestion configuration
+        modelBuilder.Entity<Core.Models.QuerySuggestions.QuerySuggestion>(entity =>
+        {
+            entity.ToTable("QuerySuggestions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.QueryText).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.DefaultTimeFrame).HasMaxLength(50);
+            entity.Property(e => e.TargetTables).HasMaxLength(500);
+            entity.Property(e => e.RequiredPermissions).HasMaxLength(200);
+            entity.Property(e => e.Tags).HasMaxLength(300);
+            entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(256);
+
+            entity.HasOne(e => e.Category)
+                .WithMany(c => c.Suggestions)
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.CategoryId, e.IsActive, e.SortOrder });
+            entity.HasIndex(e => new { e.UsageCount, e.LastUsed }).IsDescending();
+        });
+
+        // SuggestionUsageAnalytics configuration
+        modelBuilder.Entity<Core.Models.QuerySuggestions.SuggestionUsageAnalytics>(entity =>
+        {
+            entity.ToTable("SuggestionUsageAnalytics");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.SessionId).HasMaxLength(50);
+            entity.Property(e => e.TimeFrameUsed).HasMaxLength(50);
+
+            entity.HasOne(e => e.Suggestion)
+                .WithMany(s => s.UsageAnalytics)
+                .HasForeignKey(e => e.SuggestionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.SuggestionId, e.UsedAt }).IsDescending();
+            entity.HasIndex(e => new { e.UserId, e.UsedAt }).IsDescending();
+        });
+
+        // TimeFrameDefinition configuration
+        modelBuilder.Entity<Core.Models.QuerySuggestions.TimeFrameDefinition>(entity =>
+        {
+            entity.ToTable("TimeFrameDefinitions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TimeFrameKey).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(200);
+            entity.Property(e => e.SqlExpression).IsRequired().HasMaxLength(500);
+            entity.HasIndex(e => e.TimeFrameKey).IsUnique();
+            entity.HasIndex(e => new { e.IsActive, e.SortOrder });
+        });
     }
 }

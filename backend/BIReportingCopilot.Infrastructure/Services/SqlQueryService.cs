@@ -72,7 +72,30 @@ public class SqlQueryService : ISqlQueryService
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _logger.LogError(ex, "Error executing SQL query: {Sql}", sql);
+
+            // Log detailed error information
+            _logger.LogError(ex, "❌ SQL EXECUTION FAILED - SQL: {Sql}", sql);
+            _logger.LogError("❌ ERROR TYPE: {ErrorType}", ex.GetType().Name);
+            _logger.LogError("❌ ERROR MESSAGE: {ErrorMessage}", ex.Message);
+
+            if (ex.InnerException != null)
+            {
+                _logger.LogError("❌ INNER EXCEPTION: {InnerException}", ex.InnerException.Message);
+            }
+
+            // Log SQL Server specific error details if available
+            if (ex is SqlException sqlEx)
+            {
+                _logger.LogError("❌ SQL ERROR NUMBER: {ErrorNumber}", sqlEx.Number);
+                _logger.LogError("❌ SQL ERROR SEVERITY: {Severity}", sqlEx.Class);
+                _logger.LogError("❌ SQL ERROR STATE: {State}", sqlEx.State);
+                _logger.LogError("❌ SQL ERROR LINE: {LineNumber}", sqlEx.LineNumber);
+                _logger.LogError("❌ SQL ERROR PROCEDURE: {Procedure}", sqlEx.Procedure ?? "N/A");
+            }
+
+            var errorMessage = ex is SqlException sqlException
+                ? $"SQL Error {sqlException.Number}: {sqlException.Message}"
+                : ex.Message;
 
             return new QueryResult
             {
@@ -83,7 +106,7 @@ public class SqlQueryService : ISqlQueryService
                     RowCount = 0,
                     ExecutionTimeMs = (int)stopwatch.ElapsedMilliseconds,
                     Columns = Array.Empty<ColumnMetadata>(),
-                    Error = ex.Message
+                    Error = errorMessage
                 },
                 IsSuccessful = false
             };
@@ -338,7 +361,7 @@ public class SqlQueryService : ISqlQueryService
             rowCount++;
         }
 
-        return new QueryResult
+        var result = new QueryResult
         {
             Data = data.ToArray(),
             Metadata = new QueryMetadata
@@ -349,6 +372,28 @@ public class SqlQueryService : ISqlQueryService
             },
             IsSuccessful = true
         };
+
+        // Log SQL execution results
+        _logger.LogInformation("✅ SQL EXECUTION SUCCESSFUL - Rows: {RowCount}, Columns: {ColumnCount}",
+            rowCount, columns.Count);
+
+        // Log column information
+        _logger.LogInformation("📊 SQL RESULT COLUMNS: {Columns}",
+            string.Join(", ", columns.Select(c => $"{c.Name}({c.DataType})")));
+
+        // Log first few rows for debugging (if any data)
+        if (data.Count > 0)
+        {
+            var sampleRows = data.Take(3).ToList();
+            _logger.LogInformation("📋 SQL RESULT SAMPLE ({SampleCount} of {TotalCount} rows): {SampleData}",
+                sampleRows.Count, rowCount, System.Text.Json.JsonSerializer.Serialize(sampleRows, new System.Text.Json.JsonSerializerOptions { WriteIndented = false }));
+        }
+        else
+        {
+            _logger.LogInformation("📋 SQL RESULT: No data returned (empty result set)");
+        }
+
+        return result;
     }
 
     private async Task LogQueryPerformanceAsync(string sql, QueryResult result, long executionTimeMs)

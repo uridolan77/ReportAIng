@@ -561,6 +561,7 @@ builder.Services.AddScoped<ISchemaManagementService, SchemaManagementService>();
 builder.Services.AddScoped<ITuningService, TuningService>();
 builder.Services.AddScoped<IAITuningSettingsService, AITuningSettingsService>();
 builder.Services.AddScoped<IBusinessContextAutoGenerator, BusinessContextAutoGenerator>();
+builder.Services.AddScoped<IQuerySuggestionService, BIReportingCopilot.Infrastructure.Services.QuerySuggestionService>();
 // Register SignalRProgressReporter with QueryStatusHub context
 builder.Services.AddScoped<IProgressReporter>(provider =>
 {

@@ -54,7 +54,7 @@ public class SignalRQueryProgressNotifier : IQueryProgressNotifier
             _logger.LogInformation("📡 Broadcasting to all clients for debugging");
             await _hubContext.Clients.All.SendAsync("QueryProcessingProgress", progressData);
 
-            _logger.LogInformation("📡 SignalR progress notification sent successfully");
+            _logger.LogInformation("📡 SignalR progress notification sent successfully - Stage: {Stage}, Message: {Message}", stage, message);
         }
         catch (Exception ex)
         {

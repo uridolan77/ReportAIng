@@ -145,6 +145,26 @@ export const StateSyncProvider: React.FC<StateSyncProviderProps> = ({ children }
     };
   }, [queryClient]);
 
+  // Methods - Define functions before using them
+  const cleanupExpiredData = useCallback(async (): Promise<number> => {
+    let totalCleaned = 0;
+
+    // Clean up localStorage
+    totalCleaned += persistenceManager.cleanupExpiredStates(
+      'localStorage',
+      7 * 24 * 60 * 60 * 1000 // 7 days
+    );
+
+    // Clean up sessionStorage
+    totalCleaned += persistenceManager.cleanupExpiredStates(
+      'sessionStorage',
+      24 * 60 * 60 * 1000 // 24 hours
+    );
+
+    console.log(`Cleaned up ${totalCleaned} expired state entries`);
+    return totalCleaned;
+  }, []);
+
   // Setup periodic cleanup
   useEffect(() => {
     const cleanupInterval = setInterval(async () => {
@@ -158,7 +178,6 @@ export const StateSyncProvider: React.FC<StateSyncProviderProps> = ({ children }
     return () => clearInterval(cleanupInterval);
   }, [cleanupExpiredData]);
 
-  // Methods
   const broadcastToTabs = useCallback((type: string, payload: any) => {
     crossTabSync.broadcast(type, payload);
   }, []);
@@ -190,25 +209,6 @@ export const StateSyncProvider: React.FC<StateSyncProviderProps> = ({ children }
     
     setLastSyncTime(Date.now());
   }, [queryClient]);
-
-  const cleanupExpiredData = useCallback(async (): Promise<number> => {
-    let totalCleaned = 0;
-
-    // Clean up localStorage
-    totalCleaned += persistenceManager.cleanupExpiredStates(
-      'localStorage',
-      7 * 24 * 60 * 60 * 1000 // 7 days
-    );
-
-    // Clean up sessionStorage
-    totalCleaned += persistenceManager.cleanupExpiredStates(
-      'sessionStorage',
-      24 * 60 * 60 * 1000 // 24 hours
-    );
-
-    console.log(`Cleaned up ${totalCleaned} expired state entries`);
-    return totalCleaned;
-  }, []);
 
   const getStorageStats = useCallback(() => {
     return {

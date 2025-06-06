@@ -11,6 +11,7 @@ import {
   CodeOutlined,
   BarChartOutlined
 } from '@ant-design/icons';
+import './QueryProcessingViewer.css';
 
 const { Text } = Typography;
 const { Panel } = Collapse;
@@ -77,13 +78,82 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
     ).join(' ');
   };
 
-  // Calculate values used in different modes
-  const currentProgress = stages.length > 0 ? Math.max(...stages.map(s => s.progress)) : 0;
+  // Calculate values used in different modes with improved progress calculation
+  const calculateOverallProgress = () => {
+    if (stages.length === 0) return 0;
+
+    // Define stage weights for more realistic progress
+    const stageWeights: Record<string, number> = {
+      'initializing': 5,
+      'connecting': 5,
+      'started': 5,
+      'cache_check': 5,
+      'schema_loading': 10,
+      'schema_analysis': 10,
+      'prompt_building': 10,
+      'ai_processing': 30,
+      'ai_completed': 5,
+      'sql_validation': 5,
+      'sql_execution': 15,
+      'confidence_calculation': 5,
+      'visualization_generation': 5,
+      'suggestions_generation': 5,
+      'completed': 0
+    };
+
+    let totalWeight = 0;
+    let completedWeight = 0;
+
+    stages.forEach(stage => {
+      const weight = stageWeights[stage.stage] || 5;
+      totalWeight += weight;
+      completedWeight += (stage.progress / 100) * weight;
+    });
+
+    // If we have active stages, calculate weighted progress
+    if (totalWeight > 0) {
+      const weightedProgress = Math.round((completedWeight / totalWeight) * 100);
+      // Ensure minimum progress for active processing
+      return Math.max(weightedProgress, isProcessing ? 5 : 0);
+    }
+
+    // Fallback to simple max progress
+    return Math.max(...stages.map(s => s.progress));
+  };
+
+  const currentProgress = calculateOverallProgress();
   const completedStages = stages.filter(s => s.progress === 100).length;
   const totalStages = stages.length;
   const overallProgress = totalStages > 0 ? Math.round((completedStages / totalStages) * 100) : 100;
   const lastStage = stages.length > 0 ? stages[stages.length - 1] : null;
   const currentStateText = lastStage ? formatStageTitle(lastStage.stage) : 'Complete';
+
+  // Calculate estimated time remaining
+  const calculateEstimatedTime = () => {
+    if (!isProcessing || stages.length === 0) return null;
+
+    const firstStage = stages[0];
+    if (!firstStage?.details?.startTime) return null;
+
+    const startTime = new Date(firstStage.details.startTime).getTime();
+    const currentTime = Date.now();
+    const elapsedTime = currentTime - startTime;
+
+    if (currentProgress <= 5) return "Estimating...";
+
+    const estimatedTotalTime = (elapsedTime / currentProgress) * 100;
+    const remainingTime = estimatedTotalTime - elapsedTime;
+
+    if (remainingTime <= 0) return "Almost done...";
+
+    if (remainingTime < 5000) return "A few seconds";
+    if (remainingTime < 30000) return `~${Math.round(remainingTime / 1000)}s`;
+    if (remainingTime < 120000) return `~${Math.round(remainingTime / 60000)}m`;
+
+    return "Processing...";
+  };
+
+  const estimatedTime = calculateEstimatedTime();
 
   // Debug logging for hidden mode (only when stages actually change)
   React.useEffect(() => {
@@ -377,17 +447,39 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
           </Space>
         </div>
 
-        <div style={{ marginTop: '8px' }}>
+        <div style={{ marginTop: '8px' }} className={isProcessing ? 'progress-glow' : ''}>
           <Progress
             percent={currentProgress}
             status={isProcessing ? 'active' : 'success'}
             strokeColor={{
               '0%': '#1890ff',
+              '50%': '#52c41a',
               '100%': '#52c41a',
             }}
-            showInfo={false}
+            showInfo={true}
             size="small"
+            format={(percent) => (
+              <span style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: isProcessing ? '#1890ff' : '#52c41a'
+              }} className={isProcessing ? 'processing-pulse' : ''}>
+                {percent}%
+              </span>
+            )}
+            className={`progress-smooth ${isProcessing ? 'progress-bar-animated' : ''}`}
           />
+          {isProcessing && (
+            <div style={{
+              marginTop: '4px',
+              fontSize: '10px',
+              color: '#6b7280',
+              fontStyle: 'italic',
+              textAlign: 'center'
+            }} className="processing-pulse">
+              Processing... Please wait
+            </div>
+          )}
         </div>
       </Card>
     );
@@ -442,6 +534,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
           </Button>
         </Space>
       }
+      className="processing-card"
       style={{
         marginBottom: '16px',
         background: isProcessing ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' : '#ffffff',
@@ -460,23 +553,47 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
             {currentProgress}%
           </Text>
         </div>
-        <Progress
-          percent={currentProgress}
-          status={isProcessing ? 'active' : 'success'}
-          strokeColor={{
-            '0%': '#0ea5e9',
-            '50%': '#3b82f6',
-            '100%': '#059669',
-          }}
-          trailColor="#e5e7eb"
-          strokeWidth={10}
-          style={{ marginBottom: '8px' }}
-        />
-        {currentStage && (
-          <Text style={{ fontSize: '12px', color: '#6b7280', fontStyle: 'italic' }}>
-            Current: {formatStageTitle(currentStage)}
-          </Text>
-        )}
+        <div className={isProcessing ? 'stage-progress-bar' : ''}>
+          <Progress
+            percent={currentProgress}
+            status={isProcessing ? 'active' : 'success'}
+            strokeColor={{
+              '0%': '#0ea5e9',
+              '30%': '#3b82f6',
+              '70%': '#10b981',
+              '100%': '#059669',
+            }}
+            trailColor="#e5e7eb"
+            strokeWidth={12}
+            format={(percent) => (
+              <span style={{
+                fontSize: '13px',
+                fontWeight: 700,
+                color: isProcessing ? '#0ea5e9' : '#059669',
+                textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+              }} className={isProcessing ? 'processing-text-glow' : ''}>
+                {percent}%
+              </span>
+            )}
+            className={`progress-smooth ${isProcessing ? 'progress-bar-animated' : ''}`}
+            style={{
+              marginBottom: '8px'
+            }}
+          />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {currentStage && (
+            <Text style={{ fontSize: '12px', color: '#6b7280', fontStyle: 'italic' }}>
+              Current: {formatStageTitle(currentStage)}
+            </Text>
+          )}
+          {estimatedTime && isProcessing && (
+            <Text style={{ fontSize: '12px', color: '#059669', fontWeight: 500 }}
+                  className="estimated-time-bounce">
+              ⏱️ {estimatedTime}
+            </Text>
+          )}
+        </div>
       </div>
 
       {/* Processing Timeline - only show in processing and advanced modes */}

@@ -6,15 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   Typography,
-  Button,
-  Row,
-  Col
+  Button
 } from 'antd';
-import {
-  HistoryOutlined,
-  BookOutlined,
-  RocketOutlined
-} from '@ant-design/icons';
+
 import { useLocation } from 'react-router-dom';
 import { useQueryContext } from './QueryProvider';
 import { EnhancedQueryInput } from './EnhancedQueryInput';
@@ -26,6 +20,7 @@ import { GuidedQueryWizard } from './GuidedQueryWizard';
 import { useAIProcessingFeedback } from './AIProcessingFeedback';
 import { QueryProcessingViewer } from './QueryProcessingViewer';
 import { AccessibilityFeatures } from './AccessibilityFeatures';
+import { useActiveResultActions } from '../../stores/activeResultStore';
 import './animations.css';
 import './professional-polish.css';
 
@@ -39,8 +34,6 @@ export const MinimalQueryInterface: React.FC = () => {
     currentResult,
     isLoading,
     handleSubmitQuery,
-    setShowTemplateLibrary,
-    setActiveTab,
     queryHistory,
     processingStages,
     currentProcessingStage,
@@ -51,10 +44,22 @@ export const MinimalQueryInterface: React.FC = () => {
     currentQueryId
   } = useQueryContext();
 
-  const [showQuickActions] = useState(true);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
-  const [showProactiveSuggestions, setShowProactiveSuggestions] = useState(true);
+  const [hasSubmittedQuery, setHasSubmittedQuery] = useState(false);
+  const [forceInitialState, setForceInitialState] = useState(true); // Force show initial state by default
+
+  // Get actions for clearing results
+  const { clearActiveResult } = useActiveResultActions();
+
+  // Debug: Log current state
+  console.log('🔍 MinimalQueryInterface State:', {
+    hasSubmittedQuery,
+    currentResult: !!currentResult,
+    isLoading,
+    processingStagesLength: processingStages?.length || 0,
+    query: query?.substring(0, 50) + (query?.length > 50 ? '...' : '') || ''
+  });
 
 
 
@@ -65,7 +70,7 @@ export const MinimalQueryInterface: React.FC = () => {
   const handleAccessibilityAction = (action: string) => {
     switch (action) {
       case 'execute-query':
-        handleSubmitQuery();
+        handleCustomSubmitQuery();
         break;
       case 'open-wizard':
         setShowWizard(true);
@@ -104,61 +109,42 @@ export const MinimalQueryInterface: React.FC = () => {
     }
   }, []);
 
-  const quickActions = [
-    {
-      key: 'templates',
-      icon: <BookOutlined />,
-      title: 'Query Templates',
-      description: 'Browse pre-built queries',
-      action: () => setShowTemplateLibrary(true),
-      color: '#3b82f6',
-      bgGradient: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-      category: 'Templates'
-    },
-    {
-      key: 'history',
-      icon: <HistoryOutlined />,
-      title: 'Recent Queries',
-      description: `${Array.isArray(queryHistory) ? queryHistory.length : 0} saved queries`,
-      action: () => setActiveTab('history'),
-      color: '#10b981',
-      bgGradient: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-      category: 'History'
-    },
-    {
-      key: 'examples',
-      icon: <RocketOutlined />,
-      title: 'Quick Examples',
-      description: 'Try sample queries',
-      action: () => setQuery('Show me total deposits for yesterday'),
-      color: '#8b5cf6',
-      bgGradient: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)',
-      category: 'Examples'
+  // Track when a query has been submitted in the current session
+  // Only consider loading or processing stages as indicators of submission
+  // Don't automatically set hasSubmittedQuery based on persisted results
+  useEffect(() => {
+    // Only set hasSubmittedQuery if we're actively loading or processing
+    if (isLoading || (processingStages?.length || 0) > 0) {
+      setHasSubmittedQuery(true);
     }
-  ];
+  }, [isLoading, processingStages]);
 
-  const exampleQueries = [
-    {
-      category: "💰 Sales & Revenue",
-      queries: [
-        "Show me total deposits for yesterday",
-        "Show me daily revenue for the last week",
-        "Revenue breakdown by country for last week"
-      ],
-      color: "#10b981",
-      bgGradient: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)"
-    },
-    {
-      category: "👥 Player Analytics",
-      queries: [
-        "Top 10 players by deposits in the last 7 days",
-        "Count of active players yesterday",
-        "Show me casino vs sports betting revenue for last week"
-      ],
-      color: "#3b82f6",
-      bgGradient: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)"
+  // Reset hasSubmittedQuery when query is cleared completely
+  useEffect(() => {
+    if (!query?.trim() && !isLoading && (processingStages?.length || 0) === 0) {
+      setHasSubmittedQuery(false);
     }
-  ];
+  }, [query, isLoading, processingStages]);
+
+  // Custom submit handler that tracks submission state
+  const handleCustomSubmitQuery = async () => {
+    setHasSubmittedQuery(true);
+    setForceInitialState(false); // Exit initial state when submitting
+    await handleSubmitQuery();
+  };
+
+  // Clear all results and return to initial state
+  const handleClearResults = () => {
+    setQuery('');
+    setHasSubmittedQuery(false);
+    // Clear the active result from the store
+    clearActiveResult();
+    console.log('🧹 Cleared all results and reset to initial state');
+  };
+
+
+
+
 
   return (
     <div
@@ -201,7 +187,7 @@ export const MinimalQueryInterface: React.FC = () => {
           <EnhancedQueryInput
             value={query}
             onChange={setQuery}
-            onSubmit={handleSubmitQuery}
+            onSubmit={handleCustomSubmitQuery}
             loading={isLoading}
             placeholder="Ask a question about your data... (e.g., 'Show me revenue by country last month')"
             showShortcuts={false}
@@ -210,8 +196,48 @@ export const MinimalQueryInterface: React.FC = () => {
           />
         </div>
 
-        {/* Query Processing Viewer - Show as closed panel when not processing */}
-        {(isLoading || aiProcessing.isProcessing) ? (
+        {/* Action Buttons */}
+        <div style={{ textAlign: 'center', marginTop: '16px' }}>
+          {/* Show Results Button - Show when there are persisted results but in initial state */}
+          {currentResult && forceInitialState && (
+            <Button
+              type="primary"
+              onClick={() => {
+                setForceInitialState(false);
+                setHasSubmittedQuery(true);
+              }}
+              style={{
+                marginRight: '8px'
+              }}
+            >
+              View Previous Results
+            </Button>
+          )}
+
+          {/* Clear Results Button - Show when viewing results */}
+          {!forceInitialState && currentResult && (
+            <Button
+              type="text"
+              onClick={() => {
+                handleClearResults();
+                setForceInitialState(true);
+              }}
+              style={{
+                color: '#6b7280',
+                fontSize: '14px',
+                padding: '4px 12px',
+                height: 'auto',
+                marginRight: '8px'
+              }}
+            >
+              Clear results and start fresh
+            </Button>
+          )}
+
+        </div>
+
+        {/* Query Processing Viewer - Show only after query submission */}
+        {hasSubmittedQuery && ((isLoading || aiProcessing.isProcessing) ? (
           <div style={{ marginTop: '16px' }}>
             <QueryProcessingViewer
               stages={processingStages}
@@ -235,7 +261,7 @@ export const MinimalQueryInterface: React.FC = () => {
               mode={processingViewMode === 'hidden' ? 'hidden' : processingViewMode}
               onModeChange={(newMode) => {
                 console.log('🔍 MinimalQueryInterface: Mode change requested from', processingViewMode, 'to', newMode);
-                console.log('🔍 Available processing stages:', processingStages.length, processingStages.map(s => s.stage));
+                console.log('🔍 Available processing stages:', processingStages?.length || 0, processingStages?.map(s => s.stage) || []);
                 setProcessingViewMode(newMode);
 
                 // If expanding to show details, ensure we show processing details
@@ -246,24 +272,23 @@ export const MinimalQueryInterface: React.FC = () => {
               onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
             />
           </div>
-        )}
+        ))}
 
 
       </div>
 
-      {/* Results Section - Direct Content */}
-      {currentResult && (
+      {/* Results Section - Show only when user explicitly wants to see results */}
+      {!forceInitialState && (hasSubmittedQuery || isLoading) && currentResult && (
         <div style={{ marginBottom: '32px' }}>
           <QueryTabs />
         </div>
       )}
 
-      {/* Proactive Suggestions - Show when no query, no successful results, or when there's an error */}
-      {((!currentResult && !query) || (currentResult && !currentResult.success)) && showProactiveSuggestions && (
+      {/* Proactive Suggestions - Show when in initial state */}
+      {forceInitialState && !isLoading && (
         <ProactiveSuggestions
           onQuerySelect={(selectedQuery) => {
             setQuery(selectedQuery);
-            setShowProactiveSuggestions(false);
           }}
           onStartWizard={() => setShowWizard(true)}
           recentQueries={Array.isArray(queryHistory) ? queryHistory.map(h => h.query || '').slice(0, 5) : []}
@@ -272,225 +297,14 @@ export const MinimalQueryInterface: React.FC = () => {
 
 
 
-      {/* Enhanced Quick Actions - Show when no result or when there's an error */}
-      {showQuickActions && (!currentResult || (currentResult && !currentResult.success)) && (
-        <div style={{ marginBottom: '72px' }}>
-          <div style={{
-            textAlign: 'center',
-            marginBottom: '48px'
-          }}>
-            <Text style={{
-              fontSize: '28px',
-              fontWeight: 700,
-              color: '#1f2937',
-              display: 'block',
-              marginBottom: '12px',
-              fontFamily: "'Poppins', sans-serif"
-            }}>
-              🚀 Quick Actions
-            </Text>
-            <Text style={{
-              fontSize: '18px',
-              color: '#6b7280',
-              fontWeight: 500
-            }}>
-              Get started with these powerful features
-            </Text>
-          </div>
-
-          <Row gutter={[32, 32]} justify="center">
-            {quickActions.map((action, index) => (
-              <Col xs={24} sm={8} key={action.key}>
-                <div
-                  style={{
-                    padding: '32px 28px',
-                    background: action.bgGradient,
-                    borderRadius: '20px',
-                    cursor: 'pointer',
-                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                    textAlign: 'center',
-                    border: `2px solid ${action.color}20`,
-                    position: 'relative',
-                    overflow: 'hidden',
-                    height: '200px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center'
-                  }}
-                  onClick={action.action}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
-                    e.currentTarget.style.boxShadow = `0 20px 60px ${action.color}30`;
-                    e.currentTarget.style.borderColor = action.color;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.borderColor = `${action.color}20`;
-                  }}
-                >
-                  {/* Category Badge */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '16px',
-                    right: '16px',
-                    background: action.color,
-                    color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '12px',
-                    fontSize: '10px',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
-                  }}>
-                    {action.category}
-                  </div>
-
-                  <div style={{
-                    fontSize: '56px',
-                    color: action.color,
-                    marginBottom: '20px',
-                    transition: 'all 0.3s ease',
-                    filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1))'
-                  }}>
-                    {action.icon}
-                  </div>
-                  <Text style={{
-                    fontSize: '20px',
-                    fontWeight: 700,
-                    color: '#1f2937',
-                    display: 'block',
-                    marginBottom: '8px',
-                    fontFamily: "'Poppins', sans-serif"
-                  }}>
-                    {action.title}
-                  </Text>
-                  <Text style={{
-                    fontSize: '15px',
-                    color: '#4b5563',
-                    lineHeight: '1.5',
-                    fontWeight: 500
-                  }}>
-                    {action.description}
-                  </Text>
-                </div>
-              </Col>
-            ))}
-          </Row>
-        </div>
-      )}
-
-      {/* Enhanced Example Queries by Category - Show when no result or when there's an error */}
-      {(!currentResult || (currentResult && !currentResult.success)) && (
-        <div style={{ marginBottom: '72px' }}>
-          <div style={{
-            textAlign: 'center',
-            marginBottom: '48px'
-          }}>
-            <Text style={{
-              fontSize: '28px',
-              fontWeight: 700,
-              color: '#1f2937',
-              display: 'block',
-              marginBottom: '12px',
-              fontFamily: "'Poppins', sans-serif"
-            }}>
-              ⚡ Try These Examples
-            </Text>
-            <Text style={{
-              fontSize: '18px',
-              color: '#6b7280',
-              fontWeight: 500
-            }}>
-              Organized by category for easy discovery
-            </Text>
-          </div>
-
-          {exampleQueries.map((category, categoryIndex) => (
-            <div key={categoryIndex} style={{ marginBottom: '40px' }}>
-              {/* Category Header */}
-              <div style={{
-                textAlign: 'center',
-                marginBottom: '24px'
-              }}>
-                <Text style={{
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  color: category.color,
-                  display: 'block',
-                  fontFamily: "'Poppins', sans-serif"
-                }}>
-                  {category.category}
-                </Text>
-              </div>
-
-              {/* Category Queries */}
-              <Row gutter={[20, 20]} justify="center">
-                {category.queries.map((query, queryIndex) => (
-                  <Col xs={24} sm={12} lg={8} key={queryIndex}>
-                    <Button
-                      type="text"
-                      onClick={() => setQuery(query)}
-                      style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        height: 'auto',
-                        padding: '24px',
-                        background: category.bgGradient,
-                        border: `2px solid ${category.color}20`,
-                        borderRadius: '16px',
-                        color: '#1f2937',
-                        whiteSpace: 'normal',
-                        lineHeight: '1.6',
-                        fontSize: '15px',
-                        fontWeight: 500,
-                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                        minHeight: '100px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        position: 'relative',
-                        overflow: 'hidden'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = `linear-gradient(135deg, ${category.color} 0%, ${category.color}dd 100%)`;
-                        e.currentTarget.style.color = 'white';
-                        e.currentTarget.style.borderColor = category.color;
-                        e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
-                        e.currentTarget.style.boxShadow = `0 12px 32px ${category.color}40`;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = category.bgGradient;
-                        e.currentTarget.style.color = '#1f2937';
-                        e.currentTarget.style.borderColor = `${category.color}20`;
-                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      <div style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        background: category.color,
-                        opacity: 0.6
-                      }} />
-                      {query}
-                    </Button>
-                  </Col>
-                ))}
-              </Row>
-            </div>
-          ))}
-        </div>
-      )}
 
 
 
-      {/* Enhanced Empty State */}
-      {!currentResult && !isLoading && (
+
+
+
+      {/* Enhanced Empty State - Show when in initial state */}
+      {forceInitialState && !isLoading && (
         <div style={{
           textAlign: 'center',
           padding: '80px 24px',
@@ -604,10 +418,10 @@ export const MinimalQueryInterface: React.FC = () => {
       <GuidedQueryWizard
         visible={showWizard}
         onClose={() => setShowWizard(false)}
-        onQueryGenerated={(generatedQuery, metadata) => {
+        onQueryGenerated={(generatedQuery) => {
           setQuery(generatedQuery);
           setShowWizard(false);
-          setShowProactiveSuggestions(false);
+          setHasSubmittedQuery(true);
           // Optionally auto-execute the generated query
           setTimeout(() => handleSubmitQuery(), 500);
         }}

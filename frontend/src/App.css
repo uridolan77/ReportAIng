@@ -700,6 +700,22 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
+/* Modern Suggestion Buttons */
+.modern-suggestion-button {
+  transition: all 0.2s ease !important;
+}
+
+.modern-suggestion-button:hover {
+  background-color: #f0f9ff !important;
+  border-color: #3b82f6 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
+}
+
+.modern-suggestion-button:active {
+  transform: translateY(0px);
+}
+
 /* Auto-Generation Results Tabs */
 .auto-generation-results-tabs .ant-tabs-tab {
   border-radius: 8px 8px 0 0;
