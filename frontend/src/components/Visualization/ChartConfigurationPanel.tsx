@@ -111,9 +111,12 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
     const numericColumns = dataKeys.filter(key => {
       if (data.length === 0) return false;
       const value = data[0][key];
-      return (typeof value === 'number' || 
+      // Exclude meaningful IDs that should be treated as categorical
+      const isMeaningfulId = key === 'PlayerID' || key === 'Alias' || key === 'Country' || key === 'Currency';
+      return (typeof value === 'number' ||
              (typeof value === 'string' && !isNaN(parseFloat(value)))) &&
-             key !== 'id' && 
+             key !== 'id' &&
+             !isMeaningfulId &&
              !dateColumns.includes(key);
     });
     
@@ -234,9 +237,44 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
 
   const generateConfig = useCallback((overrideMetrics?: string[]) => {
     const metricsToUse = Array.isArray(overrideMetrics) ? overrideMetrics : Array.isArray(selectedMetrics) ? selectedMetrics : [];
+
+    console.log('🔍 ChartConfigurationPanel - generateConfig called:', {
+      xAxis,
+      selectedMetrics,
+      overrideMetrics,
+      metricsToUse,
+      chartType,
+      dataLength: data.length,
+      firstDataRow: data[0],
+      dataKeys: data.length > 0 ? Object.keys(data[0]) : []
+    });
+
     if (!xAxis || metricsToUse.length === 0) {
-      console.log('ChartConfigurationPanel - Cannot generate config: missing xAxis or metrics');
+      console.error('❌ ChartConfigurationPanel - Cannot generate config:', {
+        missingXAxis: !xAxis,
+        missingMetrics: metricsToUse.length === 0,
+        xAxis,
+        metricsToUse,
+        selectedMetrics
+      });
       return;
+    }
+
+    // Validate that the selected columns exist in the data
+    if (data.length > 0) {
+      const dataKeys = Object.keys(data[0]);
+      const missingXAxis = !dataKeys.includes(xAxis);
+      const missingMetrics = metricsToUse.filter(metric => !dataKeys.includes(metric));
+
+      if (missingXAxis || missingMetrics.length > 0) {
+        console.error('❌ ChartConfigurationPanel - Column validation failed:', {
+          missingXAxis,
+          missingMetrics,
+          availableKeys: dataKeys,
+          requestedXAxis: xAxis,
+          requestedMetrics: metricsToUse
+        });
+      }
     }
 
     // Preserve existing configuration settings if available
@@ -317,12 +355,34 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
       }
     };
 
-    console.log('ChartConfigurationPanel - Generated config:', {
+    console.log('✅ ChartConfigurationPanel - Generated config:', {
       chartType: config.chartType,
+      xAxis: config.xAxis,
+      yAxis: config.yAxis,
+      series: config.series,
       preservedSettings: config.customSettings,
       interaction: config.interaction,
-      animation: config.animation
+      animation: config.animation,
+      fullConfig: config
     });
+
+    // Validate the generated config against actual data
+    if (data.length > 0) {
+      const dataKeys = Object.keys(data[0]);
+      const configValidation = {
+        xAxisExists: dataKeys.includes(config.xAxis || ''),
+        yAxisExists: dataKeys.includes(config.yAxis || ''),
+        seriesExist: config.series?.every(s => dataKeys.includes(s)) || false,
+        availableKeys: dataKeys
+      };
+
+      console.log('🔍 ChartConfigurationPanel - Config validation:', configValidation);
+
+      if (!configValidation.xAxisExists || !configValidation.yAxisExists) {
+        console.error('❌ ChartConfigurationPanel - Generated config has invalid column references!');
+      }
+    }
+
     onConfigChange(config);
   }, [xAxis, selectedMetrics, chartType, data.length, onConfigChange]); // Use data.length instead of data object
 
@@ -475,6 +535,14 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
 
   // Initialize with smart defaults when data is available
   useEffect(() => {
+    console.log('🔍 ChartConfigurationPanel - Smart defaults effect triggered:', {
+      dataLength: data.length,
+      columnsLength: columns.length,
+      currentXAxis: xAxis,
+      currentMetricsLength: selectedMetrics.length,
+      shouldInitialize: data.length > 0 && columns.length > 0 && !xAxis && selectedMetrics.length === 0
+    });
+
     if (data.length > 0 && columns.length > 0 && !xAxis && selectedMetrics.length === 0) {
       console.log('ChartConfigurationPanel - Initializing with smart defaults');
 
@@ -519,21 +587,218 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         });
       } else {
         // Standard auto-configuration for non-gaming data
-        const firstDateColumn = dateColumns[0];
-        if (firstDateColumn) {
-          setXAxis(firstDateColumn);
+        console.log('🔍 ChartConfigurationPanel - Applying standard auto-configuration');
+
+        // Get all available columns
+        const dataKeys = Object.keys(data[0]).filter(key => key !== 'id');
+
+        // Find categorical columns (strings, including meaningful IDs like PlayerID)
+        const categoricalColumns = dataKeys.filter(key => {
+          const value = data[0][key];
+          // Include PlayerID and other meaningful identifiers, but exclude generic 'id' fields
+          const isMeaningfulId = key === 'PlayerID' || key === 'Alias' || key === 'Country' || key === 'Currency';
+          const isGenericId = key.toLowerCase() === 'id' || key.toLowerCase().endsWith('_id');
+          return typeof value === 'string' && (isMeaningfulId || !isGenericId);
+        });
+
+        // Find numeric columns
+        const availableNumericColumns = dataKeys.filter(key => {
+          const value = data[0][key];
+          return typeof value === 'number' || (!isNaN(Number(value)) && value !== null && value !== '');
+        });
+
+        console.log('🔍 ChartConfigurationPanel - Column detection:', {
+          dataKeys,
+          categoricalColumns,
+          availableNumericColumns,
+          dateColumns
+        });
+
+        // Smart X-axis selection: prefer meaningful categorical columns over dates
+        let selectedXAxis = null;
+
+        // Priority 1: Look for meaningful categorical columns first
+        const meaningfulColumns = categoricalColumns.filter(col =>
+          ['Country', 'CountryName', 'Currency', 'Alias', 'PlayerID', 'Provider', 'GameName', 'GameType'].includes(col)
+        );
+
+        if (meaningfulColumns.length > 0) {
+          // Prefer Country > Currency > Alias > PlayerID > others
+          selectedXAxis = meaningfulColumns.find(col => col === 'Country') ||
+                         meaningfulColumns.find(col => col === 'CountryName') ||
+                         meaningfulColumns.find(col => col === 'Currency') ||
+                         meaningfulColumns.find(col => col === 'Alias') ||
+                         meaningfulColumns.find(col => col === 'PlayerID') ||
+                         meaningfulColumns[0];
+        }
+        // Priority 2: Date columns for time series
+        else if (dateColumns.length > 0) {
+          selectedXAxis = dateColumns[0];
+        }
+        // Priority 3: Any categorical column
+        else if (categoricalColumns.length > 0) {
+          selectedXAxis = categoricalColumns[0];
+        }
+        // Priority 4: Fallback to first column
+        else if (dataKeys.length > 0) {
+          selectedXAxis = dataKeys[0];
         }
 
-        const defaultMetrics = numericColumns.slice(0, 3);
+        if (selectedXAxis) {
+          console.log('✅ ChartConfigurationPanel - Setting X-axis to:', selectedXAxis);
+          setXAxis(selectedXAxis);
+        }
+
+        const defaultMetrics = availableNumericColumns.slice(0, 3);
         if (defaultMetrics.length > 0) {
+          console.log('✅ ChartConfigurationPanel - Setting metrics to:', defaultMetrics);
           setSelectedMetrics(defaultMetrics);
+        }
+
+        // Set appropriate chart type based on selected X-axis
+        if (selectedXAxis === 'Country' || selectedXAxis === 'CountryName') {
+          setChartType('Bar'); // Country data works better as bar chart for comparison
+        } else if (selectedXAxis === 'Currency' || selectedXAxis === 'Alias') {
+          setChartType('Pie'); // Currency/Alias distribution works well as pie
+        } else if (dateColumns.includes(selectedXAxis)) {
+          setChartType('Line'); // Time series data works well as line chart
+        } else {
+          setChartType('Bar'); // Default to bar chart
         }
       }
     }
   }, [data, columns, dateColumns, numericColumns, xAxis, selectedMetrics.length, isGamingData, getGamingColumns]);
 
+  // Force auto-detection when data changes (more aggressive approach)
+  useEffect(() => {
+    if (data.length > 0 && (!xAxis || selectedMetrics.length === 0)) {
+      console.log('🔄 ChartConfigurationPanel - Force auto-detection triggered');
+
+      const dataKeys = Object.keys(data[0]).filter(key => key !== 'id');
+
+      // Find categorical columns (strings that aren't IDs)
+      const categoricalColumns = dataKeys.filter(key => {
+        const value = data[0][key];
+        return typeof value === 'string' && !key.toLowerCase().includes('id');
+      });
+
+      // Find numeric columns
+      const availableNumericColumns = dataKeys.filter(key => {
+        const value = data[0][key];
+        return typeof value === 'number' || (!isNaN(Number(value)) && value !== null && value !== '');
+      });
+
+      console.log('🔄 Force detection results:', {
+        dataKeys,
+        categoricalColumns,
+        availableNumericColumns,
+        currentXAxis: xAxis,
+        currentMetrics: selectedMetrics
+      });
+
+      // Set X-axis if not already set
+      if (!xAxis && (categoricalColumns.length > 0 || dataKeys.length > 0)) {
+        const selectedXAxis = categoricalColumns[0] || dataKeys[0];
+        console.log('🔄 Setting X-axis to:', selectedXAxis);
+        setXAxis(selectedXAxis);
+      }
+
+      // Set metrics if not already set
+      if (selectedMetrics.length === 0 && availableNumericColumns.length > 0) {
+        const defaultMetrics = availableNumericColumns.slice(0, 2);
+        console.log('🔄 Setting metrics to:', defaultMetrics);
+        setSelectedMetrics(defaultMetrics);
+      }
+
+      // Set appropriate chart type based on data
+      if (categoricalColumns.includes('CountryName') || categoricalColumns.includes('Country')) {
+        setChartType('Pie');
+      } else if (availableNumericColumns.length > 1) {
+        setChartType('Bar');
+      }
+    }
+  }, [data, xAxis, selectedMetrics]);
+
+  // Manual fix function
+  const handleFixChart = () => {
+    if (data.length === 0) return;
+
+    console.log('🔧 Manual chart fix triggered');
+
+    const dataKeys = Object.keys(data[0]).filter(key => key !== 'id');
+
+    // Find categorical and numeric columns
+    const categoricalColumns = dataKeys.filter(key => {
+      const value = data[0][key];
+      return typeof value === 'string' && !key.toLowerCase().includes('id');
+    });
+
+    const availableNumericColumns = dataKeys.filter(key => {
+      const value = data[0][key];
+      return typeof value === 'number' || (!isNaN(Number(value)) && value !== null && value !== '');
+    });
+
+    console.log('🔧 Fix chart - detected columns:', {
+      categoricalColumns,
+      availableNumericColumns,
+      firstDataRow: data[0]
+    });
+
+    // Apply the fix
+    if (categoricalColumns.length > 0) {
+      setXAxis(categoricalColumns[0]);
+    } else if (dataKeys.length > 0) {
+      setXAxis(dataKeys[0]);
+    }
+
+    if (availableNumericColumns.length > 0) {
+      setSelectedMetrics(availableNumericColumns.slice(0, 2));
+    }
+
+    // Set chart type based on data
+    if (categoricalColumns.includes('CountryName')) {
+      setChartType('Pie');
+    } else {
+      setChartType('Bar');
+    }
+
+    console.log('🔧 Chart fix applied:', {
+      xAxis: categoricalColumns[0] || dataKeys[0],
+      metrics: availableNumericColumns.slice(0, 2),
+      chartType: categoricalColumns.includes('CountryName') ? 'Pie' : 'Bar'
+    });
+  };
+
   return (
     <div>
+      {/* Emergency Fix Button */}
+      {data.length > 0 && (!xAxis || selectedMetrics.length === 0) && (
+        <div style={{
+          marginBottom: '16px',
+          padding: '12px',
+          background: '#fff7e6',
+          border: '1px solid #ffd591',
+          borderRadius: '8px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <Text strong style={{ color: '#d46b08' }}>Chart Configuration Issue</Text>
+              <div style={{ fontSize: '12px', color: '#ad6800', marginTop: '4px' }}>
+                Chart columns don't match your data. Click to auto-fix.
+              </div>
+            </div>
+            <Button
+              type="primary"
+              size="small"
+              onClick={handleFixChart}
+              style={{ background: '#fa8c16', borderColor: '#fa8c16' }}
+            >
+              Fix Chart
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Enhanced Chart Type Selection */}
       <div style={{ marginBottom: '20px' }}>
         <div style={{
@@ -613,24 +878,46 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         </div>
       </div>
 
-      <Row gutter={[16, 16]}>
+      <Row gutter={[20, 20]}>
         {/* X-Axis Selection */}
         <Col xs={24} sm={12}>
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: 8, color: '#1f2937' }}>X-Axis (Categories)</Text>
+          <div style={{
+            background: '#f8fafc',
+            padding: '16px',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '12px'
+            }}>
+              <Text strong style={{ color: '#1f2937', fontSize: '14px' }}>X-Axis (Categories)</Text>
+              <Tag color="blue" style={{ fontSize: '10px' }}>
+                {xAxis ? 'SELECTED' : 'CHOOSE'}
+              </Tag>
+            </div>
             <Select
               value={xAxis}
               onChange={handleXAxisChange}
-              style={{ width: '100%' }}
-              size="small"
+              style={{
+                width: '100%',
+                minHeight: '40px'
+              }}
+              size="middle"
               placeholder="Select X-axis column"
+              dropdownStyle={{
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}
             >
               {/* Gaming data: show label columns first */}
               {isGamingData && getGamingColumns.labelColumns.map(col => (
                 <Option key={col} value={col}>
                   <Space>
-                    <Tag color="purple" style={{ fontSize: '10px' }}>GAMING</Tag>
-                    {col}
+                    <Tag color="purple" style={{ fontSize: '10px', fontWeight: 500, borderRadius: '4px' }}>GAMING</Tag>
+                    <Text style={{ fontSize: '13px', fontWeight: 500 }}>{col}</Text>
                   </Space>
                 </Option>
               ))}
@@ -639,24 +926,44 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
               {dateColumns.map(col => (
                 <Option key={col} value={col}>
                   <Space>
-                    <Tag color="blue" style={{ fontSize: '10px' }}>DATE</Tag>
-                    {col}
+                    <Tag color="blue" style={{ fontSize: '10px', fontWeight: 500, borderRadius: '4px' }}>DATE</Tag>
+                    <Text style={{ fontSize: '13px', fontWeight: 500 }}>{col}</Text>
                   </Space>
                 </Option>
               ))}
 
               {/* Other categorical columns for non-gaming data */}
-              {!isGamingData && columns.filter(col =>
-                !dateColumns.includes(col) &&
-                !numericColumns.includes(col)
-              ).map(col => (
-                <Option key={col} value={col}>
-                  <Space>
-                    <Tag color="green" style={{ fontSize: '10px' }}>TEXT</Tag>
-                    {col}
-                  </Space>
-                </Option>
-              ))}
+              {!isGamingData && (() => {
+                // Get all available columns from actual data
+                const dataKeys = data.length > 0 ? Object.keys(data[0]).filter(key => key !== 'id') : [];
+
+                // Find categorical columns (strings, including meaningful IDs like PlayerID)
+                const categoricalColumns = dataKeys.filter(key => {
+                  if (dateColumns.includes(key) || numericColumns.includes(key)) return false;
+                  const value = data[0][key];
+                  // Include PlayerID and other meaningful identifiers, but exclude generic 'id' fields
+                  const isMeaningfulId = key === 'PlayerID' || key === 'Alias' || key === 'Country' || key === 'Currency';
+                  const isGenericId = key.toLowerCase() === 'id' || key.toLowerCase().endsWith('_id');
+                  return typeof value === 'string' && (isMeaningfulId || !isGenericId);
+                });
+
+                console.log('🔍 X-axis dropdown - Available columns:', {
+                  dataKeys,
+                  dateColumns,
+                  numericColumns,
+                  categoricalColumns,
+                  firstDataRow: data[0]
+                });
+
+                return categoricalColumns.map(col => (
+                  <Option key={col} value={col}>
+                    <Space>
+                      <Tag color="green" style={{ fontSize: '10px', fontWeight: 500, borderRadius: '4px' }}>TEXT</Tag>
+                      <Text style={{ fontSize: '13px', fontWeight: 500 }}>{col}</Text>
+                    </Space>
+                  </Option>
+                ));
+              })()}
 
               {/* Show message if no suitable columns */}
               {dateColumns.length === 0 && (!isGamingData || getGamingColumns.labelColumns.length === 0) && (
@@ -670,26 +977,44 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
 
         {/* Metrics Selection */}
         <Col xs={24} sm={12}>
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: 8, color: '#1f2937' }}>
-              Metrics ({Array.isArray(selectedMetrics) ? selectedMetrics.length : 0} selected)
-            </Text>
+          <div style={{
+            background: '#f8fafc',
+            padding: '16px',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0'
+          }}>
             <div style={{
-              maxHeight: '140px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '12px'
+            }}>
+              <Text strong style={{ color: '#1f2937', fontSize: '14px' }}>
+                Metrics
+              </Text>
+              <Tag color="green" style={{ fontSize: '10px' }}>
+                {Array.isArray(selectedMetrics) ? selectedMetrics.length : 0} SELECTED
+              </Tag>
+            </div>
+            <div style={{
+              maxHeight: '200px',
               overflowY: 'auto',
-              border: '1px solid #e5e7eb',
+              border: '1px solid #e2e8f0',
               borderRadius: '8px',
               padding: '12px',
-              background: '#f9fafb'
+              backgroundColor: '#ffffff',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
             }}>
               {numericColumns.map(metric => (
                 <div key={metric} style={{
-                  marginBottom: 8,
-                  padding: '6px 8px',
-                  borderRadius: '6px',
-                  background: Array.isArray(selectedMetrics) && selectedMetrics.includes(metric) ? '#eff6ff' : 'transparent',
-                  border: Array.isArray(selectedMetrics) && selectedMetrics.includes(metric) ? '1px solid #3b82f6' : '1px solid transparent',
-                  transition: 'all 0.2s ease'
+                  marginBottom: '10px',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  background: Array.isArray(selectedMetrics) && selectedMetrics.includes(metric) ? '#e0f2fe' : '#f8fafc',
+                  border: Array.isArray(selectedMetrics) && selectedMetrics.includes(metric) ? '2px solid #0891b2' : '1px solid #e2e8f0',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                  boxShadow: Array.isArray(selectedMetrics) && selectedMetrics.includes(metric) ? '0 2px 4px rgba(8, 145, 178, 0.1)' : 'none'
                 }}>
                   <Checkbox
                     checked={Array.isArray(selectedMetrics) ? selectedMetrics.includes(metric) : false}
@@ -698,18 +1023,19 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                       <Text style={{
-                        fontSize: '12px',
-                        fontWeight: Array.isArray(selectedMetrics) && selectedMetrics.includes(metric) ? 600 : 400,
-                        color: Array.isArray(selectedMetrics) && selectedMetrics.includes(metric) ? '#1f2937' : '#6b7280'
+                        fontSize: '13px',
+                        fontWeight: Array.isArray(selectedMetrics) && selectedMetrics.includes(metric) ? 600 : 500,
+                        color: Array.isArray(selectedMetrics) && selectedMetrics.includes(metric) ? '#0f172a' : '#475569'
                       }}>
                         {metric}
                       </Text>
                       <Tag
-                        color="green"
+                        color={Array.isArray(selectedMetrics) && selectedMetrics.includes(metric) ? 'cyan' : 'default'}
                         style={{
-                          fontSize: '9px',
+                          fontSize: '10px',
                           margin: 0,
-                          opacity: Array.isArray(selectedMetrics) && selectedMetrics.includes(metric) ? 1 : 0.5
+                          fontWeight: 500,
+                          borderRadius: '4px'
                         }}
                       >
                         NUM
@@ -719,8 +1045,14 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
                 </div>
               ))}
               {numericColumns.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                <div style={{
+                  textAlign: 'center',
+                  padding: '24px',
+                  background: '#fef3f2',
+                  borderRadius: '6px',
+                  border: '1px dashed #fca5a5'
+                }}>
+                  <Text type="secondary" style={{ fontSize: '13px', color: '#dc2626' }}>
                     No numeric columns found
                   </Text>
                 </div>
@@ -736,14 +1068,56 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          justifyContent: 'space-between',
           marginBottom: '12px'
         }}>
-          <SettingOutlined style={{ color: '#667eea' }} />
-          <Text strong style={{ color: '#1f2937' }}>Quick Presets</Text>
-          <Tag color="purple" style={{ fontSize: '10px' }}>
-            Smart Templates
-          </Tag>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <SettingOutlined style={{ color: '#667eea' }} />
+            <Text strong style={{ color: '#1f2937' }}>Quick Presets</Text>
+            <Tag color="purple" style={{ fontSize: '10px' }}>
+              Smart Templates
+            </Tag>
+          </div>
+          <Button
+            size="small"
+            type="primary"
+            ghost
+            onClick={() => {
+              // Force re-detection
+              setXAxis('');
+              setSelectedMetrics([]);
+              setIsInitialized(false);
+
+              // Trigger auto-detection after a brief delay
+              setTimeout(() => {
+                if (data.length > 0) {
+                  const dataKeys = Object.keys(data[0]).filter(key => key !== 'id');
+                  const categoricalColumns = dataKeys.filter(key => {
+                    const value = data[0][key];
+                    // Include PlayerID and other meaningful identifiers, but exclude generic 'id' fields
+                    const isMeaningfulId = key === 'PlayerID' || key === 'Alias' || key === 'Country' || key === 'Currency';
+                    const isGenericId = key.toLowerCase() === 'id' || key.toLowerCase().endsWith('_id');
+                    return typeof value === 'string' && (isMeaningfulId || !isGenericId);
+                  });
+                  const availableNumericColumns = dataKeys.filter(key => {
+                    const value = data[0][key];
+                    return typeof value === 'number' || (!isNaN(Number(value)) && value !== null && value !== '');
+                  });
+
+                  const selectedXAxis = dateColumns[0] || categoricalColumns[0] || dataKeys[0];
+                  const defaultMetrics = availableNumericColumns.slice(0, 3);
+
+                  if (selectedXAxis) setXAxis(selectedXAxis);
+                  if (defaultMetrics.length > 0) setSelectedMetrics(defaultMetrics);
+
+                  console.log('🔄 Manual auto-detection applied:', { selectedXAxis, defaultMetrics });
+                }
+              }, 100);
+            }}
+            style={{ fontSize: '11px' }}
+          >
+            Auto-Detect
+          </Button>
         </div>
 
         <div style={{

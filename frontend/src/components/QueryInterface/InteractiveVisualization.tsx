@@ -162,7 +162,27 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
     if (!config || filteredData.length === 0) return null;
 
     const { baseVisualization } = config;
-    const chartData = filteredData.slice(0, 1000); // Limit for performance
+
+    // CRITICAL FIX: Don't limit data unless absolutely necessary for performance
+    // Only limit for very large datasets (>10000 rows) and log when limiting occurs
+    let chartData = filteredData;
+    let dataLimited = false;
+
+    if (filteredData.length > 10000) {
+      chartData = filteredData.slice(0, 10000);
+      dataLimited = true;
+      console.warn(`⚠️ InteractiveVisualization: Data limited to 10000 rows (original: ${filteredData.length})`);
+    }
+
+    console.log('🔍 InteractiveVisualization: Rendering chart with data:', {
+      originalDataLength: data.length,
+      filteredDataLength: filteredData.length,
+      chartDataLength: chartData.length,
+      dataLimited,
+      chartType: baseVisualization.type,
+      xAxis: baseVisualization.xAxis,
+      yAxis: baseVisualization.yAxis
+    });
 
     const commonProps = {
       width: '100%',
@@ -392,6 +412,7 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
           <Text type="secondary">
             Showing {filteredData.length} of {data.length} rows
             {Object.keys(activeFilters).length > 0 && ' (filtered)'}
+            {filteredData.length > 10000 && ' (chart limited to 10000 for performance)'}
           </Text>
         </div>
       </Card>

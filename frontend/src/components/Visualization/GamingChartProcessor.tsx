@@ -140,29 +140,63 @@ export const processGamingChartData = (gamingData: GamingChartData): ProcessedCh
   recommendations.sort((a, b) => a.priority - b.priority);
   
   // Process data for better chart display
+  console.log('🎮 GamingChartProcessor - Starting data processing:', {
+    isGamingData,
+    dataLength: data.length,
+    gamingMetrics,
+    firstRow: data[0]
+  });
+
   const processedData = data.map((row, index) => {
     const processed = { ...row, id: index };
-    
+
+    // Track changes for debugging
+    const changes: any = {};
+
     // Ensure numeric values are properly formatted
     gamingMetrics.revenueColumns.forEach(col => {
       if (processed[col] !== undefined) {
+        const originalValue = processed[col];
         processed[col] = Number(processed[col]) || 0;
+        if (originalValue !== processed[col]) {
+          changes[col] = { from: originalValue, to: processed[col] };
+        }
       }
     });
-    
+
     gamingMetrics.sessionColumns.forEach(col => {
       if (processed[col] !== undefined) {
+        const originalValue = processed[col];
         processed[col] = Number(processed[col]) || 0;
+        if (originalValue !== processed[col]) {
+          changes[col] = { from: originalValue, to: processed[col] };
+        }
       }
     });
-    
+
     gamingMetrics.betColumns.forEach(col => {
       if (processed[col] !== undefined) {
+        const originalValue = processed[col];
         processed[col] = Number(processed[col]) || 0;
+        if (originalValue !== processed[col]) {
+          changes[col] = { from: originalValue, to: processed[col] };
+        }
       }
     });
-    
+
+    // Log significant changes for first few rows
+    if (index < 3 && Object.keys(changes).length > 0) {
+      console.log(`🎮 GamingChartProcessor Row ${index} changes:`, changes);
+    }
+
     return processed;
+  });
+
+  console.log('🎮 GamingChartProcessor - Data processing complete:', {
+    originalLength: data.length,
+    processedLength: processedData.length,
+    firstOriginal: data[0],
+    firstProcessed: processedData[0]
   });
   
   // Generate optimal configuration based on top recommendation

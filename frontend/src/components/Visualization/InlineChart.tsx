@@ -47,51 +47,94 @@ export const InlineChart: React.FC<InlineChartProps> = ({
   // Prepare data for charts
   const prepareChartData = () => {
     if (!data || data.length === 0) {
-      console.log('InlineChart: No data provided', { data, columns });
+      console.log('🔍 InlineChart: No data provided', { data, columns });
       return [];
     }
 
-    console.log('InlineChart: Preparing chart data', {
+    console.log('🔍 InlineChart: Starting chart data preparation', {
       dataLength: data.length,
       columns,
       firstRow: data[0],
-      dataKeys: Object.keys(data[0] || {})
+      dataKeys: Object.keys(data[0] || {}),
+      allDataSample: data.slice(0, 3) // Show first 3 rows for debugging
     });
 
     // For simple data, try to find numeric and categorical columns
     const numericColumns = columns.filter(col => {
       const value = data[0]?.[col];
       const isNumeric = typeof value === 'number' || !isNaN(Number(value));
-      console.log(`Column ${col}: value=${value}, type=${typeof value}, isNumeric=${isNumeric}`);
+      console.log(`🔍 Column analysis - ${col}: value=${value}, type=${typeof value}, isNumeric=${isNumeric}`);
       return isNumeric;
     });
 
     const categoricalColumns = columns.filter(col => {
       const value = data[0]?.[col];
       const isCategorical = typeof value === 'string' || (!numericColumns.includes(col) && value !== undefined);
-      console.log(`Column ${col}: value=${value}, type=${typeof value}, isCategorical=${isCategorical}`);
+      console.log(`🔍 Column analysis - ${col}: value=${value}, type=${typeof value}, isCategorical=${isCategorical}`);
       return isCategorical;
     });
 
-    console.log('Column analysis:', { numericColumns, categoricalColumns });
+    console.log('🔍 InlineChart: Column categorization:', {
+      numericColumns,
+      categoricalColumns,
+      totalColumns: columns.length
+    });
 
     // Use first categorical column as X-axis and first numeric as Y-axis
     const xColumn = categoricalColumns[0] || columns[0];
     const yColumn = numericColumns[0] || columns[1] || columns[0];
 
-    console.log('Selected columns:', { xColumn, yColumn });
+    console.log('🔍 InlineChart: Selected axis columns:', {
+      xColumn,
+      yColumn,
+      xColumnExists: data[0]?.hasOwnProperty(xColumn),
+      yColumnExists: data[0]?.hasOwnProperty(yColumn)
+    });
 
-    const chartData = data.slice(0, 20).map((row, index) => {
+    // CRITICAL FIX: Don't arbitrarily limit to 20 rows - this causes charts to not reflect actual results
+    // Only limit for very large datasets and make it configurable
+    const maxRows = 100; // Increased from 20 to 100 for better representation
+    const shouldLimit = data.length > maxRows;
+    const dataToProcess = shouldLimit ? data.slice(0, maxRows) : data;
+
+    if (shouldLimit) {
+      console.warn(`⚠️ InlineChart: Data limited to ${maxRows} rows (original: ${data.length}) - this may not reflect full results`);
+    } else {
+      console.log(`✅ InlineChart: Processing full dataset (${dataToProcess.length} rows)`);
+    }
+
+    const chartData = dataToProcess.map((row, index) => {
+      const xValue = row[xColumn];
+      const yValue = row[yColumn];
+
       const result = {
-        name: String(row[xColumn] || `Item ${index + 1}`),
-        value: Number(row[yColumn]) || 0,
+        name: String(xValue || `Item ${index + 1}`),
+        value: Number(yValue) || 0,
+        originalXValue: xValue,
+        originalYValue: yValue,
+        rowIndex: index,
         ...row
       };
-      console.log(`Row ${index}:`, result);
+
+      if (index < 5) { // Log first 5 rows for debugging
+        console.log(`🔍 InlineChart Row ${index}:`, {
+          original: { [xColumn]: xValue, [yColumn]: yValue },
+          processed: { name: result.name, value: result.value },
+          fullRow: result
+        });
+      }
+
       return result;
     });
 
-    console.log('Final chart data:', chartData);
+    console.log('✅ InlineChart: Final chart data prepared:', {
+      chartDataLength: chartData.length,
+      originalDataLength: data.length,
+      firstChartRow: chartData[0],
+      lastChartRow: chartData[chartData.length - 1],
+      dataLimitationApplied: data.length > 20
+    });
+
     return chartData;
   };
 
@@ -198,7 +241,7 @@ export const InlineChart: React.FC<InlineChartProps> = ({
       <div style={{ marginTop: '12px', textAlign: 'center' }}>
         <Text type="secondary" style={{ fontSize: '12px' }}>
           Showing {chartData.length} data points
-          {data.length > 20 && ` (limited from ${data.length} total)`}
+          {data.length > 100 && ` (limited from ${data.length} total for performance)`}
         </Text>
       </div>
     </Card>

@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { AdvancedVisualizationConfig, ChartPerformanceMetrics } from '../../types/visualization';
 import { useGamingChartProcessor, processGamingChartData, GAMING_COLOR_SCHEMES } from './GamingChartProcessor';
+import ChartDebugPanel from './ChartDebugPanel';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -82,17 +83,34 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
 
   // Memoized chart data with performance optimizations and gaming enhancements
   const chartData = useMemo(() => {
+    console.log('🔍 AdvancedChart - Starting data processing:', {
+      originalDataLength: data.length,
+      configXAxis: config.xAxis,
+      configYAxis: config.yAxis,
+      configSeries: config.series,
+      firstDataRow: data[0],
+      dataKeys: data.length > 0 ? Object.keys(data[0]) : []
+    });
+
     let processedData = [...data];
 
     // Apply gaming-specific processing if detected
     if (processedGamingData.chartData.length > 0) {
-      processedData = processedGamingData.chartData;
-      console.log('AdvancedChart - Using gaming-processed data:', {
+      console.log('🎮 AdvancedChart - Applying gaming data processing:', {
         originalLength: data.length,
-        processedLength: processedData.length,
+        gamingProcessedLength: processedGamingData.chartData.length,
         isGamingData: gamingData.isGamingData,
-        recommendations: processedGamingData.recommendations.length
+        recommendations: processedGamingData.recommendations.length,
+        originalFirstRow: data[0],
+        gamingFirstRow: processedGamingData.chartData[0]
       });
+
+      // CRITICAL: Only use gaming processed data if it's actually different and valid
+      if (processedGamingData.chartData.length === data.length) {
+        processedData = processedGamingData.chartData;
+      } else {
+        console.warn('⚠️ Gaming processed data length mismatch, using original data');
+      }
     }
 
     // Validate that the data has the expected keys
@@ -101,31 +119,65 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
       const hasXAxis = config.xAxis && firstRow.hasOwnProperty(config.xAxis);
       const hasYAxis = config.yAxis && firstRow.hasOwnProperty(config.yAxis);
 
+      console.log('🔍 AdvancedChart - Data validation:', {
+        expectedXAxis: config.xAxis,
+        expectedYAxis: config.yAxis,
+        hasXAxis,
+        hasYAxis,
+        actualKeys: Object.keys(firstRow),
+        xAxisValue: firstRow[config.xAxis || ''],
+        yAxisValue: firstRow[config.yAxis || ''],
+        isGamingData: gamingData.isGamingData
+      });
+
       if (!hasXAxis || !hasYAxis) {
-        console.warn('AdvancedChart - Missing required data keys!', {
+        console.error('❌ AdvancedChart - Missing required data keys!', {
           expectedXAxis: config.xAxis,
           expectedYAxis: config.yAxis,
           actualKeys: Object.keys(firstRow),
-          isGamingData: gamingData.isGamingData
+          isGamingData: gamingData.isGamingData,
+          firstRowData: firstRow
         });
       }
     }
 
-    // Apply data sampling if enabled
+    // Apply data sampling if enabled (with logging)
     if (config.dataProcessing?.enableSampling && data.length > (config.dataProcessing.sampleSize || 1000)) {
       const sampleSize = config.dataProcessing.sampleSize || 1000;
       const step = Math.floor(data.length / sampleSize);
+      const originalLength = processedData.length;
       processedData = data.filter((_, index) => index % step === 0);
+      console.log('📊 AdvancedChart - Applied data sampling:', {
+        originalLength,
+        sampledLength: processedData.length,
+        sampleSize,
+        step
+      });
     }
 
-    // Apply outlier filtering if enabled
+    // Apply outlier filtering if enabled (with logging)
     if (config.dataProcessing?.outliers?.removeOutliers) {
-      // Simple outlier removal based on IQR
+      const originalLength = processedData.length;
       processedData = removeOutliers(processedData, config.xAxis || 'value');
+      console.log('🔍 AdvancedChart - Applied outlier filtering:', {
+        originalLength,
+        filteredLength: processedData.length,
+        removedCount: originalLength - processedData.length
+      });
     }
+
+    console.log('✅ AdvancedChart - Final processed data:', {
+      finalLength: processedData.length,
+      firstRow: processedData[0],
+      lastRow: processedData[processedData.length - 1],
+      hasRequiredKeys: processedData.length > 0 &&
+        config.xAxis && config.yAxis &&
+        processedData[0].hasOwnProperty(config.xAxis) &&
+        processedData[0].hasOwnProperty(config.yAxis)
+    });
 
     return processedData;
-  }, [data, config]);
+  }, [data, config, processedGamingData, gamingData]);
 
   // Color palette based on theme with gaming-specific enhancements
   const colorPalette = useMemo(() => {
@@ -747,6 +799,17 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
         }}
       >
         {showSettings && renderSettings()}
+
+        {/* Chart Debug Panel - Only show in development or when explicitly enabled */}
+        {(process.env.NODE_ENV === 'development' || window.location.search.includes('debug=true')) && (
+          <ChartDebugPanel
+            originalData={data}
+            processedData={chartData}
+            config={config}
+            columns={data.length > 0 ? Object.keys(data[0]) : []}
+            title="Advanced Chart Debug"
+          />
+        )}
 
         <div style={{ minHeight: isFullscreen ? 600 : 400 }}>
           {renderChart()}

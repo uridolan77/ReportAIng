@@ -468,6 +468,21 @@ public class TuningController : ControllerBase
 
     #region Prompt Logs (Admin Debugging)
 
+    [HttpPost("update-sql-template")]
+    public async Task<ActionResult> UpdateSqlGenerationTemplate()
+    {
+        try
+        {
+            await Scripts.UpdatePromptTemplate.UpdateSqlGenerationTemplate(_context);
+            return Ok(new { message = "SQL generation template updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating SQL generation template");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
     [HttpGet("prompt-logs")]
     public async Task<ActionResult<IEnumerable<PromptLogDto>>> GetPromptLogs(
         [FromQuery] int page = 1,
