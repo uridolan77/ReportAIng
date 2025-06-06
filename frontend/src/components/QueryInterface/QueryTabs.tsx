@@ -30,6 +30,8 @@ import AdvancedChart from '../Visualization/AdvancedChart';
 import ChartConfigurationPanel from '../Visualization/ChartConfigurationPanel';
 import { VisualizationRecommendation } from '../../types/visualization';
 import { useVisualizationStore } from '../../stores/visualizationStore';
+import { FrontendQueryResponse } from '../../services/api';
+import { useActiveResultActions } from '../../stores/activeResultStore';
 
 const { Text } = Typography;
 const { TabPane } = Tabs;
@@ -50,6 +52,8 @@ export const QueryTabs: React.FC = () => {
     handleVisualizationRequest,
     setShowExportModal
   } = useQueryContext();
+
+  const { setActiveResult } = useActiveResultActions();
 
   // Use visualization store for persistent chart state
   const { currentVisualization, setVisualization } = useVisualizationStore();
@@ -78,6 +82,14 @@ export const QueryTabs: React.FC = () => {
   // Handle data filtering from table
   const handleDataFiltering = (hiddenRows: any[], visibleData: any[]) => {
     setFilteredData(visibleData);
+  };
+
+  // Handle SQL editor execution
+  const handleSqlExecute = (sqlResult: FrontendQueryResponse) => {
+    console.log('🔍 QueryTabs - SQL Editor result:', sqlResult);
+    // Update the active result with the new SQL execution result
+    setActiveResult(sqlResult, `SQL: ${sqlResult.sql?.substring(0, 50)}...`);
+    setActiveTab('result');
   };
 
   // Debug logging for current visualization
@@ -246,19 +258,10 @@ export const QueryTabs: React.FC = () => {
             message="AI Copilot is analyzing your question and preparing results..."
           />
         ) : currentResult ? (
-          <Row gutter={[16, 16]}>
-            <Col xs={24} lg={showInsightsPanel && currentResult.success ? 16 : 24}>
-              <QueryResult
-                result={currentResult}
-                query={query}
-                onRequery={handleSubmitQuery}
-                onSuggestionClick={handleFollowUpSuggestionClick}
-                onVisualizationRequest={handleVisualizationRequest}
-                onDataFiltering={handleDataFiltering}
-              />
-            </Col>
+          <div style={{ width: '100%' }}>
+            {/* Insights Panel - Between Query Generation and Table */}
             {showInsightsPanel && currentResult.success && (
-              <Col xs={24} lg={8}>
+              <div style={{ marginBottom: '24px' }}>
                 <div data-testid="insights-panel" tabIndex={0}>
                   <DataInsightsPanel
                     queryResult={currentResult}
@@ -269,9 +272,22 @@ export const QueryTabs: React.FC = () => {
                     autoGenerate={true}
                   />
                 </div>
-              </Col>
+              </div>
             )}
-          </Row>
+
+            {/* Query Result - Full Width */}
+            <div style={{ width: '100%' }}>
+              <QueryResult
+                result={currentResult}
+                query={query}
+                onRequery={handleSubmitQuery}
+                onSuggestionClick={handleFollowUpSuggestionClick}
+                onVisualizationRequest={handleVisualizationRequest}
+                onDataFiltering={handleDataFiltering}
+                onSqlExecute={handleSqlExecute}
+              />
+            </div>
+          </div>
         ) : (
           <div className="empty-result" style={{
             display: 'flex',

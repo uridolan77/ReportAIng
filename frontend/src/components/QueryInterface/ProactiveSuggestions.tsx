@@ -41,7 +41,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
       category: {
         id: 1,
         categoryKey: 'financial',
-        title: '💰 Financial & Revenue',
+        title: 'Financial & Revenue',
         icon: '💰',
         description: 'Revenue, deposits, withdrawals, and financial performance metrics',
         sortOrder: 1,
@@ -53,7 +53,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 1,
           categoryId: 1,
           categoryKey: 'financial',
-          categoryTitle: '💰 Financial & Revenue',
+          categoryTitle: 'Financial & Revenue',
           queryText: 'Show me total deposits for yesterday',
           description: 'Daily deposit performance tracking',
           defaultTimeFrame: 'yesterday',
@@ -71,7 +71,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 2,
           categoryId: 1,
           categoryKey: 'financial',
-          categoryTitle: '💰 Financial & Revenue',
+          categoryTitle: 'Financial & Revenue',
           queryText: 'Revenue breakdown by country for last week',
           description: 'Geographic revenue analysis and performance',
           defaultTimeFrame: 'last_7_days',
@@ -89,7 +89,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 3,
           categoryId: 1,
           categoryKey: 'financial',
-          categoryTitle: '💰 Financial & Revenue',
+          categoryTitle: 'Financial & Revenue',
           queryText: 'Net gaming revenue trends last 30 days',
           description: 'Revenue trend analysis and performance tracking',
           defaultTimeFrame: 'last_30_days',
@@ -109,7 +109,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
       category: {
         id: 2,
         categoryKey: 'players',
-        title: '👥 Player Analytics',
+        title: 'Player Analytics',
         icon: '👥',
         description: 'Player behavior, demographics, and lifecycle analysis',
         sortOrder: 2,
@@ -121,7 +121,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 4,
           categoryId: 2,
           categoryKey: 'players',
-          categoryTitle: '👥 Player Analytics',
+          categoryTitle: 'Player Analytics',
           queryText: 'Top 10 players by deposits in the last 7 days',
           description: 'High-value player identification and analysis',
           defaultTimeFrame: 'last_7_days',
@@ -139,7 +139,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 5,
           categoryId: 2,
           categoryKey: 'players',
-          categoryTitle: '👥 Player Analytics',
+          categoryTitle: 'Player Analytics',
           queryText: 'New player registrations by country this week',
           description: 'Player acquisition analysis by geography',
           defaultTimeFrame: 'this_week',
@@ -157,7 +157,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 6,
           categoryId: 2,
           categoryKey: 'players',
-          categoryTitle: '👥 Player Analytics',
+          categoryTitle: 'Player Analytics',
           queryText: 'Active players by white label brand yesterday',
           description: 'Brand performance comparison and analysis',
           defaultTimeFrame: 'yesterday',
@@ -177,7 +177,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
       category: {
         id: 3,
         categoryKey: 'gaming',
-        title: '🎮 Gaming & Products',
+        title: 'Gaming & Products',
         icon: '🎮',
         description: 'Game performance, provider analysis, and product metrics',
         sortOrder: 3,
@@ -189,7 +189,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 7,
           categoryId: 3,
           categoryKey: 'gaming',
-          categoryTitle: '🎮 Gaming & Products',
+          categoryTitle: 'Gaming & Products',
           queryText: 'Top performing games by net gaming revenue this month',
           description: 'Game performance ranking and analysis',
           defaultTimeFrame: 'this_month',
@@ -207,7 +207,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 8,
           categoryId: 3,
           categoryKey: 'gaming',
-          categoryTitle: '🎮 Gaming & Products',
+          categoryTitle: 'Gaming & Products',
           queryText: 'Slot vs table games revenue comparison this week',
           description: 'Game type performance analysis',
           defaultTimeFrame: 'this_week',
@@ -225,7 +225,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 9,
           categoryId: 3,
           categoryKey: 'gaming',
-          categoryTitle: '🎮 Gaming & Products',
+          categoryTitle: 'Gaming & Products',
           queryText: 'Casino vs sports betting revenue split this month',
           description: 'Product vertical comparison and analysis',
           defaultTimeFrame: 'this_month',
@@ -245,7 +245,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
       category: {
         id: 4,
         categoryKey: 'transactions',
-        title: '💳 Transactions & Payments',
+        title: 'Transactions & Payments',
         icon: '💳',
         description: 'Payment methods, transaction analysis, and processing metrics',
         sortOrder: 4,
@@ -257,7 +257,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 10,
           categoryId: 4,
           categoryKey: 'transactions',
-          categoryTitle: '💳 Transactions & Payments',
+          categoryTitle: 'Transactions & Payments',
           queryText: 'Transaction volumes by payment method today',
           description: 'Payment method usage analysis',
           defaultTimeFrame: 'today',
@@ -275,7 +275,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 11,
           categoryId: 4,
           categoryKey: 'transactions',
-          categoryTitle: '💳 Transactions & Payments',
+          categoryTitle: 'Transactions & Payments',
           queryText: 'Failed vs successful transactions by payment type this week',
           description: 'Payment success rate analysis',
           defaultTimeFrame: 'this_week',
@@ -293,7 +293,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           id: 12,
           categoryId: 4,
           categoryKey: 'transactions',
-          categoryTitle: '💳 Transactions & Payments',
+          categoryTitle: 'Transactions & Payments',
           queryText: 'Average transaction amount by payment method this month',
           description: 'Payment method value insights',
           defaultTimeFrame: 'this_month',
@@ -319,10 +319,10 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
       if (suggestions && suggestions.length > 0) {
         // Store all suggestions for randomization
         setAllSuggestions(suggestions);
-        // Randomly select 2-3 suggestions from each category
+        // Randomly select 2 suggestions from each category
         const randomizedSuggestions = suggestions.map(group => ({
           ...group,
-          suggestions: getRandomSuggestions(group.suggestions, Math.min(3, group.suggestions.length))
+          suggestions: getRandomSuggestions(group.suggestions, Math.min(2, group.suggestions.length))
         }));
         setGroupedSuggestions(randomizedSuggestions);
       } else {
@@ -357,7 +357,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
 
     const randomizedSuggestions = allSuggestions.map(group => ({
       ...group,
-      suggestions: getRandomSuggestions(group.suggestions, Math.min(3, group.suggestions.length))
+      suggestions: getRandomSuggestions(group.suggestions, Math.min(2, group.suggestions.length))
     }));
 
     setGroupedSuggestions(randomizedSuggestions);
@@ -375,7 +375,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
     try {
       const categoryData = allSuggestions.find(cat => cat.category.categoryKey === categoryKey);
       if (categoryData) {
-        const newSuggestions = getRandomSuggestions(categoryData.suggestions, Math.min(3, categoryData.suggestions.length));
+        const newSuggestions = getRandomSuggestions(categoryData.suggestions, Math.min(2, categoryData.suggestions.length));
         setGroupedSuggestions(prev =>
           prev.map(cat =>
             cat.category.categoryKey === categoryKey
@@ -614,13 +614,15 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
                 />
               </Tooltip>
 
-              <div style={{
-                fontSize: '32px',
-                marginBottom: '8px',
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
-              }}>
-                {group.category.icon}
-              </div>
+              {group.category.icon && group.category.icon !== '??' && (
+                <div style={{
+                  fontSize: '32px',
+                  marginBottom: '8px',
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                }}>
+                  {group.category.icon}
+                </div>
+              )}
               <Title level={5} style={{
                 margin: 0,
                 color: '#1f2937',

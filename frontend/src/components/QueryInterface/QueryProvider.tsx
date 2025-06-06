@@ -96,7 +96,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
-  const [showInsightsPanel, setShowInsightsPanel] = useState(true);
+  const [showInsightsPanel, setShowInsightsPanel] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   // Active result management
@@ -168,13 +168,22 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
           // Add or update processing stage
           setProcessingStages(prev => {
             const existingIndex = prev.findIndex(stageData => stageData.stage === stage);
+
+            // Determine status based on stage type and progress
+            let status = 'active';
+            if (stage === 'sql_error' || stage === 'validation_failed' || stage === 'error') {
+              status = 'error';
+            } else if (progress === 100) {
+              status = 'completed';
+            }
+
             const newStage = {
               stage: stage,
               message: messageText,
               progress: progress,
               timestamp: timestamp,
               details: details,
-              status: progress === 100 ? 'completed' : 'active'
+              status: status
             };
 
             if (existingIndex >= 0) {
@@ -197,21 +206,49 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
 
           // Handle validation failures
           if (stage === 'validation_failed') {
-            console.error('❌ SQL Validation Failed:', message);
+            console.error('❌ SQL Validation Failed:', messageText);
             console.error('❌ Failed SQL:', details?.sql);
             console.error('❌ Error Details:', details);
 
             // Keep processing details visible to show the error
             setShowProcessingDetails(true);
+            // Keep processing view mode visible for errors
+            setProcessingViewMode('processing');
 
             // Create an error result to display in the UI
             const errorResult = {
               success: false,
-              error: details?.error || message || 'SQL validation failed',
+              error: details?.error || messageText || 'SQL validation failed',
               sql: details?.sql,
               queryId: currentQueryId,
               timestamp: new Date().toISOString(),
               validationError: true
+            };
+
+            // Set this as the current result so it shows in the UI
+            setActiveResult(errorResult, query);
+            setActiveTab('result');
+          }
+
+          // Handle SQL execution errors
+          if (stage === 'sql_error') {
+            console.error('❌ SQL Execution Failed:', messageText);
+            console.error('❌ Failed SQL:', details?.sql);
+            console.error('❌ Error Details:', details);
+
+            // Keep processing details visible to show the error
+            setShowProcessingDetails(true);
+            // Keep processing view mode visible for errors
+            setProcessingViewMode('processing');
+
+            // Create an error result to display in the UI
+            const errorResult = {
+              success: false,
+              error: details?.error || messageText || 'SQL execution failed',
+              sql: details?.sql,
+              queryId: currentQueryId,
+              timestamp: new Date().toISOString(),
+              executionError: true
             };
 
             // Set this as the current result so it shows in the UI

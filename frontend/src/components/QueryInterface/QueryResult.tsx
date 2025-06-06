@@ -6,11 +6,13 @@ import {
   DownloadOutlined,
   TableOutlined,
   BugOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import DataTable from '../DataTable';
 import { QueryResponse } from '../../types/query';
-import { ApiService } from '../../services/api';
+import { ApiService, FrontendQueryResponse } from '../../services/api';
+import SqlEditor from './SqlEditor';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -21,9 +23,10 @@ interface QueryResultProps {
   onSuggestionClick?: (suggestion: string) => void;
   onVisualizationRequest?: (type: string, data: any[], columns: any[]) => void;
   onDataFiltering?: (hiddenRows: any[], visibleData: any[]) => void;
+  onSqlExecute?: (result: FrontendQueryResponse) => void;
 }
 
-export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick, onVisualizationRequest, onDataFiltering }) => {
+export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onRequery, onSuggestionClick, onVisualizationRequest, onDataFiltering, onSqlExecute }) => {
   // All hooks must be called at the top level before any conditional returns
   // State for debug mode
   const [debugMode, setDebugMode] = useState(false);
@@ -36,6 +39,8 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
   const [hiddenRows, setHiddenRows] = useState<any[]>([]);
   // State for visible data (filtered data excluding hidden rows)
   const [visibleData, setVisibleData] = useState<any[]>([]);
+  // State for SQL editor
+  const [showSqlEditor, setShowSqlEditor] = useState(false);
 
   // Debug logging for prompt details and error handling
   React.useEffect(() => {
@@ -81,6 +86,15 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
       onRequery();
     } catch (error) {
       console.error('Error clearing cache:', error);
+    }
+  };
+
+  // Handle SQL editor execution
+  const handleSqlExecute = (sqlResult: FrontendQueryResponse) => {
+    console.log('🔍 QueryResult - SQL Editor result:', sqlResult);
+    setShowSqlEditor(false);
+    if (onSqlExecute) {
+      onSqlExecute(sqlResult);
     }
   };
 
@@ -549,25 +563,54 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
                 Copy
               </div>
             </summary>
-            <Paragraph
-              code
-              copyable={{
-                tooltips: ['Copy SQL', 'Copied!']
-              }}
-              style={{
-                marginTop: '12px',
-                background: '#f6f8fa',
-                padding: '20px',
-                borderRadius: '12px',
-                fontSize: '14px',
-                border: '1px solid #e1e4e8',
-                fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
-                lineHeight: '1.6'
-              }}
-            >
-              {result.sql}
-            </Paragraph>
+            <div style={{ marginTop: '12px' }}>
+              <Paragraph
+                code
+                copyable={{
+                  tooltips: ['Copy SQL', 'Copied!']
+                }}
+                style={{
+                  background: '#f6f8fa',
+                  padding: '20px',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  border: '1px solid #e1e4e8',
+                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                  lineHeight: '1.6',
+                  marginBottom: '12px'
+                }}
+              >
+                {result.sql}
+              </Paragraph>
+
+              <div style={{ textAlign: 'right' }}>
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  onClick={() => setShowSqlEditor(true)}
+                  style={{
+                    backgroundColor: '#3b82f6',
+                    borderColor: '#3b82f6',
+                    borderRadius: '8px'
+                  }}
+                >
+                  Edit & Execute SQL
+                </Button>
+              </div>
+            </div>
           </details>
+
+          {/* SQL Editor */}
+          {showSqlEditor && (
+            <div style={{ marginTop: '16px' }}>
+              <SqlEditor
+                initialSql={result.sql}
+                onExecute={handleSqlExecute}
+                onClose={() => setShowSqlEditor(false)}
+                sessionId={result.queryId}
+              />
+            </div>
+          )}
 
           {/* Show prompt details if available */}
           {result.promptDetails && (

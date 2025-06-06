@@ -158,6 +158,17 @@ export interface BackendQueryRequest {
   };
 }
 
+// SQL Execution Request interface
+export interface SqlExecutionRequest {
+  sql: string;
+  sessionId?: string;
+  options?: {
+    maxRows?: number;
+    timeoutSeconds?: number;
+    dataSource?: string;
+  };
+}
+
 export interface QueryResult {
   success: boolean;
   data?: any[];
@@ -576,6 +587,54 @@ export class ApiService {
       promptDetailsKeys: transformedResult.promptDetails ? Object.keys(transformedResult.promptDetails) : 'N/A'
     });
 
+    return transformedResult;
+  }
+
+  // Execute raw SQL query
+  static async executeRawSQL(request: SqlExecutionRequest): Promise<FrontendQueryResponse> {
+    console.log('🔍 API Service - Executing raw SQL:', {
+      sql: request.sql.substring(0, 100) + (request.sql.length > 100 ? '...' : ''),
+      sessionId: request.sessionId
+    });
+
+    const response = await api.post('/api/query/execute-sql', request);
+    const backendResponse: QueryResponse = response.data;
+
+    console.log('API Service - Raw SQL backend response:', backendResponse);
+
+    // Transform backend QueryResponse to match frontend QueryResponse interface
+    const transformedResult = {
+      queryId: backendResponse.QueryId || backendResponse.queryId || '',
+      sql: backendResponse.Sql || backendResponse.sql || '',
+      result: {
+        data: backendResponse.Result?.Data || backendResponse.result?.data || [],
+        metadata: {
+          columnCount: backendResponse.Result?.Metadata?.ColumnCount || backendResponse.result?.metadata?.columnCount || 0,
+          rowCount: backendResponse.Result?.Metadata?.RowCount || backendResponse.result?.metadata?.rowCount || 0,
+          executionTimeMs: backendResponse.Result?.Metadata?.ExecutionTimeMs || backendResponse.result?.metadata?.executionTimeMs || 0,
+          columns: backendResponse.Result?.Metadata?.Columns?.map(col => ({
+            name: col.Name,
+            dataType: col.DataType,
+            isNullable: col.IsNullable,
+            description: '',
+            semanticTags: []
+          })) || [],
+          dataSource: '',
+          queryTimestamp: new Date().toISOString()
+        }
+      },
+      visualization: backendResponse.Visualization || backendResponse.visualization,
+      confidence: 1.0, // User-provided SQL has full confidence
+      suggestions: [],
+      cached: false,
+      success: backendResponse.Success || backendResponse.success || false,
+      error: backendResponse.Error || backendResponse.error,
+      timestamp: backendResponse.Timestamp || backendResponse.timestamp || new Date().toISOString(),
+      executionTimeMs: backendResponse.ExecutionTimeMs || backendResponse.executionTimeMs || 0,
+      promptDetails: undefined // No prompt details for raw SQL
+    };
+
+    console.log('API Service - Raw SQL transformed result:', transformedResult);
     return transformedResult;
   }
 

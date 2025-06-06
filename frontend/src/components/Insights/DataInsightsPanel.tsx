@@ -229,8 +229,8 @@ export const DataInsightsPanel: React.FC<DataInsightsPanelProps> = ({
     <Card
       title={
         <Space>
-          <ThunderboltOutlined />
-          <span>AI Data Insights</span>
+          <ThunderboltOutlined style={{ color: '#3b82f6' }} />
+          <span style={{ fontWeight: 600, color: '#1f2937' }}>AI Data Insights</span>
           <Badge count={insights.length} style={{ backgroundColor: '#52c41a' }} />
         </Space>
       }
@@ -271,7 +271,13 @@ export const DataInsightsPanel: React.FC<DataInsightsPanelProps> = ({
           </Button>
         </Space>
       }
-      style={{ height: '100%' }}
+      style={{
+        width: '100%',
+        borderRadius: '12px',
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
+      }}
+      bodyStyle={{ padding: '16px' }}
     >
       {!queryResult?.result?.data ? (
         <div style={{
@@ -354,15 +360,24 @@ export const DataInsightsPanel: React.FC<DataInsightsPanelProps> = ({
           </Text>
         </div>
       ) : (
-        <List
-          dataSource={filteredInsights}
-          renderItem={(insight) => (
-            <List.Item style={{ padding: '12px 0' }}>
-              <Card
-                size="small"
-                style={{ width: '100%' }}
-                bodyStyle={{ padding: '12px' }}
-              >
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: filteredInsights.length > 2 ? 'repeat(auto-fit, minmax(300px, 1fr))' : '1fr',
+          gap: '16px',
+          width: '100%'
+        }}>
+          {filteredInsights.map((insight) => (
+            <Card
+              key={insight.id}
+              size="small"
+              style={{
+                width: '100%',
+                borderRadius: '8px',
+                border: '1px solid #f0f0f0',
+                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)'
+              }}
+              bodyStyle={{ padding: '12px' }}
+            >
                 <Space direction="vertical" style={{ width: '100%' }}>
                   {/* Header */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -442,9 +457,8 @@ export const DataInsightsPanel: React.FC<DataInsightsPanelProps> = ({
                   </Collapse>
                 </Space>
               </Card>
-            </List.Item>
-          )}
-        />
+          ))}
+        </div>
       )}
 
       {/* Summary Stats */}

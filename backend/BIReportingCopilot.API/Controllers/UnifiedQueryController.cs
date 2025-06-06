@@ -411,6 +411,71 @@ public class UnifiedQueryController : ControllerBase
         return StreamSQLGenerationInternal(request, cancellationToken);
     }
 
+    /// <summary>
+    /// Execute raw SQL query directly
+    /// </summary>
+    /// <param name="request">The SQL execution request</param>
+    /// <returns>Query response with results</returns>
+    [HttpPost("execute-sql")]
+    public async Task<ActionResult<QueryResponse>> ExecuteRawSQL([FromBody] SqlExecutionRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            _logger.LogInformation("Executing raw SQL for user {UserId}: {SQL}", userId, request.Sql?.Substring(0, Math.Min(100, request.Sql?.Length ?? 0)));
+
+            // Validate SQL (basic security check)
+            if (string.IsNullOrWhiteSpace(request.Sql))
+            {
+                return BadRequest(new { error = "SQL query is required" });
+            }
+
+            // Only allow SELECT statements for security
+            var trimmedSql = request.Sql.Trim();
+            if (!trimmedSql.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { error = "Only SELECT statements are allowed" });
+            }
+
+            var startTime = DateTime.UtcNow;
+            var queryId = Guid.NewGuid().ToString();
+
+            // Execute the SQL query
+            var queryResult = await _sqlQueryService.ExecuteSelectQueryAsync(request.Sql, request.Options);
+
+            var executionTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
+
+            // Create response
+            var response = new QueryResponse
+            {
+                QueryId = queryId,
+                Sql = request.Sql,
+                Success = queryResult.IsSuccessful,
+                Result = queryResult,
+                ExecutionTimeMs = executionTime,
+                Timestamp = DateTime.UtcNow,
+                Confidence = 1.0, // User-provided SQL has full confidence
+                Suggestions = Array.Empty<string>(),
+                Cached = false,
+                Error = queryResult.IsSuccessful ? null : queryResult.Metadata?.Error
+            };
+
+            // Log the execution
+            _logger.LogInformation("Direct SQL execution for user {UserId} - SQL: {SQL}, Success: {Success}, Time: {ExecutionTime}ms",
+                userId, request.Sql.Substring(0, Math.Min(50, request.Sql.Length)) + "...", queryResult.IsSuccessful, executionTime);
+
+            _logger.LogInformation("Raw SQL execution completed for user {UserId} - Success: {Success}, Rows: {RowCount}, Time: {ExecutionTime}ms",
+                userId, queryResult.IsSuccessful, queryResult.Metadata?.RowCount ?? 0, executionTime);
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing raw SQL");
+            return StatusCode(500, new { error = "Failed to execute SQL query", details = ex.Message });
+        }
+    }
+
     #endregion
 
     #region Admin Operations
@@ -843,6 +908,16 @@ public class StreamingSQLRequest
     public QueryComplexity Complexity { get; set; } = QueryComplexity.Medium;
     public List<string>? PreviousQueries { get; set; }
     public Dictionary<string, object>? UserPreferences { get; set; }
+}
+
+/// <summary>
+/// SQL execution request for direct SQL execution
+/// </summary>
+public class SqlExecutionRequest
+{
+    public string Sql { get; set; } = string.Empty;
+    public string? SessionId { get; set; }
+    public QueryOptions? Options { get; set; }
 }
 
 /// <summary>
