@@ -202,7 +202,7 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
               {chartSettings.showLegend && <Legend />}
               <Bar
                 dataKey={baseVisualization.yAxis || 'value'}
-                fill="#8884d8"
+                fill="#3b82f6"
                 animationDuration={chartSettings.enableAnimation ? 1000 : 0}
               />
             </BarChart>
@@ -221,7 +221,7 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
               <Line
                 type="monotone"
                 dataKey={baseVisualization.yAxis}
-                stroke="#8884d8"
+                stroke="#3b82f6"
                 animationDuration={chartSettings.enableAnimation ? 1000 : 0}
               />
             </LineChart>
@@ -239,7 +239,7 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
                 cx="50%"
                 cy="50%"
                 outerRadius={150}
-                fill="#8884d8"
+                fill="#3b82f6"
                 animationDuration={chartSettings.enableAnimation ? 1000 : 0}
               >
                 {chartData.map((entry, index) => (
@@ -260,7 +260,7 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
               <XAxis dataKey={baseVisualization.xAxis} />
               <YAxis dataKey={baseVisualization.yAxis} />
               <RechartsTooltip />
-              <Scatter fill="#8884d8" />
+              <Scatter fill="#3b82f6" />
             </ScatterChart>
           </ResponsiveContainer>
         );

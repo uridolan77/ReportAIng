@@ -689,12 +689,22 @@ export class ApiService {
 
   // Cache Management
   static async clearCache(pattern?: string): Promise<any> {
-    const response = await api.delete('/api/cache/clear', { params: { pattern } });
+    const response = await api.delete('/api/cache/clear-all');
+    return response.data;
+  }
+
+  static async clearSpecificCache(query: string): Promise<any> {
+    const response = await api.post('/api/cache/clear', { query });
     return response.data;
   }
 
   static async getCacheMetrics(): Promise<any> {
-    const response = await api.get('/api/cache/metrics');
+    const response = await api.get('/api/cache/stats');
+    return response.data;
+  }
+
+  static async checkCacheExists(query: string): Promise<any> {
+    const response = await api.get('/api/cache/exists', { params: { query } });
     return response.data;
   }
 }

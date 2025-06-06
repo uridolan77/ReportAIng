@@ -2,9 +2,11 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Infrastructure.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using Microsoft.Data.SqlClient;
 using CoreModels = BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.Services;
@@ -13,11 +15,13 @@ public class PromptService : IPromptService
 {
     private readonly ILogger<PromptService> _logger;
     private readonly BICopilotContext _context;
+    private readonly ISecretsManagementService _secretsService;
 
-    public PromptService(ILogger<PromptService> logger, BICopilotContext context)
+    public PromptService(ILogger<PromptService> logger, BICopilotContext context, ISecretsManagementService secretsService)
     {
         _logger = logger;
         _context = context;
+        _secretsService = secretsService;
     }
 
     public async Task<string> BuildQueryPromptAsync(string naturalLanguageQuery, SchemaMetadata schema, string? context = null)
@@ -26,7 +30,7 @@ public class PromptService : IPromptService
         {
             var template = await GetPromptTemplateAsync("sql_generation");
 
-            var schemaDescription = BuildEnhancedSchemaDescription(schema);
+            var schemaDescription = await BuildEnhancedSchemaDescriptionAsync(schema);
             var businessRules = GetBusinessRulesForQuery(naturalLanguageQuery);
             var exampleQueries = GetRelevantExampleQueries(naturalLanguageQuery);
             var contextInfo = !string.IsNullOrEmpty(context) ? $"\nAdditional context: {context}" : "";
@@ -54,7 +58,7 @@ public class PromptService : IPromptService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error building query prompt");
-            return GetFallbackQueryPrompt(naturalLanguageQuery, schema, context);
+            return await GetFallbackQueryPromptAsync(naturalLanguageQuery, schema, context);
         }
     }
 
@@ -67,7 +71,7 @@ public class PromptService : IPromptService
             _logger.LogInformation("📋 Retrieved template: {TemplateName} v{Version}, Content length: {ContentLength}",
                 template.Name, template.Version, template.Content?.Length ?? 0);
 
-            var schemaDescription = BuildEnhancedSchemaDescription(schema);
+            var schemaDescription = await BuildEnhancedSchemaDescriptionAsync(schema);
             var businessRules = GetBusinessRulesForQuery(naturalLanguageQuery);
             var exampleQueries = GetRelevantExampleQueries(naturalLanguageQuery);
             var contextInfo = !string.IsNullOrEmpty(context) ? $"\nAdditional context: {context}" : "";
@@ -176,7 +180,7 @@ public class PromptService : IPromptService
             _logger.LogError(ex, "Error building detailed query prompt, using fallback");
             var fallbackPromptDetails = new PromptDetails
             {
-                FullPrompt = GetFallbackQueryPrompt(naturalLanguageQuery, schema, context),
+                FullPrompt = await GetFallbackQueryPromptAsync(naturalLanguageQuery, schema, context),
                 TemplateName = "fallback",
                 TemplateVersion = "1.0",
                 Sections = new[]
@@ -185,7 +189,7 @@ public class PromptService : IPromptService
                     {
                         Name = "fallback",
                         Title = "Fallback Prompt",
-                        Content = GetFallbackQueryPrompt(naturalLanguageQuery, schema, context),
+                        Content = await GetFallbackQueryPromptAsync(naturalLanguageQuery, schema, context),
                         Type = "fallback",
                         Order = 1
                     }
@@ -462,7 +466,7 @@ public class PromptService : IPromptService
         return string.Join("\n", description);
     }
 
-    private string BuildEnhancedSchemaDescription(SchemaMetadata schema)
+    private async Task<string> BuildEnhancedSchemaDescriptionAsync(SchemaMetadata schema)
     {
         var description = new List<string>();
 
@@ -512,6 +516,13 @@ public class PromptService : IPromptService
                 if (!string.IsNullOrEmpty(businessMeaning))
                 {
                     columnDesc += $" - {businessMeaning}";
+                }
+
+                // Add field values for specific columns (dynamically discovered)
+                var fieldValues = await GetDynamicFieldValuesAsync(table.Name, column.Name);
+                if (!string.IsNullOrEmpty(fieldValues))
+                {
+                    columnDesc += $" - Valid values: {fieldValues}";
                 }
 
                 tableDesc += $"\n{columnDesc}";
@@ -589,7 +600,7 @@ public class PromptService : IPromptService
             "userid" => "Same as PlayerID - unique player identifier",
             "registrationdate" => "When the player first registered",
             "lastlogindate" => "Most recent player login timestamp",
-            "status" => "Current status (active, inactive, suspended, etc.)",
+            "status" => "Current player status - ONLY 'Active' or 'Blocked' are valid (use 'Blocked' for suspended players)",
             "balance" => "Current account balance",
             "totaldeposits" => "Lifetime sum of all deposits",
             "totalwithdraws" => "Lifetime sum of all withdrawals",
@@ -605,6 +616,179 @@ public class PromptService : IPromptService
             _ when columnName.Contains("bonus") => "Bonus-related amount",
             _ => ""
         };
+    }
+
+    /// <summary>
+    /// Gets the valid field values for specific table columns to help AI generate accurate SQL
+    /// </summary>
+    private string GetColumnFieldValues(string tableName, string columnName)
+    {
+        var tableKey = tableName.ToLower();
+        var columnKey = columnName.ToLower();
+
+        // Player status values - CRITICAL: Only Active and Blocked are valid in this database
+        if (columnKey == "status" && tableKey.Contains("player"))
+        {
+            return "'Active', 'Blocked'";
+        }
+
+        // Bonus status values
+        if (columnKey == "status" && tableKey.Contains("bonus"))
+        {
+            return "'Active', 'Expired', 'Used', 'Cancelled', 'Pending'";
+        }
+
+        // Transaction status values
+        if (columnKey == "status" && tableKey.Contains("transaction"))
+        {
+            return "'Completed', 'Pending', 'Failed', 'Cancelled', 'Processing'";
+        }
+
+        // Payment method types
+        if (columnKey.Contains("paymentmethod") || columnKey.Contains("payment_method"))
+        {
+            return "'CreditCard', 'Neteller', 'MoneyBookers', 'Skrill', 'PayPal', 'BankTransfer', 'Crypto', 'Other'";
+        }
+
+        // Action types for daily actions
+        if (columnKey == "actiontype" || columnKey == "action_type")
+        {
+            return "'Deposit', 'Withdrawal', 'Bet', 'Win', 'Bonus', 'Registration', 'Login'";
+        }
+
+        // Game types
+        if (columnKey == "gametype" || columnKey == "game_type")
+        {
+            return "'Slot', 'Table', 'Live', 'Sports', 'Virtual', 'Scratch', 'Bingo', 'Keno', 'Poker'";
+        }
+
+        // Currency codes (common ones)
+        if (columnKey.Contains("currency") && !columnKey.Contains("id"))
+        {
+            return "'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'SEK', 'NOK', 'DKK', 'CHF', 'JPY'";
+        }
+
+        // Boolean-like fields
+        if (columnKey.Contains("active") || columnKey.Contains("enabled") || columnKey.Contains("verified"))
+        {
+            return "0 (false), 1 (true)";
+        }
+
+        // Gender field
+        if (columnKey == "gender" || columnKey == "sex")
+        {
+            return "'M', 'F', 'Male', 'Female', 'Other', 'Unknown'";
+        }
+
+        // VIP levels
+        if (columnKey.Contains("vip") || columnKey.Contains("level") || columnKey.Contains("tier"))
+        {
+            return "'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'VIP1', 'VIP2', 'VIP3'";
+        }
+
+        // Risk levels
+        if (columnKey.Contains("risk"))
+        {
+            return "'Low', 'Medium', 'High', 'Critical'";
+        }
+
+        // Account types
+        if (columnKey.Contains("accounttype") || columnKey == "type")
+        {
+            return "'Real', 'Demo', 'Bonus', 'Test'";
+        }
+
+        // Verification status
+        if (columnKey.Contains("verification") || columnKey.Contains("kyc"))
+        {
+            return "'Verified', 'Pending', 'Rejected', 'NotRequired'";
+        }
+
+        // Common providers (for games)
+        if (columnKey == "provider" && tableKey.Contains("game"))
+        {
+            return "'NetEnt', 'Microgaming', 'Pragmatic Play', 'Evolution', 'Playtech', 'Yggdrasil', 'Play n GO', 'Red Tiger'";
+        }
+
+        // Language codes
+        if (columnKey.Contains("language") || columnKey.Contains("locale"))
+        {
+            return "'en', 'de', 'fr', 'es', 'it', 'sv', 'no', 'da', 'fi'";
+        }
+
+        return ""; // No specific values defined for this column
+    }
+
+    /// <summary>
+    /// Dynamically discovers field values from the database for better AI context
+    /// Only queries for columns that are likely to have limited distinct values
+    /// </summary>
+    private async Task<string> GetDynamicFieldValuesAsync(string tableName, string columnName)
+    {
+        try
+        {
+            // Only check specific columns that are likely to have limited distinct values
+            var columnKey = columnName.ToLower();
+            var shouldCheckValues = columnKey == "status" ||
+                                  columnKey.Contains("type") ||
+                                  columnKey.Contains("method") ||
+                                  columnKey.Contains("category") ||
+                                  columnKey.Contains("level") ||
+                                  columnKey.Contains("tier") ||
+                                  columnKey == "gender" ||
+                                  columnKey == "currency" ||
+                                  columnKey == "provider";
+
+            if (!shouldCheckValues)
+            {
+                return "";
+            }
+
+            var connectionString = await _secretsService.GetSecretAsync("DailyActionsDB--ConnectionString");
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                return "";
+            }
+
+            using var connection = new SqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            // Query to get distinct values for the column (limited to reasonable number)
+            var sql = $@"
+                SELECT DISTINCT TOP 10 [{columnName}]
+                FROM [common].[{tableName}] WITH (NOLOCK)
+                WHERE [{columnName}] IS NOT NULL
+                  AND [{columnName}] != ''
+                  AND LEN(CAST([{columnName}] AS NVARCHAR(MAX))) < 50
+                ORDER BY [{columnName}]";
+
+            using var command = new SqlCommand(sql, connection);
+            var values = new List<string>();
+
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync() && values.Count < 10)
+            {
+                var value = reader[columnName]?.ToString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    values.Add($"'{value}'");
+                }
+            }
+
+            if (values.Count > 0)
+            {
+                _logger.LogInformation("🔍 Dynamic field values for {Table}.{Column}: {Values}",
+                    tableName, columnName, string.Join(", ", values));
+                return string.Join(", ", values);
+            }
+
+            return "";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not get dynamic field values for {Table}.{Column}", tableName, columnName);
+            return "";
+        }
     }
 
     private string GetBusinessRulesForQuery(string naturalLanguageQuery)
@@ -701,12 +885,42 @@ public class PromptService : IPromptService
             rules.Add("Include whitelabel names for business context");
         }
 
+        // Field value rules
+        if (query.Contains("status") || query.Contains("active") || query.Contains("suspended") || query.Contains("blocked"))
+        {
+            rules.Add("CRITICAL: For player status queries, only 'Active' and 'Blocked' are valid values in this database");
+            rules.Add("CRITICAL: When user asks for 'suspended' players, use 'Blocked' status instead");
+            rules.Add("CRITICAL: Status values are case-sensitive strings: 'Active' or 'Blocked' only");
+            rules.Add("CRITICAL: Use the exact values shown in the schema - they may vary by table");
+            rules.Add("Example: WHERE Status = 'Blocked' (for suspended/blocked players)");
+            rules.Add("Example: WHERE Status = 'Active' (for active players)");
+        }
+
+        if (query.Contains("payment") || query.Contains("method"))
+        {
+            rules.Add("For payment methods: Use 'CreditCard', 'Neteller', 'MoneyBookers', 'Skrill', 'PayPal', 'BankTransfer', 'Crypto', 'Other'");
+        }
+
+        // Terminology mapping rules
+        if (query.Contains("suspended") || query.Contains("suspend"))
+        {
+            rules.Add("TERMINOLOGY MAPPING: 'Suspended' players should be queried using Status = 'Blocked'");
+            rules.Add("CRITICAL: Never use 'Suspended' as a status value - it doesn't exist in this database");
+            rules.Add("CRITICAL: Replace any reference to 'suspended' with 'Blocked' in WHERE clauses");
+        }
+
+        if (query.Contains("game") && (query.Contains("type") || query.Contains("category")))
+        {
+            rules.Add("For game types: Use 'Slot', 'Table', 'Live', 'Sports', 'Virtual', 'Scratch', 'Bingo', 'Keno', 'Poker'");
+        }
+
         // Default rules if no specific patterns found
         if (rules.Count == 0)
         {
             rules.Add("Use tbl_Daily_actions as primary table for statistical queries");
             rules.Add("JOIN with reference tables (players, countries, currencies, whitelabels) for context");
             rules.Add("Use appropriate aggregations (SUM, COUNT, AVG) based on the question");
+            rules.Add("CRITICAL: Always use exact field values as shown in schema - they are case-sensitive");
         }
 
         return string.Join("\n- ", rules);
@@ -861,6 +1075,28 @@ SQL: SELECT w.Name as BrandName, SUM(da.Deposits) as Revenue, COUNT(DISTINCT da.
      WHERE da.Date = CAST(GETDATE() AS DATE)
      GROUP BY w.Name
      ORDER BY Revenue DESC");
+        }
+
+        // Status-specific examples - CRITICAL for suspended/blocked mapping
+        if (query.Contains("status") || query.Contains("suspended") || query.Contains("blocked"))
+        {
+            examples.Add(@"
+EXAMPLE: 'suspended players by brand'
+SQL: SELECT wl.LabelName AS Brand, COUNT(DISTINCT dap.PlayerID) AS BlockedPlayers
+     FROM common.tbl_Daily_actions_players dap WITH (NOLOCK)
+     JOIN common.tbl_White_labels wl WITH (NOLOCK) ON dap.CasinoID = wl.LabelID
+     WHERE dap.Status = 'Blocked'
+     GROUP BY wl.LabelName
+     ORDER BY BlockedPlayers DESC");
+
+            examples.Add(@"
+EXAMPLE: 'players by status last 7 days'
+SQL: SELECT dap.Status, COUNT(DISTINCT dap.PlayerID) AS PlayerCount
+     FROM common.tbl_Daily_actions da WITH (NOLOCK)
+     JOIN common.tbl_Daily_actions_players dap WITH (NOLOCK) ON da.PlayerID = dap.PlayerID
+     WHERE da.Date >= DATEADD(DAY, -7, CAST(GETDATE() AS DATE))
+     GROUP BY dap.Status
+     ORDER BY PlayerCount DESC");
         }
 
         if (examples.Count == 0)
@@ -1027,9 +1263,9 @@ Return only valid JSON.",
         };
     }
 
-    private string GetFallbackQueryPrompt(string naturalLanguageQuery, SchemaMetadata schema, string? context)
+    private async Task<string> GetFallbackQueryPromptAsync(string naturalLanguageQuery, SchemaMetadata schema, string? context)
     {
-        var schemaDescription = BuildEnhancedSchemaDescription(schema);
+        var schemaDescription = await BuildEnhancedSchemaDescriptionAsync(schema);
         var businessRules = GetBusinessRulesForQuery(naturalLanguageQuery);
 
         return $@"You are an expert SQL developer specializing in gaming/casino business intelligence.

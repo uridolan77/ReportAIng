@@ -276,14 +276,41 @@ Return only valid JSON.";
 
         var suggestions = new List<string>
         {
+            // Basic queries with correct field values
             $"Show me total deposits for yesterday ({yesterday})",
             $"Top 10 players by deposits in the last 7 days",
             $"Show me daily revenue for the last week",
             $"Count of active players yesterday",
+
+            // Status-specific queries (will use actual database values)
+            "Show me all blocked players from the last 7 days",
+            "Count of active players by brand this month",
+            "Show me players by status for the last 30 days",
+            "List all active players with deposits today",
+
+            // Payment method queries
+            "Show me deposits by payment method for the last week",
+            "Total CreditCard deposits vs Neteller deposits this month",
+            "Show me players using Skrill payment method",
+
+            // Game type queries
+            "Show me revenue by game type (Slot vs Table vs Live) for last week",
+            "Top 10 Slot games by revenue this month",
+            "Show me Live casino performance vs Sports betting",
+
+            // Country and currency analysis
+            $"Revenue breakdown by country for last week",
+            "Show me players by currency (USD, EUR, GBP) this month",
+
+            // Bonus analysis
+            "Show me active bonus balances by player",
+            "Total expired bonuses this month",
+            "Players with pending bonus status",
+
+            // Gaming analytics
             $"Show me casino vs sports betting revenue for last week",
             $"Total bets and wins for {thisMonth}",
-            $"Show me player activity for the last 3 days",
-            $"Revenue breakdown by country for last week"
+            $"Show me player activity for the last 3 days"
         };
 
         // Add schema-specific suggestions with recent dates

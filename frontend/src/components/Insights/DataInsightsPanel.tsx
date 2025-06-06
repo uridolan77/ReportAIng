@@ -152,7 +152,7 @@ export const DataInsightsPanel: React.FC<DataInsightsPanelProps> = ({
       case 'trend': return '#1890ff';
       case 'anomaly': return '#ff4d4f';
       case 'correlation': return '#52c41a';
-      case 'pattern': return '#722ed1';
+      case 'pattern': return '#3b82f6';
       case 'summary': return '#13c2c2';
       case 'recommendation': return '#faad14';
       default: return '#8c8c8c';

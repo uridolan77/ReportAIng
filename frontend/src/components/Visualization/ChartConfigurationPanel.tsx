@@ -198,7 +198,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
       icon: <DotChartOutlined />,
       description: 'Show correlations',
       category: 'Advanced',
-      color: '#722ed1'
+      color: '#3b82f6'
     },
     {
       value: 'Bubble',
@@ -323,7 +323,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         name: 'default',
         darkMode: false,
         colors: {
-          primary: ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2'],
+          primary: ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#3b82f6', '#13c2c2'],
           secondary: ['#d9d9d9', '#bfbfbf'],
           background: '#ffffff',
           text: '#000000',
@@ -508,7 +508,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
               name: 'gaming',
               darkMode: false,
               colors: {
-                primary: ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2'],
+                primary: ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#3b82f6', '#13c2c2'],
                 secondary: ['#d9d9d9', '#bfbfbf'],
                 background: '#ffffff',
                 text: '#000000',
@@ -915,7 +915,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
               {isGamingData && getGamingColumns.labelColumns.map(col => (
                 <Option key={col} value={col}>
                   <Space>
-                    <Tag color="purple" style={{ fontSize: '10px', fontWeight: 500, borderRadius: '4px' }}>GAMING</Tag>
+                    <Tag color="blue" style={{ fontSize: '10px', fontWeight: 500, borderRadius: '4px' }}>GAMING</Tag>
                     <Text style={{ fontSize: '13px', fontWeight: 500 }}>{col}</Text>
                   </Space>
                 </Option>
@@ -1071,9 +1071,9 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
           marginBottom: '12px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <SettingOutlined style={{ color: '#667eea' }} />
+            <SettingOutlined style={{ color: '#3b82f6' }} />
             <Text strong style={{ color: '#1f2937' }}>Quick Presets</Text>
-            <Tag color="purple" style={{ fontSize: '10px' }}>
+            <Tag color="blue" style={{ fontSize: '10px' }}>
               Smart Templates
             </Tag>
           </div>

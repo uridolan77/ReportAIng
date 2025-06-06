@@ -80,25 +80,25 @@ public class QueryService : IQueryService
             var requestCachingEnabled = request.Options.EnableCache;
             var isCachingEnabled = requestCachingEnabled && adminCachingEnabled;
 
-            _logger.LogError("🔍 CACHE DEBUG - Admin setting: {AdminCache}, Request setting: {RequestCache}, Final: {FinalCache}",
+            _logger.LogInformation("🔍 CACHE DEBUG - Admin setting: {AdminCache}, Request setting: {RequestCache}, Final: {FinalCache}",
                 adminCachingEnabled, requestCachingEnabled, isCachingEnabled);
 
             // FORCE CACHE BYPASS - Clear any stale cache entries for this query when caching is disabled
             var cacheKey = GenerateCacheKey(request.Question);
             if (!isCachingEnabled)
             {
-                _logger.LogError("🧹 CACHE DISABLED - Clearing any stale cache for query: {CacheKey}", cacheKey);
+                _logger.LogInformation("🧹 CACHE DISABLED - Clearing any stale cache for query: {CacheKey}", cacheKey);
                 await _cacheService.RemoveAsync($"query:{cacheKey}");
             }
 
             if (isCachingEnabled)
             {
-                _logger.LogError("🔑 CACHE KEY DEBUG - Question: '{Question}' -> Key: {CacheKey}", request.Question, cacheKey);
+                _logger.LogInformation("🔑 CACHE KEY DEBUG - Question: '{Question}' -> Key: {CacheKey}", request.Question, cacheKey);
                 var cachedResult = await GetCachedQueryAsync(cacheKey);
                 if (cachedResult != null)
                 {
-                    _logger.LogError("🎯 CACHE HIT - Returning cached result for query {QueryId} with key {CacheKey}", queryId, cacheKey);
-                    _logger.LogError("🎯 CACHED QUERY WAS: '{CachedQuestion}' -> SQL: {CachedSQL}", cachedResult.Sql?.Substring(0, Math.Min(100, cachedResult.Sql?.Length ?? 0)) + "...", cachedResult.Sql?.Substring(0, Math.Min(200, cachedResult.Sql?.Length ?? 0)) + "...");
+                    _logger.LogInformation("🎯 CACHE HIT - Returning cached result for query {QueryId} with key {CacheKey}", queryId, cacheKey);
+                    _logger.LogInformation("🎯 CACHED QUERY WAS: '{CachedQuestion}' -> SQL: {CachedSQL}", cachedResult.Sql?.Substring(0, Math.Min(100, cachedResult.Sql?.Length ?? 0)) + "...", cachedResult.Sql?.Substring(0, Math.Min(200, cachedResult.Sql?.Length ?? 0)) + "...");
                     cachedResult.QueryId = queryId;
                     cachedResult.Cached = true;
                     return cachedResult;
@@ -340,12 +340,12 @@ public class QueryService : IQueryService
             if (isCachingEnabled)
             {
                 await CacheQueryAsync(cacheKey, response, TimeSpan.FromHours(24));
-                _logger.LogError("💾 CACHE STORED - Question: '{Question}' -> Key: {CacheKey} -> SQL: {SQL}",
+                _logger.LogInformation("💾 CACHE STORED - Question: '{Question}' -> Key: {CacheKey} -> SQL: {SQL}",
                     request.Question, cacheKey, generatedSQL?.Substring(0, Math.Min(100, generatedSQL?.Length ?? 0)) + "...");
             }
             else
             {
-                _logger.LogError("💾 CACHE NOT STORED - Caching disabled for query {QueryId}", queryId);
+                _logger.LogInformation("💾 CACHE NOT STORED - Caching disabled for query {QueryId}", queryId);
             }
 
             // Log the successful query
@@ -524,7 +524,7 @@ public class QueryService : IQueryService
         var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(cacheKeyData));
         var hexHash = Convert.ToHexString(hash);
 
-        _logger.LogError("🔑 ENHANCED CACHE KEY - Question: '{Question}' -> Type: {QueryType} -> Keywords: {Keywords} -> Hash: {Hash}",
+        _logger.LogInformation("🔑 ENHANCED CACHE KEY - Question: '{Question}' -> Type: {QueryType} -> Keywords: {Keywords} -> Hash: {Hash}",
             question, queryType, keyWords, hexHash);
 
         return hexHash;

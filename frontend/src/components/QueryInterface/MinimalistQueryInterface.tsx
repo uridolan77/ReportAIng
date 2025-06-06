@@ -120,7 +120,7 @@ export const MinimalistQueryInterface: React.FC<MinimalistQueryInterfaceProps> =
                 display: 'block',
                 marginBottom: '8px'
               }}>
-                Ask your data anything
+                Ask DailyActionsDB anything
               </Text>
               <Text style={{ 
                 fontSize: '16px', 

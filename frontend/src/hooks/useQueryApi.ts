@@ -9,7 +9,19 @@ export const useExecuteQuery = () => {
 
   return useMutation({
     mutationFn: async (request: QueryRequest): Promise<QueryResponse> => {
-      return ApiService.executeQuery(request);
+      const result = await ApiService.executeQuery(request);
+
+      // Log the result for debugging
+      console.log('🔍 useExecuteQuery - API result:', {
+        success: result.success,
+        error: result.error,
+        hasResult: !!result.result,
+        hasData: !!result.result?.data
+      });
+
+      // Always return the result - don't throw errors for backend failures
+      // The UI will handle success/error based on result.success
+      return result;
     },
 
     onMutate: async (request) => {

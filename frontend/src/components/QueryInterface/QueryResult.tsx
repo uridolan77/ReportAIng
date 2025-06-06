@@ -5,10 +5,12 @@ import {
   CodeOutlined,
   DownloadOutlined,
   TableOutlined,
-  BugOutlined
+  BugOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
 import DataTable from '../DataTable';
 import { QueryResponse } from '../../types/query';
+import { ApiService } from '../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -49,10 +51,43 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
       metadataKeys: result?.result?.metadata ? Object.keys(result.result.metadata) : 'N/A',
       fullResult: result
     });
+
+    // Additional debugging for error cases
+    if (result && !result.success) {
+      console.log('🚨 QueryResult - ERROR CASE DETECTED:', {
+        success: result.success,
+        error: result.error,
+        errorMessage: result.error,
+        sql: result.sql,
+        queryId: result.queryId,
+        willRenderErrorUI: true
+      });
+    }
   }, [result]);
+
+  // Handle cache clearing
+  const handleClearCache = async () => {
+    try {
+      // Clear the specific cache entry for this query
+      await ApiService.clearSpecificCache(query);
+      console.log('Cache cleared successfully for query:', query);
+
+      // Re-execute the query after clearing cache
+      onRequery();
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+    }
+  };
 
   // Conditional returns after all hooks
   if (!result.success) {
+    console.log('🚨 QueryResult - RENDERING ERROR UI:', {
+      success: result.success,
+      error: result.error,
+      errorType: typeof result.error,
+      isValidationError: (result.error && typeof result.error === 'string' && result.error.includes('validation'))
+    });
+
     const isValidationError = (result.error && typeof result.error === 'string' && result.error.includes('validation'));
 
     return (
@@ -378,7 +413,7 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
         onClick={() => setIsQueryGenerationCollapsed(!isQueryGenerationCollapsed)}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Title level={5} style={{ margin: 0, color: '#667eea' }}>
+            <Title level={5} style={{ margin: 0, color: '#3b82f6' }}>
               🤖 Query Generation
             </Title>
             <div style={{
@@ -404,6 +439,37 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
               <Tag color="purple" style={{ borderRadius: '6px', fontWeight: 500 }}>
                 Cached
               </Tag>
+            )}
+            {result.cached && (
+              <Button
+                size="small"
+                type="text"
+                icon={<DeleteOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClearCache();
+                }}
+                style={{
+                  color: '#ff4d4f',
+                  border: '1px solid #ff4d4f',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  height: '24px',
+                  padding: '0 8px',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#ff4d4f';
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#ff4d4f';
+                }}
+                title="Clear this cached result and re-execute query"
+              >
+                Clear Cache
+              </Button>
             )}
           </Space>
         </div>

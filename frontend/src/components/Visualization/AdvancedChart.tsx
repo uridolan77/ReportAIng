@@ -194,7 +194,7 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
     }
 
     return config.theme?.colors?.primary || [
-      '#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2'
+      '#1890ff', '#52c41a', '#faad14', '#f5222d', '#3b82f6', '#13c2c2'
     ];
   }, [config.theme, gamingData.isGamingData, config.xAxis]);
 
@@ -725,7 +725,7 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
                 <Option value="#52c41a">Green</Option>
                 <Option value="#faad14">Orange</Option>
                 <Option value="#f5222d">Red</Option>
-                <Option value="#722ed1">Purple</Option>
+                <Option value="#3b82f6">Blue</Option>
               </Select>
             </div>
           </Space>

@@ -66,6 +66,14 @@ export const API_CONFIG = {
       IMPORT: '/api/SchemaManagement/import',
     },
 
+    // Cache Management endpoints
+    CACHE: {
+      CLEAR: '/api/cache/clear',
+      CLEAR_ALL: '/api/cache/clear-all',
+      STATS: '/api/cache/stats',
+      EXISTS: '/api/cache/exists',
+    },
+
     // Health check
     HEALTH: '/health',
   },

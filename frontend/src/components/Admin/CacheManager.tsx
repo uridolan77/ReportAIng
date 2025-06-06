@@ -69,7 +69,7 @@ export const CacheManager: React.FC = () => {
     loadAISettings();
     loadCacheStats();
     loadCacheEntries();
-  }, [loadAISettings, loadCacheStats, loadCacheEntries]);
+  }, []); // Empty dependency array since these are stable useCallback functions
 
   const loadAISettings = useCallback(async () => {
     try {

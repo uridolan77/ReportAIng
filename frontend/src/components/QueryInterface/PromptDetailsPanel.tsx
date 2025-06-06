@@ -36,9 +36,9 @@ interface PromptDetailsPanelProps {
   className?: string;
 }
 
-const PromptDetailsPanel: React.FC<PromptDetailsPanelProps> = ({ 
-  promptDetails, 
-  className 
+export const PromptDetailsPanel: React.FC<PromptDetailsPanelProps> = ({
+  promptDetails,
+  className
 }) => {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
 
@@ -78,7 +78,7 @@ const PromptDetailsPanel: React.FC<PromptDetailsPanelProps> = ({
       case 'user_input':
         return 'green';
       case 'schema':
-        return 'purple';
+        return 'blue';
       case 'business_rules':
         return 'orange';
       case 'examples':

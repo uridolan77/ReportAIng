@@ -245,7 +245,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       'Query': 'blue',
       'Navigation': 'green',
       'Export': 'orange',
-      'View': 'purple',
+      'View': 'blue',
       'Admin': 'red',
       'Edit': 'cyan'
     };

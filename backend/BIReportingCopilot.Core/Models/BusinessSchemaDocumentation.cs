@@ -72,7 +72,7 @@ public static class BusinessSchemaDocumentation
                 ["Email"] = "Player's email address",
                 ["RegistrationDate"] = "When player first registered",
                 ["LastLoginDate"] = "Most recent login timestamp",
-                ["Status"] = "Current account status (Active, Inactive, Suspended, etc.)",
+                ["Status"] = "Current account status - ONLY 'Active' or 'Blocked' are valid (use 'Blocked' for suspended players)",
                 ["CountryID"] = "Player's country (Foreign Key to countries table)",
                 ["CurrencyID"] = "Player's preferred currency (Foreign Key to currencies table)",
                 ["WhitelabelID"] = "Casino brand where player registered",

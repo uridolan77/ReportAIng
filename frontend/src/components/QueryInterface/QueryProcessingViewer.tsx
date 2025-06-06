@@ -314,9 +314,9 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         size="small"
         style={{
           borderRadius: '8px',
-          border: hasValidData ? '1px solid #d1fae5' : '1px solid #e8f4fd',
+          border: hasValidData ? '1px solid #e0e7ff' : '1px solid #e8f4fd',
           background: hasValidData
-            ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)'
+            ? 'linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%)'
             : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
           marginBottom: '16px',
           cursor: 'pointer',
@@ -338,22 +338,22 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-2px)';
           e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-          e.currentTarget.style.borderColor = hasValidData ? '#10b981' : '#3b82f6';
+          e.currentTarget.style.borderColor = hasValidData ? '#3b82f6' : '#3b82f6';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.borderColor = hasValidData ? '#d1fae5' : '#e8f4fd';
+          e.currentTarget.style.borderColor = hasValidData ? '#e0e7ff' : '#e8f4fd';
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Space>
             <RobotOutlined style={{
-              color: hasValidData ? '#10b981' : '#6b7280',
+              color: hasValidData ? '#3b82f6' : '#6b7280',
               fontSize: '16px'
             }} />
             <Text style={{
-              color: hasValidData ? '#065f46' : '#6b7280',
+              color: hasValidData ? '#4c1d95' : '#6b7280',
               fontSize: '14px',
               fontWeight: 500
             }}>
@@ -368,15 +368,15 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
 
           <Space size="small">
             {hasValidData && totalStages > 0 && (
-              <Tag color="green" style={{ fontSize: '10px', fontWeight: 500 }}>
+              <Tag color="purple" style={{ fontSize: '10px', fontWeight: 500 }}>
                 {completedStages}/{totalStages} stages
               </Tag>
             )}
-            <Tag color={hasValidData ? "green" : "blue"} style={{ fontSize: '10px', fontWeight: 500 }}>
+            <Tag color={hasValidData ? "purple" : "blue"} style={{ fontSize: '10px', fontWeight: 500 }}>
               {hasValidData ? '100% complete' : `${overallProgress}% complete`}
             </Tag>
             <EyeOutlined style={{
-              color: hasValidData ? '#10b981' : '#6b7280',
+              color: hasValidData ? '#3b82f6' : '#6b7280',
               fontSize: '12px'
             }} />
           </Space>
@@ -386,7 +386,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         <div style={{ marginTop: '8px' }}>
           <Text style={{
             fontSize: '11px',
-            color: hasValidData ? '#047857' : '#9ca3af',
+            color: hasValidData ? '#5b21b6' : '#9ca3af',
             fontStyle: 'italic'
           }}>
             {hasValidData
@@ -408,15 +408,15 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         size="small"
         style={{
           borderRadius: '8px',
-          border: '1px solid #e8f4fd',
-          background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+          border: '1px solid #e0e7ff',
+          background: 'linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%)',
           marginBottom: '16px'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Space>
-            <RobotOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
-            <Text strong style={{ color: '#1890ff', fontSize: '14px' }}>
+            <RobotOutlined style={{ color: '#3b82f6', fontSize: '16px' }} />
+            <Text strong style={{ color: '#3b82f6', fontSize: '14px' }}>
               🤖 AI Processing - {minimalStateText}
             </Text>
             {isProcessing && (
@@ -452,9 +452,9 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
             percent={currentProgress}
             status={isProcessing ? 'active' : 'success'}
             strokeColor={{
-              '0%': '#1890ff',
-              '50%': '#52c41a',
-              '100%': '#52c41a',
+              '0%': '#3b82f6',
+              '50%': '#1d4ed8',
+              '100%': '#1e40af',
             }}
             showInfo={true}
             size="small"
@@ -462,7 +462,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
               <span style={{
                 fontSize: '11px',
                 fontWeight: 600,
-                color: isProcessing ? '#1890ff' : '#52c41a'
+                color: isProcessing ? '#3b82f6' : '#1e40af'
               }} className={isProcessing ? 'processing-pulse' : ''}>
                 {percent}%
               </span>
@@ -491,7 +491,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
       size="small"
       title={
         <Space>
-          <RobotOutlined style={{ color: '#1890ff' }} />
+          <RobotOutlined style={{ color: '#3b82f6' }} />
           <Text strong>🤖 AI Query Processing</Text>
           {queryId && (
             <Tag color="blue" style={{ fontSize: '10px' }}>
@@ -537,10 +537,10 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
       className="processing-card"
       style={{
         marginBottom: '16px',
-        background: isProcessing ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' : '#ffffff',
-        border: isProcessing ? '2px solid #0ea5e9' : '1px solid #d1d5db',
+        background: isProcessing ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' : '#ffffff',
+        border: isProcessing ? '2px solid #3b82f6' : '1px solid #d1d5db',
         borderRadius: '12px',
-        boxShadow: isProcessing ? '0 4px 20px rgba(14, 165, 233, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+        boxShadow: isProcessing ? '0 4px 20px rgba(59, 130, 246, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
       }}
     >
       {/* Overall Progress */}
@@ -549,7 +549,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
           <Text strong style={{ fontSize: '14px', color: '#1f2937' }}>
             Processing Progress
           </Text>
-          <Text style={{ fontSize: '14px', color: '#059669', fontWeight: 600 }}>
+          <Text style={{ fontSize: '14px', color: '#1e40af', fontWeight: 600 }}>
             {currentProgress}%
           </Text>
         </div>
@@ -558,10 +558,10 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
             percent={currentProgress}
             status={isProcessing ? 'active' : 'success'}
             strokeColor={{
-              '0%': '#0ea5e9',
-              '30%': '#3b82f6',
-              '70%': '#10b981',
-              '100%': '#059669',
+              '0%': '#3b82f6',
+              '30%': '#1d4ed8',
+              '70%': '#1e40af',
+              '100%': '#1e3a8a',
             }}
             trailColor="#e5e7eb"
             strokeWidth={12}
@@ -569,7 +569,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
               <span style={{
                 fontSize: '13px',
                 fontWeight: 700,
-                color: isProcessing ? '#0ea5e9' : '#059669',
+                color: isProcessing ? '#3b82f6' : '#1e40af',
                 textShadow: '0 1px 2px rgba(0,0,0,0.1)'
               }} className={isProcessing ? 'processing-text-glow' : ''}>
                 {percent}%
@@ -588,7 +588,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
             </Text>
           )}
           {estimatedTime && isProcessing && (
-            <Text style={{ fontSize: '12px', color: '#059669', fontWeight: 500 }}
+            <Text style={{ fontSize: '12px', color: '#1e40af', fontWeight: 500 }}
                   className="estimated-time-bounce">
               ⏱️ {estimatedTime}
             </Text>
@@ -607,17 +607,17 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
           <div style={{
             padding: '20px',
             textAlign: 'center',
-            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-            border: '2px dashed #0ea5e9',
+            background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+            border: '2px dashed #3b82f6',
             borderRadius: '8px',
             marginBottom: '16px'
           }}>
             <Space direction="vertical" size="small">
-              <LoadingOutlined style={{ fontSize: '24px', color: '#0ea5e9' }} />
-              <Text style={{ color: '#0369a1', fontWeight: 500 }}>
+              <LoadingOutlined style={{ fontSize: '24px', color: '#3b82f6' }} />
+              <Text style={{ color: '#1d4ed8', fontWeight: 500 }}>
                 Initializing query processing...
               </Text>
-              <Text style={{ color: '#0284c7', fontSize: '12px' }}>
+              <Text style={{ color: '#2563eb', fontSize: '12px' }}>
                 Connecting to AI service and preparing your request
               </Text>
             </Space>
@@ -707,8 +707,8 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         <div style={{
           textAlign: 'center',
           padding: '20px',
-          background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-          border: '2px solid #10b981',
+          background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+          border: '2px solid #3b82f6',
           borderRadius: '12px',
           marginTop: '20px',
           position: 'relative',
@@ -721,18 +721,18 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
             left: '-100%',
             width: '100%',
             height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.1), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent)',
             animation: 'shimmer 2s infinite'
           }} />
 
           <Space direction="vertical" size="small">
             <Space>
-              <LoadingOutlined style={{ color: '#059669', fontSize: '18px' }} />
-              <Text style={{ color: '#059669', fontWeight: 600, fontSize: '16px' }}>
+              <LoadingOutlined style={{ color: '#3b82f6', fontSize: '18px' }} />
+              <Text style={{ color: '#3b82f6', fontWeight: 600, fontSize: '16px' }}>
                 🤖 AI is processing your query...
               </Text>
             </Space>
-            <Text style={{ color: '#047857', fontSize: '12px' }}>
+            <Text style={{ color: '#1d4ed8', fontSize: '12px' }}>
               This may take a few moments depending on query complexity
             </Text>
           </Space>

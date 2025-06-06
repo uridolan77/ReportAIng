@@ -228,13 +228,37 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
     <div style={{ position: 'relative' }}>
       <div
         style={{
-          background: 'transparent',
-          border: 'none'
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          borderRadius: '20px',
+          border: '1px solid #e1e5e9',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.12)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.08)';
+          e.currentTarget.style.transform = 'translateY(0)';
         }}
       >
+        {/* Decorative gradient overlay */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '4px',
+          background: 'linear-gradient(90deg, #3b82f6 0%, #1d4ed8 50%, #1e40af 100%)',
+          borderRadius: '20px 20px 0 0'
+        }} />
+
         <Space direction="vertical" style={{ width: '100%' }}>
           {/* Enhanced Query Input */}
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', padding: '24px' }}>
             <AutoComplete
               value={value}
               onChange={onChange}
@@ -253,8 +277,9 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                   root: {
                     maxHeight: 300,
                     overflow: 'auto',
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+                    borderRadius: '16px',
+                    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',
+                    border: '1px solid #e1e5e9'
                   }
                 }
               }}
@@ -262,18 +287,20 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
               <TextArea
                 ref={inputRef}
                 placeholder={placeholder}
-                autoSize={autoHeight ? { minRows: 3, maxRows } : false}
+                autoSize={autoHeight ? { minRows: 6, maxRows } : false}
                 onKeyDown={handleKeyDown}
                 className="query-textarea"
                 style={{
                   resize: 'vertical',
                   fontSize: '18px',
                   lineHeight: '1.6',
-                  padding: '20px 24px',
+                  padding: '20px 80px 20px 20px',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: '16px',
                   background: 'transparent',
-                  fontWeight: 400
+                  fontWeight: 400,
+                  color: '#1f2937',
+                  fontFamily: "'Inter', sans-serif"
                 }}
               />
             </AutoComplete>
@@ -282,10 +309,10 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
             <div
               style={{
                 position: 'absolute',
-                bottom: 16,
-                right: 16,
+                bottom: 20,
+                right: 20,
                 display: 'flex',
-                gap: 12,
+                gap: 8,
               }}
             >
               {value && (
@@ -296,12 +323,24 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                     icon={<ClearOutlined />}
                     onClick={handleClear}
                     style={{
-                      borderRadius: '10px',
+                      borderRadius: '12px',
                       background: 'rgba(255, 255, 255, 0.95)',
                       border: '1px solid #e2e8f0',
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                      height: '40px',
-                      width: '40px'
+                      height: '44px',
+                      width: '44px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(248, 250, 252, 0.95)';
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
+                      e.currentTarget.style.transform = 'scale(1)';
                     }}
                   />
                 </Tooltip>
@@ -317,13 +356,27 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                   disabled={!value.trim()}
                   className="query-submit-btn"
                   style={{
-                    height: '40px',
-                    borderRadius: '10px',
+                    height: '44px',
+                    borderRadius: '12px',
                     fontWeight: 600,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                     border: 'none',
-                    boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
-                    minWidth: '80px'
+                    boxShadow: '0 4px 16px rgba(59, 130, 246, 0.4)',
+                    minWidth: '100px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading && value.trim()) {
+                      e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.5)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(59, 130, 246, 0.4)';
                   }}
                 />
               </Tooltip>
@@ -370,8 +423,8 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
                   type="text"
                   icon={<BookOutlined />}
                   style={{
-                    color: '#667eea',
-                    border: '1px solid #667eea',
+                    color: '#3b82f6',
+                    border: '1px solid #3b82f6',
                     borderRadius: '8px',
                     fontWeight: 500,
                     height: '28px'

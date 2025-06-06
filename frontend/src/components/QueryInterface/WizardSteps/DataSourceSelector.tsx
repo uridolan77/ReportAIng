@@ -152,7 +152,7 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
       'Gaming Analytics': 'blue',
       'Player Management': 'green',
       'Reference Data': 'orange',
-      'Partner Management': 'purple'
+      'Partner Management': 'blue'
     };
     return colors[category] || 'default';
   };

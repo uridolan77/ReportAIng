@@ -83,6 +83,16 @@ export const DASHBOARD_ENDPOINTS = {
 } as const;
 
 /**
+ * Cache Endpoints
+ */
+export const CACHE_ENDPOINTS = {
+  CLEAR: '/api/cache/clear',
+  CLEAR_ALL: '/api/cache/clear-all',
+  STATS: '/api/cache/stats',
+  EXISTS: '/api/cache/exists',
+} as const;
+
+/**
  * Export Endpoints
  */
 export const EXPORT_ENDPOINTS = {
@@ -141,6 +151,7 @@ const endpoints = {
   STREAMING_ENDPOINTS,
   VISUALIZATION_ENDPOINTS,
   DASHBOARD_ENDPOINTS,
+  CACHE_ENDPOINTS,
   EXPORT_ENDPOINTS,
   SIGNALR_HUBS,
   getApiUrl,

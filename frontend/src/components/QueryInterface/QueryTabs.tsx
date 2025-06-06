@@ -24,7 +24,7 @@ import { useQueryContext } from './QueryProvider';
 import { QueryResult } from './QueryResult';
 import { QueryLoadingState } from './LoadingStates';
 import { DataInsightsPanel } from '../Insights/DataInsightsPanel';
-import PromptDetailsPanel from './PromptDetailsPanel';
+// import { PromptDetailsPanel } from './PromptDetailsPanel';
 import VisualizationRecommendations from '../Visualization/VisualizationRecommendations';
 import AdvancedChart from '../Visualization/AdvancedChart';
 import ChartConfigurationPanel from '../Visualization/ChartConfigurationPanel';
@@ -85,17 +85,29 @@ export const QueryTabs: React.FC = () => {
         hasPromptDetails: !!currentResult.promptDetails,
         promptDetails: currentResult.promptDetails,
         queryId: currentResult.queryId,
-        success: currentResult.success
+        success: currentResult.success,
+        error: currentResult.error,
+        resultKeys: Object.keys(currentResult),
+        willRenderQueryResult: true
       });
+    } else {
+      console.log('QueryTabs - No current result available');
     }
   }, [currentResult]);
 
   return (
-    <Tabs
-      activeKey={activeTab}
-      onChange={setActiveTab}
-      className="query-tabs enhanced-query-tabs"
-      size="large"
+    <div style={{
+      background: 'white',
+      borderRadius: '16px',
+      border: '1px solid #e5e7eb',
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+      overflow: 'hidden'
+    }}>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        className="query-tabs enhanced-query-tabs"
+        size="large"
       tabBarExtraContent={
         currentResult && (
           <Space size="small">
@@ -335,7 +347,7 @@ export const QueryTabs: React.FC = () => {
                   width: '40px',
                   height: '40px',
                   borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -398,7 +410,7 @@ export const QueryTabs: React.FC = () => {
                   <Card
                     title={
                       <Space>
-                        <SettingOutlined style={{ color: '#667eea' }} />
+                        <SettingOutlined style={{ color: '#3b82f6' }} />
                         <span style={{ color: '#1f2937', fontWeight: 600 }}>Chart Builder</span>
                         {isGamingData && (
                           <Tag color="blue" style={{ fontSize: '10px' }}>Gaming Data</Tag>
@@ -481,7 +493,7 @@ export const QueryTabs: React.FC = () => {
                       borderBottom: '1px solid #f3f4f6'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <BarChartOutlined style={{ fontSize: '20px', color: '#667eea' }} />
+                        <BarChartOutlined style={{ fontSize: '20px', color: '#3b82f6' }} />
                         <Text style={{
                           fontSize: '16px',
                           fontWeight: 600,
@@ -567,7 +579,7 @@ export const QueryTabs: React.FC = () => {
                       <Tag color="blue">Bar Charts</Tag>
                       <Tag color="green">Line Charts</Tag>
                       <Tag color="orange">Pie Charts</Tag>
-                      <Tag color="purple">Area Charts</Tag>
+                      <Tag color="blue">Area Charts</Tag>
                       <Tag color="cyan">Scatter Plots</Tag>
                     </div>
                   </Card>
@@ -641,7 +653,10 @@ export const QueryTabs: React.FC = () => {
         key="prompt"
       >
         {currentResult && currentResult.promptDetails ? (
-          <PromptDetailsPanel promptDetails={currentResult.promptDetails} />
+          <div>
+            <p>Prompt Details Panel temporarily disabled for debugging</p>
+            <pre>{JSON.stringify(currentResult.promptDetails, null, 2)}</pre>
+          </div>
         ) : (
           <div className="empty-result">
             <Text type="secondary">
@@ -665,5 +680,6 @@ export const QueryTabs: React.FC = () => {
         )}
       </TabPane>
     </Tabs>
+    </div>
   );
 };
