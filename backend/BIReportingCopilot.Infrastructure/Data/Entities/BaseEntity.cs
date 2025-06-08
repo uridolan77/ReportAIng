@@ -26,22 +26,8 @@ public class SchemaMetadataEntity : BaseEntity
     public bool IsActive { get; set; } = true;
 }
 
-public class QueryHistoryEntity : BaseEntity
-{
-    public long Id { get; set; }
-    public string UserId { get; set; } = string.Empty;
-    public string SessionId { get; set; } = string.Empty;
-    public string NaturalLanguageQuery { get; set; } = string.Empty;
-    public string GeneratedSQL { get; set; } = string.Empty;
-    public int? ExecutionTimeMs { get; set; }
-    public int? ResultRowCount { get; set; }
-    public decimal? ConfidenceScore { get; set; }
-    public byte? UserFeedback { get; set; }
-    public string? ErrorMessage { get; set; }
-    public DateTime QueryTimestamp { get; set; } = DateTime.UtcNow;
-    public bool IsSuccessful { get; set; }
-    public byte? QueryComplexity { get; set; }
-}
+// QueryHistoryEntity moved to Core/Models/UnifiedQueryHistory.cs as UnifiedQueryHistoryEntity
+// This eliminates the duplicate QueryHistoryEntity classes and provides a single source of truth
 
 public class PromptTemplateEntity : BaseEntity
 {

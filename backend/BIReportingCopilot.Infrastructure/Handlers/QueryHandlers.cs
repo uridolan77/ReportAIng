@@ -38,28 +38,28 @@ public class GetQueryHistoryQueryHandler : IRequestHandler<GetQueryHistoryQuery,
 
                 // Apply filters
                 if (request.StartDate.HasValue)
-                    query = query.Where(q => q.QueryTimestamp >= request.StartDate.Value);
+                    query = query.Where(q => q.ExecutedAt >= request.StartDate.Value);
 
                 if (request.EndDate.HasValue)
-                    query = query.Where(q => q.QueryTimestamp <= request.EndDate.Value);
+                    query = query.Where(q => q.ExecutedAt <= request.EndDate.Value);
 
                 if (!string.IsNullOrWhiteSpace(request.SearchTerm))
-                    query = query.Where(q => q.NaturalLanguageQuery.Contains(request.SearchTerm));
+                    query = query.Where(q => q.Query.Contains(request.SearchTerm));
 
                 var totalCount = await query.CountAsync(cancellationToken);
 
                 var items = await query
-                    .OrderByDescending(q => q.QueryTimestamp)
+                    .OrderByDescending(q => q.ExecutedAt)
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
                     .Select(entity => new QueryHistoryItem
                     {
                         Id = entity.Id.ToString(),
                         UserId = entity.UserId,
-                        Question = entity.NaturalLanguageQuery,
-                        Sql = entity.GeneratedSQL,
-                        Timestamp = entity.QueryTimestamp,
-                        ExecutionTimeMs = entity.ExecutionTimeMs ?? 0,
+                        Question = entity.Query,
+                        Sql = entity.GeneratedSql ?? "",
+                        Timestamp = entity.ExecutedAt,
+                        ExecutionTimeMs = entity.ExecutionTimeMs,
                         Successful = entity.IsSuccessful,
                         Error = entity.ErrorMessage
                     })

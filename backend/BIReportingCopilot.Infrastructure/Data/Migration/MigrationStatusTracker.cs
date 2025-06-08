@@ -222,7 +222,7 @@ public class MigrationStatusTracker
             var hasQueryData = await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
             {
                 var queryContext = (QueryDbContext)context;
-                return await queryContext.QueryHistories.AnyAsync();
+                return await queryContext.QueryHistory.AnyAsync();
             });
 
             return hasSecurityData || hasTuningData || hasQueryData;

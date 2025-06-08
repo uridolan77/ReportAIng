@@ -170,9 +170,9 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddValidatorsFromAssemblyContaining<QueryRequestValidator>();
 
-// Configure application settings
-builder.Services.Configure<BIReportingCopilot.Core.Configuration.ApplicationSettings>(
-    builder.Configuration.GetSection(BIReportingCopilot.Core.Configuration.ApplicationSettings.SectionName));
+// Configure application settings (using unified configuration)
+builder.Services.Configure<BIReportingCopilot.Core.Configuration.UnifiedApplicationSettings>(
+    builder.Configuration.GetSection(BIReportingCopilot.Core.Configuration.UnifiedApplicationSettings.SectionName));
 
 // Configure security settings
 builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.RateLimitingConfiguration>(
@@ -486,19 +486,19 @@ builder.Services.Configure<BIReportingCopilot.Infrastructure.Messaging.EventBusC
     builder.Configuration.GetSection("EventBus"));
 
 // ===== CACHING & REDIS =====
-// Configure Redis settings
-builder.Services.Configure<BIReportingCopilot.Core.Configuration.RedisConfiguration>(
-    builder.Configuration.GetSection("Redis"));
+// Configure Cache settings (includes Redis configuration)
+builder.Services.Configure<BIReportingCopilot.Core.Configuration.CacheConfiguration>(
+    builder.Configuration.GetSection("Cache"));
 
 // Conditionally register Redis services based on configuration
-var redisConfig = builder.Configuration.GetSection("Redis").Get<BIReportingCopilot.Core.Configuration.RedisConfiguration>();
-if (redisConfig?.Enabled == true)
+var cacheConfig = builder.Configuration.GetSection("Cache").Get<BIReportingCopilot.Core.Configuration.CacheConfiguration>();
+if (cacheConfig?.EnableRedis == true)
 {
     // Register Redis connection multiplexer
     builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(provider =>
     {
-        var config = provider.GetRequiredService<IOptions<BIReportingCopilot.Core.Configuration.RedisConfiguration>>().Value;
-        var connectionString = config.GetConnectionStringWithOptions();
+        var config = provider.GetRequiredService<IOptions<BIReportingCopilot.Core.Configuration.CacheConfiguration>>().Value;
+        var connectionString = config.GetRedisConnectionStringWithOptions();
 
         if (string.IsNullOrEmpty(connectionString))
         {
@@ -511,14 +511,14 @@ if (redisConfig?.Enabled == true)
     // Register Redis distributed cache
     builder.Services.AddStackExchangeRedisCache(options =>
     {
-        var config = redisConfig.GetConnectionStringWithOptions();
+        var config = cacheConfig.GetRedisConnectionStringWithOptions();
         if (!string.IsNullOrEmpty(config))
         {
             options.Configuration = config;
         }
     });
 
-    Log.Information("Redis caching enabled with connection: {ConnectionString}", redisConfig.ConnectionString);
+    Log.Information("Redis caching enabled with connection: {ConnectionString}", cacheConfig.RedisConnectionString);
 }
 else
 {

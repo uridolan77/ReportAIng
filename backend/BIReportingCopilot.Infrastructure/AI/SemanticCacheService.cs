@@ -102,7 +102,7 @@ public class SemanticCacheService
             var querySignature = GenerateQuerySignature(naturalLanguageQuery, sqlQuery);
             var semanticFeatures = await _similarityAnalyzer.ExtractSemanticsAsync(naturalLanguageQuery, sqlQuery);
 
-            var cacheEntry = new Core.Models.SemanticCacheEntry
+            var cacheEntry = new Core.Models.UnifiedSemanticCacheEntry
             {
                 QueryHash = querySignature,
                 OriginalQuery = naturalLanguageQuery,
@@ -113,7 +113,12 @@ public class SemanticCacheService
                 CreatedAt = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.Add(expiry ?? TimeSpan.FromHours(24)),
                 AccessCount = 1,
-                LastAccessedAt = DateTime.UtcNow
+                LastAccessedAt = DateTime.UtcNow,
+                CreatedBy = "SemanticCacheService",
+                UpdatedBy = "SemanticCacheService",
+                CreatedDate = DateTime.UtcNow,
+                LastUpdated = DateTime.UtcNow,
+                IsActive = true
             };
 
             // Store in database for persistence and similarity search using QueryDbContext
@@ -313,7 +318,7 @@ public class SemanticCacheService
     {
         try
         {
-            var totalQueries = await queryContext.QueryHistories.CountAsync();
+            var totalQueries = await queryContext.QueryHistory.CountAsync();
             var cacheHits = await queryContext.SemanticCacheEntries.SumAsync(e => e.AccessCount);
 
             return totalQueries > 0 ? (double)cacheHits / totalQueries : 0.0;

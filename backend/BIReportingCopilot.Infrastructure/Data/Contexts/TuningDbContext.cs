@@ -22,9 +22,9 @@ public class TuningDbContext : DbContext
     public DbSet<PromptTemplateEntity> PromptTemplates { get; set; }
     public DbSet<PromptLogEntity> PromptLogs { get; set; }
 
-    // AI Learning and feedback
-    public DbSet<AIGenerationAttempt> AIGenerationAttempts { get; set; }
-    public DbSet<AIFeedbackEntry> AIFeedbackEntries { get; set; }
+    // AI Learning and feedback (Unified Models)
+    public DbSet<UnifiedAIGenerationAttempt> AIGenerationAttempts { get; set; }
+    public DbSet<UnifiedAIFeedbackEntry> AIFeedbackEntries { get; set; }
 
     // System configuration
     public DbSet<SystemConfigurationEntity> SystemConfiguration { get; set; }
@@ -164,8 +164,8 @@ public class TuningDbContext : DbContext
             entity.Property(e => e.UpdatedBy).HasMaxLength(256);
         });
 
-        // Configure AI Learning entities
-        modelBuilder.Entity<AIGenerationAttempt>(entity =>
+        // Configure Unified AI Learning entities
+        modelBuilder.Entity<UnifiedAIGenerationAttempt>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.UserId);
@@ -174,9 +174,11 @@ public class TuningDbContext : DbContext
             entity.Property(e => e.UserId).HasMaxLength(500);
             entity.Property(e => e.AIProvider).HasMaxLength(100);
             entity.Property(e => e.ModelVersion).HasMaxLength(100);
+            entity.Property(e => e.CreatedBy).HasMaxLength(500);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(500);
         });
 
-        modelBuilder.Entity<AIFeedbackEntry>(entity =>
+        modelBuilder.Entity<UnifiedAIFeedbackEntry>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.CreatedAt });
@@ -185,6 +187,8 @@ public class TuningDbContext : DbContext
             entity.Property(e => e.UserId).HasMaxLength(500);
             entity.Property(e => e.FeedbackType).HasMaxLength(50);
             entity.Property(e => e.Category).HasMaxLength(100);
+            entity.Property(e => e.CreatedBy).HasMaxLength(500);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(500);
         });
 
         // Seed default data

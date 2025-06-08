@@ -204,18 +204,23 @@ public static class TestDataBuilders
             .With(u => u.CreatedBy, "System");
     }
 
-    public static TestDataBuilder<BIReportingCopilot.Infrastructure.Data.Entities.QueryHistoryEntity> QueryHistory()
+    public static TestDataBuilder<BIReportingCopilot.Core.Models.UnifiedQueryHistoryEntity> QueryHistory()
     {
-        return new TestDataBuilder<BIReportingCopilot.Infrastructure.Data.Entities.QueryHistoryEntity>()
+        return new TestDataBuilder<BIReportingCopilot.Core.Models.UnifiedQueryHistoryEntity>()
             .With(q => q.Id, Random.Shared.NextInt64(1, long.MaxValue))
             .With(q => q.UserId, Guid.NewGuid().ToString())
             .With(q => q.SessionId, Guid.NewGuid().ToString())
-            .With(q => q.NaturalLanguageQuery, "Show me all customers")
-            .With(q => q.GeneratedSQL, "SELECT * FROM Customers")
+            .With(q => q.Query, "Show me all customers")
+            .With(q => q.GeneratedSql, "SELECT * FROM Customers")
             .With(q => q.IsSuccessful, true)
             .With(q => q.ExecutionTimeMs, Random.Shared.Next(100, 5000))
-            .With(q => q.ResultRowCount, Random.Shared.Next(1, 1000))
-            .With(q => q.QueryTimestamp, DateTime.UtcNow);
+            .With(q => q.RowCount, Random.Shared.Next(1, 1000))
+            .With(q => q.ExecutedAt, DateTime.UtcNow)
+            .With(q => q.CreatedBy, "TestUser")
+            .With(q => q.UpdatedBy, "TestUser")
+            .With(q => q.CreatedDate, DateTime.UtcNow)
+            .With(q => q.LastUpdated, DateTime.UtcNow)
+            .With(q => q.IsActive, true);
     }
 
     public static TestDataBuilder<BusinessTableInfoEntity> BusinessTableInfo()
@@ -335,7 +340,7 @@ public class TestScenarioBuilder
         return this;
     }
 
-    public TestScenarioBuilder AddQueryHistory(Action<TestDataBuilder<BIReportingCopilot.Infrastructure.Data.Entities.QueryHistoryEntity>>? configure = null)
+    public TestScenarioBuilder AddQueryHistory(Action<TestDataBuilder<BIReportingCopilot.Core.Models.UnifiedQueryHistoryEntity>>? configure = null)
     {
         var builder = TestDataBuilders.QueryHistory();
         configure?.Invoke(builder);

@@ -14,8 +14,7 @@ public class BICopilotContext : DbContext
 
     // Core entities
     public DbSet<SchemaMetadataEntity> SchemaMetadata { get; set; }
-    public DbSet<Entities.QueryHistoryEntity> QueryHistory { get; set; }
-    public DbSet<Core.Models.QueryHistoryEntity> QueryHistories { get; set; } // Core version for compatibility
+    public DbSet<Core.Models.UnifiedQueryHistoryEntity> QueryHistory { get; set; } // Unified query history
     public DbSet<PromptTemplateEntity> PromptTemplates { get; set; }
     public DbSet<PromptLogEntity> PromptLogs { get; set; }
     public DbSet<AITuningSettingsEntity> AITuningSettings { get; set; }
@@ -40,13 +39,12 @@ public class BICopilotContext : DbContext
     public DbSet<QueryPerformanceEntity> QueryPerformance { get; set; }
     public DbSet<SystemMetricsEntity> SystemMetrics { get; set; }
 
-    // AI Learning and Semantic Cache
-    public DbSet<Core.Models.AIGenerationAttempt> AIGenerationAttempts { get; set; }
-    public DbSet<Core.Models.AIFeedbackEntry> AIFeedbackEntries { get; set; }
-    public DbSet<Core.Models.SemanticCacheEntry> SemanticCacheEntries { get; set; }
+    // AI Learning and Semantic Cache (Unified Models)
+    public DbSet<Core.Models.UnifiedAIGenerationAttempt> AIGenerationAttempts { get; set; }
+    public DbSet<Core.Models.UnifiedAIFeedbackEntry> AIFeedbackEntries { get; set; }
+    public DbSet<Core.Models.UnifiedSemanticCacheEntry> SemanticCacheEntries { get; set; }
 
     // Additional missing DbSets
-    public DbSet<Core.Models.QueryHistoryEntity> QueryExecutionLogs { get; set; }
     public DbSet<SystemMetricsEntity> PerformanceMetrics { get; set; }
     public DbSet<Core.Models.TempFile> TempFiles { get; set; }
 
@@ -80,16 +78,7 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.BusinessDescription).HasMaxLength(500);
         });
 
-        // Configure QueryHistory
-        modelBuilder.Entity<Entities.QueryHistoryEntity>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.UserId, e.QueryTimestamp });
-            entity.HasIndex(e => e.SessionId);
-            entity.HasIndex(e => e.QueryTimestamp);
-            entity.Property(e => e.NaturalLanguageQuery).HasMaxLength(2000);
-            entity.Property(e => e.ErrorMessage).HasMaxLength(1000);
-        });
+        // QueryHistory configuration moved to unified model configuration below (line 330)
 
         // Configure PromptTemplates
         modelBuilder.Entity<PromptTemplateEntity>(entity =>
@@ -291,7 +280,7 @@ public class BICopilotContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         // Configure AI Learning entities
-        modelBuilder.Entity<Core.Models.AIGenerationAttempt>(entity =>
+        modelBuilder.Entity<Core.Models.UnifiedAIGenerationAttempt>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.UserId);
@@ -299,9 +288,11 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.UserId).HasMaxLength(500);
             entity.Property(e => e.AIProvider).HasMaxLength(100);
             entity.Property(e => e.ModelVersion).HasMaxLength(100);
+            entity.Property(e => e.CreatedBy).HasMaxLength(500);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(500);
         });
 
-        modelBuilder.Entity<Core.Models.AIFeedbackEntry>(entity =>
+        modelBuilder.Entity<Core.Models.UnifiedAIFeedbackEntry>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.CreatedAt });
@@ -309,24 +300,37 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.UserId).HasMaxLength(500);
             entity.Property(e => e.FeedbackType).HasMaxLength(50);
             entity.Property(e => e.Category).HasMaxLength(100);
+            entity.Property(e => e.CreatedBy).HasMaxLength(500);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(500);
         });
 
-        modelBuilder.Entity<Core.Models.SemanticCacheEntry>(entity =>
+        modelBuilder.Entity<Core.Models.UnifiedSemanticCacheEntry>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.QueryHash).IsUnique();
             entity.HasIndex(e => e.ExpiresAt);
             entity.HasIndex(e => e.LastAccessedAt);
-            entity.Property(e => e.QueryHash).HasMaxLength(100);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.Property(e => e.QueryHash).HasMaxLength(64);
+            entity.Property(e => e.OriginalQuery).HasMaxLength(4000);
+            entity.Property(e => e.NormalizedQuery).HasMaxLength(4000);
+            entity.Property(e => e.CreatedBy).HasMaxLength(500);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(500);
         });
 
-        modelBuilder.Entity<Core.Models.QueryHistoryEntity>(entity =>
+        modelBuilder.Entity<Core.Models.UnifiedQueryHistoryEntity>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.ExecutedAt);
+            entity.HasIndex(e => e.SessionId);
             entity.Property(e => e.UserId).HasMaxLength(500);
             entity.Property(e => e.Query).HasMaxLength(2000);
+            entity.Property(e => e.SessionId).HasMaxLength(100);
+            entity.Property(e => e.DatabaseName).HasMaxLength(100);
+            entity.Property(e => e.SchemaName).HasMaxLength(100);
+            entity.Property(e => e.CreatedBy).HasMaxLength(500);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(500);
         });
 
         // Apply schema management configurations

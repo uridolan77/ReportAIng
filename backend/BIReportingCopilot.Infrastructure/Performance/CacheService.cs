@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Configuration;
 using ModelsCacheStatistics = BIReportingCopilot.Core.Models.CacheStatistics;
 using System.Text.Json;
 using System.Collections.Concurrent;
@@ -71,7 +72,7 @@ public class CacheService : ICacheService
                     var deserializedValue = JsonSerializer.Deserialize<T>(distributedValue);
 
                     // Store in memory cache for faster access
-                    var memoryExpiry = TimeSpan.FromMinutes(_config.MemoryCacheExpiryMinutes);
+                    var memoryExpiry = TimeSpan.FromMinutes(_config.DefaultExpirationMinutes);
                     _memoryCache.Set(key, deserializedValue, memoryExpiry);
 
                     RecordHit();
@@ -96,13 +97,13 @@ public class CacheService : ICacheService
     {
         try
         {
-            var actualExpiry = expiry ?? TimeSpan.FromMinutes(_config.DefaultExpiryMinutes);
+            var actualExpiry = expiry ?? TimeSpan.FromMinutes(_config.DefaultExpirationMinutes);
 
             // Set in memory cache
             var memoryOptions = new MemoryCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = actualExpiry,
-                SlidingExpiration = TimeSpan.FromMinutes(_config.SlidingExpirationMinutes),
+                SlidingExpiration = TimeSpan.FromMinutes(_config.DefaultExpirationMinutes / 2), // Use half of default as sliding
                 Priority = CacheItemPriority.Normal
             };
 
@@ -115,7 +116,7 @@ public class CacheService : ICacheService
                 var distributedOptions = new DistributedCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = actualExpiry,
-                    SlidingExpiration = TimeSpan.FromMinutes(_config.SlidingExpirationMinutes)
+                    SlidingExpiration = TimeSpan.FromMinutes(_config.DefaultExpirationMinutes / 2) // Use half of default as sliding
                 };
 
                 await _distributedCache.SetStringAsync(key, serializedValue, distributedOptions);
@@ -226,7 +227,7 @@ public class CacheService : ICacheService
             if (_keyTimestamps.TryGetValue(key, out var timestamp))
             {
                 var elapsed = DateTime.UtcNow - timestamp;
-                var defaultExpiry = TimeSpan.FromMinutes(_config.DefaultExpiryMinutes);
+                var defaultExpiry = TimeSpan.FromMinutes(_config.DefaultExpirationMinutes);
                 var remaining = defaultExpiry - elapsed;
                 return Task.FromResult<TimeSpan?>(remaining > TimeSpan.Zero ? remaining : null);
             }
@@ -341,7 +342,7 @@ public class CacheService : ICacheService
                 // If we have the value in memory cache, reset its expiry
                 if (_memoryCache.TryGetValue(key, out var value))
                 {
-                    var expiry = newExpiry ?? TimeSpan.FromMinutes(_config.DefaultExpiryMinutes);
+                    var expiry = newExpiry ?? TimeSpan.FromMinutes(_config.DefaultExpirationMinutes);
                     _memoryCache.Set(key, value, expiry);
                     return Task.FromResult(true);
                 }
@@ -517,17 +518,5 @@ public class CacheService : ICacheService
     #endregion
 }
 
-/// <summary>
-/// Cache configuration settings
-/// </summary>
-public class CacheConfiguration
-{
-    public int DefaultExpiryMinutes { get; set; } = 30;
-    public int MemoryCacheExpiryMinutes { get; set; } = 15;
-    public int SlidingExpirationMinutes { get; set; } = 5;
-    public bool UseDistributedCache { get; set; } = false;
-    public string? RedisConnectionString { get; set; }
-    public int WriteBehindDelaySeconds { get; set; } = 5;
-    public bool EnableRefreshAhead { get; set; } = true;
-    public int RefreshAheadThresholdMinutes { get; set; } = 5;
-}
+// CacheConfiguration moved to Core/Configuration/UnifiedConfigurationModels.cs
+// This duplicate class has been removed to eliminate configuration duplication

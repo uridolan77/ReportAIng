@@ -408,8 +408,8 @@ public class PromptService : IPromptService
             var successRate = totalQueries > 0 ? (double)successfulQueries / totalQueries : 0;
 
             var averageResponseTime = recentQueries
-                .Where(q => q.ExecutionTimeMs.HasValue)
-                .Select(q => q.ExecutionTimeMs!.Value)
+                .Where(q => q.ExecutionTimeMs > 0)
+                .Select(q => q.ExecutionTimeMs)
                 .DefaultIfEmpty(0)
                 .Average();
 

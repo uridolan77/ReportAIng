@@ -2,9 +2,18 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BIReportingCopilot.Core.Models;
 
+// =============================================================================
+// LEGACY QUERY HISTORY MODELS - DEPRECATED
+// =============================================================================
+// These models have been consolidated into UnifiedQueryHistory.cs
+// This file is kept for backward compatibility during migration
+// =============================================================================
+
 /// <summary>
-/// Entity for tracking query history and analytics
+/// Legacy Query History Entity - DEPRECATED
+/// Use UnifiedQueryHistoryEntity from UnifiedQueryHistory.cs instead
 /// </summary>
+[Obsolete("Use UnifiedQueryHistoryEntity from UnifiedQueryHistory.cs instead. This class will be removed in a future version.")]
 public class QueryHistoryEntity
 {
     public int Id { get; set; }
@@ -61,8 +70,10 @@ public class QueryHistoryEntity
 }
 
 /// <summary>
-/// Entity for AI generation attempts and feedback
+/// Legacy AI Generation Attempt Entity - DEPRECATED
+/// Use UnifiedAIGenerationAttempt from UnifiedQueryHistory.cs instead
 /// </summary>
+[Obsolete("Use UnifiedAIGenerationAttempt from UnifiedQueryHistory.cs instead. This class will be removed in a future version.")]
 public class AIGenerationAttempt
 {
     public int Id { get; set; }
@@ -112,8 +123,10 @@ public class AIGenerationAttempt
 }
 
 /// <summary>
-/// Entity for AI feedback and learning
+/// Legacy AI Feedback Entry Entity - DEPRECATED
+/// Use UnifiedAIFeedbackEntry from UnifiedQueryHistory.cs instead
 /// </summary>
+[Obsolete("Use UnifiedAIFeedbackEntry from UnifiedQueryHistory.cs instead. This class will be removed in a future version.")]
 public class AIFeedbackEntry
 {
     public int Id { get; set; }
@@ -162,8 +175,10 @@ public class AIFeedbackEntry
 }
 
 /// <summary>
-/// Entity for semantic cache entries
+/// Legacy Semantic Cache Entry Entity - DEPRECATED
+/// Use UnifiedSemanticCacheEntry from UnifiedQueryHistory.cs instead
 /// </summary>
+[Obsolete("Use UnifiedSemanticCacheEntry from UnifiedQueryHistory.cs instead. This class will be removed in a future version.")]
 public class SemanticCacheEntry
 {
     public int Id { get; set; }

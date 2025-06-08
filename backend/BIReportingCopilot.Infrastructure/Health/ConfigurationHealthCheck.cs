@@ -311,7 +311,7 @@ public class BoundedContextsHealthCheck : IHealthCheck
             try
             {
                 using var queryContext = _contextFactory.CreateQueryContext();
-                var historyCount = await queryContext.QueryHistories.CountAsync();
+                var historyCount = await queryContext.QueryHistory.CountAsync();
                 data["QueryContextHistoryCount"] = historyCount;
             }
             catch (Exception ex)

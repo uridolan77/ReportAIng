@@ -3,10 +3,17 @@ using System.ComponentModel.DataAnnotations;
 namespace BIReportingCopilot.Core.Configuration;
 
 /// <summary>
-/// Unified application settings consolidating all configuration models
+/// Unified application settings consolidating all application-level configuration
+/// Enhanced with comprehensive application settings from legacy ApplicationSettings.cs
 /// </summary>
 public class UnifiedApplicationSettings
 {
+    /// <summary>
+    /// Configuration section name for backward compatibility
+    /// </summary>
+    public const string SectionName = "ApplicationSettings";
+
+    // Core Application Properties
     [Required(ErrorMessage = "Application name is required")]
     public string ApplicationName { get; set; } = "BI Reporting Copilot";
 
@@ -16,6 +23,7 @@ public class UnifiedApplicationSettings
     [Required(ErrorMessage = "Version is required")]
     public string Version { get; set; } = "1.0.0";
 
+    // Web Application Settings
     public bool EnableDetailedErrors { get; set; } = true;
     public bool EnableSwagger { get; set; } = true;
     public bool EnableCors { get; set; } = true;
@@ -25,6 +33,101 @@ public class UnifiedApplicationSettings
 
     public List<string> AllowedOrigins { get; set; } = new();
     public List<string> TrustedProxies { get; set; } = new();
+
+    // Logging and Monitoring (consolidated from ApplicationSettings.cs)
+    /// <summary>
+    /// Whether to enable detailed logging
+    /// </summary>
+    public bool EnableDetailedLogging { get; set; } = true;
+
+    /// <summary>
+    /// Whether to enable performance monitoring
+    /// </summary>
+    public bool EnablePerformanceMonitoring { get; set; } = true;
+
+    /// <summary>
+    /// Whether to enable health checks
+    /// </summary>
+    public bool EnableHealthChecks { get; set; } = true;
+
+    /// <summary>
+    /// Whether to enable metrics collection
+    /// </summary>
+    public bool EnableMetrics { get; set; } = true;
+
+    /// <summary>
+    /// Whether to enable distributed tracing
+    /// </summary>
+    public bool EnableTracing { get; set; } = true;
+
+    // Performance Settings (consolidated from ApplicationSettings.cs)
+    /// <summary>
+    /// Default timeout for operations in seconds
+    /// </summary>
+    [Range(1, 3600, ErrorMessage = "Timeout must be between 1 and 3600 seconds")]
+    public int DefaultTimeoutSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// Maximum number of concurrent operations
+    /// </summary>
+    [Range(1, 1000, ErrorMessage = "Max concurrent operations must be between 1 and 1000")]
+    public int MaxConcurrentOperations { get; set; } = 100;
+
+    // Caching Settings (consolidated from ApplicationSettings.cs)
+    /// <summary>
+    /// Whether to enable caching
+    /// </summary>
+    public bool EnableCaching { get; set; } = true;
+
+    /// <summary>
+    /// Default cache expiration in minutes
+    /// </summary>
+    [Range(1, 1440, ErrorMessage = "Cache expiration must be between 1 and 1440 minutes")]
+    public int DefaultCacheExpirationMinutes { get; set; } = 60;
+
+    // Background Services (consolidated from ApplicationSettings.cs)
+    /// <summary>
+    /// Whether to enable background jobs
+    /// </summary>
+    public bool EnableBackgroundJobs { get; set; } = true;
+
+    /// <summary>
+    /// Whether to enable real-time notifications
+    /// </summary>
+    public bool EnableRealTimeNotifications { get; set; } = true;
+
+    // Security and Audit (consolidated from ApplicationSettings.cs)
+    /// <summary>
+    /// Whether to enable audit logging
+    /// </summary>
+    public bool EnableAuditLogging { get; set; } = true;
+
+    /// <summary>
+    /// Whether to enable security monitoring
+    /// </summary>
+    public bool EnableSecurityMonitoring { get; set; } = true;
+
+    // Feature Management (consolidated from ApplicationSettings.cs)
+    /// <summary>
+    /// Feature flags
+    /// </summary>
+    public Dictionary<string, bool> FeatureFlags { get; set; } = new();
+
+    /// <summary>
+    /// Custom application settings
+    /// </summary>
+    public Dictionary<string, string> CustomSettings { get; set; } = new();
+
+    // Backward Compatibility Properties
+    /// <summary>
+    /// Backward compatibility alias for RequestTimeoutSeconds
+    /// </summary>
+    [Obsolete("Use DefaultTimeoutSeconds instead. This property will be removed in a future version.")]
+    public int TimeoutSeconds
+    {
+        get => DefaultTimeoutSeconds;
+        set => DefaultTimeoutSeconds = value;
+    }
 }
 
 /// <summary>
@@ -281,12 +384,41 @@ public class DatabaseConfiguration
 
 /// <summary>
 /// Cache configuration consolidating Redis and memory cache settings
+/// Enhanced with full Redis configuration capabilities
 /// </summary>
 public class CacheConfiguration
 {
-    // Redis Settings
+    // Redis Connection Settings
     public string RedisConnectionString { get; set; } = string.Empty;
     public bool EnableRedis { get; set; } = true;
+
+    // Detailed Redis Settings (consolidated from RedisConfiguration)
+    public string RedisHost { get; set; } = "localhost";
+
+    [Range(1, 65535, ErrorMessage = "Redis port must be between 1 and 65535")]
+    public int RedisPort { get; set; } = 6379;
+
+    public string? RedisPassword { get; set; }
+
+    [Range(0, 15, ErrorMessage = "Redis database must be between 0 and 15")]
+    public int RedisDatabase { get; set; } = 0;
+
+    [Range(1000, 30000, ErrorMessage = "Redis connection timeout must be between 1000 and 30000 milliseconds")]
+    public int RedisConnectionTimeoutMs { get; set; } = 5000;
+
+    [Range(1000, 30000, ErrorMessage = "Redis command timeout must be between 1000 and 30000 milliseconds")]
+    public int RedisCommandTimeoutMs { get; set; } = 5000;
+
+    public bool RedisUseSsl { get; set; } = false;
+    public string? RedisSslHost { get; set; }
+    public bool RedisAbortOnConnectFail { get; set; } = false;
+    public string RedisKeyPrefix { get; set; } = "bi-copilot";
+
+    [Range(1, 1000, ErrorMessage = "Redis max connections must be between 1 and 1000")]
+    public int RedisMaxConnections { get; set; } = 100;
+
+    public bool RedisEnableClustering { get; set; } = false;
+    public List<string> RedisClusterEndpoints { get; set; } = new();
 
     // Cache Expiration
     [Range(1, 1440, ErrorMessage = "Default expiration must be between 1 and 1440 minutes")]
@@ -305,6 +437,73 @@ public class CacheConfiguration
 
     [Range(1, 1000, ErrorMessage = "Memory cache size limit must be between 1 and 1000 MB")]
     public int MemoryCacheSizeLimitMB { get; set; } = 100;
+
+    // Advanced Cache Features (consolidated from Infrastructure CacheConfiguration)
+    [Range(1, 300, ErrorMessage = "Write behind delay must be between 1 and 300 seconds")]
+    public int WriteBehindDelaySeconds { get; set; } = 5;
+
+    public bool EnableRefreshAhead { get; set; } = true;
+
+    [Range(1, 60, ErrorMessage = "Refresh ahead threshold must be between 1 and 60 minutes")]
+    public int RefreshAheadThresholdMinutes { get; set; } = 5;
+
+    /// <summary>
+    /// Get Redis connection string with options (consolidated from RedisConfiguration)
+    /// </summary>
+    /// <returns>Formatted Redis connection string</returns>
+    public string GetRedisConnectionStringWithOptions()
+    {
+        if (!string.IsNullOrEmpty(RedisConnectionString))
+        {
+            return RedisConnectionString;
+        }
+
+        var connectionStringBuilder = new List<string>();
+
+        // Add host and port
+        connectionStringBuilder.Add($"{RedisHost}:{RedisPort}");
+
+        // Add password if provided
+        if (!string.IsNullOrEmpty(RedisPassword))
+        {
+            connectionStringBuilder.Add($"password={RedisPassword}");
+        }
+
+        // Add database
+        if (RedisDatabase != 0)
+        {
+            connectionStringBuilder.Add($"defaultDatabase={RedisDatabase}");
+        }
+
+        // Add timeouts
+        connectionStringBuilder.Add($"connectTimeout={RedisConnectionTimeoutMs}");
+        connectionStringBuilder.Add($"syncTimeout={RedisCommandTimeoutMs}");
+
+        // Add SSL settings
+        if (RedisUseSsl)
+        {
+            connectionStringBuilder.Add("ssl=true");
+            if (!string.IsNullOrEmpty(RedisSslHost))
+            {
+                connectionStringBuilder.Add($"sslHost={RedisSslHost}");
+            }
+        }
+
+        // Add other options
+        connectionStringBuilder.Add($"abortConnect={RedisAbortOnConnectFail.ToString().ToLower()}");
+
+        return string.Join(",", connectionStringBuilder);
+    }
+
+    /// <summary>
+    /// Backward compatibility property for legacy RedisConfiguration.Enabled
+    /// </summary>
+    [Obsolete("Use EnableRedis instead. This property will be removed in a future version.")]
+    public bool Enabled
+    {
+        get => EnableRedis;
+        set => EnableRedis = value;
+    }
 }
 
 /// <summary>

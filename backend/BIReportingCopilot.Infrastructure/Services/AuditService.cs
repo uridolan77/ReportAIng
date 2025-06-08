@@ -94,17 +94,22 @@ public class AuditService : IAuditService
 
                     securityContext.AuditLog.Add(auditEntry);
 
-                    // Also log to query history (using Infrastructure entity)
-                    var queryHistory = new Data.Entities.QueryHistoryEntity
+                    // Also log to query history (using Unified entity)
+                    var queryHistory = new Core.Models.UnifiedQueryHistoryEntity
                     {
                         UserId = userId,
                         SessionId = sessionId,
-                        NaturalLanguageQuery = naturalLanguageQuery,
-                        GeneratedSQL = generatedSQL,
+                        Query = naturalLanguageQuery,
+                        GeneratedSql = generatedSQL,
                         ExecutionTimeMs = executionTimeMs,
                         IsSuccessful = successful,
                         ErrorMessage = error,
-                        QueryTimestamp = DateTime.UtcNow
+                        ExecutedAt = DateTime.UtcNow,
+                        CreatedBy = userId,
+                        UpdatedBy = userId,
+                        CreatedDate = DateTime.UtcNow,
+                        LastUpdated = DateTime.UtcNow,
+                        IsActive = true
                     };
 
                     queryContext.QueryHistory.Add(queryHistory);
@@ -255,35 +260,33 @@ public class AuditService : IAuditService
             {
                 var queryContext = (QueryDbContext)dbContext;
                 var queryHistory = await queryContext.QueryHistory
-                    .Where(q => q.QueryTimestamp >= from && q.QueryTimestamp <= to)
+                    .Where(q => q.ExecutedAt >= from && q.ExecutedAt <= to)
                     .ToListAsync();
 
                 var totalQueries = queryHistory.Count;
                 var uniqueUsers = queryHistory.Select(q => q.UserId).Distinct().Count();
                 var successfulQueries = queryHistory.Count(q => q.IsSuccessful);
-                var averageResponseTime = queryHistory.Where(q => q.ExecutionTimeMs.HasValue)
-                    .Average(q => q.ExecutionTimeMs!.Value);
+                var averageResponseTime = queryHistory.Any() ? queryHistory.Average(q => q.ExecutionTimeMs) : 0;
 
                 var queriesByUser = queryHistory
                     .GroupBy(q => q.UserId)
                     .ToDictionary(g => g.Key, g => g.Count());
 
                 var queriesByHour = queryHistory
-                    .GroupBy(q => q.QueryTimestamp.Hour)
+                    .GroupBy(q => q.ExecutedAt.Hour)
                     .ToDictionary(g => g.Key.ToString(), g => g.Count());
 
                 var mostPopularQueries = queryHistory
-                    .GroupBy(q => q.NaturalLanguageQuery.ToLowerInvariant())
+                    .GroupBy(q => q.Query.ToLowerInvariant())
                     .OrderByDescending(g => g.Count())
                     .Take(10)
                     .Select(g => g.Key)
                     .ToList();
 
                 var slowestQueries = queryHistory
-                    .Where(q => q.ExecutionTimeMs.HasValue)
-                    .OrderByDescending(q => q.ExecutionTimeMs!.Value)
+                    .OrderByDescending(q => q.ExecutionTimeMs)
                     .Take(10)
-                    .Select(q => q.NaturalLanguageQuery)
+                    .Select(q => q.Query)
                     .ToList();
 
                 var report = new UsageReport

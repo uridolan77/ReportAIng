@@ -21,20 +21,17 @@ namespace BIReportingCopilot.API.Controllers;
 public class UnifiedCacheController : ControllerBase
 {
     private readonly ICacheService _cacheService;
-    private readonly IQueryService _queryService;
     private readonly ILogger<UnifiedCacheController> _logger;
     private readonly IMediator _mediator;
     private readonly IVectorSearchService _vectorSearchService;
 
     public UnifiedCacheController(
         ICacheService cacheService,
-        IQueryService queryService,
         ILogger<UnifiedCacheController> logger,
         IMediator mediator,
         IVectorSearchService vectorSearchService)
     {
         _cacheService = cacheService;
-        _queryService = queryService;
         _logger = logger;
         _mediator = mediator;
         _vectorSearchService = vectorSearchService;

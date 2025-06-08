@@ -15,14 +15,12 @@ public class QueryDbContext : DbContext
     {
     }
 
-    // Query execution and history
-    public DbSet<Entities.QueryHistoryEntity> QueryHistory { get; set; }
-    public DbSet<Core.Models.QueryHistoryEntity> QueryHistories { get; set; } // Core version for compatibility
-    public DbSet<Core.Models.QueryHistoryEntity> QueryExecutionLogs { get; set; }
+    // Query execution and history (Unified Models)
+    public DbSet<Core.Models.UnifiedQueryHistoryEntity> QueryHistory { get; set; }
 
-    // Query caching
+    // Query caching (Unified Models)
     public DbSet<QueryCacheEntity> QueryCache { get; set; }
-    public DbSet<SemanticCacheEntry> SemanticCacheEntries { get; set; }
+    public DbSet<Core.Models.UnifiedSemanticCacheEntry> SemanticCacheEntries { get; set; }
 
     // Query performance
     public DbSet<QueryPerformanceEntity> QueryPerformance { get; set; }
@@ -40,29 +38,22 @@ public class QueryDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure QueryHistory (Infrastructure version)
-        modelBuilder.Entity<Entities.QueryHistoryEntity>(entity =>
+        // Configure Unified QueryHistory
+        modelBuilder.Entity<Core.Models.UnifiedQueryHistoryEntity>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.UserId, e.QueryTimestamp });
-            entity.HasIndex(e => e.SessionId);
-            entity.HasIndex(e => e.QueryTimestamp);
-            entity.HasIndex(e => new { e.IsSuccessful, e.QueryTimestamp });
-            entity.Property(e => e.NaturalLanguageQuery).HasMaxLength(2000);
-            entity.Property(e => e.ErrorMessage).HasMaxLength(1000);
-            entity.Property(e => e.UserId).HasMaxLength(256);
-            entity.Property(e => e.SessionId).HasMaxLength(50);
-        });
-
-        // Configure QueryHistory (Core version)
-        modelBuilder.Entity<Core.Models.QueryHistoryEntity>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.ExecutedAt);
             entity.HasIndex(e => new { e.UserId, e.ExecutedAt });
-            entity.Property(e => e.UserId).HasMaxLength(500);
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => e.ExecutedAt);
+            entity.HasIndex(e => new { e.IsSuccessful, e.ExecutedAt });
             entity.Property(e => e.Query).HasMaxLength(2000);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(1000);
+            entity.Property(e => e.UserId).HasMaxLength(500);
+            entity.Property(e => e.SessionId).HasMaxLength(100);
+            entity.Property(e => e.DatabaseName).HasMaxLength(100);
+            entity.Property(e => e.SchemaName).HasMaxLength(100);
+            entity.Property(e => e.CreatedBy).HasMaxLength(500);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(500);
         });
 
         // Configure QueryCache
@@ -77,15 +68,20 @@ public class QueryDbContext : DbContext
             entity.Property(e => e.ResultMetadata).HasMaxLength(2000);
         });
 
-        // Configure SemanticCacheEntry
-        modelBuilder.Entity<SemanticCacheEntry>(entity =>
+        // Configure Unified SemanticCacheEntry
+        modelBuilder.Entity<Core.Models.UnifiedSemanticCacheEntry>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.QueryHash).IsUnique();
             entity.HasIndex(e => e.ExpiresAt);
             entity.HasIndex(e => e.LastAccessedAt);
+            entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => new { e.ExpiresAt, e.LastAccessedAt });
-            entity.Property(e => e.QueryHash).HasMaxLength(100);
+            entity.Property(e => e.QueryHash).HasMaxLength(64);
+            entity.Property(e => e.OriginalQuery).HasMaxLength(4000);
+            entity.Property(e => e.NormalizedQuery).HasMaxLength(4000);
+            entity.Property(e => e.CreatedBy).HasMaxLength(500);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(500);
         });
 
         // Configure QueryPerformance

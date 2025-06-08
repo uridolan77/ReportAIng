@@ -172,7 +172,27 @@ public class LearningService
                 Metadata = JsonSerializer.Serialize(feedback.Metadata ?? new Dictionary<string, object>())
             };
 
-            _context.AIFeedbackEntries.Add(feedbackEntry);
+            // Convert to unified model
+            var unifiedFeedbackEntry = new Core.Models.UnifiedAIFeedbackEntry
+            {
+                UserId = feedbackEntry.UserId,
+                OriginalQuery = feedbackEntry.OriginalQuery,
+                GeneratedSql = feedbackEntry.GeneratedSql,
+                CorrectedSql = feedbackEntry.CorrectedSql,
+                FeedbackType = feedbackEntry.FeedbackType,
+                Rating = feedbackEntry.Rating,
+                Comments = feedbackEntry.Comments,
+                Category = feedbackEntry.Category,
+                CreatedAt = feedbackEntry.CreatedAt,
+                CreatedBy = feedbackEntry.UserId,
+                UpdatedBy = feedbackEntry.UserId,
+                CreatedDate = DateTime.UtcNow,
+                LastUpdated = DateTime.UtcNow,
+                IsActive = true,
+                Metadata = feedbackEntry.Metadata
+            };
+
+            _context.AIFeedbackEntries.Add(unifiedFeedbackEntry);
             await _context.SaveChangesAsync();
 
             // Update learning models based on feedback
@@ -354,8 +374,8 @@ public class LearningService
         try
         {
             // Get historical execution times for comparison
-            var recentExecutions = await _context.QueryExecutionLogs
-                .Where(q => q.Timestamp > DateTime.UtcNow.AddDays(-7))
+            var recentExecutions = await _context.QueryHistory
+                .Where(q => q.ExecutedAt > DateTime.UtcNow.AddDays(-7))
                 .Select(q => TimeSpan.FromMilliseconds(q.ExecutionTimeMs))
                 .ToListAsync();
 
@@ -395,8 +415,8 @@ public class LearningService
         try
         {
             // Get historical result sizes
-            var recentResults = await _context.QueryExecutionLogs
-                .Where(q => q.Timestamp > DateTime.UtcNow.AddDays(-7))
+            var recentResults = await _context.QueryHistory
+                .Where(q => q.ExecutedAt > DateTime.UtcNow.AddDays(-7))
                 .Select(q => q.RowCount)
                 .ToListAsync();
 
@@ -564,11 +584,11 @@ public class LearningService
     {
         try
         {
-            var activities = await _context.QueryExecutionLogs
-                .Where(q => q.UserId == userId && q.Timestamp >= startTime && q.Timestamp <= endTime)
+            var activities = await _context.QueryHistory
+                .Where(q => q.UserId == userId && q.ExecutedAt >= startTime && q.ExecutedAt <= endTime)
                 .Select(q => new UserActivity
                 {
-                    Timestamp = q.Timestamp,
+                    Timestamp = q.ExecutedAt,
                     Query = q.Query,
                     Success = q.IsSuccessful,
                     ExecutionTime = TimeSpan.FromMilliseconds(q.ExecutionTimeMs),

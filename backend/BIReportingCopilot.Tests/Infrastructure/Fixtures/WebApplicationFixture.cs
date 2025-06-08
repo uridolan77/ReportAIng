@@ -178,7 +178,7 @@ public class WebApplicationFixture : WebApplicationFactory<Program>, IDisposable
         context.AIFeedbackEntries.RemoveRange(context.AIFeedbackEntries);
         context.AIGenerationAttempts.RemoveRange(context.AIGenerationAttempts);
         context.SemanticCacheEntries.RemoveRange(context.SemanticCacheEntries);
-        context.QueryHistories.RemoveRange(context.QueryHistories);
+        context.QueryHistory.RemoveRange(context.QueryHistory);
         context.BusinessColumnInfo.RemoveRange(context.BusinessColumnInfo);
         context.BusinessTableInfo.RemoveRange(context.BusinessTableInfo);
         context.QueryPatterns.RemoveRange(context.QueryPatterns);

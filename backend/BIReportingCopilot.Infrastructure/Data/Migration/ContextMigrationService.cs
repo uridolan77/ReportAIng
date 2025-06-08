@@ -165,7 +165,7 @@ public class ContextMigrationService
             using var queryContext = _contextFactory.CreateQueryContext();
 
             // Count records to migrate
-            var historyCount = await legacyContext.QueryHistories.CountAsync();
+            var historyCount = await legacyContext.QueryHistory.CountAsync();
             var suggestionCount = await legacyContext.QuerySuggestions.CountAsync();
 
             result.MigrationStats["QueryHistory"] = historyCount;
@@ -174,8 +174,8 @@ public class ContextMigrationService
             if (!dryRun)
             {
                 // Migrate query history
-                var history = await legacyContext.QueryHistories.ToListAsync();
-                queryContext.QueryHistories.AddRange(history);
+                var history = await legacyContext.QueryHistory.ToListAsync();
+                queryContext.QueryHistory.AddRange(history);
 
                 // Migrate suggestions
                 var suggestions = await legacyContext.QuerySuggestions.Include(s => s.Category).ToListAsync();
@@ -262,7 +262,7 @@ public class ContextMigrationService
             using var legacyContext = _contextFactory.CreateLegacyContext();
             result.HasLegacyData = await legacyContext.Users.AnyAsync() ||
                                    await legacyContext.BusinessTableInfo.AnyAsync() ||
-                                   await legacyContext.QueryHistories.AnyAsync();
+                                   await legacyContext.QueryHistory.AnyAsync();
 
             // Check if bounded contexts are empty (safe to migrate)
             result.BoundedContextsEmpty = await CheckBoundedContextsEmptyAsync();
@@ -289,7 +289,7 @@ public class ContextMigrationService
 
             var securityEmpty = !await securityContext.Users.AnyAsync();
             var tuningEmpty = !await tuningContext.BusinessTableInfo.AnyAsync();
-            var queryEmpty = !await queryContext.QueryHistories.AnyAsync();
+            var queryEmpty = !await queryContext.QueryHistory.AnyAsync();
 
             return securityEmpty && tuningEmpty && queryEmpty;
         }
