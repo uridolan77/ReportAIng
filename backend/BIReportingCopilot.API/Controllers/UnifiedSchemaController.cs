@@ -15,7 +15,7 @@ namespace BIReportingCopilot.API.Controllers;
 /// Replaces: SchemaController, SchemaManagementController, SchemaOptimizationController
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/schema")]
 [Authorize]
 public class UnifiedSchemaController : ControllerBase
 {

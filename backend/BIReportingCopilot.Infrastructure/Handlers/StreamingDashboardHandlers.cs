@@ -117,6 +117,41 @@ public class ProcessDataStreamEventCommandHandler : IRequestHandler<ProcessDataS
 }
 
 /// <summary>
+/// Command handler for processing query stream events
+/// </summary>
+public class ProcessQueryStreamEventCommandHandler : IRequestHandler<ProcessQueryStreamEventCommand, bool>
+{
+    private readonly ILogger<ProcessQueryStreamEventCommandHandler> _logger;
+    private readonly IRealTimeStreamingService _streamingService;
+
+    public ProcessQueryStreamEventCommandHandler(
+        ILogger<ProcessQueryStreamEventCommandHandler> logger,
+        IRealTimeStreamingService streamingService)
+    {
+        _logger = logger;
+        _streamingService = streamingService;
+    }
+
+    public async Task<bool> Handle(ProcessQueryStreamEventCommand request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug("🔍 Processing query stream event: {QueryId}", request.QueryEvent.QueryId);
+
+            await _streamingService.ProcessQueryStreamEventAsync(request.QueryEvent);
+
+            _logger.LogDebug("🔍 Query stream event processed: {QueryId}", request.QueryEvent.QueryId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error processing query stream event {QueryId}", request.QueryEvent.QueryId);
+            return false;
+        }
+    }
+}
+
+/// <summary>
 /// Query handler for getting real-time dashboard
 /// </summary>
 public class GetRealTimeDashboardQueryHandler : IRequestHandler<GetRealTimeDashboardQuery, RealTimeDashboard>
