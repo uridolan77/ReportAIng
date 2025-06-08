@@ -167,10 +167,12 @@ public class SystemMetricsEntity : BaseEntity
 {
     public long Id { get; set; }
     public string MetricName { get; set; } = string.Empty;
+    public string? MetricCategory { get; set; }
     public double Value { get; set; }
     public string? Unit { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public string? Tags { get; set; }
+    public DateTime? RetentionDate { get; set; }
 }
 
 public class MfaChallengeEntity : BaseEntity

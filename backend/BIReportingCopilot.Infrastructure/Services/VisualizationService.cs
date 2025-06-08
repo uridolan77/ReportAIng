@@ -615,9 +615,15 @@ public class VisualizationService : IVisualizationService
     {
         return new DashboardLayout
         {
+            Type = LayoutType.Grid,
             Rows = chartCount <= 2 ? 1 : 2,
             Columns = Math.Min(chartCount, 2),
-            ChartSizes = Enumerable.Repeat("auto", chartCount).ToArray()
+            Configuration = new LayoutConfiguration
+            {
+                GridGap = 10,
+                EnableDragAndDrop = true,
+                EnableResize = true
+            }
         };
     }
 
@@ -766,9 +772,15 @@ public class VisualizationService : IVisualizationService
     {
         return new DashboardLayout
         {
+            Type = LayoutType.Grid,
             Rows = chartCount <= 2 ? 1 : 2,
             Columns = Math.Min(chartCount, 2),
-            ChartSizes = Enumerable.Repeat("auto", chartCount).ToArray()
+            Configuration = new LayoutConfiguration
+            {
+                GridGap = preferences?.GridGap ?? 10,
+                EnableDragAndDrop = true,
+                EnableResize = true
+            }
         };
     }
 

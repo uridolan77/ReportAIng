@@ -2,6 +2,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using MLQueryMetrics = BIReportingCopilot.Core.Models.ML.QueryMetrics;
+using MLUserFeedback = BIReportingCopilot.Core.Models.ML.UserFeedback;
 using BIReportingCopilot.Core.Models.ML;
 using BIReportingCopilot.Infrastructure.Data;
 using System.Text.Json;
@@ -37,7 +39,7 @@ public class LearningService
     /// <summary>
     /// Detect anomalies in query patterns
     /// </summary>
-    public async Task<AnomalyDetectionResult> DetectQueryAnomaliesAsync(string query, QueryMetrics metrics)
+    public async Task<AnomalyDetectionResult> DetectQueryAnomaliesAsync(string query, MLQueryMetrics metrics)
     {
         try
         {
@@ -151,7 +153,7 @@ public class LearningService
     /// <summary>
     /// Process user feedback and update learning models
     /// </summary>
-    public async Task ProcessFeedbackAsync(UserFeedback feedback)
+    public async Task ProcessFeedbackAsync(MLUserFeedback feedback)
     {
         try
         {
@@ -429,7 +431,7 @@ public class LearningService
         }
     }
 
-    private async Task<DetectedAnomaly?> DetectComplexityAnomalyAsync(string query, QueryMetrics metrics)
+    private async Task<DetectedAnomaly?> DetectComplexityAnomalyAsync(string query, MLQueryMetrics metrics)
     {
         try
         {
@@ -681,9 +683,9 @@ public class LearningService
     #endregion
 
     // Placeholder methods for learning functionality
-    private async Task UpdateLearningModelsAsync(UserFeedback feedback) { /* Implementation */ }
-    private async Task UpdateQuerySuccessPatternsAsync(UserFeedback feedback) { /* Implementation */ }
-    private async Task UpdateOptimizationInsightsAsync(UserFeedback feedback) { /* Implementation */ }
+    private async Task UpdateLearningModelsAsync(MLUserFeedback feedback) { /* Implementation */ }
+    private async Task UpdateQuerySuccessPatternsAsync(MLUserFeedback feedback) { /* Implementation */ }
+    private async Task UpdateOptimizationInsightsAsync(MLUserFeedback feedback) { /* Implementation */ }
     private async Task<List<string>> GetSuccessfulPatternsAsync(string? userId, string? category) => new();
     private async Task<List<string>> GetCommonMistakesAsync(string? userId, string? category) => new();
     private async Task<List<string>> GetOptimizationSuggestionsAsync(string? userId, string? category) => new();

@@ -15,4 +15,13 @@ public interface IQueryProgressNotifier
     /// <param name="progress">Progress percentage (0-100)</param>
     /// <param name="details">Optional stage details</param>
     Task NotifyProcessingStageAsync(string userId, string queryId, string stage, string message, int progress, object? details = null);
+
+    /// <summary>
+    /// Notify progress update
+    /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="progress">Progress percentage (0-100)</param>
+    /// <param name="message">Progress message</param>
+    /// <param name="stage">Current stage</param>
+    Task NotifyProgressAsync(string userId, double progress, string message, string stage);
 }

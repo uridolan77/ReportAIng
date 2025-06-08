@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Models;
+using CoreQueryPerformanceMetrics = BIReportingCopilot.Core.Models.DTOs.QueryPerformanceMetrics;
 using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Core.DTOs.SchemaManagement;
 using CoreModels = BIReportingCopilot.Core.Models;
@@ -26,7 +27,7 @@ public interface IQueryService
     Task<List<ProcessedQuery>> FindSimilarQueriesAsync(string query, string userId, int limit = 5);
 
     // Performance and optimization methods
-    Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(string queryHash);
+    Task<CoreQueryPerformanceMetrics> GetQueryPerformanceAsync(string queryHash);
     Task<bool> ValidateQueryAsync(string sql);
     Task<List<QuerySuggestion>> GetSmartSuggestionsAsync(string userId, string? context = null);
     Task<QueryOptimizationResult> OptimizeQueryAsync(string sql);
@@ -133,7 +134,7 @@ public interface ISqlQueryService
     Task<bool> ValidateSqlAsync(string sql);
     Task<string> OptimizeSqlAsync(string sql);
     Task<QueryExecutionPlan> GetExecutionPlanAsync(string sql);
-    Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(string sql);
+    Task<CoreQueryPerformanceMetrics> GetQueryPerformanceAsync(string sql);
     Task<bool> TestConnectionAsync(string? dataSource = null);
     Task<List<string>> GetAvailableDataSourcesAsync();
 }
@@ -328,19 +329,7 @@ public interface ICacheService
     #endregion
 }
 
-/// <summary>
-/// Cache statistics for monitoring and diagnostics
-/// </summary>
-public class CacheStatistics
-{
-    public long TotalKeys { get; set; }
-    public long HitCount { get; set; }
-    public long MissCount { get; set; }
-    public double HitRatio => TotalRequests > 0 ? (double)HitCount / TotalRequests : 0;
-    public long TotalRequests => HitCount + MissCount;
-    public long MemoryUsage { get; set; }
-    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
-}
+// CacheStatistics class moved to PerformanceModels.cs to avoid duplication
 
 public interface IUserService
 {

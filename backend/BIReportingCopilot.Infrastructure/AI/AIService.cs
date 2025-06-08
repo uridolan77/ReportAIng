@@ -605,7 +605,7 @@ EXAMPLES:
         try
         {
             // Convert QueryFeedback to UserFeedback
-            var userFeedback = new UserFeedback
+            var userFeedback = new BIReportingCopilot.Core.Models.ML.UserFeedback
             {
                 UserId = userId,
                 QueryId = feedback.QueryId,

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using ModelsCacheStatistics = BIReportingCopilot.Core.Models.CacheStatistics;
 using System.Text.Json;
 using System.Collections.Concurrent;
 
@@ -22,7 +23,7 @@ public class CacheService : ICacheService
     private readonly IConfiguration _configuration;
     private readonly CacheConfiguration _config;
     private readonly ConcurrentDictionary<string, DateTime> _keyTimestamps;
-    private readonly CacheStatistics _statistics;
+    private readonly ModelsCacheStatistics _statistics;
     private readonly object _statsLock = new();
     private readonly SemaphoreSlim _semaphore = new(1, 1); // For thread-safe operations
 
@@ -37,7 +38,7 @@ public class CacheService : ICacheService
         _logger = logger;
         _configuration = configuration;
         _keyTimestamps = new ConcurrentDictionary<string, DateTime>();
-        _statistics = new CacheStatistics();
+        _statistics = new ModelsCacheStatistics();
 
         // Load cache configuration
         _config = new CacheConfiguration();
@@ -312,18 +313,18 @@ public class CacheService : ICacheService
         return Task.CompletedTask;
     }
 
-    public Task<CacheStatistics> GetStatisticsAsync()
+    public Task<ModelsCacheStatistics> GetStatisticsAsync()
     {
         lock (_statsLock)
         {
-            _statistics.TotalKeys = _keyTimestamps.Count;
+            _statistics.TotalEntries = _keyTimestamps.Count;
             _statistics.LastUpdated = DateTime.UtcNow;
-            return Task.FromResult(new CacheStatistics
+            return Task.FromResult(new ModelsCacheStatistics
             {
-                TotalKeys = _statistics.TotalKeys,
+                TotalEntries = _statistics.TotalEntries,
                 HitCount = _statistics.HitCount,
                 MissCount = _statistics.MissCount,
-                MemoryUsage = _statistics.MemoryUsage,
+                TotalSizeBytes = _statistics.TotalSizeBytes,
                 LastUpdated = _statistics.LastUpdated
             });
         }

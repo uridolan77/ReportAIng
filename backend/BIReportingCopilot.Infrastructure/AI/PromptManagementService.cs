@@ -4,6 +4,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.ML;
 using BIReportingCopilot.Infrastructure.Data;
+using BIReportingCopilot.Infrastructure.Data.Contexts;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -11,15 +12,15 @@ using System.Text.RegularExpressions;
 namespace BIReportingCopilot.Infrastructure.AI;
 
 /// <summary>
-/// Unified prompt management service combining context management and prompt optimization
-/// Consolidates functionality from ContextManager and PromptOptimizer
+/// Enhanced prompt management service using bounded contexts for better performance and maintainability
+/// Uses TuningDbContext for AI tuning data and prompt management
 /// </summary>
 public class PromptManagementService : IContextManager
 {
     private readonly ICacheService _cacheService;
     private readonly IAuditService _auditService;
     private readonly ISemanticAnalyzer _semanticAnalyzer;
-    private readonly BICopilotContext _context;
+    private readonly IDbContextFactory _contextFactory;
     private readonly ILogger<PromptManagementService> _logger;
     private readonly Dictionary<string, OptimizationRule> _optimizationRules;
 
@@ -27,13 +28,13 @@ public class PromptManagementService : IContextManager
         ICacheService cacheService,
         IAuditService auditService,
         ISemanticAnalyzer semanticAnalyzer,
-        BICopilotContext context,
+        IDbContextFactory contextFactory,
         ILogger<PromptManagementService> logger)
     {
         _cacheService = cacheService;
         _auditService = auditService;
         _semanticAnalyzer = semanticAnalyzer;
-        _context = context;
+        _contextFactory = contextFactory;
         _logger = logger;
         _optimizationRules = InitializeOptimizationRules();
     }
@@ -398,16 +399,21 @@ public class PromptManagementService : IContextManager
     {
         try
         {
-            // Extract potential table/column names from prompt
-            var words = ExtractWords(prompt);
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async context =>
+            {
+                var tuningContext = (TuningDbContext)context;
 
-            var hints = await _context.BusinessTableInfo
-                .Where(t => words.Any(w => t.TableName.Contains(w) || t.BusinessPurpose.Contains(w)))
-                .Select(t => $"{t.TableName} ({t.BusinessPurpose})")
-                .Take(3)
-                .ToListAsync();
+                // Extract potential table/column names from prompt
+                var words = ExtractWords(prompt);
 
-            return hints;
+                var hints = await tuningContext.BusinessTableInfo
+                    .Where(t => words.Any(w => t.TableName.Contains(w) || t.BusinessPurpose.Contains(w)))
+                    .Select(t => $"{t.TableName} ({t.BusinessPurpose})")
+                    .Take(3)
+                    .ToListAsync();
+
+                return hints;
+            });
         }
         catch (Exception ex)
         {
@@ -420,14 +426,18 @@ public class PromptManagementService : IContextManager
     {
         try
         {
-            var insights = await _context.AIFeedbackEntries
-                .Where(f => f.Category == queryPattern && f.Rating >= 4 && !string.IsNullOrEmpty(f.Comments))
-                .Select(f => f.Comments!)
-                .Distinct()
-                .Take(5)
-                .ToListAsync();
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async context =>
+            {
+                var tuningContext = (TuningDbContext)context;
+                var insights = await tuningContext.AIFeedbackEntries
+                    .Where(f => f.Category == queryPattern && f.Rating >= 4 && !string.IsNullOrEmpty(f.Comments))
+                    .Select(f => f.Comments!)
+                    .Distinct()
+                    .Take(5)
+                    .ToListAsync();
 
-            return insights.Where(i => i.Length > 20 && i.Length < 200).ToList();
+                return insights.Where(i => i.Length > 20 && i.Length < 200).ToList();
+            });
         }
         catch (Exception ex)
         {

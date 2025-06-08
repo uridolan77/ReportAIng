@@ -169,13 +169,20 @@ public class SecurityConfiguration
     public bool ValidateAudience { get; set; } = true;
     public bool ValidateLifetime { get; set; } = true;
 
-    // Rate Limiting
+    // Rate Limiting (cleaned up redundant properties)
     public bool EnableRateLimit { get; set; } = true;
-    public bool EnableRateLimiting { get; set; } = true; // Alias for EnableRateLimit
     public bool EnableSqlValidation { get; set; } = true;
     public int MaxQueryLength { get; set; } = 10000;
     public int MaxQueryComplexity { get; set; } = 50;
     public Dictionary<string, int>? RateLimits { get; set; }
+
+    // Backward compatibility property (deprecated - use EnableRateLimit)
+    [Obsolete("Use EnableRateLimit instead. This property will be removed in a future version.")]
+    public bool EnableRateLimiting
+    {
+        get => EnableRateLimit;
+        set => EnableRateLimit = value;
+    }
 
     // Security Features
     public bool EnableHttpsRedirection { get; set; } = true;

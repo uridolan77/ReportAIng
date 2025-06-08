@@ -41,4 +41,17 @@ public class PromptLogEntity
 
     [MaxLength(256)]
     public string? SessionId { get; set; }
+
+    // Additional properties expected by Infrastructure layer
+    [NotMapped]
+    public DateTime Timestamp
+    {
+        get => CreatedDate;
+        set => CreatedDate = value;
+    }
+
+    public long? TemplateId { get; set; }
+
+    [MaxLength(64)]
+    public string? PromptHash { get; set; }
 }

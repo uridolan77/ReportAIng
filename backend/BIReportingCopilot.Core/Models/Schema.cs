@@ -24,6 +24,9 @@ public class TableMetadata
     public string? BusinessPurpose { get; set; }
     public string[] NaturalLanguageAliases { get; set; } = Array.Empty<string>();
     public DataQualityScore? QualityScore { get; set; }
+
+    // Additional property for compatibility
+    public long EstimatedRowCount { get; set; }
 }
 
 public class ColumnMetadata
@@ -155,6 +158,8 @@ public class TempFile
 {
     public int Id { get; set; }
     public string FilePath { get; set; } = string.Empty;
+    public string? FileName { get; set; }
+    public string? ContentType { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime ExpiresAt { get; set; }
     public string CreatedBy { get; set; } = string.Empty;

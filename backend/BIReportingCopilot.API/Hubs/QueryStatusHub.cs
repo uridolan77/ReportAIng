@@ -5,228 +5,302 @@ using BIReportingCopilot.Core.Interfaces;
 
 namespace BIReportingCopilot.API.Hubs;
 
-[Authorize]
-public class QueryStatusHub : Hub, IProgressHub
+/// <summary>
+/// Enhanced QueryStatusHub with improved async operations and error handling
+/// </summary>
+public class QueryStatusHub : BaseHub, IProgressHub
 {
-    private readonly ILogger<QueryStatusHub> _logger;
-
-    public QueryStatusHub(ILogger<QueryStatusHub> logger)
+    public QueryStatusHub(ILogger<QueryStatusHub> logger) : base(logger)
     {
-        _logger = logger;
     }
 
-    public override async Task OnConnectedAsync()
+    protected override async Task OnUserConnectedAsync(string userId, string connectionId)
     {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var subClaim = Context.User?.FindFirst("sub")?.Value;
-        var nameClaim = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
-        var emailClaim = Context.User?.FindFirst(ClaimTypes.Email)?.Value;
+        _logger.LogInformation("🔗 QueryStatusHub - User {UserId} connected with connection {ConnectionId}", userId, connectionId);
 
-        _logger.LogInformation("🔗 User connected to QueryStatusHub - ConnectionId: {ConnectionId}, NameIdentifier: {UserId}, Sub: {SubClaim}, Name: {NameClaim}, Email: {Email}",
-            Context.ConnectionId, userId, subClaim, nameClaim, emailClaim);
-
-        // Log all claims for debugging
+        // Log all claims for debugging in development
         if (Context.User?.Claims != null)
         {
             foreach (var claim in Context.User.Claims)
             {
-                _logger.LogInformation("🔗 Claim: {Type} = {Value}", claim.Type, claim.Value);
+                _logger.LogDebug("🔗 Claim: {Type} = {Value}", claim.Type, claim.Value);
             }
         }
 
-        // Add user to their personal group for targeted notifications
-        // Try different user ID formats
-        var userIdToUse = userId ?? subClaim ?? nameClaim ?? emailClaim;
-        if (!string.IsNullOrEmpty(userIdToUse))
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userIdToUse}");
-            _logger.LogInformation("🔗 Added user {UserId} to group user_{UserId}", userIdToUse, userIdToUse);
-        }
-        else
-        {
-            _logger.LogWarning("🔗 No user ID found in claims for connection {ConnectionId}", Context.ConnectionId);
-        }
-
-        await base.OnConnectedAsync();
+        await Task.CompletedTask;
     }
 
-    public override async Task OnDisconnectedAsync(Exception? exception)
+    protected override async Task OnUserDisconnectedAsync(string userId, string connectionId, Exception? exception)
     {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        _logger.LogInformation("User {UserId} disconnected from QueryStatusHub with connection {ConnectionId}",
-            userId, Context.ConnectionId);
+        _logger.LogInformation("🔗 QueryStatusHub - User {UserId} disconnected with connection {ConnectionId}", userId, connectionId);
 
         if (exception != null)
         {
-            _logger.LogError(exception, "User {UserId} disconnected with error", userId);
+            _logger.LogError(exception, "User {UserId} disconnected with error from QueryStatusHub", userId);
         }
 
-        await base.OnDisconnectedAsync(exception);
+        await Task.CompletedTask;
     }
 
-    // Client can join a specific query group to receive updates for that query
+    /// <summary>
+    /// Client can join a specific query group to receive updates for that query
+    /// </summary>
     public async Task JoinQueryGroup(string queryId)
     {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        _logger.LogDebug("User {UserId} joining query group {QueryId}", userId, queryId);
+        try
+        {
+            if (string.IsNullOrWhiteSpace(queryId))
+            {
+                _logger.LogWarning("JoinQueryGroup called with empty queryId by connection {ConnectionId}", Context.ConnectionId);
+                return;
+            }
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, $"query_{queryId}");
+            var userId = GetCurrentUserId();
+            _logger.LogDebug("User {UserId} joining query group {QueryId}", userId, queryId);
 
-        // Notify the client they've joined the group
-        await Clients.Caller.SendAsync("JoinedQueryGroup", queryId);
+            var groupName = $"query_{queryId}";
+            var success = await SafeAddToGroupAsync(groupName);
+
+            if (success)
+            {
+                await SafeSendAsync(Clients.Caller, "JoinedQueryGroup", queryId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error joining query group {QueryId} for connection {ConnectionId}", queryId, Context.ConnectionId);
+        }
     }
 
-    // Client can leave a query group
+    /// <summary>
+    /// Client can leave a query group
+    /// </summary>
     public async Task LeaveQueryGroup(string queryId)
     {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        _logger.LogDebug("User {UserId} leaving query group {QueryId}", userId, queryId);
+        try
+        {
+            if (string.IsNullOrWhiteSpace(queryId))
+            {
+                _logger.LogWarning("LeaveQueryGroup called with empty queryId by connection {ConnectionId}", Context.ConnectionId);
+                return;
+            }
 
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"query_{queryId}");
+            var userId = GetCurrentUserId();
+            _logger.LogDebug("User {UserId} leaving query group {QueryId}", userId, queryId);
 
-        // Notify the client they've left the group
-        await Clients.Caller.SendAsync("LeftQueryGroup", queryId);
+            var groupName = $"query_{queryId}";
+            var success = await SafeRemoveFromGroupAsync(groupName);
+
+            if (success)
+            {
+                await SafeSendAsync(Clients.Caller, "LeftQueryGroup", queryId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error leaving query group {QueryId} for connection {ConnectionId}", queryId, Context.ConnectionId);
+        }
     }
 
-    // Send query status update to specific query group
+    /// <summary>
+    /// Send query status update to specific query group with enhanced error handling
+    /// </summary>
     public async Task SendQueryStatusUpdate(string queryId, object statusUpdate)
     {
-        await Clients.Group($"query_{queryId}").SendAsync("QueryStatusUpdate", queryId, statusUpdate);
+        try
+        {
+            if (string.IsNullOrWhiteSpace(queryId))
+            {
+                _logger.LogWarning("SendQueryStatusUpdate called with empty queryId");
+                return;
+            }
+
+            await SafeSendAsync(Clients.Group($"query_{queryId}"), "QueryStatusUpdate", new { QueryId = queryId, StatusUpdate = statusUpdate });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending query status update for {QueryId}", queryId);
+        }
     }
 
-    // Send notification to specific user
+    /// <summary>
+    /// Send notification to specific user with enhanced error handling
+    /// </summary>
     public async Task SendUserNotification(string userId, object notification)
     {
-        await Clients.Group($"user_{userId}").SendAsync("UserNotification", notification);
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                _logger.LogWarning("SendUserNotification called with empty userId");
+                return;
+            }
+
+            await SafeSendAsync(Clients.Group($"user_{userId}"), "UserNotification", notification);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending user notification to {UserId}", userId);
+        }
     }
 
-    // Broadcast system-wide notification
+    /// <summary>
+    /// Broadcast system-wide notification with enhanced error handling
+    /// </summary>
     public async Task SendSystemNotification(object notification)
     {
-        await Clients.All.SendAsync("SystemNotification", notification);
-    }
-
-    /// <summary>
-    /// Get connection info for debugging
-    /// </summary>
-    public async Task GetConnectionInfo()
-    {
-        var userId = GetCurrentUserId();
-
-        await Clients.Caller.SendAsync("ConnectionInfo", new
+        try
         {
-            ConnectionId = Context.ConnectionId,
-            UserId = userId,
-            UserAgent = Context.GetHttpContext()?.Request.Headers["User-Agent"].ToString(),
-            RemoteIpAddress = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString(),
-            Timestamp = DateTime.UtcNow
-        });
-    }
-
-    /// <summary>
-    /// Test connection method for debugging
-    /// </summary>
-    public async Task TestConnection()
-    {
-        var userId = GetCurrentUserId();
-        _logger.LogInformation("🔗 TestConnection called by user {UserId} with connection {ConnectionId}", userId, Context.ConnectionId);
-
-        await Clients.Caller.SendAsync("TestConnectionResponse", new
+            await SafeSendAsync(Clients.All, "SystemNotification", notification);
+        }
+        catch (Exception ex)
         {
-            ConnectionId = Context.ConnectionId,
-            UserId = userId,
-            Message = "Connection test successful",
-            Timestamp = DateTime.UtcNow,
-            IsAuthenticated = Context.User?.Identity?.IsAuthenticated ?? false,
-            UserGroups = new[] { $"user_{userId}" }
-        });
+            _logger.LogError(ex, "Error sending system notification");
+        }
     }
 
     /// <summary>
-    /// Get current user ID using the same logic as controllers
-    /// </summary>
-    private string GetCurrentUserId()
-    {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var subClaim = Context.User?.FindFirst("sub")?.Value;
-        var nameClaim = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
-        var emailClaim = Context.User?.FindFirst(ClaimTypes.Email)?.Value;
-
-        var result = userId ?? subClaim ?? nameClaim ?? emailClaim ?? "anonymous";
-
-        _logger.LogInformation("🔍 QueryStatusHub GetCurrentUserId - NameIdentifier: {UserId}, Sub: {SubClaim}, Name: {NameClaim}, Email: {Email}, Result: {Result}",
-            userId, subClaim, nameClaim, emailClaim, result);
-
-        return result;
-    }
-
-    /// <summary>
-    /// Implementation of IProgressHub interface
+    /// Implementation of IProgressHub interface with enhanced error handling
     /// </summary>
     public async Task SendAutoGenerationProgressAsync(string userId, object progressData)
     {
-        await Clients.Group($"user_{userId}").SendAsync("AutoGenerationProgress", progressData);
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                _logger.LogWarning("SendAutoGenerationProgressAsync called with empty userId");
+                return;
+            }
+
+            await SafeSendAsync(Clients.Group($"user_{userId}"), "AutoGenerationProgress", progressData);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending auto generation progress to user {UserId}", userId);
+        }
     }
 }
 
-// Extension methods for easier hub usage from services
+/// <summary>
+/// Enhanced extension methods for easier hub usage from services with improved error handling
+/// </summary>
 public static class QueryStatusHubExtensions
 {
-    public static async Task NotifyQueryStarted(this IHubContext<QueryStatusHub> hubContext, string queryId, string userId)
+    public static async Task<bool> NotifyQueryStarted(this IHubContext<QueryStatusHub> hubContext, string queryId, string userId, ILogger? logger = null)
     {
-        await hubContext.Clients.Group($"query_{queryId}").SendAsync("QueryStarted", new
+        try
         {
-            QueryId = queryId,
-            UserId = userId,
-            Timestamp = DateTime.UtcNow,
-            Status = "started"
-        });
+            if (string.IsNullOrWhiteSpace(queryId) || string.IsNullOrWhiteSpace(userId))
+                return false;
+
+            await hubContext.Clients.Group($"query_{queryId}").SendAsync("QueryStarted", new
+            {
+                QueryId = queryId,
+                UserId = userId,
+                Timestamp = DateTime.UtcNow,
+                Status = "started"
+            });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "Error notifying query started for {QueryId}", queryId);
+            return false;
+        }
     }
 
-    public static async Task NotifyQueryProgress(this IHubContext<QueryStatusHub> hubContext, string queryId, double progress, string? message = null)
+    public static async Task<bool> NotifyQueryProgress(this IHubContext<QueryStatusHub> hubContext, string queryId, double progress, string? message = null, ILogger? logger = null)
     {
-        await hubContext.Clients.Group($"query_{queryId}").SendAsync("QueryProgress", new
+        try
         {
-            QueryId = queryId,
-            Progress = progress,
-            Message = message,
-            Timestamp = DateTime.UtcNow,
-            Status = "in_progress"
-        });
+            if (string.IsNullOrWhiteSpace(queryId))
+                return false;
+
+            await hubContext.Clients.Group($"query_{queryId}").SendAsync("QueryProgress", new
+            {
+                QueryId = queryId,
+                Progress = Math.Max(0, Math.Min(100, progress)), // Clamp between 0-100
+                Message = message,
+                Timestamp = DateTime.UtcNow,
+                Status = "in_progress"
+            });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "Error notifying query progress for {QueryId}", queryId);
+            return false;
+        }
     }
 
-    public static async Task NotifyQueryCompleted(this IHubContext<QueryStatusHub> hubContext, string queryId, bool success, int executionTimeMs, string? error = null)
+    public static async Task<bool> NotifyQueryCompleted(this IHubContext<QueryStatusHub> hubContext, string queryId, bool success, int executionTimeMs, string? error = null, ILogger? logger = null)
     {
-        await hubContext.Clients.Group($"query_{queryId}").SendAsync("QueryCompleted", new
+        try
         {
-            QueryId = queryId,
-            Success = success,
-            ExecutionTimeMs = executionTimeMs,
-            Error = error,
-            Timestamp = DateTime.UtcNow,
-            Status = success ? "completed" : "failed"
-        });
+            if (string.IsNullOrWhiteSpace(queryId))
+                return false;
+
+            await hubContext.Clients.Group($"query_{queryId}").SendAsync("QueryCompleted", new
+            {
+                QueryId = queryId,
+                Success = success,
+                ExecutionTimeMs = Math.Max(0, executionTimeMs), // Ensure non-negative
+                Error = error,
+                Timestamp = DateTime.UtcNow,
+                Status = success ? "completed" : "failed"
+            });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "Error notifying query completed for {QueryId}", queryId);
+            return false;
+        }
     }
 
-    public static async Task NotifyUserActivity(this IHubContext<QueryStatusHub> hubContext, string userId, string activity, object? details = null)
+    public static async Task<bool> NotifyUserActivity(this IHubContext<QueryStatusHub> hubContext, string userId, string activity, object? details = null, ILogger? logger = null)
     {
-        await hubContext.Clients.Group($"user_{userId}").SendAsync("UserActivity", new
+        try
         {
-            UserId = userId,
-            Activity = activity,
-            Details = details,
-            Timestamp = DateTime.UtcNow
-        });
+            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(activity))
+                return false;
+
+            await hubContext.Clients.Group($"user_{userId}").SendAsync("UserActivity", new
+            {
+                UserId = userId,
+                Activity = activity,
+                Details = details,
+                Timestamp = DateTime.UtcNow
+            });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "Error notifying user activity for {UserId}", userId);
+            return false;
+        }
     }
 
-    public static async Task NotifySystemAlert(this IHubContext<QueryStatusHub> hubContext, string alertType, string message, string severity = "info")
+    public static async Task<bool> NotifySystemAlert(this IHubContext<QueryStatusHub> hubContext, string alertType, string message, string severity = "info", ILogger? logger = null)
     {
-        await hubContext.Clients.All.SendAsync("SystemAlert", new
+        try
         {
-            AlertType = alertType,
-            Message = message,
-            Severity = severity,
-            Timestamp = DateTime.UtcNow
-        });
+            if (string.IsNullOrWhiteSpace(alertType) || string.IsNullOrWhiteSpace(message))
+                return false;
+
+            await hubContext.Clients.All.SendAsync("SystemAlert", new
+            {
+                AlertType = alertType,
+                Message = message,
+                Severity = severity,
+                Timestamp = DateTime.UtcNow
+            });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "Error sending system alert: {AlertType}", alertType);
+            return false;
+        }
     }
 }

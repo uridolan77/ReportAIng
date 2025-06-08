@@ -2,6 +2,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Infrastructure.Data.Contexts;
 using BIReportingCopilot.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
@@ -13,14 +14,14 @@ using System.Text.Json;
 namespace BIReportingCopilot.Infrastructure.Services;
 
 /// <summary>
-/// Unified schema service with built-in distributed caching and database persistence
-/// Consolidates SchemaService and CachedSchemaService functionality
+/// Enhanced schema service using bounded contexts for better performance and maintainability
+/// Uses SchemaDbContext for schema metadata persistence and caching
 /// </summary>
 public class SchemaService : ISchemaService
 {
     private readonly ILogger<SchemaService> _logger;
     private readonly IConfiguration _configuration;
-    private readonly BICopilotContext _context;
+    private readonly IDbContextFactory _contextFactory;
     private readonly IConnectionStringProvider _connectionStringProvider;
     private readonly IDistributedCache? _distributedCache;
     private readonly TimeSpan _distributedCacheExpiration = TimeSpan.FromHours(24);
@@ -28,13 +29,13 @@ public class SchemaService : ISchemaService
     public SchemaService(
         ILogger<SchemaService> logger,
         IConfiguration configuration,
-        BICopilotContext context,
+        IDbContextFactory contextFactory,
         IConnectionStringProvider connectionStringProvider,
         IDistributedCache? distributedCache = null)
     {
         _logger = logger;
         _configuration = configuration;
-        _context = context;
+        _contextFactory = contextFactory;
         _connectionStringProvider = connectionStringProvider;
         _distributedCache = distributedCache;
     }
@@ -320,24 +321,29 @@ public class SchemaService : ISchemaService
     {
         try
         {
-            var databaseName = dataSource ?? "default";
-            var cachedEntities = await _context.SchemaMetadata
-                .Where(s => s.DatabaseName == databaseName && s.IsActive)
-                .ToListAsync();
-
-            if (!cachedEntities.Any())
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Schema, async context =>
             {
-                return null;
-            }
+                var schemaContext = (SchemaDbContext)context;
+                var databaseName = dataSource ?? "default";
 
-            // Check if cache is still valid (less than 1 hour old)
-            var latestUpdate = cachedEntities.Max(s => s.LastUpdated);
-            if (DateTime.UtcNow - latestUpdate > TimeSpan.FromHours(1))
-            {
-                return null;
-            }
+                var cachedEntities = await schemaContext.SchemaMetadata
+                    .Where(s => s.DatabaseName == databaseName && s.IsActive)
+                    .ToListAsync();
 
-            return BuildSchemaFromEntities(cachedEntities, databaseName);
+                if (!cachedEntities.Any())
+                {
+                    return null;
+                }
+
+                // Check if cache is still valid (less than 1 hour old)
+                var latestUpdate = cachedEntities.Max(s => s.LastUpdated);
+                if (DateTime.UtcNow - latestUpdate > TimeSpan.FromHours(1))
+                {
+                    return null;
+                }
+
+                return BuildSchemaFromEntities(cachedEntities, databaseName);
+            });
         }
         catch (Exception ex)
         {
@@ -350,42 +356,46 @@ public class SchemaService : ISchemaService
     {
         try
         {
-            var databaseName = dataSource ?? "default";
-
-            // Remove old cached entries
-            var oldEntries = await _context.SchemaMetadata
-                .Where(s => s.DatabaseName == databaseName)
-                .ToListAsync();
-
-            _context.SchemaMetadata.RemoveRange(oldEntries);
-
-            // Add new entries
-            foreach (var table in schema.Tables)
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Schema, async context =>
             {
-                foreach (var column in table.Columns)
+                var schemaContext = (SchemaDbContext)context;
+                var databaseName = dataSource ?? "default";
+
+                // Remove old cached entries
+                var oldEntries = await schemaContext.SchemaMetadata
+                    .Where(s => s.DatabaseName == databaseName)
+                    .ToListAsync();
+
+                schemaContext.SchemaMetadata.RemoveRange(oldEntries);
+
+                // Add new entries
+                foreach (var table in schema.Tables)
                 {
-                    var entity = new SchemaMetadataEntity
+                    foreach (var column in table.Columns)
                     {
-                        DatabaseName = databaseName,
-                        SchemaName = table.Schema,
-                        TableName = table.Name,
-                        ColumnName = column.Name,
-                        DataType = column.DataType,
-                        IsNullable = column.IsNullable,
-                        IsPrimaryKey = column.IsPrimaryKey,
-                        IsForeignKey = column.IsForeignKey,
-                        BusinessDescription = column.Description,
-                        SemanticTags = column.SemanticTags.Any() ? JsonSerializer.Serialize(column.SemanticTags) : null,
-                        SampleValues = column.SampleValues.Any() ? JsonSerializer.Serialize(column.SampleValues) : null,
-                        LastUpdated = DateTime.UtcNow,
-                        IsActive = true
-                    };
+                        var entity = new SchemaMetadataEntity
+                        {
+                            DatabaseName = databaseName,
+                            SchemaName = table.Schema,
+                            TableName = table.Name,
+                            ColumnName = column.Name,
+                            DataType = column.DataType,
+                            IsNullable = column.IsNullable,
+                            IsPrimaryKey = column.IsPrimaryKey,
+                            IsForeignKey = column.IsForeignKey,
+                            BusinessDescription = column.Description,
+                            SemanticTags = column.SemanticTags.Any() ? JsonSerializer.Serialize(column.SemanticTags) : null,
+                            SampleValues = column.SampleValues.Any() ? JsonSerializer.Serialize(column.SampleValues) : null,
+                            LastUpdated = DateTime.UtcNow,
+                            IsActive = true
+                        };
 
-                    _context.SchemaMetadata.Add(entity);
+                        schemaContext.SchemaMetadata.Add(entity);
+                    }
                 }
-            }
 
-            await _context.SaveChangesAsync();
+                await schemaContext.SaveChangesAsync();
+            });
         }
         catch (Exception ex)
         {
@@ -397,13 +407,17 @@ public class SchemaService : ISchemaService
     {
         try
         {
-            var databaseName = dataSource ?? "default";
-            var oldEntries = await _context.SchemaMetadata
-                .Where(s => s.DatabaseName == databaseName)
-                .ToListAsync();
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Schema, async context =>
+            {
+                var schemaContext = (SchemaDbContext)context;
+                var databaseName = dataSource ?? "default";
+                var oldEntries = await schemaContext.SchemaMetadata
+                    .Where(s => s.DatabaseName == databaseName)
+                    .ToListAsync();
 
-            _context.SchemaMetadata.RemoveRange(oldEntries);
-            await _context.SaveChangesAsync();
+                schemaContext.SchemaMetadata.RemoveRange(oldEntries);
+                await schemaContext.SaveChangesAsync();
+            });
 
             _logger.LogInformation("Cleared cached schema for data source: {DataSource}", dataSource ?? "default");
         }

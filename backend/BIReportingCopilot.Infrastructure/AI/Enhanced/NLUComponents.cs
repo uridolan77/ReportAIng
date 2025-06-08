@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Infrastructure.Performance;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
 
@@ -275,18 +276,7 @@ public class DomainAdaptationEngine
     }
 }
 
-/// <summary>
-/// NLU training data
-/// </summary>
-public class NLUTrainingData
-{
-    public string Query { get; set; } = string.Empty;
-    public string Intent { get; set; } = string.Empty;
-    public List<EntityAnnotation> EntityAnnotations { get; set; } = new();
-    public string Language { get; set; } = "en";
-    public string? Domain { get; set; }
-    public Dictionary<string, object> Metadata { get; set; } = new();
-}
+// NLUTrainingData class removed - using Core model instead
 
 // EntityAnnotation, DomainAnalysis, and DomainConcept classes are defined in NLUModels.cs
 

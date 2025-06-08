@@ -1,19 +1,6 @@
 namespace BIReportingCopilot.Core.Models;
 
-/// <summary>
-/// User activity tracking and analytics
-/// Note: UserProfile has been consolidated into the main User class
-/// </summary>
-public class UserActivitySummary
-{
-    public int TotalQueries { get; set; }
-    public int QueriesThisWeek { get; set; }
-    public int QueriesThisMonth { get; set; }
-    public double AverageQueryTime { get; set; }
-    public DateTime LastActivity { get; set; }
-    public List<DailyActivity> DailyActivities { get; set; } = new();
-    public Dictionary<string, int> QueryTypeBreakdown { get; set; } = new();
-}
+// UserActivitySummary moved to RealTimeStreaming.cs to avoid duplicates
 
 public class DailyActivity
 {

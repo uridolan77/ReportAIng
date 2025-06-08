@@ -61,4 +61,33 @@ public class SignalRQueryProgressNotifier : IQueryProgressNotifier
             _logger.LogError(ex, "Failed to send SignalR progress notification for user {UserId}, query {QueryId}", userId, queryId);
         }
     }
+
+    public async Task NotifyProgressAsync(string userId, double progress, string message, string stage)
+    {
+        try
+        {
+            var progressData = new
+            {
+                Progress = progress,
+                Message = message,
+                Stage = stage,
+                Timestamp = DateTime.UtcNow
+            };
+
+            _logger.LogInformation("📡 Sending SignalR progress notification - User: {UserId}, Stage: {Stage}, Progress: {Progress}%",
+                userId, stage, progress);
+
+            // Send to user-specific group
+            await _hubContext.Clients.Group($"user_{userId}").SendAsync("ProgressUpdate", progressData);
+
+            // Also send to all connected clients for debugging
+            await _hubContext.Clients.All.SendAsync("ProgressUpdate", progressData);
+
+            _logger.LogInformation("📡 SignalR progress notification sent successfully - Stage: {Stage}, Message: {Message}", stage, message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send SignalR progress notification for user {UserId}", userId);
+        }
+    }
 }

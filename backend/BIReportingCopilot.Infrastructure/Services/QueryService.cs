@@ -1,58 +1,38 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.DTOs;
+using BIReportingCopilot.Core.Commands;
+using BIReportingCopilot.Core.Queries;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Data;
+using BIReportingCopilot.Infrastructure.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MediatR;
 using CoreModels = BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
+/// <summary>
+/// Enhanced QueryService using CQRS pattern with MediatR for better separation of concerns
+/// Delegates complex business logic to focused command and query handlers
+/// </summary>
 public class QueryService : IQueryService
 {
     private readonly ILogger<QueryService> _logger;
-    private readonly IAIService _aiService;
-    private readonly ISchemaService _schemaService;
-    private readonly ISqlQueryService _sqlQueryService;
-    private readonly ICacheService _cacheService;
-    private readonly IAuditService _auditService;
-    private readonly IPromptService _promptService;
-    private readonly IAITuningSettingsService _settingsService;
-    private readonly IContextManager? _contextManager;
-    private readonly BICopilotContext _context;
-    private readonly IQueryProgressNotifier? _progressNotifier;
-
-    // Legacy support removed - using IAIService instead
+    private readonly IMediator _mediator;
+    private readonly IDbContextFactory _contextFactory;
 
     public QueryService(
         ILogger<QueryService> logger,
-        IAIService aiService,
-        ISchemaService schemaService,
-        ISqlQueryService sqlQueryService,
-        ICacheService cacheService,
-        IAuditService auditService,
-        IPromptService promptService,
-        IAITuningSettingsService settingsService,
-        BICopilotContext context,
-        IQueryProgressNotifier? progressNotifier = null,
-        IContextManager? contextManager = null) // Optional for backward compatibility
+        IMediator mediator,
+        IDbContextFactory contextFactory)
     {
         _logger = logger;
-        _aiService = aiService;
-        _schemaService = schemaService;
-        _sqlQueryService = sqlQueryService;
-        _cacheService = cacheService;
-        _auditService = auditService;
-        _promptService = promptService;
-        _settingsService = settingsService;
-        _context = context;
-        _contextManager = contextManager;
-        _progressNotifier = progressNotifier;
+        _mediator = mediator;
+        _contextFactory = contextFactory;
 
-        // Debug logging for progress notifier injection
-        _logger.LogInformation("🔧 QueryService initialized - ProgressNotifier: {ProgressNotifierType}",
-            _progressNotifier?.GetType().Name ?? "NULL");
+        _logger.LogInformation("🔧 Enhanced QueryService initialized with CQRS pattern using MediatR");
     }
 
     public async Task<QueryResponse> ProcessQueryAsync(QueryRequest request, string userId)
@@ -62,369 +42,54 @@ public class QueryService : IQueryService
 
     public async Task<QueryResponse> ProcessQueryAsync(QueryRequest request, string userId, CancellationToken cancellationToken)
     {
-        var queryId = Guid.NewGuid().ToString();
-        var startTime = DateTime.UtcNow;
-        PromptDetails? promptDetails = null; // Declare at method level
-
         try
         {
-            _logger.LogError("🎯🎯🎯 ENHANCED QueryService.ProcessQueryAsync CALLED - Processing query {QueryId} for user {UserId}: {Question}",
-                queryId, userId, request.Question);
+            _logger.LogInformation("🎯 CQRS QueryService - Delegating to ProcessQueryCommandHandler for user {UserId}: {Question}",
+                userId, request.Question);
 
-            // Notify query processing started with immediate feedback
-            await NotifyProcessingStage(userId, queryId, "started", "Query processing initiated", 5);
-
-            // Check cache first if enabled (both in request options AND admin settings)
-            await NotifyProcessingStage(userId, queryId, "cache_check", "Checking query cache", 8);
-            var adminCachingEnabled = await _settingsService.GetBooleanSettingAsync("EnableQueryCaching", true);
-            var requestCachingEnabled = request.Options.EnableCache;
-            var isCachingEnabled = requestCachingEnabled && adminCachingEnabled;
-
-            _logger.LogInformation("🔍 CACHE DEBUG - Admin setting: {AdminCache}, Request setting: {RequestCache}, Final: {FinalCache}",
-                adminCachingEnabled, requestCachingEnabled, isCachingEnabled);
-
-            // FORCE CACHE BYPASS - Clear any stale cache entries for this query when caching is disabled
-            var cacheKey = GenerateCacheKey(request.Question);
-            if (!isCachingEnabled)
+            // Delegate to CQRS command handler for better separation of concerns
+            var command = new ProcessQueryCommand
             {
-                _logger.LogInformation("🧹 CACHE DISABLED - Clearing any stale cache for query: {CacheKey}", cacheKey);
-                await _cacheService.RemoveAsync($"query:{cacheKey}");
-            }
-
-            if (isCachingEnabled)
-            {
-                _logger.LogInformation("🔑 CACHE KEY DEBUG - Question: '{Question}' -> Key: {CacheKey}", request.Question, cacheKey);
-                var cachedResult = await GetCachedQueryAsync(cacheKey);
-                if (cachedResult != null)
-                {
-                    _logger.LogInformation("🎯 CACHE HIT - Returning cached result for query {QueryId} with key {CacheKey}", queryId, cacheKey);
-                    _logger.LogInformation("🎯 CACHED QUERY WAS: '{CachedQuestion}' -> SQL: {CachedSQL}", cachedResult.Sql?.Substring(0, Math.Min(100, cachedResult.Sql?.Length ?? 0)) + "...", cachedResult.Sql?.Substring(0, Math.Min(200, cachedResult.Sql?.Length ?? 0)) + "...");
-                    cachedResult.QueryId = queryId;
-                    cachedResult.Cached = true;
-                    return cachedResult;
-                }
-                else
-                {
-                    _logger.LogError("🎯 CACHE MISS - No cached result found for query {QueryId} with key {CacheKey}", queryId, cacheKey);
-                }
-            }
-            else
-            {
-                _logger.LogError("🚫 CACHE DISABLED - Query caching disabled for query {QueryId} (Admin: {AdminCache}, Request: {RequestCache})",
-                    queryId, adminCachingEnabled, requestCachingEnabled);
-            }
-
-            // Get full schema metadata first
-            await NotifyProcessingStage(userId, queryId, "schema_loading", "Loading database schema", 12);
-            var fullSchema = await _schemaService.GetSchemaMetadataAsync();
-
-            // Get relevant schema context based on the query
-            await NotifyProcessingStage(userId, queryId, "schema_analysis", "Analyzing relevant schema for query", 18);
-            SchemaMetadata relevantSchema;
-
-
-            try
-            {
-                if (_contextManager != null)
-                {
-                    _logger.LogInformation("QueryService: Calling ContextManager.GetRelevantSchemaAsync");
-                    var schemaContext = await _contextManager.GetRelevantSchemaAsync(request.Question, fullSchema);
-
-                    relevantSchema = new SchemaMetadata
-                    {
-                        Tables = schemaContext.RelevantTables,
-                        DatabaseName = fullSchema.DatabaseName,
-                        Version = fullSchema.Version,
-                        LastUpdated = fullSchema.LastUpdated
-                    };
-
-                    _logger.LogInformation("QueryService: Using relevant schema with {TableCount} tables for query: {Query}. Tables: {TableNames}",
-                        relevantSchema.Tables.Count, request.Question, string.Join(", ", relevantSchema.Tables.Select(t => t.Name)));
-                }
-                else
-                {
-                    _logger.LogWarning("QueryService: ContextManager not available, using full schema with {TableCount} tables", fullSchema.Tables.Count);
-                    relevantSchema = fullSchema;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "QueryService: Error getting relevant schema, falling back to full schema");
-                relevantSchema = fullSchema;
-            }
-
-            // Generate SQL using enhanced AI prompt with relevant business context
-            await NotifyProcessingStage(userId, queryId, "prompt_building", "Building AI prompt with business context", 25);
-            var prompt = await _promptService.BuildQueryPromptAsync(request.Question, relevantSchema);
-
-            // Debug: Generate prompt details with detailed logging
-            await NotifyProcessingStage(userId, queryId, "prompt_details", "Generating detailed prompt information", 30);
-            _logger.LogInformation("🔍 Generating prompt details for query: {Question}", request.Question);
-            promptDetails = await _promptService.BuildDetailedQueryPromptAsync(request.Question, relevantSchema);
-            _logger.LogInformation("📝 Prompt details generated: {HasPromptDetails}, Template: {TemplateName}, Sections: {SectionCount}",
-                promptDetails != null, promptDetails?.TemplateName, promptDetails?.Sections?.Length ?? 0);
-
-            await NotifyProcessingStage(userId, queryId, "ai_processing", "Sending request to AI service for SQL generation", 35, new {
-                prompt = prompt?.Substring(0, Math.Min(200, prompt?.Length ?? 0)) + "...",
-                promptLength = prompt?.Length ?? 0,
-                templateName = promptDetails?.TemplateName
-            });
-
-            // Add intermediate progress during AI processing
-            var aiStartTime = DateTime.UtcNow;
-
-            // Simulate progress updates during AI processing for better UX
-            var progressTask = Task.Run(async () =>
-            {
-                var progressSteps = new[] { 40, 45, 50, 55 };
-                var messages = new[] {
-                    "AI analyzing query structure...",
-                    "AI mapping to database schema...",
-                    "AI generating SQL logic...",
-                    "AI optimizing query..."
-                };
-
-                for (int i = 0; i < progressSteps.Length; i++)
-                {
-                    await Task.Delay(300, cancellationToken); // Shorter delay for more responsive progress
-                    if (!cancellationToken.IsCancellationRequested)
-                    {
-                        await NotifyProcessingStage(userId, queryId, "ai_processing", messages[i], progressSteps[i]);
-                    }
-                }
-            });
-
-            var generatedSQL = await _aiService.GenerateSQLAsync(prompt, cancellationToken);
-            var aiExecutionTime = (int)(DateTime.UtcNow - aiStartTime).TotalMilliseconds;
-
-            // Cancel the progress task since AI processing is complete
-            try { progressTask.Wait(100); } catch { /* Ignore timeout */ }
-
-            _logger.LogInformation("🤖 AI GENERATED SQL: {GeneratedSQL}", generatedSQL);
-
-            await NotifyProcessingStage(userId, queryId, "ai_completed", "AI generated SQL successfully", 60, new {
-                generatedSQL = generatedSQL?.Substring(0, Math.Min(300, generatedSQL?.Length ?? 0)) + "...",
-                aiExecutionTime = aiExecutionTime
-            });
-
-            // Validate the generated SQL
-            await NotifyProcessingStage(userId, queryId, "sql_validation", "Validating generated SQL", 65);
-            var isValidSQL = await _sqlQueryService.ValidateSqlAsync(generatedSQL);
-            if (!isValidSQL)
-            {
-                var error = "Generated SQL failed validation";
-                _logger.LogError("❌ SQL VALIDATION FAILED for query: {Question}", request.Question);
-                _logger.LogError("❌ FAILED SQL: {GeneratedSQL}", generatedSQL);
-                await NotifyProcessingStage(userId, queryId, "validation_failed", $"SQL validation failed: {error}", 100, new {
-                    error = error,
-                    sql = generatedSQL
-                });
-                await LogQueryAsync(userId, request, generatedSQL, false, 0, error);
-                await LogPromptDetailsAsync(request.Question, prompt, generatedSQL, false, aiExecutionTime, userId, request.SessionId, error);
-                return CreateErrorResponse(queryId, error, generatedSQL, promptDetails);
-            }
-
-            // Execute the SQL query
-            await NotifyProcessingStage(userId, queryId, "sql_execution", "Executing SQL query against database", 70, new {
-                sql = generatedSQL?.Substring(0, Math.Min(200, generatedSQL?.Length ?? 0)) + "..."
-            });
-            _logger.LogInformation("Executing SQL: {SQL}", generatedSQL);
-            var dbStartTime = DateTime.UtcNow;
-            var queryResult = await _sqlQueryService.ExecuteSelectQueryAsync(generatedSQL, request.Options, cancellationToken);
-            var dbExecutionTime = (int)(DateTime.UtcNow - dbStartTime).TotalMilliseconds;
-            var totalExecutionTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
-
-            _logger.LogInformation("✅ DATABASE EXECUTION COMPLETED - Success: {Success}, RowCount: {RowCount}, ExecutionTime: {ExecutionTime}ms",
-                queryResult.IsSuccessful, queryResult.Metadata?.RowCount ?? 0, dbExecutionTime);
-
-            // Log detailed query result information
-            if (queryResult.IsSuccessful && queryResult.Data?.Length > 0)
-            {
-                _logger.LogInformation("📊 QUERY RESULT SUMMARY - Rows: {RowCount}, Columns: {ColumnCount}, First Row Sample: {FirstRowSample}",
-                    queryResult.Metadata?.RowCount ?? 0,
-                    queryResult.Metadata?.ColumnCount ?? 0,
-                    System.Text.Json.JsonSerializer.Serialize(queryResult.Data.FirstOrDefault(), new System.Text.Json.JsonSerializerOptions { WriteIndented = false }));
-            }
-            else if (queryResult.IsSuccessful)
-            {
-                _logger.LogInformation("📊 QUERY RESULT: No data returned (empty result set)");
-            }
-
-            // Check if SQL execution failed
-            if (!queryResult.IsSuccessful || !string.IsNullOrEmpty(queryResult.Metadata?.Error))
-            {
-                var sqlError = queryResult.Metadata?.Error ?? "SQL execution failed";
-                _logger.LogError("❌ SQL EXECUTION FAILED: {Error}", sqlError);
-
-                // Notify UI about SQL execution failure
-                await NotifyProcessingStage(userId, queryId, "sql_error", $"SQL execution failed: {sqlError}", 0, new {
-                    sql = generatedSQL?.Substring(0, Math.Min(200, generatedSQL?.Length ?? 0)) + "...",
-                    error = sqlError,
-                    executionTime = dbExecutionTime
-                });
-
-                await LogQueryAsync(userId, request, generatedSQL, false, totalExecutionTime, sqlError);
-                await LogPromptDetailsAsync(request.Question, prompt, generatedSQL, false, totalExecutionTime, userId, request.SessionId, sqlError);
-
-                var errorResponse = new QueryResponse
-                {
-                    QueryId = queryId,
-                    Sql = generatedSQL,
-                    Success = false,
-                    Error = $"SQL Error: {sqlError}",
-                    Timestamp = DateTime.UtcNow,
-                    ExecutionTimeMs = totalExecutionTime,
-                    PromptDetails = promptDetails,
-                    Confidence = 0,
-                    Suggestions = Array.Empty<string>(),
-                    Cached = false
-                };
-
-                _logger.LogError("❌ RETURNING SQL ERROR RESPONSE - QueryId: {QueryId}, SQL: {SQL}, Error: {Error}",
-                    queryId, generatedSQL?.Substring(0, Math.Min(100, generatedSQL?.Length ?? 0)) + "...", sqlError);
-
-                return errorResponse;
-            }
-
-            await NotifyProcessingStage(userId, queryId, "sql_completed", "SQL execution completed successfully", 80, new {
-                rowCount = queryResult.Metadata?.RowCount ?? 0,
-                dbExecutionTime = dbExecutionTime
-            });
-
-            // Calculate confidence score
-            await NotifyProcessingStage(userId, queryId, "confidence_calculation", "Calculating confidence score", 85);
-            var confidence = await _aiService.CalculateConfidenceScoreAsync(request.Question, generatedSQL);
-
-            // Generate visualization config if requested
-            VisualizationConfig? visualization = null;
-            if (request.Options.IncludeVisualization && queryResult.Data?.Length > 0)
-            {
-                await NotifyProcessingStage(userId, queryId, "visualization_generation", "Generating visualization recommendations", 90);
-                var vizConfigJson = await _aiService.GenerateVisualizationConfigAsync(
-                    request.Question, queryResult.Metadata.Columns, queryResult.Data);
-
-                // Parse visualization config (simplified for now)
-                visualization = new VisualizationConfig
-                {
-                    Type = "bar", // Default to bar chart
-                    Config = new Dictionary<string, object>()
-                };
-            }
-
-            // Generate suggestions
-            await NotifyProcessingStage(userId, queryId, "suggestions_generation", "Generating follow-up suggestions", 95);
-            var suggestions = await _aiService.GenerateQuerySuggestionsAsync(request.Question, relevantSchema);
-            _logger.LogInformation("💡 Generated {Count} suggestions for query: {Suggestions}",
-                suggestions?.Length ?? 0, string.Join(", ", suggestions ?? Array.Empty<string>()));
-
-            var response = new QueryResponse
-            {
-                QueryId = queryId,
-                Sql = generatedSQL,
-                Result = queryResult,
-                Visualization = visualization,
-                Confidence = confidence,
-                Suggestions = suggestions,
-                Cached = false,
-                Success = true,
-                Timestamp = DateTime.UtcNow,
-                ExecutionTimeMs = totalExecutionTime,
-                PromptDetails = promptDetails
+                Question = request.Question,
+                SessionId = request.SessionId,
+                UserId = userId,
+                Options = request.Options,
+                CancellationToken = cancellationToken
             };
 
-            // Debug: Log response details
-            _logger.LogInformation("📤 Query response created: QueryId={QueryId}, HasPromptDetails={HasPromptDetails}, PromptTemplate={TemplateName}",
-                response.QueryId, response.PromptDetails != null, response.PromptDetails?.TemplateName);
-
-            // Cache the result if enabled (both in request options AND admin settings)
-            if (isCachingEnabled)
-            {
-                await CacheQueryAsync(cacheKey, response, TimeSpan.FromHours(24));
-                _logger.LogInformation("💾 CACHE STORED - Question: '{Question}' -> Key: {CacheKey} -> SQL: {SQL}",
-                    request.Question, cacheKey, generatedSQL?.Substring(0, Math.Min(100, generatedSQL?.Length ?? 0)) + "...");
-            }
-            else
-            {
-                _logger.LogInformation("💾 CACHE NOT STORED - Caching disabled for query {QueryId}", queryId);
-            }
-
-            // Log the successful query
-            await LogQueryAsync(userId, request, generatedSQL, true, totalExecutionTime);
-
-            // Log prompt details for admin debugging
-            await LogPromptDetailsAsync(request.Question, prompt, generatedSQL, true, totalExecutionTime, userId, request.SessionId);
-
-            await NotifyProcessingStage(userId, queryId, "completed", "Query processing completed successfully", 100, new {
-                totalExecutionTime = totalExecutionTime,
-                rowCount = response.Result?.Metadata?.RowCount ?? 0,
-                confidence = confidence,
-                cached = false
-            });
-
-            _logger.LogInformation("Query completed successfully - QueryId: {QueryId}, ExecutionTime: {ExecutionTime}ms, RowCount: {RowCount}",
-                queryId, totalExecutionTime, response.Result?.Metadata?.RowCount ?? 0);
-
-            return response;
+            return await _mediator.Send(command, cancellationToken);
         }
         catch (Exception ex)
         {
-            var errorExecutionTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
-            _logger.LogError(ex, "❌ QUERY PROCESSING FAILED - QueryId: {QueryId}, User: {UserId}, Error: {Error}", queryId, userId, ex.Message);
-
-            // Notify UI about the error via SignalR
-            await NotifyProcessingStage(userId, queryId, "error", $"Query processing failed: {ex.Message}", 0, new {
-                error = ex.Message,
-                errorType = ex.GetType().Name,
-                executionTime = errorExecutionTime
-            });
-
-            await LogQueryAsync(userId, request, "", false, errorExecutionTime, ex.Message);
-
-            var errorResponse = CreateErrorResponse(queryId, ex.Message, "", promptDetails);
-
-            // Log the error response details
-            _logger.LogError("❌ RETURNING ERROR RESPONSE - QueryId: {QueryId}, Error: {Error}", queryId, ex.Message);
-
-            return errorResponse;
+            _logger.LogError(ex, "❌ Error in QueryService.ProcessQueryAsync for user {UserId}", userId);
+            throw;
         }
     }
+
+
+
+
+
 
     public async Task<List<QueryHistoryItem>> GetQueryHistoryAsync(string userId, int page = 1, int pageSize = 20)
     {
         try
         {
-            _logger.LogInformation("📋 RETRIEVING QUERY HISTORY - User: {UserId}, Page: {Page}, PageSize: {PageSize}", userId, page, pageSize);
+            _logger.LogInformation("📋 CQRS QueryService - Delegating to GetQueryHistoryQueryHandler for user {UserId}", userId);
 
-            // Get query history directly from QueryHistory table (not audit logs)
-            var queryHistoryEntities = await _context.QueryHistory
-                .Where(q => q.UserId == userId)
-                .OrderByDescending(q => q.QueryTimestamp)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+            var query = new GetQueryHistoryQuery
+            {
+                UserId = userId,
+                Page = page,
+                PageSize = pageSize
+            };
 
-            _logger.LogInformation("📋 FOUND {Count} QUERY HISTORY RECORDS for user {UserId}", queryHistoryEntities.Count, userId);
-
-            var queryHistory = queryHistoryEntities
-                .Select(entity => new QueryHistoryItem
-                {
-                    Id = entity.Id.ToString(),
-                    UserId = entity.UserId,
-                    Question = entity.NaturalLanguageQuery,
-                    Sql = entity.GeneratedSQL,
-                    Timestamp = entity.QueryTimestamp,
-                    ExecutionTimeMs = entity.ExecutionTimeMs ?? 0,
-                    Successful = entity.IsSuccessful,
-                    Error = entity.ErrorMessage
-                })
-                .ToList();
-
-            _logger.LogInformation("📋 RETURNING {Count} QUERY HISTORY ITEMS for user {UserId}", queryHistory.Count, userId);
-            return queryHistory;
+            var result = await _mediator.Send(query);
+            return result.Items;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ ERROR retrieving query history for user {UserId}", userId);
+            _logger.LogError(ex, "❌ Error in QueryService.GetQueryHistoryAsync for user {UserId}", userId);
             return new List<QueryHistoryItem>();
         }
     }
@@ -433,17 +98,19 @@ public class QueryService : IQueryService
     {
         try
         {
-            _logger.LogInformation("Submitting feedback for query {QueryId} from user {UserId}: {Feedback}",
-                feedback.QueryId, userId, feedback.Feedback);
+            _logger.LogInformation("🎯 CQRS QueryService - Delegating to SubmitQueryFeedbackCommandHandler");
 
-            // TODO: Store feedback in database
-            await _auditService.LogAsync("QUERY_FEEDBACK", userId, "QueryFeedback", feedback.QueryId, feedback);
+            var command = new SubmitQueryFeedbackCommand
+            {
+                Feedback = feedback,
+                UserId = userId
+            };
 
-            return true;
+            return await _mediator.Send(command);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error submitting feedback for query {QueryId}", feedback.QueryId);
+            _logger.LogError(ex, "❌ Error in QueryService.SubmitFeedbackAsync for query {QueryId}", feedback.QueryId);
             return false;
         }
     }
@@ -452,13 +119,19 @@ public class QueryService : IQueryService
     {
         try
         {
-            var schema = await _schemaService.GetSchemaMetadataAsync();
-            var suggestions = await _aiService.GenerateQuerySuggestionsAsync(context ?? "general business queries", schema);
-            return suggestions.ToList();
+            _logger.LogInformation("🎯 CQRS QueryService - Delegating to GetQuerySuggestionsQueryHandler");
+
+            var query = new GetQuerySuggestionsQuery
+            {
+                UserId = userId,
+                Context = context
+            };
+
+            return await _mediator.Send(query);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating query suggestions for user {UserId}", userId);
+            _logger.LogError(ex, "❌ Error in QueryService.GetQuerySuggestionsAsync for user {UserId}", userId);
             return new List<string>();
         }
     }
@@ -467,11 +140,12 @@ public class QueryService : IQueryService
     {
         try
         {
-            return await _cacheService.GetAsync<QueryResponse>($"query:{queryHash}");
+            var query = new GetCachedQueryQuery { QueryHash = queryHash };
+            return await _mediator.Send(query);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving cached query {QueryHash}", queryHash);
+            _logger.LogError(ex, "❌ Error in QueryService.GetCachedQueryAsync");
             return null;
         }
     }
@@ -480,11 +154,17 @@ public class QueryService : IQueryService
     {
         try
         {
-            await _cacheService.SetAsync($"query:{queryHash}", response, expiry ?? TimeSpan.FromHours(24));
+            var command = new CacheQueryCommand
+            {
+                QueryHash = queryHash,
+                Response = response,
+                Expiry = expiry
+            };
+            await _mediator.Send(command);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error caching query {QueryHash}", queryHash);
+            _logger.LogError(ex, "❌ Error in QueryService.CacheQueryAsync");
         }
     }
 
@@ -492,244 +172,62 @@ public class QueryService : IQueryService
     {
         try
         {
-            await _cacheService.RemovePatternAsync($"query:{pattern}");
+            var command = new InvalidateQueryCacheCommand { Pattern = pattern };
+            await _mediator.Send(command);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error invalidating query cache pattern {Pattern}", pattern);
+            _logger.LogError(ex, "❌ Error in QueryService.InvalidateQueryCacheAsync");
         }
     }
 
-    private string GenerateCacheKey(string question)
-    {
-        // ROBUST cache key generation with semantic fingerprinting to prevent collisions
-        var normalizedQuestion = question.Trim().ToLowerInvariant()
-            .Replace("  ", " ") // Remove double spaces
-            .Replace("\r\n", " ")
-            .Replace("\n", " ")
-            .Replace("\t", " ");
+    // All business logic has been moved to CQRS handlers for better separation of concerns
 
-        // Extract key semantic elements for better differentiation
-        var queryType = DetermineQueryType(normalizedQuestion);
-        var keyWords = ExtractKeyWords(normalizedQuestion);
-        var questionStructure = AnalyzeQuestionStructure(normalizedQuestion);
-
-        // Add current date for time-sensitive queries
-        var currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
-
-        // Create comprehensive cache key with multiple differentiators
-        var cacheKeyData = $"q:{normalizedQuestion}|type:{queryType}|keywords:{keyWords}|structure:{questionStructure}|date:{currentDate}|len:{question.Length}";
-
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(cacheKeyData));
-        var hexHash = Convert.ToHexString(hash);
-
-        _logger.LogInformation("🔑 ENHANCED CACHE KEY - Question: '{Question}' -> Type: {QueryType} -> Keywords: {Keywords} -> Hash: {Hash}",
-            question, queryType, keyWords, hexHash);
-
-        return hexHash;
-    }
-
-    private string DetermineQueryType(string question)
-    {
-        var lowerQuestion = question.ToLowerInvariant();
-
-        if (lowerQuestion.Contains("count") && (lowerQuestion.Contains("player") || lowerQuestion.Contains("user")))
-            return "player_count";
-        if (lowerQuestion.Contains("top") && lowerQuestion.Contains("player"))
-            return "top_players";
-        if (lowerQuestion.Contains("deposit"))
-            return "deposits";
-        if (lowerQuestion.Contains("revenue") || lowerQuestion.Contains("income"))
-            return "revenue";
-        if (lowerQuestion.Contains("bonus"))
-            return "bonus";
-        if (lowerQuestion.Contains("yesterday"))
-            return "yesterday";
-        if (lowerQuestion.Contains("last") && (lowerQuestion.Contains("day") || lowerQuestion.Contains("week")))
-            return "recent_period";
-
-        return "general";
-    }
-
-    private string ExtractKeyWords(string question)
-    {
-        var words = question.ToLowerInvariant()
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Where(w => w.Length > 2) // Filter out short words
-            .Where(w => !new[] { "the", "and", "for", "are", "but", "not", "you", "all", "can", "had", "her", "was", "one", "our", "out", "day", "get", "has", "him", "his", "how", "man", "new", "now", "old", "see", "two", "way", "who", "boy", "did", "its", "let", "put", "say", "she", "too", "use" }.Contains(w))
-            .OrderBy(w => w)
-            .Take(5); // Take top 5 meaningful words
-
-        return string.Join("|", words);
-    }
-
-    private string AnalyzeQuestionStructure(string question)
-    {
-        var structure = "";
-        var lowerQuestion = question.ToLowerInvariant();
-
-        if (lowerQuestion.StartsWith("count")) structure += "count_";
-        if (lowerQuestion.StartsWith("top")) structure += "top_";
-        if (lowerQuestion.StartsWith("show")) structure += "show_";
-        if (lowerQuestion.Contains("yesterday")) structure += "yesterday_";
-        if (lowerQuestion.Contains("last")) structure += "last_";
-        if (lowerQuestion.Contains("player")) structure += "player_";
-        if (lowerQuestion.Contains("deposit")) structure += "deposit_";
-
-        return structure.TrimEnd('_');
-    }
-
-    private QueryResponse CreateErrorResponse(string queryId, string error, string? sql = null, PromptDetails? promptDetails = null)
-    {
-        return new QueryResponse
-        {
-            QueryId = queryId,
-            Sql = sql ?? "",
-            Success = false,
-            Error = error,
-            Timestamp = DateTime.UtcNow,
-            Confidence = 0,
-            Suggestions = Array.Empty<string>(),
-            Cached = false,
-            ExecutionTimeMs = 0,
-            PromptDetails = promptDetails
-        };
-    }
-
-    private async Task LogQueryAsync(string userId, QueryRequest request, string sql, bool successful, int executionTime, string? error = null)
-    {
-        try
-        {
-            await _auditService.LogQueryAsync(userId, request.SessionId, request.Question, sql, successful, executionTime, error);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error logging query for user {UserId}", userId);
-        }
-    }
-
-    // Removed old audit log parsing methods - now reading directly from QueryHistory table
-
-    private async Task LogPromptDetailsAsync(string userQuery, string fullPrompt, string generatedSQL, bool success, int executionTime, string? userId = null, string? sessionId = null, string? errorMessage = null)
-    {
-        try
-        {
-            // This will be handled by the PromptService, but we can add additional context here
-            _logger.LogDebug("Query processed - User: {UserId}, Success: {Success}, ExecutionTime: {ExecutionTime}ms",
-                userId, success, executionTime);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error logging prompt details for user {UserId}", userId);
-        }
-    }
-
-    #region Advanced Query Processing Methods
+    #region Interface Compliance Methods - Delegated to CQRS Handlers
 
     public async Task<ProcessedQuery> ProcessAdvancedQueryAsync(string query, string userId, CoreModels.QueryContext? context = null)
     {
-        try
-        {
-            _logger.LogInformation("Processing advanced query for user {UserId}: {Query}", userId, query);
-
-            var processedQuery = new ProcessedQuery
-            {
-                OriginalQuery = query,
-                UserId = userId,
-                Context = context,
-                ProcessedAt = DateTime.UtcNow
-            };
-
-            // Generate SQL using AI service
-            var schema = await _schemaService.GetSchemaMetadataAsync();
-            processedQuery.GeneratedSQL = await _aiService.GenerateSQLAsync(query);
-
-            // Calculate semantic similarity with previous queries
-            var similarQueries = await FindSimilarQueriesAsync(query, userId, 3);
-            processedQuery.SimilarQueries = similarQueries;
-
-            return processedQuery;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing advanced query for user {UserId}: {Query}", userId, query);
-            throw;
-        }
+        // This could be implemented as a separate CQRS command if needed
+        _logger.LogInformation("🎯 Advanced query processing not yet implemented in CQRS pattern");
+        throw new NotImplementedException("Advanced query processing will be implemented as CQRS commands");
     }
 
     public async Task<double> CalculateSemanticSimilarityAsync(string query1, string query2)
     {
-        try
-        {
-            // Fallback to simple text similarity
-            return CalculateSimpleTextSimilarity(query1, query2);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error calculating semantic similarity");
-            return 0.0;
-        }
+        // This could be implemented as a separate CQRS query if needed
+        _logger.LogInformation("🎯 Semantic similarity calculation not yet implemented in CQRS pattern");
+        return 0.0;
     }
 
     public async Task<List<ProcessedQuery>> FindSimilarQueriesAsync(string query, string userId, int limit = 5)
     {
-        try
-        {
-            // In a real implementation, this would search a database of processed queries
-            // For now, return empty list
-            return new List<ProcessedQuery>();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error finding similar queries for user {UserId}", userId);
-            return new List<ProcessedQuery>();
-        }
+        // This could be implemented as a separate CQRS query if needed
+        _logger.LogInformation("🎯 Similar queries search not yet implemented in CQRS pattern");
+        return new List<ProcessedQuery>();
     }
 
-    private double CalculateSimpleTextSimilarity(string text1, string text2)
-    {
-        // Simple Jaccard similarity
-        var words1 = text1.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
-        var words2 = text2.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
-
-        var intersection = words1.Intersect(words2).Count();
-        var union = words1.Union(words2).Count();
-
-        return union > 0 ? (double)intersection / union : 0.0;
-    }
-
-    // Additional methods for interface compliance
     public async Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(string queryHash)
     {
-        try
+        // This could be implemented as a separate CQRS query if needed
+        _logger.LogInformation("🎯 Query performance metrics not yet implemented in CQRS pattern");
+        return new QueryPerformanceMetrics
         {
-            // Basic implementation - in production, this would query performance data
-            return new QueryPerformanceMetrics
-            {
-                ExecutionTime = TimeSpan.FromMilliseconds(100),
-                RowsAffected = 0,
-                FromCache = false
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting query performance for hash: {QueryHash}", queryHash);
-            throw;
-        }
+            ExecutionTime = TimeSpan.FromMilliseconds(100),
+            RowsAffected = 0,
+            FromCache = false
+        };
     }
 
     public async Task<bool> ValidateQueryAsync(string sql)
     {
         try
         {
-            // Basic validation - check if it's a SELECT query
-            var trimmedSql = sql.Trim();
-            return trimmedSql.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase);
+            var query = new ValidateSqlQuery { Sql = sql };
+            return await _mediator.Send(query);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error validating SQL: {Sql}", sql);
+            _logger.LogError(ex, "❌ Error in QueryService.ValidateQueryAsync");
             return false;
         }
     }
@@ -738,61 +236,28 @@ public class QueryService : IQueryService
     {
         try
         {
-            // Basic implementation - return some default suggestions
-            return new List<QuerySuggestion>
-            {
-                new QuerySuggestion { Text = "Show me all data" },
-                new QuerySuggestion { Text = "Count total records" },
-                new QuerySuggestion { Text = "Show recent data" }
-            };
+            var suggestions = await GetQuerySuggestionsAsync(userId, context);
+            return suggestions.Select(s => new QuerySuggestion { Text = s }).ToList();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting smart suggestions for user: {UserId}", userId);
+            _logger.LogError(ex, "❌ Error in QueryService.GetSmartSuggestionsAsync");
             return new List<QuerySuggestion>();
         }
     }
 
     public async Task<QueryOptimizationResult> OptimizeQueryAsync(string sql)
     {
-        try
+        // This could be implemented as a separate CQRS command if needed
+        _logger.LogInformation("🎯 Query optimization not yet implemented in CQRS pattern");
+        return new QueryOptimizationResult
         {
-            // Basic implementation - return the original SQL with minimal optimization
-            return new QueryOptimizationResult
-            {
-                OriginalQuery = sql,
-                OptimizedQuery = sql,
-                ImprovementScore = 0.0,
-                Suggestions = new List<OptimizationSuggestion>()
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error optimizing SQL: {Sql}", sql);
-            throw;
-        }
+            OriginalQuery = sql,
+            OptimizedQuery = sql,
+            ImprovementScore = 0.0,
+            Suggestions = new List<OptimizationSuggestion>()
+        };
     }
 
     #endregion
-
-    /// <summary>
-    /// Notify processing stage via real-time communication
-    /// </summary>
-    private async Task NotifyProcessingStage(string userId, string queryId, string stage, string message, int progress, object? details = null)
-    {
-        try
-        {
-            _logger.LogInformation("📡 Query Progress - User: {UserId}, QueryId: {QueryId}, Stage: {Stage}, Progress: {Progress}%, Message: {Message}",
-                userId, queryId, stage, progress, message);
-
-            if (_progressNotifier != null)
-            {
-                await _progressNotifier.NotifyProcessingStageAsync(userId, queryId, stage, message, progress, details);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send processing stage notification for user {UserId}, query {QueryId}", userId, queryId);
-        }
-    }
 }

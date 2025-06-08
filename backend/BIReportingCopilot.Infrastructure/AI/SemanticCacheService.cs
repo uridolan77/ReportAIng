@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
+using BIReportingCopilot.Infrastructure.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Security.Cryptography;
@@ -11,23 +12,24 @@ using System.Text;
 namespace BIReportingCopilot.Infrastructure.AI;
 
 /// <summary>
-/// Semantic cache service that understands query similarity and provides intelligent caching
+/// Enhanced semantic cache service using bounded contexts for better performance and maintainability
+/// Uses QueryDbContext for semantic cache entries and query history
 /// </summary>
 public class SemanticCacheService : ISemanticCacheService
 {
     private readonly IMemoryCache _memoryCache;
-    private readonly BICopilotContext _context;
+    private readonly IDbContextFactory _contextFactory;
     private readonly ILogger<SemanticCacheService> _logger;
     private readonly SemanticCacheConfiguration _config;
     private readonly QuerySimilarityAnalyzer _similarityAnalyzer;
 
     public SemanticCacheService(
         IMemoryCache memoryCache,
-        BICopilotContext context,
+        IDbContextFactory contextFactory,
         ILogger<SemanticCacheService> logger)
     {
         _memoryCache = memoryCache;
-        _context = context;
+        _contextFactory = contextFactory;
         _logger = logger;
         _similarityAnalyzer = new QuerySimilarityAnalyzer(logger);
         _config = new SemanticCacheConfiguration();
@@ -114,9 +116,13 @@ public class SemanticCacheService : ISemanticCacheService
                 LastAccessedAt = DateTime.UtcNow
             };
 
-            // Store in database for persistence and similarity search
-            _context.SemanticCacheEntries.Add(cacheEntry);
-            await _context.SaveChangesAsync();
+            // Store in database for persistence and similarity search using QueryDbContext
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            {
+                var queryContext = (QueryDbContext)context;
+                queryContext.SemanticCacheEntries.Add(cacheEntry);
+                await queryContext.SaveChangesAsync();
+            });
 
             // Store in memory cache for fast access
             var cacheResult = new SemanticCacheResult
@@ -145,20 +151,24 @@ public class SemanticCacheService : ISemanticCacheService
     {
         try
         {
-            var affectedEntries = await _context.SemanticCacheEntries
-                .Where(e => e.GeneratedSql != null && e.GeneratedSql.Contains(tableName, StringComparison.OrdinalIgnoreCase))
-                .ToListAsync();
-
-            foreach (var entry in affectedEntries)
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
             {
-                entry.ExpiresAt = DateTime.UtcNow; // Mark as expired
-                _memoryCache.Remove($"semantic_{entry.QueryHash}");
-            }
+                var queryContext = (QueryDbContext)context;
+                var affectedEntries = await queryContext.SemanticCacheEntries
+                    .Where(e => e.GeneratedSql != null && e.GeneratedSql.Contains(tableName, StringComparison.OrdinalIgnoreCase))
+                    .ToListAsync();
 
-            await _context.SaveChangesAsync();
+                foreach (var entry in affectedEntries)
+                {
+                    entry.ExpiresAt = DateTime.UtcNow; // Mark as expired
+                    _memoryCache.Remove($"semantic_{entry.QueryHash}");
+                }
 
-            _logger.LogInformation("Invalidated {Count} cache entries for table {TableName} due to {ChangeType}",
-                affectedEntries.Count, tableName, changeType);
+                await queryContext.SaveChangesAsync();
+
+                _logger.LogInformation("Invalidated {Count} cache entries for table {TableName} due to {ChangeType}",
+                    affectedEntries.Count, tableName, changeType);
+            });
         }
         catch (Exception ex)
         {
@@ -173,28 +183,32 @@ public class SemanticCacheService : ISemanticCacheService
     {
         try
         {
-            var stats = await _context.SemanticCacheEntries
-                .Where(e => e.ExpiresAt > DateTime.UtcNow)
-                .GroupBy(e => 1)
-                .Select(g => new
-                {
-                    TotalEntries = g.Count(),
-                    TotalAccesses = g.Sum(e => e.AccessCount),
-                    AverageAge = g.Average(e => EF.Functions.DateDiffHour(e.CreatedAt, DateTime.UtcNow))
-                })
-                .FirstOrDefaultAsync();
-
-            var hitRate = await CalculateHitRateAsync();
-
-            return new SemanticCacheStatistics
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
             {
-                TotalEntries = stats?.TotalEntries ?? 0,
-                TotalAccesses = stats?.TotalAccesses ?? 0,
-                AverageAgeHours = stats?.AverageAge ?? 0,
-                HitRate = hitRate,
-                MemoryCacheSize = GetMemoryCacheSize(),
-                LastUpdated = DateTime.UtcNow
-            };
+                var queryContext = (QueryDbContext)context;
+                var stats = await queryContext.SemanticCacheEntries
+                    .Where(e => e.ExpiresAt > DateTime.UtcNow)
+                    .GroupBy(e => 1)
+                    .Select(g => new
+                    {
+                        TotalEntries = g.Count(),
+                        TotalAccesses = g.Sum(e => e.AccessCount),
+                        AverageAge = g.Average(e => EF.Functions.DateDiffHour(e.CreatedAt, DateTime.UtcNow))
+                    })
+                    .FirstOrDefaultAsync();
+
+                var hitRate = await CalculateHitRateAsync(queryContext);
+
+                return new SemanticCacheStatistics
+                {
+                    TotalEntries = stats?.TotalEntries ?? 0,
+                    TotalAccesses = stats?.TotalAccesses ?? 0,
+                    AverageAgeHours = stats?.AverageAge ?? 0,
+                    HitRate = hitRate,
+                    MemoryCacheSize = GetMemoryCacheSize(),
+                    LastUpdated = DateTime.UtcNow
+                };
+            });
         }
         catch (Exception ex)
         {
@@ -210,14 +224,18 @@ public class SemanticCacheService : ISemanticCacheService
     {
         try
         {
-            var expiredEntries = await _context.SemanticCacheEntries
-                .Where(e => e.ExpiresAt <= DateTime.UtcNow)
-                .ToListAsync();
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            {
+                var queryContext = (QueryDbContext)context;
+                var expiredEntries = await queryContext.SemanticCacheEntries
+                    .Where(e => e.ExpiresAt <= DateTime.UtcNow)
+                    .ToListAsync();
 
-            _context.SemanticCacheEntries.RemoveRange(expiredEntries);
-            await _context.SaveChangesAsync();
+                queryContext.SemanticCacheEntries.RemoveRange(expiredEntries);
+                await queryContext.SaveChangesAsync();
 
-            _logger.LogInformation("Cleaned up {Count} expired cache entries", expiredEntries.Count);
+                _logger.LogInformation("Cleaned up {Count} expired cache entries", expiredEntries.Count);
+            });
         }
         catch (Exception ex)
         {
@@ -229,11 +247,15 @@ public class SemanticCacheService : ISemanticCacheService
     {
         var currentFeatures = await _similarityAnalyzer.ExtractSemanticsAsync(naturalLanguageQuery, sqlQuery);
 
-        var candidateEntries = await _context.SemanticCacheEntries
-            .Where(e => e.ExpiresAt > DateTime.UtcNow)
-            .OrderByDescending(e => e.LastAccessedAt)
-            .Take(100) // Limit for performance
-            .ToListAsync();
+        var candidateEntries = await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+        {
+            var queryContext = (QueryDbContext)context;
+            return await queryContext.SemanticCacheEntries
+                .Where(e => e.ExpiresAt > DateTime.UtcNow)
+                .OrderByDescending(e => e.LastAccessedAt)
+                .Take(100) // Limit for performance
+                .ToListAsync();
+        });
 
         var similarQueries = new List<SimilarQueryResult>();
 
@@ -268,7 +290,12 @@ public class SemanticCacheService : ISemanticCacheService
 
         if (similarQueries.Any())
         {
-            await _context.SaveChangesAsync(); // Save access count updates
+            // Save access count updates using QueryDbContext
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            {
+                var queryContext = (QueryDbContext)context;
+                await queryContext.SaveChangesAsync();
+            });
         }
 
         return similarQueries;
@@ -282,12 +309,12 @@ public class SemanticCacheService : ISemanticCacheService
         return Convert.ToBase64String(hash)[..16]; // Take first 16 characters
     }
 
-    private async Task<double> CalculateHitRateAsync()
+    private async Task<double> CalculateHitRateAsync(QueryDbContext queryContext)
     {
         try
         {
-            var totalQueries = await _context.QueryHistories.CountAsync();
-            var cacheHits = await _context.SemanticCacheEntries.SumAsync(e => e.AccessCount);
+            var totalQueries = await queryContext.QueryHistories.CountAsync();
+            var cacheHits = await queryContext.SemanticCacheEntries.SumAsync(e => e.AccessCount);
 
             return totalQueries > 0 ? (double)cacheHits / totalQueries : 0.0;
         }
@@ -336,7 +363,11 @@ public interface ISemanticCacheService
 public class SemanticCacheConfiguration
 {
     public double MinimumSimilarityThreshold { get; set; } = 0.75;
+    public double SimilarityThreshold { get; set; } = 0.75; // Alias for compatibility
+    public int MaxSimilarQueries { get; set; } = 5;
+    public string EmbeddingModel { get; set; } = "text-embedding-ada-002";
     public TimeSpan DefaultExpiry { get; set; } = TimeSpan.FromHours(24);
+    public TimeSpan DefaultExpiration { get; set; } = TimeSpan.FromHours(24); // Alias for compatibility
     public int MaxCacheEntries { get; set; } = 10000;
     public TimeSpan CleanupInterval { get; set; } = TimeSpan.FromHours(6);
 }
@@ -347,10 +378,17 @@ public class SemanticCacheConfiguration
 public class SemanticCacheResult
 {
     public QueryResponse QueryResponse { get; set; } = new();
+    public QueryResponse? CachedResponse { get; set; } // Alias for compatibility
     public double SimilarityScore { get; set; }
     public string OriginalQuery { get; set; } = string.Empty;
     public DateTime CacheTimestamp { get; set; }
     public bool IsSemanticMatch { get; set; }
+    public bool IsHit { get; set; }
+    public List<string> SimilarQueries { get; set; } = new();
+    public TimeSpan LookupTime { get; set; }
+    public string CacheStrategy { get; set; } = "Semantic";
+    public Dictionary<string, object> Metadata { get; set; } = new();
+    public object? CacheEntry { get; set; }
 }
 
 /// <summary>
@@ -364,6 +402,12 @@ public class SemanticCacheStatistics
     public double HitRate { get; set; }
     public int MemoryCacheSize { get; set; }
     public DateTime LastUpdated { get; set; }
+
+    // Additional properties expected by Infrastructure layer
+    public int HitCount { get; set; }
+    public int MissCount { get; set; }
+    public long TotalSizeBytes { get; set; }
+    public int TotalRequests { get; set; }
 }
 
 /// <summary>
@@ -397,12 +441,17 @@ public class QuerySimilarityAnalyzer
     {
         try
         {
+            var intent = ClassifyIntent(naturalLanguageQuery);
+            var complexity = CalculateComplexity(sqlQuery);
+
             var features = new SemanticFeatures
             {
                 Keywords = ExtractKeywords(naturalLanguageQuery),
                 Entities = ExtractEntities(naturalLanguageQuery),
-                Intent = ClassifyIntent(naturalLanguageQuery),
-                Complexity = CalculateComplexity(sqlQuery),
+                Intent = intent,
+                Intents = new List<string> { intent }, // Populate both for compatibility
+                Complexity = complexity,
+                ComplexityScore = complexity, // Populate both for compatibility
                 TableReferences = ExtractTableReferences(sqlQuery),
                 ColumnReferences = ExtractColumnReferences(sqlQuery),
                 QueryType = DetermineQueryType(sqlQuery),
@@ -599,7 +648,9 @@ public class SemanticFeatures
     public List<string> Keywords { get; set; } = new();
     public List<string> Entities { get; set; } = new();
     public string Intent { get; set; } = string.Empty;
+    public List<string> Intents { get; set; } = new();
     public double Complexity { get; set; }
+    public double ComplexityScore { get; set; }
     public List<string> TableReferences { get; set; } = new();
     public List<string> ColumnReferences { get; set; } = new();
     public string QueryType { get; set; } = string.Empty;

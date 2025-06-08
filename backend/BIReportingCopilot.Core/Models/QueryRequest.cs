@@ -158,15 +158,7 @@ public class DashboardConfig
     public int? RefreshInterval { get; set; } // seconds
 }
 
-public class DashboardLayout
-{
-    public int Rows { get; set; }
-    public int Columns { get; set; }
-    public string[] ChartSizes { get; set; } = Array.Empty<string>(); // full, half, quarter, third
-    public string Type { get; set; } = "grid";
-    public int Spacing { get; set; } = 16;
-    public int Padding { get; set; } = 24;
-}
+// DashboardLayout moved to MultiModalDashboards.cs to avoid duplicates
 
 public class QueryHistoryItem
 {
@@ -190,6 +182,9 @@ public class QueryFeedback
     [Required]
     [RegularExpression("^(positive|negative|neutral)$", ErrorMessage = "Feedback must be 'positive', 'negative', or 'neutral'")]
     public string Feedback { get; set; } = string.Empty;
+
+    [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5")]
+    public int Rating { get; set; } = 3;
 
     [StringLength(1000, ErrorMessage = "Comments cannot exceed 1000 characters")]
     public string? Comments { get; set; }

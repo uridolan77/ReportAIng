@@ -68,6 +68,7 @@ public class DashboardPreferences
     public bool EnableAnalytics { get; set; } = false;
     public LayoutPreference Layout { get; set; } = LayoutPreference.Auto;
     public string[] PreferredChartTypes { get; set; } = Array.Empty<string>();
+    public int? GridGap { get; set; }
 }
 
 /// <summary>

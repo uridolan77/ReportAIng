@@ -1,0 +1,689 @@
+namespace BIReportingCopilot.Core.Models;
+
+/// <summary>
+/// Query execution metrics for performance tracking
+/// </summary>
+public class QueryExecutionMetrics
+{
+    public string QueryId { get; set; } = string.Empty;
+    public DateTime StartTime { get; set; } = DateTime.UtcNow;
+    public DateTime EndTime { get; set; } = DateTime.UtcNow;
+    public int ExecutionTimeMs { get; set; }
+    public int RowCount { get; set; }
+    public long MemoryUsageBytes { get; set; }
+    public int CpuUsagePercent { get; set; }
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+    public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
+}
+
+/// <summary>
+/// Query metrics for analysis and optimization
+/// </summary>
+public class QueryMetrics
+{
+    public double NLUConfidence { get; set; }
+    public double QueryIntelligenceScore { get; set; }
+    public double OptimizationScore { get; set; }
+    public int ExecutionTimeMs { get; set; }
+    public int RowCount { get; set; }
+    public bool CacheHit { get; set; }
+    public Dictionary<string, double> PerformanceIndicators { get; set; } = new();
+    public List<string> OptimizationSuggestions { get; set; } = new();
+}
+
+/// <summary>
+/// Performance goal for optimization
+/// </summary>
+public class PerformanceGoal
+{
+    public string GoalId { get; set; } = Guid.NewGuid().ToString();
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public PerformanceGoalType Type { get; set; } = PerformanceGoalType.ExecutionTime;
+    public double TargetValue { get; set; }
+    public string Unit { get; set; } = string.Empty;
+    public PerformanceGoalPriority Priority { get; set; } = PerformanceGoalPriority.Medium;
+    public bool IsActive { get; set; } = true;
+}
+
+/// <summary>
+/// Performance metrics for system monitoring
+/// </summary>
+public class PerformanceMetrics
+{
+    public double AverageResponseTime { get; set; }
+    public double ThroughputPerSecond { get; set; }
+    public double ErrorRate { get; set; }
+    public double CpuUsagePercent { get; set; }
+    public double MemoryUsagePercent { get; set; }
+    public double DiskUsagePercent { get; set; }
+    public int ActiveConnections { get; set; }
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public Dictionary<string, double> CustomMetrics { get; set; } = new();
+
+    // Additional properties for compatibility with API controllers
+    public double MedianResponseTime { get; set; }
+    public double P95ResponseTime { get; set; }
+    public double SuccessRate { get; set; } = 1.0;
+}
+
+/// <summary>
+/// Cache statistics for monitoring
+/// </summary>
+public class CacheStatistics
+{
+    public int TotalEntries { get; set; }
+    public long TotalSizeBytes { get; set; }
+    public int HitCount { get; set; }
+    public int MissCount { get; set; }
+    public double HitRate => TotalRequests > 0 ? (double)HitCount / TotalRequests : 0.0;
+    public int TotalRequests => HitCount + MissCount;
+    public TimeSpan AverageRetrievalTime { get; set; }
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public Dictionary<string, object> AdditionalStats { get; set; } = new();
+
+    // Additional properties expected by Infrastructure layer
+    public long TotalKeys { get; set; } // Alias for TotalEntries
+    public long MemoryUsage { get; set; } // Alias for TotalSizeBytes
+    public double HitRatio => HitRate; // Alias for HitRate
+
+    // Additional properties for semantic cache compatibility
+    public int SemanticCacheHits { get; set; }
+    public int SemanticCacheMisses { get; set; }
+    public double SemanticCacheHitRate { get; set; }
+    public int TotalSemanticEntries { get; set; }
+}
+
+/// <summary>
+/// SQL query result with metadata
+/// </summary>
+public class SqlQueryResult
+{
+    public bool Success { get; set; }
+    public bool IsSuccessful => Success; // Alias for Success property
+    public string? Error { get; set; }
+    public List<Dictionary<string, object>> Data { get; set; } = new();
+    public int RowCount { get; set; }
+    public int ExecutionTimeMs { get; set; }
+    public string ExecutedSql { get; set; } = string.Empty;
+    public QueryExecutionMetrics Metrics { get; set; } = new();
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
+/// SQL query metadata for enhanced tracking
+/// </summary>
+public class SqlQueryMetadata
+{
+    public string QueryId { get; set; } = string.Empty;
+    public string QueryType { get; set; } = string.Empty;
+    public List<string> TablesAccessed { get; set; } = new();
+    public int ParameterCount { get; set; }
+    public double ComplexityScore { get; set; }
+    public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
+    public string UserId { get; set; } = string.Empty;
+    public Dictionary<string, object> AdditionalMetadata { get; set; } = new();
+    public string? Error { get; set; }
+    public int ExecutionTimeMs { get; set; }
+}
+
+/// <summary>
+/// Trend analysis for performance data
+/// </summary>
+public class TrendAnalysis
+{
+    public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
+    public string MetricName { get; set; } = string.Empty;
+    public TrendDirection Direction { get; set; } = TrendDirection.Stable;
+    public double Slope { get; set; }
+    public double Confidence { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public List<TrendDataPoint> DataPoints { get; set; } = new();
+    public List<string> Insights { get; set; } = new();
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Data point for trend analysis
+/// </summary>
+public class TrendDataPoint
+{
+    public DateTime Timestamp { get; set; }
+    public double Value { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
+/// Export options for various formats
+/// </summary>
+public class ExportOptions
+{
+    public int? Width { get; set; }
+    public int? Height { get; set; }
+    public string? Theme { get; set; }
+    public bool IncludeData { get; set; } = true;
+    public bool IncludeMetadata { get; set; } = true;
+    public string? Watermark { get; set; }
+    public Dictionary<string, object> CustomOptions { get; set; } = new();
+}
+
+// NLUMetrics and NLUPerformancePattern moved to AIModels.cs to avoid duplicates
+
+/// <summary>
+/// Index suggestion for database optimization
+/// </summary>
+public class IndexSuggestion
+{
+    public string SuggestionId { get; set; } = Guid.NewGuid().ToString();
+    public string TableName { get; set; } = string.Empty;
+    public List<string> Columns { get; set; } = new();
+    public IndexType Type { get; set; } = IndexType.BTree;
+    public IndexPriority Priority { get; set; } = IndexPriority.Medium;
+    public double EstimatedImpact { get; set; }
+    public string Reasoning { get; set; } = string.Empty;
+    public string SqlScript { get; set; } = string.Empty;
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+    public bool IsImplemented { get; set; } = false;
+
+    // Additional properties for compatibility
+    public double ImpactScore { get; set; }
+    public string CreateStatement { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Schema health analysis result
+/// </summary>
+public class SchemaHealthAnalysis
+{
+    public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
+    public double OverallHealthScore { get; set; }
+    public List<SchemaIssue> Issues { get; set; } = new();
+    public List<SchemaRecommendation> Recommendations { get; set; } = new();
+    public SchemaHealthMetrics Metrics { get; set; } = new();
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+    public TimeSpan AnalysisDuration { get; set; }
+
+    // Additional properties for compatibility
+    public TableHealthAnalysis? TableHealth { get; set; }
+    public IndexHealthAnalysis? IndexHealth { get; set; }
+    public RelationshipAnalysis? RelationshipHealth { get; set; }
+    public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Schema issue identified during health analysis
+/// </summary>
+public class SchemaIssue
+{
+    public string IssueId { get; set; } = Guid.NewGuid().ToString();
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public IssueSeverity Severity { get; set; } = IssueSeverity.Medium;
+    public IssueCategory Category { get; set; } = IssueCategory.Performance;
+    public string TableName { get; set; } = string.Empty;
+    public string ColumnName { get; set; } = string.Empty;
+    public List<string> SuggestedActions { get; set; } = new();
+    public DateTime DetectedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Schema recommendation for improvements
+/// </summary>
+public class SchemaRecommendation
+{
+    public string RecommendationId { get; set; } = Guid.NewGuid().ToString();
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public RecommendationPriority Priority { get; set; } = RecommendationPriority.Medium;
+    public RecommendationType Type { get; set; } = RecommendationType.Performance;
+    public double EstimatedImpact { get; set; }
+    public string Implementation { get; set; } = string.Empty;
+    public List<string> Benefits { get; set; } = new();
+    public List<string> Risks { get; set; } = new();
+}
+
+/// <summary>
+/// Schema health metrics
+/// </summary>
+public class SchemaHealthMetrics
+{
+    public int TotalTables { get; set; }
+    public int TotalColumns { get; set; }
+    public int TotalIndexes { get; set; }
+    public int MissingIndexes { get; set; }
+    public int UnusedIndexes { get; set; }
+    public double AverageTableSize { get; set; }
+    public int NormalizationIssues { get; set; }
+    public int PerformanceIssues { get; set; }
+    public int SecurityIssues { get; set; }
+}
+
+/// <summary>
+/// Execution plan analysis result
+/// </summary>
+public class ExecutionPlanAnalysis
+{
+    public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
+    public string QueryId { get; set; } = string.Empty;
+    public double ComplexityScore { get; set; }
+    public List<ExecutionPlanBottleneck> Bottlenecks { get; set; } = new();
+    public List<OptimizationOpportunity> OptimizationOpportunities { get; set; } = new();
+    public ExecutionPlanMetrics Metrics { get; set; } = new();
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+
+    // Additional properties for compatibility
+    public string Sql { get; set; } = string.Empty;
+    public List<ExecutionStep> Steps { get; set; } = new();
+    public ResourceUsageAnalysis? ResourceUsage { get; set; }
+    public double EstimatedCost { get; set; }
+}
+
+/// <summary>
+/// Execution plan bottleneck
+/// </summary>
+public class ExecutionPlanBottleneck
+{
+    public string BottleneckId { get; set; } = Guid.NewGuid().ToString();
+    public string Operation { get; set; } = string.Empty;
+    public double CostPercentage { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public BottleneckSeverity Severity { get; set; } = BottleneckSeverity.Medium;
+    public List<string> SuggestedFixes { get; set; } = new();
+}
+
+/// <summary>
+/// Optimization opportunity in execution plan
+/// </summary>
+public class OptimizationOpportunity
+{
+    public string OpportunityId { get; set; } = Guid.NewGuid().ToString();
+    public string Description { get; set; } = string.Empty;
+    public double EstimatedImprovement { get; set; }
+    public OptimizationPriority Priority { get; set; } = OptimizationPriority.Medium;
+    public string Implementation { get; set; } = string.Empty;
+    public List<string> Benefits { get; set; } = new();
+
+    // Additional properties for compatibility
+    public string Type { get; set; } = string.Empty;
+    public double PotentialImpact { get; set; }
+    public string Recommendation { get; set; } = string.Empty;
+    public List<string> RequiredActions { get; set; } = new();
+    public double ImplementationComplexity { get; set; }
+}
+
+/// <summary>
+/// Execution plan metrics
+/// </summary>
+public class ExecutionPlanMetrics
+{
+    public double TotalCost { get; set; }
+    public int OperationCount { get; set; }
+    public double EstimatedRows { get; set; }
+    public double EstimatedExecutionTime { get; set; }
+    public int IndexSeeks { get; set; }
+    public int IndexScans { get; set; }
+    public int TableScans { get; set; }
+    public Dictionary<string, double> OperationCosts { get; set; } = new();
+}
+
+// Enumerations
+public enum PerformanceGoalType
+{
+    ExecutionTime,
+    Throughput,
+    MemoryUsage,
+    CpuUsage,
+    ErrorRate
+}
+
+public enum PerformanceGoalPriority
+{
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+public enum IndexType
+{
+    BTree,
+    Hash,
+    Bitmap,
+    Clustered,
+    NonClustered,
+    Unique
+}
+
+public enum IndexPriority
+{
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+public enum IssueSeverity
+{
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+public enum IssueCategory
+{
+    Performance,
+    Security,
+    Maintainability,
+    Scalability,
+    Reliability
+}
+
+public enum BottleneckSeverity
+{
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+public enum OptimizationPriority
+{
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+public enum OptimizationGoal
+{
+    Performance,
+    Readability,
+    Maintainability,
+    Security,
+    Scalability
+}
+
+/// <summary>
+/// SQL optimization result
+/// </summary>
+public class SqlOptimizationResult
+{
+    public string OptimizedSql { get; set; } = string.Empty;
+    public double ConfidenceScore { get; set; }
+    public List<OptimizationImprovement> Improvements { get; set; } = new();
+    public TimeSpan EstimatedTimeSaving { get; set; }
+    public string Reasoning { get; set; } = string.Empty;
+
+    // Additional properties expected by Infrastructure layer
+    public string OriginalSql { get; set; } = string.Empty;
+    public List<SqlOptimization> Optimizations { get; set; } = new();
+    public PerformanceComparison? PerformanceComparison { get; set; }
+    public List<string> Warnings { get; set; } = new();
+}
+
+/// <summary>
+/// Optimization improvement
+/// </summary>
+public class OptimizationImprovement
+{
+    public string Type { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public double Impact { get; set; }
+}
+
+/// <summary>
+/// Optimization goals
+/// </summary>
+public class OptimizationGoals
+{
+    public List<OptimizationGoal> Goals { get; set; } = new();
+    public Dictionary<string, double> Weights { get; set; } = new();
+
+    // Additional properties expected by Infrastructure layer
+    public bool OptimizeForSpeed => Goals.Contains(OptimizationGoal.Performance);
+}
+
+/// <summary>
+/// Query rewrite suggestion
+/// </summary>
+public class QueryRewrite
+{
+    public string OriginalQuery { get; set; } = string.Empty;
+    public string RewrittenQuery { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+    public double ConfidenceScore { get; set; }
+}
+
+/// <summary>
+/// Performance trend analysis
+/// </summary>
+public class PerformanceTrendAnalysis
+{
+    public string MetricName { get; set; } = string.Empty;
+    public TrendDirection Direction { get; set; }
+    public double TrendStrength { get; set; }
+    public List<TrendDataPoint> DataPoints { get; set; } = new();
+}
+
+/// <summary>
+/// Maintenance recommendation
+/// </summary>
+public class MaintenanceRecommendation
+{
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public MaintenancePriority Priority { get; set; }
+    public string Action { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Schema optimization metrics
+/// </summary>
+public class SchemaOptimizationMetrics
+{
+    public int TotalOptimizations { get; set; }
+    public double AverageImprovementScore { get; set; }
+    public Dictionary<string, int> OptimizationsByType { get; set; } = new();
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+
+    // Additional properties for compatibility
+    public int IndexSuggestionsGenerated { get; set; }
+    public int IndexSuggestionsImplemented { get; set; }
+    public double QueryPerformanceImprovement { get; set; }
+    public Dictionary<string, int> OptimizationTypes { get; set; } = new();
+}
+
+/// <summary>
+/// Data point for charts and visualizations
+/// </summary>
+public class DataPoint
+{
+    public object X { get; set; } = new();
+    public object Y { get; set; } = new();
+    public string? Label { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+public enum MaintenancePriority
+{
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+/// <summary>
+/// Performance prediction for optimization
+/// </summary>
+public class PerformancePrediction
+{
+    public double PredictedImprovement { get; set; }
+    public TimeSpan EstimatedExecutionTime { get; set; }
+    public double ConfidenceScore { get; set; }
+    public List<string> Factors { get; set; } = new();
+
+    // Additional properties for compatibility
+    public double EstimatedSpeedup { get; set; }
+    public double ConfidenceLevel { get; set; }
+    public ResourceUsageEstimate? ResourceUsage { get; set; }
+    public List<string> Assumptions { get; set; } = new();
+}
+
+/// <summary>
+/// SQL optimization recommendation
+/// </summary>
+public class SqlOptimization
+{
+    public string OptimizationType { get; set; } = string.Empty;
+    public string OriginalSql { get; set; } = string.Empty;
+    public string OptimizedSql { get; set; } = string.Empty;
+    public double ExpectedImprovement { get; set; }
+    public string Reasoning { get; set; } = string.Empty;
+
+    // Additional properties expected by Infrastructure layer
+    public string? AfterCode { get; set; } // Alias for OptimizedSql
+}
+
+/// <summary>
+/// Performance metric for tracking
+/// </summary>
+public class PerformanceMetric
+{
+    public string MetricName { get; set; } = string.Empty;
+    public double Value { get; set; }
+    public string Unit { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
+/// Performance comparison between optimizations
+/// </summary>
+public class PerformanceComparison
+{
+    public string ComparisonId { get; set; } = string.Empty;
+    public List<PerformanceMetric> BeforeMetrics { get; set; } = new();
+    public List<PerformanceMetric> AfterMetrics { get; set; } = new();
+    public double ImprovementPercentage { get; set; }
+}
+
+/// <summary>
+/// Table health analysis
+/// </summary>
+public class TableHealth
+{
+    public string TableName { get; set; } = string.Empty;
+    public double HealthScore { get; set; }
+    public List<string> Issues { get; set; } = new();
+    public List<string> Recommendations { get; set; } = new();
+}
+
+/// <summary>
+/// Execution step in query plan
+/// </summary>
+public class ExecutionStep
+{
+    public string StepId { get; set; } = string.Empty;
+    public string Operation { get; set; } = string.Empty;
+    public double Cost { get; set; }
+    public TimeSpan Duration { get; set; }
+    public Dictionary<string, object> Details { get; set; } = new();
+}
+
+/// <summary>
+/// Performance bottleneck identification
+/// </summary>
+public class PerformanceBottleneck
+{
+    public string BottleneckId { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public double Impact { get; set; }
+    public List<string> Solutions { get; set; } = new();
+}
+
+/// <summary>
+/// Resource usage analysis
+/// </summary>
+public class ResourceUsageAnalysis
+{
+    public double CpuUsage { get; set; }
+    public double MemoryUsage { get; set; }
+    public double IoUsage { get; set; }
+    public Dictionary<string, double> DetailedMetrics { get; set; } = new();
+}
+
+/// <summary>
+/// Resource usage estimate for performance prediction
+/// </summary>
+public class ResourceUsageEstimate
+{
+    public double CpuUsage { get; set; }
+    public double MemoryUsage { get; set; }
+    public double DiskUsage { get; set; }
+    public double NetworkUsage { get; set; }
+    public Dictionary<string, double> AdditionalMetrics { get; set; } = new();
+}
+
+/// <summary>
+/// Estimated impact of an optimization
+/// </summary>
+public class EstimatedImpact
+{
+    public double PerformanceImprovement { get; set; }
+    public double StorageOverhead { get; set; }
+    public double MaintenanceOverhead { get; set; }
+    public double ConfidenceLevel { get; set; } = 0.8;
+    public List<string> Benefits { get; set; } = new();
+    public List<string> Risks { get; set; } = new();
+}
+
+/// <summary>
+/// Table health analysis result
+/// </summary>
+public class TableHealthAnalysis
+{
+    public double OverallScore { get; set; }
+    public Dictionary<string, TableHealth> Tables { get; set; } = new();
+    public List<string> ProblematicTables { get; set; } = new();
+    public List<SchemaIssue> Issues { get; set; } = new();
+}
+
+/// <summary>
+/// Index health analysis result
+/// </summary>
+public class IndexHealthAnalysis
+{
+    public double OverallEfficiency { get; set; }
+    public List<string> UnusedIndexes { get; set; } = new();
+    public List<string> MissingIndexes { get; set; } = new();
+    public List<SchemaIssue> Issues { get; set; } = new();
+}
+
+/// <summary>
+/// Relationship analysis result
+/// </summary>
+public class RelationshipAnalysis
+{
+    public double IntegrityScore { get; set; }
+    public List<SchemaIssue> Issues { get; set; } = new();
+    public List<string> MissingRelationships { get; set; } = new();
+    public List<string> BrokenRelationships { get; set; } = new();
+}
+
+/// <summary>
+/// Plan optimization result
+/// </summary>
+public class PlanOptimization
+{
+    public string OptimizationId { get; set; } = string.Empty;
+    public string OriginalPlan { get; set; } = string.Empty;
+    public string OptimizedPlan { get; set; } = string.Empty;
+    public double ImprovementScore { get; set; }
+    public List<string> Changes { get; set; } = new();
+}
+
+

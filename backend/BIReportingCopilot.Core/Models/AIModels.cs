@@ -58,19 +58,14 @@ public class ComplexityFactor
     public string Name { get; set; } = string.Empty;
     public int Impact { get; set; }
     public string Description { get; set; } = string.Empty;
+
+    // Additional properties expected by Infrastructure layer
+    public string Factor { get; set; } = string.Empty; // Alias for Name
+    public double Weight { get; set; } // Alias for Impact
 }
 
 // Context Management Models
-public class UserContext
-{
-    public string UserId { get; set; } = string.Empty;
-    public List<string> PreferredTables { get; set; } = new();
-    public List<string> CommonFilters { get; set; } = new();
-    public Dictionary<string, object> Preferences { get; set; } = new();
-    public List<QueryPattern> RecentPatterns { get; set; } = new();
-    public DateTime LastUpdated { get; set; }
-    public string Domain { get; set; } = string.Empty; // e.g., "sales", "marketing", "finance"
-}
+// UserContext moved to AdvancedNLU.cs to avoid duplicates
 
 public class QueryPattern
 {

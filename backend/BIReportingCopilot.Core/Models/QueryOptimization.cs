@@ -6,8 +6,10 @@ namespace BIReportingCopilot.Core.Models;
 public class QueryOptimizationResult
 {
     public string OriginalQuery { get; set; } = string.Empty;
+    public string OriginalSql { get; set; } = string.Empty; // Alias for compatibility
 
     public string OptimizedQuery { get; set; } = string.Empty;
+    public string OptimizedSql { get; set; } = string.Empty; // Alias for compatibility
 
     public List<OptimizationSuggestion> Suggestions { get; set; } = new();
 
@@ -29,7 +31,10 @@ public class QueryOptimizationResult
 
     public string? Metadata { get; set; } // JSON for additional data
 
-
+    // Additional properties expected by Infrastructure layer
+    public PerformancePrediction? PerformancePrediction { get; set; }
+    public List<IndexSuggestion> IndexSuggestions { get; set; } = new();
+    public ComplexityAnalysis? ComplexityAnalysis { get; set; }
 }
 
 /// <summary>
@@ -58,6 +63,12 @@ public class OptimizationSuggestion
     public string? AfterCode { get; set; }
 
     public string? Reasoning { get; set; }
+
+    // Additional properties expected by Infrastructure layer
+    public string? Implementation { get; set; }
+    public double Impact { get; set; } // Alias for ImpactScore
+    public List<string> Benefits { get; set; } = new();
+    public List<string> Considerations { get; set; } = new();
 }
 
 // PerformanceMetrics class already exists in DashboardModels.cs and other files
@@ -98,6 +109,17 @@ public class QuerySuggestion
     public bool RequiresConfirmation { get; set; } = false;
 
     public string? ConfirmationMessage { get; set; }
+}
+
+/// <summary>
+/// Query complexity analysis result
+/// </summary>
+public class ComplexityAnalysis
+{
+    public ComplexityLevel Level { get; set; } = ComplexityLevel.Simple;
+    public double Score { get; set; }
+    public List<ComplexityFactor> Factors { get; set; } = new();
+    public List<string> SimplificationOpportunities { get; set; } = new();
 }
 
 // AIOptions class already exists in AIModels.cs

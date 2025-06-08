@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
@@ -8,38 +7,55 @@ using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Performance;
+using BIReportingCopilot.Infrastructure.Configuration;
+using BIReportingCopilot.Infrastructure.Data.Contexts;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
+/// <summary>
+/// Refactored TuningService that delegates to focused services for better separation of concerns
+/// Enhanced to use bounded contexts for better performance and maintainability
+/// </summary>
 public class TuningService : ITuningService
 {
-    private readonly BICopilotContext _context;
+    private readonly IDbContextFactory _contextFactory;
     private readonly ILogger<TuningService> _logger;
     private readonly IBusinessContextAutoGenerator _autoGenerator;
     private readonly PerformanceManagementService _performanceService;
     private readonly ISchemaService _schemaService;
-    private readonly IConfiguration _configuration;
+    private readonly UnifiedConfigurationService _configurationService;
     private readonly IProgressReporter _progressReporter;
     private readonly ISchemaManagementService _schemaManagementService;
 
+    // New focused services
+    private readonly IBusinessTableManagementService _tableManagementService;
+    private readonly IQueryPatternManagementService _patternManagementService;
+    private readonly IGlossaryManagementService _glossaryManagementService;
+
     public TuningService(
-        BICopilotContext context,
+        IDbContextFactory contextFactory,
         ILogger<TuningService> logger,
         IBusinessContextAutoGenerator autoGenerator,
         PerformanceManagementService performanceService,
         ISchemaService schemaService,
-        IConfiguration configuration,
+        UnifiedConfigurationService configurationService,
         IProgressReporter progressReporter,
-        ISchemaManagementService schemaManagementService)
+        ISchemaManagementService schemaManagementService,
+        IBusinessTableManagementService tableManagementService,
+        IQueryPatternManagementService patternManagementService,
+        IGlossaryManagementService glossaryManagementService)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _logger = logger;
         _autoGenerator = autoGenerator;
         _performanceService = performanceService;
         _schemaService = schemaService;
-        _configuration = configuration;
+        _configurationService = configurationService;
         _progressReporter = progressReporter;
         _schemaManagementService = schemaManagementService;
+        _tableManagementService = tableManagementService;
+        _patternManagementService = patternManagementService;
+        _glossaryManagementService = glossaryManagementService;
     }
 
     #region Dashboard
@@ -50,61 +66,30 @@ public class TuningService : ITuningService
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-            // Use a single query with multiple aggregations to reduce database round trips
-            var dashboardStats = await _context.BusinessTableInfo
-                .Where(t => t.IsActive)
-                .Select(t => new
-                {
-                    TableId = t.Id,
-                    SchemaTable = $"{t.SchemaName}.{t.TableName}",
-                    UpdatedDate = t.UpdatedDate,
-                    ColumnCount = t.Columns.Count(c => c.IsActive)
-                })
-                .ToListAsync();
+            // Use the focused services to get statistics
+            var tableStats = await _tableManagementService.GetTableStatisticsAsync();
+            var patternStats = await _patternManagementService.GetPatternStatisticsAsync();
+            var glossaryStats = await _glossaryManagementService.GetGlossaryStatisticsAsync();
 
-            // Get all other counts sequentially to avoid DbContext concurrency issues
-            var columnCount = await _context.BusinessColumnInfo.Where(c => c.IsActive).CountAsync();
-            var patternCount = await _context.QueryPatterns.Where(p => p.IsActive).CountAsync();
-            var glossaryCount = await _context.BusinessGlossary.Where(g => g.IsActive).CountAsync();
-            var templateCount = await _context.PromptTemplates.Where(p => p.IsActive).CountAsync();
-
-            // Get pattern data
-            var patterns = await _context.QueryPatterns
-                .Where(p => p.IsActive)
-                .Select(p => new { p.PatternName, p.UsageCount, p.Priority })
-                .ToListAsync();
-
-            var counts = new[] { columnCount, patternCount, glossaryCount, templateCount };
-
-            var recentlyUpdatedTables = dashboardStats
-                .Where(t => t.UpdatedDate.HasValue)
-                .OrderByDescending(t => t.UpdatedDate)
-                .Take(5)
-                .Select(t => t.SchemaTable)
-                .ToList();
-
-            var mostUsedPatterns = patterns
-                .OrderByDescending(p => p.UsageCount)
-                .Take(5)
-                .Select(p => p.PatternName)
-                .ToList();
-
-            var patternUsageStats = patterns
-                .GroupBy(p => p.Priority)
-                .ToDictionary(g => $"Priority {g.Key}", g => g.Count());
+            // Get template count directly (this will be moved to a separate service later)
+            var templateCount = await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async context =>
+            {
+                var tuningContext = (TuningDbContext)context;
+                return await tuningContext.PromptTemplates.Where(p => p.IsActive).CountAsync();
+            });
 
             stopwatch.Stop();
 
             return new TuningDashboardData
             {
-                TotalTables = dashboardStats.Count,
-                TotalColumns = counts[0],
-                TotalPatterns = counts[1],
-                TotalGlossaryTerms = counts[2],
-                ActivePromptTemplates = counts[3],
-                RecentlyUpdatedTables = recentlyUpdatedTables,
-                MostUsedPatterns = mostUsedPatterns,
-                PatternUsageStats = patternUsageStats
+                TotalTables = tableStats.TotalTables,
+                TotalColumns = tableStats.TotalColumns,
+                TotalPatterns = patternStats.TotalPatterns,
+                TotalGlossaryTerms = glossaryStats.TotalTerms,
+                ActivePromptTemplates = templateCount,
+                RecentlyUpdatedTables = tableStats.RecentlyUpdatedTables,
+                MostUsedPatterns = patternStats.MostUsedPatterns,
+                PatternUsageStats = patternStats.PatternUsageStats
             };
         }
         catch (Exception ex)
@@ -116,222 +101,36 @@ public class TuningService : ITuningService
 
     #endregion
 
-    #region Business Table Info
+    #region Business Table Info - Delegated to BusinessTableManagementService
 
     public async Task<List<BusinessTableInfoDto>> GetBusinessTablesAsync()
     {
-        try
-        {
-            var tables = await _context.BusinessTableInfo
-                .Include(t => t.Columns.Where(c => c.IsActive))
-                .Where(t => t.IsActive)
-                .OrderBy(t => t.SchemaName)
-                .ThenBy(t => t.TableName)
-                .ToListAsync();
-
-            return tables.Select(MapToDto).ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting business tables");
-            throw;
-        }
+        return await _tableManagementService.GetBusinessTablesAsync();
     }
 
-    /// <summary>
-    /// Optimized version that only loads necessary fields for better performance
-    /// </summary>
     public async Task<List<BusinessTableInfoOptimizedDto>> GetBusinessTablesOptimizedAsync()
     {
-        try
-        {
-            return await _context.BusinessTableInfo
-                .Where(t => t.IsActive)
-                .Select(t => new BusinessTableInfoOptimizedDto
-                {
-                    Id = t.Id,
-                    TableName = t.TableName,
-                    SchemaName = t.SchemaName,
-                    BusinessPurpose = t.BusinessPurpose,
-                    BusinessContext = t.BusinessContext,
-                    IsActive = t.IsActive,
-                    UpdatedDate = t.UpdatedDate,
-                    UpdatedBy = t.UpdatedBy,
-                    ColumnCount = t.Columns.Count(c => c.IsActive),
-                    CreatedDate = t.CreatedDate
-                })
-                .AsNoTracking()
-                .OrderBy(t => t.SchemaName)
-                .ThenBy(t => t.TableName)
-                .ToListAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting optimized business tables");
-            throw;
-        }
+        return await _tableManagementService.GetBusinessTablesOptimizedAsync();
     }
 
     public async Task<BusinessTableInfoDto?> GetBusinessTableAsync(long id)
     {
-        try
-        {
-            var table = await _context.BusinessTableInfo
-                .Include(t => t.Columns.Where(c => c.IsActive))
-                .FirstOrDefaultAsync(t => t.Id == id && t.IsActive);
-
-            return table != null ? MapToDto(table) : null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting business table {TableId}", id);
-            throw;
-        }
+        return await _tableManagementService.GetBusinessTableAsync(id);
     }
 
     public async Task<BusinessTableInfoDto> CreateBusinessTableAsync(CreateTableInfoRequest request, string userId)
     {
-        try
-        {
-            var entity = new BusinessTableInfoEntity
-            {
-                TableName = request.TableName,
-                SchemaName = request.SchemaName,
-                BusinessPurpose = request.BusinessPurpose,
-                BusinessContext = request.BusinessContext,
-                PrimaryUseCase = request.PrimaryUseCase,
-                CommonQueryPatterns = JsonSerializer.Serialize(request.CommonQueryPatterns),
-                BusinessRules = request.BusinessRules,
-                IsActive = true,
-                CreatedBy = userId,
-                CreatedDate = DateTime.UtcNow
-            };
-
-            _context.BusinessTableInfo.Add(entity);
-            await _context.SaveChangesAsync();
-
-            // Add columns
-            foreach (var columnRequest in request.Columns)
-            {
-                var columnEntity = new BusinessColumnInfoEntity
-                {
-                    TableInfoId = entity.Id,
-                    ColumnName = columnRequest.ColumnName,
-                    BusinessMeaning = columnRequest.BusinessMeaning,
-                    BusinessContext = columnRequest.BusinessContext,
-                    DataExamples = JsonSerializer.Serialize(columnRequest.DataExamples),
-                    ValidationRules = columnRequest.ValidationRules,
-                    IsKeyColumn = columnRequest.IsKeyColumn,
-                    IsActive = true,
-                    CreatedBy = userId,
-                    CreatedDate = DateTime.UtcNow
-                };
-
-                _context.BusinessColumnInfo.Add(columnEntity);
-            }
-
-            await _context.SaveChangesAsync();
-
-            // Reload with columns
-            var createdTable = await GetBusinessTableAsync(entity.Id);
-            _logger.LogInformation("Created business table: {SchemaName}.{TableName}", entity.SchemaName, entity.TableName);
-
-            return createdTable!;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating business table");
-            throw;
-        }
+        return await _tableManagementService.CreateBusinessTableAsync(request, userId);
     }
 
     public async Task<BusinessTableInfoDto?> UpdateBusinessTableAsync(long id, CreateTableInfoRequest request, string userId)
     {
-        try
-        {
-            var entity = await _context.BusinessTableInfo
-                .Include(t => t.Columns)
-                .FirstOrDefaultAsync(t => t.Id == id && t.IsActive);
-
-            if (entity == null)
-                return null;
-
-            entity.TableName = request.TableName;
-            entity.SchemaName = request.SchemaName;
-            entity.BusinessPurpose = request.BusinessPurpose;
-            entity.BusinessContext = request.BusinessContext;
-            entity.PrimaryUseCase = request.PrimaryUseCase;
-            entity.CommonQueryPatterns = JsonSerializer.Serialize(request.CommonQueryPatterns);
-            entity.BusinessRules = request.BusinessRules;
-            entity.UpdatedBy = userId;
-            entity.UpdatedDate = DateTime.UtcNow;
-
-            // Update columns - remove existing and add new ones
-            _context.BusinessColumnInfo.RemoveRange(entity.Columns);
-
-            foreach (var columnRequest in request.Columns)
-            {
-                var columnEntity = new BusinessColumnInfoEntity
-                {
-                    TableInfoId = entity.Id,
-                    ColumnName = columnRequest.ColumnName,
-                    BusinessMeaning = columnRequest.BusinessMeaning,
-                    BusinessContext = columnRequest.BusinessContext,
-                    DataExamples = JsonSerializer.Serialize(columnRequest.DataExamples),
-                    ValidationRules = columnRequest.ValidationRules,
-                    IsKeyColumn = columnRequest.IsKeyColumn,
-                    IsActive = true,
-                    CreatedBy = userId,
-                    CreatedDate = DateTime.UtcNow
-                };
-
-                _context.BusinessColumnInfo.Add(columnEntity);
-            }
-
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Updated business table: {SchemaName}.{TableName}", entity.SchemaName, entity.TableName);
-            return await GetBusinessTableAsync(id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating business table {TableId}", id);
-            throw;
-        }
+        return await _tableManagementService.UpdateBusinessTableAsync(id, request, userId);
     }
 
     public async Task<bool> DeleteBusinessTableAsync(long id)
     {
-        try
-        {
-            var entity = await _context.BusinessTableInfo.FindAsync(id);
-            if (entity == null || !entity.IsActive)
-                return false;
-
-            entity.IsActive = false;
-            entity.UpdatedDate = DateTime.UtcNow;
-
-            // Also deactivate columns
-            var columns = await _context.BusinessColumnInfo
-                .Where(c => c.TableInfoId == id)
-                .ToListAsync();
-
-            foreach (var column in columns)
-            {
-                column.IsActive = false;
-                column.UpdatedDate = DateTime.UtcNow;
-            }
-
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Deleted business table {TableId}", id);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting business table {TableId}", id);
-            throw;
-        }
+        return await _tableManagementService.DeleteBusinessTableAsync(id);
     }
 
     #endregion
@@ -361,7 +160,7 @@ public class TuningService : ITuningService
             CommonQueryPatterns = commonQueryPatterns,
             BusinessRules = entity.BusinessRules,
             IsActive = entity.IsActive,
-            Columns = entity.Columns?.Select(MapColumnToDto).ToList() ?? new List<BusinessColumnInfoDto>()
+            Columns = entity.Columns?.Select(MapColumnToBusinessColumnInfo).ToList() ?? new List<BusinessColumnInfo>()
         };
     }
 
@@ -379,7 +178,7 @@ public class TuningService : ITuningService
 
         return new BusinessColumnInfoDto
         {
-            Id = entity.Id,
+            Id = (int)entity.Id,
             ColumnName = entity.ColumnName,
             BusinessMeaning = entity.BusinessMeaning,
             BusinessContext = entity.BusinessContext,
@@ -390,268 +189,85 @@ public class TuningService : ITuningService
         };
     }
 
+    private static BusinessColumnInfo MapColumnToBusinessColumnInfo(BusinessColumnInfoEntity entity)
+    {
+        var dataExamples = new List<string>();
+        if (!string.IsNullOrEmpty(entity.DataExamples))
+        {
+            try
+            {
+                dataExamples = JsonSerializer.Deserialize<List<string>>(entity.DataExamples) ?? new List<string>();
+            }
+            catch { /* Ignore deserialization errors */ }
+        }
+
+        return new BusinessColumnInfo
+        {
+            ColumnName = entity.ColumnName,
+            BusinessMeaning = entity.BusinessMeaning,
+            BusinessContext = entity.BusinessContext,
+            DataExamples = dataExamples,
+            ValidationRules = entity.ValidationRules,
+            IsKeyColumn = entity.IsKeyColumn
+        };
+    }
+
     #endregion
 
-    #region Query Patterns
+    #region Query Patterns - Delegated to QueryPatternManagementService
 
     public async Task<List<QueryPatternDto>> GetQueryPatternsAsync()
     {
-        try
-        {
-            var patterns = await _context.QueryPatterns
-                .Where(p => p.IsActive)
-                .OrderBy(p => p.Priority)
-                .ThenBy(p => p.PatternName)
-                .ToListAsync();
-
-            return patterns.Select(MapPatternToDto).ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting query patterns");
-            throw;
-        }
+        return await _patternManagementService.GetQueryPatternsAsync();
     }
 
     public async Task<QueryPatternDto?> GetQueryPatternAsync(long id)
     {
-        try
-        {
-            var pattern = await _context.QueryPatterns
-                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
-
-            return pattern != null ? MapPatternToDto(pattern) : null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting query pattern {PatternId}", id);
-            throw;
-        }
+        return await _patternManagementService.GetQueryPatternAsync(id);
     }
 
     public async Task<QueryPatternDto> CreateQueryPatternAsync(CreateQueryPatternRequest request, string userId)
     {
-        try
-        {
-            var entity = new QueryPatternEntity
-            {
-                PatternName = request.PatternName,
-                NaturalLanguagePattern = request.NaturalLanguagePattern,
-                SqlTemplate = request.SqlTemplate,
-                Description = request.Description,
-                BusinessContext = request.BusinessContext,
-                Keywords = JsonSerializer.Serialize(request.Keywords),
-                RequiredTables = JsonSerializer.Serialize(request.RequiredTables),
-                Priority = request.Priority,
-                IsActive = true,
-                UsageCount = 0,
-                CreatedBy = userId,
-                CreatedDate = DateTime.UtcNow
-            };
-
-            _context.QueryPatterns.Add(entity);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Created query pattern: {PatternName}", entity.PatternName);
-            return MapPatternToDto(entity);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating query pattern");
-            throw;
-        }
+        return await _patternManagementService.CreateQueryPatternAsync(request, userId);
     }
 
     public async Task<QueryPatternDto?> UpdateQueryPatternAsync(long id, CreateQueryPatternRequest request, string userId)
     {
-        try
-        {
-            var entity = await _context.QueryPatterns
-                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
-
-            if (entity == null)
-                return null;
-
-            entity.PatternName = request.PatternName;
-            entity.NaturalLanguagePattern = request.NaturalLanguagePattern;
-            entity.SqlTemplate = request.SqlTemplate;
-            entity.Description = request.Description;
-            entity.BusinessContext = request.BusinessContext;
-            entity.Keywords = JsonSerializer.Serialize(request.Keywords);
-            entity.RequiredTables = JsonSerializer.Serialize(request.RequiredTables);
-            entity.Priority = request.Priority;
-            entity.UpdatedBy = userId;
-            entity.UpdatedDate = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Updated query pattern: {PatternName}", entity.PatternName);
-            return MapPatternToDto(entity);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating query pattern {PatternId}", id);
-            throw;
-        }
+        return await _patternManagementService.UpdateQueryPatternAsync(id, request, userId);
     }
 
     public async Task<bool> DeleteQueryPatternAsync(long id)
     {
-        try
-        {
-            var entity = await _context.QueryPatterns.FindAsync(id);
-            if (entity == null || !entity.IsActive)
-                return false;
-
-            entity.IsActive = false;
-            entity.UpdatedDate = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Deleted query pattern {PatternId}", id);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting query pattern {PatternId}", id);
-            throw;
-        }
+        return await _patternManagementService.DeleteQueryPatternAsync(id);
     }
 
     public async Task<string> TestQueryPatternAsync(long id, string naturalLanguageQuery)
     {
-        try
-        {
-            var pattern = await _context.QueryPatterns
-                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
-
-            if (pattern == null)
-                return "Pattern not found";
-
-            // Simple pattern matching test
-            var keywords = JsonSerializer.Deserialize<List<string>>(pattern.Keywords) ?? new List<string>();
-            var matchedKeywords = keywords.Where(k => naturalLanguageQuery.ToLower().Contains(k.ToLower())).ToList();
-
-            var result = $"Pattern: {pattern.PatternName}\n";
-            result += $"Matched Keywords: {string.Join(", ", matchedKeywords)}\n";
-            result += $"Match Score: {matchedKeywords.Count}/{keywords.Count}\n";
-            result += $"SQL Template:\n{pattern.SqlTemplate}";
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error testing query pattern {PatternId}", id);
-            throw;
-        }
+        return await _patternManagementService.TestQueryPatternAsync(id, naturalLanguageQuery);
     }
 
     #endregion
 
-    #region Business Glossary
+    #region Business Glossary - Delegated to GlossaryManagementService
 
     public async Task<List<BusinessGlossaryDto>> GetGlossaryTermsAsync()
     {
-        try
-        {
-            var terms = await _context.BusinessGlossary
-                .Where(g => g.IsActive)
-                .OrderBy(g => g.Category)
-                .ThenBy(g => g.Term)
-                .ToListAsync();
-
-            return terms.Select(MapGlossaryToDto).ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting glossary terms");
-            throw;
-        }
+        return await _glossaryManagementService.GetGlossaryTermsAsync();
     }
 
     public async Task<BusinessGlossaryDto> CreateGlossaryTermAsync(BusinessGlossaryDto request, string userId)
     {
-        try
-        {
-            var entity = new BusinessGlossaryEntity
-            {
-                Term = request.Term,
-                Definition = request.Definition,
-                BusinessContext = request.BusinessContext,
-                Synonyms = JsonSerializer.Serialize(request.Synonyms),
-                RelatedTerms = JsonSerializer.Serialize(request.RelatedTerms),
-                Category = request.Category,
-                IsActive = true,
-                UsageCount = 0,
-                CreatedBy = userId,
-                CreatedDate = DateTime.UtcNow
-            };
-
-            _context.BusinessGlossary.Add(entity);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Created glossary term: {Term}", entity.Term);
-            return MapGlossaryToDto(entity);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating glossary term");
-            throw;
-        }
+        return await _glossaryManagementService.CreateGlossaryTermAsync(request, userId);
     }
 
     public async Task<BusinessGlossaryDto?> UpdateGlossaryTermAsync(long id, BusinessGlossaryDto request, string userId)
     {
-        try
-        {
-            var entity = await _context.BusinessGlossary
-                .FirstOrDefaultAsync(g => g.Id == id && g.IsActive);
-
-            if (entity == null)
-                return null;
-
-            entity.Term = request.Term;
-            entity.Definition = request.Definition;
-            entity.BusinessContext = request.BusinessContext;
-            entity.Synonyms = JsonSerializer.Serialize(request.Synonyms);
-            entity.RelatedTerms = JsonSerializer.Serialize(request.RelatedTerms);
-            entity.Category = request.Category;
-            entity.UpdatedBy = userId;
-            entity.UpdatedDate = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Updated glossary term: {Term}", entity.Term);
-            return MapGlossaryToDto(entity);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating glossary term {TermId}", id);
-            throw;
-        }
+        return await _glossaryManagementService.UpdateGlossaryTermAsync(id, request, userId);
     }
 
     public async Task<bool> DeleteGlossaryTermAsync(long id)
     {
-        try
-        {
-            var entity = await _context.BusinessGlossary.FindAsync(id);
-            if (entity == null || !entity.IsActive)
-                return false;
-
-            entity.IsActive = false;
-            entity.UpdatedDate = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Deleted glossary term {TermId}", id);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting glossary term {TermId}", id);
-            throw;
-        }
+        return await _glossaryManagementService.DeleteGlossaryTermAsync(id);
     }
 
     #endregion
@@ -662,13 +278,17 @@ public class TuningService : ITuningService
     {
         try
         {
-            var settings = await _context.AITuningSettings
-                .Where(s => s.IsActive)
-                .OrderBy(s => s.Category)
-                .ThenBy(s => s.SettingKey)
-                .ToListAsync();
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async context =>
+            {
+                var tuningContext = (TuningDbContext)context;
+                var settings = await tuningContext.AITuningSettings
+                    .Where(s => s.IsActive)
+                    .OrderBy(s => s.Category)
+                    .ThenBy(s => s.SettingKey)
+                    .ToListAsync();
 
-            return settings.Select(MapSettingToDto).ToList();
+                return settings.Select(MapSettingToDto).ToList();
+            });
         }
         catch (Exception ex)
         {
@@ -681,21 +301,25 @@ public class TuningService : ITuningService
     {
         try
         {
-            var entity = await _context.AITuningSettings
-                .FirstOrDefaultAsync(s => s.Id == id && s.IsActive);
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async context =>
+            {
+                var tuningContext = (TuningDbContext)context;
+                var entity = await tuningContext.AITuningSettings
+                    .FirstOrDefaultAsync(s => s.Id == id && s.IsActive);
 
-            if (entity == null)
-                return null;
+                if (entity == null)
+                    return null;
 
-            entity.SettingValue = request.SettingValue;
-            entity.Description = request.Description;
-            entity.UpdatedBy = userId;
-            entity.UpdatedDate = DateTime.UtcNow;
+                entity.SettingValue = request.SettingValue;
+                entity.Description = request.Description;
+                entity.UpdatedBy = userId;
+                entity.UpdatedDate = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+                await tuningContext.SaveChangesAsync();
 
-            _logger.LogInformation("Updated AI setting: {SettingKey}", entity.SettingKey);
-            return MapSettingToDto(entity);
+                _logger.LogInformation("Updated AI setting: {SettingKey}", entity.SettingKey);
+                return MapSettingToDto(entity);
+            });
         }
         catch (Exception ex)
         {
@@ -1106,10 +730,14 @@ public class TuningService : ITuningService
         try
         {
             // Check if table already exists
-            var existingTable = await _context.BusinessTableInfo
-                .FirstOrDefaultAsync(t => t.TableName == context.TableName &&
-                                         t.SchemaName == context.SchemaName &&
-                                         t.IsActive);
+            var existingTable = await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async dbContext =>
+            {
+                var tuningContext = (TuningDbContext)dbContext;
+                return await tuningContext.BusinessTableInfo
+                    .FirstOrDefaultAsync(t => t.TableName == context.TableName &&
+                                             t.SchemaName == context.SchemaName &&
+                                             t.IsActive);
+            });
 
             if (existingTable != null)
             {
@@ -1126,7 +754,7 @@ public class TuningService : ITuningService
                 PrimaryUseCase = context.PrimaryUseCase,
                 CommonQueryPatterns = context.CommonQueryPatterns,
                 BusinessRules = context.BusinessRules,
-                Columns = context.Columns.Select(c => new CreateColumnInfoRequest
+                Columns = context.Columns.Select(c => new BusinessColumnInfo
                 {
                     ColumnName = c.ColumnName,
                     BusinessMeaning = c.BusinessName,
@@ -1151,8 +779,12 @@ public class TuningService : ITuningService
         try
         {
             // Check if term already exists
-            var existingTerm = await _context.BusinessGlossary
-                .FirstOrDefaultAsync(g => g.Term.ToLower() == term.Term.ToLower() && g.IsActive);
+            var existingTerm = await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async dbContext =>
+            {
+                var tuningContext = (TuningDbContext)dbContext;
+                return await tuningContext.BusinessGlossary
+                    .FirstOrDefaultAsync(g => g.Term.ToLower() == term.Term.ToLower() && g.IsActive);
+            });
 
             if (existingTerm != null)
             {
@@ -1187,10 +819,14 @@ public class TuningService : ITuningService
     {
         try
         {
-            var templates = await _context.PromptTemplates
-                .OrderBy(t => t.Name)
-                .ThenByDescending(t => t.CreatedDate)
-                .ToListAsync();
+            var templates = await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async dbContext =>
+            {
+                var tuningContext = (TuningDbContext)dbContext;
+                return await tuningContext.PromptTemplates
+                    .OrderBy(t => t.Name)
+                    .ThenByDescending(t => t.CreatedDate)
+                    .ToListAsync();
+            });
 
             return templates.Select(MapToPromptTemplateDto).ToList();
         }
@@ -1205,8 +841,12 @@ public class TuningService : ITuningService
     {
         try
         {
-            var template = await _context.PromptTemplates
-                .FirstOrDefaultAsync(t => t.Id == id && t.IsActive);
+            var template = await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async dbContext =>
+            {
+                var tuningContext = (TuningDbContext)dbContext;
+                return await tuningContext.PromptTemplates
+                    .FirstOrDefaultAsync(t => t.Id == id && t.IsActive);
+            });
 
             return template != null ? MapToPromptTemplateDto(template) : null;
         }
@@ -1222,8 +862,12 @@ public class TuningService : ITuningService
         try
         {
             // Check if template with same name and version already exists
-            var existingTemplate = await _context.PromptTemplates
-                .FirstOrDefaultAsync(t => t.Name == request.Name && t.Version == request.Version);
+            var existingTemplate = await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async dbContext =>
+            {
+                var tuningContext = (TuningDbContext)dbContext;
+                return await tuningContext.PromptTemplates
+                    .FirstOrDefaultAsync(t => t.Name == request.Name && t.Version == request.Version);
+            });
 
             if (existingTemplate != null)
             {
@@ -1243,8 +887,12 @@ public class TuningService : ITuningService
                 Parameters = request.Parameters != null ? JsonSerializer.Serialize(request.Parameters) : null
             };
 
-            _context.PromptTemplates.Add(entity);
-            await _context.SaveChangesAsync();
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async dbContext =>
+            {
+                var tuningContext = (TuningDbContext)dbContext;
+                tuningContext.PromptTemplates.Add(entity);
+                await tuningContext.SaveChangesAsync();
+            });
 
             _logger.LogInformation("Created prompt template: {TemplateName} v{Version} by {UserId}",
                 request.Name, request.Version, userId);
@@ -1262,24 +910,30 @@ public class TuningService : ITuningService
     {
         try
         {
-            var entity = await _context.PromptTemplates
-                .FirstOrDefaultAsync(t => t.Id == id);
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async dbContext =>
+            {
+                var tuningContext = (TuningDbContext)dbContext;
+                var entity = await tuningContext.PromptTemplates
+                    .FirstOrDefaultAsync(t => t.Id == id);
 
-            if (entity == null)
-                return null;
+                if (entity == null)
+                    return null;
 
-            entity.Content = request.Content;
-            entity.Description = request.Description;
-            entity.IsActive = request.IsActive;
-            entity.UpdatedDate = DateTime.UtcNow;
-            entity.UpdatedBy = userId;
-            entity.Parameters = request.Parameters != null ? JsonSerializer.Serialize(request.Parameters) : null;
+                entity.Content = request.Content;
+                entity.Description = request.Description;
+                entity.IsActive = request.IsActive;
+                entity.UpdatedDate = DateTime.UtcNow;
+                entity.UpdatedBy = userId;
+                entity.Parameters = request.Parameters != null ? JsonSerializer.Serialize(request.Parameters) : null;
 
-            await _context.SaveChangesAsync();
+                await tuningContext.SaveChangesAsync();
 
-            _logger.LogInformation("Updated prompt template: {TemplateId} by {UserId}", id, userId);
+                _logger.LogInformation("Updated prompt template: {TemplateId} by {UserId}", id, userId);
 
-            return MapToPromptTemplateDto(entity);
+                return MapToPromptTemplateDto(entity);
+            });
+
+            // Moved inside context factory call above
         }
         catch (Exception ex)
         {
@@ -1292,20 +946,26 @@ public class TuningService : ITuningService
     {
         try
         {
-            var entity = await _context.PromptTemplates
-                .FirstOrDefaultAsync(t => t.Id == id);
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async dbContext =>
+            {
+                var tuningContext = (TuningDbContext)dbContext;
+                var entity = await tuningContext.PromptTemplates
+                    .FirstOrDefaultAsync(t => t.Id == id);
 
-            if (entity == null)
-                return false;
+                if (entity == null)
+                    return false;
 
-            entity.IsActive = false;
-            entity.UpdatedDate = DateTime.UtcNow;
+                entity.IsActive = false;
+                entity.UpdatedDate = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+                await tuningContext.SaveChangesAsync();
 
-            _logger.LogInformation("Deleted prompt template: {TemplateId}", id);
+                _logger.LogInformation("Deleted prompt template: {TemplateId}", id);
 
-            return true;
+                return true;
+            });
+
+            // Moved inside context factory call above
         }
         catch (Exception ex)
         {
@@ -1318,35 +978,41 @@ public class TuningService : ITuningService
     {
         try
         {
-            var entity = await _context.PromptTemplates
-                .FirstOrDefaultAsync(t => t.Id == id);
-
-            if (entity == null)
-                return false;
-
-            // Deactivate other versions of the same template
-            var otherVersions = await _context.PromptTemplates
-                .Where(t => t.Name == entity.Name && t.Id != id && t.IsActive)
-                .ToListAsync();
-
-            foreach (var version in otherVersions)
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async dbContext =>
             {
-                version.IsActive = false;
-                version.UpdatedDate = DateTime.UtcNow;
-                version.UpdatedBy = userId;
-            }
+                var tuningContext = (TuningDbContext)dbContext;
+                var entity = await tuningContext.PromptTemplates
+                    .FirstOrDefaultAsync(t => t.Id == id);
 
-            // Activate this version
-            entity.IsActive = true;
-            entity.UpdatedDate = DateTime.UtcNow;
-            entity.UpdatedBy = userId;
+                if (entity == null)
+                    return false;
 
-            await _context.SaveChangesAsync();
+                // Deactivate other versions of the same template
+                var otherVersions = await tuningContext.PromptTemplates
+                    .Where(t => t.Name == entity.Name && t.Id != id && t.IsActive)
+                    .ToListAsync();
 
-            _logger.LogInformation("Activated prompt template: {TemplateId} ({TemplateName} v{Version}) by {UserId}",
-                id, entity.Name, entity.Version, userId);
+                foreach (var version in otherVersions)
+                {
+                    version.IsActive = false;
+                    version.UpdatedDate = DateTime.UtcNow;
+                    version.UpdatedBy = userId;
+                }
 
-            return true;
+                // Activate this version
+                entity.IsActive = true;
+                entity.UpdatedDate = DateTime.UtcNow;
+                entity.UpdatedBy = userId;
+
+                await tuningContext.SaveChangesAsync();
+
+                _logger.LogInformation("Activated prompt template: {TemplateId} ({TemplateName} v{Version}) by {UserId}",
+                    id, entity.Name, entity.Version, userId);
+
+                return true;
+            });
+
+            // Moved inside context factory call above
         }
         catch (Exception ex)
         {
@@ -1359,22 +1025,28 @@ public class TuningService : ITuningService
     {
         try
         {
-            var entity = await _context.PromptTemplates
-                .FirstOrDefaultAsync(t => t.Id == id);
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async dbContext =>
+            {
+                var tuningContext = (TuningDbContext)dbContext;
+                var entity = await tuningContext.PromptTemplates
+                    .FirstOrDefaultAsync(t => t.Id == id);
 
-            if (entity == null)
-                return false;
+                if (entity == null)
+                    return false;
 
-            entity.IsActive = false;
-            entity.UpdatedDate = DateTime.UtcNow;
-            entity.UpdatedBy = userId;
+                entity.IsActive = false;
+                entity.UpdatedDate = DateTime.UtcNow;
+                entity.UpdatedBy = userId;
 
-            await _context.SaveChangesAsync();
+                await tuningContext.SaveChangesAsync();
 
-            _logger.LogInformation("Deactivated prompt template: {TemplateId} ({TemplateName} v{Version}) by {UserId}",
-                id, entity.Name, entity.Version, userId);
+                _logger.LogInformation("Deactivated prompt template: {TemplateId} ({TemplateName} v{Version}) by {UserId}",
+                    id, entity.Name, entity.Version, userId);
 
-            return true;
+                return true;
+            });
+
+            // Moved inside context factory call above
         }
         catch (Exception ex)
         {
@@ -1387,8 +1059,12 @@ public class TuningService : ITuningService
     {
         try
         {
-            var template = await _context.PromptTemplates
-                .FirstOrDefaultAsync(t => t.Id == id && t.IsActive);
+            var template = await _contextFactory.ExecuteWithContextAsync(ContextType.Tuning, async dbContext =>
+            {
+                var tuningContext = (TuningDbContext)dbContext;
+                return await tuningContext.PromptTemplates
+                    .FirstOrDefaultAsync(t => t.Id == id && t.IsActive);
+            });
 
             if (template == null)
             {
@@ -1501,7 +1177,8 @@ public class TuningService : ITuningService
         // Use the BIDatabase connection string (same as schema service)
         try
         {
-            return Task.FromResult(_configuration.GetConnectionString("BIDatabase"));
+            var dbConfig = _configurationService.GetDatabaseSettings();
+            return Task.FromResult<string?>(dbConfig.ConnectionString);
         }
         catch
         {

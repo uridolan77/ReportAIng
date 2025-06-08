@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.Metrics;
 using BIReportingCopilot.Core.Interfaces;
+using CoreISemanticCacheService = BIReportingCopilot.Core.Interfaces.ISemanticCacheService;
 using BIReportingCopilot.Core.Models.ML;
 using BIReportingCopilot.Infrastructure.Monitoring;
 using BIReportingCopilot.Infrastructure.Security;
@@ -16,7 +17,7 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
 {
     private readonly ILogger<QueryExecutedEventHandler> _logger;
     private readonly MonitoringManagementService _monitoringService;
-    private readonly ISemanticCacheService _semanticCache;
+    private readonly CoreISemanticCacheService _semanticCache;
     private readonly SecurityManagementService _securityService;
     private readonly IMetricsCollector _metricsCollector;
     private readonly IAnomalyDetector _anomalyDetector;
@@ -24,7 +25,7 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
     public QueryExecutedEventHandler(
         ILogger<QueryExecutedEventHandler> logger,
         MonitoringManagementService monitoringService,
-        ISemanticCacheService semanticCache,
+        CoreISemanticCacheService semanticCache,
         SecurityManagementService securityService,
         IMetricsCollector metricsCollector,
         IAnomalyDetector anomalyDetector)

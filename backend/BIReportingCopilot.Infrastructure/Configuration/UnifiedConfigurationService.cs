@@ -272,6 +272,65 @@ public class UnifiedConfigurationService
         return JsonSerializer.Serialize(values, new JsonSerializerOptions { WriteIndented = true });
     }
 
+    /// <summary>
+    /// Get configuration value with type conversion and default
+    /// </summary>
+    public T GetConfigurationValue<T>(string key, T defaultValue = default!)
+    {
+        try
+        {
+            var value = _configuration[key];
+            if (string.IsNullOrEmpty(value))
+                return defaultValue;
+
+            if (typeof(T) == typeof(string))
+                return (T)(object)value;
+
+            return (T)Convert.ChangeType(value, typeof(T));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error getting configuration value for key {Key}, returning default", key);
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
+    /// Check if configuration section exists
+    /// </summary>
+    public bool SectionExists(string sectionName)
+    {
+        return _configuration.GetSection(sectionName).Exists();
+    }
+
+    /// <summary>
+    /// Get all configuration sections
+    /// </summary>
+    public IEnumerable<string> GetAllSections()
+    {
+        return _configuration.GetChildren().Select(c => c.Key);
+    }
+
+    /// <summary>
+    /// Update configuration cache for a specific section
+    /// </summary>
+    public void RefreshSection(string sectionName)
+    {
+        lock (_cacheLock)
+        {
+            var keysToRemove = _configurationCache.Keys
+                .Where(k => k.Contains($"_{sectionName}"))
+                .ToList();
+
+            foreach (var key in keysToRemove)
+            {
+                _configurationCache.Remove(key);
+            }
+
+            _logger.LogInformation("Configuration cache refreshed for section {SectionName}", sectionName);
+        }
+    }
+
     private async Task<ConfigurationSectionValidationResult> ValidateSecurityConfigurationSection()
     {
         var result = new ConfigurationSectionValidationResult

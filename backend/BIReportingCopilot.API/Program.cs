@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -181,19 +182,75 @@ builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.SecretsCon
 builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.SqlValidationConfiguration>(
     builder.Configuration.GetSection("SqlValidation"));
 
-// Configure Entity Framework
+// Configure Entity Framework - Enhanced with bounded contexts (Enhancement #4: Database Context Optimization)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Configure SQL Server options for all contexts
+void ConfigureSqlServerOptions(SqlServerDbContextOptionsBuilder sqlOptions)
+{
+    sqlOptions.EnableRetryOnFailure(
+        maxRetryCount: 3,
+        maxRetryDelay: TimeSpan.FromSeconds(30),
+        errorNumbersToAdd: null);
+    sqlOptions.CommandTimeout(30);
+}
+
 if (!string.IsNullOrEmpty(connectionString))
 {
+    // Legacy context for backward compatibility
     builder.Services.AddDbContext<BICopilotContext>(options =>
-        options.UseSqlServer(connectionString));
+        options.UseSqlServer(connectionString, sqlOptions => ConfigureSqlServerOptions(sqlOptions)));
+
+    // Bounded contexts for better separation of concerns
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.SecurityDbContext>(options =>
+        options.UseSqlServer(connectionString, sqlOptions => ConfigureSqlServerOptions(sqlOptions)));
+
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.TuningDbContext>(options =>
+        options.UseSqlServer(connectionString, sqlOptions => ConfigureSqlServerOptions(sqlOptions)));
+
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.QueryDbContext>(options =>
+        options.UseSqlServer(connectionString, sqlOptions => ConfigureSqlServerOptions(sqlOptions)));
+
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.SchemaDbContext>(options =>
+        options.UseSqlServer(connectionString, sqlOptions => ConfigureSqlServerOptions(sqlOptions)));
+
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.MonitoringDbContext>(options =>
+        options.UseSqlServer(connectionString, sqlOptions => ConfigureSqlServerOptions(sqlOptions)));
 }
 else
 {
     // Use in-memory database for development
     builder.Services.AddDbContext<BICopilotContext>(options =>
         options.UseInMemoryDatabase("BICopilotDev"));
+
+    // In-memory bounded contexts for development
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.SecurityDbContext>(options =>
+        options.UseInMemoryDatabase("SecurityDev"));
+
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.TuningDbContext>(options =>
+        options.UseInMemoryDatabase("TuningDev"));
+
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.QueryDbContext>(options =>
+        options.UseInMemoryDatabase("QueryDev"));
+
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.SchemaDbContext>(options =>
+        options.UseInMemoryDatabase("SchemaDev"));
+
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.MonitoringDbContext>(options =>
+        options.UseInMemoryDatabase("MonitoringDev"));
 }
+
+// DbContext factory for managing bounded contexts
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Data.Contexts.IDbContextFactory, BIReportingCopilot.Infrastructure.Data.Contexts.DbContextFactory>();
+
+// Context migration service for transitioning from monolithic to bounded contexts
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Data.Migration.ContextMigrationService>();
+
+// Service migration helper for systematic service migration
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Data.Migration.ServiceMigrationHelper>();
+
+// Migration status tracker for comprehensive migration monitoring
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Data.Migration.MigrationStatusTracker>();
 
 // Configure Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -329,6 +386,9 @@ builder.Services.AddScoped<IAIProviderFactory, BIReportingCopilot.Infrastructure
 
 // Unified configuration service - consolidates all configuration management
 builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Configuration.UnifiedConfigurationService>();
+
+// Configuration migration service for backward compatibility during transition
+builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Configuration.ConfigurationMigrationService>();
 
 // Unified performance management service - consolidates streaming, metrics, and monitoring
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.PerformanceManagementService>();
@@ -504,6 +564,13 @@ builder.Services.AddScoped<IQueryService, QueryService>();
 builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Services.SchemaService>(); // Unified with built-in caching
 builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Services.SqlQueryService>();
 builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.Services.PromptService>();
+
+// ===== ENHANCED AI SERVICES (Strategic Enhancements #2 & #3) =====
+builder.Services.AddScoped<IAdvancedNLUService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionAdvancedNLUService>();
+builder.Services.AddScoped<ISchemaOptimizationService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionSchemaOptimizationService>();
+builder.Services.AddScoped<IQueryIntelligenceService, BIReportingCopilot.Infrastructure.AI.Enhanced.QueryIntelligenceService>();
+builder.Services.AddScoped<IRealTimeStreamingService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionRealTimeStreamingService>();
+builder.Services.AddScoped<IMultiModalDashboardService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionMultiModalDashboardService>();
 builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Services.VisualizationService>();
 
 // Streaming query service with factory pattern
@@ -558,8 +625,15 @@ builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IPasswordHasher, B
 // IConnectionStringProvider already registered before configuration validation
 builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializationService>();
 builder.Services.AddScoped<ISchemaManagementService, SchemaManagementService>();
+// Focused tuning services (Enhancement #1: Refactor "God" Services)
+builder.Services.AddScoped<IBusinessTableManagementService, BusinessTableManagementService>();
+builder.Services.AddScoped<IQueryPatternManagementService, QueryPatternManagementService>();
+builder.Services.AddScoped<IGlossaryManagementService, GlossaryManagementService>();
+builder.Services.AddScoped<IQueryCacheService, QueryCacheService>();
+
+// Main tuning service (now delegates to focused services and uses bounded contexts)
 builder.Services.AddScoped<ITuningService, TuningService>();
-builder.Services.AddScoped<IAITuningSettingsService, AITuningSettingsService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Services.IAITuningSettingsService, BIReportingCopilot.Infrastructure.Services.AITuningSettingsService>();
 builder.Services.AddScoped<IBusinessContextAutoGenerator, BusinessContextAutoGenerator>();
 builder.Services.AddScoped<IQuerySuggestionService, BIReportingCopilot.Infrastructure.Services.QuerySuggestionService>();
 // Register SignalRProgressReporter with QueryStatusHub context
@@ -609,8 +683,15 @@ var healthChecks = builder.Services.AddHealthChecks();
 // Add fast health checks that return cached status
 healthChecks.AddCheck<BIReportingCopilot.API.HealthChecks.BIDatabaseHealthCheck>("bidatabase");
 
+// Add configuration health checks (Enhancement #3: Configuration Management)
+healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.ConfigurationHealthCheck>("configuration");
+healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.ConfigurationPerformanceHealthCheck>("configuration-performance");
+
+// Add bounded contexts health check (Enhancement #4: Database Context Optimization)
+healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.BoundedContextsHealthCheck>("bounded-contexts");
+
 // Log health check configuration
-Log.Information("Health checks configured - BIDatabase health check registered");
+Log.Information("Health checks configured - BIDatabase, Configuration, Configuration Performance, and Bounded Contexts health checks registered");
 
 // Add security health checks
 builder.Services.AddSecurityHealthChecks();

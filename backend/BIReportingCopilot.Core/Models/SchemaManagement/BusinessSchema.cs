@@ -126,6 +126,8 @@ public class SchemaTableContext
 
     public DateTime UpdatedAt { get; set; }
 
+    public bool IsActive { get; set; } = true;
+
     // Navigation properties
     public virtual BusinessSchemaVersion SchemaVersion { get; set; } = null!;
     public virtual ICollection<SchemaColumnContext> ColumnContexts { get; set; } = new List<SchemaColumnContext>();
@@ -176,6 +178,8 @@ public class SchemaColumnContext
 
     public DateTime UpdatedAt { get; set; }
 
+    public bool IsActive { get; set; } = true;
+
     // Navigation properties
     public virtual SchemaTableContext TableContext { get; set; } = null!;
 }
@@ -218,6 +222,8 @@ public class SchemaGlossaryTerm
 
     public DateTime UpdatedAt { get; set; }
 
+    public bool IsActive { get; set; } = true;
+
     // Navigation properties
     public virtual BusinessSchemaVersion SchemaVersion { get; set; } = null!;
 }
@@ -258,6 +264,12 @@ public class SchemaRelationship
 
     public DateTime UpdatedAt { get; set; }
 
+    public bool IsActive { get; set; } = true;
+
+    public Guid SourceTableId { get; set; }
+
+    public Guid TargetTableId { get; set; }
+
     // Navigation properties
     public virtual BusinessSchemaVersion SchemaVersion { get; set; } = null!;
 }
@@ -275,7 +287,13 @@ public class UserSchemaPreference
 
     public Guid SchemaVersionId { get; set; }
 
+    public Guid SchemaId { get; set; }
+
     public bool IsDefault { get; set; } = false;
+
+    public bool IsActive { get; set; } = true;
+
+    public DateTime LastUsed { get; set; } = DateTime.UtcNow;
 
     public DateTime CreatedAt { get; set; }
 

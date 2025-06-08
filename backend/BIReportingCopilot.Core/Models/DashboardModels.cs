@@ -47,13 +47,7 @@ public class PopularTable
     public DateTime LastAccessed { get; set; }
 }
 
-public class PerformanceMetrics
-{
-    public double AverageResponseTime { get; set; }
-    public double MedianResponseTime { get; set; }
-    public double P95ResponseTime { get; set; }
-    public decimal SuccessRate { get; set; }
-}
+// PerformanceMetrics moved to PerformanceModels.cs to avoid duplicates
 
 public class ErrorAnalysis
 {

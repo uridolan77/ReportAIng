@@ -2,25 +2,29 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Infrastructure.Data.Contexts;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
+/// <summary>
+/// Enhanced UserService using bounded contexts for better performance and maintainability
+/// </summary>
 public class UserService : IUserService
 {
     private readonly ILogger<UserService> _logger;
-    private readonly BICopilotContext _context;
+    private readonly IDbContextFactory _contextFactory;
     private readonly IAuditService _auditService;
 
     public UserService(
         ILogger<UserService> logger,
-        BICopilotContext context,
+        IDbContextFactory contextFactory,
         IAuditService auditService)
     {
         _logger = logger;
-        _context = context;
+        _contextFactory = contextFactory;
         _auditService = auditService;
     }
 
@@ -28,27 +32,33 @@ public class UserService : IUserService
     {
         try
         {
-            var userEntity = await _context.Users
-                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-
-            if (userEntity == null)
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async context =>
             {
-                return null;
-            }
+                var securityContext = (SecurityDbContext)context;
 
-            var preferences = await GetUserPreferencesEntityAsync(userId);
+                var userEntity = await securityContext.Users
+                    .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
-            return new UserInfo
-            {
-                Id = userEntity.Id,
-                Username = userEntity.Username,
-                DisplayName = userEntity.DisplayName,
-                Email = userEntity.Email,
-                Roles = userEntity.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries),
-                Permissions = await GetUserPermissionsAsync(userId),
-                Preferences = MapToUserPreferences(preferences),
-                LastLogin = userEntity.LastLoginDate
-            };
+                if (userEntity == null)
+                {
+                    return null;
+                }
+
+                var preferences = await securityContext.UserPreferences
+                    .FirstOrDefaultAsync(p => p.UserId == userId);
+
+                return new UserInfo
+                {
+                    Id = userEntity.Id,
+                    Username = userEntity.Username,
+                    DisplayName = userEntity.DisplayName,
+                    Email = userEntity.Email,
+                    Roles = userEntity.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries),
+                    Permissions = await GetUserPermissionsAsync(userId),
+                    Preferences = MapToUserPreferences(preferences),
+                    LastLogin = userEntity.LastLoginDate
+                };
+            });
         }
         catch (Exception ex)
         {
@@ -70,7 +80,12 @@ public class UserService : IUserService
                     UserId = userId,
                     CreatedDate = DateTime.UtcNow
                 };
-                _context.UserPreferences.Add(existingPrefs);
+                await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async dbContext =>
+                {
+                    var userContext = (SecurityDbContext)dbContext;
+                    userContext.UserPreferences.Add(existingPrefs);
+                    await userContext.SaveChangesAsync();
+                });
             }
 
             // Update preferences
@@ -82,7 +97,24 @@ public class UserService : IUserService
             existingPrefs.NotificationSettings = JsonSerializer.Serialize(preferences.NotificationSettings);
             existingPrefs.UpdatedDate = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async dbContext =>
+            {
+                var userContext = (SecurityDbContext)dbContext;
+                // Update the existing preferences entity
+                var existingEntity = await userContext.UserPreferences
+                    .FirstOrDefaultAsync(p => p.UserId == userId);
+                if (existingEntity != null)
+                {
+                    existingEntity.PreferredChartTypes = existingPrefs.PreferredChartTypes;
+                    existingEntity.DefaultDateRange = existingPrefs.DefaultDateRange;
+                    existingEntity.MaxRowsPerQuery = existingPrefs.MaxRowsPerQuery;
+                    existingEntity.EnableQuerySuggestions = existingPrefs.EnableQuerySuggestions;
+                    existingEntity.EnableAutoVisualization = existingPrefs.EnableAutoVisualization;
+                    existingEntity.NotificationSettings = existingPrefs.NotificationSettings;
+                    existingEntity.UpdatedDate = existingPrefs.UpdatedDate;
+                }
+                await userContext.SaveChangesAsync();
+            });
 
             await _auditService.LogAsync("USER_PREFERENCES_UPDATED", userId, "UserPreferences", userId);
 
@@ -100,15 +132,24 @@ public class UserService : IUserService
     {
         try
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            var user = await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async dbContext =>
+            {
+                var userContext = (SecurityDbContext)dbContext;
+                return await userContext.Users
+                    .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            });
 
             if (user == null)
             {
                 return new List<string>();
             }
 
-            var roles = user.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            if (user == null)
+            {
+                return new List<string>();
+            }
+
+            var roles = user.Roles?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
             var permissions = new List<string>();
 
             // Map roles to permissions
@@ -156,8 +197,12 @@ public class UserService : IUserService
                 IsActive = true
             };
 
-            _context.UserSessions.Add(sessionEntity);
-            await _context.SaveChangesAsync();
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async dbContext =>
+            {
+                var userContext = (SecurityDbContext)dbContext;
+                userContext.UserSessions.Add(sessionEntity);
+                await userContext.SaveChangesAsync();
+            });
 
             await _auditService.LogAsync("SESSION_CREATED", userId, "UserSession", sessionId,
                 new { IpAddress = ipAddress, UserAgent = userAgent }, ipAddress, userAgent);
@@ -184,8 +229,12 @@ public class UserService : IUserService
     {
         try
         {
-            var sessionEntity = await _context.UserSessions
-                .FirstOrDefaultAsync(s => s.SessionId == sessionId && s.IsActive);
+            var sessionEntity = await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async dbContext =>
+            {
+                var userContext = (SecurityDbContext)dbContext;
+                return await userContext.UserSessions
+                    .FirstOrDefaultAsync(s => s.SessionId == sessionId && s.IsActive);
+            });
 
             if (sessionEntity == null)
             {
@@ -214,14 +263,18 @@ public class UserService : IUserService
     {
         try
         {
-            var sessionEntity = await _context.UserSessions
-                .FirstOrDefaultAsync(s => s.SessionId == sessionId && s.IsActive);
-
-            if (sessionEntity != null)
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async dbContext =>
             {
-                sessionEntity.LastActivity = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
-            }
+                var userContext = (SecurityDbContext)dbContext;
+                var sessionEntity = await userContext.UserSessions
+                    .FirstOrDefaultAsync(s => s.SessionId == sessionId && s.IsActive);
+
+                if (sessionEntity != null)
+                {
+                    sessionEntity.LastActivity = DateTime.UtcNow;
+                    await userContext.SaveChangesAsync();
+                }
+            });
         }
         catch (Exception ex)
         {
@@ -233,17 +286,21 @@ public class UserService : IUserService
     {
         try
         {
-            var sessionEntity = await _context.UserSessions
-                .FirstOrDefaultAsync(s => s.SessionId == sessionId);
-
-            if (sessionEntity != null)
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async dbContext =>
             {
-                sessionEntity.IsActive = false;
-                sessionEntity.UpdatedDate = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+                var userContext = (SecurityDbContext)dbContext;
+                var sessionEntity = await userContext.UserSessions
+                    .FirstOrDefaultAsync(s => s.SessionId == sessionId);
 
-                await _auditService.LogAsync("SESSION_ENDED", sessionEntity.UserId, "UserSession", sessionId);
-            }
+                if (sessionEntity != null)
+                {
+                    sessionEntity.IsActive = false;
+                    sessionEntity.UpdatedDate = DateTime.UtcNow;
+                    await userContext.SaveChangesAsync();
+
+                    await _auditService.LogAsync("SESSION_ENDED", sessionEntity.UserId, "UserSession", sessionId);
+                }
+            });
         }
         catch (Exception ex)
         {
@@ -278,37 +335,41 @@ public class UserService : IUserService
     {
         try
         {
-            var query = _context.AuditLog.Where(a => a.UserId == userId);
-
-            if (from.HasValue)
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async dbContext =>
             {
-                query = query.Where(a => a.Timestamp >= from.Value);
-            }
+                var userContext = (SecurityDbContext)dbContext;
+                var query = userContext.AuditLog.Where(a => a.UserId == userId);
 
-            if (to.HasValue)
-            {
-                query = query.Where(a => a.Timestamp <= to.Value);
-            }
+                if (from.HasValue)
+                {
+                    query = query.Where(a => a.Timestamp >= from.Value);
+                }
 
-            var auditEntries = await query
-                .OrderByDescending(a => a.Timestamp)
-                .Take(100) // Limit to last 100 activities
-                .ToListAsync();
+                if (to.HasValue)
+                {
+                    query = query.Where(a => a.Timestamp <= to.Value);
+                }
 
-            return auditEntries.Select(a => new UserActivity
-            {
-                Id = a.Id.ToString(),
-                UserId = a.UserId,
-                Action = a.Action,
-                EntityType = a.EntityType,
-                EntityId = a.EntityId,
-                Details = !string.IsNullOrEmpty(a.Details) ?
-                    JsonSerializer.Deserialize<Dictionary<string, object>>(a.Details) : null,
-                IpAddress = a.IpAddress,
-                UserAgent = a.UserAgent,
-                Timestamp = a.Timestamp,
-                SessionId = string.Empty // Not available in audit log
-            }).ToList();
+                var auditEntries = await query
+                    .OrderByDescending(a => a.Timestamp)
+                    .Take(100) // Limit to last 100 activities
+                    .ToListAsync();
+
+                return auditEntries.Select(a => new UserActivity
+                {
+                    Id = a.Id.ToString(),
+                    UserId = a.UserId,
+                    Action = a.Action,
+                    EntityType = a.EntityType,
+                    EntityId = a.EntityId,
+                    Details = !string.IsNullOrEmpty(a.Details) ?
+                        JsonSerializer.Deserialize<Dictionary<string, object>>(a.Details) : null,
+                    IpAddress = a.IpAddress,
+                    UserAgent = a.UserAgent,
+                    Timestamp = a.Timestamp,
+                    SessionId = string.Empty // Not available in audit log
+                }).ToList();
+            });
         }
         catch (Exception ex)
         {
@@ -321,7 +382,11 @@ public class UserService : IUserService
     {
         try
         {
-            return await _context.Users.CountAsync(u => u.IsActive);
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async dbContext =>
+            {
+                var userContext = (SecurityDbContext)dbContext;
+                return await userContext.Users.CountAsync(u => u.IsActive);
+            });
         }
         catch (Exception ex)
         {
@@ -332,8 +397,12 @@ public class UserService : IUserService
 
     private async Task<UserPreferencesEntity?> GetUserPreferencesEntityAsync(string userId)
     {
-        return await _context.UserPreferences
-            .FirstOrDefaultAsync(p => p.UserId == userId);
+        return await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async dbContext =>
+        {
+            var userContext = (SecurityDbContext)dbContext;
+            return await userContext.UserPreferences
+                .FirstOrDefaultAsync(p => p.UserId == userId);
+        });
     }
 
     private UserPreferences MapToUserPreferences(UserPreferencesEntity? entity)

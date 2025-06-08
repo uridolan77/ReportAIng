@@ -375,7 +375,7 @@ public class DashboardController : ControllerBase
                     AverageResponseTime = 0,
                     MedianResponseTime = 0,
                     P95ResponseTime = 0,
-                    SuccessRate = 100m
+                    SuccessRate = 100.0
                 };
             }
 
@@ -394,7 +394,7 @@ public class DashboardController : ControllerBase
                 AverageResponseTime = executionTimes.Any() ? (int)executionTimes.Average() : 0,
                 MedianResponseTime = executionTimes.Any() ? (int)executionTimes[executionTimes.Count / 2] : 0,
                 P95ResponseTime = executionTimes.Any() ? (int)executionTimes[(int)(executionTimes.Count * 0.95)] : 0,
-                SuccessRate = successRate
+                SuccessRate = (double)successRate
             };
         }
         catch (Exception ex)
@@ -405,7 +405,7 @@ public class DashboardController : ControllerBase
                 AverageResponseTime = 0,
                 MedianResponseTime = 0,
                 P95ResponseTime = 0,
-                SuccessRate = 0m
+                SuccessRate = 0.0
             };
         }
     }

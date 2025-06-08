@@ -1,11 +1,14 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using BIReportingCopilot.Infrastructure.Services;
 using BIReportingCopilot.Infrastructure.Security;
 using BIReportingCopilot.Infrastructure.Performance;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Commands;
+using BIReportingCopilot.Core.Models;
 using MediatR;
 
 namespace BIReportingCopilot.Tests.Integration;
@@ -41,6 +44,49 @@ public class EnhancementIntegrationTests : IClassFixture<WebApplicationFactory<P
         // Verify cache service is the unified version
         Assert.NotNull(services.GetService<ICacheService>());
         Assert.IsType<CacheService>(services.GetService<ICacheService>());
+    }
+
+    [Fact]
+    public void Enhanced_Services_Should_Be_Registered_In_DI_Container()
+    {
+        // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var services = scope.ServiceProvider;
+        var logger = services.GetRequiredService<ILogger<EnhancementIntegrationTests>>();
+
+        logger.LogInformation("🧪 Testing enhanced services registration in DI container");
+
+        // Assert - Enhanced Semantic Caching (Enhancement #1)
+        var semanticCacheService = services.GetService<ISemanticCacheService>();
+        Assert.NotNull(semanticCacheService);
+        logger.LogInformation("✅ ISemanticCacheService registered successfully");
+
+        // Assert - Advanced NLU (Enhancement #2)
+        var advancedNLUService = services.GetService<IAdvancedNLUService>();
+        Assert.NotNull(advancedNLUService);
+        logger.LogInformation("✅ IAdvancedNLUService registered successfully");
+
+        // Assert - Schema Optimization (Enhancement #2)
+        var schemaOptimizationService = services.GetService<ISchemaOptimizationService>();
+        Assert.NotNull(schemaOptimizationService);
+        logger.LogInformation("✅ ISchemaOptimizationService registered successfully");
+
+        // Assert - Query Intelligence (Enhancement #2)
+        var queryIntelligenceService = services.GetService<IQueryIntelligenceService>();
+        Assert.NotNull(queryIntelligenceService);
+        logger.LogInformation("✅ IQueryIntelligenceService registered successfully");
+
+        // Assert - Real-time Streaming (Enhancement #3)
+        var realTimeStreamingService = services.GetService<IRealTimeStreamingService>();
+        Assert.NotNull(realTimeStreamingService);
+        logger.LogInformation("✅ IRealTimeStreamingService registered successfully");
+
+        // Assert - Multi-Modal Dashboards (Enhancement #3)
+        var multiModalDashboardService = services.GetService<IMultiModalDashboardService>();
+        Assert.NotNull(multiModalDashboardService);
+        logger.LogInformation("✅ IMultiModalDashboardService registered successfully");
+
+        logger.LogInformation("🎉 All enhanced services are properly registered in DI container!");
     }
 
     [Fact]

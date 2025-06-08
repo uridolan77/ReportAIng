@@ -516,9 +516,9 @@ public class AdvancedNLUService
         };
     }
 
-    private async Task<UserPreferences> InferUserPreferencesAsync(List<ConversationTurn> conversationHistory)
+    private async Task<NLUUserPreferences> InferUserPreferencesAsync(List<ConversationTurn> conversationHistory)
     {
-        return new UserPreferences
+        return new NLUUserPreferences
         {
             PreferredQueryTypes = new List<string> { "DataQuery", "Aggregation" },
             PreferredTimeRanges = new List<string> { "Last 30 days", "This month" },

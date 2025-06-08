@@ -105,6 +105,14 @@ public class QueryPatternEntity : BaseEntity
     public bool IsActive { get; set; } = true;
     public int UsageCount { get; set; } = 0;
     public DateTime? LastUsed { get; set; }
+
+    // Alias property for compatibility
+    [NotMapped]
+    public DateTime? LastUsedDate
+    {
+        get => LastUsed;
+        set => LastUsed = value;
+    }
 }
 
 [Table("BusinessGlossary")]
@@ -136,6 +144,14 @@ public class BusinessGlossaryEntity : BaseEntity
     public bool IsActive { get; set; } = true;
     public int UsageCount { get; set; } = 0;
     public DateTime? LastUsed { get; set; }
+
+    // Alias property for compatibility
+    [NotMapped]
+    public DateTime? LastUsedDate
+    {
+        get => LastUsed;
+        set => LastUsed = value;
+    }
 }
 
 [Table("AITuningSettings")]
