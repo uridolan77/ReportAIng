@@ -4,9 +4,12 @@ import { useComponentSize } from '../../../hooks/usePerformance';
 import { useAccessibility } from '../../../hooks/useAccessibility';
 
 // Note: d3-sankey types might need to be installed separately
-// For now, we'll use any types for sankey functions
-const sankey = (d3 as any).sankey;
-const sankeyLinkHorizontal = (d3 as any).sankeyLinkHorizontal;
+// For now, we'll use any types for sankey functions or provide fallback
+const sankey = (d3 as any).sankey || (() => {
+  console.warn('d3-sankey not available, using fallback');
+  return () => ({ nodes: [], links: [] });
+});
+const sankeyLinkHorizontal = (d3 as any).sankeyLinkHorizontal || (() => 'M0,0L0,0');
 
 interface SankeyData {
   nodes: Array<{ id: string; name: string; category?: string; description?: string }>;
@@ -52,6 +55,20 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
 
   useEffect(() => {
     if (!svgRef.current || !data.nodes.length || size.width === 0) return;
+
+    // Check if d3-sankey is available
+    if (!(d3 as any).sankey) {
+      const svg = d3.select(svgRef.current);
+      svg.selectAll('*').remove();
+      svg.append('text')
+        .attr('x', size.width / 2)
+        .attr('y', size.width * 0.3)
+        .attr('text-anchor', 'middle')
+        .style('font-size', '16px')
+        .style('fill', '#666')
+        .text('Sankey chart requires d3-sankey package');
+      return;
+    }
 
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();

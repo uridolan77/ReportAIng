@@ -20,9 +20,9 @@ namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
 // =============================================================================
 
 /// <summary>
-/// Real-time streaming configuration
+/// Phase 3 real-time streaming configuration (renamed to avoid conflict with Core.Models.StreamingConfiguration)
 /// </summary>
-public class StreamingConfiguration
+public class Phase3StreamingConfiguration
 {
     public int BufferSize { get; set; } = 1000;
     public TimeSpan FlushInterval { get; set; } = TimeSpan.FromSeconds(5);
@@ -46,22 +46,22 @@ public class StreamingDataChunk
 }
 
 /// <summary>
-/// Streaming analytics result
+/// Phase 3 streaming analytics result (renamed to avoid conflict with Core.Models.StreamingAnalyticsResult)
 /// </summary>
-public class StreamingAnalyticsResult
+public class Phase3StreamingAnalyticsResult
 {
     public string StreamId { get; set; } = string.Empty;
     public List<StreamingDataChunk> Chunks { get; set; } = new();
-    public StreamingMetrics Metrics { get; set; } = new();
+    public Phase3StreamingMetrics Metrics { get; set; } = new();
     public List<StreamingInsight> Insights { get; set; } = new();
     public DateTime StartTime { get; set; }
     public DateTime? EndTime { get; set; }
 }
 
 /// <summary>
-/// Streaming metrics
+/// Phase 3 streaming metrics (renamed to avoid conflict with Core.Models.StreamingMetrics)
 /// </summary>
-public class StreamingMetrics
+public class Phase3StreamingMetrics
 {
     public long TotalBytes { get; set; }
     public int ChunkCount { get; set; }

@@ -414,17 +414,12 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.SecurityMa
 // ===== ENHANCED AI SERVICES =====
 // Note: Advanced AI services are available but disabled for Phase 3A infrastructure setup
 
-// Enhanced configuration
-builder.Services.Configure<EnhancedAIConfiguration>(
-    builder.Configuration.GetSection("EnhancedAI"));
+// Enhanced AI configuration (now part of unified AIConfiguration)
+// Note: Enhanced AI features are now configured through the unified AIConfiguration
+// in UnifiedApplicationSettings section
 
-// Feature flags for gradual rollout
-builder.Services.Configure<FeatureFlags>(
-    builder.Configuration.GetSection("FeatureFlags"));
-
-// Migration settings
-builder.Services.Configure<MigrationSettings>(
-    builder.Configuration.GetSection("Migration"));
+// Feature flags and migration settings are now part of UnifiedApplicationSettings
+// These configurations have been consolidated into the unified configuration model
 
 // Phase 2 Enhanced Services - Available but disabled for Phase 3A infrastructure setup
 
@@ -573,9 +568,13 @@ builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.Ser
 builder.Services.AddScoped<IAdvancedNLUService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionAdvancedNLUService>();
 builder.Services.AddScoped<ISchemaOptimizationService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionSchemaOptimizationService>();
 builder.Services.AddScoped<IQueryIntelligenceService, BIReportingCopilot.Infrastructure.AI.Enhanced.QueryIntelligenceService>();
-// IRealTimeStreamingService registration removed - ProductionRealTimeStreamingService excluded from compilation
+// Real-Time Streaming Service - ENABLED for feature development
+builder.Services.AddScoped<IRealTimeStreamingService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionRealTimeStreamingService>();
 builder.Services.AddScoped<IMultiModalDashboardService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionMultiModalDashboardService>();
 builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Services.VisualizationService>();
+
+// Performance Optimization Services
+builder.Services.AddHostedService<BIReportingCopilot.Infrastructure.Performance.AutoOptimizationService>();
 
 // Streaming query service with factory pattern
 builder.Services.AddScoped<IStreamingSqlQueryService>(provider =>
@@ -755,6 +754,8 @@ app.MapControllers();
 // Configure SignalR hubs
 app.MapHub<QueryStatusHub>("/hubs/query-status");
 app.MapHub<QueryHub>("/hubs/query");
+// Real-time streaming hub for enhanced features
+app.MapHub<BIReportingCopilot.Infrastructure.AI.Enhanced.StreamingHub>("/hubs/streaming");
 
 // Configure health checks
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions

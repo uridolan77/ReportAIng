@@ -45,7 +45,7 @@
   <!-- Exclude Phase 3 experimental files with compilation errors -->
   <ItemGroup>
     <Compile Remove="AI\Enhanced\FederatedLearningComponents.cs" />
-    <Compile Remove="AI\Enhanced\ProductionRealTimeStreamingService.cs" />
+    <!-- ProductionRealTimeStreamingService.cs re-enabled for feature development -->
   </ItemGroup>
 
 </Project>

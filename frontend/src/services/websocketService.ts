@@ -264,6 +264,47 @@ class WebSocketService {
       timestamp: Date.now()
     });
   }
+
+  // Enhanced AI Features
+  public startStreamingSession(config: any): void {
+    this.send({
+      type: 'start_streaming_session',
+      payload: config,
+      timestamp: Date.now()
+    });
+  }
+
+  public processQueryStreamEvent(queryEvent: any): void {
+    this.send({
+      type: 'process_query_stream_event',
+      payload: queryEvent,
+      timestamp: Date.now()
+    });
+  }
+
+  public processDataStreamEvent(dataEvent: any): void {
+    this.send({
+      type: 'process_data_stream_event',
+      payload: dataEvent,
+      timestamp: Date.now()
+    });
+  }
+
+  public subscribeToDataStream(subscription: any): void {
+    this.send({
+      type: 'subscribe_to_data_stream',
+      payload: subscription,
+      timestamp: Date.now()
+    });
+  }
+
+  public createRealTimeAlert(alert: any): void {
+    this.send({
+      type: 'create_real_time_alert',
+      payload: alert,
+      timestamp: Date.now()
+    });
+  }
 }
 
 // Singleton instance
@@ -305,10 +346,17 @@ export const useWebSocket = () => {
     lastMessage,
     sendMessage,
     subscribe,
+    isConnected: connectionState === 'connected',
     joinRoom: websocketService.joinRoom.bind(websocketService),
     leaveRoom: websocketService.leaveRoom.bind(websocketService),
     broadcastCursorPosition: websocketService.broadcastCursorPosition.bind(websocketService),
     broadcastQueryExecution: websocketService.broadcastQueryExecution.bind(websocketService),
-    broadcastDashboardUpdate: websocketService.broadcastDashboardUpdate.bind(websocketService)
+    broadcastDashboardUpdate: websocketService.broadcastDashboardUpdate.bind(websocketService),
+    // Enhanced AI Features
+    startStreamingSession: websocketService.startStreamingSession.bind(websocketService),
+    processQueryStreamEvent: websocketService.processQueryStreamEvent.bind(websocketService),
+    processDataStreamEvent: websocketService.processDataStreamEvent.bind(websocketService),
+    subscribeToDataStream: websocketService.subscribeToDataStream.bind(websocketService),
+    createRealTimeAlert: websocketService.createRealTimeAlert.bind(websocketService)
   };
 };

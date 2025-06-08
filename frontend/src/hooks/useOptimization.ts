@@ -228,18 +228,39 @@ export const usePaginatedData = <T>(
   }, [data, pageSize, currentPage]);
 };
 
-// Performance monitoring hook
+// Enhanced performance monitoring hook
 export const usePerformanceMonitor = (componentName: string) => {
   const renderCount = useRef(0);
   const lastRenderTime = useRef(performance.now());
+  const mountTime = useRef(performance.now());
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    renderCount: 0,
+    averageRenderTime: 0,
+    totalRenderTime: 0,
+    mountTime: 0
+  });
 
   useEffect(() => {
     renderCount.current++;
     const currentTime = performance.now();
     const timeSinceLastRender = currentTime - lastRenderTime.current;
+    const timeSinceMount = currentTime - mountTime.current;
 
+    // Update metrics
+    setPerformanceMetrics(prev => ({
+      renderCount: renderCount.current,
+      averageRenderTime: timeSinceMount / renderCount.current,
+      totalRenderTime: timeSinceMount,
+      mountTime: mountTime.current
+    }));
+
+    // Development warnings
     if (renderCount.current > 1 && timeSinceLastRender < 16 && process.env.NODE_ENV === 'development') {
-      console.warn(`${componentName} rendered ${renderCount.current} times in ${timeSinceLastRender.toFixed(2)}ms`);
+      console.warn(`🐌 ${componentName} rendered ${renderCount.current} times in ${timeSinceLastRender.toFixed(2)}ms`);
+    }
+
+    if (renderCount.current > 10 && process.env.NODE_ENV === 'development') {
+      console.warn(`🔄 ${componentName} has rendered ${renderCount.current} times - consider optimization`);
     }
 
     lastRenderTime.current = currentTime;
@@ -247,11 +268,88 @@ export const usePerformanceMonitor = (componentName: string) => {
 
   return {
     renderCount: renderCount.current,
+    performanceMetrics,
     getStats: () => ({
       renderCount: renderCount.current,
-      lastRenderTime: lastRenderTime.current
+      lastRenderTime: lastRenderTime.current,
+      mountTime: mountTime.current,
+      ...performanceMetrics
     })
   };
+};
+
+// Real-time performance monitoring hook
+export const useRealTimePerformance = () => {
+  const [metrics, setMetrics] = useState({
+    memoryUsage: 0,
+    renderingPerformance: 0,
+    networkLatency: 0,
+    cacheHitRate: 0
+  });
+
+  useEffect(() => {
+    const updateMetrics = () => {
+      // Memory usage
+      if ('memory' in performance) {
+        const memInfo = (performance as any).memory;
+        setMetrics(prev => ({
+          ...prev,
+          memoryUsage: (memInfo.usedJSHeapSize / memInfo.jsHeapSizeLimit) * 100
+        }));
+      }
+
+      // Rendering performance
+      const paintEntries = performance.getEntriesByType('paint');
+      if (paintEntries.length > 0) {
+        const fcp = paintEntries.find(entry => entry.name === 'first-contentful-paint');
+        if (fcp) {
+          setMetrics(prev => ({
+            ...prev,
+            renderingPerformance: fcp.startTime
+          }));
+        }
+      }
+    };
+
+    updateMetrics();
+    const interval = setInterval(updateMetrics, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return metrics;
+};
+
+// Cache performance monitoring hook
+export const useCachePerformance = () => {
+  const [cacheMetrics, setCacheMetrics] = useState({
+    hitRate: 0,
+    missRate: 0,
+    totalRequests: 0,
+    averageRetrievalTime: 0
+  });
+
+  const updateCacheMetrics = useCallback(async () => {
+    try {
+      const response = await fetch('/api/performance-monitoring/cache/metrics', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCacheMetrics(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch cache metrics:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    updateCacheMetrics();
+    const interval = setInterval(updateCacheMetrics, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, [updateCacheMetrics]);
+
+  return { cacheMetrics, updateCacheMetrics };
 };
 
 // Optimized event handlers

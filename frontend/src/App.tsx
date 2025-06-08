@@ -35,6 +35,11 @@ const SchemaManagementDashboard = lazy(() => import('./components/SchemaManageme
 const QuerySuggestionsManager = lazy(() => import('./components/Admin/QuerySuggestionsManager').then(module => ({ default: module.QuerySuggestionsManager })));
 const MinimalistQueryPage = lazy(() => import('./pages/MinimalistQueryPage'));
 const DBExplorer = lazy(() => import('./components/DBExplorer/DBExplorer').then(module => ({ default: module.DBExplorer })));
+const EnhancedQueryInterface = lazy(() => import('./components/Enhanced/EnhancedQueryInterface').then(module => ({ default: module.default })));
+const EnhancedFeaturesDemo = lazy(() => import('./pages/EnhancedFeaturesDemo').then(module => ({ default: module.default })));
+const EnhancedDashboardInterface = lazy(() => import('./components/Enhanced/EnhancedDashboardInterface').then(module => ({ default: module.default })));
+const EnhancedVisualizationInterface = lazy(() => import('./components/Enhanced/EnhancedVisualizationInterface').then(module => ({ default: module.default })));
+const PerformanceMonitoringDashboard = lazy(() => import('./components/Performance/PerformanceMonitoringDashboard').then(module => ({ default: module.default })));
 
 const App: React.FC = () => {
   const { isAuthenticated, user, isAdmin } = useAuthStore();
@@ -171,6 +176,11 @@ const App: React.FC = () => {
                             <Route path="/suggestions" element={<SuggestionsPage />} />
                             <Route path="/streaming" element={<div style={{ padding: '40px', textAlign: 'center' }}>Streaming Queries - Coming Soon</div>} />
                             <Route path="/enhanced-query" element={<EnhancedQueryBuilder />} />
+                            <Route path="/enhanced-ai" element={<EnhancedQueryInterface />} />
+                            <Route path="/enhanced-demo" element={<EnhancedFeaturesDemo />} />
+                            <Route path="/enhanced-dashboard" element={<EnhancedDashboardInterface />} />
+                            <Route path="/enhanced-visualization" element={<EnhancedVisualizationInterface />} />
+                            <Route path="/performance-monitoring" element={<PerformanceMonitoringDashboard />} />
                             <Route path="/db-explorer" element={<DBExplorer />} />
 
                             {/* Admin Routes */}

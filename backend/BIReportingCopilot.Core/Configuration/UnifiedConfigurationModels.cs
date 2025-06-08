@@ -132,6 +132,7 @@ public class UnifiedApplicationSettings
 
 /// <summary>
 /// AI configuration consolidating OpenAI and AI-related settings
+/// Enhanced with advanced AI features from EnhancedAIConfiguration.cs
 /// </summary>
 public class AIConfiguration
 {
@@ -153,7 +154,7 @@ public class AIConfiguration
     [Range(1, 5, ErrorMessage = "Max retries must be between 1 and 5")]
     public int MaxRetries { get; set; } = 3;
 
-    // AI Features
+    // Basic AI Features
     public bool EnableCaching { get; set; } = true;
     public bool EnableLogging { get; set; } = true;
     public bool EnableSemanticAnalysis { get; set; } = true;
@@ -163,12 +164,172 @@ public class AIConfiguration
     public bool EnableAnomalyDetection { get; set; } = true;
     public bool EnablePromptOptimization { get; set; } = true;
 
-    // AI Performance
+    // Enhanced AI Features (consolidated from EnhancedAIConfiguration.cs)
+    /// <summary>
+    /// Enable conversation context tracking
+    /// </summary>
+    public bool EnableConversationContext { get; set; } = true;
+
+    /// <summary>
+    /// Enable query decomposition for complex queries
+    /// </summary>
+    public bool EnableQueryDecomposition { get; set; } = true;
+
+    /// <summary>
+    /// Enable entity linking to schema elements
+    /// </summary>
+    public bool EnableEntityLinking { get; set; } = true;
+
+    /// <summary>
+    /// Enable multi-dimensional confidence scoring
+    /// </summary>
+    public bool EnableAdvancedConfidenceScoring { get; set; } = true;
+
+    /// <summary>
+    /// Enable AI-powered intent classification
+    /// </summary>
+    public bool EnableAIIntentClassification { get; set; } = true;
+
+    /// <summary>
+    /// Enable schema relationship analysis
+    /// </summary>
+    public bool EnableSchemaRelationshipAnalysis { get; set; } = true;
+
+    /// <summary>
+    /// Enable SQL optimization
+    /// </summary>
+    public bool EnableSQLOptimization { get; set; } = true;
+
+    // Enhanced AI Configuration Parameters
+    /// <summary>
+    /// Maximum number of queries to keep in conversation context
+    /// </summary>
+    [Range(1, 50, ErrorMessage = "Max context queries must be between 1 and 50")]
+    public int MaxContextQueries { get; set; } = 10;
+
+    /// <summary>
+    /// Time-to-live for conversation context in hours
+    /// </summary>
+    [Range(1, 24, ErrorMessage = "Context TTL must be between 1 and 24 hours")]
+    public int ContextTtlHours { get; set; } = 2;
+
+    /// <summary>
+    /// Minimum confidence threshold for query execution
+    /// </summary>
+    [Range(0.0, 1.0, ErrorMessage = "Confidence threshold must be between 0.0 and 1.0")]
+    public double MinimumConfidenceThreshold { get; set; } = 0.6;
+
+    /// <summary>
+    /// Minimum similarity threshold for semantic caching
+    /// </summary>
+    [Range(0.0, 1.0, ErrorMessage = "Similarity threshold must be between 0.0 and 1.0")]
+    public double MinimumSimilarityThreshold { get; set; } = 0.85;
+
+    /// <summary>
+    /// Maximum complexity score before triggering decomposition
+    /// </summary>
+    [Range(1, 20, ErrorMessage = "Max complexity must be between 1 and 20")]
+    public int MaxComplexityBeforeDecomposition { get; set; } = 7;
+
+    // AI Performance (enhanced)
     [Range(1, 1440, ErrorMessage = "Cache expiration must be between 1 and 1440 minutes")]
     public int CacheExpirationMinutes { get; set; } = 60;
 
     [Range(1, 100, ErrorMessage = "Max concurrent requests must be between 1 and 100")]
     public int MaxConcurrentRequests { get; set; } = 10;
+
+    /// <summary>
+    /// Enable parallel processing for sub-queries
+    /// </summary>
+    public bool EnableParallelProcessing { get; set; } = true;
+
+    /// <summary>
+    /// Maximum number of parallel sub-queries
+    /// </summary>
+    [Range(1, 10, ErrorMessage = "Max parallel sub-queries must be between 1 and 10")]
+    public int MaxParallelSubQueries { get; set; } = 3;
+
+    /// <summary>
+    /// Timeout for individual sub-query processing in seconds
+    /// </summary>
+    [Range(5, 300, ErrorMessage = "Sub-query timeout must be between 5 and 300 seconds")]
+    public int SubQueryTimeoutSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// Enable caching of decomposition results
+    /// </summary>
+    public bool EnableDecompositionCaching { get; set; } = true;
+
+    /// <summary>
+    /// Cache TTL for decomposition results in minutes
+    /// </summary>
+    [Range(1, 1440, ErrorMessage = "Decomposition cache TTL must be between 1 and 1440 minutes")]
+    public int DecompositionCacheTtlMinutes { get; set; } = 60;
+
+    // Confidence Weights (consolidated from EnhancedAIConfiguration.cs)
+    /// <summary>
+    /// Confidence weights for multi-dimensional scoring
+    /// </summary>
+    public AIConfidenceWeights ConfidenceWeights { get; set; } = new();
+
+    // Enhanced Logging Settings
+    /// <summary>
+    /// Enable detailed logging for semantic analysis
+    /// </summary>
+    public bool EnableSemanticAnalysisLogging { get; set; } = true;
+
+    /// <summary>
+    /// Enable detailed logging for SQL generation
+    /// </summary>
+    public bool EnableSQLGenerationLogging { get; set; } = true;
+
+    /// <summary>
+    /// Enable detailed logging for confidence scoring
+    /// </summary>
+    public bool EnableConfidenceLogging { get; set; } = true;
+
+    /// <summary>
+    /// Enable performance metrics logging
+    /// </summary>
+    public bool EnablePerformanceLogging { get; set; } = true;
+
+    /// <summary>
+    /// Log conversation context changes
+    /// </summary>
+    public bool LogConversationContext { get; set; } = false;
+
+    /// <summary>
+    /// Log query decomposition details
+    /// </summary>
+    public bool LogQueryDecomposition { get; set; } = true;
+}
+
+/// <summary>
+/// Confidence scoring weights for multi-dimensional AI confidence calculation
+/// Consolidated from EnhancedAIConfiguration.cs
+/// </summary>
+public class AIConfidenceWeights
+{
+    [Range(0.0, 1.0, ErrorMessage = "Model confidence weight must be between 0.0 and 1.0")]
+    public float ModelConfidence { get; set; } = 0.3f;
+
+    [Range(0.0, 1.0, ErrorMessage = "Schema alignment weight must be between 0.0 and 1.0")]
+    public float SchemaAlignment { get; set; } = 0.25f;
+
+    [Range(0.0, 1.0, ErrorMessage = "Execution validity weight must be between 0.0 and 1.0")]
+    public float ExecutionValidity { get; set; } = 0.25f;
+
+    [Range(0.0, 1.0, ErrorMessage = "Historical performance weight must be between 0.0 and 1.0")]
+    public float HistoricalPerformance { get; set; } = 0.2f;
+
+    /// <summary>
+    /// Validate that all weights sum to approximately 1.0
+    /// </summary>
+    public bool IsValid()
+    {
+        var sum = ModelConfidence + SchemaAlignment + ExecutionValidity + HistoricalPerformance;
+        return Math.Abs(sum - 1.0f) < 0.01f; // Allow small floating point differences
+    }
 }
 
 /// <summary>

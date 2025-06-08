@@ -28,7 +28,8 @@ import {
   CodeOutlined,
   LeftOutlined,
   RightOutlined,
-  DatabaseOutlined
+  DatabaseOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApplicationState } from '../../hooks/useEnhancedState';
@@ -162,6 +163,36 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
           icon: <CodeOutlined />,
           label: 'Query Builder',
           description: 'Advanced query building tools'
+        },
+        {
+          key: '/enhanced-ai',
+          icon: <RobotOutlined />,
+          label: 'Enhanced AI Interface',
+          description: 'Next-gen AI with real-time streaming'
+        },
+        {
+          key: '/enhanced-demo',
+          icon: <RocketOutlined />,
+          label: 'Enhanced Features Demo',
+          description: 'Comprehensive demo of all enhanced features'
+        },
+        {
+          key: '/enhanced-dashboard',
+          icon: <DashboardOutlined />,
+          label: 'Multi-Modal Dashboards',
+          description: 'AI-powered dashboard creation and management'
+        },
+        {
+          key: '/enhanced-visualization',
+          icon: <BarChartOutlined />,
+          label: 'Advanced Visualizations',
+          description: 'D3.js-powered interactive charts and graphs'
+        },
+        {
+          key: '/performance-monitoring',
+          icon: <ThunderboltOutlined />,
+          label: 'Performance Monitoring',
+          description: 'Real-time system performance and optimization'
         },
         {
           key: '/db-explorer',
