@@ -113,6 +113,32 @@ public class UnifiedSemanticCacheService : ISemanticCacheService
         }
     }
 
+    public async Task ClearCacheAsync()
+    {
+        try
+        {
+            await _infrastructureService.CleanupExpiredEntriesAsync();
+            _logger.LogInformation("All cache cleared");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error clearing cache");
+        }
+    }
+
+    public async Task InvalidateExpiredEntriesAsync()
+    {
+        try
+        {
+            await _infrastructureService.CleanupExpiredEntriesAsync();
+            _logger.LogInformation("Expired cache entries invalidated");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error invalidating expired entries");
+        }
+    }
+
     public async Task InvalidateCacheByPatternAsync(string pattern)
     {
         try

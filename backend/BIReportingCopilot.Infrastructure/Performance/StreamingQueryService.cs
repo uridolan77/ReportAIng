@@ -6,6 +6,7 @@ using System.Threading.Channels;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Core.Interfaces;
+using CoreQueryPerformanceMetrics = BIReportingCopilot.Core.Models.DTOs.QueryPerformanceMetrics;
 
 namespace BIReportingCopilot.Infrastructure.Performance;
 
@@ -314,7 +315,7 @@ public class StreamingSqlQueryService : IStreamingSqlQueryService
     public Task<QueryExecutionPlan> GetExecutionPlanAsync(string sql)
         => _innerService.GetExecutionPlanAsync(sql);
 
-    public Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(string sql)
+    public Task<CoreQueryPerformanceMetrics> GetQueryPerformanceAsync(string sql)
         => _innerService.GetQueryPerformanceAsync(sql);
 
     public Task<bool> TestConnectionAsync(string? dataSource = null)

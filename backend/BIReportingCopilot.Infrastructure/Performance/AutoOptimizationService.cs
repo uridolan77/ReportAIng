@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Infrastructure.AI;
@@ -76,7 +77,7 @@ public class AutoOptimizationService : IHostedService, IDisposable
             var metrics = await _performanceService.GetCurrentPerformanceSnapshotAsync();
             
             // Record monitoring metrics
-            _monitoringService.RecordPerformanceMetric("monitoring_cycle_duration", stopwatch.ElapsedMilliseconds);
+            _monitoringService.RecordHistogram("monitoring_cycle_duration", stopwatch.ElapsedMilliseconds);
             
             // Check for performance issues
             await CheckPerformanceThresholds(metrics);
@@ -126,8 +127,8 @@ public class AutoOptimizationService : IHostedService, IDisposable
                 stopwatch.ElapsedMilliseconds, optimizationsApplied);
 
             // Record optimization metrics
-            _monitoringService.RecordPerformanceMetric("optimization_cycle_duration", stopwatch.ElapsedMilliseconds);
-            _monitoringService.RecordPerformanceMetric("optimizations_applied", optimizationsApplied);
+            _monitoringService.RecordHistogram("optimization_cycle_duration", stopwatch.ElapsedMilliseconds);
+            _monitoringService.RecordHistogram("optimizations_applied", optimizationsApplied);
         }
         catch (Exception ex)
         {

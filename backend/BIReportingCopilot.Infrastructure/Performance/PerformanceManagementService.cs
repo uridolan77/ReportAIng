@@ -314,6 +314,59 @@ public class PerformanceManagementService
         }
     }
 
+    /// <summary>
+    /// Get performance metrics for a date range
+    /// </summary>
+    public async Task<List<PerformanceMetrics>> GetPerformanceMetricsAsync(DateTime from, DateTime to, string? category = null)
+    {
+        await Task.CompletedTask; // For async signature compatibility
+
+        lock (_metricsLock)
+        {
+            var metrics = _metricsCache.Values
+                .Where(m => m.LastUpdated >= from && m.LastUpdated <= to)
+                .Where(m => category == null || m.OperationType.Contains(category, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            return metrics;
+        }
+    }
+
+    /// <summary>
+    /// Get current performance snapshot
+    /// </summary>
+    public async Task<PerformanceMetricsSummary> GetCurrentPerformanceSnapshotAsync()
+    {
+        await Task.CompletedTask; // For async signature compatibility
+        return GetPerformanceMetrics();
+    }
+
+    /// <summary>
+    /// Get query performance breakdown
+    /// </summary>
+    public async Task<List<QueryPerformanceMetrics>> GetQueryPerformanceBreakdownAsync()
+    {
+        await Task.CompletedTask; // For async signature compatibility
+
+        lock (_metricsLock)
+        {
+            var queryMetrics = _metricsCache.Values
+                .Where(m => m.OperationType.StartsWith("query_"))
+                .Select(m => new QueryPerformanceMetrics
+                {
+                    QueryType = m.OperationType.Replace("query_", ""),
+                    AverageExecutionTime = m.AverageExecutionTime,
+                    TotalExecutions = m.TotalOperations,
+                    SuccessRate = m.TotalOperations > 0 ? (double)m.SuccessCount / m.TotalOperations * 100 : 100,
+                    P95ExecutionTime = m.AverageExecutionTime.Add(TimeSpan.FromMilliseconds(m.AverageExecutionTime.TotalMilliseconds * 0.2)), // Approximation
+                    P99ExecutionTime = m.AverageExecutionTime.Add(TimeSpan.FromMilliseconds(m.AverageExecutionTime.TotalMilliseconds * 0.5))  // Approximation
+                })
+                .ToList();
+
+            return queryMetrics;
+        }
+    }
+
     #endregion
 
     #region Private Helper Methods
@@ -415,4 +468,17 @@ public class StreamingDataResult<T>
     public int BatchSize { get; set; }
     public bool HasMore { get; set; }
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Query performance metrics
+/// </summary>
+public class QueryPerformanceMetrics
+{
+    public string QueryType { get; set; } = string.Empty;
+    public TimeSpan AverageExecutionTime { get; set; }
+    public int TotalExecutions { get; set; }
+    public double SuccessRate { get; set; }
+    public TimeSpan P95ExecutionTime { get; set; }
+    public TimeSpan P99ExecutionTime { get; set; }
 }

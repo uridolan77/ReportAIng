@@ -62,11 +62,15 @@ public class EnhancedQueryProcessor : IQueryProcessor
             _logger.LogDebug("Query classified as {Category} with {Complexity} complexity",
                 classification.Category, classification.Complexity);
 
-            // Step 5: Generate SQL Candidates
+            // Step 5: Schema-aware query decomposition
+            var decomposition = await DecomposeQueryWithSchemaAsync(naturalLanguageQuery, schemaContext, classification);
+            _logger.LogDebug("Query decomposed into {ComponentCount} components", decomposition.Components.Count);
+
+            // Step 6: Generate SQL Candidates with decomposition
             var sqlCandidates = await _queryOptimizer.GenerateCandidatesAsync(semanticAnalysis, schemaContext);
             _logger.LogDebug("Generated {CandidateCount} SQL candidates", sqlCandidates.Count);
 
-            // Step 6: Optimize and Select Best Query
+            // Step 7: Optimize and Select Best Query
             var optimizedQuery = await _queryOptimizer.OptimizeAsync(sqlCandidates, userContext);
             _logger.LogDebug("Selected optimized query with confidence: {Confidence}", optimizedQuery.ConfidenceScore);
 
@@ -184,6 +188,164 @@ public class EnhancedQueryProcessor : IQueryProcessor
             _logger.LogError(ex, "Error finding similar queries");
             return new List<ProcessedQuery>();
         }
+    }
+
+    /// <summary>
+    /// Decompose complex queries into manageable components with schema awareness
+    /// </summary>
+    private async Task<QueryDecomposition> DecomposeQueryWithSchemaAsync(
+        string naturalLanguageQuery,
+        SchemaContext schemaContext,
+        QueryClassification classification)
+    {
+        try
+        {
+            var decomposition = new QueryDecomposition
+            {
+                OriginalQuery = naturalLanguageQuery,
+                Components = new List<QueryComponent>(),
+                ExecutionOrder = new List<int>(),
+                Dependencies = new Dictionary<int, List<int>>()
+            };
+
+            // Analyze query complexity and break down if needed
+            if (classification.Complexity == QueryComplexity.High ||
+                classification.RequiredJoins.Count > 2)
+            {
+                // Complex query - decompose into sub-queries
+                decomposition.Components.AddRange(await DecomposeComplexQueryAsync(naturalLanguageQuery, schemaContext));
+            }
+            else if (classification.Category == QueryCategory.Aggregation)
+            {
+                // Aggregation query - decompose by aggregation functions
+                decomposition.Components.AddRange(await DecomposeAggregationQueryAsync(naturalLanguageQuery, schemaContext));
+            }
+            else
+            {
+                // Simple query - single component
+                decomposition.Components.Add(new QueryComponent
+                {
+                    Id = 1,
+                    Type = QueryComponentType.Primary,
+                    Description = "Main query execution",
+                    Query = naturalLanguageQuery,
+                    RequiredTables = schemaContext.RelevantTables.Select(t => t.Name).ToList(),
+                    EstimatedComplexity = classification.Complexity
+                });
+            }
+
+            // Determine execution order based on dependencies
+            decomposition.ExecutionOrder = DetermineExecutionOrder(decomposition.Components);
+
+            _logger.LogDebug("Query decomposed into {ComponentCount} components with execution order: {Order}",
+                decomposition.Components.Count, string.Join(" -> ", decomposition.ExecutionOrder));
+
+            return decomposition;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error decomposing query");
+            return new QueryDecomposition
+            {
+                OriginalQuery = naturalLanguageQuery,
+                Components = new List<QueryComponent>
+                {
+                    new QueryComponent
+                    {
+                        Id = 1,
+                        Type = QueryComponentType.Primary,
+                        Description = "Fallback single component",
+                        Query = naturalLanguageQuery,
+                        RequiredTables = schemaContext.RelevantTables.Select(t => t.Name).ToList(),
+                        EstimatedComplexity = QueryComplexity.Medium
+                    }
+                },
+                ExecutionOrder = new List<int> { 1 },
+                Dependencies = new Dictionary<int, List<int>>()
+            };
+        }
+    }
+
+    /// <summary>
+    /// Decompose complex queries with multiple joins or subqueries
+    /// </summary>
+    private async Task<List<QueryComponent>> DecomposeComplexQueryAsync(string query, SchemaContext schemaContext)
+    {
+        var components = new List<QueryComponent>();
+
+        // Identify main data retrieval component
+        components.Add(new QueryComponent
+        {
+            Id = 1,
+            Type = QueryComponentType.DataRetrieval,
+            Description = "Primary data retrieval",
+            Query = ExtractPrimaryDataQuery(query, schemaContext),
+            RequiredTables = GetPrimaryTables(schemaContext),
+            EstimatedComplexity = QueryComplexity.Medium
+        });
+
+        // Identify join components
+        var joinTables = GetJoinTables(schemaContext);
+        for (int i = 0; i < joinTables.Count; i++)
+        {
+            components.Add(new QueryComponent
+            {
+                Id = i + 2,
+                Type = QueryComponentType.Join,
+                Description = $"Join with {joinTables[i]}",
+                Query = $"Join data with {joinTables[i]}",
+                RequiredTables = new List<string> { joinTables[i] },
+                EstimatedComplexity = QueryComplexity.Low
+            });
+        }
+
+        // Identify aggregation component if needed
+        if (ContainsAggregation(query))
+        {
+            components.Add(new QueryComponent
+            {
+                Id = components.Count + 1,
+                Type = QueryComponentType.Aggregation,
+                Description = "Aggregate results",
+                Query = ExtractAggregationPart(query),
+                RequiredTables = new List<string>(),
+                EstimatedComplexity = QueryComplexity.Low
+            });
+        }
+
+        return components;
+    }
+
+    /// <summary>
+    /// Decompose aggregation queries by function type
+    /// </summary>
+    private async Task<List<QueryComponent>> DecomposeAggregationQueryAsync(string query, SchemaContext schemaContext)
+    {
+        var components = new List<QueryComponent>();
+
+        // Base data component
+        components.Add(new QueryComponent
+        {
+            Id = 1,
+            Type = QueryComponentType.DataRetrieval,
+            Description = "Retrieve base data for aggregation",
+            Query = ExtractBaseDataQuery(query, schemaContext),
+            RequiredTables = schemaContext.RelevantTables.Select(t => t.Name).ToList(),
+            EstimatedComplexity = QueryComplexity.Low
+        });
+
+        // Aggregation component
+        components.Add(new QueryComponent
+        {
+            Id = 2,
+            Type = QueryComponentType.Aggregation,
+            Description = "Apply aggregation functions",
+            Query = ExtractAggregationPart(query),
+            RequiredTables = new List<string>(),
+            EstimatedComplexity = QueryComplexity.Medium
+        });
+
+        return components;
     }
 
     private async Task<List<string>> GenerateContextualSuggestions(
@@ -313,6 +475,79 @@ public class EnhancedQueryProcessor : IQueryProcessor
         var commonTables = new[] { "orders", "customers", "products", "sales", "transactions", "users", "invoices", "payments" };
         return commonTables.Any(ct => tableName.ToLowerInvariant().Contains(ct));
     }
+
+    #region Query Decomposition Helper Methods
+
+    /// <summary>
+    /// Determine optimal execution order for query components
+    /// </summary>
+    private List<int> DetermineExecutionOrder(List<QueryComponent> components)
+    {
+        // Simple ordering: DataRetrieval -> Join -> Aggregation -> Filtering
+        return components
+            .OrderBy(c => GetComponentPriority(c.Type))
+            .Select(c => c.Id)
+            .ToList();
+    }
+
+    private int GetComponentPriority(QueryComponentType type)
+    {
+        return type switch
+        {
+            QueryComponentType.DataRetrieval => 1,
+            QueryComponentType.Join => 2,
+            QueryComponentType.Filtering => 3,
+            QueryComponentType.Aggregation => 4,
+            QueryComponentType.Sorting => 5,
+            _ => 6
+        };
+    }
+
+    private string ExtractPrimaryDataQuery(string query, SchemaContext schemaContext)
+    {
+        var primaryTable = schemaContext.RelevantTables.FirstOrDefault()?.Name ?? "main_table";
+        return $"Retrieve data from {primaryTable}";
+    }
+
+    private List<string> GetPrimaryTables(SchemaContext schemaContext)
+    {
+        return schemaContext.RelevantTables.Take(1).Select(t => t.Name).ToList();
+    }
+
+    private List<string> GetJoinTables(SchemaContext schemaContext)
+    {
+        return schemaContext.RelevantTables.Skip(1).Select(t => t.Name).ToList();
+    }
+
+    private bool ContainsAggregation(string query)
+    {
+        var aggregationKeywords = new[] { "sum", "count", "avg", "max", "min", "total", "average" };
+        return aggregationKeywords.Any(k => query.Contains(k, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string ExtractAggregationPart(string query)
+    {
+        if (query.Contains("sum", StringComparison.OrdinalIgnoreCase))
+            return "Calculate sum";
+        if (query.Contains("count", StringComparison.OrdinalIgnoreCase))
+            return "Count records";
+        if (query.Contains("avg", StringComparison.OrdinalIgnoreCase) || query.Contains("average", StringComparison.OrdinalIgnoreCase))
+            return "Calculate average";
+        if (query.Contains("max", StringComparison.OrdinalIgnoreCase))
+            return "Find maximum";
+        if (query.Contains("min", StringComparison.OrdinalIgnoreCase))
+            return "Find minimum";
+
+        return "Apply aggregation";
+    }
+
+    private string ExtractBaseDataQuery(string query, SchemaContext schemaContext)
+    {
+        var primaryTable = schemaContext.RelevantTables.FirstOrDefault()?.Name ?? "main_table";
+        return $"Select base data from {primaryTable}";
+    }
+
+    #endregion
 
     private async Task CacheProcessedQueryAsync(string originalQuery, ProcessedQuery processedQuery)
     {

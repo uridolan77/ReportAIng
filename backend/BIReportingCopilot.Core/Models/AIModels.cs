@@ -140,6 +140,7 @@ public class ProcessedQuery
     public List<string> SemanticTokens { get; set; } = new();
     public string? Intent { get; set; }
     public List<string> Entities { get; set; } = new();
+    public QueryDecomposition? Decomposition { get; set; }
 }
 
 // Enums
@@ -194,6 +195,52 @@ public enum VisualizationType
     Heatmap,
     Gauge,
     KPI
+}
+
+public enum QueryComponentType
+{
+    Primary,
+    DataRetrieval,
+    Join,
+    Filtering,
+    Aggregation,
+    Sorting,
+    Grouping,
+    Subquery
+}
+
+// Query Decomposition Models
+public class QueryDecomposition
+{
+    public string OriginalQuery { get; set; } = string.Empty;
+    public List<QueryComponent> Components { get; set; } = new();
+    public List<int> ExecutionOrder { get; set; } = new();
+    public Dictionary<int, List<int>> Dependencies { get; set; } = new();
+    public DecompositionStrategy Strategy { get; set; } = DecompositionStrategy.Simple;
+    public double ComplexityReduction { get; set; }
+    public TimeSpan EstimatedExecutionTime { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class QueryComponent
+{
+    public int Id { get; set; }
+    public QueryComponentType Type { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public string Query { get; set; } = string.Empty;
+    public List<string> RequiredTables { get; set; } = new();
+    public QueryComplexity EstimatedComplexity { get; set; }
+    public TimeSpan EstimatedExecutionTime { get; set; }
+    public List<int> Dependencies { get; set; } = new();
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+public enum DecompositionStrategy
+{
+    Simple,
+    Sequential,
+    Parallel,
+    Hierarchical
 }
 
 // Relationship Models

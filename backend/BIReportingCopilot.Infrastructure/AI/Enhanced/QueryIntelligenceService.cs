@@ -497,11 +497,364 @@ public class QueryIntelligenceService : IQueryIntelligenceService
         return (nluScore * nluWeight) + (optimizationScore * optimizationWeight);
     }
 
-    // Placeholder implementations for remaining methods
-    private async Task<List<IntelligentQuerySuggestion>> GenerateIntentBasedSuggestionsAsync(ConversationAnalysis analysis, SchemaMetadata schema) => new();
-    private async Task<List<IntelligentQuerySuggestion>> GeneratePerformanceOptimizedSuggestionsAsync(SchemaMetadata schema) => new();
-    private async Task<List<IntelligentQuerySuggestion>> GenerateContextAwareSuggestionsAsync(string context, SchemaMetadata schema) => new();
-    private async Task<List<IntelligentQuerySuggestion>> GenerateDomainSpecificSuggestionsAsync(SchemaMetadata schema) => new();
+    /// <summary>
+    /// Generate suggestions based on user intent analysis
+    /// </summary>
+    private async Task<List<IntelligentQuerySuggestion>> GenerateIntentBasedSuggestionsAsync(ConversationAnalysis analysis, SchemaMetadata schema)
+    {
+        var suggestions = new List<IntelligentQuerySuggestion>();
+
+        try
+        {
+            // Analyze dominant intents from conversation
+            var dominantIntents = analysis.CommonIntents?.Take(3) ?? new List<string>();
+
+            foreach (var intent in dominantIntents)
+            {
+                switch (intent.ToLower())
+                {
+                    case "aggregation":
+                    case "summary":
+                        suggestions.AddRange(GenerateAggregationSuggestions(schema));
+                        break;
+                    case "comparison":
+                    case "trend":
+                        suggestions.AddRange(GenerateComparisonSuggestions(schema));
+                        break;
+                    case "filtering":
+                    case "lookup":
+                        suggestions.AddRange(GenerateFilteringSuggestions(schema));
+                        break;
+                    case "ranking":
+                    case "top":
+                        suggestions.AddRange(GenerateRankingSuggestions(schema));
+                        break;
+                }
+            }
+
+            return suggestions.Take(5).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating intent-based suggestions");
+            return new List<IntelligentQuerySuggestion>();
+        }
+    }
+
+    /// <summary>
+    /// Generate performance-optimized query suggestions
+    /// </summary>
+    private async Task<List<IntelligentQuerySuggestion>> GeneratePerformanceOptimizedSuggestionsAsync(SchemaMetadata schema)
+    {
+        var suggestions = new List<IntelligentQuerySuggestion>();
+
+        try
+        {
+            // Find tables with good indexing for fast queries
+            var optimizedTables = schema.Tables
+                .Where(t => t.Indexes?.Any() == true)
+                .Take(3);
+
+            foreach (var table in optimizedTables)
+            {
+                suggestions.Add(new IntelligentQuerySuggestion
+                {
+                    Text = $"Show me recent data from {table.Name}",
+                    Description = $"Optimized query using indexed table {table.Name}",
+                    Category = "Performance",
+                    Relevance = 0.85,
+                    PerformanceScore = 0.9,
+                    Benefits = new List<string> { "Fast execution", "Uses indexes" }
+                });
+            }
+
+            return suggestions;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating performance-optimized suggestions");
+            return new List<IntelligentQuerySuggestion>();
+        }
+    }
+
+    /// <summary>
+    /// Generate context-aware suggestions based on current context
+    /// </summary>
+    private async Task<List<IntelligentQuerySuggestion>> GenerateContextAwareSuggestionsAsync(string context, SchemaMetadata schema)
+    {
+        var suggestions = new List<IntelligentQuerySuggestion>();
+
+        try
+        {
+            if (string.IsNullOrEmpty(context))
+                return suggestions;
+
+            // Extract context keywords
+            var contextKeywords = ExtractContextKeywords(context);
+
+            // Find relevant tables based on context
+            var relevantTables = schema.Tables
+                .Where(t => contextKeywords.Any(k =>
+                    t.Name.Contains(k, StringComparison.OrdinalIgnoreCase) ||
+                    t.Columns.Any(c => c.Name.Contains(k, StringComparison.OrdinalIgnoreCase))))
+                .Take(3);
+
+            foreach (var table in relevantTables)
+            {
+                suggestions.Add(new IntelligentQuerySuggestion
+                {
+                    Text = $"Analyze {table.Name} data related to {string.Join(", ", contextKeywords)}",
+                    Description = $"Context-aware suggestion based on {table.Name} relevance",
+                    Category = "Contextual",
+                    Relevance = 0.75,
+                    PerformanceScore = 0.7,
+                    Benefits = new List<string> { "Context-aware", "Relevant data" }
+                });
+            }
+
+            return suggestions;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating context-aware suggestions");
+            return new List<IntelligentQuerySuggestion>();
+        }
+    }
+
+    /// <summary>
+    /// Generate domain-specific suggestions
+    /// </summary>
+    private async Task<List<IntelligentQuerySuggestion>> GenerateDomainSpecificSuggestionsAsync(SchemaMetadata schema)
+    {
+        var suggestions = new List<IntelligentQuerySuggestion>();
+
+        try
+        {
+            // Gaming domain specific suggestions
+            var gamingTables = schema.Tables
+                .Where(t => IsGamingRelated(t.Name))
+                .Take(3);
+
+            foreach (var table in gamingTables)
+            {
+                suggestions.AddRange(GenerateGamingSuggestions(table));
+            }
+
+            return suggestions.Take(5).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating domain-specific suggestions");
+            return new List<IntelligentQuerySuggestion>();
+        }
+    }
+
+    #region Helper Methods
+
+    /// <summary>
+    /// Generate aggregation-focused suggestions
+    /// </summary>
+    private List<IntelligentQuerySuggestion> GenerateAggregationSuggestions(SchemaMetadata schema)
+    {
+        var suggestions = new List<IntelligentQuerySuggestion>();
+
+        var numericTables = schema.Tables
+            .Where(t => t.Columns.Any(c => IsNumericType(c.DataType)))
+            .Take(2);
+
+        foreach (var table in numericTables)
+        {
+            var numericColumns = table.Columns.Where(c => IsNumericType(c.DataType)).Take(2);
+            foreach (var column in numericColumns)
+            {
+                suggestions.Add(new IntelligentQuerySuggestion
+                {
+                    Text = $"What is the total {column.Name} from {table.Name}?",
+                    Description = $"Aggregation query for numeric column {column.Name}",
+                    Category = "Aggregation",
+                    Relevance = 0.8,
+                    PerformanceScore = 0.85,
+                    Benefits = new List<string> { "Clear aggregation", "Optimized performance" }
+                });
+            }
+        }
+
+        return suggestions;
+    }
+
+    /// <summary>
+    /// Generate comparison-focused suggestions
+    /// </summary>
+    private List<IntelligentQuerySuggestion> GenerateComparisonSuggestions(SchemaMetadata schema)
+    {
+        var suggestions = new List<IntelligentQuerySuggestion>();
+
+        var dateTables = schema.Tables
+            .Where(t => t.Columns.Any(c => IsDateType(c.DataType)))
+            .Take(2);
+
+        foreach (var table in dateTables)
+        {
+            suggestions.Add(new IntelligentQuerySuggestion
+            {
+                Text = $"Compare {table.Name} data between this month and last month",
+                Description = $"Time-based comparison for {table.Name}",
+                Category = "Comparison",
+                Relevance = 0.75,
+                PerformanceScore = 0.7,
+                Benefits = new List<string> { "Time-based analysis", "Trend identification" }
+            });
+        }
+
+        return suggestions;
+    }
+
+    /// <summary>
+    /// Generate filtering-focused suggestions
+    /// </summary>
+    private List<IntelligentQuerySuggestion> GenerateFilteringSuggestions(SchemaMetadata schema)
+    {
+        var suggestions = new List<IntelligentQuerySuggestion>();
+
+        var indexedTables = schema.Tables
+            .Where(t => t.Indexes?.Any() == true)
+            .Take(2);
+
+        foreach (var table in indexedTables)
+        {
+            var indexedColumns = table.Indexes?.SelectMany(i => i.Columns).Distinct().Take(2) ?? new List<string>();
+            foreach (var column in indexedColumns)
+            {
+                suggestions.Add(new IntelligentQuerySuggestion
+                {
+                    Text = $"Show {table.Name} where {column} equals [specific value]",
+                    Description = $"Optimized filtering using indexed column {column}",
+                    Category = "Filtering",
+                    Relevance = 0.85,
+                    PerformanceScore = 0.9,
+                    Benefits = new List<string> { "Fast filtering", "Uses indexes" }
+                });
+            }
+        }
+
+        return suggestions;
+    }
+
+    /// <summary>
+    /// Generate ranking-focused suggestions
+    /// </summary>
+    private List<IntelligentQuerySuggestion> GenerateRankingSuggestions(SchemaMetadata schema)
+    {
+        var suggestions = new List<IntelligentQuerySuggestion>();
+
+        var numericTables = schema.Tables
+            .Where(t => t.Columns.Any(c => IsNumericType(c.DataType)))
+            .Take(2);
+
+        foreach (var table in numericTables)
+        {
+            var numericColumn = table.Columns.FirstOrDefault(c => IsNumericType(c.DataType));
+            if (numericColumn != null)
+            {
+                suggestions.Add(new IntelligentQuerySuggestion
+                {
+                    Text = $"Show top 10 {table.Name} by {numericColumn.Name}",
+                    Description = $"Ranking query for {table.Name} by {numericColumn.Name}",
+                    Category = "Ranking",
+                    Relevance = 0.8,
+                    PerformanceScore = 0.75,
+                    Benefits = new List<string> { "Top performers", "Clear ranking" }
+                });
+            }
+        }
+
+        return suggestions;
+    }
+
+    /// <summary>
+    /// Extract context keywords from text
+    /// </summary>
+    private List<string> ExtractContextKeywords(string context)
+    {
+        var keywords = new List<string>();
+
+        // Simple keyword extraction - can be enhanced with NLP
+        var words = context.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(w => w.Length > 3)
+            .Select(w => w.Trim().ToLower())
+            .Distinct();
+
+        keywords.AddRange(words);
+        return keywords;
+    }
+
+    /// <summary>
+    /// Check if table name is gaming-related
+    /// </summary>
+    private bool IsGamingRelated(string tableName)
+    {
+        var gamingKeywords = new[] { "game", "player", "bet", "win", "casino", "slot", "poker", "daily", "action" };
+        return gamingKeywords.Any(k => tableName.Contains(k, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Generate gaming-specific suggestions
+    /// </summary>
+    private List<IntelligentQuerySuggestion> GenerateGamingSuggestions(TableMetadata table)
+    {
+        var suggestions = new List<IntelligentQuerySuggestion>();
+
+        // Gaming-specific query patterns
+        if (table.Name.Contains("player", StringComparison.OrdinalIgnoreCase))
+        {
+            suggestions.Add(new IntelligentQuerySuggestion
+            {
+                Text = $"Show active players from {table.Name}",
+                Description = "Gaming domain: Player activity analysis",
+                Category = "Gaming",
+                Relevance = 0.9,
+                PerformanceScore = 0.85,
+                Benefits = new List<string> { "Player insights", "Activity tracking" }
+            });
+        }
+
+        if (table.Name.Contains("bet", StringComparison.OrdinalIgnoreCase) ||
+            table.Name.Contains("win", StringComparison.OrdinalIgnoreCase))
+        {
+            suggestions.Add(new IntelligentQuerySuggestion
+            {
+                Text = $"Calculate total revenue from {table.Name}",
+                Description = "Gaming domain: Revenue analysis",
+                Category = "Gaming",
+                Relevance = 0.85,
+                PerformanceScore = 0.8,
+                Benefits = new List<string> { "Revenue insights", "Financial analysis" }
+            });
+        }
+
+        return suggestions;
+    }
+
+    /// <summary>
+    /// Check if data type is numeric
+    /// </summary>
+    private bool IsNumericType(string dataType)
+    {
+        var numericTypes = new[] { "int", "decimal", "float", "double", "money", "numeric", "bigint" };
+        return numericTypes.Any(t => dataType.Contains(t, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Check if data type is date/time
+    /// </summary>
+    private bool IsDateType(string dataType)
+    {
+        var dateTypes = new[] { "date", "time", "datetime", "timestamp" };
+        return dateTypes.Any(t => dataType.Contains(t, StringComparison.OrdinalIgnoreCase));
+    }
+
+    #endregion
+
     private List<IntelligentQuerySuggestion> RankSuggestionsByIntelligence(List<IntelligentQuerySuggestion> suggestions, ConversationAnalysis analysis) => suggestions.OrderByDescending(s => s.Relevance).ToList();
     
     private async Task<List<string>> GetGeneralAutocompleteSuggestionsAsync(SchemaMetadata schema) => new() { "Show", "Count", "List", "Find", "Get" };
