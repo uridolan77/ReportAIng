@@ -27,6 +27,8 @@ import { TableExplorer } from './TableExplorer';
 import { TableDataPreview } from './TableDataPreview';
 import { DatabaseTable, DatabaseSchema, DBExplorerState } from '../../types/dbExplorer';
 import DBExplorerAPI from '../../services/dbExplorerApi';
+import { ApiService } from '../../services/api';
+import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
@@ -50,15 +52,121 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [previewDrawerVisible, setPreviewDrawerVisible] = useState(false);
   const [siderWidth, setSiderWidth] = useState(350);
+  const [debugData, setDebugData] = useState<any>(null);
+
+  // Transform SQL query result to schema structure
+  const transformQueryResultToSchema = (data: any[]): DatabaseSchema => {
+    console.log('🔄 Starting transformation with data:', {
+      totalRows: data.length,
+      sampleRows: data.slice(0, 3),
+      allKeys: data.length > 0 ? Object.keys(data[0]) : []
+    });
+
+    const tablesMap = new Map<string, any>();
+
+    // Group data by table
+    data.forEach((row, index) => {
+      if (index < 5) {
+        console.log(`🔍 Processing row ${index}:`, row);
+      }
+
+      const tableKey = `${row.schema_name}.${row.table_name}`;
+
+      if (!tablesMap.has(tableKey)) {
+        const newTable = {
+          name: row.table_name,
+          schema: row.schema_name,
+          type: row.table_type?.toLowerCase() === 'view' ? 'view' : 'table',
+          columns: [],
+          primaryKeys: [],
+          foreignKeys: []
+        };
+        tablesMap.set(tableKey, newTable);
+        console.log(`📋 Created new table: ${tableKey}`, newTable);
+      }
+
+      const table = tablesMap.get(tableKey);
+      if (row.column_name) {
+        const column = {
+          name: row.column_name,
+          dataType: row.data_type,
+          isNullable: row.is_nullable === 'YES',
+          isPrimaryKey: row.is_primary_key === 1,
+          isForeignKey: false,
+          defaultValue: row.default_value,
+          maxLength: row.max_length
+        };
+
+        table.columns.push(column);
+
+        if (column.isPrimaryKey) {
+          table.primaryKeys.push(column.name);
+        }
+
+        if (index < 10) {
+          console.log(`📝 Added column to ${tableKey}:`, column);
+        }
+      }
+    });
+
+    const result = {
+      name: 'Database',
+      lastUpdated: new Date().toISOString(),
+      version: '1.0.0',
+      views: Array.from(tablesMap.values()).filter(t => t.type === 'view'),
+      tables: Array.from(tablesMap.values()).filter(t => t.type === 'table')
+    };
+
+    console.log('✅ Transformation complete:', {
+      totalTables: result.tables.length,
+      totalViews: result.views.length,
+      sampleTable: result.tables[0],
+      sampleTableColumnCount: result.tables[0]?.columns?.length
+    });
+
+    return result;
+  };
 
   // Load database schema
-  const loadSchema = useCallback(async () => {
+  const loadSchema = useCallback(async (bustCache: boolean = false) => {
     setState(prev => ({ ...prev, loading: true, error: undefined }));
-    
+
     try {
-      const schemaData = await DBExplorerAPI.getDatabaseSchema();
-      setSchema(schemaData);
-      message.success('Database schema loaded successfully');
+      // Use the same API call as SchemaManagementDashboard which works
+      console.log('🔍 Attempting to load schema using ApiService.getSchema()...');
+      const rawSchemaData = await ApiService.getSchema();
+      console.log('🔍 Raw schema data from ApiService:', rawSchemaData);
+      console.log('🔍 Schema data structure:', {
+        keys: Object.keys(rawSchemaData || {}),
+        databaseName: rawSchemaData?.databaseName,
+        tablesCount: rawSchemaData?.tables?.length || 0,
+        viewsCount: rawSchemaData?.views?.length || 0,
+        sampleTable: rawSchemaData?.tables?.[0]
+      });
+
+      if (rawSchemaData && rawSchemaData.tables) {
+        // Transform it to match our interface - use the data directly since it's already in the right format
+        const transformedSchema: DatabaseSchema = {
+          name: rawSchemaData.databaseName || 'Database',
+          lastUpdated: rawSchemaData.lastUpdated || new Date().toISOString(),
+          version: rawSchemaData.version || '1.0.0',
+          views: rawSchemaData.views || [],
+          tables: rawSchemaData.tables || []
+        };
+
+        console.log('🔍 Transformed schema for UI:', {
+          name: transformedSchema.name,
+          tablesCount: transformedSchema.tables.length,
+          viewsCount: transformedSchema.views.length,
+          sampleTable: transformedSchema.tables[0],
+          sampleTableColumns: transformedSchema.tables[0]?.columns?.slice(0, 3)
+        });
+
+        setSchema(transformedSchema);
+        message.success('Database schema loaded successfully');
+      } else {
+        throw new Error('No schema data received from API');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load database schema';
       setState(prev => ({ ...prev, error: errorMessage }));
@@ -114,9 +222,13 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
   // Refresh schema
   const handleRefresh = useCallback(async () => {
     try {
+      console.log('🔄 Starting schema refresh...');
       await DBExplorerAPI.refreshSchema();
-      await loadSchema();
+      console.log('🔄 Schema refresh completed, reloading with cache busting...');
+      await loadSchema(true); // Pass true to bust cache
+      console.log('🔄 Schema reload completed');
     } catch (error) {
+      console.error('🔄 Schema refresh failed:', error);
       message.error('Failed to refresh schema');
     }
   }, [loadSchema]);
@@ -195,46 +307,43 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
 
       {/* Main Content */}
       <div style={{ margin: '16px', height: 'calc(100vh - 140px)' }}>
-        <Layout style={{ height: '100%', background: 'transparent' }}>
+        <div style={{ display: 'flex', height: '100%', gap: '16px' }}>
           {/* Resizable Schema Tree Sidebar */}
           {!siderCollapsed && (
-            <div style={{ display: 'flex', height: '100%' }}>
-              <Resizable
-                width={siderWidth}
-                height={0}
-                onResize={(e, { size }) => {
-                  setSiderWidth(size.width);
+            <Resizable
+              width={siderWidth}
+              height={0}
+              onResize={(e, { size }) => {
+                setSiderWidth(size.width);
+              }}
+              minConstraints={[250, 0]}
+              maxConstraints={[600, 0]}
+              resizeHandles={['e']}
+              className="db-explorer-resizable"
+            >
+              <div
+                style={{
+                  width: siderWidth,
+                  height: '100%',
+                  position: 'relative'
                 }}
-                minConstraints={[250, 0]}
-                maxConstraints={[600, 0]}
-                resizeHandles={['e']}
-                className="db-explorer-resizable"
               >
-                <div
-                  style={{
-                    width: siderWidth,
-                    height: '100%',
-                    marginRight: '16px',
-                    position: 'relative'
-                  }}
-                >
-                  <SchemaTree
-                    tables={tables}
-                    loading={state.loading}
-                    onTableSelect={handleTableSelect}
-                    onPreviewTable={handleTablePreview}
-                    onRefresh={handleRefresh}
-                    selectedTableName={state.selectedTable?.name}
-                    expandedKeys={Array.from(state.expandedTables)}
-                    onExpandedKeysChange={handleExpandedKeysChange}
-                  />
-                </div>
-              </Resizable>
-            </div>
+                <SchemaTree
+                  tables={tables}
+                  loading={state.loading}
+                  onTableSelect={handleTableSelect}
+                  onPreviewTable={handleTablePreview}
+                  onRefresh={handleRefresh}
+                  selectedTableName={state.selectedTable?.name}
+                  expandedKeys={Array.from(state.expandedTables)}
+                  onExpandedKeysChange={handleExpandedKeysChange}
+                />
+              </div>
+            </Resizable>
           )}
 
           {/* Main Content Area */}
-          <Content style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             {state.loading && !schema ? (
               <Card style={{ height: '100%', textAlign: 'center' }}>
                 <div style={{ padding: '100px 0' }}>
@@ -270,8 +379,8 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
                 </div>
               </Card>
             )}
-          </Content>
-        </Layout>
+          </div>
+        </div>
       </div>
 
       {/* Data Preview Drawer */}

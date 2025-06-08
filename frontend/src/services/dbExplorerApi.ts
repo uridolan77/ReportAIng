@@ -7,10 +7,18 @@ export class DBExplorerAPI {
   /**
    * Get complete database schema with all tables and their structure
    */
-  static async getDatabaseSchema(connectionName?: string): Promise<DatabaseSchema> {
+  static async getDatabaseSchema(connectionName?: string, bustCache: boolean = false): Promise<DatabaseSchema> {
     try {
+      const params: any = { connectionName };
+
+      // Add cache busting parameter if requested
+      if (bustCache) {
+        params._t = Date.now();
+        console.log('🔍 Cache busting enabled for schema request');
+      }
+
       const response = await apiClient.get<any>(`${this.BASE_URL}`, {
-        params: { connectionName }
+        params
       });
 
       // Transform the API response to match our DatabaseSchema interface
@@ -20,8 +28,8 @@ export class DBExplorerAPI {
         throw new Error('No schema data received from API');
       }
 
-      console.log('Full API Response:', apiData);
-      console.log('API Response structure:', {
+      console.log('🔍 Full API Response:', apiData);
+      console.log('🔍 API Response structure:', {
         databaseName: apiData.databaseName,
         tablesCount: apiData.tables?.length || 0,
         viewsCount: apiData.views?.length || 0,
@@ -29,16 +37,50 @@ export class DBExplorerAPI {
         sampleTable: apiData.tables?.[0] ? {
           name: apiData.tables[0].name,
           columnsCount: apiData.tables[0].columns?.length || 0,
-          tableKeys: Object.keys(apiData.tables[0])
+          tableKeys: Object.keys(apiData.tables[0]),
+          sampleColumns: apiData.tables[0].columns?.slice(0, 3)?.map((col: any) => ({
+            name: col.name || col.columnName || col.Name,
+            dataType: col.dataType || col.type || col.DataType,
+            keys: Object.keys(col)
+          }))
         } : null
       });
 
+      // Handle different possible response structures
+      let tables = [];
+      let views = [];
+      let databaseName = 'Database';
+
+      if (apiData.tables && Array.isArray(apiData.tables)) {
+        tables = apiData.tables;
+      } else if (Array.isArray(apiData)) {
+        // If the response is directly an array of tables
+        tables = apiData;
+      }
+
+      if (apiData.views && Array.isArray(apiData.views)) {
+        views = apiData.views;
+      }
+
+      if (apiData.databaseName) {
+        databaseName = apiData.databaseName;
+      } else if (apiData.name) {
+        databaseName = apiData.name;
+      }
+
+      console.log('Processed data:', {
+        databaseName,
+        tablesCount: tables.length,
+        viewsCount: views.length,
+        sampleTable: tables[0]
+      });
+
       return {
-        name: apiData.databaseName || 'Database',
+        name: databaseName,
         lastUpdated: apiData.lastUpdated || new Date().toISOString(),
         version: apiData.version || '1.0.0',
-        views: apiData.views?.map(DBExplorerAPI.transformTableMetadata) || [],
-        tables: apiData.tables?.map(DBExplorerAPI.transformTableMetadata) || []
+        views: views.map(DBExplorerAPI.transformTableMetadata),
+        tables: tables.map(DBExplorerAPI.transformTableMetadata)
       };
     } catch (error) {
       console.error('Error fetching database schema:', error);
@@ -69,27 +111,47 @@ export class DBExplorerAPI {
       };
     }
 
+    console.log(`🔍 Transforming table ${apiTable.name}:`, {
+      originalTable: apiTable,
+      columnsReceived: apiTable.columns?.length || 0,
+      sampleColumn: apiTable.columns?.[0],
+      allColumnNames: apiTable.columns?.map((col: any) => col.name || col.columnName || col.Name).slice(0, 5),
+      firstThreeColumns: apiTable.columns?.slice(0, 3)?.map((col: any) => ({
+        originalKeys: Object.keys(col),
+        name: col.name || col.columnName || col.Name,
+        dataType: col.dataType || col.type || col.DataType,
+        isPrimaryKey: col.isPrimaryKey || col.IsPrimaryKey,
+        isNullable: col.isNullable
+      }))
+    });
+
     const transformed = {
-      name: apiTable.name || 'Unknown',
-      schema: apiTable.schema || 'dbo',
+      name: apiTable.name || apiTable.tableName || apiTable.Name || 'Unknown',
+      schema: apiTable.schema || apiTable.schemaName || apiTable.Schema || 'dbo',
       type: (apiTable.type?.toLowerCase() === 'view' ? 'view' : 'table') as 'table' | 'view',
-      rowCount: apiTable.rowCount,
-      description: apiTable.description || apiTable.businessDescription,
+      rowCount: apiTable.rowCount || apiTable.RowCount,
+      description: apiTable.description || apiTable.businessDescription || apiTable.Description,
       columns: apiTable.columns?.map(DBExplorerAPI.transformColumnMetadata) || [],
-      primaryKeys: apiTable.columns?.filter((col: any) => col.isPrimaryKey).map((col: any) => col.name) || [],
-      foreignKeys: apiTable.columns?.filter((col: any) => col.isForeignKey).map((col: any) => ({
-        name: `FK_${apiTable.name}_${col.name}`,
-        column: col.name,
-        referencedTable: col.referencedTable || 'Unknown',
-        referencedColumn: col.referencedColumn || 'Unknown'
+      primaryKeys: apiTable.columns?.filter((col: any) =>
+        col.isPrimaryKey || col.IsPrimaryKey
+      ).map((col: any) =>
+        col.name || col.columnName || col.Name
+      ) || [],
+      foreignKeys: apiTable.columns?.filter((col: any) =>
+        col.isForeignKey || col.IsForeignKey
+      ).map((col: any) => ({
+        name: `FK_${apiTable.name}_${col.name || col.columnName || col.Name}`,
+        column: col.name || col.columnName || col.Name,
+        referencedTable: col.referencedTable || col.ReferencedTable || 'Unknown',
+        referencedColumn: col.referencedColumn || col.ReferencedColumn || 'Unknown'
       })) || []
     };
 
-    console.log(`Transformed table ${apiTable.name}:`, {
-      originalColumns: apiTable.columns?.length || 0,
+    console.log(`Transformed table ${apiTable.name} result:`, {
       transformedColumns: transformed.columns.length,
       primaryKeys: transformed.primaryKeys.length,
-      foreignKeys: transformed.foreignKeys.length
+      foreignKeys: transformed.foreignKeys.length,
+      sampleTransformedColumn: transformed.columns[0]
     });
 
     return transformed;
@@ -110,20 +172,31 @@ export class DBExplorerAPI {
       };
     }
 
-    return {
-      name: apiColumn.name || 'Unknown',
-      dataType: apiColumn.dataType || 'varchar',
+    const transformed = {
+      name: apiColumn.name || apiColumn.columnName || apiColumn.Name || 'Unknown',
+      dataType: apiColumn.dataType || apiColumn.type || apiColumn.DataType || 'varchar',
       isNullable: apiColumn.isNullable !== false, // Default to true if not specified
-      isPrimaryKey: apiColumn.isPrimaryKey === true,
-      isForeignKey: apiColumn.isForeignKey === true,
-      defaultValue: apiColumn.defaultValue,
-      maxLength: apiColumn.maxLength,
-      precision: apiColumn.precision,
-      scale: apiColumn.scale,
-      description: apiColumn.description || apiColumn.businessDescription,
-      referencedTable: apiColumn.referencedTable,
-      referencedColumn: apiColumn.referencedColumn
+      isPrimaryKey: apiColumn.isPrimaryKey === true || apiColumn.IsPrimaryKey === true,
+      isForeignKey: apiColumn.isForeignKey === true || apiColumn.IsForeignKey === true,
+      defaultValue: apiColumn.defaultValue || apiColumn.DefaultValue,
+      maxLength: apiColumn.maxLength || apiColumn.MaxLength,
+      precision: apiColumn.precision || apiColumn.Precision,
+      scale: apiColumn.scale || apiColumn.Scale,
+      description: apiColumn.description || apiColumn.businessDescription || apiColumn.Description,
+      referencedTable: apiColumn.referencedTable || apiColumn.ReferencedTable,
+      referencedColumn: apiColumn.referencedColumn || apiColumn.ReferencedColumn
     };
+
+    // Log first few columns for debugging
+    if (Math.random() < 0.3) { // Log ~30% of columns to see more examples
+      console.log('Column transformation:', {
+        original: apiColumn,
+        transformed: transformed,
+        availableKeys: Object.keys(apiColumn)
+      });
+    }
+
+    return transformed;
   }
 
   /**
@@ -231,9 +304,26 @@ export class DBExplorerAPI {
    * Refresh database schema cache
    */
   static async refreshSchema(connectionName?: string): Promise<void> {
-    await apiClient.post('/api/query/refresh-schema', {
-      connectionName
-    });
+    console.log('🔄 Calling schema refresh API...');
+    try {
+      // Try the UnifiedQueryController endpoint first
+      await apiClient.post('/api/query/refresh-schema', {
+        connectionName
+      });
+      console.log('🔄 Schema refresh API call successful');
+    } catch (error) {
+      console.error('🔄 Schema refresh API call failed:', error);
+      // Fallback to SchemaController endpoint
+      try {
+        await apiClient.post('/api/schema/refresh', {}, {
+          params: { connectionName }
+        });
+        console.log('🔄 Schema refresh fallback API call successful');
+      } catch (fallbackError) {
+        console.error('🔄 Schema refresh fallback API call failed:', fallbackError);
+        throw fallbackError;
+      }
+    }
   }
 
   /**
