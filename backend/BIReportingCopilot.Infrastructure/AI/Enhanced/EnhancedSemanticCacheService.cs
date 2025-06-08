@@ -13,8 +13,9 @@ namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
 /// <summary>
 /// Enhanced semantic cache service with vector embeddings for superior similarity matching
 /// Provides intelligent caching based on semantic understanding rather than exact text matching
+/// Note: This class is not currently used in the unified service architecture
 /// </summary>
-public class EnhancedSemanticCacheService : ISemanticCacheService
+public class EnhancedSemanticCacheService
 {
     private readonly ILogger<EnhancedSemanticCacheService> _logger;
     private readonly IMemoryCache _memoryCache;

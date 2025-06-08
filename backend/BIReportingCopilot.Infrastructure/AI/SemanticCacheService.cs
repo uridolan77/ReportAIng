@@ -15,7 +15,7 @@ namespace BIReportingCopilot.Infrastructure.AI;
 /// Enhanced semantic cache service using bounded contexts for better performance and maintainability
 /// Uses QueryDbContext for semantic cache entries and query history
 /// </summary>
-public class SemanticCacheService : ISemanticCacheService
+public class SemanticCacheService
 {
     private readonly IMemoryCache _memoryCache;
     private readonly IDbContextFactory _contextFactory;
@@ -345,17 +345,7 @@ public class SemanticCacheService : ISemanticCacheService
     }
 }
 
-/// <summary>
-/// Interface for semantic cache service
-/// </summary>
-public interface ISemanticCacheService
-{
-    Task<SemanticCacheResult?> GetSemanticallySimilarAsync(string naturalLanguageQuery, string sqlQuery);
-    Task CacheSemanticQueryAsync(string naturalLanguageQuery, string sqlQuery, QueryResponse response, TimeSpan? expiry = null);
-    Task InvalidateByDataChangeAsync(string tableName, string changeType);
-    Task<SemanticCacheStatistics> GetCacheStatisticsAsync();
-    Task CleanupExpiredEntriesAsync();
-}
+// Interface removed - using Core.Interfaces.ISemanticCacheService instead
 
 /// <summary>
 /// Semantic cache configuration

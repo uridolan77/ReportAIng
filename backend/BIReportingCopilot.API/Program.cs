@@ -409,7 +409,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Services.Notificati
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.SecurityManagementService>();
 
 // ===== AI/ML ENHANCEMENT SERVICES =====
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.SemanticCacheService>();
+// Removed old Infrastructure ISemanticCacheService registration - using unified service instead
 
 // ===== ENHANCED AI SERVICES =====
 // Note: Advanced AI services are available but disabled for Phase 3A infrastructure setup
@@ -471,13 +471,7 @@ builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IAnomalyDetector>(
     return new AnomalyDetectorAdapter(learningService);
 });
 
-// Register ISemanticCacheService for event handlers
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService>(provider =>
-{
-    var cacheService = provider.GetRequiredService<ICacheService>();
-    var logger = provider.GetRequiredService<ILogger<SemanticCacheAdapter>>();
-    return new SemanticCacheAdapter(cacheService, logger);
-});
+// Removed duplicate ISemanticCacheService registration - using unified service instead
 
 // ===== PERFORMANCE & MONITORING =====
 // StreamingDataService functionality consolidated into PerformanceManagementService
@@ -542,6 +536,16 @@ builder.Services.AddMemoryCache();
 
 // Unified cache service with built-in distributed caching support
 builder.Services.AddSingleton<ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();
+
+// ===== SEMANTIC CACHE & VECTOR SEARCH SERVICES =====
+// Register vector search service for semantic similarity
+builder.Services.AddScoped<IVectorSearchService, BIReportingCopilot.Infrastructure.AI.Enhanced.InMemoryVectorSearchService>();
+
+// Register infrastructure semantic cache service (for internal use)
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.SemanticCacheService>();
+
+// Register unified semantic cache service (implements Core interface)
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.UnifiedSemanticCacheService>();
 
 // ===== CONFIGURATION SECTIONS =====
 builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.RateLimitingConfiguration>(
@@ -633,7 +637,13 @@ builder.Services.AddScoped<IQueryCacheService, QueryCacheService>();
 
 // Main tuning service (now delegates to focused services and uses bounded contexts)
 builder.Services.AddScoped<ITuningService, TuningService>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Services.IAITuningSettingsService, BIReportingCopilot.Infrastructure.Services.AITuningSettingsService>();
+
+// Register infrastructure AI tuning settings service (for internal use)
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Services.AITuningSettingsService>();
+
+// Register unified AI tuning settings service (implements Core interface)
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IAITuningSettingsService, BIReportingCopilot.Infrastructure.Services.UnifiedAITuningSettingsService>();
+
 builder.Services.AddScoped<IBusinessContextAutoGenerator, BusinessContextAutoGenerator>();
 builder.Services.AddScoped<IQuerySuggestionService, BIReportingCopilot.Infrastructure.Services.QuerySuggestionService>();
 // Register SignalRProgressReporter with QueryStatusHub context

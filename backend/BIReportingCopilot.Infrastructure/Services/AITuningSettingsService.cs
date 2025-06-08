@@ -5,16 +5,9 @@ using BIReportingCopilot.Infrastructure.Data.Entities;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
-public interface IAITuningSettingsService
-{
-    Task<bool> GetBooleanSettingAsync(string key, bool defaultValue = false);
-    Task<int> GetIntegerSettingAsync(string key, int defaultValue = 0);
-    Task<string> GetStringSettingAsync(string key, string defaultValue = "");
-    Task<bool> UpdateSettingAsync(string key, string value);
-    Task<Dictionary<string, string>> GetAllSettingsAsync();
-}
+// Interface removed - using Core.Interfaces.IAITuningSettingsService instead
 
-public class AITuningSettingsService : IAITuningSettingsService
+public class AITuningSettingsService
 {
     private readonly BICopilotContext _context;
     private readonly ILogger<AITuningSettingsService> _logger;

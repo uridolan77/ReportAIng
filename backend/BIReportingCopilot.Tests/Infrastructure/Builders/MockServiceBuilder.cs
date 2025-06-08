@@ -196,9 +196,9 @@ public class MockServiceBuilder
     /// <summary>
     /// Create a mock semantic cache service with default behaviors
     /// </summary>
-    public MockServiceBuilder WithMockSemanticCacheService(Action<Mock<ISemanticCacheService>>? configure = null)
+    public MockServiceBuilder WithMockSemanticCacheService(Action<Mock<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService>>? configure = null)
     {
-        var mock = For<ISemanticCacheService>();
+        var mock = For<BIReportingCopilot.Infrastructure.AI.ISemanticCacheService>();
 
         // Default behaviors - cache misses by default
         mock.Setup(x => x.GetSemanticallySimilarAsync(It.IsAny<string>(), It.IsAny<string>()))

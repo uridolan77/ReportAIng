@@ -6,8 +6,9 @@ namespace BIReportingCopilot.Infrastructure.AI;
 
 /// <summary>
 /// Adapter that implements ISemanticCacheService using ICacheService
+/// Note: This class is not currently used in the unified service architecture
 /// </summary>
-public class SemanticCacheAdapter : ISemanticCacheService
+public class SemanticCacheAdapter
 {
     private readonly ICacheService _cacheService;
     private readonly ILogger<SemanticCacheAdapter> _logger;
