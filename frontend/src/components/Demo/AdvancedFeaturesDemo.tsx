@@ -14,6 +14,7 @@ import { useAdvancedQueryStore } from '../../stores/advancedQueryStore';
 import { useVisualizationStore } from '../../stores/visualizationStore';
 import { useWebSocket } from '../../services/websocketService';
 import { SecurityUtils } from '../../utils/security';
+import DataTable from '../DataTable/DataTableMain';
 
 // TabPane not used - using items prop instead
 const { Title, Text, Paragraph } = Typography;
@@ -116,6 +117,108 @@ const generateMockWidgets = () => [
   }
 ];
 
+// Enhanced filtering test data
+const generateFilteringTestData = () => [
+  {
+    id: 1,
+    CountryName: 'United States',
+    Revenue: 200000,
+    Players: 1500,
+    GameType: 'Slots',
+    Provider: 'NetEnt',
+    CreatedDate: '2024-01-15',
+    IsActive: true
+  },
+  {
+    id: 2,
+    CountryName: 'Canada',
+    Revenue: 150000,
+    Players: 1200,
+    GameType: 'Blackjack',
+    Provider: 'Evolution',
+    CreatedDate: '2024-01-16',
+    IsActive: true
+  },
+  {
+    id: 3,
+    CountryName: 'United Kingdom',
+    Revenue: 180000,
+    Players: 1350,
+    GameType: 'Roulette',
+    Provider: 'Pragmatic Play',
+    CreatedDate: '2024-01-17',
+    IsActive: false
+  },
+  {
+    id: 4,
+    CountryName: 'Germany',
+    Revenue: 120000,
+    Players: 900,
+    GameType: 'Slots',
+    Provider: 'NetEnt',
+    CreatedDate: '2024-01-18',
+    IsActive: true
+  },
+  {
+    id: 5,
+    CountryName: 'France',
+    Revenue: 95000,
+    Players: 750,
+    GameType: 'Poker',
+    Provider: 'PokerStars',
+    CreatedDate: '2024-01-19',
+    IsActive: true
+  },
+  {
+    id: 6,
+    CountryName: 'Spain',
+    Revenue: 85000,
+    Players: 650,
+    GameType: 'Baccarat',
+    Provider: 'Evolution',
+    CreatedDate: '2024-01-20',
+    IsActive: false
+  }
+];
+
+const filteringTestColumns = [
+  {
+    key: 'CountryName',
+    title: 'Country Name',
+    dataIndex: 'CountryName'
+  },
+  {
+    key: 'Revenue',
+    title: 'Revenue',
+    dataIndex: 'Revenue'
+  },
+  {
+    key: 'Players',
+    title: 'Players',
+    dataIndex: 'Players'
+  },
+  {
+    key: 'GameType',
+    title: 'Game Type',
+    dataIndex: 'GameType'
+  },
+  {
+    key: 'Provider',
+    title: 'Provider',
+    dataIndex: 'Provider'
+  },
+  {
+    key: 'CreatedDate',
+    title: 'Created Date',
+    dataIndex: 'CreatedDate'
+  },
+  {
+    key: 'IsActive',
+    title: 'Is Active',
+    dataIndex: 'IsActive'
+  }
+];
+
 export const AdvancedFeaturesDemo: React.FC = () => {
   const [activeTab, setActiveTab] = useState('security');
   const [searchTerm, setSearchTerm] = useState('');
@@ -158,6 +261,9 @@ export const AdvancedFeaturesDemo: React.FC = () => {
   const [heatmapData] = useState(generateHeatmapData);
   const [treemapData] = useState(generateTreemapData);
   const [networkData] = useState(generateNetworkData);
+
+  // Enhanced filtering test data
+  const [filteringTestData] = useState(generateFilteringTestData);
 
   // Security demonstration
   useEffect(() => {
@@ -528,6 +634,57 @@ export const AdvancedFeaturesDemo: React.FC = () => {
               </Card>
             </Col>
           </Row>
+          </>
+            )
+          },
+          {
+            key: 'datatable',
+            label: <span><ExperimentOutlined />Enhanced DataTable</span>,
+            children: (
+          <>
+          <Alert
+            message="📊 Enhanced DataTable Filtering"
+            description="Automatic type detection with intelligent filter controls for different data types"
+            type="info"
+            showIcon
+            style={{ marginBottom: '24px' }}
+          />
+
+          <Card title="🔍 Enhanced Filtering Test" style={{ marginBottom: '24px' }}>
+            <Space direction="vertical" style={{ width: '100%', marginBottom: '16px' }}>
+              <Text strong>Expected Filter Types:</Text>
+              <Space wrap>
+                <Badge color="blue" text="CountryName → Multiselect" />
+                <Badge color="green" text="Revenue → Money Range" />
+                <Badge color="purple" text="Players → Number Range" />
+                <Badge color="cyan" text="GameType → Multiselect" />
+                <Badge color="orange" text="Provider → Multiselect" />
+                <Badge color="red" text="CreatedDate → Date Range" />
+                <Badge color="magenta" text="IsActive → Boolean" />
+              </Space>
+            </Space>
+
+            <DataTable
+              data={filteringTestData}
+              columns={filteringTestColumns}
+              keyField="id"
+              autoDetectTypes={true}
+              autoGenerateFilterOptions={true}
+              features={{
+                filtering: true,
+                searching: true,
+                sorting: true,
+                pagination: true,
+                selection: true,
+                export: true,
+                columnChooser: true
+              }}
+              config={{
+                pageSize: 10,
+                pageSizeOptions: [5, 10, 20]
+              }}
+            />
+          </Card>
           </>
             )
           },

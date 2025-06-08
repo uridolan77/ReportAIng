@@ -9,7 +9,7 @@ import {
   DeleteOutlined,
   EditOutlined
 } from '@ant-design/icons';
-import DataTable from '../DataTable';
+import DataTable from '../DataTable/DataTableMain';
 import { QueryResponse } from '../../types/query';
 import { ApiService } from '../../services/api';
 import SqlEditor from './SqlEditor';
@@ -372,15 +372,13 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
     dataIndex: col.name,
     key: col.name,
     width: 150,
-    dataType: col.dataType === 'number' || col.dataType === 'integer' || col.dataType === 'decimal' ? 'number' :
-              col.dataType === 'date' || col.dataType === 'datetime' || col.dataType === 'timestamp' ? 'date' :
-              col.dataType === 'boolean' ? 'boolean' : 'string',
+    // Let automatic type detection handle the dataType
     sortable: true,
     filterable: true,
     searchable: true,
     resizable: true,
     copyable: true,
-    formatter: (value: any, record: any, index: number) => {
+    render: (value: any, record: any, index: number) => {
       if (debugMode && process.env.NODE_ENV === 'development') {
         console.log('Column render:', { columnName: col.name, value, record, index });
       }
@@ -425,13 +423,13 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
           dataIndex: key,
           key: key,
           width: 150,
-          dataType: 'string',
+          // Let automatic type detection handle the dataType
           sortable: true,
           filterable: true,
           searchable: true,
           resizable: true,
           copyable: true,
-          formatter: (value: any) => {
+          render: (value: any) => {
             if (value === null || value === undefined) {
               return <Text type="secondary">NULL</Text>;
             }
@@ -843,6 +841,8 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
               data={dataSource}
               columns={finalColumns}
               keyField="id"
+              autoDetectTypes={true}
+              autoGenerateFilterOptions={true}
               features={{
                 pagination: true,
                 sorting: true,
@@ -863,9 +863,6 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
               config={{
                 pageSize: pageSize,
                 pageSizeOptions: [10, 25, 50, 100, 200],
-                stripedRows: true,
-                hoverEffect: true,
-                stickyHeader: true,
                 exportFileName: `query-results-${new Date().toISOString().split('T')[0]}`,
                 density: 'standard'
               }}

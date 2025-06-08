@@ -4,7 +4,15 @@ export type { DataTableProps, DataTableColumn, DataTableFeatures, DataTableConfi
 
 // Re-export components for external use
 export { DataTableToolbar } from './components/DataTableToolbar';
-export { FilterPanel } from './components/FilterPanel';
+// Note: FilterPanel is internal to DataTable and not exported to prevent circular dependencies
+
+// Re-export enhanced functionality
+export { useEnhancedColumns, useAutoColumns, createColumnsFromData } from './hooks/useEnhancedColumns';
+export { DataTypeDetector, enhanceColumnsWithTypeDetection } from './utils/dataTypeDetection';
+export type { DataTypeAnalysis, ColumnAnalysis } from './utils/dataTypeDetection';
+
+// Note: Demo component is not exported to prevent circular dependencies
+// Import directly from './demo/EnhancedFilteringDemo' if needed
 export { ColumnChooserModal, ExportModal } from './components/DataTableModals';
 export { AggregationRow } from './components/AggregationRow';
 export { VirtualizedTable, StandardTable } from './components/DataTableRenderer';
@@ -12,7 +20,6 @@ export { VirtualizedTable, StandardTable } from './components/DataTableRenderer'
 // Re-export services
 export { ExportService } from './services/ExportService';
 export { VirtualizationService } from './services/VirtualizationService';
-export { StatePersistenceService } from './services/StatePersistenceService';
 export { ContextMenuProvider, useContextMenuActions } from './services/ContextMenuService';
 
 // Re-export hooks

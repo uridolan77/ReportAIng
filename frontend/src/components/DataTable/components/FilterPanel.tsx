@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card, Button, Space, Input, InputNumber, DatePicker, Select, Radio, Typography } from 'antd';
-import { CloseCircleOutlined } from '@ant-design/icons';
+import { Card, Button, Space, Input, InputNumber, DatePicker, Select, Radio, Typography, Slider } from 'antd';
+import { CloseCircleOutlined, DollarOutlined } from '@ant-design/icons';
 import { useToken } from 'antd/es/theme/internal';
 import dayjs from 'dayjs';
 
@@ -13,9 +13,9 @@ interface DataTableColumn {
   key: string;
   title: string;
   dataIndex: string;
-  dataType?: 'string' | 'number' | 'date' | 'boolean' | 'json' | 'array' | 'object' | 'custom';
+  dataType?: 'string' | 'number' | 'date' | 'boolean' | 'money' | 'currency' | 'json' | 'array' | 'object' | 'custom';
   filterable?: boolean;
-  filterType?: 'text' | 'number' | 'date' | 'dateRange' | 'select' | 'multiselect' | 'boolean' | 'custom';
+  filterType?: 'text' | 'number' | 'money' | 'date' | 'dateRange' | 'select' | 'multiselect' | 'boolean' | 'custom';
   filterOptions?: any[];
   customFilter?: (value: any, filterValue: any) => boolean;
 }
@@ -39,14 +39,49 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
 }) => {
   const [, token] = useToken();
 
+  // Debug logging for filter panel
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && visible) {
+      console.log('🔍 FilterPanel Debug:', {
+        columns: columns.map(col => ({
+          key: col.key,
+          title: col.title,
+          dataType: col.dataType,
+          filterType: col.filterType,
+          hasFilterOptions: !!col.filterOptions,
+          filterOptionsCount: col.filterOptions?.length
+        })),
+        filterConfig
+      });
+    }
+  }, [visible, columns, filterConfig]);
+
   if (!visible) return null;
 
   const renderFilterControl = (column: DataTableColumn) => {
     const filterValue = filterConfig[column.key];
-    
+
     switch (column.filterType || column.dataType) {
       case 'text':
       case 'string':
+        // If column has filterOptions, use multiselect, otherwise use text input
+        if (column.filterOptions && column.filterOptions.length > 0) {
+          return (
+            <Select
+              mode="multiple"
+              placeholder={`Select ${column.title}`}
+              value={filterValue || []}
+              onChange={value => onFilterChange(column.key, value)}
+              options={column.filterOptions}
+              style={{ marginTop: 8, width: '100%' }}
+              allowClear
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+            />
+          );
+        }
         return (
           <Input
             placeholder={`Filter ${column.title}`}
@@ -55,20 +90,76 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
             style={{ marginTop: 8 }}
           />
         );
-      
+
       case 'number':
         return (
-          <Space style={{ marginTop: 8 }}>
-            <InputNumber
-              placeholder="Min"
-              value={filterValue?.min}
-              onChange={min => onFilterChange(column.key, { ...filterValue, min })}
-            />
-            <InputNumber
-              placeholder="Max"
-              value={filterValue?.max}
-              onChange={max => onFilterChange(column.key, { ...filterValue, max })}
-            />
+          <Space direction="vertical" style={{ marginTop: 8, width: '100%' }}>
+            <Space>
+              <InputNumber
+                placeholder="Min"
+                value={filterValue?.min}
+                onChange={min => onFilterChange(column.key, { ...filterValue, min })}
+                style={{ width: '100%' }}
+              />
+              <InputNumber
+                placeholder="Max"
+                value={filterValue?.max}
+                onChange={max => onFilterChange(column.key, { ...filterValue, max })}
+                style={{ width: '100%' }}
+              />
+            </Space>
+          </Space>
+        );
+
+      case 'money':
+      case 'currency':
+        return (
+          <Space direction="vertical" style={{ marginTop: 8, width: '100%' }}>
+            <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+              <DollarOutlined /> Money Filter
+            </Typography.Text>
+            <Space>
+              <InputNumber
+                placeholder="Min Amount"
+                value={filterValue?.min}
+                onChange={min => onFilterChange(column.key, { ...filterValue, min })}
+                prefix="$"
+                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                style={{ width: '120px' }}
+              />
+              <InputNumber
+                placeholder="Max Amount"
+                value={filterValue?.max}
+                onChange={max => onFilterChange(column.key, { ...filterValue, max })}
+                prefix="$"
+                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                style={{ width: '120px' }}
+              />
+            </Space>
+            <Space>
+              <Button
+                size="small"
+                type={filterValue?.operator === 'gte' ? 'primary' : 'default'}
+                onClick={() => onFilterChange(column.key, {
+                  ...filterValue,
+                  operator: filterValue?.operator === 'gte' ? undefined : 'gte'
+                })}
+              >
+                ≥ Greater or Equal
+              </Button>
+              <Button
+                size="small"
+                type={filterValue?.operator === 'lte' ? 'primary' : 'default'}
+                onClick={() => onFilterChange(column.key, {
+                  ...filterValue,
+                  operator: filterValue?.operator === 'lte' ? undefined : 'lte'
+                })}
+              >
+                ≤ Less or Equal
+              </Button>
+            </Space>
           </Space>
         );
       
@@ -84,9 +175,16 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       case 'dateRange':
         return (
           <RangePicker
-            value={filterValue}
-            onChange={dates => onFilterChange(column.key, dates)}
+            value={filterValue ? [
+              filterValue[0] ? dayjs(filterValue[0]) : null,
+              filterValue[1] ? dayjs(filterValue[1]) : null
+            ] : null}
+            onChange={dates => onFilterChange(column.key, dates ? [
+              dates[0]?.toISOString(),
+              dates[1]?.toISOString()
+            ] : null)}
             style={{ marginTop: 8, width: '100%' }}
+            placeholder={['Start Date', 'End Date']}
           />
         );
       

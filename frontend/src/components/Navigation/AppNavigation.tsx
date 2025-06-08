@@ -162,6 +162,12 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
           icon: <CodeOutlined />,
           label: 'Query Builder',
           description: 'Advanced query building tools'
+        },
+        {
+          key: '/db-explorer',
+          icon: <DatabaseOutlined />,
+          label: 'DB Explorer',
+          description: 'Explore database schema and preview table data'
         }
       ]
     }

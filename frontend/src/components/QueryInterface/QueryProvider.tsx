@@ -132,7 +132,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const [processingStages, setProcessingStages] = useState<any[]>([]);
   const [currentProcessingStage, setCurrentProcessingStage] = useState<string>('');
   const [showProcessingDetails, setShowProcessingDetails] = useState(false);
-  const [processingViewMode, setProcessingViewMode] = useState<'minimal' | 'processing' | 'advanced' | 'hidden'>('minimal');
+  const [processingViewMode, setProcessingViewMode] = useState<'minimal' | 'processing' | 'advanced' | 'hidden'>('hidden');
   const [currentQueryId, setCurrentQueryId] = useState<string>('');
 
   // Refs
@@ -144,11 +144,18 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
       console.log('📨 Received WebSocket message:', lastMessage);
 
       try {
-        // Handle different message types
-        if (lastMessage.type === 'QueryProcessingProgress') {
+        // Handle different message types - check for both old and new event names
+        if (lastMessage.type === 'QueryProcessingProgress' ||
+            lastMessage.type === 'QueryProgress' ||
+            lastMessage.type === 'DetailedProgress') {
           // Parse the data which is already JSON stringified by the WebSocket hook
           const message = JSON.parse(lastMessage.data);
-          console.log('🔄 Query processing progress update:', message);
+          console.log('🔄 Query processing progress update:', {
+            type: lastMessage.type,
+            message,
+            messageKeys: Object.keys(message),
+            hasDetails: !!(message.Details || message.details)
+          });
 
           // Update current query ID and stage - handle both uppercase and lowercase field names
           const queryId = message.QueryId || message.queryId;
@@ -157,6 +164,17 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
           const progress = message.Progress || message.progress;
           const timestamp = message.Timestamp || message.timestamp;
           const details = message.Details || message.details;
+
+          // Debug log the WebSocket message details
+          console.log('🔍 WebSocket message received:', {
+            stage,
+            messageText,
+            progress,
+            timestamp,
+            details: details ? Object.keys(details) : 'no details',
+            fullDetails: details,
+            rawMessage: message
+          });
 
           if (queryId) {
             setCurrentQueryId(queryId);
@@ -286,6 +304,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
               setProgress(message.progress * 100);
               break;
             case 'query_completed':
+            case 'QueryCompleted':
               // setIsLoading handled by React Query mutation state
               setProgress(0);
               // Don't clear processing details immediately - let them be available for the hidden panel
@@ -358,6 +377,9 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const handleSubmitQuery = useCallback(async () => {
     if (!query.trim() || executeQueryMutation.isPending) return;
 
+    // Create query request first
+    const queryRequest = createQueryRequest(query);
+
     // Initialize processing state with immediate feedback
     setProgress(0);
     setShowProcessingDetails(true);
@@ -392,8 +414,6 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
       setProgress(10);
     }, 100);
 
-    const queryRequest = createQueryRequest(query);
-
     try {
       const result = await executeQueryMutation.mutateAsync(queryRequest);
       console.log('🔍 Query execution completed - Full result:', result);
@@ -405,6 +425,8 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
         hasMetadata: !!result?.result?.metadata,
         error: result?.error,
         sql: result?.sql,
+        hasPromptDetails: !!(result?.promptDetails || result?.PromptDetails),
+        promptDetailsKeys: result?.promptDetails ? Object.keys(result.promptDetails) : (result?.PromptDetails ? Object.keys(result.PromptDetails) : 'None'),
         allKeys: result ? Object.keys(result) : 'N/A'
       });
 
@@ -421,21 +443,38 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
               message: 'Query processing started',
               progress: 100,
               timestamp: new Date().toISOString(),
-              details: {}
+              details: {
+                operation: 'Query initialization',
+                queryText: query,
+                sessionId: queryRequest.sessionId,
+                startTime: new Date().toISOString()
+              }
             },
             {
               stage: 'ai_processing',
               message: 'AI analyzing query',
               progress: 100,
               timestamp: new Date().toISOString(),
-              details: {}
+              details: {
+                operation: 'AI query analysis',
+                model: 'GPT-4 Turbo',
+                queryText: query,
+                analysisType: 'Natural language to SQL conversion',
+                ...(result?.promptDetails && { promptDetails: result.promptDetails }),
+                ...(result?.PromptDetails && { PromptDetails: result.PromptDetails })
+              }
             },
             {
               stage: 'sql_execution',
               message: 'Executing SQL query',
               progress: 100,
               timestamp: new Date().toISOString(),
-              details: {}
+              details: {
+                operation: 'Database query execution',
+                database: 'Production database',
+                queryText: query,
+                executionMode: 'Standard'
+              }
             }
           ];
           prev = defaultStages;
@@ -455,7 +494,23 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
           details: {
             success: result?.success,
             executionTime: result?.executionTimeMs,
-            rowCount: result?.result?.data?.length || 0
+            rowCount: result?.result?.data?.length || 0,
+            queryText: query,
+            sql: result?.sql || 'SQL not available',
+            hasVisualization: !!result?.result?.visualization,
+            dataColumns: result?.result?.metadata?.columns?.length || 0,
+            cacheUpdated: true,
+            finalStatus: result?.success ? 'Success' : 'Error',
+            ...(result?.error && { error: result.error }),
+            ...(result?.promptDetails && { promptDetails: result.promptDetails }),
+            ...(result?.PromptDetails && { PromptDetails: result.PromptDetails }),
+            ...(result?.result?.metadata && {
+              metadata: {
+                totalColumns: result.result.metadata.columns?.length || 0,
+                columnNames: result.result.metadata.columns?.map(c => c.name) || [],
+                dataTypes: result.result.metadata.columns?.map(c => c.dataType) || []
+              }
+            })
           }
         };
 

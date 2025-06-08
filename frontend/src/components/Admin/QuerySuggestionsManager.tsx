@@ -25,12 +25,15 @@ import {
   BarChartOutlined,
   PlusOutlined,
   ReloadOutlined,
-  SettingOutlined
+  SettingOutlined,
+  SyncOutlined
 } from '@ant-design/icons';
 import { CategoriesManager } from './QuerySuggestions/CategoriesManager';
 import { SuggestionsManager } from './QuerySuggestions/SuggestionsManager';
 import { SuggestionAnalytics } from './QuerySuggestions/SuggestionAnalytics';
+import { SuggestionSyncUtility } from './QuerySuggestions/SuggestionSyncUtility';
 import { querySuggestionService, SuggestionCategory, QuerySuggestion } from '../../services/querySuggestionService';
+import '../../styles/enhanced-ui.css';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -195,10 +198,10 @@ export const QuerySuggestionsManager: React.FC = () => {
             View Analytics
           </Button>
           <Button
-            icon={<SettingOutlined />}
-            onClick={() => setActiveTab('settings')}
+            icon={<SyncOutlined />}
+            onClick={() => setActiveTab('sync')}
           >
-            Settings
+            Sync Database
           </Button>
         </Space>
       </Card>
@@ -270,6 +273,7 @@ export const QuerySuggestionsManager: React.FC = () => {
         onChange={setActiveTab}
         type="card"
         size="large"
+        className="suggestions-management-tabs"
         style={{
           background: 'white',
           borderRadius: '12px',
@@ -339,6 +343,18 @@ export const QuerySuggestionsManager: React.FC = () => {
             categories={categories}
             stats={stats}
           />
+        </TabPane>
+
+        <TabPane
+          tab={
+            <Space>
+              <SyncOutlined />
+              <span>Sync Database</span>
+            </Space>
+          }
+          key="sync"
+        >
+          <SuggestionSyncUtility onSyncComplete={loadData} />
         </TabPane>
       </Tabs>
     </div>

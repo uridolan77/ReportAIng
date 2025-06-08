@@ -53,18 +53,18 @@ export const MinimalQueryInterface: React.FC = () => {
   // Get actions for clearing results
   const { clearActiveResult } = useActiveResultActions();
 
-  // Debug: Log current state
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 MinimalQueryInterface State:', {
-      hasSubmittedQuery,
-      currentResult: !!currentResult,
-      isLoading,
-      forceInitialState,
-      processingStagesLength: processingStages?.length || 0,
-      query: query?.substring(0, 50) + (query?.length > 50 ? '...' : '') || '',
-      willShowSuggestions: forceInitialState && !isLoading
-    });
-  }
+  // Debug: Log current state (commented out to reduce console noise)
+  // if (process.env.NODE_ENV === 'development') {
+  //   console.log('🔍 MinimalQueryInterface State:', {
+  //     hasSubmittedQuery,
+  //     currentResult: !!currentResult,
+  //     isLoading,
+  //     forceInitialState,
+  //     processingStagesLength: processingStages?.length || 0,
+  //     query: query?.substring(0, 50) + (query?.length > 50 ? '...' : '') || '',
+  //     willShowSuggestions: forceInitialState && !isLoading
+  //   });
+  // }
 
 
 

@@ -8,42 +8,47 @@ interface QuerySuggestionsProps {
   onSuggestionClick: (suggestion: string) => void;
 }
 
+// Export the suggestion categories for use in database sync
+export const suggestionCategories = [
+  {
+    title: 'Revenue Analysis',
+    icon: <BarChartOutlined />,
+    color: '#1890ff',
+    categoryKey: 'revenue-analysis',
+    suggestions: [
+      'Show me total deposits for yesterday',
+      'Show me daily revenue for the last week',
+      'Top 10 players by deposits in the last 7 days',
+      'Revenue breakdown by country for last week',
+    ],
+  },
+  {
+    title: 'Customer Insights',
+    icon: <UserOutlined />,
+    color: '#52c41a',
+    categoryKey: 'customer-insights',
+    suggestions: [
+      'Count of active players yesterday',
+      'Show me new player registrations for the last 7 days',
+      'Top 10 players by total bets in the last week',
+      'Show me player activity for the last 3 days',
+    ],
+  },
+  {
+    title: 'Operational Metrics',
+    icon: <TableOutlined />,
+    color: '#fa8c16',
+    categoryKey: 'operational-metrics',
+    suggestions: [
+      'Show me casino vs sports betting revenue for last week',
+      'Total bets and wins for yesterday',
+      'Show me bonus usage for the last 7 days',
+      'Daily transaction volume for the last week',
+    ],
+  },
+];
+
 export const QuerySuggestions: React.FC<QuerySuggestionsProps> = ({ onSuggestionClick }) => {
-  const suggestionCategories = [
-    {
-      title: 'Revenue Analysis',
-      icon: <BarChartOutlined />,
-      color: '#1890ff',
-      suggestions: [
-        'Show me total deposits for yesterday',
-        'Show me daily revenue for the last week',
-        'Top 10 players by deposits in the last 7 days',
-        'Revenue breakdown by country for last week',
-      ],
-    },
-    {
-      title: 'Customer Insights',
-      icon: <UserOutlined />,
-      color: '#52c41a',
-      suggestions: [
-        'Count of active players yesterday',
-        'Show me new player registrations for the last 7 days',
-        'Top 10 players by total bets in the last week',
-        'Show me player activity for the last 3 days',
-      ],
-    },
-    {
-      title: 'Operational Metrics',
-      icon: <TableOutlined />,
-      color: '#fa8c16',
-      suggestions: [
-        'Show me casino vs sports betting revenue for last week',
-        'Total bets and wins for yesterday',
-        'Show me bonus usage for the last 7 days',
-        'Daily transaction volume for the last week',
-      ],
-    },
-  ];
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>

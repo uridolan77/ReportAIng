@@ -13,6 +13,7 @@ import { useDataTableHandlers } from './hooks/useDataTableHandlers';
 import { useContextMenuHandlers } from './hooks/useContextMenuHandlers';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useEnhancedVirtualization } from './hooks/useEnhancedVirtualization';
+import { useEnhancedColumns } from './hooks/useEnhancedColumns';
 
 // Import sub-components
 import { DataTableToolbar } from './components/DataTableToolbar';
@@ -37,6 +38,8 @@ const DataTable: React.FC<DataTableProps> = (props) => {
     keyField = 'id',
     loading = false,
     error = null,
+    autoDetectTypes = false,
+    autoGenerateFilterOptions = true,
 
     features = {},
     config = {},
@@ -50,6 +53,32 @@ const DataTable: React.FC<DataTableProps> = (props) => {
   const { token } = useToken();
   const tableRef = useRef<HTMLDivElement>(null);
 
+  // Enhanced columns with automatic type detection
+  const { enhancedColumns, columnAnalysis } = useEnhancedColumns({
+    data,
+    columns,
+    autoDetectTypes,
+    sampleSize: 100
+  });
+
+  // Debug logging for enhanced columns
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && autoDetectTypes && data.length > 0) {
+      console.log('🔍 DataTable Enhanced Columns Debug:', {
+        originalColumns: columns,
+        enhancedColumns,
+        columnAnalysis,
+        autoDetectTypes,
+        autoGenerateFilterOptions,
+        dataLength: data.length,
+        sampleData: data.slice(0, 3)
+      });
+    }
+  }, [columns, enhancedColumns, columnAnalysis, autoDetectTypes, autoGenerateFilterOptions, data]);
+
+  // Use enhanced columns if auto-detection is enabled, otherwise use original columns
+  const finalColumns = autoDetectTypes ? enhancedColumns : columns;
+
   // Custom hooks for state management
   const {
     state,
@@ -58,7 +87,7 @@ const DataTable: React.FC<DataTableProps> = (props) => {
     visibleColumns,
     debouncedSearchText,
     virtualizationServiceRef
-  } = useDataTableState({ columns, features, config });
+  } = useDataTableState({ columns: finalColumns, features, config });
 
   // Data processing
   const { processedData, paginatedData, totalRecords } = useDataProcessing({
@@ -84,7 +113,9 @@ const DataTable: React.FC<DataTableProps> = (props) => {
     config,
     tableRef,
     keyField,
-    props
+    props,
+    data,
+    debouncedSearchText
   });
 
   // Context menu handlers
@@ -140,8 +171,8 @@ const DataTable: React.FC<DataTableProps> = (props) => {
 
   // Update columns when prop changes
   useEffect(() => {
-    actions.setDisplayColumns(columns);
-  }, [columns, actions]);
+    actions.setDisplayColumns(finalColumns);
+  }, [finalColumns, actions]);
 
   // Use enhanced virtualization data when advanced virtualization is enabled
   const finalData = enabledFeatures.advancedVirtualization ? visibleData : paginatedData;
@@ -222,7 +253,7 @@ const DataTable: React.FC<DataTableProps> = (props) => {
           {state.showFilterPanel && (
             <FilterPanel
               visible={state.showFilterPanel}
-              columns={visibleColumns}
+              columns={finalColumns.filter(col => !col.hidden)}
               filterConfig={state.filterConfig}
               onFilterChange={handlers.handleFilter}
               onClose={() => actions.setShowFilterPanel(false)}

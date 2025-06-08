@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Input, Button, Space, Typography, Card, Spin, Alert } from 'antd';
 import { SendOutlined, LoadingOutlined } from '@ant-design/icons';
-import DataTable from '../DataTable/DataTable';
+import DataTable from '../DataTable/DataTableMain';
 import { QueryResponse } from '../../types/query';
 
 const { Text } = Typography;
@@ -69,15 +69,13 @@ export const MinimalistQueryInterface: React.FC<MinimalistQueryInterfaceProps> =
         dataIndex: col.name,
         key: col.name,
         width: 150,
-        dataType: col.type === 'number' || col.type === 'integer' || col.type === 'decimal' ? 'number' :
-                  col.type === 'date' || col.type === 'datetime' || col.type === 'timestamp' ? 'date' :
-                  col.type === 'boolean' ? 'boolean' : 'string',
+        // Let automatic type detection handle the dataType
         sortable: true,
         filterable: true,
         searchable: true,
         resizable: true,
         copyable: true,
-        formatter: (value: any) => {
+        render: (value: any) => {
           if (value === null || value === undefined) {
             return <Text type="secondary">NULL</Text>;
           }
@@ -246,6 +244,8 @@ export const MinimalistQueryInterface: React.FC<MinimalistQueryInterfaceProps> =
                     data={dataSource}
                     columns={columns}
                     keyField="id"
+                    autoDetectTypes={true}
+                    autoGenerateFilterOptions={true}
                     features={{
                       pagination: true,
                       sorting: true,
@@ -267,9 +267,6 @@ export const MinimalistQueryInterface: React.FC<MinimalistQueryInterfaceProps> =
                     config={{
                       pageSize: 25,
                       pageSizeOptions: [10, 25, 50, 100],
-                      stripedRows: true,
-                      hoverEffect: true,
-                      stickyHeader: false,
                       exportFileName: `query-results-${new Date().toISOString().split('T')[0]}`,
                       density: 'standard'
                     }}

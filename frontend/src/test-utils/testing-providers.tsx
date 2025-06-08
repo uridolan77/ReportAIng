@@ -8,7 +8,7 @@ import { render, RenderOptions, RenderResult } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
-import { ThemeProvider } from 'styled-components';
+// import { ThemeProvider } from 'styled-components'; // Commented out - not used
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 
 // Mock data and configurations
@@ -121,11 +121,9 @@ export const TestProviders: React.FC<TestProvidersProps> = ({
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <ConfigProvider {...antdConfig}>
-          <ThemeProvider theme={theme}>
-            <QueryProvider>
-              {children}
-            </QueryProvider>
-          </ThemeProvider>
+          <QueryProvider>
+            {children}
+          </QueryProvider>
         </ConfigProvider>
       </QueryClientProvider>
     </BrowserRouter>
@@ -206,9 +204,9 @@ export const ThemeTestProvider: React.FC<{ children: ReactNode; theme?: any }> =
   children,
   theme = testTheme
 }) => (
-  <ThemeProvider theme={theme}>
+  <div data-testid="theme-provider">
     {children}
-  </ThemeProvider>
+  </div>
 );
 
 // Utility functions for testing

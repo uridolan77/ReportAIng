@@ -34,6 +34,7 @@ const TuningDashboard = lazy(() => import('./components/Tuning/TuningDashboard')
 const SchemaManagementDashboard = lazy(() => import('./components/SchemaManagement/SchemaManagementDashboard').then(module => ({ default: module.SchemaManagementDashboard })));
 const QuerySuggestionsManager = lazy(() => import('./components/Admin/QuerySuggestionsManager').then(module => ({ default: module.QuerySuggestionsManager })));
 const MinimalistQueryPage = lazy(() => import('./pages/MinimalistQueryPage'));
+const DBExplorer = lazy(() => import('./components/DBExplorer/DBExplorer').then(module => ({ default: module.DBExplorer })));
 
 const App: React.FC = () => {
   const { isAuthenticated, user, isAdmin } = useAuthStore();
@@ -170,6 +171,7 @@ const App: React.FC = () => {
                             <Route path="/suggestions" element={<SuggestionsPage />} />
                             <Route path="/streaming" element={<div style={{ padding: '40px', textAlign: 'center' }}>Streaming Queries - Coming Soon</div>} />
                             <Route path="/enhanced-query" element={<EnhancedQueryBuilder />} />
+                            <Route path="/db-explorer" element={<DBExplorer />} />
 
                             {/* Admin Routes */}
                             <Route path="/admin/tuning" element={<TuningDashboard />} />

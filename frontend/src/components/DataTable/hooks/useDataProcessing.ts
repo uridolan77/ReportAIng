@@ -4,6 +4,18 @@ import _ from 'lodash';
 import dayjs from 'dayjs';
 import { DataTableColumn, DataTableFeatures, SortConfig, FilterConfig } from '../types';
 
+// Helper function to parse money values
+const parseMoneyValue = (value: any): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    // Remove currency symbols, commas, and spaces
+    const cleaned = value.replace(/[$€£¥,\s]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
 interface UseDataProcessingProps {
   data: any[];
   debouncedSearchText: string;
@@ -79,23 +91,49 @@ export const useDataProcessing = ({
                 return true;
               }
               return numValue === Number(filterValue);
-            
+
+            case 'money':
+              // Parse money value (remove currency symbols and commas)
+              const moneyValue = parseMoneyValue(cellValue);
+              if (typeof filterValue === 'object' && filterValue !== null) {
+                // Handle operator-based filtering
+                if (filterValue.operator === 'gte' && filterValue.min !== undefined) {
+                  return moneyValue >= filterValue.min;
+                }
+                if (filterValue.operator === 'lte' && filterValue.max !== undefined) {
+                  return moneyValue <= filterValue.max;
+                }
+                // Handle range filtering
+                if (filterValue.min !== undefined && moneyValue < filterValue.min) return false;
+                if (filterValue.max !== undefined && moneyValue > filterValue.max) return false;
+                return true;
+              }
+              return moneyValue === Number(filterValue);
+
             case 'date':
               return dayjs(cellValue).isSame(dayjs(filterValue), 'day');
-            
+
             case 'dateRange':
               const dateValue = dayjs(cellValue);
               return dateValue.isBetween(filterValue[0], filterValue[1], 'day', '[]');
-            
+
             case 'select':
               return cellValue === filterValue;
-            
+
             case 'multiselect':
               return Array.isArray(filterValue) && filterValue.includes(cellValue);
-            
+
             case 'boolean':
               return cellValue === filterValue;
-            
+
+            case 'text':
+              // Handle multiselect for text fields
+              if (Array.isArray(filterValue) && filterValue.length > 0) {
+                return filterValue.includes(cellValue);
+              }
+              // Handle text search
+              return String(cellValue || '').toLowerCase().includes(String(filterValue || '').toLowerCase());
+
             default:
               return String(cellValue || '').toLowerCase().includes(String(filterValue).toLowerCase());
           }

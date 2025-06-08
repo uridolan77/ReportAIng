@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout as AntLayout, Button, Typography, Avatar, Dropdown } from 'antd';
+import { Layout as AntLayout, Button, Typography, Avatar, Dropdown, Menu } from 'antd';
 import {
   RobotOutlined,
   LogoutOutlined,
@@ -21,28 +21,62 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout, isAdmin } = useAuthStore();
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
 
-  const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: 'Profile',
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Settings',
-    },
-    {
-      type: 'divider' as const,
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: 'Logout',
-      onClick: logout,
-    },
-  ];
+  const handleProfileClick = () => {
+    console.log('Profile clicked');
+    setDropdownOpen(false);
+    // TODO: Navigate to profile page or open profile modal
+  };
+
+  const handleSettingsClick = () => {
+    console.log('Settings clicked');
+    setDropdownOpen(false);
+    // TODO: Navigate to settings page or open settings modal
+  };
+
+  // Handle menu clicks
+  const handleMenuClick = (info: any) => {
+    console.log('Menu item clicked:', info.key);
+    setDropdownOpen(false);
+    switch (info.key) {
+      case 'profile':
+        handleProfileClick();
+        break;
+      case 'settings':
+        handleSettingsClick();
+        break;
+      case 'logout':
+        logout();
+        break;
+      default:
+        console.log('Unknown menu item:', info.key);
+    }
+  };
+
+  // Create menu using Menu component
+  const userMenu = (
+    <Menu
+      onClick={handleMenuClick}
+      style={{
+        minWidth: 160,
+        border: '1px solid #e2e8f0',
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+      }}
+    >
+      <Menu.Item key="profile" icon={<UserOutlined />}>
+        Profile
+      </Menu.Item>
+      <Menu.Item key="settings" icon={<SettingOutlined />}>
+        Settings
+      </Menu.Item>
+      <Menu.Divider />
+      <Menu.Item key="logout" icon={<LogoutOutlined />}>
+        Logout
+      </Menu.Item>
+    </Menu>
+  );
 
   return (
     <AntLayout style={{ minHeight: '100vh' }}>
@@ -55,7 +89,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           height: '64px',
           position: 'sticky',
           top: 0,
-          zIndex: 1000
+          zIndex: 1000,
+          overflow: 'visible'
         }}
       >
         {/* Left side - Logo */}
@@ -124,7 +159,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '16px'
+            gap: '16px',
+            overflow: 'visible'
           }}
         >
           <DatabaseStatusIndicator />
@@ -166,12 +202,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Button>
 
           <Dropdown
-            menu={{ items: userMenuItems }}
+            overlay={userMenu}
             placement="bottomRight"
             trigger={['click']}
+            open={dropdownOpen}
+            onOpenChange={(open) => {
+              console.log('Dropdown open state changed:', open);
+              setDropdownOpen(open);
+            }}
+            getPopupContainer={() => document.body}
           >
-            <Button
-              type="text"
+            <div
               className="user-dropdown-button"
               style={{
                 display: 'flex',
@@ -186,7 +227,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 fontWeight: 500,
                 fontSize: '14px',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                cursor: 'pointer'
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('User dropdown clicked');
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = '#3b82f6';
@@ -233,7 +279,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   {isAdmin ? 'Admin' : 'User'}
                 </Text>
               </div>
-            </Button>
+            </div>
           </Dropdown>
         </div>
       </Header>

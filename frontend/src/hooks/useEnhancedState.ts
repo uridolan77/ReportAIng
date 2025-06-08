@@ -29,6 +29,30 @@ export const useEnhancedState = <T>(
   const debounceTimerRef = useRef<NodeJS.Timeout>();
   const isInitializedRef = useRef(false);
 
+  const loadPersistedState = useCallback(async () => {
+    if (!persistence) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const persistedValue = await persistenceManager.loadState(persistence);
+
+      if (persistedValue !== null) {
+        setState(persistedValue);
+        setLastSyncTimestamp(Date.now());
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load persisted state');
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load persisted state:', err);
+      }
+    } finally {
+      setIsLoading(false);
+      isInitializedRef.current = true;
+    }
+  }, [persistence]);
+
   // Load persisted state on mount
   useEffect(() => {
     if (persistence && !isInitializedRef.current) {
@@ -63,28 +87,6 @@ export const useEnhancedState = <T>(
     return unsubscribe;
   }, [key, crossTabSync, state, lastSyncTimestamp, onConflict, subscribe]);
 
-  const loadPersistedState = useCallback(async () => {
-    if (!persistence) return;
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const persistedValue = await persistenceManager.loadState(persistence);
-
-      if (persistedValue !== null) {
-        setState(persistedValue);
-        setLastSyncTimestamp(Date.now());
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load persisted state');
-      console.error('Failed to load persisted state:', err);
-    } finally {
-      setIsLoading(false);
-      isInitializedRef.current = true;
-    }
-  }, [persistence]);
-
   const savePersistedState = useCallback(async (value: T) => {
     if (!persistence) return;
 
@@ -92,7 +94,9 @@ export const useEnhancedState = <T>(
       await persistenceManager.saveState(value, persistence);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save state');
-      console.error('Failed to save persisted state:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to save persisted state:', err);
+      }
     }
   }, [persistence]);
 

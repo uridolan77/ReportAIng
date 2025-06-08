@@ -63,7 +63,9 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         stage: s?.stage || 'undefined',
         progress: s?.progress || 0,
         message: s?.message || 'undefined',
-        timestamp: s?.timestamp || 'undefined'
+        timestamp: s?.timestamp || 'undefined',
+        details: s?.details ? Object.keys(s.details) : 'no details',
+        fullDetails: s?.details // Log full details to see structure
       }))
     });
   }, [stages, isProcessing, currentStage, queryId, isVisible]);
@@ -78,9 +80,24 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
     ).join(' ');
   };
 
+  // Helper function to format timing
+  const formatDuration = (ms: number) => {
+    if (ms < 1000) return `${Math.round(ms)}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${(ms / 60000).toFixed(1)}m`;
+  };
+
+  // Helper function to get step timing
+  const getStepTiming = (stageData: ProcessingStage, index: number) => {
+    const stepTiming = timingInfo.stepTimes.find(t => t.stage === stageData.stage);
+    return stepTiming || null;
+  };
+
   // Calculate values used in different modes with improved progress calculation
   const calculateOverallProgress = () => {
-    if (stages.length === 0) return 0;
+    if (stages.length === 0) {
+      return isProcessing ? 0 : 0; // Start at 0 when processing begins
+    }
 
     // Define stage weights for more realistic progress
     const stageWeights: Record<string, number> = {
@@ -107,24 +124,30 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
     stages.forEach(stage => {
       const weight = stageWeights[stage.stage] || 5;
       totalWeight += weight;
-      completedWeight += (stage.progress / 100) * weight;
+      const stageProgress = stage.progress !== undefined && stage.progress !== null ? stage.progress : 0;
+      completedWeight += (stageProgress / 100) * weight;
     });
 
     // If we have active stages, calculate weighted progress
     if (totalWeight > 0) {
       const weightedProgress = Math.round((completedWeight / totalWeight) * 100);
-      // Ensure minimum progress for active processing
-      return Math.max(weightedProgress, isProcessing ? 5 : 0);
+      // Ensure progress doesn't exceed 100% and starts properly
+      return Math.min(Math.max(weightedProgress, 0), 100);
     }
 
-    // Fallback to simple max progress
-    return Math.max(...stages.map(s => s.progress));
+    // Fallback to simple average progress
+    const validStages = stages.filter(s => s.progress !== undefined && s.progress !== null);
+    if (validStages.length > 0) {
+      return Math.round(validStages.reduce((sum, s) => sum + s.progress, 0) / validStages.length);
+    }
+
+    return 0;
   };
 
   const currentProgress = calculateOverallProgress();
   const completedStages = stages.filter(s => s.progress === 100).length;
   const totalStages = stages.length;
-  const overallProgress = totalStages > 0 ? Math.round((completedStages / totalStages) * 100) : 100;
+  const overallProgress = currentProgress; // Use the weighted progress calculation instead
   const lastStage = stages.length > 0 ? stages[stages.length - 1] : null;
   const currentStateText = lastStage ? formatStageTitle(lastStage.stage) : 'Complete';
 
@@ -155,6 +178,41 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
 
   const estimatedTime = calculateEstimatedTime();
 
+  // Calculate timing information
+  const calculateTimingInfo = () => {
+    if (stages.length === 0) return { totalTime: 0, stepTimes: [] };
+
+    const sortedStages = [...stages].sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
+      return timeA - timeB;
+    });
+
+    const firstStage = sortedStages[0];
+    const lastStage = sortedStages[sortedStages.length - 1];
+
+    const startTime = new Date(firstStage.timestamp).getTime();
+    const endTime = isProcessing ? Date.now() : new Date(lastStage.timestamp).getTime();
+    const totalTime = endTime - startTime;
+
+    const stepTimes = sortedStages.map((stage, index) => {
+      const stageTime = new Date(stage.timestamp).getTime();
+      const prevTime = index > 0 ? new Date(sortedStages[index - 1].timestamp).getTime() : startTime;
+      const stepDuration = stageTime - prevTime;
+
+      return {
+        stage: stage.stage,
+        duration: stepDuration,
+        timestamp: stageTime,
+        cumulativeTime: stageTime - startTime
+      };
+    });
+
+    return { totalTime, stepTimes };
+  };
+
+  const timingInfo = calculateTimingInfo();
+
   // Debug logging for hidden mode (only when stages actually change)
   React.useEffect(() => {
     if ((mode === 'hidden' || !isVisible) && process.env.NODE_ENV === 'development') {
@@ -166,7 +224,8 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         lastStage: lastStage?.stage,
         currentStateText,
         queryId,
-        onModeChange: !!onModeChange
+        onModeChange: !!onModeChange,
+        timingInfo
       });
     }
   }, [mode, isVisible, stages.length, queryId]); // Reduced dependencies to prevent infinite loops
@@ -237,6 +296,87 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
   const renderStageDetails = (stageData: ProcessingStage) => {
     if (!stageData.details) return null;
 
+    // Special handling for prompt details - this is the most important data to show
+    if (stageData.details.promptDetails || stageData.details.PromptDetails) {
+      const promptDetails = stageData.details.promptDetails || stageData.details.PromptDetails;
+      return (
+        <div style={{
+          marginTop: '8px',
+          padding: '12px',
+          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+          borderRadius: '8px',
+          border: '1px solid #0ea5e9'
+        }}>
+          <Text strong style={{ color: '#0c4a6e', fontSize: '12px', marginBottom: '8px', display: 'block' }}>
+            🤖 AI Prompt Details
+          </Text>
+          <div style={{ display: 'grid', gap: '8px' }}>
+            <div style={{
+              padding: '8px',
+              background: '#ffffff',
+              borderRadius: '6px',
+              border: '1px solid #e0f2fe'
+            }}>
+              <Text strong style={{ fontSize: '11px', color: '#0c4a6e', display: 'block', marginBottom: '4px' }}>
+                📝 Full Prompt Sent to AI:
+              </Text>
+              <div style={{
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                whiteSpace: 'pre-wrap',
+                maxHeight: '200px',
+                overflow: 'auto',
+                padding: '8px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '4px',
+                border: '1px solid #e2e8f0',
+                color: '#374151'
+              }}>
+                {promptDetails.fullPrompt || promptDetails.FullPrompt || 'No prompt available'}
+              </div>
+            </div>
+            {(promptDetails.templateName || promptDetails.TemplateName) && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '6px 10px',
+                background: '#ffffff',
+                borderRadius: '6px',
+                border: '1px solid #e0f2fe'
+              }}>
+                <Text style={{ fontSize: '11px', color: '#0c4a6e', fontWeight: 500 }}>
+                  📋 Template:
+                </Text>
+                <Text style={{ fontSize: '11px', color: '#374151' }}>
+                  {promptDetails.templateName || promptDetails.TemplateName}
+                </Text>
+              </div>
+            )}
+            {(promptDetails.tokenCount || promptDetails.TokenCount) && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '6px 10px',
+                background: '#ffffff',
+                borderRadius: '6px',
+                border: '1px solid #e0f2fe'
+              }}>
+                <Text style={{ fontSize: '11px', color: '#0c4a6e', fontWeight: 500 }}>
+                  🔢 Token Count:
+                </Text>
+                <Text style={{ fontSize: '11px', color: '#374151' }}>
+                  {promptDetails.tokenCount || promptDetails.TokenCount}
+                </Text>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Enhanced cache details handling
+    const isCacheStage = stageData.stage?.includes('cache') || stageData.stage === 'cache_check' || stageData.stage === 'cache_lookup';
+
     return (
       <div style={{
         marginTop: '8px',
@@ -250,45 +390,95 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         </Text>
         <div style={{ display: 'grid', gap: '6px' }}>
           {Object.entries(stageData.details).map(([key, value]) => {
+            // Skip prompt details as they're handled above
+            if (key === 'promptDetails' || key === 'PromptDetails') {
+              return null;
+            }
+
             // Format specific keys for better readability
             let displayValue = value;
             let displayKey = key;
 
+            // Enhanced cache-specific formatting
+            if (isCacheStage) {
+              if (key === 'cacheKey') {
+                displayKey = '🔑 Cache Key';
+                displayValue = typeof value === 'string' ? value : JSON.stringify(value);
+              } else if (key === 'cacheHit') {
+                displayKey = '🎯 Cache Result';
+                displayValue = value ? '✅ HIT - Data found in cache' : '❌ MISS - Data not found in cache';
+              } else if (key === 'cacheValue') {
+                displayKey = '💾 Cached Data';
+                if (typeof value === 'object') {
+                  displayValue = `${JSON.stringify(value).length} characters of cached data`;
+                } else {
+                  displayValue = value;
+                }
+              } else if (key === 'ttl') {
+                displayKey = '⏰ Cache TTL';
+                displayValue = `${value} seconds`;
+              } else if (key === 'cacheSize') {
+                displayKey = '📊 Cache Size';
+                displayValue = `${value} bytes`;
+              } else if (key === 'searchQuery') {
+                displayKey = '🔍 Search Query';
+                displayValue = value;
+              } else if (key === 'queryHash') {
+                displayKey = '🔐 Query Hash';
+                displayValue = value;
+              }
+            }
+
+            // General formatting
             if (key === 'promptLength') {
-              displayKey = 'Prompt Length';
+              displayKey = '📝 Prompt Length';
               displayValue = `${value} characters`;
             } else if (key === 'aiExecutionTime') {
-              displayKey = 'AI Response Time';
+              displayKey = '🤖 AI Response Time';
               displayValue = `${value}ms`;
             } else if (key === 'dbExecutionTime') {
-              displayKey = 'Database Execution Time';
+              displayKey = '🗄️ Database Execution Time';
               displayValue = `${value}ms`;
             } else if (key === 'rowCount') {
-              displayKey = 'Rows Returned';
+              displayKey = '📊 Rows Returned';
               displayValue = `${value} rows`;
             } else if (key === 'templateName') {
-              displayKey = 'Prompt Template';
-            } else if (typeof value === 'string' && value.length > 100) {
-              displayValue = value.substring(0, 100) + '...';
-            } else if (typeof value === 'object') {
+              displayKey = '📋 Prompt Template';
+            } else if (key === 'confidence') {
+              displayKey = '🎯 Confidence Score';
+              displayValue = `${(value * 100).toFixed(1)}%`;
+            } else if (typeof value === 'object' && !isCacheStage) {
               displayValue = JSON.stringify(value, null, 2);
+            } else if (typeof value === 'string') {
+              // Don't truncate strings - show full content
+              displayValue = value;
             }
 
             return (
               <div key={key} style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                padding: '4px 8px',
+                padding: '6px 10px',
                 background: '#ffffff',
-                borderRadius: '4px',
-                border: '1px solid #e5e7eb'
+                borderRadius: '6px',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
               }}>
                 <Text style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>
                   {displayKey}:
                 </Text>
-                <Text style={{ fontSize: '11px', color: '#374151', textAlign: 'right', maxWidth: '60%' }}>
+                <div style={{
+                  fontSize: '11px',
+                  color: '#374151',
+                  textAlign: 'right',
+                  maxWidth: '60%',
+                  fontFamily: key.includes('cache') || key.includes('query') || key.includes('sql') ? 'monospace' : 'inherit',
+                  maxHeight: '100px',
+                  overflowY: 'auto',
+                  whiteSpace: 'pre-wrap'
+                }}>
                   {displayValue}
-                </Text>
+                </div>
               </div>
             );
           })}
@@ -303,7 +493,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
     }
   };
 
-  // Hidden mode - show as closed panel
+  // Hidden mode - show as closed panel (minimal mode)
   if (mode === 'hidden' || !isVisible) {
     // Show completion status with proper data
     const completionText = !isProcessing && stages.length > 0 ? 'Completed' : currentStateText;
@@ -313,14 +503,13 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
       <Card
         size="small"
         style={{
-          borderRadius: '8px',
-          border: hasValidData ? '1px solid #e0e7ff' : '1px solid #e8f4fd',
-          background: hasValidData
-            ? 'linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%)'
-            : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+          borderRadius: '12px',
+          border: '1px solid #e5e7eb',
+          background: 'white',
           marginBottom: '16px',
           cursor: 'pointer',
-          transition: 'all 0.3s ease'
+          transition: 'all 0.3s ease',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
         }}
         onClick={(e) => {
           e.preventDefault();
@@ -336,64 +525,90 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
           }
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-          e.currentTarget.style.borderColor = hasValidData ? '#3b82f6' : '#3b82f6';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+          e.currentTarget.style.borderColor = '#d1d5db';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.borderColor = hasValidData ? '#e0e7ff' : '#e8f4fd';
+          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+          e.currentTarget.style.borderColor = '#e5e7eb';
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Space>
             <RobotOutlined style={{
-              color: hasValidData ? '#3b82f6' : '#6b7280',
+              color: '#6b7280',
               fontSize: '16px'
             }} />
             <Text style={{
-              color: hasValidData ? '#4c1d95' : '#6b7280',
+              color: '#374151',
               fontSize: '14px',
               fontWeight: 500
             }}>
-              🤖 AI Processing - {completionText}
+              AI Processing - {completionText}
             </Text>
             {queryId && (
-              <Tag color="blue" style={{ fontSize: '10px' }}>
+              <Tag color="default" style={{ fontSize: '10px', color: '#6b7280', borderColor: '#d1d5db' }}>
                 ID: {queryId.substring(0, 8)}...
               </Tag>
             )}
           </Space>
 
           <Space size="small">
-            {hasValidData && totalStages > 0 && (
-              <Tag color="purple" style={{ fontSize: '10px', fontWeight: 500 }}>
+            {totalStages > 0 && (
+              <Tag color="default" style={{ fontSize: '10px', fontWeight: 500, color: '#6b7280', borderColor: '#d1d5db' }}>
                 {completedStages}/{totalStages} stages
               </Tag>
             )}
-            <Tag color={hasValidData ? "purple" : "blue"} style={{ fontSize: '10px', fontWeight: 500 }}>
-              {hasValidData ? '100% complete' : `${overallProgress}% complete`}
+            {timingInfo.totalTime > 0 && (
+              <Tag color="blue" style={{ fontSize: '10px', fontWeight: 500 }}>
+                {formatDuration(timingInfo.totalTime)}
+              </Tag>
+            )}
+            <Tag color="default" style={{ fontSize: '10px', fontWeight: 500, color: '#6b7280', borderColor: '#d1d5db' }}>
+              {isProcessing ? `${currentProgress}% complete` : (hasValidData ? '100% complete' : '0% complete')}
             </Tag>
             <EyeOutlined style={{
-              color: hasValidData ? '#3b82f6' : '#6b7280',
+              color: '#9ca3af',
               fontSize: '12px'
             }} />
           </Space>
         </div>
 
-        {/* Show hint text */}
-        <div style={{ marginTop: '8px' }}>
-          <Text style={{
-            fontSize: '11px',
-            color: hasValidData ? '#5b21b6' : '#9ca3af',
-            fontStyle: 'italic'
-          }}>
-            {hasValidData
-              ? 'Click to view processing details and AI insights'
-              : 'Processing information will appear here'
-            }
-          </Text>
+        {/* Progress bar in minimal mode */}
+        <div style={{ marginTop: '12px' }}>
+          <Progress
+            percent={isProcessing ? currentProgress : (hasValidData ? 100 : 0)}
+            status={isProcessing ? 'active' : 'success'}
+            strokeColor={{
+              '0%': '#3b82f6',
+              '50%': '#2563eb',
+              '100%': '#1d4ed8',
+            }}
+            trailColor="#f3f4f6"
+            strokeWidth={6}
+            showInfo={true}
+            format={(percent) => (
+              <span style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#3b82f6'
+              }}>
+                {percent}%
+              </span>
+            )}
+            style={{ marginBottom: '8px' }}
+          />
+          {hasValidData && stages.length > 0 && !isProcessing && (
+            <Text style={{
+              fontSize: '11px',
+              color: '#9ca3af',
+              fontStyle: 'italic'
+            }}>
+              Click to view processing details and AI insights
+            </Text>
+          )}
         </div>
       </Card>
     );
@@ -489,38 +704,62 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
   return (
     <Card
       size="small"
+      style={{
+        borderRadius: '12px',
+        border: '1px solid #e5e7eb',
+        background: 'white',
+        marginBottom: '16px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+      }}
       title={
-        <Space>
-          <RobotOutlined style={{ color: '#3b82f6' }} />
-          <Text strong>🤖 AI Query Processing</Text>
-          {queryId && (
-            <Tag color="blue" style={{ fontSize: '10px' }}>
-              ID: {queryId.substring(0, 8)}...
-            </Tag>
-          )}
-          {isProcessing && (
-            <Tag color="processing" style={{ fontSize: '10px' }}>
-              <LoadingOutlined style={{ marginRight: '4px' }} />
-              PROCESSING
-            </Tag>
-          )}
-        </Space>
+        <div
+          style={{ cursor: 'pointer', padding: '4px 0' }}
+          onClick={() => handleModeChange('hidden')}
+        >
+          <Space>
+            <RobotOutlined style={{ color: '#6b7280' }} />
+            <Text strong style={{ color: '#374151' }}>AI Query Processing</Text>
+            {queryId && (
+              <Tag color="default" style={{ fontSize: '10px', color: '#6b7280', borderColor: '#d1d5db' }}>
+                ID: {queryId.substring(0, 8)}...
+              </Tag>
+            )}
+            {isProcessing && (
+              <Tag color="default" style={{ fontSize: '10px', color: '#6b7280', borderColor: '#d1d5db' }}>
+                <LoadingOutlined style={{ marginRight: '4px' }} />
+                PROCESSING
+              </Tag>
+            )}
+          </Space>
+        </div>
       }
       extra={
         <Space size="small">
           <Button
-            type={mode === 'advanced' ? 'primary' : 'text'}
+            type={mode === 'advanced' ? 'default' : 'text'}
             size="small"
             onClick={() => handleModeChange('advanced')}
-            style={{ fontSize: '10px', padding: '2px 8px', height: '24px' }}
+            style={{
+              fontSize: '10px',
+              padding: '2px 8px',
+              height: '24px',
+              color: mode === 'advanced' ? '#374151' : '#9ca3af',
+              borderColor: mode === 'advanced' ? '#d1d5db' : 'transparent'
+            }}
           >
             ADVANCED
           </Button>
           <Button
-            type={mode === 'processing' ? 'primary' : 'text'}
+            type={mode === 'processing' ? 'default' : 'text'}
             size="small"
             onClick={() => handleModeChange('processing')}
-            style={{ fontSize: '10px', padding: '2px 8px', height: '24px' }}
+            style={{
+              fontSize: '10px',
+              padding: '2px 8px',
+              height: '24px',
+              color: mode === 'processing' ? '#374151' : '#9ca3af',
+              borderColor: mode === 'processing' ? '#d1d5db' : 'transparent'
+            }}
           >
             PROCESSING
           </Button>
@@ -528,9 +767,14 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
             type="text"
             size="small"
             onClick={() => handleModeChange('hidden')}
-            style={{ fontSize: '10px', padding: '2px 8px', height: '24px' }}
+            style={{
+              fontSize: '10px',
+              padding: '2px 8px',
+              height: '24px',
+              color: '#9ca3af'
+            }}
           >
-            HIDE
+            MINIMIZE
           </Button>
         </Space>
       }
@@ -546,12 +790,19 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
       {/* Overall Progress */}
       <div style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <Text strong style={{ fontSize: '14px', color: '#1f2937' }}>
+          <Text strong style={{ fontSize: '14px', color: '#374151' }}>
             Processing Progress
           </Text>
-          <Text style={{ fontSize: '14px', color: '#1e40af', fontWeight: 600 }}>
-            {currentProgress}%
-          </Text>
+          <Space size="small">
+            {timingInfo.totalTime > 0 && (
+              <Tag color="blue" style={{ fontSize: '11px', fontWeight: 500 }}>
+                ⏱️ Total: {formatDuration(timingInfo.totalTime)}
+              </Tag>
+            )}
+            <Text style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600 }}>
+              {currentProgress}%
+            </Text>
+          </Space>
         </div>
         <div className={isProcessing ? 'stage-progress-bar' : ''}>
           <Progress
@@ -559,23 +810,21 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
             status={isProcessing ? 'active' : 'success'}
             strokeColor={{
               '0%': '#3b82f6',
-              '30%': '#1d4ed8',
-              '70%': '#1e40af',
-              '100%': '#1e3a8a',
+              '50%': '#2563eb',
+              '100%': '#1d4ed8',
             }}
-            trailColor="#e5e7eb"
+            trailColor="#f3f4f6"
             strokeWidth={12}
             format={(percent) => (
               <span style={{
                 fontSize: '13px',
-                fontWeight: 700,
-                color: isProcessing ? '#3b82f6' : '#1e40af',
-                textShadow: '0 1px 2px rgba(0,0,0,0.1)'
-              }} className={isProcessing ? 'processing-text-glow' : ''}>
+                fontWeight: 600,
+                color: '#3b82f6'
+              }}>
                 {percent}%
               </span>
             )}
-            className={`progress-smooth ${isProcessing ? 'progress-bar-animated' : ''}`}
+            className="progress-smooth"
             style={{
               marginBottom: '8px'
             }}
@@ -583,7 +832,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {currentStage && (
-            <Text style={{ fontSize: '12px', color: '#6b7280', fontStyle: 'italic' }}>
+            <Text style={{ fontSize: '12px', color: '#9ca3af', fontStyle: 'italic' }}>
               Current: {formatStageTitle(currentStage)}
             </Text>
           )}
@@ -599,25 +848,25 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
       {/* Processing Timeline - only show in processing and advanced modes */}
       {(mode === 'processing' || mode === 'advanced') && (
         <div style={{ marginTop: '16px' }}>
-          <Text strong style={{ fontSize: '14px', color: '#1f2937', marginBottom: '12px', display: 'block' }}>
-            🔄 Processing Steps
+          <Text strong style={{ fontSize: '14px', color: '#374151', marginBottom: '12px', display: 'block' }}>
+            Processing Steps
           </Text>
 
         {stages.length === 0 && isProcessing ? (
           <div style={{
             padding: '20px',
             textAlign: 'center',
-            background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-            border: '2px dashed #3b82f6',
+            background: '#f9fafb',
+            border: '2px dashed #d1d5db',
             borderRadius: '8px',
             marginBottom: '16px'
           }}>
             <Space direction="vertical" size="small">
-              <LoadingOutlined style={{ fontSize: '24px', color: '#3b82f6' }} />
-              <Text style={{ color: '#1d4ed8', fontWeight: 500 }}>
+              <LoadingOutlined style={{ fontSize: '24px', color: '#6b7280' }} />
+              <Text style={{ color: '#374151', fontWeight: 500 }}>
                 Initializing query processing...
               </Text>
-              <Text style={{ color: '#2563eb', fontSize: '12px' }}>
+              <Text style={{ color: '#9ca3af', fontSize: '12px' }}>
                 Connecting to AI service and preparing your request
               </Text>
             </Space>
@@ -633,30 +882,61 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
               <Timeline.Item
                 key={`${stageData.stage || 'unknown'}-${index}`}
                 dot={getStageIcon(stageData.stage || 'unknown', status)}
-                color={getStageColor(stageData.stage || 'unknown', status)}
+                color={status === 'active' ? '#6b7280' : status === 'completed' ? '#374151' : '#d1d5db'}
               >
                 <div style={{
-                  padding: '8px 12px',
-                  background: status === 'active' ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' : '#ffffff',
-                  border: status === 'active' ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                  padding: '12px 16px',
+                  background: status === 'active' ? '#f9fafb' : '#ffffff',
+                  border: status === 'active' ? '2px solid #d1d5db' : '1px solid #e5e7eb',
                   borderRadius: '8px',
-                  marginBottom: '8px'
-                }}>
+                  marginBottom: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onClick={() => {
+                  const panelKey = `details-${index}`;
+                  setExpandedPanels(prev =>
+                    prev.includes(panelKey)
+                      ? prev.filter(key => key !== panelKey)
+                      : [...prev, panelKey]
+                  );
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#9ca3af';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = status === 'active' ? '#d1d5db' : '#e5e7eb';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+                >
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Text strong style={{
-                        color: status === 'active' ? '#1d4ed8' : '#374151',
+                        color: status === 'active' ? '#374151' : '#6b7280',
                         fontSize: '13px'
                       }}>
                         {formatStageTitle(stageData.stage)}
                       </Text>
-                      <Space>
+                      <Space size="small">
+                        {(() => {
+                          const stepTiming = getStepTiming(stageData, index);
+                          return stepTiming && stepTiming.duration > 0 ? (
+                            <Tag color="cyan" style={{ fontSize: '9px', fontWeight: 500 }}>
+                              {formatDuration(stepTiming.duration)}
+                            </Tag>
+                          ) : null;
+                        })()}
                         <Tag
-                          color={getStageColor(stageData.stage, status)}
-                          size="small"
-                          style={{ fontWeight: 600 }}
+                          color="default"
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            color: '#6b7280',
+                            borderColor: '#d1d5db'
+                          }}
                         >
-                          {stageData.progress}%
+                          {stageData.progress !== undefined && stageData.progress !== null ? `${stageData.progress}%` : '0%'}
                         </Tag>
                         <Text style={{ fontSize: '10px', color: '#9ca3af' }}>
                           {stageData.timestamp ? new Date(stageData.timestamp).toLocaleTimeString() : 'N/A'}
@@ -672,26 +952,281 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
                       {stageData.message || 'Processing...'}
                     </Text>
 
-                    {/* Technical details only in advanced mode */}
-                    {mode === 'advanced' && stageData.details && (
-                      <Collapse
-                        ghost
-                        size="small"
-                        activeKey={expandedPanels}
-                        onChange={(keys) => setExpandedPanels(keys as string[])}
-                      >
-                        <Panel
-                          header={
-                            <Text style={{ fontSize: '11px', color: '#3b82f6', fontWeight: 500 }}>
-                              📊 View Technical Details
+                    {/* Expandable details for each step */}
+                    {expandedPanels.includes(`details-${index}`) && (
+                      <div style={{
+                        marginTop: '12px',
+                        padding: '12px',
+                        background: '#f3f4f6',
+                        borderRadius: '6px',
+                        border: '1px solid #e5e7eb'
+                      }}>
+                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text strong style={{ fontSize: '12px', color: '#374151' }}>
+                              Step Details
                             </Text>
-                          }
-                          key={`details-${index}`}
-                          style={{ padding: 0 }}
-                        >
+                            {(() => {
+                              const stepTiming = getStepTiming(stageData, index);
+                              return stepTiming ? (
+                                <Space size="small">
+                                  <Tag color="blue" style={{ fontSize: '10px' }}>
+                                    Duration: {formatDuration(stepTiming.duration)}
+                                  </Tag>
+                                  <Tag color="purple" style={{ fontSize: '10px' }}>
+                                    Cumulative: {formatDuration(stepTiming.cumulativeTime)}
+                                  </Tag>
+                                </Space>
+                              ) : null;
+                            })()}
+                          </div>
+
+                          {/* Stage-specific details */}
+                          <div style={{
+                            background: '#f8fafc',
+                            padding: '8px',
+                            borderRadius: '6px',
+                            border: '1px solid #e2e8f0'
+                          }}>
+                            <Text strong style={{ fontSize: '11px', color: '#374151', display: 'block', marginBottom: '6px' }}>
+                              📊 Stage Information
+                            </Text>
+                            <div style={{ display: 'grid', gap: '4px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Text style={{ fontSize: '10px', color: '#6b7280' }}>Stage:</Text>
+                                <Text style={{ fontSize: '10px', color: '#374151', fontFamily: 'monospace' }}>{stageData.stage}</Text>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Text style={{ fontSize: '10px', color: '#6b7280' }}>Status:</Text>
+                                <Text style={{ fontSize: '10px', color: '#374151' }}>{status.toUpperCase()}</Text>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Text style={{ fontSize: '10px', color: '#6b7280' }}>Progress:</Text>
+                                <Text style={{ fontSize: '10px', color: '#374151' }}>{stageData.progress || 0}%</Text>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Text style={{ fontSize: '10px', color: '#6b7280' }}>Timestamp:</Text>
+                                <Text style={{ fontSize: '10px', color: '#374151', fontFamily: 'monospace' }}>
+                                  {stageData.timestamp ? new Date(stageData.timestamp).toISOString() : 'N/A'}
+                                </Text>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Prompt - check multiple possible field names */}
+                          {(stageData.details?.prompt || stageData.details?.promptText || stageData.details?.query || stageData.details?.userQuery) && (
+                            <div>
+                              <Text strong style={{ fontSize: '11px', color: '#6b7280' }}>💬 Prompt:</Text>
+                              <div style={{
+                                background: 'white',
+                                padding: '8px',
+                                borderRadius: '4px',
+                                border: '1px solid #e5e7eb',
+                                marginTop: '4px',
+                                fontSize: '11px',
+                                color: '#374151',
+                                fontFamily: 'monospace',
+                                maxHeight: '400px',
+                                overflowY: 'auto',
+                                whiteSpace: 'pre-wrap'
+                              }}>
+                                {stageData.details.prompt ||
+                                 stageData.details.promptText ||
+                                 stageData.details.query ||
+                                 stageData.details.userQuery}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Response - check multiple possible field names */}
+                          {(stageData.details?.response || stageData.details?.aiResponse || stageData.details?.result || stageData.details?.output) && (
+                            <div>
+                              <Text strong style={{ fontSize: '11px', color: '#6b7280' }}>🤖 AI Response:</Text>
+                              <div style={{
+                                background: 'white',
+                                padding: '8px',
+                                borderRadius: '4px',
+                                border: '1px solid #e5e7eb',
+                                marginTop: '4px',
+                                fontSize: '11px',
+                                color: '#374151',
+                                fontFamily: 'monospace',
+                                maxHeight: '500px',
+                                overflowY: 'auto',
+                                whiteSpace: 'pre-wrap'
+                              }}>
+                                {(() => {
+                                  const responseData = stageData.details.response ||
+                                                     stageData.details.aiResponse ||
+                                                     stageData.details.result ||
+                                                     stageData.details.output;
+
+                                  return typeof responseData === 'string'
+                                    ? responseData
+                                    : JSON.stringify(responseData, null, 2);
+                                })()}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* SQL Query - check multiple possible field names */}
+                          {(stageData.details?.sql || stageData.details?.sqlQuery || stageData.details?.generatedSql || stageData.details?.query) && (
+                            <div>
+                              <Text strong style={{ fontSize: '11px', color: '#6b7280' }}>🗄️ Generated SQL:</Text>
+                              <div style={{
+                                background: 'white',
+                                padding: '8px',
+                                borderRadius: '4px',
+                                border: '1px solid #e5e7eb',
+                                marginTop: '4px',
+                                fontSize: '11px',
+                                color: '#374151',
+                                fontFamily: 'monospace',
+                                maxHeight: '500px',
+                                overflowY: 'auto',
+                                whiteSpace: 'pre-wrap'
+                              }}>
+                                {stageData.details.sql ||
+                                 stageData.details.sqlQuery ||
+                                 stageData.details.generatedSql ||
+                                 stageData.details.query}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Results Summary */}
+                          {stageData.details?.results && (
+                            <div>
+                              <Text strong style={{ fontSize: '11px', color: '#6b7280' }}>📊 Results Summary:</Text>
+                              <div style={{
+                                background: 'white',
+                                padding: '8px',
+                                borderRadius: '4px',
+                                border: '1px solid #e5e7eb',
+                                marginTop: '4px',
+                                fontSize: '11px',
+                                color: '#374151'
+                              }}>
+                                {typeof stageData.details.results === 'object' ? (
+                                  <div style={{ display: 'grid', gap: '4px' }}>
+                                    {Object.entries(stageData.details.results).map(([key, value]) => (
+                                      <div key={key} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Text style={{ fontSize: '10px', color: '#6b7280' }}>{key}:</Text>
+                                        <Text style={{ fontSize: '10px', color: '#374151' }}>
+                                          {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                        </Text>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Text style={{ fontFamily: 'monospace' }}>{String(stageData.details.results)}</Text>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Error Information */}
+                          {stageData.details?.error && (
+                            <div>
+                              <Text strong style={{ fontSize: '11px', color: '#dc2626' }}>❌ Error Details:</Text>
+                              <div style={{
+                                background: '#fef2f2',
+                                padding: '8px',
+                                borderRadius: '4px',
+                                border: '1px solid #fecaca',
+                                marginTop: '4px',
+                                fontSize: '11px',
+                                color: '#dc2626',
+                                fontFamily: 'monospace'
+                              }}>
+                                {typeof stageData.details.error === 'string'
+                                  ? stageData.details.error
+                                  : JSON.stringify(stageData.details.error, null, 2)}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* All Available Details - show everything in the details object */}
+                          {stageData.details && Object.keys(stageData.details).length > 0 && (
+                            <div>
+                              <Text strong style={{ fontSize: '11px', color: '#6b7280' }}>🔍 All Available Details:</Text>
+                              <div style={{
+                                background: '#f8fafc',
+                                padding: '8px',
+                                borderRadius: '4px',
+                                border: '1px solid #e2e8f0',
+                                marginTop: '4px'
+                              }}>
+                                {Object.entries(stageData.details).map(([key, value]) => {
+                                  // Skip if we already showed this field above
+                                  const alreadyShown = ['prompt', 'promptText', 'query', 'userQuery',
+                                                       'response', 'aiResponse', 'result', 'output',
+                                                       'sql', 'sqlQuery', 'generatedSql',
+                                                       'results', 'error'].includes(key);
+
+                                  if (alreadyShown) return null;
+
+                                  let displayValue = value;
+                                  if (typeof value === 'object' && value !== null) {
+                                    displayValue = JSON.stringify(value, null, 2);
+                                  } else if (typeof value === 'string' && value.length > 500) {
+                                    // For very long strings, show first 500 chars with expand option
+                                    displayValue = value.substring(0, 500) + '... (truncated)';
+                                  }
+
+                                  return (
+                                    <div key={key} style={{
+                                      marginBottom: '8px',
+                                      padding: '6px',
+                                      background: 'white',
+                                      borderRadius: '4px',
+                                      border: '1px solid #e5e7eb'
+                                    }}>
+                                      <Text strong style={{ fontSize: '10px', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                                        {key}:
+                                      </Text>
+                                      <div style={{
+                                        fontSize: '10px',
+                                        color: '#6b7280',
+                                        fontFamily: typeof value === 'object' || key.includes('sql') || key.includes('query') ? 'monospace' : 'inherit',
+                                        whiteSpace: 'pre-wrap',
+                                        maxHeight: '200px',
+                                        overflowY: 'auto'
+                                      }}>
+                                        {String(displayValue)}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Other technical details */}
                           {renderStageDetails(stageData)}
-                        </Panel>
-                      </Collapse>
+                        </Space>
+                      </div>
+                    )}
+
+                    {/* Click hint - show if there are ANY details available */}
+                    {stageData.details && Object.keys(stageData.details).length > 0 ? (
+                      <Text style={{
+                        fontSize: '10px',
+                        color: '#9ca3af',
+                        fontStyle: 'italic',
+                        marginTop: '4px'
+                      }}>
+                        Click to {expandedPanels.includes(`details-${index}`) ? 'hide' : 'view'} details ({Object.keys(stageData.details).length} fields available)
+                      </Text>
+                    ) : (
+                      <Text style={{
+                        fontSize: '10px',
+                        color: '#d1d5db',
+                        fontStyle: 'italic',
+                        marginTop: '4px'
+                      }}>
+                        No additional details available
+                      </Text>
                     )}
                   </Space>
                 </div>
@@ -707,8 +1242,8 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         <div style={{
           textAlign: 'center',
           padding: '20px',
-          background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-          border: '2px solid #3b82f6',
+          background: '#f9fafb',
+          border: '2px solid #d1d5db',
           borderRadius: '12px',
           marginTop: '20px',
           position: 'relative',
@@ -721,18 +1256,18 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
             left: '-100%',
             width: '100%',
             height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(107, 114, 128, 0.1), transparent)',
             animation: 'shimmer 2s infinite'
           }} />
 
           <Space direction="vertical" size="small">
             <Space>
-              <LoadingOutlined style={{ color: '#3b82f6', fontSize: '18px' }} />
-              <Text style={{ color: '#3b82f6', fontWeight: 600, fontSize: '16px' }}>
-                🤖 AI is processing your query...
+              <LoadingOutlined style={{ color: '#6b7280', fontSize: '18px' }} />
+              <Text style={{ color: '#374151', fontWeight: 600, fontSize: '16px' }}>
+                AI is processing your query...
               </Text>
             </Space>
-            <Text style={{ color: '#1d4ed8', fontSize: '12px' }}>
+            <Text style={{ color: '#9ca3af', fontSize: '12px' }}>
               This may take a few moments depending on query complexity
             </Text>
           </Space>

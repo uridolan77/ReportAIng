@@ -621,10 +621,44 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
         const fixedSuggestions = suggestions.map(group => {
           let icon = group.category.icon;
 
-          // Fix missing or placeholder icons
-          if (!icon || icon === '??' || icon === '?' || icon.trim() === '') {
+          // Map text-based icon names to actual emojis (based on database values)
+          const textToEmojiMap: Record<string, string> = {
+            'Dollar': '💎',      // Financial & Revenue
+            'Target': '🎯',      // Player Analytics
+            'Game': '🎲',        // Gaming & Products
+            'Credit': '💳',      // Transactions & Payments
+            'Global': '🌍',      // Demographics & Behavior
+            'Lock': '🔐',        // Account & Status
+            'Gift': '🎁',        // Bonus & Promotions
+            'Shield': '🛡️',      // Compliance & Risk
+            'Chart': '📊',       // Business Intelligence
+            'Setting': '⚙️',     // Operations & Trends
+            // Additional common variations
+            'Gamepad2': '🎲',
+            'CreditCard': '💳',
+            'Globe': '🌍',
+            'Scale': '⚖️',
+            'BarChart': '📊',
+            'Settings': '⚙️',
+            'TrendingUp': '📈',
+            'Users': '👥',
+            'Activity': '📊',
+            'Calendar': '📅',
+            'Clock': '⏰',
+            'Database': '🗄️',
+            'FileText': '📄',
+            'PieChart': '📊',
+            'LineChart': '📈'
+          };
+
+          // First, try to map text-based icon names to emojis
+          if (icon && textToEmojiMap[icon]) {
+            icon = textToEmojiMap[icon];
+          }
+          // If still no valid emoji icon, map by category key
+          else if (!icon || icon === '??' || icon === '?' || icon.trim() === '' || !icon.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u)) {
             // Map category keys to appropriate icons
-            const iconMap: Record<string, string> = {
+            const categoryIconMap: Record<string, string> = {
               'financial': '💎',        // Financial & Revenue - Diamond for premium/value
               'players': '🎯',         // Player Analytics - Target for precision analytics
               'gaming': '🎲',          // Gaming & Products - Dice for gaming
@@ -646,7 +680,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
               'trends': '⚙️'
             };
 
-            icon = iconMap[group.category.categoryKey] || iconMap[group.category.categoryKey.toLowerCase()] || '📊';
+            icon = categoryIconMap[group.category.categoryKey] || categoryIconMap[group.category.categoryKey.toLowerCase()] || '📊';
           }
 
           return {

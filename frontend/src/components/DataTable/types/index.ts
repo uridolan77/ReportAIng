@@ -21,7 +21,7 @@ export interface DataTableColumn {
   ellipsis?: boolean;
   
   // Data types and formatting
-  dataType?: 'string' | 'number' | 'date' | 'boolean' | 'object' | 'array';
+  dataType?: 'string' | 'number' | 'date' | 'boolean' | 'money' | 'currency' | 'object' | 'array';
   format?: string | ((value: any) => string);
   precision?: number;
   
@@ -38,7 +38,7 @@ export interface DataTableColumn {
   customAggregation?: (values: any[]) => any;
   
   // Filtering
-  filterType?: 'text' | 'number' | 'date' | 'dateRange' | 'select' | 'multiselect' | 'boolean' | 'custom';
+  filterType?: 'text' | 'number' | 'money' | 'date' | 'dateRange' | 'select' | 'multiselect' | 'boolean' | 'custom';
   filterOptions?: any[];
   customFilter?: (value: any, filterValue: any) => boolean;
   
@@ -125,7 +125,11 @@ export interface DataTableProps {
   keyField?: string;
   loading?: boolean;
   error?: Error | null;
-  
+
+  // Enhanced features
+  autoDetectTypes?: boolean;
+  autoGenerateFilterOptions?: boolean;
+
   // Table identification for state persistence
   tableId?: string;
   
