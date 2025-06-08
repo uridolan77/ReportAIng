@@ -154,7 +154,10 @@ public class DbContextFactory : IDbContextFactory
     /// </summary>
     public async Task<T> ExecuteWithContextAsync<T>(ContextType contextType, Func<DbContext, Task<T>> operation)
     {
-        using var context = GetContextForOperation(contextType);
+        // Create a new scope for this operation to get a fresh context
+        using var scope = _serviceProvider.CreateScope();
+        var context = GetContextForOperationFromScope(contextType, scope.ServiceProvider);
+
         try
         {
             return await operation(context);
@@ -171,7 +174,10 @@ public class DbContextFactory : IDbContextFactory
     /// </summary>
     public async Task ExecuteWithContextAsync(ContextType contextType, Func<DbContext, Task> operation)
     {
-        using var context = GetContextForOperation(contextType);
+        // Create a new scope for this operation to get a fresh context
+        using var scope = _serviceProvider.CreateScope();
+        var context = GetContextForOperationFromScope(contextType, scope.ServiceProvider);
+
         try
         {
             await operation(context);
@@ -187,16 +193,18 @@ public class DbContextFactory : IDbContextFactory
     /// Execute operation with multiple contexts (for cross-context operations)
     /// </summary>
     public async Task<T> ExecuteWithMultipleContextsAsync<T>(
-        IEnumerable<ContextType> contextTypes, 
+        IEnumerable<ContextType> contextTypes,
         Func<Dictionary<ContextType, DbContext>, Task<T>> operation)
     {
+        // Create a new scope for this operation to get fresh contexts
+        using var scope = _serviceProvider.CreateScope();
         var contexts = new Dictionary<ContextType, DbContext>();
-        
+
         try
         {
             foreach (var contextType in contextTypes)
             {
-                contexts[contextType] = GetContextForOperation(contextType);
+                contexts[contextType] = GetContextForOperationFromScope(contextType, scope.ServiceProvider);
             }
 
             return await operation(contexts);
@@ -206,13 +214,7 @@ public class DbContextFactory : IDbContextFactory
             _logger.LogError(ex, "Error executing multi-context operation");
             throw;
         }
-        finally
-        {
-            foreach (var context in contexts.Values)
-            {
-                context.Dispose();
-            }
-        }
+        // No need to manually dispose - the scope will handle it
     }
 
     /// <summary>
@@ -227,7 +229,9 @@ public class DbContextFactory : IDbContextFactory
         {
             try
             {
-                using var context = GetContextForOperation(contextType);
+                // Create a new scope for each validation to get a fresh context
+                using var scope = _serviceProvider.CreateScope();
+                var context = GetContextForOperationFromScope(contextType, scope.ServiceProvider);
                 await context.Database.CanConnectAsync();
                 result.SuccessfulContexts.Add(contextType);
             }
@@ -253,7 +257,9 @@ public class DbContextFactory : IDbContextFactory
         {
             try
             {
-                using var context = GetContextForOperation(contextType);
+                // Create a new scope for each health check to get a fresh context
+                using var scope = _serviceProvider.CreateScope();
+                var context = GetContextForOperationFromScope(contextType, scope.ServiceProvider);
                 health[contextType] = await context.Database.CanConnectAsync();
             }
             catch
@@ -263,6 +269,23 @@ public class DbContextFactory : IDbContextFactory
         }
 
         return health;
+    }
+
+    /// <summary>
+    /// Helper method to get context from a specific service provider scope
+    /// </summary>
+    private DbContext GetContextForOperationFromScope(ContextType contextType, IServiceProvider serviceProvider)
+    {
+        return contextType switch
+        {
+            ContextType.Security => serviceProvider.GetRequiredService<SecurityDbContext>(),
+            ContextType.Tuning => serviceProvider.GetRequiredService<TuningDbContext>(),
+            ContextType.Query => serviceProvider.GetRequiredService<QueryDbContext>(),
+            ContextType.Schema => serviceProvider.GetRequiredService<SchemaDbContext>(),
+            ContextType.Monitoring => serviceProvider.GetRequiredService<MonitoringDbContext>(),
+            ContextType.Legacy => serviceProvider.GetRequiredService<BICopilotContext>(),
+            _ => throw new ArgumentException($"Unknown context type: {contextType}")
+        };
     }
 }
 

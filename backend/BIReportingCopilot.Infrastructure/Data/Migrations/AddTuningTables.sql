@@ -115,6 +115,8 @@ CREATE TABLE [dbo].[PromptLogs] (
     [CreatedDate] datetime2 NOT NULL DEFAULT GETUTCDATE(),
     [UserId] nvarchar(256) NULL,
     [SessionId] nvarchar(256) NULL,
+    [TemplateId] bigint NULL,
+    [PromptHash] nvarchar(64) NULL,
     CONSTRAINT [PK_PromptLogs] PRIMARY KEY CLUSTERED ([Id] ASC)
 );
 
@@ -163,6 +165,12 @@ CREATE NONCLUSTERED INDEX [IX_PromptLogs_Success]
 
 CREATE NONCLUSTERED INDEX [IX_PromptLogs_UserId]
     ON [dbo].[PromptLogs] ([UserId] ASC);
+
+CREATE NONCLUSTERED INDEX [IX_PromptLogs_TemplateId_CreatedDate]
+    ON [dbo].[PromptLogs] ([TemplateId] ASC, [CreatedDate] DESC);
+
+CREATE NONCLUSTERED INDEX [IX_PromptLogs_PromptHash]
+    ON [dbo].[PromptLogs] ([PromptHash] ASC);
 
 -- Insert initial data for tbl_Daily_actions
 INSERT INTO [dbo].[BusinessTableInfo]

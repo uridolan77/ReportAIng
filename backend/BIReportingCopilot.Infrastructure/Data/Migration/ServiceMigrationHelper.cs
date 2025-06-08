@@ -204,8 +204,11 @@ public class {recommendation.ServiceName}
             {
                 try
                 {
-                    using var context = _contextFactory.GetContextForOperation(contextType);
-                    await context.Database.CanConnectAsync();
+                    // Use ExecuteWithContextAsync to properly manage context lifecycle
+                    await _contextFactory.ExecuteWithContextAsync(contextType, async context =>
+                    {
+                        await context.Database.CanConnectAsync();
+                    });
                     result.SuccessfulMigrations.Add($"{serviceName}_{contextType}");
                 }
                 catch (Exception ex)

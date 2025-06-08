@@ -140,9 +140,9 @@ public class MigrationStatusTracker
         return status;
     }
 
-    private async Task<Phase3Status> GetPhase3StatusAsync()
+    private async Task<MigrationPhase3Status> GetPhase3StatusAsync()
     {
-        var status = new Phase3Status();
+        var status = new MigrationPhase3Status();
 
         try
         {
@@ -180,8 +180,11 @@ public class MigrationStatusTracker
             {
                 if (contextType == ContextType.Legacy) continue;
 
-                using var context = _contextFactory.GetContextForOperation(contextType);
-                var canConnect = await context.Database.CanConnectAsync();
+                // Use ExecuteWithContextAsync to properly manage context lifecycle
+                var canConnect = await _contextFactory.ExecuteWithContextAsync(contextType, async context =>
+                {
+                    return await context.Database.CanConnectAsync();
+                });
                 if (!canConnect) return false;
             }
 
@@ -245,7 +248,7 @@ public class MigrationStatusTracker
         return (completedChecks * 100) / totalChecks;
     }
 
-    private int CalculatePhase3Progress(Phase3Status status)
+    private int CalculatePhase3Progress(MigrationPhase3Status status)
     {
         var totalChecks = 3; // DataMigrationComplete, No services using legacy, Can remove legacy
         var completedChecks = 0;
@@ -336,7 +339,7 @@ public class ComprehensiveMigrationStatus
     public string? ErrorMessage { get; set; }
     public Phase1Status Phase1Status { get; set; } = new();
     public Phase2Status Phase2Status { get; set; } = new();
-    public Phase3Status Phase3Status { get; set; } = new();
+    public MigrationPhase3Status Phase3Status { get; set; } = new();
     public DateTime CheckedAt { get; set; } = DateTime.UtcNow;
 }
 
@@ -371,7 +374,7 @@ public class Phase2Status
 /// <summary>
 /// Phase 3: Legacy context deprecation status
 /// </summary>
-public class Phase3Status
+public class MigrationPhase3Status
 {
     public bool LegacyContextStillRegistered { get; set; }
     public List<string> ServicesUsingLegacyContext { get; set; } = new();

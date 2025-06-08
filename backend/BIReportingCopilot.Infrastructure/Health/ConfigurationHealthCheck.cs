@@ -286,7 +286,7 @@ public class BoundedContextsHealthCheck : IHealthCheck
             // Test SecurityDbContext
             try
             {
-                using var securityContext = _contextFactory.CreateSecurityContext();
+                var securityContext = _contextFactory.CreateSecurityContext();
                 var userCount = await securityContext.Users.CountAsync();
                 data["SecurityContextUserCount"] = userCount;
             }
@@ -298,7 +298,7 @@ public class BoundedContextsHealthCheck : IHealthCheck
             // Test TuningDbContext
             try
             {
-                using var tuningContext = _contextFactory.CreateTuningContext();
+                var tuningContext = _contextFactory.CreateTuningContext();
                 var tableCount = await tuningContext.BusinessTableInfo.CountAsync();
                 data["TuningContextTableCount"] = tableCount;
             }
@@ -310,7 +310,7 @@ public class BoundedContextsHealthCheck : IHealthCheck
             // Test QueryDbContext
             try
             {
-                using var queryContext = _contextFactory.CreateQueryContext();
+                var queryContext = _contextFactory.CreateQueryContext();
                 var historyCount = await queryContext.QueryHistory.CountAsync();
                 data["QueryContextHistoryCount"] = historyCount;
             }
@@ -322,7 +322,7 @@ public class BoundedContextsHealthCheck : IHealthCheck
             // Test SchemaDbContext
             try
             {
-                using var schemaContext = _contextFactory.CreateSchemaContext();
+                var schemaContext = _contextFactory.CreateSchemaContext();
                 var metadataCount = await schemaContext.SchemaMetadata.CountAsync();
                 data["SchemaContextMetadataCount"] = metadataCount;
             }
@@ -334,7 +334,7 @@ public class BoundedContextsHealthCheck : IHealthCheck
             // Test MonitoringDbContext
             try
             {
-                using var monitoringContext = _contextFactory.CreateMonitoringContext();
+                var monitoringContext = _contextFactory.CreateMonitoringContext();
                 var metricsCount = await monitoringContext.SystemMetrics.CountAsync();
                 data["MonitoringContextMetricsCount"] = metricsCount;
             }

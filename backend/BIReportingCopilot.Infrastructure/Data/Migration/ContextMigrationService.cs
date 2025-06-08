@@ -259,10 +259,13 @@ public class ContextMigrationService
             result.ContextErrors.AddRange(contextValidation.FailedContexts.Values);
 
             // Check if legacy context has data
-            using var legacyContext = _contextFactory.CreateLegacyContext();
-            result.HasLegacyData = await legacyContext.Users.AnyAsync() ||
-                                   await legacyContext.BusinessTableInfo.AnyAsync() ||
-                                   await legacyContext.QueryHistory.AnyAsync();
+            result.HasLegacyData = await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
+            {
+                var legacyContext = (BICopilotContext)context;
+                return await legacyContext.Users.AnyAsync() ||
+                       await legacyContext.BusinessTableInfo.AnyAsync() ||
+                       await legacyContext.QueryHistory.AnyAsync();
+            });
 
             // Check if bounded contexts are empty (safe to migrate)
             result.BoundedContextsEmpty = await CheckBoundedContextsEmptyAsync();
