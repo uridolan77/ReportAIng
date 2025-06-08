@@ -105,15 +105,7 @@ const SuggestionsPageContent: React.FC = () => {
     navigate('/', { state: { selectedQuery: suggestion.query } });
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'trending': return <RiseOutlined />;
-      case 'personalized': return <UserOutlined />;
-      case 'optimization': return <DollarOutlined />;
-      case 'seasonal': return <ClockCircleOutlined />;
-      default: return <BulbOutlined />;
-    }
-  };
+
 
   const getTypeLabel = (type: string) => {
     switch (type) {

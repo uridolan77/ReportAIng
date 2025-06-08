@@ -21,15 +21,13 @@ import {
   BarChartOutlined,
   TrophyOutlined,
   ClockCircleOutlined,
-  UserOutlined,
   RiseOutlined,
-  FallOutlined,
   FireOutlined,
   EyeOutlined
 } from '@ant-design/icons';
 import { QuerySuggestion, SuggestionCategory } from '../../../services/querySuggestionService';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface SuggestionAnalyticsProps {
   suggestions: QuerySuggestion[];
@@ -54,7 +52,7 @@ interface CategoryAnalytics {
   topSuggestion: QuerySuggestion | null;
 }
 
-interface SuggestionAnalytics {
+interface SuggestionAnalyticsItem {
   suggestion: QuerySuggestion;
   usageRank: number;
   categoryRank: number;
@@ -86,7 +84,7 @@ export const SuggestionAnalytics: React.FC<SuggestionAnalyticsProps> = ({
   }, [suggestions, categories]);
 
   // Calculate top performing suggestions
-  const topSuggestions = useMemo((): SuggestionAnalytics[] => {
+  const topSuggestions = useMemo((): SuggestionAnalyticsItem[] => {
     const sortedSuggestions = [...suggestions].sort((a, b) => b.usageCount - a.usageCount);
     
     return sortedSuggestions.slice(0, 10).map((suggestion, index) => {

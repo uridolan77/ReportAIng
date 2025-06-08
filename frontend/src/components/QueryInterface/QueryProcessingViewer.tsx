@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Timeline, Progress, Typography, Space, Tag, Collapse, Button } from 'antd';
+import { Card, Timeline, Progress, Typography, Space, Tag, Button } from 'antd';
 import {
   ClockCircleOutlined,
   CheckCircleOutlined,
@@ -14,7 +14,6 @@ import {
 import './QueryProcessingViewer.css';
 
 const { Text } = Typography;
-const { Panel } = Collapse;
 
 export interface ProcessingStage {
   stage: string;
@@ -231,65 +230,47 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
   }, [mode, isVisible, stages.length, queryId]); // Reduced dependencies to prevent infinite loops
 
   const getStageIcon = (stage: string, status: string = 'pending') => {
-    const iconProps = { style: { fontSize: '16px' } };
+    const baseStyle = { fontSize: '16px' };
 
     if (status === 'error') {
-      return <ExclamationCircleOutlined {...iconProps} style={{ ...iconProps.style, color: '#ff4d4f' }} />;
+      return <ExclamationCircleOutlined style={{ ...baseStyle, color: '#ff4d4f' }} />;
     }
 
     if (status === 'completed') {
-      return <CheckCircleOutlined {...iconProps} style={{ ...iconProps.style, color: '#52c41a' }} />;
+      return <CheckCircleOutlined style={{ ...baseStyle, color: '#52c41a' }} />;
     }
 
     if (status === 'active') {
-      return <LoadingOutlined {...iconProps} style={{ ...iconProps.style, color: '#1890ff' }} />;
+      return <LoadingOutlined style={{ ...baseStyle, color: '#1890ff' }} />;
     }
 
     // Stage-specific icons
     switch (stage) {
       case 'started':
       case 'cache_check':
-        return <ClockCircleOutlined {...iconProps} style={{ ...iconProps.style, color: '#8c8c8c' }} />;
+        return <ClockCircleOutlined style={{ ...baseStyle, color: '#8c8c8c' }} />;
       case 'schema_loading':
       case 'schema_analysis':
-        return <DatabaseOutlined {...iconProps} style={{ ...iconProps.style, color: '#722ed1' }} />;
+        return <DatabaseOutlined style={{ ...baseStyle, color: '#722ed1' }} />;
       case 'prompt_building':
       case 'prompt_details':
       case 'ai_processing':
       case 'ai_completed':
-        return <RobotOutlined {...iconProps} style={{ ...iconProps.style, color: '#1890ff' }} />;
+        return <RobotOutlined style={{ ...baseStyle, color: '#1890ff' }} />;
       case 'sql_validation':
       case 'sql_execution':
       case 'sql_completed':
-        return <CodeOutlined {...iconProps} style={{ ...iconProps.style, color: '#52c41a' }} />;
+        return <CodeOutlined style={{ ...baseStyle, color: '#52c41a' }} />;
       case 'confidence_calculation':
       case 'visualization_generation':
       case 'suggestions_generation':
-        return <BarChartOutlined {...iconProps} style={{ ...iconProps.style, color: '#fa8c16' }} />;
+        return <BarChartOutlined style={{ ...baseStyle, color: '#fa8c16' }} />;
       default:
-        return <ClockCircleOutlined {...iconProps} style={{ ...iconProps.style, color: '#8c8c8c' }} />;
+        return <ClockCircleOutlined style={{ ...baseStyle, color: '#8c8c8c' }} />;
     }
   };
 
-  const getStageColor = (stage: string, status: string = 'pending') => {
-    if (status === 'error') return 'red';
-    if (status === 'completed') return 'green';
-    if (status === 'active') return 'blue';
 
-    switch (stage) {
-      case 'ai_processing':
-      case 'ai_completed':
-        return 'blue';
-      case 'sql_execution':
-      case 'sql_completed':
-        return 'green';
-      case 'schema_loading':
-      case 'schema_analysis':
-        return 'purple';
-      default:
-        return 'default';
-    }
-  };
 
 
 

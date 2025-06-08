@@ -19,7 +19,7 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useActiveResult, useActiveResultActions } from '../stores/activeResultStore';
+import { useActiveResult } from '../stores/activeResultStore';
 import { QueryResult } from '../components/QueryInterface/QueryResult';
 import { DataInsightsPanel } from '../components/Insights/DataInsightsPanel';
 
@@ -28,7 +28,7 @@ const { Title, Text } = Typography;
 const ResultsPageContent: React.FC = () => {
   const navigate = useNavigate();
   const { result: currentResult, query, hasResult } = useActiveResult();
-  const { refreshActiveResult } = useActiveResultActions();
+
 
   // Handle requery - navigate back to main page with the current query
   const handleRequery = () => {

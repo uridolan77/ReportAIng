@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Layout,
   Card,
   Typography,
   Space,
@@ -18,7 +17,6 @@ import './DBExplorer.css';
 import {
   DatabaseOutlined,
   ReloadOutlined,
-  SettingOutlined,
   QuestionCircleOutlined,
   FullscreenOutlined
 } from '@ant-design/icons';
@@ -28,11 +26,9 @@ import { TableDataPreview } from './TableDataPreview';
 import { DatabaseTable, DatabaseSchema, DBExplorerState } from '../../types/dbExplorer';
 import DBExplorerAPI from '../../services/dbExplorerApi';
 import { ApiService } from '../../services/api';
-import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
-const { Sider, Content } = Layout;
 
 interface DBExplorerProps {
   onQueryGenerated?: (query: string) => void;
@@ -52,80 +48,8 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [previewDrawerVisible, setPreviewDrawerVisible] = useState(false);
   const [siderWidth, setSiderWidth] = useState(350);
-  const [debugData, setDebugData] = useState<any>(null);
 
-  // Transform SQL query result to schema structure
-  const transformQueryResultToSchema = (data: any[]): DatabaseSchema => {
-    console.log('🔄 Starting transformation with data:', {
-      totalRows: data.length,
-      sampleRows: data.slice(0, 3),
-      allKeys: data.length > 0 ? Object.keys(data[0]) : []
-    });
 
-    const tablesMap = new Map<string, any>();
-
-    // Group data by table
-    data.forEach((row, index) => {
-      if (index < 5) {
-        console.log(`🔍 Processing row ${index}:`, row);
-      }
-
-      const tableKey = `${row.schema_name}.${row.table_name}`;
-
-      if (!tablesMap.has(tableKey)) {
-        const newTable = {
-          name: row.table_name,
-          schema: row.schema_name,
-          type: row.table_type?.toLowerCase() === 'view' ? 'view' : 'table',
-          columns: [],
-          primaryKeys: [],
-          foreignKeys: []
-        };
-        tablesMap.set(tableKey, newTable);
-        console.log(`📋 Created new table: ${tableKey}`, newTable);
-      }
-
-      const table = tablesMap.get(tableKey);
-      if (row.column_name) {
-        const column = {
-          name: row.column_name,
-          dataType: row.data_type,
-          isNullable: row.is_nullable === 'YES',
-          isPrimaryKey: row.is_primary_key === 1,
-          isForeignKey: false,
-          defaultValue: row.default_value,
-          maxLength: row.max_length
-        };
-
-        table.columns.push(column);
-
-        if (column.isPrimaryKey) {
-          table.primaryKeys.push(column.name);
-        }
-
-        if (index < 10) {
-          console.log(`📝 Added column to ${tableKey}:`, column);
-        }
-      }
-    });
-
-    const result = {
-      name: 'Database',
-      lastUpdated: new Date().toISOString(),
-      version: '1.0.0',
-      views: Array.from(tablesMap.values()).filter(t => t.type === 'view'),
-      tables: Array.from(tablesMap.values()).filter(t => t.type === 'table')
-    };
-
-    console.log('✅ Transformation complete:', {
-      totalTables: result.tables.length,
-      totalViews: result.views.length,
-      sampleTable: result.tables[0],
-      sampleTableColumnCount: result.tables[0]?.columns?.length
-    });
-
-    return result;
-  };
 
   // Load database schema
   const loadSchema = useCallback(async (bustCache: boolean = false) => {

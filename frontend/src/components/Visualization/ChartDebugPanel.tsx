@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Card, Collapse, Typography, Table, Tag, Space, Button, Alert } from 'antd';
-import { BugOutlined, EyeOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { BugOutlined } from '@ant-design/icons';
 
 const { Panel } = Collapse;
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 interface ChartDebugPanelProps {
   originalData: any[];

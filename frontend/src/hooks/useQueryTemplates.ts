@@ -5,12 +5,11 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { message } from 'antd';
-import { 
-  queryTemplateService, 
-  QueryTemplate, 
-  QueryShortcut, 
-  QuerySuggestion,
-  TemplateVariable 
+import {
+  queryTemplateService,
+  QueryTemplate,
+  QueryShortcut,
+  QuerySuggestion
 } from '../services/queryTemplateService';
 
 export interface UseQueryTemplatesReturn {

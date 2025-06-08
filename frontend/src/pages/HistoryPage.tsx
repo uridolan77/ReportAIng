@@ -14,8 +14,7 @@ import {
 } from 'antd';
 import {
   HomeOutlined,
-  HistoryOutlined,
-  ArrowLeftOutlined
+  HistoryOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
@@ -26,7 +25,7 @@ const { Title, Text } = Typography;
 
 const HistoryPageContent: React.FC = () => {
   const navigate = useNavigate();
-  const { setQuery, setActiveTab, queryHistory } = useQueryContext();
+  const { setQuery, queryHistory } = useQueryContext();
 
   const handleQuerySelect = (selectedQuery: string) => {
     setQuery(selectedQuery);

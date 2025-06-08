@@ -68,7 +68,7 @@ export const useEnhancedState = <T>(
     if (!crossTabSync || !isInitializedRef.current) return;
 
     const unsubscribe = subscribe(`state_update_${key}`, (data) => {
-      const { value, timestamp, tabId } = data;
+      const { value, timestamp } = data;
       
       // Avoid infinite loops
       if (timestamp <= lastSyncTimestamp) return;

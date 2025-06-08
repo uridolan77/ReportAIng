@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
@@ -90,9 +90,9 @@ describe('Layout - User Dropdown', () => {
     // Wait for dropdown menu to appear
     await waitFor(() => {
       expect(screen.getByText('Profile')).toBeInTheDocument();
-      expect(screen.getByText('Settings')).toBeInTheDocument();
-      expect(screen.getByText('Logout')).toBeInTheDocument();
     });
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+    expect(screen.getByText('Logout')).toBeInTheDocument();
   });
 
   it('should call logout when logout menu item is clicked', async () => {

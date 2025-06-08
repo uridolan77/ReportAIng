@@ -67,9 +67,10 @@ export const SuggestionSyncUtility: React.FC<SuggestionSyncUtilityProps> = ({ on
       }
       
     } catch (error) {
-      console.error = console.error; // Restore console.error
-      console.log = console.log; // Restore console.log
-      
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Sync failed:', error);
+      }
+
       addLog('error', `Sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setLastSyncResult('error');
     } finally {

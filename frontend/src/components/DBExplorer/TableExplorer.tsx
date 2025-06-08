@@ -15,11 +15,10 @@ import {
   TableOutlined,
   KeyOutlined,
   LinkOutlined,
-  InfoCircleOutlined,
   CopyOutlined,
   DatabaseOutlined
 } from '@ant-design/icons';
-import { DatabaseTable, DatabaseColumn, ForeignKey } from '../../types/dbExplorer';
+import { DatabaseTable, DatabaseColumn } from '../../types/dbExplorer';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Button, Space, Input, InputNumber, DatePicker, Select, Radio, Typography, Slider } from 'antd';
+import { Card, Button, Space, Input, InputNumber, DatePicker, Select, Radio, Typography } from 'antd';
 import { CloseCircleOutlined, DollarOutlined } from '@ant-design/icons';
 import { useToken } from 'antd/es/theme/internal';
 import dayjs from 'dayjs';

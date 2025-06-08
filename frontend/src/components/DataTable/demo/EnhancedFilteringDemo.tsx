@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, Space, Typography, Button, Tag, Divider } from 'antd';
 import { FilterOutlined, TableOutlined, DollarOutlined, CalendarOutlined } from '@ant-design/icons';
 import DataTable from '../DataTableMain';
-import { useEnhancedColumns, useAutoColumns } from '../hooks/useEnhancedColumns';
+import { useAutoColumns } from '../hooks/useEnhancedColumns';
 import { DataTableColumn } from '../types';
 
 const { Title, Text, Paragraph } = Typography;

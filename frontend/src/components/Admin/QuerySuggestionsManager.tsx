@@ -13,7 +13,6 @@ import {
   Statistic,
   Space,
   Button,
-  Alert,
   Spin,
   Badge,
   message
@@ -25,7 +24,6 @@ import {
   BarChartOutlined,
   PlusOutlined,
   ReloadOutlined,
-  SettingOutlined,
   SyncOutlined
 } from '@ant-design/icons';
 import { CategoriesManager } from './QuerySuggestions/CategoriesManager';

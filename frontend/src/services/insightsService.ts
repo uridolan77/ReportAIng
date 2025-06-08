@@ -1,4 +1,4 @@
-import { API_CONFIG } from '../config/api';
+
 
 export interface DataInsight {
   id: string;
