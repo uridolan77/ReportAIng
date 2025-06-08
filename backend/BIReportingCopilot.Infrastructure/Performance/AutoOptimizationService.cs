@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Infrastructure.AI;
@@ -16,9 +17,7 @@ namespace BIReportingCopilot.Infrastructure.Performance;
 public class AutoOptimizationService : IHostedService, IDisposable
 {
     private readonly ILogger<AutoOptimizationService> _logger;
-    private readonly PerformanceManagementService _performanceService;
-    private readonly MonitoringManagementService _monitoringService;
-    private readonly UnifiedSemanticCacheService _cacheService;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly PerformanceConfiguration _config;
     private readonly Timer _optimizationTimer;
     private readonly Timer _monitoringTimer;
@@ -27,18 +26,14 @@ public class AutoOptimizationService : IHostedService, IDisposable
 
     public AutoOptimizationService(
         ILogger<AutoOptimizationService> logger,
-        PerformanceManagementService performanceService,
-        MonitoringManagementService monitoringService,
-        UnifiedSemanticCacheService cacheService,
+        IServiceScopeFactory serviceScopeFactory,
         IOptions<PerformanceConfiguration> config)
     {
         _logger = logger;
-        _performanceService = performanceService;
-        _monitoringService = monitoringService;
-        _cacheService = cacheService;
+        _serviceScopeFactory = serviceScopeFactory;
         _config = config.Value;
         _optimizationSemaphore = new SemaphoreSlim(1, 1);
-        
+
         // Initialize timers but don't start them yet
         _optimizationTimer = new Timer(PerformOptimizations, null, Timeout.Infinite, Timeout.Infinite);
         _monitoringTimer = new Timer(MonitorPerformance, null, Timeout.Infinite, Timeout.Infinite);
@@ -71,17 +66,21 @@ public class AutoOptimizationService : IHostedService, IDisposable
     {
         try
         {
+            using var scope = _serviceScopeFactory.CreateScope();
+            var performanceService = scope.ServiceProvider.GetRequiredService<PerformanceManagementService>();
+            var monitoringService = scope.ServiceProvider.GetRequiredService<MonitoringManagementService>();
+
             var stopwatch = Stopwatch.StartNew();
-            
+
             // Collect current performance metrics
-            var metrics = await _performanceService.GetCurrentPerformanceSnapshotAsync();
-            
+            var metrics = await performanceService.GetCurrentPerformanceSnapshotAsync();
+
             // Record monitoring metrics
-            _monitoringService.RecordHistogram("monitoring_cycle_duration", stopwatch.ElapsedMilliseconds);
-            
+            monitoringService.RecordHistogram("monitoring_cycle_duration", stopwatch.ElapsedMilliseconds);
+
             // Check for performance issues
-            await CheckPerformanceThresholds(metrics);
-            
+            await CheckPerformanceThresholds(metrics, scope.ServiceProvider);
+
             _logger.LogDebug("📊 Performance monitoring cycle completed in {Duration}ms", stopwatch.ElapsedMilliseconds);
         }
         catch (Exception ex)
@@ -100,35 +99,40 @@ public class AutoOptimizationService : IHostedService, IDisposable
 
         try
         {
+            using var scope = _serviceScopeFactory.CreateScope();
+            var performanceService = scope.ServiceProvider.GetRequiredService<PerformanceManagementService>();
+            var cacheService = scope.ServiceProvider.GetRequiredService<ISemanticCacheService>();
+            var monitoringService = scope.ServiceProvider.GetRequiredService<MonitoringManagementService>();
+
             _logger.LogInformation("🔧 Starting automatic optimization cycle");
             var stopwatch = Stopwatch.StartNew();
 
             // Get current performance metrics
-            var metrics = await _performanceService.GetCurrentPerformanceSnapshotAsync();
-            var cacheMetrics = await _cacheService.GetCachePerformanceMetricsAsync();
+            var metrics = await performanceService.GetCurrentPerformanceSnapshotAsync();
+            var cacheMetrics = await cacheService.GetCachePerformanceMetricsAsync();
 
             var optimizationsApplied = 0;
 
             // Cache optimizations
-            optimizationsApplied += await OptimizeCache(cacheMetrics);
+            optimizationsApplied += await OptimizeCache(cacheMetrics, cacheService);
 
             // Memory optimizations
             optimizationsApplied += await OptimizeMemory(metrics);
 
             // Query optimizations
-            optimizationsApplied += await OptimizeQueries(metrics);
+            optimizationsApplied += await OptimizeQueries(metrics, performanceService);
 
             // Database connection optimizations
             optimizationsApplied += await OptimizeDatabaseConnections(metrics);
 
             stopwatch.Stop();
-            
-            _logger.LogInformation("✅ Optimization cycle completed in {Duration}ms. Applied {Count} optimizations", 
+
+            _logger.LogInformation("✅ Optimization cycle completed in {Duration}ms. Applied {Count} optimizations",
                 stopwatch.ElapsedMilliseconds, optimizationsApplied);
 
             // Record optimization metrics
-            _monitoringService.RecordHistogram("optimization_cycle_duration", stopwatch.ElapsedMilliseconds);
-            _monitoringService.RecordHistogram("optimizations_applied", optimizationsApplied);
+            monitoringService.RecordHistogram("optimization_cycle_duration", stopwatch.ElapsedMilliseconds);
+            monitoringService.RecordHistogram("optimizations_applied", optimizationsApplied);
         }
         catch (Exception ex)
         {
@@ -140,7 +144,7 @@ public class AutoOptimizationService : IHostedService, IDisposable
         }
     }
 
-    private async Task<int> OptimizeCache(Core.Interfaces.CachePerformanceMetrics cacheMetrics)
+    private async Task<int> OptimizeCache(Core.Interfaces.CachePerformanceMetrics cacheMetrics, ISemanticCacheService cacheService)
     {
         var optimizations = 0;
 
@@ -150,7 +154,7 @@ public class AutoOptimizationService : IHostedService, IDisposable
             if (cacheMetrics.HitRate < 0.7)
             {
                 _logger.LogInformation("🗄️ Cache hit rate is {HitRate:P1}, optimizing cache", cacheMetrics.HitRate);
-                await _cacheService.OptimizeCacheAsync();
+                await cacheService.OptimizeCacheAsync();
                 optimizations++;
             }
 
@@ -158,7 +162,7 @@ public class AutoOptimizationService : IHostedService, IDisposable
             if (cacheMetrics.TotalRequests > 10000)
             {
                 _logger.LogInformation("🧹 Cache has {Requests} requests, cleaning up expired entries", cacheMetrics.TotalRequests);
-                await _cacheService.InvalidateExpiredEntriesAsync();
+                await cacheService.CleanupExpiredEntriesAsync();
                 optimizations++;
             }
         }
@@ -200,29 +204,29 @@ public class AutoOptimizationService : IHostedService, IDisposable
         return optimizations;
     }
 
-    private async Task<int> OptimizeQueries(dynamic metrics)
+    private async Task<int> OptimizeQueries(dynamic metrics, PerformanceManagementService performanceService)
     {
         var optimizations = 0;
 
         try
         {
             // Get query performance data
-            var queryMetrics = await _performanceService.GetQueryPerformanceBreakdownAsync();
-            
+            var queryMetrics = await performanceService.GetQueryPerformanceBreakdownAsync();
+
             // Identify slow queries
             var slowQueries = queryMetrics.Where(q => q.AverageExecutionTime.TotalMilliseconds > 1000).ToList();
-            
+
             if (slowQueries.Any())
             {
                 _logger.LogInformation("🐌 Found {Count} slow queries, applying optimizations", slowQueries.Count);
-                
+
                 foreach (var slowQuery in slowQueries)
                 {
                     // Log slow query for analysis
-                    _logger.LogWarning("Slow query detected: {QueryType} - {AvgTime}ms", 
+                    _logger.LogWarning("Slow query detected: {QueryType} - {AvgTime}ms",
                         slowQuery.QueryType, slowQuery.AverageExecutionTime.TotalMilliseconds);
                 }
-                
+
                 optimizations++;
             }
         }
@@ -252,12 +256,15 @@ public class AutoOptimizationService : IHostedService, IDisposable
         return optimizations;
     }
 
-    private async Task CheckPerformanceThresholds(dynamic metrics)
+    private async Task CheckPerformanceThresholds(dynamic metrics, IServiceProvider serviceProvider)
     {
         try
         {
-            var cacheMetrics = await _cacheService.GetCachePerformanceMetricsAsync();
-            
+            var cacheService = serviceProvider.GetRequiredService<ISemanticCacheService>();
+            var performanceService = serviceProvider.GetRequiredService<PerformanceManagementService>();
+
+            var cacheMetrics = await cacheService.GetCachePerformanceMetricsAsync();
+
             // Check cache performance
             if (cacheMetrics.HitRate < 0.5)
             {
@@ -272,9 +279,9 @@ public class AutoOptimizationService : IHostedService, IDisposable
             }
 
             // Check for performance degradation trends
-            var recentMetrics = await _performanceService.GetPerformanceMetricsAsync(
+            var recentMetrics = await performanceService.GetPerformanceMetricsAsync(
                 DateTime.UtcNow.AddMinutes(-10), DateTime.UtcNow);
-            
+
             if (recentMetrics.Any())
             {
                 var avgExecutionTime = recentMetrics.Average(m => m.AverageExecutionTime.TotalMilliseconds);
