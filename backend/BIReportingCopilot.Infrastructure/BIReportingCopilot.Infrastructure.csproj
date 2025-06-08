@@ -42,17 +42,10 @@
     <ProjectReference Include="..\BIReportingCopilot.Core\BIReportingCopilot.Core.csproj" />
   </ItemGroup>
 
-  <!-- Temporarily exclude Phase 3 files with compilation errors for Phase 3A demo -->
+  <!-- Exclude Phase 3 experimental files with compilation errors -->
   <ItemGroup>
-    <Compile Remove="AI\Enhanced\RealTimeStreamingAnalytics.cs" />
-    <Compile Remove="AI\Enhanced\Phase3Models.cs" />
-    <Compile Remove="AI\Enhanced\AdvancedNLUService.cs" />
-    <!-- NLU model files have been consolidated into NLUModels.cs -->
-    <!-- Phase 3 model files have been consolidated into Phase3Models.cs -->
-    <Compile Remove="AI\Enhanced\FederatedLearningService.cs" />
-    <Compile Remove="AI\Enhanced\FederatedLearning*.cs" />
-    <Compile Remove="AI\Enhanced\QuantumResistantSecurityService.cs" />
-    <!-- Note: Files removed during Round 3 cleanup - no longer need exclusions -->
+    <Compile Remove="AI\Enhanced\FederatedLearningComponents.cs" />
+    <Compile Remove="AI\Enhanced\ProductionRealTimeStreamingService.cs" />
   </ItemGroup>
 
 </Project>

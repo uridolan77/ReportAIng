@@ -8,22 +8,25 @@ using BIReportingCopilot.Infrastructure.Jobs;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Infrastructure.Configuration;
+using BIReportingCopilot.Core.Models;
+using Microsoft.AspNetCore.SignalR;
 
 namespace BIReportingCopilot.Tests.Unit.Jobs;
 
 [TestFixture]
 public class CleanupJobTests
 {
-    private Mock<ILogger<CleanupJob>> _mockLogger;
+    private Mock<ILogger<BackgroundJobManagementService>> _mockLogger;
     private Mock<ICacheService> _mockCacheService;
     private Mock<IConfiguration> _mockConfiguration;
     private BICopilotContext _context;
-    private CleanupJob _cleanupJob;
+    private BackgroundJobManagementService _cleanupJob;
 
     [SetUp]
     public void Setup()
     {
-        _mockLogger = new Mock<ILogger<CleanupJob>>();
+        _mockLogger = new Mock<ILogger<BackgroundJobManagementService>>();
         _mockCacheService = new Mock<ICacheService>();
         _mockConfiguration = new Mock<IConfiguration>();
 
@@ -32,7 +35,26 @@ public class CleanupJobTests
             .Options;
         _context = new BICopilotContext(options);
 
-        _cleanupJob = new CleanupJob(_mockLogger.Object);
+        // Create mocks for all required dependencies
+        var mockSchemaService = new Mock<ISchemaService>();
+        var mockAuditService = new Mock<IAuditService>();
+        var mockQueryService = new Mock<IQueryService>();
+        var mockConfigurationService = new Mock<UnifiedConfigurationService>();
+        var mockHubContext = new Mock<IHubContext<Hub>>();
+
+        // Setup configuration service to return performance settings
+        mockConfigurationService.Setup(x => x.GetPerformanceSettings())
+            .Returns(new PerformanceConfiguration { RetentionDays = 30 });
+
+        _cleanupJob = new BackgroundJobManagementService(
+            _context,
+            mockSchemaService.Object,
+            mockAuditService.Object,
+            _mockCacheService.Object,
+            mockQueryService.Object,
+            mockConfigurationService.Object,
+            _mockLogger.Object,
+            mockHubContext.Object);
     }
 
     [TearDown]
@@ -78,7 +100,7 @@ public class CleanupJobTests
         await _context.SaveChangesAsync();
 
         // Act
-        await _cleanupJob.PerformCleanup();
+        await _cleanupJob.PerformSystemCleanupAsync();
 
         // Assert
         var activeSessions = await _context.UserSessions.Where(s => s.IsActive).ToListAsync();
@@ -125,7 +147,7 @@ public class CleanupJobTests
         await _context.SaveChangesAsync();
 
         // Act
-        await _cleanupJob.PerformCleanup();
+        await _cleanupJob.PerformSystemCleanupAsync();
 
         // Assert
         var remainingTokens = await _context.RefreshTokens.ToListAsync();
@@ -170,7 +192,7 @@ public class CleanupJobTests
         await _context.SaveChangesAsync();
 
         // Act
-        await _cleanupJob.PerformCleanup();
+        await _cleanupJob.PerformSystemCleanupAsync();
 
         // Assert
         var remainingSessions = await _context.UserSessions.ToListAsync();
@@ -214,7 +236,7 @@ public class CleanupJobTests
         await _context.SaveChangesAsync();
 
         // Act
-        await _cleanupJob.PerformCleanup();
+        await _cleanupJob.PerformSystemCleanupAsync();
 
         // Assert
         var remainingLogs = await _context.AuditLog.ToListAsync();
@@ -262,7 +284,7 @@ public class CleanupJobTests
         await _context.SaveChangesAsync();
 
         // Act
-        await _cleanupJob.PerformCleanup();
+        await _cleanupJob.PerformSystemCleanupAsync();
 
         // Assert
         var remainingCache = await _context.QueryCache.ToListAsync();
@@ -278,7 +300,7 @@ public class CleanupJobTests
         _context.Dispose(); // Dispose context to simulate database error
 
         // Act & Assert
-        await _cleanupJob.Invoking(job => job.PerformCleanup())
+        await _cleanupJob.Invoking(job => job.PerformSystemCleanupAsync())
             .Should().NotThrowAsync();
 
         // Verify error was logged
@@ -299,7 +321,7 @@ public class CleanupJobTests
         _context.Dispose(); // Dispose context to simulate error
 
         // Act & Assert
-        await _cleanupJob.Invoking(job => job.PerformCleanup())
+        await _cleanupJob.Invoking(job => job.PerformSystemCleanupAsync())
             .Should().NotThrowAsync();
     }
 
@@ -335,7 +357,7 @@ public class CleanupJobTests
         await _context.SaveChangesAsync();
 
         // Act
-        await _cleanupJob.PerformCleanup();
+        await _cleanupJob.PerformSystemCleanupAsync();
 
         // Assert
         _mockLogger.Verify(

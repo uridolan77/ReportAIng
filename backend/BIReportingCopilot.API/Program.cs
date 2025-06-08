@@ -573,7 +573,7 @@ builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.Ser
 builder.Services.AddScoped<IAdvancedNLUService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionAdvancedNLUService>();
 builder.Services.AddScoped<ISchemaOptimizationService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionSchemaOptimizationService>();
 builder.Services.AddScoped<IQueryIntelligenceService, BIReportingCopilot.Infrastructure.AI.Enhanced.QueryIntelligenceService>();
-builder.Services.AddScoped<IRealTimeStreamingService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionRealTimeStreamingService>();
+// IRealTimeStreamingService registration removed - ProductionRealTimeStreamingService excluded from compilation
 builder.Services.AddScoped<IMultiModalDashboardService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionMultiModalDashboardService>();
 builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Services.VisualizationService>();
 

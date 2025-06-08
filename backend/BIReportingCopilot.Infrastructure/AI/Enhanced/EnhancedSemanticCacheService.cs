@@ -22,7 +22,7 @@ public class EnhancedSemanticCacheService
     private readonly IDbContextFactory _contextFactory;
     private readonly IVectorSearchService _vectorSearchService;
     private readonly IAIService _aiService;
-    private readonly SemanticCacheConfiguration _config;
+    private readonly BIReportingCopilot.Core.Models.SemanticCacheConfiguration _config;
 
     public EnhancedSemanticCacheService(
         ILogger<EnhancedSemanticCacheService> logger,
@@ -36,7 +36,7 @@ public class EnhancedSemanticCacheService
         _contextFactory = contextFactory;
         _vectorSearchService = vectorSearchService;
         _aiService = aiService;
-        _config = new SemanticCacheConfiguration();
+        _config = new BIReportingCopilot.Core.Models.SemanticCacheConfiguration();
     }
 
     /// <summary>

@@ -1,40 +1,182 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using MediatR;
-using BIReportingCopilot.Core.Commands;
-using BIReportingCopilot.Infrastructure.Handlers;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Constants;
+using BIReportingCopilot.Core.Commands;
+using BIReportingCopilot.Core.Queries;
+using BIReportingCopilot.Infrastructure.Handlers;
+using MediatR;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace BIReportingCopilot.API.Controllers;
 
 /// <summary>
-/// Admin controller for managing enhanced semantic cache with vector embeddings
-/// Provides monitoring, optimization, and configuration endpoints
+/// Unified Cache Controller - Consolidates basic cache operations and advanced semantic cache management
+/// Replaces: CacheController, SemanticCacheController
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
-[Authorize] // Require authentication for cache management
-public class SemanticCacheController : ControllerBase
+[Route("api/cache")]
+[Authorize]
+public class UnifiedCacheController : ControllerBase
 {
-    private readonly ILogger<SemanticCacheController> _logger;
+    private readonly ICacheService _cacheService;
+    private readonly IQueryService _queryService;
+    private readonly ILogger<UnifiedCacheController> _logger;
     private readonly IMediator _mediator;
     private readonly IVectorSearchService _vectorSearchService;
 
-    public SemanticCacheController(
-        ILogger<SemanticCacheController> logger,
+    public UnifiedCacheController(
+        ICacheService cacheService,
+        IQueryService queryService,
+        ILogger<UnifiedCacheController> logger,
         IMediator mediator,
         IVectorSearchService vectorSearchService)
     {
+        _cacheService = cacheService;
+        _queryService = queryService;
         _logger = logger;
         _mediator = mediator;
         _vectorSearchService = vectorSearchService;
     }
 
+    #region Basic Cache Operations
+
+    /// <summary>
+    /// Clear specific cache entry by query
+    /// </summary>
+    [HttpPost("clear")]
+    public async Task<ActionResult> ClearCache([FromBody] ClearCacheRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Cache clear requested for query: {Query}", request.Query);
+
+            if (!string.IsNullOrEmpty(request.Query))
+            {
+                var cacheKey = GenerateCacheKey(request.Query);
+                await _cacheService.RemoveAsync($"{ApplicationConstants.CacheKeys.QueryPrefix}{cacheKey}");
+                
+                _logger.LogInformation("Cleared cache for query key: {CacheKey}", cacheKey);
+                
+                return Ok(new { 
+                    message = "Cache cleared successfully", 
+                    cacheKey = cacheKey,
+                    timestamp = DateTime.UtcNow 
+                });
+            }
+            else if (!string.IsNullOrEmpty(request.Pattern))
+            {
+                await _cacheService.RemovePatternAsync($"{ApplicationConstants.CacheKeys.QueryPrefix}{request.Pattern}");
+                
+                _logger.LogInformation("Cleared cache entries matching pattern: {Pattern}", request.Pattern);
+                
+                return Ok(new { 
+                    message = "Cache pattern cleared successfully", 
+                    pattern = request.Pattern,
+                    timestamp = DateTime.UtcNow 
+                });
+            }
+            else
+            {
+                return BadRequest(new { error = "Either query or pattern must be provided" });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error clearing cache");
+            return StatusCode(500, new { error = "An error occurred while clearing cache" });
+        }
+    }
+
+    /// <summary>
+    /// Clear all cache entries
+    /// </summary>
+    [HttpDelete("clear-all")]
+    public async Task<ActionResult> ClearAllCache()
+    {
+        try
+        {
+            _logger.LogInformation("Clear all cache requested");
+            
+            await _cacheService.ClearAllAsync();
+            
+            _logger.LogInformation("All cache cleared successfully");
+            
+            return Ok(new { 
+                message = "All cache cleared successfully", 
+                timestamp = DateTime.UtcNow 
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error clearing all cache");
+            return StatusCode(500, new { error = "An error occurred while clearing all cache" });
+        }
+    }
+
+    /// <summary>
+    /// Get basic cache statistics
+    /// </summary>
+    [HttpGet("stats")]
+    public async Task<ActionResult> GetCacheStats()
+    {
+        try
+        {
+            var stats = await _cacheService.GetStatisticsAsync();
+            
+            return Ok(new
+            {
+                statistics = stats,
+                timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cache statistics");
+            return StatusCode(500, new { error = "An error occurred while getting cache statistics" });
+        }
+    }
+
+    /// <summary>
+    /// Check if a specific cache key exists
+    /// </summary>
+    [HttpGet("exists")]
+    public async Task<ActionResult> CheckCacheExists([FromQuery] string query)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(query))
+            {
+                return BadRequest(new { error = "Query parameter is required" });
+            }
+
+            var cacheKey = GenerateCacheKey(query);
+            var exists = await _cacheService.ExistsAsync($"{ApplicationConstants.CacheKeys.QueryPrefix}{cacheKey}");
+            
+            return Ok(new
+            {
+                exists = exists,
+                cacheKey = cacheKey,
+                timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking cache existence for query: {Query}", query);
+            return StatusCode(500, new { error = "An error occurred while checking cache existence" });
+        }
+    }
+
+    #endregion
+
+    #region Semantic Cache Operations
+
     /// <summary>
     /// Get enhanced semantic cache metrics and performance statistics
     /// </summary>
-    [HttpGet("metrics")]
-    public async Task<IActionResult> GetMetrics()
+    [HttpGet("semantic/metrics")]
+    public async Task<IActionResult> GetSemanticMetrics()
     {
         try
         {
@@ -60,8 +202,8 @@ public class SemanticCacheController : ControllerBase
     /// <summary>
     /// Optimize semantic cache for better performance
     /// </summary>
-    [HttpPost("optimize")]
-    public async Task<IActionResult> OptimizeCache([FromBody] OptimizeCacheRequest? request = null)
+    [HttpPost("semantic/optimize")]
+    public async Task<IActionResult> OptimizeSemanticCache([FromBody] OptimizeCacheRequest? request = null)
     {
         try
         {
@@ -103,7 +245,7 @@ public class SemanticCacheController : ControllerBase
     /// <summary>
     /// Search for similar queries using vector similarity
     /// </summary>
-    [HttpPost("search")]
+    [HttpPost("semantic/search")]
     public async Task<IActionResult> SearchSimilarQueries([FromBody] SearchSimilarQueriesRequest request)
     {
         try
@@ -148,10 +290,25 @@ public class SemanticCacheController : ControllerBase
         }
     }
 
+    #endregion
+
+    #region Helper Methods
+
+    /// <summary>
+    /// Generate cache key for a query (same logic as QueryService)
+    /// </summary>
+    private string GenerateCacheKey(string query)
+    {
+        var normalizedQuery = query.Trim().ToLowerInvariant();
+        using var sha256 = SHA256.Create();
+        var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(normalizedQuery));
+        return Convert.ToHexString(hashBytes).ToLowerInvariant();
+    }
+
     /// <summary>
     /// Generate embedding for a text query (for testing/debugging)
     /// </summary>
-    [HttpPost("embedding")]
+    [HttpPost("semantic/embedding")]
     public async Task<IActionResult> GenerateEmbedding([FromBody] GenerateEmbeddingRequest request)
     {
         try
@@ -188,7 +345,7 @@ public class SemanticCacheController : ControllerBase
     /// <summary>
     /// Get detailed vector search statistics
     /// </summary>
-    [HttpGet("vector-stats")]
+    [HttpGet("semantic/vector-stats")]
     public async Task<IActionResult> GetVectorStats()
     {
         try
@@ -224,7 +381,7 @@ public class SemanticCacheController : ControllerBase
     /// <summary>
     /// Test semantic cache lookup for a specific query
     /// </summary>
-    [HttpPost("test-lookup")]
+    [HttpPost("semantic/test-lookup")]
     public async Task<IActionResult> TestCacheLookup([FromBody] TestCacheLookupRequest request)
     {
         try
@@ -277,15 +434,15 @@ public class SemanticCacheController : ControllerBase
     /// <summary>
     /// Clear semantic cache (admin only)
     /// </summary>
-    [HttpDelete("clear")]
-    [Authorize(Roles = "Admin")] // Restrict to admin users only
-    public async Task<IActionResult> ClearCache()
+    [HttpDelete("semantic/clear")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ClearSemanticCache()
     {
         try
         {
             _logger.LogWarning("🧹 Admin clearing semantic cache");
 
-            // This would implement cache clearing logic
+            // This would implement semantic cache clearing logic
             // For now, just return success
             return Ok(new
             {
@@ -300,11 +457,26 @@ public class SemanticCacheController : ControllerBase
             return StatusCode(500, new { success = false, error = ex.Message });
         }
     }
+
+    #endregion
 }
 
 /// <summary>
-/// Request models for semantic cache endpoints
+/// Request models for cache operations
 /// </summary>
+public class ClearCacheRequest
+{
+    /// <summary>
+    /// Specific query to clear from cache
+    /// </summary>
+    public string? Query { get; set; }
+
+    /// <summary>
+    /// Pattern to match for clearing multiple cache entries
+    /// </summary>
+    public string? Pattern { get; set; }
+}
+
 public class OptimizeCacheRequest
 {
     public bool ForceOptimization { get; set; } = false;

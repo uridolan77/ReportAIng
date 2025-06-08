@@ -1,5 +1,9 @@
 using Xunit;
+using Moq;
+using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Infrastructure.AI;
+using BIReportingCopilot.Infrastructure.Services;
+using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using System.Collections.Generic;
@@ -8,15 +12,21 @@ using System.Threading.Tasks;
 namespace BIReportingCopilot.Tests.Unit.Services;
 
 /// <summary>
-/// Unit tests for PromptTemplateManager
+/// Unit tests for PromptService (formerly PromptTemplateManager)
 /// </summary>
 public class PromptTemplateManagerTests
 {
-    private readonly PromptTemplateManager _promptManager;
+    private readonly PromptService _promptManager;
 
     public PromptTemplateManagerTests()
     {
-        _promptManager = new PromptTemplateManager();
+        // Create mocks for PromptService dependencies
+        var mockContext = new Mock<TuningDbContext>();
+        var mockLogger = new Mock<ILogger<PromptService>>();
+
+        _promptManager = new PromptService(
+            mockContext.Object,
+            mockLogger.Object);
     }
 
     [Fact]

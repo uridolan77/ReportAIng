@@ -422,6 +422,11 @@ public class SqlOptimizationResult
     public List<SqlOptimization> Optimizations { get; set; } = new();
     public PerformanceComparison? PerformanceComparison { get; set; }
     public List<string> Warnings { get; set; } = new();
+
+    // Properties expected by API controllers
+    public double ImprovementScore { get; set; }
+    public double EstimatedPerformanceGain { get; set; }
+    public List<string> Recommendations { get; set; } = new();
 }
 
 /// <summary>

@@ -14,21 +14,21 @@ namespace BIReportingCopilot.Tests.Unit.Controllers;
 [TestFixture]
 public class DashboardControllerTests
 {
-    private Mock<ILogger<DashboardController>> _mockLogger;
+    private Mock<ILogger<UnifiedDashboardController>> _mockLogger;
     private Mock<IQueryService> _mockQueryService;
     private Mock<IUserService> _mockUserService;
     private Mock<IAuditService> _mockAuditService;
-    private DashboardController _controller;
+    private UnifiedDashboardController _controller;
 
     [SetUp]
     public void Setup()
     {
-        _mockLogger = new Mock<ILogger<DashboardController>>();
+        _mockLogger = new Mock<ILogger<UnifiedDashboardController>>();
         _mockQueryService = new Mock<IQueryService>();
         _mockUserService = new Mock<IUserService>();
         _mockAuditService = new Mock<IAuditService>();
 
-        _controller = new DashboardController(
+        _controller = new UnifiedDashboardController(
             _mockLogger.Object,
             _mockUserService.Object,
             _mockAuditService.Object,
