@@ -163,7 +163,12 @@ public class AzureOpenAIProvider : IAIProvider
         };
     }
 
-    private async IAsyncEnumerable<StreamingResponse> CreateErrorStreamAsync(string errorMessage)
+    private IAsyncEnumerable<StreamingResponse> CreateErrorStreamAsync(string errorMessage)
+    {
+        return CreateErrorStreamInternal(errorMessage);
+    }
+
+    private async IAsyncEnumerable<StreamingResponse> CreateErrorStreamInternal(string errorMessage)
     {
         yield return new StreamingResponse
         {

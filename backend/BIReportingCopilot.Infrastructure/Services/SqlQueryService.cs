@@ -140,7 +140,7 @@ public class SqlQueryService : ISqlQueryService
         }
     }
 
-    public async Task<string> OptimizeSqlAsync(string sql)
+    public Task<string> OptimizeSqlAsync(string sql)
     {
         try
         {
@@ -159,12 +159,12 @@ public class SqlQueryService : ISqlQueryService
             _logger.LogDebug("Optimized SQL query from {OriginalLength} to {OptimizedLength} characters",
                 sql.Length, optimized.Length);
 
-            return optimized;
+            return Task.FromResult(optimized);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SQL optimization failed, returning original query");
-            return sql;
+            return Task.FromResult(sql);
         }
     }
 
@@ -275,7 +275,7 @@ public class SqlQueryService : ISqlQueryService
         }
     }
 
-    public async Task<List<string>> GetAvailableDataSourcesAsync()
+    public Task<List<string>> GetAvailableDataSourcesAsync()
     {
         var dataSources = new List<string>();
 
@@ -303,7 +303,7 @@ public class SqlQueryService : ISqlQueryService
             }
         }
 
-        return dataSources;
+        return Task.FromResult(dataSources);
     }
 
     private async Task<string?> GetConnectionStringAsync(string? dataSource = null)

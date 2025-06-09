@@ -212,7 +212,7 @@ public class UnifiedAITuningSettingsService : IAITuningSettingsService
         }
     }
 
-    public async Task<TuningValidationResult> ValidateSettingsAsync(AITuningSettingsDto settings)
+    public Task<TuningValidationResult> ValidateSettingsAsync(AITuningSettingsDto settings)
     {
         try
         {
@@ -229,38 +229,38 @@ public class UnifiedAITuningSettingsService : IAITuningSettingsService
             if (string.IsNullOrEmpty(settings.SettingValue))
                 result.Issues.Add(new ValidationIssue { Title = "Missing Setting Value", Description = "Setting value is required", Severity = ValidationIssueSeverity.Error });
 
-            return result;
+            return Task.FromResult(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating settings");
-            return new TuningValidationResult
+            return Task.FromResult(new TuningValidationResult
             {
                 IsValid = false,
                 Issues = new List<ValidationIssue> { new ValidationIssue { Title = "Validation Error", Description = ex.Message, Severity = ValidationIssueSeverity.Error } }
-            };
+            });
         }
     }
 
-    public async Task<TuningOptimizationResult> OptimizeSettingsAsync(string settingsId)
+    public Task<TuningOptimizationResult> OptimizeSettingsAsync(string settingsId)
     {
         try
         {
             // Basic optimization - this would be enhanced in a real implementation
-            return new TuningOptimizationResult
+            return Task.FromResult(new TuningOptimizationResult
             {
                 ImprovementScore = 0.0,
                 OptimizationSteps = new List<string> { "Settings are already optimized" }
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error optimizing settings: {SettingsId}", settingsId);
-            return new TuningOptimizationResult
+            return Task.FromResult(new TuningOptimizationResult
             {
                 ImprovementScore = -1.0,
                 OptimizationSteps = new List<string> { $"Error: {ex.Message}" }
-            };
+            });
         }
     }
 

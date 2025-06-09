@@ -184,7 +184,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         }
     }
 
-    public async Task<List<SemanticEntity>> ExtractEntitiesAsync(string query)
+    public Task<List<SemanticEntity>> ExtractEntitiesAsync(string query)
     {
         var entities = new List<SemanticEntity>();
         var lowerQuery = query.ToLowerInvariant();
@@ -214,11 +214,13 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         entities.AddRange(ExtractDates(query));
 
         // Remove duplicates and sort by position
-        return entities
+        var result = entities
             .GroupBy(e => new { e.Text, e.Type })
             .Select(g => g.First())
             .OrderBy(e => e.StartPosition)
             .ToList();
+
+        return Task.FromResult(result);
     }
 
     public Task<Core.Models.QueryIntent> ClassifyIntentAsync(string query)

@@ -130,7 +130,7 @@ public class ConfigurationPerformanceHealthCheck : IHealthCheck
         _logger = logger;
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(
+    public Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
@@ -182,27 +182,27 @@ public class ConfigurationPerformanceHealthCheck : IHealthCheck
 
             if (maxTime > criticalThresholdMs)
             {
-                return HealthCheckResult.Unhealthy(
-                    $"Configuration loading is too slow. Max time: {maxTime}ms, Average: {avgTime:F1}ms", 
-                    null, data);
+                return Task.FromResult(HealthCheckResult.Unhealthy(
+                    $"Configuration loading is too slow. Max time: {maxTime}ms, Average: {avgTime:F1}ms",
+                    null, data));
             }
             else if (maxTime > warningThresholdMs)
             {
-                return HealthCheckResult.Degraded(
-                    $"Configuration loading is slower than expected. Max time: {maxTime}ms, Average: {avgTime:F1}ms", 
-                    null, data);
+                return Task.FromResult(HealthCheckResult.Degraded(
+                    $"Configuration loading is slower than expected. Max time: {maxTime}ms, Average: {avgTime:F1}ms",
+                    null, data));
             }
             else
             {
-                return HealthCheckResult.Healthy(
-                    $"Configuration loading performance is good. Max time: {maxTime}ms, Average: {avgTime:F1}ms", 
-                    data);
+                return Task.FromResult(HealthCheckResult.Healthy(
+                    $"Configuration loading performance is good. Max time: {maxTime}ms, Average: {avgTime:F1}ms",
+                    data));
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during configuration performance health check");
-            return HealthCheckResult.Unhealthy($"Configuration performance health check failed: {ex.Message}");
+            return Task.FromResult(HealthCheckResult.Unhealthy($"Configuration performance health check failed: {ex.Message}"));
         }
     }
 }

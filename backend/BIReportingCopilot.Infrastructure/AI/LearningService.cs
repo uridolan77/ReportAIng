@@ -438,7 +438,7 @@ public class LearningService
         }
     }
 
-    private async Task<DetectedAnomaly?> DetectComplexityAnomalyAsync(string query, MLQueryMetrics metrics)
+    private Task<DetectedAnomaly?> DetectComplexityAnomalyAsync(string query, MLQueryMetrics metrics)
     {
         try
         {
@@ -446,7 +446,7 @@ public class LearningService
 
             if (complexity > 0.8) // High complexity threshold
             {
-                return new DetectedAnomaly
+                return Task.FromResult<DetectedAnomaly?>(new DetectedAnomaly
                 {
                     Type = "QueryComplexity",
                     Severity = complexity > 0.9 ? AnomalySeverity.High : AnomalySeverity.Medium,
@@ -458,19 +458,19 @@ public class LearningService
                         "Review join conditions and optimize where possible",
                         "Consider using views or stored procedures for complex logic"
                     }
-                };
+                });
             }
 
-            return null;
+            return Task.FromResult<DetectedAnomaly?>(null);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error detecting complexity anomaly");
-            return null;
+            return Task.FromResult<DetectedAnomaly?>(null);
         }
     }
 
-    private async Task<DetectedAnomaly?> DetectPatternAnomalyAsync(string query)
+    private Task<DetectedAnomaly?> DetectPatternAnomalyAsync(string query)
     {
         try
         {
@@ -492,7 +492,7 @@ public class LearningService
             {
                 if (lowerQuery.Contains(pattern))
                 {
-                    return new DetectedAnomaly
+                    return Task.FromResult<DetectedAnomaly?>(new DetectedAnomaly
                     {
                         Type = "SuspiciousPattern",
                         Severity = AnomalySeverity.High,
@@ -504,16 +504,16 @@ public class LearningService
                             "Consider using parameterized queries",
                             "Validate query against security policies"
                         }
-                    };
+                    });
                 }
             }
 
-            return null;
+            return Task.FromResult<DetectedAnomaly?>(null);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error detecting pattern anomaly");
-            return null;
+            return Task.FromResult<DetectedAnomaly?>(null);
         }
     }
 
@@ -618,24 +618,24 @@ public class LearningService
         return null;
     }
 
-    private async Task<BehaviorAnomaly?> DetectUnusualQueryPatternsAsync(List<UserActivity> activities, string userId)
+    private Task<BehaviorAnomaly?> DetectUnusualQueryPatternsAsync(List<UserActivity> activities, string userId)
     {
         // Check for unusual error rates
         var errorRate = activities.Any() ? activities.Count(a => !a.Success) / (double)activities.Count : 0;
 
         if (errorRate > 0.5) // More than 50% errors is unusual
         {
-            return new BehaviorAnomaly
+            return Task.FromResult<BehaviorAnomaly?>(new BehaviorAnomaly
             {
                 AnomalyType = "HighErrorRate",
                 Description = $"User has {errorRate:P0} error rate in recent queries",
                 Severity = errorRate > 0.8 ? (double)AnomalySeverity.High : (double)AnomalySeverity.Medium,
                 UserId = userId,
                 DetectedAt = DateTime.UtcNow
-            };
+            });
         }
 
-        return null;
+        return Task.FromResult<BehaviorAnomaly?>(null);
     }
 
     private BehaviorAnomaly? DetectErrorRateAnomaly(List<UserActivity> activities, string userId)
@@ -783,7 +783,7 @@ public class LearningService
         // Generate personalized recommendations based on insights
         return new List<PersonalizedRecommendation>();
     }
-    private async Task<List<PersonalizedRecommendation>> GeneratePatternRecommendationsAsync(string userId, LearningInsights insights) => new();
+    private Task<List<PersonalizedRecommendation>> GeneratePatternRecommendationsAsync(string userId, LearningInsights insights) => Task.FromResult(new List<PersonalizedRecommendation>());
     private List<PersonalizedRecommendation> GeneratePerformanceRecommendations(LearningInsights insights) => new();
 
     private class ExecutionPattern { }

@@ -27,7 +27,7 @@ public class DashboardCreationService
     /// <summary>
     /// Create dashboard from request
     /// </summary>
-    public async Task<Dashboard> CreateDashboardAsync(CreateDashboardRequest request, string userId)
+    public Task<Dashboard> CreateDashboardAsync(CreateDashboardRequest request, string userId)
     {
         try
         {
@@ -64,7 +64,7 @@ public class DashboardCreationService
             }
 
             _logger.LogInformation("✅ Dashboard '{Name}' created successfully", dashboard.Name);
-            return dashboard;
+            return Task.FromResult(dashboard);
         }
         catch (Exception ex)
         {
@@ -134,7 +134,7 @@ public class DashboardCreationService
     /// <summary>
     /// Generate widgets from NLU analysis
     /// </summary>
-    private async Task<List<CreateWidgetRequest>> GenerateWidgetsFromNLUAsync(AdvancedNLUResult nluResult, SchemaMetadata schema)
+    private Task<List<CreateWidgetRequest>> GenerateWidgetsFromNLUAsync(AdvancedNLUResult nluResult, SchemaMetadata schema)
     {
         var widgets = new List<CreateWidgetRequest>();
 
@@ -188,7 +188,7 @@ public class DashboardCreationService
 
         widgets.Add(summaryWidget);
 
-        return widgets;
+        return Task.FromResult(widgets);
     }
 }
 

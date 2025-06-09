@@ -292,7 +292,7 @@ public class HealthManagementService : IHealthCheck
         }
     }
 
-    private async Task<HealthCheckResult> PerformSecurityHealthCheckAsync(CancellationToken cancellationToken)
+    private Task<HealthCheckResult> PerformSecurityHealthCheckAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -324,24 +324,24 @@ public class HealthManagementService : IHealthCheck
                     ["Issues"] = issues,
                     ["IssueCount"] = issues.Count
                 };
-                return HealthCheckResult.Degraded($"Security configuration issues: {string.Join(", ", issues)}", null, securityData);
+                return Task.FromResult(HealthCheckResult.Degraded($"Security configuration issues: {string.Join(", ", issues)}", null, securityData));
             }
 
-            return HealthCheckResult.Healthy("Security configuration is properly set up", new Dictionary<string, object>
+            return Task.FromResult(HealthCheckResult.Healthy("Security configuration is properly set up", new Dictionary<string, object>
             {
                 ["RateLimitingEnabled"] = securityConfig.EnableRateLimit,
                 ["HttpsRedirectionEnabled"] = securityConfig.EnableHttpsRedirection,
                 ["AuditLoggingEnabled"] = securityConfig.EnableAuditLogging
-            });
+            }));
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Security health check failed");
-            return HealthCheckResult.Unhealthy($"Security health check failed: {ex.Message}");
+            return Task.FromResult(HealthCheckResult.Unhealthy($"Security health check failed: {ex.Message}"));
         }
     }
 
-    private async Task<HealthCheckResult> PerformPerformanceHealthCheckAsync(CancellationToken cancellationToken)
+    private Task<HealthCheckResult> PerformPerformanceHealthCheckAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -353,18 +353,18 @@ public class HealthManagementService : IHealthCheck
             if (performanceConfig.EnablePerformanceMetrics) enabledFeatures.Add("PerformanceMetrics");
             if (performanceConfig.EnableStreaming) enabledFeatures.Add("Streaming");
 
-            return HealthCheckResult.Healthy($"Performance features enabled: {string.Join(", ", enabledFeatures)}", new Dictionary<string, object>
+            return Task.FromResult(HealthCheckResult.Healthy($"Performance features enabled: {string.Join(", ", enabledFeatures)}", new Dictionary<string, object>
             {
                 ["EnabledFeatures"] = enabledFeatures,
                 ["MaxConcurrentQueries"] = performanceConfig.MaxConcurrentQueries,
                 ["DefaultTimeout"] = performanceConfig.DefaultQueryTimeoutSeconds,
                 ["StreamingBatchSize"] = performanceConfig.StreamingBatchSize
-            });
+            }));
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Performance health check failed");
-            return HealthCheckResult.Unhealthy($"Performance health check failed: {ex.Message}");
+            return Task.FromResult(HealthCheckResult.Unhealthy($"Performance health check failed: {ex.Message}"));
         }
     }
 
@@ -401,7 +401,7 @@ public class HealthManagementService : IHealthCheck
         }
     }
 
-    private async Task<bool> ValidateEssentialServicesAsync()
+    private Task<bool> ValidateEssentialServicesAsync()
     {
         try
         {
@@ -412,20 +412,20 @@ public class HealthManagementService : IHealthCheck
             // Check if essential AI features are enabled
             if (!aiConfig.EnableSemanticAnalysis || !aiConfig.EnableQueryClassification)
             {
-                return false;
+                return Task.FromResult(false);
             }
 
             // Check cache configuration
             if (cacheConfig.EnableDistributedCache && string.IsNullOrEmpty(cacheConfig.RedisConnectionString))
             {
-                return false;
+                return Task.FromResult(false);
             }
 
-            return true;
+            return Task.FromResult(true);
         }
         catch
         {
-            return false;
+            return Task.FromResult(false);
         }
     }
 

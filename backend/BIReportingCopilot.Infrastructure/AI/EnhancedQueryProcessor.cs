@@ -269,7 +269,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
     /// <summary>
     /// Decompose complex queries with multiple joins or subqueries
     /// </summary>
-    private async Task<List<QueryComponent>> DecomposeComplexQueryAsync(string query, SchemaContext schemaContext)
+    private Task<List<QueryComponent>> DecomposeComplexQueryAsync(string query, SchemaContext schemaContext)
     {
         var components = new List<QueryComponent>();
 
@@ -313,13 +313,13 @@ public class EnhancedQueryProcessor : IQueryProcessor
             });
         }
 
-        return components;
+        return Task.FromResult(components);
     }
 
     /// <summary>
     /// Decompose aggregation queries by function type
     /// </summary>
-    private async Task<List<QueryComponent>> DecomposeAggregationQueryAsync(string query, SchemaContext schemaContext)
+    private Task<List<QueryComponent>> DecomposeAggregationQueryAsync(string query, SchemaContext schemaContext)
     {
         var components = new List<QueryComponent>();
 
@@ -345,10 +345,10 @@ public class EnhancedQueryProcessor : IQueryProcessor
             EstimatedComplexity = QueryComplexity.Medium
         });
 
-        return components;
+        return Task.FromResult(components);
     }
 
-    private async Task<List<string>> GenerateContextualSuggestions(
+    private Task<List<string>> GenerateContextualSuggestions(
         SemanticAnalysis contextAnalysis,
         UserContext userContext,
         SchemaMetadata schema)
@@ -390,10 +390,10 @@ public class EnhancedQueryProcessor : IQueryProcessor
                 break;
         }
 
-        return suggestions;
+        return Task.FromResult(suggestions);
     }
 
-    private async Task<List<string>> GeneratePatternBasedSuggestions(UserContext userContext)
+    private Task<List<string>> GeneratePatternBasedSuggestions(UserContext userContext)
     {
         var suggestions = new List<string>();
 
@@ -427,10 +427,10 @@ public class EnhancedQueryProcessor : IQueryProcessor
                 break;
         }
 
-        return suggestions;
+        return Task.FromResult(suggestions);
     }
 
-    private async Task<List<string>> GenerateSchemaBasedSuggestions(SchemaMetadata schema, UserContext userContext)
+    private Task<List<string>> GenerateSchemaBasedSuggestions(SchemaMetadata schema, UserContext userContext)
     {
         var suggestions = new List<string>();
 
@@ -467,7 +467,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
             }
         }
 
-        return suggestions;
+        return Task.FromResult(suggestions);
     }
 
     private bool IsCommonBusinessTable(string tableName)

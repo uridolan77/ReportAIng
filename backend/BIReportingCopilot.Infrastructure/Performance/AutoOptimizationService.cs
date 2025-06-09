@@ -174,7 +174,7 @@ public class AutoOptimizationService : IHostedService, IDisposable
         return optimizations;
     }
 
-    private async Task<int> OptimizeMemory(dynamic metrics)
+    private Task<int> OptimizeMemory(dynamic metrics)
     {
         var optimizations = 0;
 
@@ -188,10 +188,10 @@ public class AutoOptimizationService : IHostedService, IDisposable
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
-                
+
                 var memoryAfter = GC.GetTotalMemory(false);
                 var freed = memoryBefore - memoryAfter;
-                
+
                 _logger.LogInformation("♻️ Garbage collection freed {Freed:F1}MB", freed / (1024.0 * 1024.0));
                 optimizations++;
             }
@@ -201,7 +201,7 @@ public class AutoOptimizationService : IHostedService, IDisposable
             _logger.LogError(ex, "❌ Error optimizing memory");
         }
 
-        return optimizations;
+        return Task.FromResult(optimizations);
     }
 
     private async Task<int> OptimizeQueries(dynamic metrics, PerformanceManagementService performanceService)
@@ -238,7 +238,7 @@ public class AutoOptimizationService : IHostedService, IDisposable
         return optimizations;
     }
 
-    private async Task<int> OptimizeDatabaseConnections(dynamic metrics)
+    private Task<int> OptimizeDatabaseConnections(dynamic metrics)
     {
         var optimizations = 0;
 
@@ -253,7 +253,7 @@ public class AutoOptimizationService : IHostedService, IDisposable
             _logger.LogError(ex, "❌ Error optimizing database connections");
         }
 
-        return optimizations;
+        return Task.FromResult(optimizations);
     }
 
     private async Task CheckPerformanceThresholds(dynamic metrics, IServiceProvider serviceProvider)

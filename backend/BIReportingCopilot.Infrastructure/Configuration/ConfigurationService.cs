@@ -329,7 +329,7 @@ public class ConfigurationService
         }
     }
 
-    private async Task<ConfigurationSectionValidationResult> ValidateSecurityConfigurationSection()
+    private Task<ConfigurationSectionValidationResult> ValidateSecurityConfigurationSection()
     {
         var result = new ConfigurationSectionValidationResult
         {
@@ -351,10 +351,10 @@ public class ConfigurationService
             result.Errors.Add($"Failed to load configuration: {ex.Message}");
         }
 
-        return result;
+        return Task.FromResult(result);
     }
 
-    private async Task<ConfigurationSectionValidationResult> ValidateDatabaseConfigurationSection()
+    private Task<ConfigurationSectionValidationResult> ValidateDatabaseConfigurationSection()
     {
         var result = new ConfigurationSectionValidationResult
         {
@@ -376,10 +376,10 @@ public class ConfigurationService
             result.Errors.Add($"Failed to load configuration: {ex.Message}");
         }
 
-        return result;
+        return Task.FromResult(result);
     }
 
-    private async Task<ConfigurationSectionValidationResult> ValidateConfigurationSection<T>(string sectionName)
+    private Task<ConfigurationSectionValidationResult> ValidateConfigurationSection<T>(string sectionName)
         where T : class, new()
     {
         var result = new ConfigurationSectionValidationResult
@@ -402,7 +402,7 @@ public class ConfigurationService
             result.Errors.Add($"Failed to load configuration: {ex.Message}");
         }
 
-        return result;
+        return Task.FromResult(result);
     }
 
     private List<ValidationResult> ValidateConfiguration<T>(T configuration)

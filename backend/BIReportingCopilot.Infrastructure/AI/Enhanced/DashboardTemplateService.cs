@@ -23,7 +23,7 @@ public class DashboardTemplateService
     /// <summary>
     /// Get available dashboard templates
     /// </summary>
-    public async Task<List<DashboardTemplate>> GetTemplatesAsync(string? category = null)
+    public Task<List<DashboardTemplate>> GetTemplatesAsync(string? category = null)
     {
         try
         {
@@ -36,7 +36,7 @@ public class DashboardTemplateService
                 templates = templates.Where(t => t.Category.Equals(category, StringComparison.OrdinalIgnoreCase)).ToList();
             }
 
-            return templates;
+            return Task.FromResult(templates);
         }
         catch (Exception ex)
         {
@@ -108,8 +108,8 @@ public class DashboardTemplateService
     /// <summary>
     /// Process template parameters
     /// </summary>
-    private async Task<DashboardTemplate> ProcessTemplateParametersAsync(
-        DashboardTemplate template, 
+    private Task<DashboardTemplate> ProcessTemplateParametersAsync(
+        DashboardTemplate template,
         Dictionary<string, object> parameters)
     {
         // Clone the template
@@ -134,7 +134,7 @@ public class DashboardTemplateService
             Tags = template.Tags
         };
 
-        return processedTemplate;
+        return Task.FromResult(processedTemplate);
     }
 
     /// <summary>

@@ -27,7 +27,7 @@ public class Phase3StatusService
     /// <summary>
     /// Get Phase 3 feature status
     /// </summary>
-    public async Task<Phase3Status> GetPhase3StatusAsync()
+    public Task<Phase3Status> GetPhase3StatusAsync()
     {
         try
         {
@@ -68,17 +68,17 @@ public class Phase3StatusService
                 }
             };
 
-            return status;
+            return Task.FromResult(status);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting Phase 3 status");
-            return new Phase3Status
+            return Task.FromResult(new Phase3Status
             {
                 IsPhase3Available = false,
                 Error = ex.Message,
                 LastChecked = DateTime.UtcNow
-            };
+            });
         }
     }
 
@@ -107,7 +107,7 @@ public class Phase3StatusService
     /// <summary>
     /// Get Phase 3 analytics
     /// </summary>
-    public async Task<Phase3Analytics> GetPhase3AnalyticsAsync(TimeSpan period)
+    public Task<Phase3Analytics> GetPhase3AnalyticsAsync(TimeSpan period)
     {
         try
         {
@@ -132,17 +132,17 @@ public class Phase3StatusService
             if (_config.EnableFederatedLearning) analytics.EnabledFeatures++;
             if (_config.EnableQuantumSecurity) analytics.EnabledFeatures++;
 
-            return analytics;
+            return Task.FromResult(analytics);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating Phase 3 analytics");
-            return new Phase3Analytics
+            return Task.FromResult(new Phase3Analytics
             {
                 Period = period,
                 GeneratedAt = DateTime.UtcNow,
                 Error = ex.Message
-            };
+            });
         }
     }
 }

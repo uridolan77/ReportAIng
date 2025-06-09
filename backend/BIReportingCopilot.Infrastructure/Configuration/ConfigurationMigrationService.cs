@@ -127,7 +127,7 @@ public class ConfigurationMigrationService
     /// <summary>
     /// Validate migration compatibility
     /// </summary>
-    public async Task<MigrationValidationResult> ValidateMigrationAsync()
+    public Task<MigrationValidationResult> ValidateMigrationAsync()
     {
         var result = new MigrationValidationResult();
 
@@ -154,9 +154,9 @@ public class ConfigurationMigrationService
                     var method = typeof(ConfigurationMigrationService)
                         .GetMethod(nameof(GetConfiguration))!
                         .MakeGenericMethod(type);
-                    
+
                     method.Invoke(this, new object?[] { null });
-                    
+
                     result.SuccessfulMigrations.Add(type.Name);
                 }
                 catch (Exception ex)
@@ -176,7 +176,7 @@ public class ConfigurationMigrationService
             result.FailedMigrations.Add("ValidationProcess", ex.Message);
         }
 
-        return result;
+        return Task.FromResult(result);
     }
 
     /// <summary>

@@ -390,7 +390,7 @@ public class StreamingService : IRealTimeStreamingService
     /// <summary>
     /// Get active streaming sessions
     /// </summary>
-    public async Task<List<StreamingSession>> GetActiveSessionsAsync(string? userId = null)
+    public Task<List<StreamingSession>> GetActiveSessionsAsync(string? userId = null)
     {
         try
         {
@@ -400,12 +400,12 @@ public class StreamingService : IRealTimeStreamingService
                 .ToList();
 
             _logger.LogDebug("📋 Retrieved {Count} active streaming sessions", sessions.Count);
-            return sessions;
+            return Task.FromResult(sessions);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error getting active streaming sessions");
-            return new List<StreamingSession>();
+            return Task.FromResult(new List<StreamingSession>());
         }
     }
 

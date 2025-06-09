@@ -322,7 +322,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
         }
     }
 
-    private async Task LogQueryAsync(ProcessQueryCommand request, string sql, bool success, int executionTime, string? error = null)
+    private Task LogQueryAsync(ProcessQueryCommand request, string sql, bool success, int executionTime, string? error = null)
     {
         try
         {
@@ -334,6 +334,8 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
         {
             _logger.LogWarning(ex, "Error logging query");
         }
+
+        return Task.CompletedTask;
     }
 
     private async Task NotifyProgress(string userId, string queryId, string stage, string message, int progress, object? data = null)
