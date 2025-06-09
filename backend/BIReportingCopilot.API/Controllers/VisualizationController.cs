@@ -7,19 +7,19 @@ using System.ComponentModel.DataAnnotations;
 namespace BIReportingCopilot.API.Controllers;
 
 /// <summary>
-/// Unified visualization controller combining standard and advanced visualization capabilities
+/// Visualization controller providing standard and advanced visualization capabilities
 /// </summary>
 [ApiController]
 [Route("api/visualization")]
 [Authorize]
-public class UnifiedVisualizationController : ControllerBase
+public class VisualizationController : ControllerBase
 {
-    private readonly ILogger<UnifiedVisualizationController> _logger;
+    private readonly ILogger<VisualizationController> _logger;
     private readonly BIReportingCopilot.Infrastructure.Services.IVisualizationService _visualizationService;
     private readonly IQueryService _queryService;
 
-    public UnifiedVisualizationController(
-        ILogger<UnifiedVisualizationController> logger,
+    public VisualizationController(
+        ILogger<VisualizationController> logger,
         BIReportingCopilot.Infrastructure.Services.IVisualizationService visualizationService,
         IQueryService queryService)
     {
@@ -507,7 +507,7 @@ public class VisualizationOptionsResponse
 }
 
 /// <summary>
-/// Visualization option with metadata
+/// Individual visualization option
 /// </summary>
 public class VisualizationOption
 {
@@ -519,12 +519,29 @@ public class VisualizationOption
 }
 
 /// <summary>
+/// Data summary for visualization recommendations
+/// </summary>
+public class DataSummary
+{
+    public int RowCount { get; set; }
+    public int ColumnCount { get; set; }
+    public bool HasNumericData { get; set; }
+    public bool HasCategoricalData { get; set; }
+    public bool HasTimeData { get; set; }
+    public string DataComplexity { get; set; } = string.Empty;
+}
+
+/// <summary>
 /// Visualization validation request
 /// </summary>
 public class VisualizationValidationRequest
 {
+    [Required]
     public string VisualizationType { get; set; } = string.Empty;
+
+    [Required]
     public ColumnMetadata[] Columns { get; set; } = Array.Empty<ColumnMetadata>();
+
     public int RowCount { get; set; }
 }
 
@@ -544,10 +561,8 @@ public class VisualizationValidationResponse
 /// </summary>
 public class AdvancedVisualizationRequest
 {
-    [Required]
     public string Query { get; set; } = string.Empty;
     public VisualizationPreferences? Preferences { get; set; }
-    public bool OptimizeForPerformance { get; set; } = true;
 }
 
 /// <summary>
@@ -557,9 +572,8 @@ public class AdvancedVisualizationResponse
 {
     public bool Success { get; set; }
     public AdvancedVisualizationConfig? Visualization { get; set; }
-    public DataSummary? DataSummary { get; set; }
-    public ChartPerformanceMetrics? PerformanceMetrics { get; set; }
-    public string? ErrorMessage { get; set; }
+    public DataSummary DataSummary { get; set; } = new();
+    public ChartPerformanceMetrics PerformanceMetrics { get; set; } = new();
 }
 
 /// <summary>
@@ -567,7 +581,6 @@ public class AdvancedVisualizationResponse
 /// </summary>
 public class AdvancedDashboardRequest
 {
-    [Required]
     public string Query { get; set; } = string.Empty;
     public DashboardPreferences? Preferences { get; set; }
 }
@@ -582,7 +595,6 @@ public class AdvancedDashboardResponse
     public double ComplexityScore { get; set; }
     public string EstimatedLoadTime { get; set; } = string.Empty;
     public string RecommendedLayout { get; set; } = string.Empty;
-    public string? ErrorMessage { get; set; }
 }
 
 /// <summary>
@@ -591,24 +603,11 @@ public class AdvancedDashboardResponse
 public class ChartPerformanceMetrics
 {
     public string RenderTime { get; set; } = string.Empty;
-    public long MemoryUsage { get; set; }
+    public int MemoryUsage { get; set; }
     public int DataPointsRendered { get; set; }
     public bool UsedSampling { get; set; }
     public bool UsedVirtualization { get; set; }
     public bool UsedWebGL { get; set; }
-}
-
-/// <summary>
-/// Data summary for visualization
-/// </summary>
-public class DataSummary
-{
-    public int RowCount { get; set; }
-    public int ColumnCount { get; set; }
-    public bool HasNumericData { get; set; }
-    public bool HasCategoricalData { get; set; }
-    public bool HasTimeData { get; set; }
-    public string DataComplexity { get; set; } = string.Empty;
 }
 
 #endregion

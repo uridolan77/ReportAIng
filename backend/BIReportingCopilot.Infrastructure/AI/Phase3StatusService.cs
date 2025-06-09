@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using BIReportingCopilot.Core.Interfaces;
 
-namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
+namespace BIReportingCopilot.Infrastructure.AI;
 
 /// <summary>
 /// Phase 3 status and management service

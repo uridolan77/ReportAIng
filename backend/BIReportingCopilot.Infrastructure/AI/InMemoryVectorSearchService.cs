@@ -4,7 +4,7 @@ using BIReportingCopilot.Core.Models;
 using System.Collections.Concurrent;
 using System.Text.Json;
 
-namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
+namespace BIReportingCopilot.Infrastructure.AI.Intelligence;
 
 /// <summary>
 /// In-memory vector search service for semantic similarity matching
@@ -318,11 +318,11 @@ public class InMemoryVectorSearchService : IVectorSearchService
     /// Batch generate embeddings for multiple texts
     /// </summary>
     public async Task<List<BatchEmbeddingResult>> GenerateBatchEmbeddingsAsync(
-        List<string> texts, 
+        List<string> texts,
         CancellationToken cancellationToken = default)
     {
         var results = new List<BatchEmbeddingResult>();
-        
+
         foreach (var text in texts)
         {
             var startTime = DateTime.UtcNow;
@@ -349,7 +349,7 @@ public class InMemoryVectorSearchService : IVectorSearchService
                 });
             }
         }
-        
+
         return results;
     }
 
@@ -495,9 +495,9 @@ public class InMemoryVectorSearchService : IVectorSearchService
 
     private long EstimateEntrySize(VectorEntry entry)
     {
-        return sizeof(float) * entry.Embedding.Length + 
-               entry.QueryText.Length * sizeof(char) + 
-               entry.SqlQuery.Length * sizeof(char) + 
+        return sizeof(float) * entry.Embedding.Length +
+               entry.QueryText.Length * sizeof(char) +
+               entry.SqlQuery.Length * sizeof(char) +
                1024; // Approximate overhead
     }
 

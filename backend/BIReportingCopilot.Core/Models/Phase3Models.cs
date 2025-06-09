@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
+namespace BIReportingCopilot.Core.Models;
 
 // =============================================================================
 // PHASE 3 ENHANCED AI MODELS - CONSOLIDATED

@@ -16,7 +16,7 @@ using System.Diagnostics.Metrics;
 using BIReportingCopilot.Infrastructure.Monitoring;
 using CoreModels = BIReportingCopilot.Core.Models;
 
-namespace BIReportingCopilot.Infrastructure.AI;
+namespace BIReportingCopilot.Infrastructure.AI.Core;
 
 /// <summary>
 /// Enhanced AI service with built-in resilience, monitoring, and adaptive capabilities
@@ -482,8 +482,6 @@ Return only valid JSON.";
 
     #region Private Helper Methods
 
-
-
     private string BuildEnhancedPrompt(string originalPrompt)
     {
         // Enhanced prompt with NOLOCK instructions
@@ -527,8 +525,6 @@ EXAMPLES:
 
         return sql;
     }
-
-
 
     private string GenerateDataPreview(object[] data)
     {

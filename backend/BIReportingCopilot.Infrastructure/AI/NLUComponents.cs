@@ -3,7 +3,7 @@ using BIReportingCopilot.Infrastructure.Performance;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 
-namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
+namespace BIReportingCopilot.Infrastructure.AI.Components;
 
 /// <summary>
 /// Semantic parser for NLU

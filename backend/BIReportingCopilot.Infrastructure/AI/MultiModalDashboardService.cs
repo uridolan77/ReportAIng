@@ -5,23 +5,23 @@ using BIReportingCopilot.Infrastructure.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
+namespace BIReportingCopilot.Infrastructure.AI.Dashboard;
 
 /// <summary>
-/// Production-ready Multi-Modal Dashboard service
+/// Multi-Modal Dashboard service
 /// Provides advanced dashboard creation, management, and reporting
 /// </summary>
-public class ProductionMultiModalDashboardService : IMultiModalDashboardService
+public class MultiModalDashboardService : IMultiModalDashboardService
 {
-    private readonly ILogger<ProductionMultiModalDashboardService> _logger;
+    private readonly ILogger<MultiModalDashboardService> _logger;
     private readonly IDbContextFactory _contextFactory;
     private readonly DashboardCreationService _creationService;
     private readonly DashboardTemplateService _templateService;
     private readonly IQueryService _queryService;
     private readonly IAIService _aiService;
 
-    public ProductionMultiModalDashboardService(
-        ILogger<ProductionMultiModalDashboardService> logger,
+    public MultiModalDashboardService(
+        ILogger<MultiModalDashboardService> logger,
         IDbContextFactory contextFactory,
         DashboardCreationService creationService,
         DashboardTemplateService templateService,
@@ -35,7 +35,7 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
         _queryService = queryService;
         _aiService = aiService;
 
-        _logger.LogInformation("🎨 Production Multi-Modal Dashboard Service initialized with modular components");
+        _logger.LogInformation("🎨 Multi-Modal Dashboard Service initialized with modular components");
     }
 
     /// <summary>
@@ -350,272 +350,6 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
         }
     }
 
-    // Helper methods
-    private async Task<DashboardWidget> CreateWidgetFromRequestAsync(CreateWidgetRequest request, string dashboardId)
-    {
-        var widget = new DashboardWidget
-        {
-            Title = request.Title,
-            Description = request.Description ?? "",
-            Type = request.Type,
-            Position = request.Position ?? new WidgetPosition(),
-            Size = request.Size ?? new WidgetSize(),
-            Configuration = request.Configuration ?? new WidgetConfiguration(),
-            DataSource = request.DataSource,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        // Validate and process data source
-        await ValidateAndProcessDataSourceAsync(widget.DataSource);
-
-        return widget;
-    }
-
-    private async Task ValidateAndProcessDataSourceAsync(WidgetDataSource dataSource)
-    {
-        if (dataSource.Type == DataSourceType.Query && !string.IsNullOrEmpty(dataSource.Query))
-        {
-            // Validate query syntax and generate SQL if needed
-            try
-            {
-                if (string.IsNullOrEmpty(dataSource.SqlQuery))
-                {
-                    dataSource.SqlQuery = await _aiService.GenerateSQLAsync(dataSource.Query);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Could not generate SQL for widget query: {Query}", dataSource.Query);
-            }
-        }
-    }
-
-    private Core.Models.DashboardLayout CreateDefaultLayout()
-    {
-        return new Core.Models.DashboardLayout
-        {
-            Type = Core.Models.LayoutType.Grid,
-            Columns = 12,
-            Rows = 10,
-            Configuration = new LayoutConfiguration
-            {
-                GridGap = 10,
-                EnableDragAndDrop = true,
-                EnableResize = true
-            }
-        };
-    }
-
-    private bool HasDashboardAccess(Dashboard dashboard, string userId)
-    {
-        return dashboard.UserId == userId || 
-               dashboard.IsPublic || 
-               dashboard.Permissions.UserPermissions.Any(up => up.UserId == userId);
-    }
-
-    private bool HasEditAccess(Dashboard dashboard, string userId)
-    {
-        if (dashboard.UserId == userId) return true;
-
-        var userPermission = dashboard.Permissions.UserPermissions
-            .FirstOrDefault(up => up.UserId == userId);
-
-        return userPermission?.Permission >= PermissionLevel.Edit;
-    }
-
-    // Dashboard specification generation moved to DashboardCreationService
-
-    private string ExtractDashboardName(string description)
-    {
-        // Simple name extraction
-        var words = description.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return words.Length > 3 ? string.Join(" ", words.Take(3)) + " Dashboard" : description + " Dashboard";
-    }
-
-    private Task<List<CreateWidgetRequest>> GenerateWidgetsFromNLUAsync(AdvancedNLUResult nluResult, SchemaMetadata schema)
-    {
-        var widgets = new List<CreateWidgetRequest>();
-
-        // Generate widgets based on intent
-        switch (nluResult.IntentAnalysis.PrimaryIntent)
-        {
-            case "Aggregation":
-                widgets.Add(new CreateWidgetRequest
-                {
-                    Title = "Summary Metrics",
-                    Type = WidgetType.Metric,
-                    Position = new WidgetPosition { X = 0, Y = 0 },
-                    Size = new WidgetSize { Width = 6, Height = 3 },
-                    DataSource = new WidgetDataSource
-                    {
-                        Type = DataSourceType.Query,
-                        Query = "Show summary statistics"
-                    }
-                });
-                break;
-
-            case "Trend":
-                widgets.Add(new CreateWidgetRequest
-                {
-                    Title = "Trend Analysis",
-                    Type = WidgetType.Chart,
-                    Position = new WidgetPosition { X = 0, Y = 0 },
-                    Size = new WidgetSize { Width = 12, Height = 6 },
-                    DataSource = new WidgetDataSource
-                    {
-                        Type = DataSourceType.Query,
-                        Query = "Show trends over time"
-                    }
-                });
-                break;
-
-            default:
-                widgets.Add(new CreateWidgetRequest
-                {
-                    Title = "Data Overview",
-                    Type = WidgetType.Table,
-                    Position = new WidgetPosition { X = 0, Y = 0 },
-                    Size = new WidgetSize { Width = 12, Height = 8 },
-                    DataSource = new WidgetDataSource
-                    {
-                        Type = DataSourceType.Query,
-                        Query = "Show data overview"
-                    }
-                });
-                break;
-        }
-
-        return Task.FromResult(widgets);
-    }
-
-    private List<DashboardTemplate> InitializeDefaultTemplates()
-    {
-        return new List<DashboardTemplate>
-        {
-            new DashboardTemplate
-            {
-                TemplateId = "executive-summary",
-                Name = "Executive Summary",
-                Description = "High-level KPIs and metrics for executives",
-                Category = "Business",
-                PreviewImage = "/templates/executive-summary.png",
-                Layout = new Core.Models.DashboardLayout { Type = Core.Models.LayoutType.Grid, Columns = 12 },
-                Widgets = new List<TemplateWidget>
-                {
-                    new TemplateWidget
-                    {
-                        Title = "Revenue",
-                        Type = WidgetType.Metric,
-                        Position = new WidgetPosition { X = 0, Y = 0 },
-                        Size = new WidgetSize { Width = 3, Height = 2 },
-                        DataSourceTemplate = "SELECT SUM(revenue) FROM {revenue_table}"
-                    },
-                    new TemplateWidget
-                    {
-                        Title = "Revenue Trend",
-                        Type = WidgetType.Chart,
-                        Position = new WidgetPosition { X = 3, Y = 0 },
-                        Size = new WidgetSize { Width = 9, Height = 4 },
-                        DataSourceTemplate = "SELECT date, SUM(revenue) FROM {revenue_table} GROUP BY date"
-                    }
-                },
-                Tags = new List<string> { "executive", "kpi", "revenue" },
-                CreatedBy = "System"
-            },
-            new DashboardTemplate
-            {
-                TemplateId = "player-analytics",
-                Name = "Player Analytics",
-                Description = "Comprehensive player behavior and performance analytics",
-                Category = "Gaming",
-                PreviewImage = "/templates/player-analytics.png",
-                Layout = new Core.Models.DashboardLayout { Type = Core.Models.LayoutType.Grid, Columns = 12 },
-                Widgets = new List<TemplateWidget>
-                {
-                    new TemplateWidget
-                    {
-                        Title = "Active Players",
-                        Type = WidgetType.Metric,
-                        Position = new WidgetPosition { X = 0, Y = 0 },
-                        Size = new WidgetSize { Width = 3, Height = 2 },
-                        DataSourceTemplate = "SELECT COUNT(*) FROM {players_table} WHERE status = 'Active'"
-                    },
-                    new TemplateWidget
-                    {
-                        Title = "Player Activity",
-                        Type = WidgetType.Chart,
-                        Position = new WidgetPosition { X = 3, Y = 0 },
-                        Size = new WidgetSize { Width = 9, Height = 4 },
-                        DataSourceTemplate = "SELECT date, COUNT(*) FROM {activity_table} GROUP BY date"
-                    }
-                },
-                Tags = new List<string> { "players", "gaming", "analytics" },
-                CreatedBy = "System"
-            }
-        };
-    }
-
-    private Task<DashboardTemplate> ProcessTemplateParametersAsync(
-        DashboardTemplate template,
-        Dictionary<string, object> parameters)
-    {
-        // Process template parameters and replace placeholders
-        var processedTemplate = JsonSerializer.Deserialize<DashboardTemplate>(JsonSerializer.Serialize(template))!;
-
-        foreach (var widget in processedTemplate.Widgets)
-        {
-            foreach (var param in parameters)
-            {
-                widget.DataSourceTemplate = widget.DataSourceTemplate.Replace($"{{{param.Key}}}", param.Value.ToString());
-            }
-        }
-
-        return Task.FromResult(processedTemplate);
-    }
-
-    // Database operations (placeholder implementations)
-    private Task StoreDashboardAsync(Dashboard dashboard)
-    {
-        return Task.CompletedTask;
-    }
-
-    private Task UpdateDashboardInDatabaseAsync(Dashboard dashboard)
-    {
-        return Task.CompletedTask;
-    }
-
-    private Task DeleteDashboardFromDatabaseAsync(string dashboardId)
-    {
-        return Task.CompletedTask;
-    }
-
-    private Task<Dashboard?> LoadDashboardFromDatabaseAsync(string dashboardId)
-    {
-        return Task.FromResult<Dashboard?>(null);
-    }
-
-    private Task<List<Dashboard>> LoadUserDashboardsFromDatabaseAsync(string userId, DashboardFilter? filter)
-    {
-        return Task.FromResult(new List<Dashboard>());
-    }
-
-    private Task UpdateLastViewedAsync(string dashboardId, string userId)
-    {
-        return Task.CompletedTask;
-    }
-
-    // Export implementations (placeholder)
-    private Task<byte[]> GeneratePdfExportAsync(Dashboard dashboard, ExportOptions? options)
-    {
-        return Task.FromResult(Array.Empty<byte>());
-    }
-
-    private Task<byte[]> GenerateImageExportAsync(Dashboard dashboard, ExportOptions? options)
-    {
-        return Task.FromResult(Array.Empty<byte>());
-    }
-
     /// <summary>
     /// Generate automated report from dashboard
     /// </summary>
@@ -691,7 +425,119 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
         return Task.FromResult(new Dashboard());
     }
 
-    // Helper methods removed - using Core model structure instead
-}
+    // Helper methods
+    private async Task<DashboardWidget> CreateWidgetFromRequestAsync(CreateWidgetRequest request, string dashboardId)
+    {
+        var widget = new DashboardWidget
+        {
+            Title = request.Title,
+            Description = request.Description ?? "",
+            Type = request.Type,
+            Position = request.Position ?? new WidgetPosition(),
+            Size = request.Size ?? new WidgetSize(),
+            Configuration = request.Configuration ?? new WidgetConfiguration(),
+            DataSource = request.DataSource,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
 
-// Local model definitions removed - using Core models instead
+        // Validate and process data source
+        await ValidateAndProcessDataSourceAsync(widget.DataSource);
+
+        return widget;
+    }
+
+    private async Task ValidateAndProcessDataSourceAsync(WidgetDataSource dataSource)
+    {
+        if (dataSource.Type == DataSourceType.Query && !string.IsNullOrEmpty(dataSource.Query))
+        {
+            // Validate query syntax and generate SQL if needed
+            try
+            {
+                if (string.IsNullOrEmpty(dataSource.SqlQuery))
+                {
+                    dataSource.SqlQuery = await _aiService.GenerateSQLAsync(dataSource.Query);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not generate SQL for widget query: {Query}", dataSource.Query);
+            }
+        }
+    }
+
+    private Core.Models.DashboardLayout CreateDefaultLayout()
+    {
+        return new Core.Models.DashboardLayout
+        {
+            Type = Core.Models.LayoutType.Grid,
+            Columns = 12,
+            Rows = 10,
+            Configuration = new LayoutConfiguration
+            {
+                GridGap = 10,
+                EnableDragAndDrop = true,
+                EnableResize = true
+            }
+        };
+    }
+
+    private bool HasDashboardAccess(Dashboard dashboard, string userId)
+    {
+        return dashboard.UserId == userId ||
+               dashboard.IsPublic ||
+               dashboard.Permissions.UserPermissions.Any(up => up.UserId == userId);
+    }
+
+    private bool HasEditAccess(Dashboard dashboard, string userId)
+    {
+        if (dashboard.UserId == userId) return true;
+
+        var userPermission = dashboard.Permissions.UserPermissions
+            .FirstOrDefault(up => up.UserId == userId);
+
+        return userPermission?.Permission >= PermissionLevel.Edit;
+    }
+
+    // Database operations (placeholder implementations)
+    private Task StoreDashboardAsync(Dashboard dashboard)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task UpdateDashboardInDatabaseAsync(Dashboard dashboard)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task DeleteDashboardFromDatabaseAsync(string dashboardId)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task<Dashboard?> LoadDashboardFromDatabaseAsync(string dashboardId)
+    {
+        return Task.FromResult<Dashboard?>(null);
+    }
+
+    private Task<List<Dashboard>> LoadUserDashboardsFromDatabaseAsync(string userId, DashboardFilter? filter)
+    {
+        return Task.FromResult(new List<Dashboard>());
+    }
+
+    private Task UpdateLastViewedAsync(string dashboardId, string userId)
+    {
+        return Task.CompletedTask;
+    }
+
+    // Export implementations (placeholder)
+    private Task<byte[]> GeneratePdfExportAsync(Dashboard dashboard, ExportOptions? options)
+    {
+        return Task.FromResult(Array.Empty<byte>());
+    }
+
+    private Task<byte[]> GenerateImageExportAsync(Dashboard dashboard, ExportOptions? options)
+    {
+        return Task.FromResult(Array.Empty<byte>());
+    }
+}

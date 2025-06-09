@@ -12,22 +12,21 @@ using System.Text.Json;
 namespace BIReportingCopilot.API.Controllers;
 
 /// <summary>
-/// Unified Dashboard Controller - Consolidates basic dashboard operations and advanced multi-modal dashboards
-/// Replaces: DashboardController, MultiModalDashboardController
+/// Dashboard Controller - Provides dashboard operations and multi-modal dashboard management
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class UnifiedDashboardController : ControllerBase
+public class DashboardController : ControllerBase
 {
-    private readonly ILogger<UnifiedDashboardController> _logger;
+    private readonly ILogger<DashboardController> _logger;
     private readonly IUserService _userService;
     private readonly IAuditService _auditService;
     private readonly IQueryService _queryService;
     private readonly IMediator _mediator;
 
-    public UnifiedDashboardController(
-        ILogger<UnifiedDashboardController> logger,
+    public DashboardController(
+        ILogger<DashboardController> logger,
         IUserService userService,
         IAuditService auditService,
         IQueryService queryService,
@@ -40,7 +39,7 @@ public class UnifiedDashboardController : ControllerBase
         _mediator = mediator;
     }
 
-    #region Basic Dashboard Operations (from DashboardController)
+    #region Basic Dashboard Operations
 
     /// <summary>
     /// Get dashboard overview with key metrics
@@ -180,7 +179,7 @@ public class UnifiedDashboardController : ControllerBase
 
     #endregion
 
-    #region Multi-Modal Dashboard Operations (from MultiModalDashboardController)
+    #region Multi-Modal Dashboard Operations
 
     /// <summary>
     /// Create a new multi-modal dashboard

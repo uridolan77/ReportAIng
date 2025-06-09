@@ -2,12 +2,12 @@ using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 
-namespace BIReportingCopilot.Infrastructure.AI;
+namespace BIReportingCopilot.Infrastructure.AI.Core;
 
 /// <summary>
-/// Enhanced query processor with semantic analysis, context management, and intelligent optimization
+/// Query processor with semantic analysis, context management, and intelligent optimization
 /// </summary>
-public class EnhancedQueryProcessor : IQueryProcessor
+public class QueryProcessor : IQueryProcessor
 {
     private readonly ISemanticAnalyzer _semanticAnalyzer;
     private readonly IContextManager _contextManager;
@@ -15,17 +15,17 @@ public class EnhancedQueryProcessor : IQueryProcessor
     private readonly IQueryClassifier _queryClassifier;
     private readonly IAIService _aiService;
     private readonly ISchemaService _schemaService;
-    private readonly ILogger<EnhancedQueryProcessor> _logger;
+    private readonly ILogger<QueryProcessor> _logger;
     private readonly ICacheService _cacheService;
 
-    public EnhancedQueryProcessor(
+    public QueryProcessor(
         ISemanticAnalyzer semanticAnalyzer,
         IContextManager contextManager,
         IQueryOptimizer queryOptimizer,
         IQueryClassifier queryClassifier,
         IAIService aiService,
         ISchemaService schemaService,
-        ILogger<EnhancedQueryProcessor> logger,
+        ILogger<QueryProcessor> logger,
         ICacheService cacheService)
     {
         _semanticAnalyzer = semanticAnalyzer;
@@ -42,7 +42,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
     {
         try
         {
-            _logger.LogInformation("Processing enhanced query for user {UserId}: {Query}", userId, naturalLanguageQuery);
+            _logger.LogInformation("Processing query for user {UserId}: {Query}", userId, naturalLanguageQuery);
 
             // Step 1: Semantic Analysis
             var semanticAnalysis = await _semanticAnalyzer.AnalyzeAsync(naturalLanguageQuery);
@@ -96,7 +96,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing enhanced query");
+            _logger.LogError(ex, "Error processing query");
             return await CreateFallbackProcessedQuery(naturalLanguageQuery, userId);
         }
     }
@@ -573,7 +573,7 @@ public class EnhancedQueryProcessor : IQueryProcessor
             return new ProcessedQuery
             {
                 Sql = fallbackSql,
-                Explanation = "Generated using fallback processing due to error in enhanced pipeline",
+                Explanation = "Generated using fallback processing due to error in pipeline",
                 Confidence = fallbackConfidence * 0.7, // Reduce confidence for fallback
                 AlternativeQueries = new List<SqlCandidate>(),
                 SemanticEntities = new List<SemanticEntity>(),
@@ -601,13 +601,4 @@ public class EnhancedQueryProcessor : IQueryProcessor
             };
         }
     }
-}
-
-// Interface definition for the enhanced query processor
-public interface IQueryProcessor
-{
-    Task<ProcessedQuery> ProcessQueryAsync(string naturalLanguageQuery, string userId);
-    Task<List<string>> GenerateQuerySuggestionsAsync(string context, string userId);
-    Task<double> CalculateSemanticSimilarityAsync(string query1, string query2);
-    Task<List<ProcessedQuery>> FindSimilarQueriesAsync(string query, string userId, int limit = 5);
 }

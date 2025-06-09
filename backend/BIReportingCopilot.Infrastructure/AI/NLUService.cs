@@ -4,7 +4,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using System.Text.RegularExpressions;
 
-namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
+namespace BIReportingCopilot.Infrastructure.AI.Intelligence;
 
 /// <summary>
 /// Natural Language Understanding service
@@ -351,7 +351,7 @@ public class NLUService : IAdvancedNLUService
     private List<ContextualClue> ExtractContextualClues(string query, List<string> history)
     {
         var clues = new List<ContextualClue>();
-        
+
         // Extract temporal clues
         if (query.ToLowerInvariant().Contains("yesterday"))
         {
@@ -362,7 +362,7 @@ public class NLUService : IAdvancedNLUService
                 Confidence = 0.9
             });
         }
-        
+
         return clues;
     }
 
@@ -370,7 +370,7 @@ public class NLUService : IAdvancedNLUService
     {
         var temporalRefs = new List<string>();
         var timeWords = new[] { "yesterday", "today", "last week", "this month" };
-        
+
         foreach (var timeWord in timeWords)
         {
             if (query.ToLowerInvariant().Contains(timeWord))
@@ -401,22 +401,22 @@ public class NLUService : IAdvancedNLUService
     private double CalculateContextualRelevance(string query, List<string> history, List<ContextualClue> clues)
     {
         var relevance = 0.5; // Base relevance
-        
+
         if (history.Any()) relevance += 0.2;
         if (clues.Any()) relevance += 0.2;
-        
+
         return Math.Min(relevance, 1.0);
     }
 
     private string InferCurrentTopic(List<string> history)
     {
         if (!history.Any()) return "general";
-        
+
         var lastQuery = history.Last().ToLowerInvariant();
         if (lastQuery.Contains("player")) return "players";
         if (lastQuery.Contains("revenue")) return "revenue";
         if (lastQuery.Contains("game")) return "games";
-        
+
         return "general";
     }
 
@@ -424,24 +424,24 @@ public class NLUService : IAdvancedNLUService
     {
         var entities = new List<string>();
         var businessTerms = new[] { "player", "revenue", "game", "deposit", "bonus" };
-        
+
         foreach (var query in history)
         {
             entities.AddRange(businessTerms.Where(term => query.ToLowerInvariant().Contains(term)));
         }
-        
+
         return entities.Distinct().ToList();
     }
 
     private List<string> IdentifyImplicitAssumptions(string query, List<string> history)
     {
         var assumptions = new List<string>();
-        
+
         if (query.ToLowerInvariant().Contains("players") && !query.Contains("active"))
         {
             assumptions.Add("Assuming active players only");
         }
-        
+
         return assumptions;
     }
 
@@ -476,7 +476,7 @@ public class NLUService : IAdvancedNLUService
     {
         var weights = new[] { 0.4, 0.3, 0.3 }; // Intent, Entity, Context weights
         var scores = new[] { intentAnalysis.Confidence, entityAnalysis.OverallConfidence, contextualAnalysis.Relevance };
-        
+
         return weights.Zip(scores, (w, s) => w * s).Sum();
     }
 
@@ -515,35 +515,35 @@ public class NLUService : IAdvancedNLUService
     private List<QuerySuggestion> GenerateIntentBasedSuggestions(IntentAnalysis intentAnalysis, SchemaMetadata? schema)
     {
         var suggestions = new List<QuerySuggestion>();
-        
-        suggestions.Add(new QuerySuggestion 
-        { 
+
+        suggestions.Add(new QuerySuggestion
+        {
             Text = "Show me total revenue for last week",
             Category = "Revenue Analysis",
             Relevance = 0.9
         });
-        
-        suggestions.Add(new QuerySuggestion 
-        { 
+
+        suggestions.Add(new QuerySuggestion
+        {
             Text = "Count active players yesterday",
             Category = "Player Analytics",
             Relevance = 0.8
         });
-        
+
         return suggestions;
     }
 
     private List<QuerySuggestion> GenerateEntityBasedSuggestions(EntityAnalysis entityAnalysis, SchemaMetadata? schema)
     {
         var suggestions = new List<QuerySuggestion>();
-        
-        suggestions.Add(new QuerySuggestion 
-        { 
+
+        suggestions.Add(new QuerySuggestion
+        {
             Text = "Show me top 10 players by deposits",
             Category = "Player Analysis",
             Relevance = 0.8
         });
-        
+
         return suggestions;
     }
 

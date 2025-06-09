@@ -427,7 +427,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.SecurityMa
 
 // Phase 3 Enhanced Services - Phase 3A: Infrastructure Ready
 // Phase 3 Status and Management Service
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.Phase3StatusService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Phase3StatusService>();
 
 // TODO: Enable individual Phase 3 services after fixing compilation errors
 // Phase 3B: Streaming Analytics (Next)
@@ -435,7 +435,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.Phase3S
 // Phase 3D: Federated Learning & Quantum Security (Final)
 
 // Phase 3 Configuration
-builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Enhanced.Phase3Configuration>(
+builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Phase3Configuration>(
     builder.Configuration.GetSection("Phase3"));
 
 // Individual Phase 3 feature configurations will be enabled as features are activated
@@ -453,9 +453,9 @@ builder.Services.AddScoped<IContextManager>(provider =>
     provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.PromptManagementService>());
 
 // Unified learning service - consolidates MLAnomalyDetector and FeedbackLearningEngine
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.LearningService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Core.LearningService>();
 builder.Services.AddScoped<IQueryOptimizer, BIReportingCopilot.Infrastructure.AI.QueryOptimizer>();
-builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.EnhancedQueryProcessor>();
+builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.Core.QueryProcessor>();
 
 // ===== ML & ANOMALY DETECTION SERVICES =====
 // Unified learning service provides all ML functionality including anomaly detection and feedback learning
@@ -531,13 +531,10 @@ builder.Services.AddSingleton<ICacheService, BIReportingCopilot.Infrastructure.P
 
 // ===== SEMANTIC CACHE & VECTOR SEARCH SERVICES =====
 // Register vector search service for semantic similarity
-builder.Services.AddScoped<IVectorSearchService, BIReportingCopilot.Infrastructure.AI.Enhanced.InMemoryVectorSearchService>();
+builder.Services.AddScoped<IVectorSearchService, BIReportingCopilot.Infrastructure.AI.Intelligence.InMemoryVectorSearchService>();
 
-// Register infrastructure semantic cache service (for internal use)
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.SemanticCacheService>();
-
-// Register unified semantic cache service (implements Core interface)
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.UnifiedSemanticCacheService>();
+// Register semantic cache service (implements Core interface directly)
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.Caching.SemanticCacheService>();
 
 // ===== CONFIGURATION SECTIONS =====
 builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.RateLimitingConfiguration>(
@@ -554,7 +551,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHand
 
 // ===== CORE APPLICATION SERVICES =====
 // Base services
-builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.AIService>();
+builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.Core.AIService>();
 builder.Services.AddScoped<IQueryProgressNotifier, BIReportingCopilot.API.Services.SignalRQueryProgressNotifier>();
 builder.Services.AddScoped<IQueryService, QueryService>();
 builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Services.SchemaService>(); // Unified with built-in caching
@@ -562,16 +559,17 @@ builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.S
 builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.Services.PromptService>();
 
 // ===== ENHANCED AI SERVICES (Strategic Enhancements #2 & #3) =====
-builder.Services.AddScoped<IAdvancedNLUService, BIReportingCopilot.Infrastructure.AI.Enhanced.NLUService>();
-builder.Services.AddScoped<ISchemaOptimizationService, BIReportingCopilot.Infrastructure.AI.Enhanced.OptimizationService>();
-builder.Services.AddScoped<IQueryIntelligenceService, BIReportingCopilot.Infrastructure.AI.Enhanced.IntelligenceService>();
+builder.Services.AddScoped<IAdvancedNLUService, BIReportingCopilot.Infrastructure.AI.Intelligence.NLUService>();
+builder.Services.AddScoped<ISchemaOptimizationService, BIReportingCopilot.Infrastructure.AI.Intelligence.OptimizationService>();
+builder.Services.AddScoped<IVectorSearchService, BIReportingCopilot.Infrastructure.AI.Intelligence.InMemoryVectorSearchService>();
+builder.Services.AddScoped<IQueryIntelligenceService, BIReportingCopilot.Infrastructure.AI.Intelligence.IntelligenceService>();
 // Real-Time Streaming Service - ENABLED for feature development
-builder.Services.AddScoped<IRealTimeStreamingService, BIReportingCopilot.Infrastructure.AI.Enhanced.StreamingService>();
+builder.Services.AddScoped<IRealTimeStreamingService, BIReportingCopilot.Infrastructure.AI.Streaming.StreamingService>();
 
 // ===== MODULAR DASHBOARD SERVICES =====
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.DashboardCreationService>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.DashboardTemplateService>();
-builder.Services.AddScoped<IMultiModalDashboardService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionMultiModalDashboardService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Dashboard.DashboardCreationService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Dashboard.DashboardTemplateService>();
+builder.Services.AddScoped<IMultiModalDashboardService, BIReportingCopilot.Infrastructure.AI.Dashboard.MultiModalDashboardService>();
 builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Services.VisualizationService>();
 
 // Performance Optimization Services
@@ -638,11 +636,8 @@ builder.Services.AddScoped<IQueryCacheService, QueryCacheService>();
 // Main tuning service (now delegates to focused services and uses bounded contexts)
 builder.Services.AddScoped<ITuningService, TuningService>();
 
-// Register infrastructure AI tuning settings service (for internal use)
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Services.AITuningSettingsService>();
-
-// Register unified AI tuning settings service (implements Core interface)
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IAITuningSettingsService, BIReportingCopilot.Infrastructure.Services.UnifiedAITuningSettingsService>();
+// Register AI tuning settings service (implements Core interface directly)
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IAITuningSettingsService, BIReportingCopilot.Infrastructure.Services.AITuningSettingsService>();
 
 builder.Services.AddScoped<IBusinessContextAutoGenerator, BusinessContextAutoGenerator>();
 builder.Services.AddScoped<IQuerySuggestionService, BIReportingCopilot.Infrastructure.Services.QuerySuggestionService>();
@@ -756,7 +751,7 @@ app.MapControllers();
 app.MapHub<QueryStatusHub>("/hubs/query-status");
 app.MapHub<QueryHub>("/hubs/query");
 // Real-time streaming hub for enhanced features
-app.MapHub<BIReportingCopilot.Infrastructure.AI.Enhanced.StreamingHub>("/hubs/streaming");
+app.MapHub<BIReportingCopilot.Infrastructure.AI.Streaming.StreamingHub>("/hubs/streaming");
 
 // Configure health checks
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions

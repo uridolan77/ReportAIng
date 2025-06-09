@@ -8,7 +8,7 @@ using BIReportingCopilot.Infrastructure.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
+namespace BIReportingCopilot.Infrastructure.AI.Caching;
 
 /// <summary>
 /// Enhanced semantic cache service with vector embeddings for superior similarity matching
@@ -286,14 +286,14 @@ public class EnhancedSemanticCacheService
     {
         var intents = new List<string>();
         var lowerQuery = query.ToLowerInvariant();
-        
+
         if (lowerQuery.Contains("count") || sqlQuery.Contains("COUNT")) intents.Add("count");
         if (lowerQuery.Contains("sum") || sqlQuery.Contains("SUM")) intents.Add("sum");
         if (lowerQuery.Contains("average") || sqlQuery.Contains("AVG")) intents.Add("average");
         if (lowerQuery.Contains("top") || sqlQuery.Contains("TOP")) intents.Add("top");
         if (lowerQuery.Contains("filter") || sqlQuery.Contains("WHERE")) intents.Add("filter");
         if (lowerQuery.Contains("group") || sqlQuery.Contains("GROUP BY")) intents.Add("group");
-        
+
         return intents;
     }
 
@@ -301,10 +301,10 @@ public class EnhancedSemanticCacheService
     {
         var temporal = new List<string>();
         var lowerQuery = query.ToLowerInvariant();
-        
+
         var timeWords = new[] { "yesterday", "today", "tomorrow", "week", "month", "year", "last", "next", "recent" };
         temporal.AddRange(timeWords.Where(word => lowerQuery.Contains(word)));
-        
+
         return temporal;
     }
 
@@ -318,10 +318,10 @@ public class EnhancedSemanticCacheService
     {
         var concepts = new List<string>();
         var lowerQuery = query.ToLowerInvariant();
-        
+
         var businessTerms = new[] { "revenue", "profit", "customer", "player", "deposit", "bonus", "game", "transaction" };
         concepts.AddRange(businessTerms.Where(term => lowerQuery.Contains(term)));
-        
+
         return concepts;
     }
 
@@ -577,101 +577,6 @@ public class EnhancedSemanticCacheService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating cache entry metadata: {Key}", key);
-        }
-    }
-
-    public async Task<Core.Interfaces.CachePerformanceMetrics> GetCachePerformanceMetricsAsync()
-    {
-        try
-        {
-            var stats = await GetCacheStatisticsAsync();
-            return new Core.Interfaces.CachePerformanceMetrics
-            {
-                HitRate = stats.HitRate,
-                MissRate = 1.0 - stats.HitRate,
-                TotalRequests = stats.TotalRequests,
-                TotalHits = stats.HitCount,
-                TotalMisses = stats.MissCount,
-                AverageRetrievalTime = TimeSpan.FromMilliseconds(50), // Would calculate actual average
-                LastUpdated = DateTime.UtcNow
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting cache performance metrics");
-            return new Core.Interfaces.CachePerformanceMetrics { LastUpdated = DateTime.UtcNow };
-        }
-    }
-
-    public async Task OptimizeCacheAsync()
-    {
-        try
-        {
-            _logger.LogInformation("🔧 Optimizing semantic cache...");
-
-            // Remove expired entries
-            await RemoveExpiredEntriesAsync();
-
-            // Optimize vector search index
-            await _vectorSearchService.OptimizeIndexAsync();
-
-            // Compact memory cache
-            if (_memoryCache is MemoryCache mc)
-            {
-                mc.Compact(0.2); // Remove 20% of entries
-            }
-
-            _logger.LogInformation("✅ Semantic cache optimization completed");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ Error optimizing semantic cache");
-        }
-    }
-
-    public async Task<CacheHealthStatus> GetCacheHealthAsync()
-    {
-        try
-        {
-            var stats = await GetCacheStatisticsAsync();
-            var issues = new List<string>();
-            var metrics = new Dictionary<string, object>();
-
-            // Check hit rate
-            if (stats.HitRate < 0.3)
-            {
-                issues.Add("Low cache hit rate");
-            }
-
-            // Check cache size
-            if (stats.TotalEntries > 10000)
-            {
-                issues.Add("Cache size is large, consider cleanup");
-            }
-
-            metrics["hit_rate"] = stats.HitRate;
-            metrics["total_entries"] = stats.TotalEntries;
-            metrics["memory_usage_mb"] = stats.TotalSizeBytes / (1024.0 * 1024.0);
-
-            return new CacheHealthStatus
-            {
-                IsHealthy = issues.Count == 0,
-                Status = issues.Count == 0 ? "Healthy" : "Needs Attention",
-                Issues = issues,
-                Metrics = metrics,
-                CheckedAt = DateTime.UtcNow
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error checking cache health");
-            return new CacheHealthStatus
-            {
-                IsHealthy = false,
-                Status = "Error",
-                Issues = new List<string> { "Failed to check cache health" },
-                CheckedAt = DateTime.UtcNow
-            };
         }
     }
 

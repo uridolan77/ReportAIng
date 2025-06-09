@@ -3,7 +3,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using System.Text.RegularExpressions;
 
-namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
+namespace BIReportingCopilot.Infrastructure.AI.Intelligence;
 
 /// <summary>
 /// Schema Optimization service

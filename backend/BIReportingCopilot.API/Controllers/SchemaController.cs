@@ -11,22 +11,21 @@ using System.Security.Claims;
 namespace BIReportingCopilot.API.Controllers;
 
 /// <summary>
-/// Unified Schema Controller - Consolidates basic schema operations, management, and optimization
-/// Replaces: SchemaController, SchemaManagementController, SchemaOptimizationController
+/// Schema Controller - Provides schema operations, management, and optimization
 /// </summary>
 [ApiController]
 [Route("api/schema")]
 [Authorize]
-public class UnifiedSchemaController : ControllerBase
+public class SchemaController : ControllerBase
 {
-    private readonly ILogger<UnifiedSchemaController> _logger;
+    private readonly ILogger<SchemaController> _logger;
     private readonly ISchemaService _schemaService;
     private readonly ISchemaManagementService _schemaManagementService;
     private readonly ISchemaOptimizationService _schemaOptimizationService;
     private readonly IMediator _mediator;
 
-    public UnifiedSchemaController(
-        ILogger<UnifiedSchemaController> logger,
+    public SchemaController(
+        ILogger<SchemaController> logger,
         ISchemaService schemaService,
         ISchemaManagementService schemaManagementService,
         ISchemaOptimizationService schemaOptimizationService,
@@ -39,7 +38,7 @@ public class UnifiedSchemaController : ControllerBase
         _mediator = mediator;
     }
 
-    #region Basic Schema Operations (from SchemaController)
+    #region Basic Schema Operations
 
     /// <summary>
     /// Get database schema information
@@ -225,7 +224,7 @@ public class UnifiedSchemaController : ControllerBase
 
     #endregion
 
-    #region Schema Management Operations (from SchemaManagementController)
+    #region Schema Management Operations
 
     /// <summary>
     /// Get all business schemas for the current user
@@ -301,7 +300,7 @@ public class UnifiedSchemaController : ControllerBase
 
     #endregion
 
-    #region Schema Optimization Operations (from SchemaOptimizationController)
+    #region Schema Optimization Operations
 
     /// <summary>
     /// Optimize SQL query for better performance
@@ -430,9 +429,9 @@ public class UnifiedSchemaController : ControllerBase
 
     private string GetUserId()
     {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? 
-               User.FindFirst("sub")?.Value ?? 
-               User.Identity?.Name ?? 
+        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
+               User.FindFirst("sub")?.Value ??
+               User.Identity?.Name ??
                "anonymous";
     }
 

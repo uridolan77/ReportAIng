@@ -12,22 +12,21 @@ using System.Text;
 namespace BIReportingCopilot.API.Controllers;
 
 /// <summary>
-/// Unified Cache Controller - Consolidates basic cache operations and advanced semantic cache management
-/// Replaces: CacheController, SemanticCacheController
+/// Cache Controller - Provides cache operations and semantic cache management
 /// </summary>
 [ApiController]
 [Route("api/cache")]
 [Authorize]
-public class UnifiedCacheController : ControllerBase
+public class CacheController : ControllerBase
 {
     private readonly ICacheService _cacheService;
-    private readonly ILogger<UnifiedCacheController> _logger;
+    private readonly ILogger<CacheController> _logger;
     private readonly IMediator _mediator;
     private readonly IVectorSearchService _vectorSearchService;
 
-    public UnifiedCacheController(
+    public CacheController(
         ICacheService cacheService,
-        ILogger<UnifiedCacheController> logger,
+        ILogger<CacheController> logger,
         IMediator mediator,
         IVectorSearchService vectorSearchService)
     {

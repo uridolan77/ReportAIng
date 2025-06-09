@@ -13,14 +13,14 @@ using System.Runtime.CompilerServices;
 namespace BIReportingCopilot.API.Controllers;
 
 /// <summary>
-/// Unified query controller combining standard, enhanced, and streaming query capabilities
+/// Query controller providing standard, enhanced, and streaming query capabilities
 /// </summary>
 [ApiController]
 [Route("api/query")]
 [Authorize]
-public class UnifiedQueryController : ControllerBase
+public class QueryController : ControllerBase
 {
-    private readonly ILogger<UnifiedQueryController> _logger;
+    private readonly ILogger<QueryController> _logger;
     private readonly IMediator _mediator;
     private readonly IQueryService _queryService;
     private readonly IAIService _aiService;
@@ -32,8 +32,8 @@ public class UnifiedQueryController : ControllerBase
     private readonly IAuditService _auditService;
     private readonly IHubContext<QueryStatusHub> _hubContext;
 
-    public UnifiedQueryController(
-        ILogger<UnifiedQueryController> logger,
+    public QueryController(
+        ILogger<QueryController> logger,
         IMediator mediator,
         IQueryService queryService,
         IAIService aiService,

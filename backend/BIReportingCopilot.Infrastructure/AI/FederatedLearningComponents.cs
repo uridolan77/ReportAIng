@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
+using BIReportingCopilot.Core.Models;
 
-namespace BIReportingCopilot.Infrastructure.AI.Enhanced;
+namespace BIReportingCopilot.Infrastructure.AI.Components;
 
 /// <summary>
 /// Local model manager for federated learning
@@ -423,7 +424,7 @@ public class ModelValidationService
     {
         var performanceScore = trainingResult.Metrics.Accuracy;
         var privacyScore = session.PrivacyBudget > 0 ? 1.0 : 0.0;
-        
+
         return (performanceScore * 0.7) + (privacyScore * 0.3);
     }
 }
