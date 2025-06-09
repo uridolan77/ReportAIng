@@ -14,7 +14,7 @@ using BIReportingCopilot.Infrastructure.Services;
 using SignalRProgressReporter = BIReportingCopilot.Infrastructure.Services.SignalRProgressReporter;
 using BIReportingCopilot.API.Middleware;
 using BIReportingCopilot.API.Hubs;
-using BIReportingCopilot.API.HealthChecks;
+
 using BIReportingCopilot.Infrastructure.Health;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -427,7 +427,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.SecurityMa
 
 // Phase 3 Enhanced Services - Phase 3A: Infrastructure Ready
 // Phase 3 Status and Management Service
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Phase3StatusService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Management.Phase3StatusService>();
 
 // TODO: Enable individual Phase 3 services after fixing compilation errors
 // Phase 3B: Streaming Analytics (Next)
@@ -435,26 +435,26 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Phase3StatusServ
 // Phase 3D: Federated Learning & Quantum Security (Final)
 
 // Phase 3 Configuration
-builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Phase3Configuration>(
+builder.Services.Configure<BIReportingCopilot.Infrastructure.AI.Management.Phase3Configuration>(
     builder.Configuration.GetSection("Phase3"));
 
 // Individual Phase 3 feature configurations will be enabled as features are activated
 
 // Unified query analysis service - consolidates SemanticAnalyzer and QueryClassifier
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.QueryAnalysisService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Analysis.QueryAnalysisService>();
 builder.Services.AddScoped<ISemanticAnalyzer>(provider =>
-    provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.QueryAnalysisService>());
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.Analysis.QueryAnalysisService>());
 builder.Services.AddScoped<IQueryClassifier>(provider =>
-    provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.QueryAnalysisService>());
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.Analysis.QueryAnalysisService>());
 
 // Unified prompt management service - consolidates ContextManager and PromptOptimizer
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.PromptManagementService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Management.PromptManagementService>();
 builder.Services.AddScoped<IContextManager>(provider =>
-    provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.PromptManagementService>());
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.Management.PromptManagementService>());
 
 // Unified learning service - consolidates MLAnomalyDetector and FeedbackLearningEngine
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Core.LearningService>();
-builder.Services.AddScoped<IQueryOptimizer, BIReportingCopilot.Infrastructure.AI.QueryOptimizer>();
+builder.Services.AddScoped<IQueryOptimizer, BIReportingCopilot.Infrastructure.AI.Analysis.QueryOptimizer>();
 builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.Core.QueryProcessor>();
 
 // ===== ML & ANOMALY DETECTION SERVICES =====
@@ -552,7 +552,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHand
 // ===== CORE APPLICATION SERVICES =====
 // Base services
 builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.Core.AIService>();
-builder.Services.AddScoped<IQueryProgressNotifier, BIReportingCopilot.API.Services.SignalRQueryProgressNotifier>();
+builder.Services.AddScoped<IQueryProgressNotifier, BIReportingCopilot.API.Hubs.SignalRQueryProgressNotifier>();
 builder.Services.AddScoped<IQueryService, QueryService>();
 builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Services.SchemaService>(); // Unified with built-in caching
 builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Services.SqlQueryService>();
@@ -639,7 +639,7 @@ builder.Services.AddScoped<ITuningService, TuningService>();
 // Register AI tuning settings service (implements Core interface directly)
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IAITuningSettingsService, BIReportingCopilot.Infrastructure.Services.AITuningSettingsService>();
 
-builder.Services.AddScoped<IBusinessContextAutoGenerator, BusinessContextAutoGenerator>();
+builder.Services.AddScoped<IBusinessContextAutoGenerator, BIReportingCopilot.Infrastructure.AI.Management.BusinessContextAutoGenerator>();
 builder.Services.AddScoped<IQuerySuggestionService, BIReportingCopilot.Infrastructure.Services.QuerySuggestionService>();
 // Register SignalRProgressReporter with QueryStatusHub context
 builder.Services.AddScoped<IProgressReporter>(provider =>
@@ -686,7 +686,7 @@ builder.Services.AddEndpointsApiExplorer();
 var healthChecks = builder.Services.AddHealthChecks();
 
 // Add fast health checks that return cached status
-healthChecks.AddCheck<BIReportingCopilot.API.HealthChecks.BIDatabaseHealthCheck>("bidatabase");
+healthChecks.AddCheck<BIReportingCopilot.API.BIDatabaseHealthCheck>("bidatabase");
 
 // Add configuration health checks (Enhancement #3: Configuration Management)
 healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.ConfigurationHealthCheck>("configuration");
