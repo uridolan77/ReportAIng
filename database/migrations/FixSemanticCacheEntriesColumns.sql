@@ -1,6 +1,35 @@
 -- Migration: Fix SemanticCacheEntries table schema mismatch
 -- This fixes the schema mismatch where Entity Framework expects base entity columns
--- that don't exist in the database table
+-- that don't exist in the database table, and fixes the ID column type mismatch
+
+-- First, fix the ID column type mismatch (Int32 -> Int64)
+-- Check if we need to change the ID column from int to bigint
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[SemanticCacheEntries]') AND name = 'Id' AND system_type_id = 56) -- 56 = int
+BEGIN
+    PRINT 'Converting Id column from int to bigint...';
+
+    -- Drop any foreign key constraints that reference this table first
+    DECLARE @sql NVARCHAR(MAX) = '';
+    SELECT @sql = @sql + 'ALTER TABLE [' + OBJECT_SCHEMA_NAME(parent_object_id) + '].[' + OBJECT_NAME(parent_object_id) + '] DROP CONSTRAINT [' + name + '];' + CHAR(13)
+    FROM sys.foreign_keys
+    WHERE referenced_object_id = OBJECT_ID(N'[dbo].[SemanticCacheEntries]');
+
+    IF @sql != ''
+    BEGIN
+        PRINT 'Dropping foreign key constraints...';
+        EXEC sp_executesql @sql;
+    END
+
+    -- Change the ID column type
+    ALTER TABLE [dbo].[SemanticCacheEntries]
+    ALTER COLUMN [Id] BIGINT NOT NULL;
+
+    PRINT 'Successfully converted Id column to bigint';
+END
+ELSE
+BEGIN
+    PRINT 'Id column is already bigint or does not exist';
+END
 
 -- Add missing base entity columns to SemanticCacheEntries table
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[SemanticCacheEntries]') AND name = 'CreatedBy')
