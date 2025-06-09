@@ -44,7 +44,7 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
       key: 'name',
       render: (name: string, record: DatabaseColumn) => (
         <Space>
-          <Text strong>{name}</Text>
+          <Text>{name}</Text>
           {record.isPrimaryKey && (
             <Tooltip title="Primary Key">
               <KeyOutlined style={{ color: '#faad14' }} />
@@ -104,7 +104,7 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
       title: 'Column',
       dataIndex: 'column',
       key: 'column',
-      render: (column: string) => <Text strong>{column}</Text>
+      render: (column: string) => <Text>{column}</Text>
     },
     {
       title: 'Referenced Table',
@@ -175,13 +175,18 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
     <Card
       title={
         <Space>
-          <TableOutlined />
-          <Title level={4} style={{ margin: 0 }}>
+          <TableOutlined style={{ fontSize: '12px' }} />
+          <span style={{ fontSize: '12px', fontWeight: 'normal', margin: 0 }}>
             {table.name}
-          </Title>
-          {table.type === 'view' && <Tag color="purple">VIEW</Tag>}
+          </span>
+          {table.type === 'view' && <Tag color="purple" style={{ fontSize: '10px' }}>VIEW</Tag>}
         </Space>
       }
+      headStyle={{
+        fontSize: '12px',
+        fontWeight: 'normal',
+        padding: '8px 16px'
+      }}
       extra={
         <Space>
           <Button type="primary" icon={<DatabaseOutlined />} onClick={onPreviewData}>
@@ -196,10 +201,11 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
       <Space direction="vertical" style={{ width: '100%' }} size="large">
         {/* Table Information */}
         <Descriptions
-          title="Table Information"
+          title={<span style={{ fontSize: '12px', fontWeight: 'normal' }}>Table Information</span>}
           bordered
           size="small"
           column={2}
+          style={{ fontSize: '11px' }}
         >
           <Descriptions.Item label="Schema">{table.schema}</Descriptions.Item>
           <Descriptions.Item label="Type">{table.type}</Descriptions.Item>
@@ -228,38 +234,42 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
         </Descriptions>
 
         {/* Detailed Information Tabs */}
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane tab="Columns" key="columns">
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          style={{ fontSize: '12px' }}
+        >
+          <TabPane tab={<span style={{ fontSize: '12px' }}>Columns</span>} key="columns">
             <Table
               dataSource={table.columns}
               columns={columnTableColumns}
               rowKey="name"
               size="small"
               pagination={false}
-              scroll={{ y: 300 }}
+              style={{ fontSize: '12px' }}
             />
           </TabPane>
 
           {table.foreignKeys && table.foreignKeys.length > 0 && (
-            <TabPane tab={`Foreign Keys (${table.foreignKeys.length})`} key="foreignKeys">
+            <TabPane tab={<span style={{ fontSize: '12px' }}>{`Foreign Keys (${table.foreignKeys.length})`}</span>} key="foreignKeys">
               <Table
                 dataSource={table.foreignKeys}
                 columns={foreignKeyColumns}
                 rowKey="name"
                 size="small"
                 pagination={false}
-                scroll={{ y: 300 }}
+                style={{ fontSize: '12px' }}
               />
             </TabPane>
           )}
 
-          <TabPane tab="Sample Queries" key="queries">
+          <TabPane tab={<span style={{ fontSize: '12px' }}>Sample Queries</span>} key="queries">
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               {generateSampleQueries().map((queryInfo, index) => (
                 <Card key={index} size="small">
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text strong>{queryInfo.title}</Text>
+                      <Text>{queryInfo.title}</Text>
                       <Space>
                         <Button
                           type="text"

@@ -1,4 +1,4 @@
-import apiClient from './api';
+import apiClient, { ApiService, SqlExecutionRequest } from './api';
 import { DatabaseSchema, DatabaseTable, TableDataPreview, DatabaseColumn } from '../types/dbExplorer';
 
 export class DBExplorerAPI {
@@ -187,15 +187,6 @@ export class DBExplorerAPI {
       referencedColumn: apiColumn.referencedColumn || apiColumn.ReferencedColumn
     };
 
-    // Log first few columns for debugging
-    if (Math.random() < 0.3) { // Log ~30% of columns to see more examples
-      console.log('Column transformation:', {
-        original: apiColumn,
-        transformed: transformed,
-        availableKeys: Object.keys(apiColumn)
-      });
-    }
-
     return transformed;
   }
 
@@ -220,41 +211,97 @@ export class DBExplorerAPI {
       connectionName?: string;
     } = {}
   ): Promise<TableDataPreview> {
-    const { limit = 100, offset = 0, connectionName } = options;
+    const { limit = 1000, offset = 0, connectionName } = options;
 
     try {
-      // Use the existing SQL execution endpoint to get table data
-      const sql = `SELECT TOP ${limit} * FROM ${tableName}`;
+      console.log(`🔍 Getting table data preview for: ${tableName}, limit: ${limit}`);
 
-      const response = await apiClient.post('/api/query/execute', {
+      // Use fully qualified table name for DailyActionsDB tables
+      let qualifiedTableName = tableName;
+      if (tableName.startsWith('tbl_Daily_actions') || tableName.startsWith('tbl_Countries') || tableName.startsWith('tbl_Currencies') || tableName.startsWith('tbl_White_labels')) {
+        qualifiedTableName = `[DailyActionsDB].[common].[${tableName}]`;
+      }
+
+      // Start with a simple query first, then add ordering if it works
+      let sql = `SELECT TOP ${limit} * FROM ${qualifiedTableName} WITH (NOLOCK)`;
+
+      // Try to get table schema to find primary key or ID column for ordering
+      try {
+        const schema = await this.getSchema(connectionName);
+        const table = schema.tables?.find((t: any) => t.name === tableName);
+
+        // Find the best column to order by (prefer ID, then primary key, then first column)
+        if (table?.columns) {
+          const idColumn = table.columns.find((col: any) =>
+            col.name.toLowerCase().includes('id') || col.isPrimaryKey
+          );
+          if (idColumn) {
+            sql = `SELECT TOP ${limit} * FROM ${qualifiedTableName} WITH (NOLOCK) ORDER BY ${idColumn.name} DESC`;
+            console.log(`🔍 Using order by column: ${idColumn.name}`);
+          } else if (table.columns.length > 0) {
+            sql = `SELECT TOP ${limit} * FROM ${qualifiedTableName} WITH (NOLOCK) ORDER BY ${table.columns[0].name} DESC`;
+            console.log(`🔍 Using order by first column: ${table.columns[0].name}`);
+          }
+        }
+      } catch (schemaError) {
+        console.warn('🔍 Could not get schema for ordering, using simple query without ORDER BY:', schemaError);
+      }
+
+      console.log(`🔍 Executing SQL: ${sql}`);
+
+      const requestPayload: SqlExecutionRequest = {
         sql,
         sessionId: `db-explorer-${Date.now()}`,
         options: {
           maxRows: limit,
+          timeoutSeconds: 30,
           dataSource: connectionName
         }
-      });
+      };
+
+      console.log(`🔍 Request payload:`, requestPayload);
+
+      // Use the proven ApiService.executeRawSQL method instead of direct API call
+      const apiResponse = await ApiService.executeRawSQL(requestPayload);
+
+      console.log(`🔍 API response:`, apiResponse);
 
       // Transform the response to match our TableDataPreview interface
-      const result = response.data;
-
-      return {
+      const previewData = {
         tableName,
-        data: result.result?.data || [],
-        totalRows: result.result?.totalRows || result.result?.data?.length || 0,
-        columns: result.result?.columns || [],
+        data: apiResponse.result?.data || [],
+        totalRows: apiResponse.result?.totalRows || apiResponse.result?.data?.length || 0,
+        columns: apiResponse.result?.columns || [],
         sampleSize: limit
       };
-    } catch (error) {
-      // Fallback to mock data if API is not available
-      console.warn('API not available, using mock data for table preview');
-      return {
+
+      console.log(`🔍 Preview data result:`, previewData);
+      return previewData;
+    } catch (error: any) {
+      // Log detailed error information
+      console.error('🔍 Table data preview API call failed:', error);
+      console.error('🔍 Error response data:', error.response?.data);
+      console.error('🔍 Error response status:', error.response?.status);
+      console.error('🔍 Error response headers:', error.response?.headers);
+      console.error('🔍 Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
         tableName,
-        data: [],
-        totalRows: 0,
-        columns: [],
-        sampleSize: 0
-      };
+        limit,
+        connectionName,
+        sql
+      });
+
+      // Get more specific error message from response
+      let errorMessage = `Failed to load data for table ${tableName}`;
+      if (error.response?.data?.error) {
+        errorMessage += `: ${error.response.data.error}`;
+      } else if (error.response?.data?.message) {
+        errorMessage += `: ${error.response.data.message}`;
+      } else if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+      }
+
+      throw new Error(errorMessage);
     }
   }
 

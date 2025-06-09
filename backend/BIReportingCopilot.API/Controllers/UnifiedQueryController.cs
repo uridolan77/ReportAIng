@@ -510,9 +510,29 @@ public class UnifiedQueryController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("🔍 Debug schema request - getting schema metadata...");
             var schema = await _schemaService.GetSchemaMetadataAsync();
+
+            _logger.LogInformation("🔍 Schema retrieved - Database: {DatabaseName}, Tables: {TableCount}",
+                schema.DatabaseName, schema.Tables.Count);
+
+            // Log first few tables for debugging
+            foreach (var table in schema.Tables.Take(3))
+            {
+                _logger.LogInformation("🔍 Table: {Schema}.{TableName} - Columns: {ColumnCount}",
+                    table.Schema, table.Name, table.Columns.Count);
+
+                foreach (var column in table.Columns.Take(5))
+                {
+                    _logger.LogInformation("🔍   Column: {ColumnName} ({DataType}) - PK: {IsPrimaryKey}",
+                        column.Name, column.DataType, column.IsPrimaryKey);
+                }
+            }
+
             var result = new
             {
+                DatabaseName = schema.DatabaseName,
+                LastUpdated = schema.LastUpdated,
                 TableCount = schema.Tables.Count,
                 Tables = schema.Tables.Select(t => new
                 {
@@ -522,6 +542,8 @@ public class UnifiedQueryController : ControllerBase
                     Columns = t.Columns.Take(10).Select(c => new { c.Name, c.DataType, c.IsPrimaryKey }).ToList()
                 }).ToList()
             };
+
+            _logger.LogInformation("🔍 Returning debug schema with {TableCount} tables", result.TableCount);
             return Ok(result);
         }
         catch (Exception ex)

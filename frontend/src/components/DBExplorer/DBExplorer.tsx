@@ -12,7 +12,6 @@ import {
   Drawer
 } from 'antd';
 import { Resizable } from 'react-resizable';
-import 'react-resizable/css/styles.css';
 import './DBExplorer.css';
 import {
   DatabaseOutlined,
@@ -56,17 +55,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
     setState(prev => ({ ...prev, loading: true, error: undefined }));
 
     try {
-      // Use the same API call as SchemaManagementDashboard which works
-      console.log('🔍 Attempting to load schema using ApiService.getSchema()...');
       const rawSchemaData = await ApiService.getSchema();
-      console.log('🔍 Raw schema data from ApiService:', rawSchemaData);
-      console.log('🔍 Schema data structure:', {
-        keys: Object.keys(rawSchemaData || {}),
-        databaseName: rawSchemaData?.databaseName,
-        tablesCount: rawSchemaData?.tables?.length || 0,
-        viewsCount: rawSchemaData?.views?.length || 0,
-        sampleTable: rawSchemaData?.tables?.[0]
-      });
 
       if (rawSchemaData && rawSchemaData.tables) {
         // Transform it to match our interface - use the data directly since it's already in the right format
@@ -78,13 +67,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
           tables: rawSchemaData.tables || []
         };
 
-        console.log('🔍 Transformed schema for UI:', {
-          name: transformedSchema.name,
-          tablesCount: transformedSchema.tables.length,
-          viewsCount: transformedSchema.views.length,
-          sampleTable: transformedSchema.tables[0],
-          sampleTableColumns: transformedSchema.tables[0]?.columns?.slice(0, 3)
-        });
+
 
         setSchema(transformedSchema);
         message.success('Database schema loaded successfully');
@@ -160,7 +143,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
   const tables = schema?.tables || [];
 
   return (
-    <div style={{ height: '100vh', background: '#f0f2f5' }}>
+    <div className="db-explorer-container" style={{ height: '100vh', background: '#f0f2f5' }}>
       {/* Header */}
       <Card 
         style={{ 
@@ -310,11 +293,12 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
       {/* Data Preview Drawer */}
       <Drawer
         title={`Data Preview: ${state.selectedTable?.name}`}
-        placement="bottom"
-        height="70%"
+        placement="right"
+        width="85%"
         open={previewDrawerVisible}
         onClose={() => setPreviewDrawerVisible(false)}
         destroyOnClose
+        bodyStyle={{ padding: 0 }}
       >
         {state.selectedTable && (
           <TableDataPreview

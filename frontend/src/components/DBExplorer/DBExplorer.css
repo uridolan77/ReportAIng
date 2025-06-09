@@ -4,52 +4,63 @@
   height: 100%;
 }
 
-.db-explorer-resizable .react-resizable-handle {
+/* Complete override of react-resizable styles */
+.react-resizable {
+  position: relative;
+}
+
+.react-resizable-handle {
   position: absolute;
-  width: 12px;
+  width: 6px;
   height: 100%;
-  right: -6px;
-  top: 0;
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
   cursor: col-resize;
   z-index: 1000;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.db-explorer-resizable .react-resizable-handle-e {
-  right: -6px;
-  width: 12px;
+.react-resizable-handle-e {
+  right: -3px;
+  top: 0;
+  width: 6px;
   height: 100%;
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
   cursor: col-resize;
-  background: transparent;
 }
 
-.db-explorer-resizable .react-resizable-handle-e::before {
+.react-resizable-handle-e::before {
   content: '';
   position: absolute;
-  right: 5px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 2px;
-  height: 60px;
-  background: #d9d9d9;
-  border-radius: 1px;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 100%;
+  background: #d9d9d9 !important;
+  background-image: none !important;
+  border: none !important;
+  opacity: 0.6;
   transition: all 0.2s ease;
-  opacity: 0.7;
+}
+
+.react-resizable-handle-e:hover::before {
+  background: #1890ff !important;
+  opacity: 0.8;
+  width: 2px;
 }
 
 .db-explorer-resizable .react-resizable-handle-e:hover::before {
   background: #1890ff;
   opacity: 1;
   width: 3px;
-  height: 80px;
 }
 
 /* Ensure the resizable handle is visible */
 .db-explorer-resizable .react-resizable-handle-e:hover {
-  background: rgba(24, 144, 255, 0.1);
+  background: rgba(24, 144, 255, 0.08);
   border-radius: 4px;
 }
 
@@ -99,4 +110,108 @@
 
 .table-info-container::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* Aggressive table text styling - make smaller and normal weight */
+.ant-table-tbody > tr > td,
+.ant-table-tbody > tr > td *,
+.ant-table-tbody > tr > td .ant-typography,
+.ant-table-tbody > tr > td .ant-typography-text,
+.ant-table-tbody > tr > td span {
+  font-size: 11px !important;
+  font-weight: normal !important;
+}
+
+.ant-table-thead > tr > th,
+.ant-table-thead > tr > th * {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+
+/* Override ALL text in tables */
+.ant-table .ant-typography,
+.ant-table .ant-typography-text,
+.ant-table .ant-typography-text-strong,
+.ant-table strong,
+.ant-table span,
+.ant-table div {
+  font-weight: normal !important;
+  font-size: 11px !important;
+}
+
+/* Specific overrides for table content */
+.ant-table .ant-typography-caption {
+  font-size: 10px !important;
+}
+
+.ant-table .ant-tag {
+  font-size: 10px !important;
+  padding: 0 4px !important;
+  line-height: 16px !important;
+}
+
+/* DB Explorer specific - override everything */
+.db-explorer-container .ant-table,
+.db-explorer-container .ant-table *,
+.db-explorer-container .ant-table .ant-typography,
+.db-explorer-container .ant-table strong,
+.db-explorer-container .ant-table .ant-typography-text,
+.db-explorer-container .ant-table span,
+.db-explorer-container .ant-table div {
+  font-weight: normal !important;
+  font-size: 11px !important;
+}
+
+/* AGGRESSIVE override of ALL titles and headings in DB Explorer */
+.db-explorer-container .ant-typography-h1,
+.db-explorer-container .ant-typography-h2,
+.db-explorer-container .ant-typography-h3,
+.db-explorer-container .ant-typography-h4,
+.db-explorer-container .ant-typography-h5,
+.db-explorer-container h1,
+.db-explorer-container h2,
+.db-explorer-container h3,
+.db-explorer-container h4,
+.db-explorer-container h5,
+.db-explorer-container .ant-card-head-title,
+.db-explorer-container .ant-descriptions-title,
+.db-explorer-container .ant-tabs-tab,
+.db-explorer-container .ant-card-head,
+.db-explorer-container .ant-card-head *,
+.db-explorer-container .ant-card-head-wrapper,
+.db-explorer-container .ant-card-head-wrapper * {
+  font-size: 12px !important;
+  font-weight: normal !important;
+}
+
+/* Card titles specifically - VERY aggressive */
+.db-explorer-container .ant-card-head-title,
+.db-explorer-container .ant-card-head-title *,
+.db-explorer-container .ant-card-head-title span,
+.db-explorer-container .ant-card-head-title div,
+.db-explorer-container .ant-card .ant-card-head .ant-card-head-wrapper .ant-card-head-title {
+  font-size: 12px !important;
+  font-weight: normal !important;
+}
+
+/* Table headers */
+.db-explorer-container .ant-table-thead th,
+.db-explorer-container .ant-table-thead th * {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+
+/* Universal override for any remaining large text */
+.db-explorer-container * {
+  font-size: 12px !important;
+}
+
+/* Restore small elements */
+.db-explorer-container .ant-tag {
+  font-size: 10px !important;
+}
+
+.db-explorer-container .ant-table-tbody td,
+.db-explorer-container .ant-table-tbody td * {
+  font-size: 11px !important;
 }

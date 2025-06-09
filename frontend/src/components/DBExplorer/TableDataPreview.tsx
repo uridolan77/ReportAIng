@@ -33,7 +33,7 @@ interface TableDataPreviewProps {
 export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
   table,
   onClose,
-  maxRows = 100
+  maxRows = 1000
 }) => {
   const [previewData, setPreviewData] = useState<TableDataPreviewType | null>(null);
   const [loading, setLoading] = useState(false);
@@ -41,15 +41,18 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
 
   // Load table data preview
   const loadPreviewData = async () => {
+    console.log(`🔍 TableDataPreview: Loading data for table: ${table.name}, maxRows: ${maxRows}`);
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await DBExplorerAPI.getTableDataPreview(table.name, {
         limit: maxRows
       });
+      console.log(`🔍 TableDataPreview: Received data:`, data);
       setPreviewData(data);
     } catch (err) {
+      console.error(`🔍 TableDataPreview: Error loading data for ${table.name}:`, err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to load table data';
       setError(errorMessage);
       message.error(errorMessage);
@@ -90,7 +93,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
         </Space>
       ),
       dataIndex: column.name,
-      width: 150,
+      width: getColumnWidth(column),
       ellipsis: true,
       sortable: true,
       filterable: true,
@@ -109,6 +112,43 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
         return value;
       }
     }));
+  };
+
+  // Get appropriate column width based on data type and name
+  const getColumnWidth = (column: DatabaseColumn): number => {
+    const name = column.name.toLowerCase();
+    const type = column.dataType.toLowerCase();
+
+    // ID columns - narrow
+    if (name.includes('id') || name === 'selectid') {
+      return 100;
+    }
+
+    // Date columns - medium
+    if (type.includes('date') || type.includes('time')) {
+      return 180;
+    }
+
+    // Boolean/bit columns - narrow
+    if (type.includes('bit') || type.includes('bool')) {
+      return 80;
+    }
+
+    // Numeric columns - medium
+    if (type.includes('int') || type.includes('decimal') || type.includes('float') || type.includes('numeric') || type.includes('money')) {
+      return 120;
+    }
+
+    // Text columns - wider based on max length
+    if (column.maxLength) {
+      if (column.maxLength <= 50) return 150;
+      if (column.maxLength <= 100) return 200;
+      if (column.maxLength <= 255) return 250;
+      return 300;
+    }
+
+    // Default width
+    return 180;
   };
 
   // Map database column types to DataTable types
@@ -183,8 +223,8 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
           )}
         </Space>
       }
-      style={{ height: '100%' }}
-      bodyStyle={{ padding: '16px', height: 'calc(100% - 57px)', overflow: 'hidden' }}
+      style={{ height: '100vh', border: 'none' }}
+      bodyStyle={{ padding: '16px', height: 'calc(100vh - 57px)', overflow: 'auto' }}
     >
       {loading && (
         <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -228,8 +268,10 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
             config={{
               pageSize: 25,
               pageSizeOptions: [10, 25, 50, 100],
-              maxHeight: 'calc(100vh - 300px)',
-              exportFileName: `${table.name}_preview`
+              maxHeight: 'calc(100vh - 180px)',
+              exportFileName: `${table.name}_preview`,
+              scrollX: true,
+              sticky: true
             }}
             style={{ height: '100%' }}
           />
