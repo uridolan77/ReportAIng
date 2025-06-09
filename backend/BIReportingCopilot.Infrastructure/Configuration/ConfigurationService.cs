@@ -8,19 +8,19 @@ using BIReportingCopilot.Core.Configuration;
 namespace BIReportingCopilot.Infrastructure.Configuration;
 
 /// <summary>
-/// Unified configuration service consolidating all configuration management
+/// Configuration service consolidating all configuration management
 /// Replaces ApplicationSettings, ConfigurationModels, and related configuration files
 /// </summary>
-public class UnifiedConfigurationService
+public class ConfigurationService
 {
     private readonly IConfiguration _configuration;
-    private readonly ILogger<UnifiedConfigurationService> _logger;
+    private readonly ILogger<ConfigurationService> _logger;
     private readonly Dictionary<string, object> _configurationCache;
     private readonly object _cacheLock = new();
 
-    public UnifiedConfigurationService(
+    public ConfigurationService(
         IConfiguration configuration,
-        ILogger<UnifiedConfigurationService> logger)
+        ILogger<ConfigurationService> logger)
     {
         _configuration = configuration;
         _logger = logger;
@@ -61,11 +61,11 @@ public class UnifiedConfigurationService
     }
 
     /// <summary>
-    /// Get application settings with all unified configuration
+    /// Get application settings with all configuration
     /// </summary>
-    public UnifiedApplicationSettings GetApplicationSettings()
+    public ApplicationSettings GetApplicationSettings()
     {
-        return GetConfiguration<UnifiedApplicationSettings>("Application");
+        return GetConfiguration<ApplicationSettings>("Application");
     }
 
     /// <summary>
@@ -168,8 +168,6 @@ public class UnifiedConfigurationService
         return GetConfiguration<PerformanceConfiguration>("Performance");
     }
 
-
-
     /// <summary>
     /// Get caching settings
     /// </summary>
@@ -214,7 +212,7 @@ public class UnifiedConfigurationService
             // Validate each configuration section
             var validationTasks = new[]
             {
-                ValidateConfigurationSection<UnifiedApplicationSettings>("Application"),
+                ValidateConfigurationSection<ApplicationSettings>("Application"),
                 ValidateConfigurationSection<AIConfiguration>("AI"),
                 ValidateSecurityConfigurationSection(),
                 ValidateConfigurationSection<PerformanceConfiguration>("Performance"),

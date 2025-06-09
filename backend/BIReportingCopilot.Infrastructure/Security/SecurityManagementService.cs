@@ -16,7 +16,7 @@ public class SecurityManagementService : IRateLimitingService
 {
     private readonly IDistributedCache _cache;
     private readonly ILogger<SecurityManagementService> _logger;
-    private readonly UnifiedConfigurationService _configurationService;
+    private readonly ConfigurationService _configurationService;
     private readonly SecurityConfiguration _securityConfig;
 
     // SQL injection patterns
@@ -47,7 +47,7 @@ public class SecurityManagementService : IRateLimitingService
     public SecurityManagementService(
         IDistributedCache cache,
         ILogger<SecurityManagementService> logger,
-        UnifiedConfigurationService configurationService)
+        ConfigurationService configurationService)
     {
         _cache = cache;
         _logger = logger;

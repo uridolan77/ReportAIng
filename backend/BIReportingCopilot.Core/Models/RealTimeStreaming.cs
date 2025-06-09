@@ -317,6 +317,30 @@ public class PerformanceDataPoint
     public int ActiveSessions { get; set; }
 }
 
+/// <summary>
+/// Time series data point for charts and analytics
+/// </summary>
+public class TimeSeriesDataPoint
+{
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public double Value { get; set; }
+    public string? Label { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
+/// Performance history point for tracking over time
+/// </summary>
+public class PerformanceHistoryPoint
+{
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public double Throughput { get; set; }
+    public double Latency { get; set; }
+    public double ErrorRate { get; set; }
+    public int ActiveSessions { get; set; }
+    public Dictionary<string, double> Metrics { get; set; } = new();
+}
+
 // Enumerations
 public enum SessionStatus
 {

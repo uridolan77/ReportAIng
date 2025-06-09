@@ -171,9 +171,9 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddValidatorsFromAssemblyContaining<QueryRequestValidator>();
 
-// Configure application settings (using unified configuration)
-builder.Services.Configure<BIReportingCopilot.Core.Configuration.UnifiedApplicationSettings>(
-    builder.Configuration.GetSection(BIReportingCopilot.Core.Configuration.UnifiedApplicationSettings.SectionName));
+// Configure application settings (using configuration)
+builder.Services.Configure<BIReportingCopilot.Core.Configuration.ApplicationSettings>(
+    builder.Configuration.GetSection(BIReportingCopilot.Core.Configuration.ApplicationSettings.SectionName));
 
 // Configure security settings
 builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.RateLimitingConfiguration>(
@@ -387,8 +387,8 @@ builder.Services.AddScoped<IAIProviderFactory, BIReportingCopilot.Infrastructure
 
 // ===== UNIFIED SERVICES (ROUND 4, 5 & 6 CLEANUP) =====
 
-// Unified configuration service - consolidates all configuration management
-builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Configuration.UnifiedConfigurationService>();
+// Configuration service - consolidates all configuration management
+builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Configuration.ConfigurationService>();
 
 // Configuration migration service for backward compatibility during transition
 builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Configuration.ConfigurationMigrationService>();
@@ -568,11 +568,11 @@ builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.S
 builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.Services.PromptService>();
 
 // ===== ENHANCED AI SERVICES (Strategic Enhancements #2 & #3) =====
-builder.Services.AddScoped<IAdvancedNLUService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionAdvancedNLUService>();
-builder.Services.AddScoped<ISchemaOptimizationService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionSchemaOptimizationService>();
-builder.Services.AddScoped<IQueryIntelligenceService, BIReportingCopilot.Infrastructure.AI.Enhanced.QueryIntelligenceService>();
+builder.Services.AddScoped<IAdvancedNLUService, BIReportingCopilot.Infrastructure.AI.Enhanced.NLUService>();
+builder.Services.AddScoped<ISchemaOptimizationService, BIReportingCopilot.Infrastructure.AI.Enhanced.OptimizationService>();
+builder.Services.AddScoped<IQueryIntelligenceService, BIReportingCopilot.Infrastructure.AI.Enhanced.IntelligenceService>();
 // Real-Time Streaming Service - ENABLED for feature development
-builder.Services.AddScoped<IRealTimeStreamingService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionRealTimeStreamingService>();
+builder.Services.AddScoped<IRealTimeStreamingService, BIReportingCopilot.Infrastructure.AI.Enhanced.StreamingService>();
 builder.Services.AddScoped<IMultiModalDashboardService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionMultiModalDashboardService>();
 builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Services.VisualizationService>();
 

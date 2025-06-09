@@ -15,7 +15,7 @@ namespace BIReportingCopilot.Infrastructure.Health;
 public class HealthManagementService : IHealthCheck
 {
     private readonly BICopilotContext _context;
-    private readonly UnifiedConfigurationService _configurationService;
+    private readonly ConfigurationService _configurationService;
     private readonly ILogger<HealthManagementService> _logger;
     private readonly MonitoringConfiguration _monitoringConfig;
     private readonly Dictionary<string, HealthCheckResult> _healthCheckCache;
@@ -24,7 +24,7 @@ public class HealthManagementService : IHealthCheck
 
     public HealthManagementService(
         BICopilotContext context,
-        UnifiedConfigurationService configurationService,
+        ConfigurationService configurationService,
         ILogger<HealthManagementService> logger)
     {
         _context = context;

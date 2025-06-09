@@ -11,12 +11,12 @@ namespace BIReportingCopilot.Infrastructure.Health;
 /// </summary>
 public class ConfigurationHealthCheck : IHealthCheck
 {
-    private readonly UnifiedConfigurationService _configurationService;
+    private readonly ConfigurationService _configurationService;
     private readonly ConfigurationMigrationService _migrationService;
     private readonly ILogger<ConfigurationHealthCheck> _logger;
 
     public ConfigurationHealthCheck(
-        UnifiedConfigurationService configurationService,
+        ConfigurationService configurationService,
         ConfigurationMigrationService migrationService,
         ILogger<ConfigurationHealthCheck> logger)
     {
@@ -119,11 +119,11 @@ public class ConfigurationHealthCheck : IHealthCheck
 /// </summary>
 public class ConfigurationPerformanceHealthCheck : IHealthCheck
 {
-    private readonly UnifiedConfigurationService _configurationService;
+    private readonly ConfigurationService _configurationService;
     private readonly ILogger<ConfigurationPerformanceHealthCheck> _logger;
 
     public ConfigurationPerformanceHealthCheck(
-        UnifiedConfigurationService configurationService,
+        ConfigurationService configurationService,
         ILogger<ConfigurationPerformanceHealthCheck> logger)
     {
         _configurationService = configurationService;

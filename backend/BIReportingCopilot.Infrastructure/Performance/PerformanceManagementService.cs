@@ -16,7 +16,7 @@ namespace BIReportingCopilot.Infrastructure.Performance;
 public class PerformanceManagementService
 {
     private readonly BICopilotContext _context;
-    private readonly UnifiedConfigurationService _configurationService;
+    private readonly ConfigurationService _configurationService;
     private readonly ILogger<PerformanceManagementService> _logger;
     private readonly PerformanceConfiguration _performanceConfig;
     private readonly Dictionary<string, PerformanceMetrics> _metricsCache;
@@ -24,7 +24,7 @@ public class PerformanceManagementService
 
     public PerformanceManagementService(
         BICopilotContext context,
-        UnifiedConfigurationService configurationService,
+        ConfigurationService configurationService,
         ILogger<PerformanceManagementService> logger)
     {
         _context = context;

@@ -38,6 +38,33 @@ public class QueryOptimizationResult
 }
 
 /// <summary>
+/// Table health information for schema analysis
+/// </summary>
+public class TableHealthInfo
+{
+    public string TableName { get; set; } = string.Empty;
+    public double HealthScore { get; set; }
+    public List<string> Issues { get; set; } = new();
+    public List<string> Recommendations { get; set; } = new();
+    public long EstimatedRowCount { get; set; }
+    public DateTime LastAnalyzed { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Execution plan step for query analysis
+/// </summary>
+public class ExecutionPlanStep
+{
+    public string StepId { get; set; } = string.Empty;
+    public string Operation { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public double EstimatedCost { get; set; }
+    public double EstimatedRows { get; set; }
+    public List<string> Tables { get; set; } = new();
+    public Dictionary<string, object> Properties { get; set; } = new();
+}
+
+/// <summary>
 /// Individual optimization suggestion
 /// </summary>
 public class OptimizationSuggestion

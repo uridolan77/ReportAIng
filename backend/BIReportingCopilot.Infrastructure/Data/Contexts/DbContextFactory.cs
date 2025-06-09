@@ -11,12 +11,12 @@ namespace BIReportingCopilot.Infrastructure.Data.Contexts;
 public class DbContextFactory : IDbContextFactory
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly UnifiedConfigurationService _configurationService;
+    private readonly ConfigurationService _configurationService;
     private readonly ILogger<DbContextFactory> _logger;
 
     public DbContextFactory(
         IServiceProvider serviceProvider,
-        UnifiedConfigurationService configurationService,
+        ConfigurationService configurationService,
         ILogger<DbContextFactory> logger)
     {
         _serviceProvider = serviceProvider;

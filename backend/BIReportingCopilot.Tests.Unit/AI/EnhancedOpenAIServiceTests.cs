@@ -8,15 +8,15 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BIReportingCopilot.Tests.Unit.AI;
 
-public class EnhancedOpenAIServiceTests
+public class AIServiceTests
 {
-    private readonly ILogger<EnhancedOpenAIService> _logger;
+    private readonly ILogger<AIService> _logger;
     private readonly IConfiguration _configuration;
     private readonly OpenAIClient _mockClient;
 
-    public EnhancedOpenAIServiceTests()
+    public AIServiceTests()
     {
-        _logger = NullLogger<EnhancedOpenAIService>.Instance;
+        _logger = NullLogger<AIService>.Instance;
 
         // Create test configuration
         var configData = new Dictionary<string, string>
@@ -46,7 +46,7 @@ public class EnhancedOpenAIServiceTests
     public async Task GenerateSQLAsync_WithoutRealOpenAI_ShouldReturnFallbackSQL()
     {
         // Arrange
-        var service = new EnhancedOpenAIService(_mockClient, _configuration, _logger);
+        var service = new AIService(_mockClient, _configuration, _logger);
         var prompt = "Show me all customers";
 
         // Act
@@ -64,7 +64,7 @@ public class EnhancedOpenAIServiceTests
     public async Task GenerateSQLAsync_WithRevenueQuery_ShouldReturnRevenueSQL()
     {
         // Arrange
-        var service = new EnhancedOpenAIService(_mockClient, _configuration, _logger);
+        var service = new AIService(_mockClient, _configuration, _logger);
         var prompt = "Show me total revenue by month";
 
         // Act
@@ -81,7 +81,7 @@ public class EnhancedOpenAIServiceTests
     public async Task GenerateSQLAsync_WithCustomerQuery_ShouldReturnCustomerSQL()
     {
         // Arrange
-        var service = new EnhancedOpenAIService(_mockClient, _configuration, _logger);
+        var service = new AIService(_mockClient, _configuration, _logger);
         var prompt = "Show me customer information";
 
         // Act
@@ -97,7 +97,7 @@ public class EnhancedOpenAIServiceTests
     public async Task GenerateInsightAsync_WithoutRealOpenAI_ShouldReturnFallbackInsight()
     {
         // Arrange
-        var service = new EnhancedOpenAIService(_mockClient, _configuration, _logger);
+        var service = new AIService(_mockClient, _configuration, _logger);
         var query = "SELECT COUNT(*) FROM Orders";
         var data = new object[] { new { Count = 100 } };
 
@@ -114,7 +114,7 @@ public class EnhancedOpenAIServiceTests
     public async Task CalculateConfidenceScoreAsync_WithSimpleQuery_ShouldReturnReasonableScore()
     {
         // Arrange
-        var service = new EnhancedOpenAIService(_mockClient, _configuration, _logger);
+        var service = new AIService(_mockClient, _configuration, _logger);
         var naturalLanguageQuery = "Show me all users";
         var generatedSQL = "SELECT * FROM Users";
 
@@ -130,7 +130,7 @@ public class EnhancedOpenAIServiceTests
     public async Task CalculateConfidenceScoreAsync_WithComplexQuery_ShouldReturnAppropriateScore()
     {
         // Arrange
-        var service = new EnhancedOpenAIService(_mockClient, _configuration, _logger);
+        var service = new AIService(_mockClient, _configuration, _logger);
         var naturalLanguageQuery = "Show me revenue by product category with year-over-year growth";
         var generatedSQL = @"SELECT
                                 pc.CategoryName,
@@ -155,7 +155,7 @@ public class EnhancedOpenAIServiceTests
     public async Task ValidateQueryIntentAsync_WithValidDataQuery_ShouldReturnTrue()
     {
         // Arrange
-        var service = new EnhancedOpenAIService(_mockClient, _configuration, _logger);
+        var service = new AIService(_mockClient, _configuration, _logger);
         var query = "Show me all users where active = 1";
 
         // Act
@@ -169,7 +169,7 @@ public class EnhancedOpenAIServiceTests
     public async Task ValidateQueryIntentAsync_WithInvalidQuery_ShouldReturnFalse()
     {
         // Arrange
-        var service = new EnhancedOpenAIService(_mockClient, _configuration, _logger);
+        var service = new AIService(_mockClient, _configuration, _logger);
         var query = "DROP TABLE Users";
 
         // Act
@@ -194,7 +194,7 @@ public class EnhancedOpenAIServiceTests
     public async Task ValidateQueryIntentAsync_ShouldCorrectlyIdentifyValidQueries(string query, bool expectedValid)
     {
         // Arrange
-        var service = new EnhancedOpenAIService(_mockClient, _configuration, _logger);
+        var service = new AIService(_mockClient, _configuration, _logger);
 
         // Act
         var result = await service.ValidateQueryIntentAsync(query);
@@ -207,7 +207,7 @@ public class EnhancedOpenAIServiceTests
     public async Task GenerateVisualizationConfigAsync_WithQueryAndData_ShouldReturnValidJSON()
     {
         // Arrange
-        var service = new EnhancedOpenAIService(_mockClient, _configuration, _logger);
+        var service = new AIService(_mockClient, _configuration, _logger);
         var query = "SELECT Category, SUM(Revenue) FROM Sales GROUP BY Category";
         var columns = new[]
         {
@@ -233,7 +233,7 @@ public class EnhancedOpenAIServiceTests
     public async Task GenerateQuerySuggestionsAsync_WithSchema_ShouldReturnRelevantSuggestions()
     {
         // Arrange
-        var service = new EnhancedOpenAIService(_mockClient, _configuration, _logger);
+        var service = new AIService(_mockClient, _configuration, _logger);
         var schema = new BIReportingCopilot.Core.Models.SchemaMetadata
         {
             Tables = new List<BIReportingCopilot.Core.Models.TableMetadata>

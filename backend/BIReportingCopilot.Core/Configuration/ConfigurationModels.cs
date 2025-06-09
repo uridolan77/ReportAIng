@@ -3,10 +3,10 @@ using System.ComponentModel.DataAnnotations;
 namespace BIReportingCopilot.Core.Configuration;
 
 /// <summary>
-/// Unified application settings consolidating all application-level configuration
+/// Application settings consolidating all application-level configuration
 /// Enhanced with comprehensive application settings from legacy ApplicationSettings.cs
 /// </summary>
-public class UnifiedApplicationSettings
+public class ApplicationSettings
 {
     /// <summary>
     /// Configuration section name for backward compatibility
@@ -545,7 +545,7 @@ public class DatabaseConfiguration
 
 /// <summary>
 /// Cache configuration consolidating Redis and memory cache settings
-/// Enhanced with full Redis configuration capabilities
+/// Enhanced with comprehensive Redis configuration from legacy RedisConfiguration.cs
 /// </summary>
 public class CacheConfiguration
 {

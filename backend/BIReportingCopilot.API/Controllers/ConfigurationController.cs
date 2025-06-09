@@ -13,12 +13,12 @@ namespace BIReportingCopilot.API.Controllers;
 [Authorize(Roles = "Admin")]
 public class ConfigurationController : ControllerBase
 {
-    private readonly UnifiedConfigurationService _configurationService;
+    private readonly ConfigurationService _configurationService;
     private readonly ConfigurationMigrationService _migrationService;
     private readonly ILogger<ConfigurationController> _logger;
 
     public ConfigurationController(
-        UnifiedConfigurationService configurationService,
+        ConfigurationService configurationService,
         ConfigurationMigrationService migrationService,
         ILogger<ConfigurationController> logger)
     {
@@ -72,7 +72,7 @@ public class ConfigurationController : ControllerBase
     /// Get application settings
     /// </summary>
     [HttpGet("application")]
-    public ActionResult<UnifiedApplicationSettings> GetApplicationSettings()
+    public ActionResult<ApplicationSettings> GetApplicationSettings()
     {
         try
         {

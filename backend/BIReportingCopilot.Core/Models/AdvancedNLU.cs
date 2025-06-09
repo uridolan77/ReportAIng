@@ -78,6 +78,9 @@ public class SemanticStructure
     // Additional properties for compatibility
     public List<SemanticNode> Nodes { get; set; } = new();
     public double ParseConfidence { get; set; } = 0.85;
+
+    // Additional properties for NLUService compatibility
+    public QueryComplexityAnalysis ComplexityAnalysis { get; set; } = new();
 }
 
 /// <summary>
@@ -175,6 +178,9 @@ public class ContextualAnalysis
     public ConversationFlow ConversationFlow { get; set; } = new();
     public double OverallConfidence { get; set; }
     public TimeSpan ProcessingTime { get; set; }
+
+    // Additional properties for NLUService compatibility
+    public double Relevance { get; set; }
 }
 
 /// <summary>
@@ -209,6 +215,9 @@ public class NLUAnalysisContext
     public string Query { get; set; } = string.Empty;
     public ConversationContext? ConversationContext { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
+
+    // Additional properties for NLUService compatibility
+    public SchemaMetadata? Schema { get; set; }
 }
 
 /// <summary>
@@ -278,6 +287,10 @@ public class NLUMetrics
     public Dictionary<string, double> EntityAccuracy { get; set; } = new();
     public int CacheHitRate { get; set; }
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    // Additional properties for NLUService compatibility
+    public int TotalQueries { get; set; }
+    public TimeSpan ProcessingTime { get; set; }
 }
 
 
@@ -366,6 +379,13 @@ public class NLUConfiguration
     public bool EnableDomainAdaptation { get; set; } = true;
     public TimeSpan ConversationContextWindow { get; set; } = TimeSpan.FromMinutes(30);
     public Dictionary<string, object> ModelParameters { get; set; } = new();
+
+    // Additional properties for NLUService compatibility
+    public bool EnableSemanticAnalysis { get; set; } = true;
+    public bool EnableContextTracking { get; set; } = true;
+    public bool EnableLearning { get; set; } = true;
+    public int CacheExpirationMinutes { get; set; } = 30;
+    public int MaxContextQueries { get; set; } = 10;
 }
 
 // Supporting classes
@@ -446,6 +466,10 @@ public class ExtractedEntity
     // Additional properties for interface compatibility
     public string? SchemaReference { get; set; }
     public string? EntityId { get; set; }
+
+    // Additional properties for NLUService compatibility
+    public int Position { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
 public class EntityRelation
@@ -462,6 +486,9 @@ public class ContextualClue
     public string Value { get; set; } = string.Empty;
     public double Relevance { get; set; }
     public string Source { get; set; } = string.Empty;
+
+    // Additional properties for NLUService compatibility
+    public double Confidence { get; set; }
 }
 
 /// <summary>
@@ -550,6 +577,10 @@ public class TemporalContext
     public string TimeFrame { get; set; } = string.Empty;
     public TimeZoneInfo UserTimeZone { get; set; } = TimeZoneInfo.Local;
     public BusinessCalendar BusinessCalendar { get; set; } = new();
+
+    // Additional properties for NLUService compatibility
+    public List<string> References { get; set; } = new();
+    public bool IsRelative { get; set; }
 }
 
 public class DomainConcept
@@ -690,6 +721,10 @@ public class NLURecommendation
     public string Description { get; set; } = string.Empty;
     public RecommendationPriority Priority { get; set; }
     public double Confidence { get; set; }
+
+    // Additional properties for NLUService compatibility
+    public string Message { get; set; } = string.Empty;
+    public string ActionSuggestion { get; set; } = string.Empty;
 }
 
 // Enumerations
@@ -699,7 +734,10 @@ public enum IntentCategory
     Command,
     Question,
     Request,
-    Clarification
+    Clarification,
+    Analysis,
+    Comparison,
+    Other
 }
 
 public enum ComplexityLevel
@@ -760,12 +798,22 @@ public class ConversationState
 public class QueryIntelligenceResult
 {
     public string QueryId { get; set; } = Guid.NewGuid().ToString();
+    public string OriginalQuery { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public AdvancedNLUResult NLUResult { get; set; } = new();
     public QueryOptimizationResult OptimizationResult { get; set; } = new();
     public List<IntelligentQuerySuggestion> Suggestions { get; set; } = new();
     public QueryAssistance Assistance { get; set; } = new();
     public double OverallScore { get; set; }
     public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
+
+    // Additional properties for IntelligenceService compatibility
+    public SchemaOptimizationAnalysis SchemaAnalysis { get; set; } = new();
+    public List<SQLSuggestion> SQLSuggestions { get; set; } = new();
+    public double IntelligenceScore { get; set; }
+    public List<IntelligenceRecommendation> Recommendations { get; set; } = new();
+    public QueryIntelligenceMetrics ProcessingMetrics { get; set; } = new();
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
@@ -781,6 +829,25 @@ public class IntelligentQuerySuggestion
     public double PerformanceScore { get; set; }
     public List<string> Benefits { get; set; } = new();
     public Dictionary<string, object> Metadata { get; set; } = new();
+
+    // Additional properties for IntelligenceService compatibility
+    public double Confidence { get; set; }
+    public string ExpectedIntent { get; set; } = string.Empty;
+    public double SchemaRelevance { get; set; }
+    public string ComplexityLevel { get; set; } = string.Empty;
+    public string EstimatedPerformance { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Query intelligence processing metrics
+/// </summary>
+public class QueryIntelligenceMetrics
+{
+    public TimeSpan TotalProcessingTime { get; set; }
+    public TimeSpan NLUProcessingTime { get; set; }
+    public TimeSpan SchemaAnalysisTime { get; set; }
+    public List<string> ComponentsUsed { get; set; } = new();
+    public Dictionary<string, double> PerformanceMetrics { get; set; } = new();
 }
 
 /// <summary>

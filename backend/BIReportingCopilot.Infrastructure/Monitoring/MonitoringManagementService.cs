@@ -15,7 +15,7 @@ namespace BIReportingCopilot.Infrastructure.Monitoring;
 public class MonitoringManagementService : IMetricsCollector, IDisposable
 {
     private readonly ILogger<MonitoringManagementService> _logger;
-    private readonly UnifiedConfigurationService _configurationService;
+    private readonly ConfigurationService _configurationService;
     private readonly MonitoringConfiguration _monitoringConfig;
     private readonly Meter _meter;
     private readonly ConcurrentDictionary<string, Counter<long>> _counters;
@@ -35,7 +35,7 @@ public class MonitoringManagementService : IMetricsCollector, IDisposable
 
     public MonitoringManagementService(
         ILogger<MonitoringManagementService> logger,
-        UnifiedConfigurationService configurationService)
+        ConfigurationService configurationService)
     {
         _logger = logger;
         _configurationService = configurationService;

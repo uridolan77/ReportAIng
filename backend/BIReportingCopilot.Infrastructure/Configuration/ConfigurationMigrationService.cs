@@ -6,17 +6,17 @@ using BIReportingCopilot.Core.Configuration;
 namespace BIReportingCopilot.Infrastructure.Configuration;
 
 /// <summary>
-/// Service to help migrate from IConfiguration/IOptions to UnifiedConfigurationService
+/// Service to help migrate from IConfiguration/IOptions to ConfigurationService
 /// Provides backward compatibility during the migration period
 /// </summary>
 public class ConfigurationMigrationService
 {
-    private readonly UnifiedConfigurationService _unifiedConfig;
+    private readonly ConfigurationService _unifiedConfig;
     private readonly IConfiguration _legacyConfiguration;
     private readonly ILogger<ConfigurationMigrationService> _logger;
 
     public ConfigurationMigrationService(
-        UnifiedConfigurationService unifiedConfig,
+        ConfigurationService unifiedConfig,
         IConfiguration legacyConfiguration,
         ILogger<ConfigurationMigrationService> logger)
     {
@@ -49,7 +49,7 @@ public class ConfigurationMigrationService
                 nameof(MonitoringConfiguration) => (T)(object)_unifiedConfig.GetMonitoringSettings(),
                 nameof(FeatureConfiguration) => (T)(object)_unifiedConfig.GetFeatureFlags(),
                 nameof(NotificationConfiguration) => (T)(object)_unifiedConfig.GetNotificationSettings(),
-                nameof(UnifiedApplicationSettings) => (T)(object)_unifiedConfig.GetApplicationSettings(),
+                nameof(ApplicationSettings) => (T)(object)_unifiedConfig.GetApplicationSettings(),
                 _ => throw new NotSupportedException($"Configuration type {typeof(T).Name} is not supported by migration service")
             };
         }
@@ -144,7 +144,7 @@ public class ConfigurationMigrationService
                 typeof(MonitoringConfiguration),
                 typeof(FeatureConfiguration),
                 typeof(NotificationConfiguration),
-                typeof(UnifiedApplicationSettings)
+                typeof(ApplicationSettings)
             };
 
             foreach (var type in testTypes)

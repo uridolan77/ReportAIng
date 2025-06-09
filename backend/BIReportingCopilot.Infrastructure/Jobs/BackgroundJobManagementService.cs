@@ -21,7 +21,7 @@ public class BackgroundJobManagementService
     private readonly IAuditService _auditService;
     private readonly ICacheService _cacheService;
     private readonly IQueryService _queryService;
-    private readonly UnifiedConfigurationService _configurationService;
+    private readonly ConfigurationService _configurationService;
     private readonly ILogger<BackgroundJobManagementService> _logger;
     private readonly IHubContext<Hub> _hubContext;
     private readonly PerformanceConfiguration _performanceConfig;
@@ -32,7 +32,7 @@ public class BackgroundJobManagementService
         IAuditService auditService,
         ICacheService cacheService,
         IQueryService queryService,
-        UnifiedConfigurationService configurationService,
+        ConfigurationService configurationService,
         ILogger<BackgroundJobManagementService> logger,
         IHubContext<Hub> hubContext)
     {

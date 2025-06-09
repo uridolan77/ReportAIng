@@ -23,7 +23,7 @@ public class TuningService : ITuningService
     private readonly IBusinessContextAutoGenerator _autoGenerator;
     private readonly PerformanceManagementService _performanceService;
     private readonly ISchemaService _schemaService;
-    private readonly UnifiedConfigurationService _configurationService;
+    private readonly ConfigurationService _configurationService;
     private readonly IProgressReporter _progressReporter;
     private readonly ISchemaManagementService _schemaManagementService;
 
@@ -38,7 +38,7 @@ public class TuningService : ITuningService
         IBusinessContextAutoGenerator autoGenerator,
         PerformanceManagementService performanceService,
         ISchemaService schemaService,
-        UnifiedConfigurationService configurationService,
+        ConfigurationService configurationService,
         IProgressReporter progressReporter,
         ISchemaManagementService schemaManagementService,
         IBusinessTableManagementService tableManagementService,

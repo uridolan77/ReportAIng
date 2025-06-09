@@ -277,6 +277,93 @@ public class QueryContext
 }
 
 /// <summary>
+/// Context for query intelligence analysis
+/// </summary>
+public class QueryIntelligenceContext
+{
+    public SchemaMetadata? Schema { get; set; }
+    public string? UserId { get; set; }
+    public List<string> ConversationHistory { get; set; } = new();
+    public Dictionary<string, object> UserPreferences { get; set; } = new();
+    public string? BusinessDomain { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Analytics result for query intelligence
+/// </summary>
+public class QueryIntelligenceAnalytics
+{
+    public string UserId { get; set; } = string.Empty;
+    public TimeSpan TimeWindow { get; set; }
+    public NLUMetrics NLUMetrics { get; set; } = new();
+    public SchemaOptimizationMetrics SchemaMetrics { get; set; } = new();
+    public double OverallIntelligenceScore { get; set; }
+    public int TotalQueries { get; set; }
+    public int SuccessfulOptimizations { get; set; }
+    public TimeSpan AverageProcessingTime { get; set; }
+}
+
+/// <summary>
+/// Index recommendation for optimization
+/// </summary>
+public class IndexRecommendation
+{
+    public string TableName { get; set; } = string.Empty;
+    public List<string> Columns { get; set; } = new();
+    public string IndexType { get; set; } = string.Empty;
+    public double ImpactScore { get; set; }
+    public string Reasoning { get; set; } = string.Empty;
+    public string CreateStatement { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Schema optimization analysis result
+/// </summary>
+public class SchemaOptimizationAnalysis
+{
+    public List<IndexRecommendation> RecommendedIndexes { get; set; } = new();
+    public string QueryComplexity { get; set; } = string.Empty;
+    public string EstimatedPerformance { get; set; } = string.Empty;
+    public List<string> OptimizationOpportunities { get; set; } = new();
+}
+
+/// <summary>
+/// SQL suggestion with confidence and explanation
+/// </summary>
+public class SQLSuggestion
+{
+    public string SQL { get; set; } = string.Empty;
+    public double Confidence { get; set; }
+    public string Explanation { get; set; } = string.Empty;
+    public List<string> Tags { get; set; } = new();
+}
+
+/// <summary>
+/// Intelligence recommendation for query improvement
+/// </summary>
+public class IntelligenceRecommendation
+{
+    public string Type { get; set; } = string.Empty;
+    public string Priority { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public List<string> ActionItems { get; set; } = new();
+    public double Impact { get; set; }
+}
+
+/// <summary>
+/// Query recommendation
+/// </summary>
+public class QueryRecommendation
+{
+    public string Type { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Priority { get; set; } = string.Empty;
+    public double Impact { get; set; }
+    public List<string> ActionItems { get; set; } = new();
+}
+
+/// <summary>
 /// Analysis context for insight generation
 /// </summary>
 public class AnalysisContext

@@ -13,13 +13,13 @@ namespace BIReportingCopilot.Infrastructure.Services;
 public class NotificationManagementService : IEmailService, ISmsService
 {
     private readonly ILogger<NotificationManagementService> _logger;
-    private readonly UnifiedConfigurationService _configurationService;
+    private readonly ConfigurationService _configurationService;
     private readonly IHubContext<Hub> _hubContext;
     private readonly NotificationConfiguration _notificationConfig;
 
     public NotificationManagementService(
         ILogger<NotificationManagementService> logger,
-        UnifiedConfigurationService configurationService,
+        ConfigurationService configurationService,
         IHubContext<Hub> hubContext)
     {
         _logger = logger;
