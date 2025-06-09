@@ -36,7 +36,7 @@ public class EnhancedRateLimitingMiddleware
     public async Task InvokeAsync(HttpContext context, IRateLimitingService rateLimitingService)
     {
         // Skip rate limiting if disabled
-        if (!_config.EnableRateLimiting)
+        if (!_config.EnableRateLimit)
         {
             await _next(context);
             return;

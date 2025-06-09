@@ -61,17 +61,17 @@ public class InMemoryVectorSearchService : IVectorSearchService
     /// <summary>
     /// Store query embedding with metadata
     /// </summary>
-    public async Task<string> StoreQueryEmbeddingAsync(
-        string queryText, 
-        string sqlQuery, 
-        QueryResponse response, 
+    public Task<string> StoreQueryEmbeddingAsync(
+        string queryText,
+        string sqlQuery,
+        QueryResponse response,
         float[] embedding,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var embeddingId = Guid.NewGuid().ToString();
-            
+
             var vectorEntry = new VectorEntry
             {
                 Id = embeddingId,
@@ -92,16 +92,16 @@ public class InMemoryVectorSearchService : IVectorSearchService
             };
 
             _vectorIndex.TryAdd(embeddingId, vectorEntry);
-            
+
             lock (_indexLock)
             {
                 _metrics.TotalEmbeddings++;
             }
 
-            _logger.LogDebug("💾 Stored embedding {Id} for query: {Query}", 
+            _logger.LogDebug("💾 Stored embedding {Id} for query: {Query}",
                 embeddingId, queryText.Substring(0, Math.Min(50, queryText.Length)));
-            
-            return embeddingId;
+
+            return Task.FromResult(embeddingId);
         }
         catch (Exception ex)
         {
@@ -113,9 +113,9 @@ public class InMemoryVectorSearchService : IVectorSearchService
     /// <summary>
     /// Find semantically similar queries using cosine similarity
     /// </summary>
-    public async Task<List<SemanticSearchResult>> FindSimilarQueriesAsync(
-        float[] queryEmbedding, 
-        double similarityThreshold = 0.8, 
+    public Task<List<SemanticSearchResult>> FindSimilarQueriesAsync(
+        float[] queryEmbedding,
+        double similarityThreshold = 0.8,
         int maxResults = 5,
         CancellationToken cancellationToken = default)
     {
@@ -124,7 +124,7 @@ public class InMemoryVectorSearchService : IVectorSearchService
             var startTime = DateTime.UtcNow;
             var results = new List<SemanticSearchResult>();
 
-            _logger.LogDebug("🔍 Searching {Count} embeddings with threshold {Threshold:P2}", 
+            _logger.LogDebug("🔍 Searching {Count} embeddings with threshold {Threshold:P2}",
                 _vectorIndex.Count, similarityThreshold);
 
             // Calculate similarity with all stored embeddings
@@ -166,22 +166,22 @@ public class InMemoryVectorSearchService : IVectorSearchService
             }
 
             var searchTime = DateTime.UtcNow - startTime;
-            
+
             lock (_indexLock)
             {
                 _metrics.TotalSearches++;
                 _metrics.AverageSearchTime = (_metrics.AverageSearchTime * (_metrics.TotalSearches - 1) + searchTime.TotalMilliseconds) / _metrics.TotalSearches;
             }
 
-            _logger.LogDebug("🔍 Found {Count} similar queries in {Time}ms", 
+            _logger.LogDebug("🔍 Found {Count} similar queries in {Time}ms",
                 results.Count, searchTime.TotalMilliseconds);
 
-            return results;
+            return Task.FromResult(results);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error finding similar queries");
-            return new List<SemanticSearchResult>();
+            return Task.FromResult(new List<SemanticSearchResult>());
         }
     }
 
@@ -233,8 +233,8 @@ public class InMemoryVectorSearchService : IVectorSearchService
     /// <summary>
     /// Update embedding for existing query
     /// </summary>
-    public async Task<bool> UpdateQueryEmbeddingAsync(
-        string embeddingId, 
+    public Task<bool> UpdateQueryEmbeddingAsync(
+        string embeddingId,
         float[] newEmbedding,
         CancellationToken cancellationToken = default)
     {
@@ -244,59 +244,59 @@ public class InMemoryVectorSearchService : IVectorSearchService
             {
                 entry.Embedding = newEmbedding;
                 entry.LastAccessed = DateTime.UtcNow;
-                
+
                 _logger.LogDebug("🔄 Updated embedding {Id}", embeddingId);
-                return true;
+                return Task.FromResult(true);
             }
-            
-            return false;
+
+            return Task.FromResult(false);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error updating embedding {Id}", embeddingId);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
     /// <summary>
     /// Delete embedding by ID
     /// </summary>
-    public async Task<bool> DeleteQueryEmbeddingAsync(string embeddingId, CancellationToken cancellationToken = default)
+    public Task<bool> DeleteQueryEmbeddingAsync(string embeddingId, CancellationToken cancellationToken = default)
     {
         try
         {
             var removed = _vectorIndex.TryRemove(embeddingId, out _);
-            
+
             if (removed)
             {
                 lock (_indexLock)
                 {
                     _metrics.TotalEmbeddings--;
                 }
-                
+
                 _logger.LogDebug("🗑️ Deleted embedding {Id}", embeddingId);
             }
-            
-            return removed;
+
+            return Task.FromResult(removed);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error deleting embedding {Id}", embeddingId);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
     /// <summary>
     /// Get performance metrics
     /// </summary>
-    public async Task<VectorSearchMetrics> GetMetricsAsync(CancellationToken cancellationToken = default)
+    public Task<VectorSearchMetrics> GetMetricsAsync(CancellationToken cancellationToken = default)
     {
         lock (_indexLock)
         {
             _metrics.IndexSizeBytes = _vectorIndex.Sum(kvp => EstimateEntrySize(kvp.Value));
             _metrics.LastOptimized = DateTime.UtcNow; // Would track actual optimization
-            
-            return new VectorSearchMetrics
+
+            return Task.FromResult(new VectorSearchMetrics
             {
                 TotalEmbeddings = _metrics.TotalEmbeddings,
                 TotalSearches = _metrics.TotalSearches,
@@ -310,7 +310,7 @@ public class InMemoryVectorSearchService : IVectorSearchService
                     ["index_entries"] = _vectorIndex.Count,
                     ["avg_embedding_size"] = _vectorIndex.Any() ? _vectorIndex.First().Value.Embedding.Length : 0
                 }
-            };
+            });
         }
     }
 
@@ -356,12 +356,12 @@ public class InMemoryVectorSearchService : IVectorSearchService
     /// <summary>
     /// Optimize vector index for better performance
     /// </summary>
-    public async Task OptimizeIndexAsync(CancellationToken cancellationToken = default)
+    public Task OptimizeIndexAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation("🔧 Optimizing vector index with {Count} entries", _vectorIndex.Count);
-            
+
             // Remove expired entries
             var expiredEntries = _vectorIndex
                 .Where(kvp => DateTime.UtcNow - kvp.Value.LastAccessed > TimeSpan.FromDays(30))
@@ -380,17 +380,19 @@ public class InMemoryVectorSearchService : IVectorSearchService
             }
 
             _logger.LogInformation("🔧 Index optimization complete - Removed {Count} expired entries", expiredEntries.Count);
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error optimizing vector index");
+            return Task.CompletedTask;
         }
     }
 
     /// <summary>
     /// Clear the entire vector index
     /// </summary>
-    public async Task ClearIndexAsync(CancellationToken cancellationToken = default)
+    public Task ClearIndexAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -406,17 +408,19 @@ public class InMemoryVectorSearchService : IVectorSearchService
             }
 
             _logger.LogInformation("🗑️ Cleared vector index - Removed {Count} entries", count);
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error clearing vector index");
+            return Task.CompletedTask;
         }
     }
 
     /// <summary>
     /// Invalidate embeddings by pattern
     /// </summary>
-    public async Task InvalidateByPatternAsync(string pattern, CancellationToken cancellationToken = default)
+    public Task InvalidateByPatternAsync(string pattern, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -437,28 +441,30 @@ public class InMemoryVectorSearchService : IVectorSearchService
             }
 
             _logger.LogInformation("🗑️ Invalidated {Count} entries matching pattern: {Pattern}", entriesToRemove.Count, pattern);
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error invalidating entries by pattern: {Pattern}", pattern);
+            return Task.CompletedTask;
         }
     }
 
     /// <summary>
     /// Generate simple embedding based on text features (placeholder for real embedding API)
     /// </summary>
-    private async Task<float[]> GenerateSimpleEmbeddingAsync(string text)
+    private Task<float[]> GenerateSimpleEmbeddingAsync(string text)
     {
         // This is a simplified embedding generation for demonstration
         // In production, this would call OpenAI's embedding API or similar service
-        
+
         var words = text.ToLowerInvariant()
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Take(100) // Limit to prevent huge embeddings
             .ToArray();
 
         var embedding = new float[384]; // Common embedding dimension
-        
+
         // Simple hash-based embedding (not semantically meaningful, just for demo)
         for (int i = 0; i < words.Length && i < embedding.Length; i++)
         {
@@ -484,7 +490,7 @@ public class InMemoryVectorSearchService : IVectorSearchService
             }
         }
 
-        return embedding;
+        return Task.FromResult(embedding);
     }
 
     private long EstimateEntrySize(VectorEntry entry)

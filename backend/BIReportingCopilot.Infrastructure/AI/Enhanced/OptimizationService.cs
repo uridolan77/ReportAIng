@@ -107,7 +107,7 @@ public class OptimizationService : ISchemaOptimizationService
     /// <summary>
     /// Generate automated index suggestions based on query patterns
     /// </summary>
-    public async Task<List<IndexSuggestion>> SuggestIndexesAsync(
+    public Task<List<IndexSuggestion>> SuggestIndexesAsync(
         List<QueryHistoryItem> queryHistory,
         SchemaMetadata schema)
     {
@@ -134,12 +134,12 @@ public class OptimizationService : ISchemaOptimizationService
             suggestions = DeduplicateAndPrioritizeIndexSuggestions(suggestions);
 
             _logger.LogInformation("📊 Generated {Count} index suggestions", suggestions.Count);
-            return suggestions;
+            return Task.FromResult(suggestions);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error generating index suggestions");
-            return new List<IndexSuggestion>();
+            return Task.FromResult(new List<IndexSuggestion>());
         }
     }
 
@@ -229,7 +229,7 @@ public class OptimizationService : ISchemaOptimizationService
     /// <summary>
     /// Analyze schema health and suggest improvements
     /// </summary>
-    public async Task<SchemaHealthAnalysis> AnalyzeSchemaHealthAsync(SchemaMetadata schema)
+    public Task<SchemaHealthAnalysis> AnalyzeSchemaHealthAsync(SchemaMetadata schema)
     {
         try
         {
@@ -289,23 +289,23 @@ public class OptimizationService : ISchemaOptimizationService
             _logger.LogInformation("🏥 Schema health analysis completed - Overall Score: {Score:P2}",
                 overallScore);
 
-            return result;
+            return Task.FromResult(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error analyzing schema health");
-            return new SchemaHealthAnalysis
+            return Task.FromResult(new SchemaHealthAnalysis
             {
                 OverallHealthScore = 0.5,
                 AnalyzedAt = DateTime.UtcNow
-            };
+            });
         }
     }
 
     /// <summary>
     /// Generate query execution plan analysis
     /// </summary>
-    public async Task<ExecutionPlanAnalysis> AnalyzeExecutionPlanAsync(
+    public Task<ExecutionPlanAnalysis> AnalyzeExecutionPlanAsync(
         string sql,
         SchemaMetadata schema)
     {
@@ -373,38 +373,38 @@ public class OptimizationService : ISchemaOptimizationService
             _logger.LogInformation("📋 Execution plan analysis completed - Estimated Cost: {Cost}",
                 result.EstimatedCost);
 
-            return result;
+            return Task.FromResult(result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error analyzing execution plan");
-            return new ExecutionPlanAnalysis
+            return Task.FromResult(new ExecutionPlanAnalysis
             {
                 Sql = sql,
                 EstimatedCost = 0.0
-            };
+            });
         }
     }
 
     // Missing interface methods
-    public async Task<List<QueryRewrite>> SuggestQueryRewritesAsync(string originalSql, SchemaMetadata schema)
+    public Task<List<QueryRewrite>> SuggestQueryRewritesAsync(string originalSql, SchemaMetadata schema)
     {
-        return new List<QueryRewrite>();
+        return Task.FromResult(new List<QueryRewrite>());
     }
 
-    public async Task<PerformanceTrendAnalysis> AnalyzePerformanceTrendsAsync(List<QueryHistoryItem> queryHistory, TimeSpan analysisWindow)
+    public Task<PerformanceTrendAnalysis> AnalyzePerformanceTrendsAsync(List<QueryHistoryItem> queryHistory, TimeSpan analysisWindow)
     {
-        return new PerformanceTrendAnalysis();
+        return Task.FromResult(new PerformanceTrendAnalysis());
     }
 
-    public async Task<List<MaintenanceRecommendation>> GenerateMaintenanceRecommendationsAsync(SchemaMetadata schema, List<QueryHistoryItem> queryHistory)
+    public Task<List<MaintenanceRecommendation>> GenerateMaintenanceRecommendationsAsync(SchemaMetadata schema, List<QueryHistoryItem> queryHistory)
     {
-        return new List<MaintenanceRecommendation>();
+        return Task.FromResult(new List<MaintenanceRecommendation>());
     }
 
-    public async Task<SchemaOptimizationMetrics> GetOptimizationMetricsAsync()
+    public Task<SchemaOptimizationMetrics> GetOptimizationMetricsAsync()
     {
-        return new SchemaOptimizationMetrics();
+        return Task.FromResult(new SchemaOptimizationMetrics());
     }
 
     // Helper methods for SQL pattern analysis
@@ -488,7 +488,7 @@ public class OptimizationService : ISchemaOptimizationService
         return suggestions;
     }
 
-    private async Task<List<IndexSuggestion>> GenerateIndexSuggestionsForQueryAsync(string sql, SchemaMetadata schema)
+    private Task<List<IndexSuggestion>> GenerateIndexSuggestionsForQueryAsync(string sql, SchemaMetadata schema)
     {
         var suggestions = new List<IndexSuggestion>();
 
@@ -512,7 +512,7 @@ public class OptimizationService : ISchemaOptimizationService
             }
         }
 
-        return suggestions;
+        return Task.FromResult(suggestions);
     }
 
     private Dictionary<string, List<string>> ExtractWhereClauseColumns(string sql)
@@ -566,9 +566,9 @@ public class OptimizationService : ISchemaOptimizationService
         return new PerformancePrediction { PredictedImprovement = 0.3 };
     }
 
-    private async Task<string> GenerateOptimizedSqlAsync(string sql, List<OptimizationSuggestion> suggestions)
+    private Task<string> GenerateOptimizedSqlAsync(string sql, List<OptimizationSuggestion> suggestions)
     {
-        return sql; // Placeholder
+        return Task.FromResult(sql); // Placeholder
     }
 
     private double CalculateImprovementScore(List<OptimizationSuggestion> suggestions)

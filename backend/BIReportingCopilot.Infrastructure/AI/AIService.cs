@@ -534,7 +534,7 @@ EXAMPLES:
     {
         if (data.Length == 0) return "No data available";
 
-        var preview = data.Take(3).Select(item => item.ToString()).ToArray();
+        var preview = data.Take(3).Select(item => item?.ToString() ?? "null").ToArray();
         return string.Join(", ", preview) + (data.Length > 3 ? "..." : "");
     }
 

@@ -76,7 +76,7 @@ public class PromptService : IPromptService
             var exampleQueries = GetRelevantExampleQueries(naturalLanguageQuery);
             var contextInfo = !string.IsNullOrEmpty(context) ? $"\nAdditional context: {context}" : "";
 
-            var prompt = template.Content
+            var prompt = (template.Content ?? "")
                 .Replace("{schema}", schemaDescription)
                 .Replace("{question}", naturalLanguageQuery)
                 .Replace("{context}", contextInfo)
@@ -215,7 +215,7 @@ public class PromptService : IPromptService
             var dataPreview = GenerateDataPreview(result.Data);
             var columnInfo = string.Join(", ", result.Metadata.Columns.Select(c => $"{c.Name} ({c.DataType})"));
 
-            var prompt = template.Content
+            var prompt = (template.Content ?? "")
                 .Replace("{query}", query)
                 .Replace("{data_preview}", dataPreview)
                 .Replace("{column_info}", columnInfo)
@@ -239,7 +239,7 @@ public class PromptService : IPromptService
             var columnInfo = string.Join(", ", result.Metadata.Columns.Select(c => $"{c.Name} ({c.DataType})"));
             var dataCharacteristics = AnalyzeDataCharacteristics(result);
 
-            var prompt = template.Content
+            var prompt = (template.Content ?? "")
                 .Replace("{query}", query)
                 .Replace("{column_info}", columnInfo)
                 .Replace("{row_count}", result.Metadata.RowCount.ToString())

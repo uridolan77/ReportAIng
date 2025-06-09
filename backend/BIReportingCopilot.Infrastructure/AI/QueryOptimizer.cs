@@ -165,7 +165,7 @@ public class QueryOptimizer : IQueryOptimizer
         }
     }
 
-    public async Task<QueryPerformancePrediction> PredictPerformanceAsync(string sql, SchemaMetadata? schema)
+    public Task<QueryPerformancePrediction> PredictPerformanceAsync(string sql, SchemaMetadata? schema)
     {
         try
         {
@@ -187,23 +187,23 @@ public class QueryOptimizer : IQueryOptimizer
             // Generate index recommendations
             prediction.IndexRecommendations = GenerateIndexRecommendations(sql, schema);
 
-            return prediction;
+            return Task.FromResult(prediction);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error predicting query performance");
-            return new QueryPerformancePrediction
+            return Task.FromResult(new QueryPerformancePrediction
             {
                 EstimatedExecutionTime = TimeSpan.FromSeconds(1),
                 EstimatedRowCount = 1000,
                 ComplexityScore = 0.5,
                 PerformanceWarnings = new List<string> { "Unable to analyze performance" },
                 IndexRecommendations = new List<string>()
-            };
+            });
         }
     }
 
-    public async Task<string> RewriteForPerformanceAsync(string sql)
+    public Task<string> RewriteForPerformanceAsync(string sql)
     {
         try
         {
@@ -235,12 +235,12 @@ public class QueryOptimizer : IQueryOptimizer
             }
 
             _logger.LogDebug("Applied {OptimizationCount} performance optimizations", optimizations.Count);
-            return optimizedSql;
+            return Task.FromResult(optimizedSql);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error rewriting SQL for performance");
-            return sql; // Return original SQL if optimization fails
+            return Task.FromResult(sql); // Return original SQL if optimization fails
         }
     }
 

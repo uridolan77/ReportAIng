@@ -20,7 +20,7 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
     private readonly CoreISemanticCacheService _semanticCache;
     private readonly SecurityManagementService _securityService;
     private readonly IMetricsCollector _metricsCollector;
-    private readonly IAnomalyDetector _anomalyDetector;
+    private readonly LearningService _learningService;
 
     public QueryExecutedEventHandler(
         ILogger<QueryExecutedEventHandler> logger,
@@ -28,14 +28,14 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
         CoreISemanticCacheService semanticCache,
         SecurityManagementService securityService,
         IMetricsCollector metricsCollector,
-        IAnomalyDetector anomalyDetector)
+        LearningService learningService)
     {
         _logger = logger;
         _monitoringService = monitoringService;
         _semanticCache = semanticCache;
         _securityService = securityService;
         _metricsCollector = metricsCollector;
-        _anomalyDetector = anomalyDetector;
+        _learningService = learningService;
     }
 
     public async Task HandleAsync(QueryExecutedEvent @event, CancellationToken cancellationToken = default)
@@ -104,15 +104,20 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
     {
         try
         {
-            var anomalyResult = await _anomalyDetector.AnalyzeQueryAsync(
-                @event.UserId,
-                @event.NaturalLanguageQuery,
-                @event.GeneratedSQL);
-
-            if (anomalyResult.RiskLevel >= RiskLevel.Medium)
+            var metrics = new QueryMetrics
             {
-                _logger.LogWarning("Anomaly detected for user {UserId}: Risk Level {RiskLevel}, Score: {Score:F3}",
-                    @event.UserId, anomalyResult.RiskLevel, anomalyResult.AnomalyScore);
+                ExecutionTimeMs = @event.ExecutionTimeMs,
+                RowCount = @event.RowCount,
+                IsSuccessful = @event.IsSuccessful
+            };
+
+            var anomalyResult = await _learningService.DetectQueryAnomaliesAsync(@event.NaturalLanguageQuery, metrics);
+
+            if (anomalyResult.AnomalyScore > 0.1)
+            {
+                _logger.LogWarning("Anomaly detected for user {UserId}: Score: {Score:F3}, Anomalies: {Anomalies}",
+                    @event.UserId, anomalyResult.AnomalyScore,
+                    string.Join(", ", anomalyResult.DetectedAnomalies.Select(a => a.ToString())));
 
                 // Could publish AnomalyDetectedEvent here for further processing
             }

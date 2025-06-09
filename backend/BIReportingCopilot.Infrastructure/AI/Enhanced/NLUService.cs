@@ -184,7 +184,7 @@ public class NLUService : IAdvancedNLUService
             .Replace("\t", " ");
     }
 
-    private async Task<SemanticStructure> AnalyzeSemanticStructureAsync(string query)
+    private Task<SemanticStructure> AnalyzeSemanticStructureAsync(string query)
     {
         var words = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var tokens = words.Select((word, index) => new SemanticToken
@@ -195,14 +195,14 @@ public class NLUService : IAdvancedNLUService
             Confidence = 0.8
         }).ToList();
 
-        return new SemanticStructure
+        return Task.FromResult(new SemanticStructure
         {
             Tokens = tokens,
             Phrases = ExtractPhrases(tokens),
             Relations = ExtractRelations(tokens),
             KeyConcepts = ExtractKeyConcepts(query),
             ComplexityAnalysis = CalculateComplexity(query)
-        };
+        });
     }
 
     private string ClassifyTokenType(string word)
@@ -279,7 +279,7 @@ public class NLUService : IAdvancedNLUService
         return subIntents;
     }
 
-    private async Task<List<ExtractedEntity>> ExtractSchemaEntitiesAsync(string query, SchemaMetadata schema)
+    private Task<List<ExtractedEntity>> ExtractSchemaEntitiesAsync(string query, SchemaMetadata schema)
     {
         var entities = new List<ExtractedEntity>();
         var lowerQuery = query.ToLowerInvariant();
@@ -322,30 +322,30 @@ public class NLUService : IAdvancedNLUService
             }
         }
 
-        return entities;
+        return Task.FromResult(entities);
     }
 
-    private async Task<List<string>> IdentifyMissingEntitiesAsync(string query, List<ExtractedEntity> entities)
+    private Task<List<string>> IdentifyMissingEntitiesAsync(string query, List<ExtractedEntity> entities)
     {
         var missing = new List<string>();
-        
+
         // Check for common missing entities based on intent
         if (query.ToLowerInvariant().Contains("count") && !entities.Any(e => e.Type == "Table"))
         {
             missing.Add("Table name");
         }
-        
-        return missing;
+
+        return Task.FromResult(missing);
     }
 
-    private async Task<List<string>> GetConversationHistoryAsync(string userId)
+    private Task<List<string>> GetConversationHistoryAsync(string userId)
     {
         var cacheKey = $"conversation_history_{userId}";
         if (_cache.TryGetValue(cacheKey, out List<string>? history))
         {
-            return history ?? new List<string>();
+            return Task.FromResult(history ?? new List<string>());
         }
-        return new List<string>();
+        return Task.FromResult(new List<string>());
     }
 
     private List<ContextualClue> ExtractContextualClues(string query, List<string> history)
@@ -387,15 +387,15 @@ public class NLUService : IAdvancedNLUService
         };
     }
 
-    private async Task<UserContext> GetUserContextAsync(string userId)
+    private Task<UserContext> GetUserContextAsync(string userId)
     {
         // Would retrieve user preferences and context from database
-        return new UserContext
+        return Task.FromResult(new UserContext
         {
             UserId = userId,
             Preferences = new Dictionary<string, object>(),
             SessionData = new Dictionary<string, object>()
-        };
+        });
     }
 
     private double CalculateContextualRelevance(string query, List<string> history, List<ContextualClue> clues)
@@ -445,12 +445,12 @@ public class NLUService : IAdvancedNLUService
         return assumptions;
     }
 
-    private async Task<DomainAnalysis> AnalyzeDomainAsync(string query, SemanticStructure structure)
+    private Task<DomainAnalysis> AnalyzeDomainAsync(string query, SemanticStructure structure)
     {
         var concepts = structure.KeyConcepts;
         var primaryDomain = concepts.Any() ? "gaming" : "general";
-        
-        return new DomainAnalysis
+
+        return Task.FromResult(new DomainAnalysis
         {
             PrimaryDomain = primaryDomain,
             SecondaryDomains = new List<string>(),
@@ -466,7 +466,7 @@ public class NLUService : IAdvancedNLUService
                 Industry = "gaming",
                 BusinessProcesses = new List<string> { "player_management", "revenue_tracking" }
             }
-        };
+        });
     }
 
     private double CalculateOverallConfidence(
@@ -480,7 +480,7 @@ public class NLUService : IAdvancedNLUService
         return weights.Zip(scores, (w, s) => w * s).Sum();
     }
 
-    private async Task<List<NLURecommendation>> GenerateRecommendationsAsync(
+    private Task<List<NLURecommendation>> GenerateRecommendationsAsync(
         IntentAnalysis intentAnalysis,
         EntityAnalysis entityAnalysis,
         ContextualAnalysis contextualAnalysis)
@@ -509,7 +509,7 @@ public class NLUService : IAdvancedNLUService
             });
         }
 
-        return recommendations;
+        return Task.FromResult(recommendations);
     }
 
     private List<QuerySuggestion> GenerateIntentBasedSuggestions(IntentAnalysis intentAnalysis, SchemaMetadata? schema)
@@ -550,19 +550,19 @@ public class NLUService : IAdvancedNLUService
     private async Task<List<QuerySuggestion>> GenerateContextBasedSuggestionsAsync(string userId, SchemaMetadata? schema)
     {
         var suggestions = new List<QuerySuggestion>();
-        
+
         // Generate suggestions based on user's recent activity
         var history = await GetConversationHistoryAsync(userId);
         if (history.Any(h => h.ToLowerInvariant().Contains("player")))
         {
-            suggestions.Add(new QuerySuggestion 
-            { 
+            suggestions.Add(new QuerySuggestion
+            {
                 Text = "Show me player activity trends",
                 Category = "Follow-up",
                 Relevance = 0.9
             });
         }
-        
+
         return suggestions;
     }
 

@@ -19,27 +19,29 @@ public class SemanticParser
         _config = config;
     }
 
-    public async Task<SemanticStructure> ParseSemanticStructureAsync(string query, NLUAnalysisContext context)
+    public Task<SemanticStructure> ParseSemanticStructureAsync(string query, NLUAnalysisContext context)
     {
         _logger.LogDebug("Parsing semantic structure for query: {Query}", query);
 
         // Simplified semantic parsing implementation
-        return new SemanticStructure
+        return Task.FromResult(new SemanticStructure
         {
             Nodes = new List<SemanticNode>(),
             Relations = new List<SemanticRelation>(),
             ParseConfidence = 0.85
-        };
+        });
     }
 
-    public async Task TrainAsync(List<NLUTrainingData> trainingData, string? domain)
+    public Task TrainAsync(List<NLUTrainingData> trainingData, string? domain)
     {
         _logger.LogDebug("Training semantic parser with {DataCount} samples", trainingData.Count);
+        return Task.CompletedTask;
     }
 
-    public async Task UpdateConfigurationAsync(NLUConfiguration configuration)
+    public Task UpdateConfigurationAsync(NLUConfiguration configuration)
     {
         _logger.LogDebug("Updated semantic parser configuration");
+        return Task.CompletedTask;
     }
 }
 
@@ -57,7 +59,7 @@ public class IntentClassifier
         _config = config;
     }
 
-    public async Task<IntentAnalysis> ClassifyIntentAsync(
+    public Task<IntentAnalysis> ClassifyIntentAsync(
         string query,
         SemanticStructure semanticStructure,
         NLUAnalysisContext context)
@@ -65,7 +67,7 @@ public class IntentClassifier
         _logger.LogDebug("Classifying intent for query: {Query}", query);
 
         // Simplified intent classification
-        return new IntentAnalysis
+        return Task.FromResult(new IntentAnalysis
         {
             PrimaryIntent = "DataQuery",
             Confidence = 0.9,
@@ -74,17 +76,19 @@ public class IntentClassifier
                 new IntentCandidate { Intent = "Aggregation", Confidence = 0.7 },
                 new IntentCandidate { Intent = "Filtering", Confidence = 0.6 }
             }
-        };
+        });
     }
 
-    public async Task TrainAsync(List<NLUTrainingData> trainingData, string? domain)
+    public Task TrainAsync(List<NLUTrainingData> trainingData, string? domain)
     {
         _logger.LogDebug("Training intent classifier with {DataCount} samples", trainingData.Count);
+        return Task.CompletedTask;
     }
 
-    public async Task UpdateConfigurationAsync(NLUConfiguration configuration)
+    public Task UpdateConfigurationAsync(NLUConfiguration configuration)
     {
         _logger.LogDebug("Updated intent classifier configuration");
+        return Task.CompletedTask;
     }
 }
 
@@ -102,7 +106,7 @@ public class EntityExtractor
         _config = config;
     }
 
-    public async Task<EntityAnalysis> ExtractEntitiesAsync(
+    public Task<EntityAnalysis> ExtractEntitiesAsync(
         string query,
         SemanticStructure semanticStructure,
         NLUAnalysisContext context)
@@ -110,22 +114,24 @@ public class EntityExtractor
         _logger.LogDebug("Extracting entities from query: {Query}", query);
 
         // Simplified entity extraction
-        return new EntityAnalysis
+        return Task.FromResult(new EntityAnalysis
         {
             Entities = new List<ExtractedEntity>(),
             OverallConfidence = 0.8,
             MissingEntities = new List<string>()
-        };
+        });
     }
 
-    public async Task TrainAsync(List<NLUTrainingData> trainingData, string? domain)
+    public Task TrainAsync(List<NLUTrainingData> trainingData, string? domain)
     {
         _logger.LogDebug("Training entity extractor with {DataCount} samples", trainingData.Count);
+        return Task.CompletedTask;
     }
 
-    public async Task UpdateConfigurationAsync(NLUConfiguration configuration)
+    public Task UpdateConfigurationAsync(NLUConfiguration configuration)
     {
         _logger.LogDebug("Updated entity extractor configuration");
+        return Task.CompletedTask;
     }
 }
 
@@ -145,7 +151,7 @@ public class ContextualAnalyzer
         _config = config;
     }
 
-    public async Task<ContextualAnalysis> AnalyzeContextAsync(
+    public Task<ContextualAnalysis> AnalyzeContextAsync(
         string query,
         IntentAnalysis intentAnalysis,
         EntityAnalysis entityAnalysis,
@@ -153,17 +159,18 @@ public class ContextualAnalyzer
     {
         _logger.LogDebug("Analyzing context for query: {Query}", query);
 
-        return new ContextualAnalysis
+        return Task.FromResult(new ContextualAnalysis
         {
             ContextualRelevance = 0.75,
             ContextualCues = new List<ContextualCue>(),
             Inferences = new List<ContextualInference>()
-        };
+        });
     }
 
-    public async Task UpdateConfigurationAsync(NLUConfiguration configuration)
+    public Task UpdateConfigurationAsync(NLUConfiguration configuration)
     {
         _logger.LogDebug("Updated contextual analyzer configuration");
+        return Task.CompletedTask;
     }
 }
 
@@ -205,10 +212,10 @@ public class ConversationManager
         return state ?? new ConversationState { SessionId = Guid.NewGuid().ToString() };
     }
 
-    public async Task<List<ConversationTurn>> GetConversationHistoryAsync(string userId, TimeSpan window)
+    public Task<List<ConversationTurn>> GetConversationHistoryAsync(string userId, TimeSpan window)
     {
         // Simplified conversation history retrieval
-        return new List<ConversationTurn>();
+        return Task.FromResult(new List<ConversationTurn>());
     }
 }
 
@@ -226,17 +233,18 @@ public class MultilingualProcessor
         _config = config;
     }
 
-    public async Task<string> ProcessAndNormalizeAsync(NLUAnalysisContext context)
+    public Task<string> ProcessAndNormalizeAsync(NLUAnalysisContext context)
     {
         _logger.LogDebug("Processing multilingual query in language: {Language}", context.Language);
 
         // Simplified multilingual processing
-        return context.Query;
+        return Task.FromResult(context.Query);
     }
 
-    public async Task UpdateConfigurationAsync(NLUConfiguration configuration)
+    public Task UpdateConfigurationAsync(NLUConfiguration configuration)
     {
         _logger.LogDebug("Updated multilingual processor configuration");
+        return Task.CompletedTask;
     }
 }
 
@@ -254,7 +262,7 @@ public class DomainAdaptationEngine
         _cacheService = cacheService;
     }
 
-    public async Task<DomainAnalysis> AdaptToDomainAsync(
+    public Task<DomainAnalysis> AdaptToDomainAsync(
         string query,
         IntentAnalysis intentAnalysis,
         EntityAnalysis entityAnalysis,
@@ -262,17 +270,18 @@ public class DomainAdaptationEngine
     {
         _logger.LogDebug("Adapting to domain for query: {Query}", query);
 
-        return new DomainAnalysis
+        return Task.FromResult(new DomainAnalysis
         {
             Domain = "BusinessIntelligence",
             DomainConfidence = 0.9,
             DomainConcepts = new List<DomainConcept>()
-        };
+        });
     }
 
-    public async Task UpdateDomainModelsAsync(List<NLUTrainingData> trainingData, string? domain)
+    public Task UpdateDomainModelsAsync(List<NLUTrainingData> trainingData, string? domain)
     {
         _logger.LogDebug("Updating domain models for domain: {Domain}", domain);
+        return Task.CompletedTask;
     }
 }
 

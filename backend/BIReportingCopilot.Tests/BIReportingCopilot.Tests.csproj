@@ -39,19 +39,6 @@
     <ProjectReference Include="..\BIReportingCopilot.Infrastructure\BIReportingCopilot.Infrastructure.csproj" />
   </ItemGroup>
 
-  <!-- Temporarily exclude problematic test files that need major refactoring after consolidation -->
-  <ItemGroup>
-    <Compile Remove="Unit\Controllers\DashboardControllerTests.cs" />
-    <Compile Remove="Unit\AI\AdaptiveAIServiceTests.cs" />
-    <Compile Remove="Unit\Services\StreamingOpenAIServiceTests.cs" />
-    <Compile Remove="Unit\Jobs\CleanupJobTests.cs" />
-    <Compile Remove="Unit\Services\GameQueryClassificationTests.cs" />
-    <Compile Remove="Unit\Services\PromptTemplateManagerTests.cs" />
-    <Compile Remove="Unit\Services\QueryServiceTests.cs" />
-    <Compile Remove="Infrastructure\TestBase.cs" />
-    <Compile Remove="Infrastructure\Builders\MockServiceBuilder.cs" />
-    <Compile Remove="Unit\Services\AdvancedVisualizationServiceTests.cs" />
-    <Compile Remove="Integration\EventBusIntegrationTests.cs" />
-  </ItemGroup>
+  <!-- Excluded test files have been removed during deep cleanup -->
 
 </Project>

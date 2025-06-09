@@ -15,31 +15,27 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
 {
     private readonly ILogger<ProductionMultiModalDashboardService> _logger;
     private readonly IDbContextFactory _contextFactory;
-    private readonly IAdvancedNLUService _nluService;
+    private readonly DashboardCreationService _creationService;
+    private readonly DashboardTemplateService _templateService;
     private readonly IQueryService _queryService;
-    private readonly ISchemaService _schemaService;
     private readonly IAIService _aiService;
-
-    // Dashboard templates cache
-    private readonly List<DashboardTemplate> _defaultTemplates;
 
     public ProductionMultiModalDashboardService(
         ILogger<ProductionMultiModalDashboardService> logger,
         IDbContextFactory contextFactory,
-        IAdvancedNLUService nluService,
+        DashboardCreationService creationService,
+        DashboardTemplateService templateService,
         IQueryService queryService,
-        ISchemaService schemaService,
         IAIService aiService)
     {
         _logger = logger;
         _contextFactory = contextFactory;
-        _nluService = nluService;
+        _creationService = creationService;
+        _templateService = templateService;
         _queryService = queryService;
-        _schemaService = schemaService;
         _aiService = aiService;
-        _defaultTemplates = InitializeDefaultTemplates();
 
-        _logger.LogInformation("🎨 Production Multi-Modal Dashboard Service initialized");
+        _logger.LogInformation("🎨 Production Multi-Modal Dashboard Service initialized with modular components");
     }
 
     /// <summary>
@@ -49,34 +45,13 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
     {
         try
         {
-            _logger.LogInformation("🎨 Creating dashboard '{Name}' for user {UserId}", request.Name, userId);
-
-            var dashboard = new Dashboard
-            {
-                Name = request.Name,
-                Description = request.Description ?? "",
-                UserId = userId,
-                Category = request.Category,
-                Layout = request.Layout ?? CreateDefaultLayout(),
-                Configuration = request.Configuration ?? new Core.Models.DashboardConfiguration(),
-                Permissions = new DashboardPermissions { OwnerId = userId },
-                IsPublic = request.IsPublic,
-                Tags = request.Tags,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            // Create widgets
-            foreach (var widgetRequest in request.Widgets)
-            {
-                var widget = await CreateWidgetFromRequestAsync(widgetRequest, dashboard.DashboardId);
-                dashboard.Widgets.Add(widget);
-            }
+            // Use the modular creation service
+            var dashboard = await _creationService.CreateDashboardAsync(request, userId);
 
             // Store dashboard in database
             await StoreDashboardAsync(dashboard);
 
-            _logger.LogInformation("🎨 Dashboard '{Name}' created with ID {DashboardId} and {WidgetCount} widgets", 
+            _logger.LogInformation("🎨 Dashboard '{Name}' created with ID {DashboardId} and {WidgetCount} widgets",
                 dashboard.Name, dashboard.DashboardId, dashboard.Widgets.Count);
 
             return dashboard;
@@ -249,38 +224,19 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
     /// Generate dashboard from natural language description
     /// </summary>
     public async Task<Dashboard> GenerateDashboardFromDescriptionAsync(
-        string description, 
-        string userId, 
+        string description,
+        string userId,
         SchemaMetadata? schema = null)
     {
         try
         {
-            _logger.LogInformation("🤖 Generating dashboard from description for user {UserId}: {Description}", 
-                userId, description);
+            // Use the modular creation service for AI generation
+            var dashboard = await _creationService.GenerateFromDescriptionAsync(description, userId, schema);
 
-            // Analyze description with NLU
-            var nluResult = await _nluService.AnalyzeQueryAsync(description, userId);
+            // Store dashboard in database
+            await StoreDashboardAsync(dashboard);
 
-            // Get schema if not provided
-            schema ??= await _schemaService.GetSchemaMetadataAsync();
-
-            // Generate dashboard structure using AI
-            var dashboardSpec = await GenerateDashboardSpecificationAsync(description, nluResult, schema);
-
-            // Create dashboard from specification
-            var createRequest = new CreateDashboardRequest
-            {
-                Name = dashboardSpec.Name,
-                Description = dashboardSpec.Description,
-                Category = "AI Generated",
-                Widgets = dashboardSpec.Widgets,
-                Layout = dashboardSpec.Layout,
-                Tags = new List<string> { "ai-generated", "auto-created" }
-            };
-
-            var dashboard = await CreateDashboardAsync(createRequest, userId);
-
-            _logger.LogInformation("🤖 AI-generated dashboard '{Name}' created with {WidgetCount} widgets", 
+            _logger.LogInformation("🤖 AI-generated dashboard '{Name}' created with {WidgetCount} widgets",
                 dashboard.Name, dashboard.Widgets.Count);
 
             return dashboard;
@@ -364,74 +320,25 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
     /// </summary>
     public async Task<List<DashboardTemplate>> GetDashboardTemplatesAsync(string? category = null)
     {
-        try
-        {
-            _logger.LogDebug("📋 Getting dashboard templates for category: {Category}", category ?? "all");
-
-            var templates = _defaultTemplates.AsEnumerable();
-
-            if (!string.IsNullOrEmpty(category))
-            {
-                templates = templates.Where(t => t.Category.Equals(category, StringComparison.OrdinalIgnoreCase));
-            }
-
-            var result = templates.ToList();
-
-            _logger.LogInformation("📋 Retrieved {Count} dashboard templates", result.Count);
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ Error getting dashboard templates");
-            return new List<DashboardTemplate>();
-        }
+        return await _templateService.GetTemplatesAsync(category);
     }
 
     /// <summary>
     /// Create dashboard from template
     /// </summary>
     public async Task<Dashboard> CreateDashboardFromTemplateAsync(
-        string templateId, 
-        string name, 
-        string userId, 
+        string templateId,
+        string name,
+        string userId,
         Dictionary<string, object>? parameters = null)
     {
         try
         {
-            _logger.LogInformation("📋 Creating dashboard from template {TemplateId} for user {UserId}", templateId, userId);
+            // Use the modular template service
+            var dashboard = await _templateService.CreateFromTemplateAsync(templateId, name, userId, parameters);
 
-            var template = _defaultTemplates.FirstOrDefault(t => t.TemplateId == templateId);
-            if (template == null)
-            {
-                throw new ArgumentException($"Template {templateId} not found");
-            }
-
-            // Apply parameters to template
-            var processedTemplate = await ProcessTemplateParametersAsync(template, parameters ?? new());
-
-            // Create dashboard from processed template
-            var createRequest = new CreateDashboardRequest
-            {
-                Name = name,
-                Description = processedTemplate.Description,
-                Category = processedTemplate.Category,
-                Layout = processedTemplate.Layout,
-                Widgets = processedTemplate.Widgets.Select(tw => new CreateWidgetRequest
-                {
-                    Title = tw.Title,
-                    Type = tw.Type,
-                    Position = tw.Position,
-                    Size = tw.Size,
-                    Configuration = new WidgetConfiguration { CustomConfig = tw.Configuration },
-                    DataSource = new WidgetDataSource { Query = tw.DataSourceTemplate }
-                }).ToList(),
-                Tags = new List<string> { "template", template.Category }
-            };
-
-            var dashboard = await CreateDashboardAsync(createRequest, userId);
-
-            // Update template usage count
-            template.UsageCount++;
+            // Store dashboard in database
+            await StoreDashboardAsync(dashboard);
 
             _logger.LogInformation("📋 Dashboard '{Name}' created from template {TemplateId}", name, templateId);
             return dashboard;
@@ -517,33 +424,7 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
         return userPermission?.Permission >= PermissionLevel.Edit;
     }
 
-    private async Task<DashboardSpecification> GenerateDashboardSpecificationAsync(
-        string description, 
-        AdvancedNLUResult nluResult, 
-        SchemaMetadata schema)
-    {
-        // Use AI to generate dashboard specification
-        var prompt = $@"
-Generate a dashboard specification based on this description: {description}
-
-Intent: {nluResult.IntentAnalysis.PrimaryIntent}
-Entities: {string.Join(", ", nluResult.EntityAnalysis.Entities.Select(e => e.Value))}
-Domain: {nluResult.DomainAnalysis.PrimaryDomain}
-
-Available tables: {string.Join(", ", schema.Tables.Select(t => t.Name))}
-
-Create a dashboard with appropriate widgets for this request.
-";
-
-        // For now, create a simple specification
-        return new DashboardSpecification
-        {
-            Name = ExtractDashboardName(description),
-            Description = $"Auto-generated dashboard: {description}",
-            Layout = CreateDefaultLayout(),
-            Widgets = await GenerateWidgetsFromNLUAsync(nluResult, schema)
-        };
-    }
+    // Dashboard specification generation moved to DashboardCreationService
 
     private string ExtractDashboardName(string description)
     {
@@ -619,7 +500,7 @@ Create a dashboard with appropriate widgets for this request.
                 Description = "High-level KPIs and metrics for executives",
                 Category = "Business",
                 PreviewImage = "/templates/executive-summary.png",
-                Layout = CreateDefaultLayout(),
+                Layout = new Core.Models.DashboardLayout { Type = Core.Models.LayoutType.Grid, Columns = 12 },
                 Widgets = new List<TemplateWidget>
                 {
                     new TemplateWidget
@@ -649,7 +530,7 @@ Create a dashboard with appropriate widgets for this request.
                 Description = "Comprehensive player behavior and performance analytics",
                 Category = "Gaming",
                 PreviewImage = "/templates/player-analytics.png",
-                Layout = CreateDefaultLayout(),
+                Layout = new Core.Models.DashboardLayout { Type = Core.Models.LayoutType.Grid, Columns = 12 },
                 Widgets = new List<TemplateWidget>
                 {
                     new TemplateWidget
@@ -694,16 +575,46 @@ Create a dashboard with appropriate widgets for this request.
     }
 
     // Database operations (placeholder implementations)
-    private async Task StoreDashboardAsync(Dashboard dashboard) { }
-    private async Task UpdateDashboardInDatabaseAsync(Dashboard dashboard) { }
-    private async Task DeleteDashboardFromDatabaseAsync(string dashboardId) { }
-    private async Task<Dashboard?> LoadDashboardFromDatabaseAsync(string dashboardId) => null;
-    private async Task<List<Dashboard>> LoadUserDashboardsFromDatabaseAsync(string userId, DashboardFilter? filter) => new();
-    private async Task UpdateLastViewedAsync(string dashboardId, string userId) { }
+    private Task StoreDashboardAsync(Dashboard dashboard)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task UpdateDashboardInDatabaseAsync(Dashboard dashboard)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task DeleteDashboardFromDatabaseAsync(string dashboardId)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task<Dashboard?> LoadDashboardFromDatabaseAsync(string dashboardId)
+    {
+        return Task.FromResult<Dashboard?>(null);
+    }
+
+    private Task<List<Dashboard>> LoadUserDashboardsFromDatabaseAsync(string userId, DashboardFilter? filter)
+    {
+        return Task.FromResult(new List<Dashboard>());
+    }
+
+    private Task UpdateLastViewedAsync(string dashboardId, string userId)
+    {
+        return Task.CompletedTask;
+    }
 
     // Export implementations (placeholder)
-    private async Task<byte[]> GeneratePdfExportAsync(Dashboard dashboard, ExportOptions? options) => Array.Empty<byte>();
-    private async Task<byte[]> GenerateImageExportAsync(Dashboard dashboard, ExportOptions? options) => Array.Empty<byte>();
+    private Task<byte[]> GeneratePdfExportAsync(Dashboard dashboard, ExportOptions? options)
+    {
+        return Task.FromResult(Array.Empty<byte>());
+    }
+
+    private Task<byte[]> GenerateImageExportAsync(Dashboard dashboard, ExportOptions? options)
+    {
+        return Task.FromResult(Array.Empty<byte>());
+    }
 
     /// <summary>
     /// Generate automated report from dashboard
@@ -755,22 +666,32 @@ Create a dashboard with appropriate widgets for this request.
     }
 
     // Interface compliance methods (placeholder implementations)
-    public async Task<DashboardWidget> UpdateWidgetAsync(string dashboardId, string widgetId, UpdateWidgetRequest request, string userId) => new();
-    public async Task<bool> RemoveWidgetAsync(string dashboardId, string widgetId, string userId) => false;
-    public async Task<DashboardShare> ShareDashboardAsync(string dashboardId, ShareConfiguration shareConfig, string userId) => new();
-    public async Task<DashboardAnalytics> GetDashboardAnalyticsAsync(string dashboardId, TimeSpan? timeWindow = null) => new();
-    public async Task<Dashboard> CloneDashboardAsync(string dashboardId, string newName, string userId) => new();
+    public Task<DashboardWidget> UpdateWidgetAsync(string dashboardId, string widgetId, UpdateWidgetRequest request, string userId)
+    {
+        return Task.FromResult(new DashboardWidget());
+    }
+
+    public Task<bool> RemoveWidgetAsync(string dashboardId, string widgetId, string userId)
+    {
+        return Task.FromResult(false);
+    }
+
+    public Task<DashboardShare> ShareDashboardAsync(string dashboardId, ShareConfiguration shareConfig, string userId)
+    {
+        return Task.FromResult(new DashboardShare());
+    }
+
+    public Task<DashboardAnalytics> GetDashboardAnalyticsAsync(string dashboardId, TimeSpan? timeWindow = null)
+    {
+        return Task.FromResult(new DashboardAnalytics());
+    }
+
+    public Task<Dashboard> CloneDashboardAsync(string dashboardId, string newName, string userId)
+    {
+        return Task.FromResult(new Dashboard());
+    }
 
     // Helper methods removed - using Core model structure instead
-}
-
-// Supporting classes
-public class DashboardSpecification
-{
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public Core.Models.DashboardLayout Layout { get; set; } = new();
-    public List<CreateWidgetRequest> Widgets { get; set; } = new();
 }
 
 // Local model definitions removed - using Core models instead

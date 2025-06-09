@@ -306,7 +306,7 @@ public class HealthManagementService : IHealthCheck
             }
 
             // Check rate limiting
-            if (!securityConfig.EnableRateLimiting)
+            if (!securityConfig.EnableRateLimit)
             {
                 issues.Add("Rate limiting is disabled");
             }
@@ -329,7 +329,7 @@ public class HealthManagementService : IHealthCheck
 
             return HealthCheckResult.Healthy("Security configuration is properly set up", new Dictionary<string, object>
             {
-                ["RateLimitingEnabled"] = securityConfig.EnableRateLimiting,
+                ["RateLimitingEnabled"] = securityConfig.EnableRateLimit,
                 ["HttpsRedirectionEnabled"] = securityConfig.EnableHttpsRedirection,
                 ["AuditLoggingEnabled"] = securityConfig.EnableAuditLogging
             });

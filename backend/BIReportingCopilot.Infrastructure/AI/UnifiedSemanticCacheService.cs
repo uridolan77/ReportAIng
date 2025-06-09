@@ -139,32 +139,33 @@ public class UnifiedSemanticCacheService : ISemanticCacheService
         }
     }
 
-    public async Task InvalidateCacheByPatternAsync(string pattern)
+    public Task InvalidateCacheByPatternAsync(string pattern)
     {
         try
         {
             // Infrastructure service doesn't have this method, so we'll implement a basic version
             _logger.LogInformation("Cache invalidation by pattern not fully implemented: {Pattern}", pattern);
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error invalidating cache by pattern: {Pattern}", pattern);
+            return Task.CompletedTask;
         }
     }
 
-    public async Task<EnhancedSemanticCacheEntry?> GetCacheEntryAsync(string key)
+    public Task<EnhancedSemanticCacheEntry?> GetCacheEntryAsync(string key)
     {
         try
         {
             // Basic implementation - would need enhancement
             _logger.LogDebug("Getting cache entry by key: {Key}", key);
-            return null;
+            return Task.FromResult<EnhancedSemanticCacheEntry?>(null);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting cache entry: {Key}", key);
-            return null;
+            return Task.FromResult<EnhancedSemanticCacheEntry?>(null);
         }
     }
 

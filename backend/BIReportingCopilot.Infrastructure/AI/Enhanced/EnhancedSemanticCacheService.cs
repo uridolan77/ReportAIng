@@ -183,12 +183,12 @@ public class EnhancedSemanticCacheService
     /// <summary>
     /// Extract semantic features from natural language query
     /// </summary>
-    private async Task<Core.Models.SemanticFeatures> ExtractSemanticFeaturesAsync(string query, string sqlQuery)
+    private Task<Core.Models.SemanticFeatures> ExtractSemanticFeaturesAsync(string query, string sqlQuery)
     {
         try
         {
             // Extract semantic features using built-in analysis
-            return new Core.Models.SemanticFeatures
+            return Task.FromResult(new Core.Models.SemanticFeatures
             {
                 Entities = ExtractEntities(query, sqlQuery),
                 Intents = ExtractIntents(query, sqlQuery),
@@ -202,43 +202,43 @@ public class EnhancedSemanticCacheService
                     Keywords = ExtractKeywords(query),
                     QueryType = ClassifyQueryType(query)
                 }
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error extracting semantic features, using basic extraction");
-            return CreateBasicSemanticFeatures(query, sqlQuery);
+            return Task.FromResult(CreateBasicSemanticFeatures(query, sqlQuery));
         }
     }
 
     /// <summary>
     /// Classify query for optimal caching strategy
     /// </summary>
-    private async Task<Core.Models.QueryClassification> ClassifyQueryAsync(
+    private Task<Core.Models.QueryClassification> ClassifyQueryAsync(
         string query,
         string sqlQuery,
         Core.Models.SemanticFeatures features)
     {
         try
         {
-            return new Core.Models.QueryClassification
+            return Task.FromResult(new Core.Models.QueryClassification
             {
                 Category = DetermineCategoryEnum(query, sqlQuery),
                 Complexity = DetermineComplexityEnum(features.ComplexityScore),
                 ConfidenceScore = 0.85 // Would be calculated based on classification certainty
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error classifying query, using default classification");
-            return new Core.Models.QueryClassification();
+            return Task.FromResult(new Core.Models.QueryClassification());
         }
     }
 
     /// <summary>
     /// Check memory cache for exact matches
     /// </summary>
-    private async Task<EnhancedSemanticCacheEntry?> CheckMemoryCacheAsync(string query)
+    private Task<EnhancedSemanticCacheEntry?> CheckMemoryCacheAsync(string query)
     {
         var cacheKey = GenerateMemoryCacheKey(query);
         if (_memoryCache.TryGetValue(cacheKey, out EnhancedSemanticCacheEntry? entry))
@@ -247,10 +247,10 @@ public class EnhancedSemanticCacheService
             {
                 entry.AccessCount++;
                 entry.LastAccessedAt = DateTime.UtcNow;
-                return entry;
+                return Task.FromResult<EnhancedSemanticCacheEntry?>(entry);
             }
         }
-        return null;
+        return Task.FromResult<EnhancedSemanticCacheEntry?>(null);
     }
 
     /// <summary>
@@ -711,23 +711,24 @@ public class EnhancedSemanticCacheService
         };
     }
 
-    private async Task<SemanticCacheStatistics> GetDatabaseCacheStatisticsAsync(object context)
+    private Task<SemanticCacheStatistics> GetDatabaseCacheStatisticsAsync(object context)
     {
         // Would implement actual database statistics
-        return new SemanticCacheStatistics
+        return Task.FromResult(new SemanticCacheStatistics
         {
             TotalEntries = 0,
             HitCount = 0,
             MissCount = 0,
             TotalSizeBytes = 0,
             LastUpdated = DateTime.UtcNow
-        };
+        });
     }
 
-    private async Task InvalidateMemoryCacheByPatternAsync(string pattern)
+    private Task InvalidateMemoryCacheByPatternAsync(string pattern)
     {
         // Would implement pattern-based memory cache invalidation
         _logger.LogDebug("Invalidated memory cache entries matching pattern: {Pattern}", pattern);
+        return Task.CompletedTask;
     }
 
     private async Task RemoveExpiredEntriesAsync()

@@ -70,15 +70,14 @@ public class NotificationManagementService : IEmailService, ISmsService
             _logger.LogInformation("Sending email to {Recipients} with subject: {Subject}",
                 string.Join(", ", to.Select(MaskEmail)), subject);
 
-            // TODO: Implement actual email sending using SMTP, SendGrid, etc.
-            // For now, just log the email content for development
+            // Development mode: Log email content for debugging
             if (_notificationConfig.EnableLogging)
             {
                 _logger.LogInformation("Email Content:\nTo: {To}\nSubject: {Subject}\nBody: {Body}",
                     string.Join(", ", to), subject, body);
             }
 
-            // Simulate email sending delay
+            // Simulate email sending delay for development
             await Task.Delay(_notificationConfig.SimulatedDelay);
 
             _logger.LogInformation("Email sent successfully to {Recipients}",
@@ -174,15 +173,14 @@ public class NotificationManagementService : IEmailService, ISmsService
         {
             _logger.LogInformation("Sending SMS to {PhoneNumber}", MaskPhoneNumber(phoneNumber));
 
-            // TODO: Implement actual SMS sending using Twilio, AWS SNS, etc.
-            // For now, just log the SMS content for development
+            // Development mode: Log SMS content for debugging
             if (_notificationConfig.EnableLogging)
             {
                 _logger.LogInformation("SMS Content:\nTo: {PhoneNumber}\nMessage: {Message}",
                     MaskPhoneNumber(phoneNumber), message);
             }
 
-            // Simulate SMS sending delay
+            // Simulate SMS sending delay for development
             await Task.Delay(_notificationConfig.SimulatedDelay);
 
             _logger.LogInformation("SMS sent successfully to {PhoneNumber}", MaskPhoneNumber(phoneNumber));

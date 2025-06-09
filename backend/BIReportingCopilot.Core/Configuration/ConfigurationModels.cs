@@ -118,16 +118,7 @@ public class ApplicationSettings
     /// </summary>
     public Dictionary<string, string> CustomSettings { get; set; } = new();
 
-    // Backward Compatibility Properties
-    /// <summary>
-    /// Backward compatibility alias for RequestTimeoutSeconds
-    /// </summary>
-    [Obsolete("Use DefaultTimeoutSeconds instead. This property will be removed in a future version.")]
-    public int TimeoutSeconds
-    {
-        get => DefaultTimeoutSeconds;
-        set => DefaultTimeoutSeconds = value;
-    }
+    // Obsolete properties removed during cleanup
 }
 
 /// <summary>
@@ -440,13 +431,7 @@ public class SecurityConfiguration
     public int MaxQueryComplexity { get; set; } = 50;
     public Dictionary<string, int>? RateLimits { get; set; }
 
-    // Backward compatibility property (deprecated - use EnableRateLimit)
-    [Obsolete("Use EnableRateLimit instead. This property will be removed in a future version.")]
-    public bool EnableRateLimiting
-    {
-        get => EnableRateLimit;
-        set => EnableRateLimit = value;
-    }
+    // Obsolete properties removed during cleanup
 
     // Security Features
     public bool EnableHttpsRedirection { get; set; } = true;
@@ -656,15 +641,7 @@ public class CacheConfiguration
         return string.Join(",", connectionStringBuilder);
     }
 
-    /// <summary>
-    /// Backward compatibility property for legacy RedisConfiguration.Enabled
-    /// </summary>
-    [Obsolete("Use EnableRedis instead. This property will be removed in a future version.")]
-    public bool Enabled
-    {
-        get => EnableRedis;
-        set => EnableRedis = value;
-    }
+    // Obsolete properties removed during cleanup
 }
 
 /// <summary>

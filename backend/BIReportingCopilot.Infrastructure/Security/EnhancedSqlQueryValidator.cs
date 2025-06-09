@@ -16,7 +16,7 @@ namespace BIReportingCopilot.Infrastructure.Security;
 public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator, ISqlQueryValidator
 {
     private readonly ILogger<EnhancedSqlQueryValidator> _logger;
-    private readonly IAnomalyDetector _anomalyDetector;
+    private readonly LearningService _learningService;
     private readonly IMetricsCollector _metricsCollector;
     private readonly SqlValidationConfiguration _config;
 
@@ -58,12 +58,12 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator, ISqlQueryVa
 
     public EnhancedSqlQueryValidator(
         ILogger<EnhancedSqlQueryValidator> logger,
-        IAnomalyDetector anomalyDetector,
+        LearningService learningService,
         IMetricsCollector metricsCollector,
         IOptions<SqlValidationConfiguration> config)
     {
         _logger = logger;
-        _anomalyDetector = anomalyDetector;
+        _learningService = learningService;
         _metricsCollector = metricsCollector;
         _config = config.Value;
     }
@@ -162,11 +162,19 @@ public class EnhancedSqlQueryValidator : IEnhancedSqlQueryValidator, ISqlQueryVa
         {
             try
             {
-                var anomalyResult = await _anomalyDetector.AnalyzeQueryAsync(userId, query, query);
+                // Create basic query metrics for analysis
+                var metrics = new QueryMetrics
+                {
+                    ExecutionTimeMs = 100, // Default value
+                    RowCount = 0,
+                    IsSuccessful = true
+                };
+
+                var anomalyResult = await _learningService.DetectQueryAnomaliesAsync(query, metrics);
                 if (anomalyResult.AnomalyScore > 0.1) // Consider it anomalous if score > 0.1
                 {
                     var anomalyReason = anomalyResult.DetectedAnomalies.Any()
-                        ? string.Join(", ", anomalyResult.DetectedAnomalies)
+                        ? string.Join(", ", anomalyResult.DetectedAnomalies.Select(a => a.ToString()))
                         : "Unusual query pattern detected";
 
                     var anomalyIssue = new SecurityIssue(

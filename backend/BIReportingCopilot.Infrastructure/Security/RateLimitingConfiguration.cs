@@ -10,7 +10,7 @@ public class RateLimitingConfiguration
     /// <summary>
     /// Whether rate limiting is enabled
     /// </summary>
-    public bool EnableRateLimiting { get; set; } = true;
+    public bool EnableRateLimit { get; set; } = true;
 
     /// <summary>
     /// Key prefix for rate limiting cache keys

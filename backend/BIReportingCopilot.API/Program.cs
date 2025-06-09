@@ -74,12 +74,11 @@ builder.Host.UseSerilog();
 // Register connection string provider before configuration validation
 builder.Services.AddScoped<IConnectionStringProvider, SecureConnectionStringProvider>();
 
-// Validate critical configuration early
+// Configuration validation
 try
 {
-    // Temporarily skip JWT validation to test database fix
-    // builder.Configuration.ValidateStartupConfiguration();
-    Log.Information("Configuration validation skipped for testing");
+    builder.Configuration.ValidateStartupConfiguration();
+    Log.Information("Configuration validation completed successfully");
 }
 catch (Exception ex)
 {
@@ -462,12 +461,7 @@ builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI
 // Unified learning service provides all ML functionality including anomaly detection and feedback learning
 // Individual services consolidated into LearningService for better maintainability
 
-// Register IAnomalyDetector interface with LearningService as implementation
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IAnomalyDetector>(provider =>
-{
-    var learningService = provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.LearningService>();
-    return new AnomalyDetectorAdapter(learningService);
-});
+// Anomaly detection functionality is now integrated into LearningService
 
 // Removed duplicate ISemanticCacheService registration - using unified service instead
 
@@ -573,6 +567,10 @@ builder.Services.AddScoped<ISchemaOptimizationService, BIReportingCopilot.Infras
 builder.Services.AddScoped<IQueryIntelligenceService, BIReportingCopilot.Infrastructure.AI.Enhanced.IntelligenceService>();
 // Real-Time Streaming Service - ENABLED for feature development
 builder.Services.AddScoped<IRealTimeStreamingService, BIReportingCopilot.Infrastructure.AI.Enhanced.StreamingService>();
+
+// ===== MODULAR DASHBOARD SERVICES =====
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.DashboardCreationService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Enhanced.DashboardTemplateService>();
 builder.Services.AddScoped<IMultiModalDashboardService, BIReportingCopilot.Infrastructure.AI.Enhanced.ProductionMultiModalDashboardService>();
 builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Services.VisualizationService>();
 

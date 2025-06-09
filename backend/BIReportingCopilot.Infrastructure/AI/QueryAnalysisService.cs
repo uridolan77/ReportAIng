@@ -391,7 +391,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         }
     }
 
-    public async Task<List<string>> SuggestOptimizationsAsync(string query)
+    public Task<List<string>> SuggestOptimizationsAsync(string query)
     {
         var suggestions = new List<string>();
         var lowerQuery = query.ToLowerInvariant();
@@ -427,24 +427,24 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
             suggestions.Add("Avoid using functions in WHERE clauses as they can prevent index usage");
         }
 
-        return suggestions;
+        return Task.FromResult(suggestions);
     }
 
-    public async Task<bool> RequiresJoinAsync(string query, SchemaMetadata schema)
+    public Task<bool> RequiresJoinAsync(string query, SchemaMetadata schema)
     {
         var lowerQuery = query.ToLowerInvariant();
 
         // Direct join keywords
         if (lowerQuery.Contains("join") || lowerQuery.Contains("inner") || lowerQuery.Contains("left") || lowerQuery.Contains("right"))
         {
-            return true;
+            return Task.FromResult(true);
         }
 
         // Multiple table references
         var tableCount = schema.Tables.Count(table =>
             lowerQuery.Contains(table.Name.ToLowerInvariant()));
 
-        return tableCount > 1;
+        return Task.FromResult(tableCount > 1);
     }
 
     #endregion

@@ -236,9 +236,9 @@ public static class TestDataBuilders
             .With(t => t.CreatedBy, "System");
     }
 
-    public static TestDataBuilder<AIFeedbackEntry> AIFeedback()
+    public static TestDataBuilder<UnifiedAIFeedbackEntry> AIFeedback()
     {
-        return new TestDataBuilder<AIFeedbackEntry>()
+        return new TestDataBuilder<UnifiedAIFeedbackEntry>()
             .With(f => f.Id, Random.Shared.Next(1, int.MaxValue))
             .With(f => f.UserId, Guid.NewGuid().ToString())
             .With(f => f.OriginalQuery, "Show me sales data")
@@ -246,12 +246,17 @@ public static class TestDataBuilders
             .With(f => f.Rating, Random.Shared.Next(1, 6))
             .With(f => f.FeedbackType, "Positive")
             .With(f => f.CreatedAt, DateTime.UtcNow)
-            .With(f => f.IsProcessed, false);
+            .With(f => f.IsProcessed, false)
+            .With(f => f.CreatedBy, "TestSystem")
+            .With(f => f.UpdatedBy, "TestSystem")
+            .With(f => f.CreatedDate, DateTime.UtcNow)
+            .With(f => f.LastUpdated, DateTime.UtcNow)
+            .With(f => f.IsActive, true);
     }
 
-    public static TestDataBuilder<SemanticCacheEntry> SemanticCache()
+    public static TestDataBuilder<UnifiedSemanticCacheEntry> SemanticCache()
     {
-        return new TestDataBuilder<SemanticCacheEntry>()
+        return new TestDataBuilder<UnifiedSemanticCacheEntry>()
             .With(c => c.Id, Random.Shared.Next(1, int.MaxValue))
             .With(c => c.QueryHash, Guid.NewGuid().ToString("N")[..16])
             .With(c => c.OriginalQuery, "Show me customer data")
@@ -262,7 +267,12 @@ public static class TestDataBuilders
             .With(c => c.CreatedAt, DateTime.UtcNow)
             .With(c => c.ExpiresAt, DateTime.UtcNow.AddHours(24))
             .With(c => c.AccessCount, 1)
-            .With(c => c.LastAccessedAt, DateTime.UtcNow);
+            .With(c => c.LastAccessedAt, DateTime.UtcNow)
+            .With(c => c.CreatedBy, "TestSystem")
+            .With(c => c.UpdatedBy, "TestSystem")
+            .With(c => c.CreatedDate, DateTime.UtcNow)
+            .With(c => c.LastUpdated, DateTime.UtcNow)
+            .With(c => c.IsActive, true);
     }
 
     public static TestDataBuilder<QueryResponse> QueryResponse()
@@ -311,9 +321,9 @@ public static class TestDataBuilders
             .With(c => c.SampleValues, new string[] { "Sample1", "Sample2" });
     }
 
-    public static TestDataBuilder<AIGenerationAttempt> AIGenerationAttempt()
+    public static TestDataBuilder<UnifiedAIGenerationAttempt> AIGenerationAttempt()
     {
-        return new TestDataBuilder<AIGenerationAttempt>()
+        return new TestDataBuilder<UnifiedAIGenerationAttempt>()
             .With(a => a.Id, Random.Shared.Next(1, int.MaxValue))
             .With(a => a.UserQuery, "Show me data")
             .With(a => a.PromptTemplate, "Context: Focus on display queries. Query: Show me data")
@@ -321,7 +331,12 @@ public static class TestDataBuilders
             .With(a => a.AttemptedAt, DateTime.UtcNow)
             .With(a => a.IsSuccessful, true)
             .With(a => a.ConfidenceScore, 0.8)
-            .With(a => a.UserId, "test-user");
+            .With(a => a.UserId, "test-user")
+            .With(a => a.CreatedBy, "TestSystem")
+            .With(a => a.UpdatedBy, "TestSystem")
+            .With(a => a.CreatedDate, DateTime.UtcNow)
+            .With(a => a.LastUpdated, DateTime.UtcNow)
+            .With(a => a.IsActive, true);
     }
 }
 
@@ -356,7 +371,7 @@ public class TestScenarioBuilder
         return this;
     }
 
-    public TestScenarioBuilder AddAIFeedback(Action<TestDataBuilder<AIFeedbackEntry>>? configure = null)
+    public TestScenarioBuilder AddAIFeedback(Action<TestDataBuilder<UnifiedAIFeedbackEntry>>? configure = null)
     {
         var builder = TestDataBuilders.AIFeedback();
         configure?.Invoke(builder);
@@ -364,7 +379,7 @@ public class TestScenarioBuilder
         return this;
     }
 
-    public TestScenarioBuilder AddSemanticCache(Action<TestDataBuilder<SemanticCacheEntry>>? configure = null)
+    public TestScenarioBuilder AddSemanticCache(Action<TestDataBuilder<UnifiedSemanticCacheEntry>>? configure = null)
     {
         var builder = TestDataBuilders.SemanticCache();
         configure?.Invoke(builder);

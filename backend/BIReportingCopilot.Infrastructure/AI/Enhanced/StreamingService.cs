@@ -561,44 +561,44 @@ public class StreamingService : IRealTimeStreamingService
         await Task.CompletedTask;
     }
 
-    private async Task<object> GenerateRealTimeInsightsAsync(QueryStreamEvent queryEvent)
+    private Task<object> GenerateRealTimeInsightsAsync(QueryStreamEvent queryEvent)
     {
-        return new { Insight = "Real-time insight" };
+        return Task.FromResult<object>(new { Insight = "Real-time insight" });
     }
 
-    private async Task<List<LiveChart>> GenerateLiveChartsAsync(string userId)
+    private Task<List<LiveChart>> GenerateLiveChartsAsync(string userId)
     {
-        return new List<LiveChart>();
+        return Task.FromResult(new List<LiveChart>());
     }
 
-    private async Task<List<RealTimeAlert>> GetActiveAlertsAsync(string userId)
+    private Task<List<RealTimeAlert>> GetActiveAlertsAsync(string userId)
     {
-        return new List<RealTimeAlert>();
+        return Task.FromResult(new List<RealTimeAlert>());
     }
 
-    private async Task<List<PerformanceIndicator>> GeneratePerformanceIndicatorsAsync(string userId)
+    private Task<List<PerformanceIndicator>> GeneratePerformanceIndicatorsAsync(string userId)
     {
-        return new List<PerformanceIndicator>();
+        return Task.FromResult(new List<PerformanceIndicator>());
     }
 
-    private async Task<TrendAnalysis> GenerateTrendAnalysisAsync(string userId)
+    private Task<TrendAnalysis> GenerateTrendAnalysisAsync(string userId)
     {
-        return new TrendAnalysis();
+        return Task.FromResult(new TrendAnalysis());
     }
 
-    private async Task<List<RealTimeRecommendation>> GenerateRealTimeRecommendationsAsync(string userId)
+    private Task<List<RealTimeRecommendation>> GenerateRealTimeRecommendationsAsync(string userId)
     {
-        return new List<RealTimeRecommendation>();
+        return Task.FromResult(new List<RealTimeRecommendation>());
     }
 
-    private async Task<int> CountEventsInWindowAsync(DateTime startTime, DateTime endTime, string? userId)
+    private Task<int> CountEventsInWindowAsync(DateTime startTime, DateTime endTime, string? userId)
     {
-        return 100; // Placeholder
+        return Task.FromResult(100); // Placeholder
     }
 
-    private async Task<Dictionary<string, int>> GetEventsByTypeAsync(DateTime startTime, DateTime endTime, string? userId)
+    private Task<Dictionary<string, int>> GetEventsByTypeAsync(DateTime startTime, DateTime endTime, string? userId)
     {
-        return new Dictionary<string, int>();
+        return Task.FromResult(new Dictionary<string, int>());
     }
 
     private double CalculateAverageProcessingTime()
@@ -606,19 +606,19 @@ public class StreamingService : IRealTimeStreamingService
         return 50.0; // Placeholder
     }
 
-    private async Task<ThroughputMetrics> CalculateThroughputMetricsAsync(DateTime startTime, DateTime endTime)
+    private Task<ThroughputMetrics> CalculateThroughputMetricsAsync(DateTime startTime, DateTime endTime)
     {
-        return new ThroughputMetrics();
+        return Task.FromResult(new ThroughputMetrics());
     }
 
-    private async Task<PerformanceMetrics> GetPerformanceMetricsAsync(DateTime startTime, DateTime endTime)
+    private Task<PerformanceMetrics> GetPerformanceMetricsAsync(DateTime startTime, DateTime endTime)
     {
-        return new PerformanceMetrics();
+        return Task.FromResult(new PerformanceMetrics());
     }
 
-    private async Task<UserActivitySummary> GetUserActivitySummaryAsync(DateTime startTime, DateTime endTime, string? userId)
+    private Task<UserActivitySummary> GetUserActivitySummaryAsync(DateTime startTime, DateTime endTime, string? userId)
     {
-        return new UserActivitySummary { ActiveUsers = 5 };
+        return Task.FromResult(new UserActivitySummary { ActiveUsers = 5 });
     }
 
     private double CalculateQueriesPerMinute()
@@ -641,14 +641,14 @@ public class StreamingService : IRealTimeStreamingService
         return 0.65; // Placeholder
     }
 
-    private async Task<double> CalculateCacheHitRateAsync()
+    private Task<double> CalculateCacheHitRateAsync()
     {
-        return 0.85; // Placeholder
+        return Task.FromResult(0.85); // Placeholder
     }
 
-    private async Task<List<TimeSeriesDataPoint>> GenerateTimeSeriesDataAsync()
+    private Task<List<TimeSeriesDataPoint>> GenerateTimeSeriesDataAsync()
     {
-        return new List<TimeSeriesDataPoint>();
+        return Task.FromResult(new List<TimeSeriesDataPoint>());
     }
 
     private double CalculateTotalThroughput()
@@ -666,8 +666,8 @@ public class StreamingService : IRealTimeStreamingService
         };
     }
 
-    private async Task<List<PerformanceHistoryPoint>> GetPerformanceHistoryAsync()
+    private Task<List<PerformanceHistoryPoint>> GetPerformanceHistoryAsync()
     {
-        return new List<PerformanceHistoryPoint>();
+        return Task.FromResult(new List<PerformanceHistoryPoint>());
     }
 }

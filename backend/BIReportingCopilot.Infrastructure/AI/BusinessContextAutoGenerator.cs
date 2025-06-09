@@ -577,14 +577,15 @@ Respond in JSON format:
 
         foreach (var column in table.Columns)
         {
-            await progressCallback?.Invoke("Column Analysis", $"Processing column {column.Name} ({processedColumns + 1}/{table.Columns.Count})", column.Name);
+            if (progressCallback != null)
+                await progressCallback("Column Analysis", $"Processing column {column.Name} ({processedColumns + 1}/{table.Columns.Count})", column.Name);
 
             // Add detailed progress in mock mode
-            if (mockMode)
+            if (mockMode && progressCallback != null)
             {
-                await progressCallback?.Invoke("Column Analysis", $"Analyzing column {column.Name} (mock mode)...", column.Name);
+                await progressCallback("Column Analysis", $"Analyzing column {column.Name} (mock mode)...", column.Name);
                 await Task.Delay(50);
-                await progressCallback?.Invoke("Column Analysis", $"Generating business context for {column.Name}...", column.Name);
+                await progressCallback("Column Analysis", $"Generating business context for {column.Name}...", column.Name);
                 await Task.Delay(50);
             }
 
@@ -609,7 +610,8 @@ Respond in JSON format:
             processedColumns++;
 
             // Final progress update for this column
-            await progressCallback?.Invoke("Column Analysis", $"Completed column {column.Name} ({processedColumns}/{table.Columns.Count})", column.Name);
+            if (progressCallback != null)
+                await progressCallback("Column Analysis", $"Completed column {column.Name} ({processedColumns}/{table.Columns.Count})", column.Name);
 
             if (mockMode)
             {
@@ -985,20 +987,6 @@ Respond in JSON format:
         return terms.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private string GenerateBusinessRelationship(string fromTable, string toTable)
     {
         var fromBusiness = GenerateBusinessName(fromTable);
@@ -1067,8 +1055,6 @@ Respond in JSON format:
 
         return Math.Min(score, 0.9);
     }
-
-
 
     private double CalculateRelationshipConfidence(BusinessRelationshipAnalysis analysis)
     {
