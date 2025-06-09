@@ -607,7 +607,7 @@ public class NLUService : IAdvancedNLUService
     /// <summary>
     /// Classify query intent with confidence scoring
     /// </summary>
-    public async Task<IntentAnalysis> ClassifyIntentAsync(string query, string? userId = null)
+    public Task<IntentAnalysis> ClassifyIntentAsync(string query, string? userId = null)
     {
         try
         {
@@ -634,26 +634,26 @@ public class NLUService : IAdvancedNLUService
                     Confidence = kvp.Value
                 }).ToList();
 
-            return new IntentAnalysis
+            return Task.FromResult(new IntentAnalysis
             {
                 PrimaryIntent = primaryIntent.Key ?? "Unknown",
                 Confidence = primaryIntent.Value,
                 AlternativeIntents = alternatives,
                 Category = DetermineIntentCategory(primaryIntent.Key ?? "Unknown"),
                 SubIntents = ExtractSubIntents(query)
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error classifying intent");
-            return new IntentAnalysis
+            return Task.FromResult(new IntentAnalysis
             {
                 PrimaryIntent = "Unknown",
                 Confidence = 0.0,
                 AlternativeIntents = new List<Core.Models.IntentCandidate>(),
                 Category = IntentCategory.Other,
                 SubIntents = new List<string>()
-            };
+            });
         }
     }
 
@@ -714,7 +714,7 @@ public class NLUService : IAdvancedNLUService
     }
 
     // Interface implementation methods
-    public async Task<QueryImprovement> SuggestQueryImprovementsAsync(string originalQuery, AdvancedNLUResult nluResult)
+    public Task<QueryImprovement> SuggestQueryImprovementsAsync(string originalQuery, AdvancedNLUResult nluResult)
     {
         var improvements = new List<ImprovementSuggestion>();
 
@@ -729,14 +729,14 @@ public class NLUService : IAdvancedNLUService
             });
         }
 
-        return new QueryImprovement
+        return Task.FromResult(new QueryImprovement
         {
             OriginalQuery = originalQuery,
             ImprovedQuery = originalQuery, // Would generate improved version
             Suggestions = improvements,
             ImprovementScore = 0.7,
             Reasoning = "Query could be more specific for better results"
-        };
+        });
     }
 
     public async Task<ConversationAnalysis> AnalyzeConversationAsync(string userId, TimeSpan? analysisWindow = null)
@@ -758,28 +758,29 @@ public class NLUService : IAdvancedNLUService
         };
     }
 
-    public async Task<NLUMetrics> GetMetricsAsync()
+    public Task<NLUMetrics> GetMetricsAsync()
     {
-        return new NLUMetrics
+        return Task.FromResult(new NLUMetrics
         {
             TotalQueries = 1000,
             AverageConfidence = 0.85,
             IntentAccuracy = new Dictionary<string, double> { ["Overall"] = 0.92 },
             EntityAccuracy = new Dictionary<string, double> { ["Overall"] = 0.88 },
             ProcessingTime = TimeSpan.FromMilliseconds(150)
-        };
+        });
     }
 
-    public async Task UpdateConfigurationAsync(NLUConfiguration configuration)
+    public Task UpdateConfigurationAsync(NLUConfiguration configuration)
     {
         _logger.LogInformation("Updating NLU configuration");
         // Would update internal configuration
+        return Task.CompletedTask;
     }
 
     /// <summary>
     /// Train NLU models with user feedback and domain data
     /// </summary>
-    public async Task TrainModelsAsync(List<NLUTrainingData> trainingData, string? domain = null)
+    public Task TrainModelsAsync(List<NLUTrainingData> trainingData, string? domain = null)
     {
         try
         {
@@ -812,6 +813,7 @@ public class NLUService : IAdvancedNLUService
             }
 
             _logger.LogInformation("NLU model training completed successfully");
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {

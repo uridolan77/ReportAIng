@@ -198,7 +198,7 @@ public class IntelligenceService : IQueryIntelligenceService
     }
 
     // Helper methods
-    private async Task<SchemaOptimizationAnalysis> AnalyzeSchemaOptimizationAsync(string query, SchemaMetadata schema, AdvancedNLUResult nluResult)
+    private Task<SchemaOptimizationAnalysis> AnalyzeSchemaOptimizationAsync(string query, SchemaMetadata schema, AdvancedNLUResult nluResult)
     {
         // Analyze query for schema optimization opportunities
         var analysis = new SchemaOptimizationAnalysis
@@ -215,10 +215,10 @@ public class IntelligenceService : IQueryIntelligenceService
             analysis.OptimizationOpportunities.Add("Consider adding indexes for aggregation columns");
         }
 
-        return analysis;
+        return Task.FromResult(analysis);
     }
 
-    private async Task<List<SQLSuggestion>> GenerateSQLSuggestionsAsync(AdvancedNLUResult nluResult, SchemaMetadata schema)
+    private Task<List<SQLSuggestion>> GenerateSQLSuggestionsAsync(AdvancedNLUResult nluResult, SchemaMetadata schema)
     {
         var suggestions = new List<SQLSuggestion>();
 
@@ -243,7 +243,7 @@ public class IntelligenceService : IQueryIntelligenceService
                 break;
         }
 
-        return suggestions;
+        return Task.FromResult(suggestions);
     }
 
     private double CalculateIntelligenceScore(AdvancedNLUResult nluResult, SchemaOptimizationAnalysis schemaAnalysis)
@@ -254,9 +254,9 @@ public class IntelligenceService : IQueryIntelligenceService
         return (nluScore * 0.6) + (schemaScore * 0.4);
     }
 
-    private async Task<List<IntelligenceRecommendation>> GenerateIntelligenceRecommendationsAsync(
-        AdvancedNLUResult nluResult, 
-        SchemaOptimizationAnalysis schemaAnalysis, 
+    private Task<List<IntelligenceRecommendation>> GenerateIntelligenceRecommendationsAsync(
+        AdvancedNLUResult nluResult,
+        SchemaOptimizationAnalysis schemaAnalysis,
         List<SQLSuggestion> sqlSuggestions)
     {
         var recommendations = new List<IntelligenceRecommendation>();
@@ -283,7 +283,7 @@ public class IntelligenceService : IQueryIntelligenceService
             });
         }
 
-        return recommendations;
+        return Task.FromResult(recommendations);
     }
 
     private QueryOptimizationResult EnhanceWithIntelligence(QueryOptimizationResult optimizationResult, QueryIntelligenceResult intelligenceResult)
@@ -346,7 +346,7 @@ public class IntelligenceService : IQueryIntelligenceService
     /// <summary>
     /// Learn from user interaction and feedback
     /// </summary>
-    public async Task LearnFromInteractionAsync(string query, string userId, QueryResponse response, UserFeedback? feedback = null)
+    public Task LearnFromInteractionAsync(string query, string userId, QueryResponse response, UserFeedback? feedback = null)
     {
         try
         {
@@ -363,5 +363,7 @@ public class IntelligenceService : IQueryIntelligenceService
         {
             _logger.LogError(ex, "Error learning from interaction for user: {UserId}", userId);
         }
+
+        return Task.CompletedTask;
     }
 }

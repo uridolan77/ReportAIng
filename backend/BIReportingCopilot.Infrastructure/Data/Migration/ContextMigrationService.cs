@@ -224,7 +224,7 @@ public class ContextMigrationService
         }
     }
 
-    private async Task MigrateMonitoringDataAsync(MigrationResult result, bool dryRun)
+    private Task MigrateMonitoringDataAsync(MigrationResult result, bool dryRun)
     {
         try
         {
@@ -242,6 +242,8 @@ public class ContextMigrationService
             _logger.LogError(ex, "Error migrating monitoring data");
             result.Errors.Add($"Monitoring migration error: {ex.Message}");
         }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>

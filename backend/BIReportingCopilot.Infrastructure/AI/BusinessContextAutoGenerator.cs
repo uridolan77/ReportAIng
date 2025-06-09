@@ -707,7 +707,7 @@ Respond in JSON format:
         }
     }
 
-    private async Task<List<TableRelationship>> AnalyzeForeignKeyRelationships(SchemaMetadata schema)
+    private Task<List<TableRelationship>> AnalyzeForeignKeyRelationships(SchemaMetadata schema)
     {
         var relationships = new List<TableRelationship>();
 
@@ -747,7 +747,7 @@ Respond in JSON format:
             }
         }
 
-        return relationships;
+        return Task.FromResult(relationships);
     }
 
     private List<BusinessDomain> IdentifyBusinessDomains(SchemaMetadata schema)

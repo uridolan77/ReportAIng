@@ -433,7 +433,7 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
         return words.Length > 3 ? string.Join(" ", words.Take(3)) + " Dashboard" : description + " Dashboard";
     }
 
-    private async Task<List<CreateWidgetRequest>> GenerateWidgetsFromNLUAsync(AdvancedNLUResult nluResult, SchemaMetadata schema)
+    private Task<List<CreateWidgetRequest>> GenerateWidgetsFromNLUAsync(AdvancedNLUResult nluResult, SchemaMetadata schema)
     {
         var widgets = new List<CreateWidgetRequest>();
 
@@ -486,7 +486,7 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
                 break;
         }
 
-        return widgets;
+        return Task.FromResult(widgets);
     }
 
     private List<DashboardTemplate> InitializeDefaultTemplates()
@@ -556,8 +556,8 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
         };
     }
 
-    private async Task<DashboardTemplate> ProcessTemplateParametersAsync(
-        DashboardTemplate template, 
+    private Task<DashboardTemplate> ProcessTemplateParametersAsync(
+        DashboardTemplate template,
         Dictionary<string, object> parameters)
     {
         // Process template parameters and replace placeholders
@@ -571,7 +571,7 @@ public class ProductionMultiModalDashboardService : IMultiModalDashboardService
             }
         }
 
-        return processedTemplate;
+        return Task.FromResult(processedTemplate);
     }
 
     // Database operations (placeholder implementations)

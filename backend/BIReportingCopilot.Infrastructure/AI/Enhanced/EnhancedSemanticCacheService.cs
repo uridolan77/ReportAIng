@@ -385,10 +385,11 @@ public class EnhancedSemanticCacheService
         // Update access statistics in database
         try
         {
-            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, context =>
             {
                 // Would update access count and last accessed time
                 _logger.LogDebug("Updated cache access for embedding {Id}", embeddingId);
+                return Task.CompletedTask;
             });
         }
         catch (Exception ex)
@@ -402,10 +403,11 @@ public class EnhancedSemanticCacheService
         // Store in database for persistence
         try
         {
-            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, context =>
             {
                 // Would store the cache entry in database
                 _logger.LogDebug("Stored cache entry in database: {Id}", entry.Id);
+                return Task.CompletedTask;
             });
         }
         catch (Exception ex)
@@ -494,10 +496,11 @@ public class EnhancedSemanticCacheService
             await _vectorSearchService.ClearIndexAsync();
 
             // Clear database cache entries
-            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, context =>
             {
                 // Would clear semantic cache entries from database
                 _logger.LogInformation("Cleared semantic cache from database");
+                return Task.CompletedTask;
             });
 
             _logger.LogInformation("✅ Semantic cache cleared successfully");
@@ -521,10 +524,11 @@ public class EnhancedSemanticCacheService
             await _vectorSearchService.InvalidateByPatternAsync(pattern);
 
             // Invalidate database entries
-            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, context =>
             {
                 // Would invalidate database entries matching pattern
                 _logger.LogDebug("Invalidated database cache entries matching pattern: {Pattern}", pattern);
+                return Task.CompletedTask;
             });
         }
         catch (Exception ex)
@@ -545,11 +549,11 @@ public class EnhancedSemanticCacheService
             }
 
             // Try database
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, context =>
             {
                 // Would retrieve from database by key
                 _logger.LogDebug("Retrieved cache entry from database: {Key}", key);
-                return (EnhancedSemanticCacheEntry?)null;
+                return Task.FromResult((EnhancedSemanticCacheEntry?)null);
             });
         }
         catch (Exception ex)
@@ -563,10 +567,11 @@ public class EnhancedSemanticCacheService
     {
         try
         {
-            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, context =>
             {
                 // Would update metadata in database
                 _logger.LogDebug("Updated cache entry metadata: {Key}", key);
+                return Task.CompletedTask;
             });
         }
         catch (Exception ex)
@@ -735,10 +740,11 @@ public class EnhancedSemanticCacheService
     {
         try
         {
-            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, context =>
             {
                 // Would remove expired entries from database
                 _logger.LogDebug("Removed expired cache entries");
+                return Task.CompletedTask;
             });
         }
         catch (Exception ex)
