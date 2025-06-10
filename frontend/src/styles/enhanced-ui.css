@@ -132,37 +132,122 @@
   font-weight: 600;
 }
 
-/* Enhanced Tab Styles */
-.tabs-enhanced .ant-tabs-tab {
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  margin-right: var(--space-1);
-  padding: var(--space-3) var(--space-5);
-  border: 1px solid var(--neutral-200);
-  background: var(--neutral-50);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
+/* ===== GLOBAL TAB STYLES - CLEAN MODERN DESIGN ===== */
+
+/* Global Tab Container */
+.ant-tabs {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
   overflow: hidden;
-  font-weight: 500;
+}
+
+/* Tab Navigation Area */
+.ant-tabs-nav {
+  margin-bottom: 0 !important;
+  background: #fafafa !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  padding: 0 !important;
+}
+
+.ant-tabs-nav-wrap {
+  padding: 0 !important;
+}
+
+/* Individual Tab Styling */
+.ant-tabs-tab {
+  color: #595959 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  padding: 12px 20px !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.ant-tabs-tab:hover {
+  color: #1890ff !important;
+  background: rgba(24, 144, 255, 0.04) !important;
+  border-bottom-color: rgba(24, 144, 255, 0.3) !important;
+}
+
+.ant-tabs-tab-active {
+  color: #1890ff !important;
+  background: #ffffff !important;
+  border-bottom: 3px solid #1890ff !important;
+  font-weight: 600 !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Tab Button Text */
+.ant-tabs-tab .ant-tabs-tab-btn {
+  color: inherit !important;
+  font-weight: inherit !important;
+  font-size: inherit !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #1890ff !important;
+  font-weight: 600 !important;
+}
+
+/* Tab Icons */
+.ant-tabs-tab .anticon {
+  color: inherit !important;
+  font-size: 16px !important;
+}
+
+.ant-tabs-tab-active .anticon {
+  color: #1890ff !important;
+}
+
+/* Tab Content Area */
+.ant-tabs-content-holder {
+  background: #ffffff !important;
+  padding: 0 !important;
+}
+
+.ant-tabs-tabpane {
+  padding: 24px !important;
+  min-height: 400px;
+}
+
+/* Card Type Tabs (for special cases) */
+.ant-tabs-card .ant-tabs-tab {
+  border: 1px solid #e8e8e8 !important;
+  border-bottom: none !important;
+  border-radius: 8px 8px 0 0 !important;
+  margin-right: 2px !important;
+  background: #f8f9fa !important;
+}
+
+.ant-tabs-card .ant-tabs-tab-active {
+  border-color: #1890ff !important;
+  border-bottom: 1px solid #ffffff !important;
+  background: #ffffff !important;
+}
+
+/* Enhanced Tab Styles (Legacy Support) */
+.tabs-enhanced .ant-tabs-tab {
+  /* Inherits from global styles above */
 }
 
 .tabs-enhanced .ant-tabs-tab:hover {
-  background: var(--neutral-100);
-  border-color: var(--neutral-300);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  /* Inherits from global styles above */
 }
 
 .tabs-enhanced .ant-tabs-tab-active {
-  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
-  border-color: var(--primary-500);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-
-.tabs-enhanced .ant-tabs-tab-active .ant-tabs-tab-btn {
-  color: white;
-  font-weight: 600;
+  /* Inherits from global styles above */
 }
 
 /* Enhanced Suggestions Management Tabs */

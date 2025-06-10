@@ -156,7 +156,8 @@ export interface AuthenticationResult {
   Success?: boolean;     // Backend uses capital S
   token?: string;
   refreshToken?: string;
-  AccessToken?: string;  // Backend uses capital A
+  accessToken?: string;  // Backend actually sends lowercase
+  AccessToken?: string;  // Legacy support
   RefreshToken?: string; // Backend uses capital R
   expiresAt?: string;
   user?: UserProfile;

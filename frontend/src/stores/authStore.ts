@@ -65,13 +65,13 @@ export const useAuthStore = create<AuthState>()(
           if (response.success) {
             // Backend now returns camelCase properties due to JSON serialization fix
             console.log('🔐 Login response:', {
-              hasAccessToken: !!response.AccessToken,
+              hasAccessToken: !!response.accessToken,
               hasRefreshToken: !!response.refreshToken,
               user: response.user
             });
 
             // Encrypt tokens before storing (now async)
-            const accessToken = response.AccessToken || '';
+            const accessToken = response.accessToken || '';
             const refreshToken = response.refreshToken || '';
 
             if (!accessToken) {

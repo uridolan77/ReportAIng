@@ -1,0 +1,89 @@
+/* Performance Monitoring Dashboard Specific Styles */
+
+.performance-dashboard {
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.performance-dashboard-header {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.performance-dashboard-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.performance-dashboard-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Tab styling now uses global styles from enhanced-ui.css */
+
+/* Health status indicators */
+.health-status-healthy {
+  color: #52c41a;
+}
+
+.health-status-warning {
+  color: #faad14;
+}
+
+.health-status-critical {
+  color: #ff4d4f;
+}
+
+/* Performance metrics cards */
+.performance-metrics-card {
+  margin-bottom: 16px;
+}
+
+.performance-metrics-card .ant-card-body {
+  padding: 16px;
+}
+
+/* Chart containers */
+.performance-chart-container {
+  margin-bottom: 24px;
+}
+
+.performance-chart-container .ant-card-body {
+  padding: 20px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .performance-dashboard {
+    padding: 16px;
+  }
+  
+  .performance-dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .performance-dashboard-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .performance-dashboard {
+    padding: 12px;
+  }
+  
+  .performance-dashboard-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+}

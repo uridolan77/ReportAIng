@@ -192,11 +192,17 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
         .enter()
         .append('tspan')
         .attr('x', function(d) {
-          const node = d3.select((this as any).parentNode).datum() as any;
+          const parentNode = (this as any).parentNode;
+          if (!parentNode) return 0;
+          const node = d3.select(parentNode).datum() as any;
+          if (!node) return 0;
           return (node.x1 - node.x0) / 2;
         })
         .attr('y', function(d, i) {
-          const node = d3.select((this as any).parentNode).datum() as any;
+          const parentNode = (this as any).parentNode;
+          if (!parentNode) return 0;
+          const node = d3.select(parentNode).datum() as any;
+          if (!node) return 0;
           const fontSize = Math.max(
             minFontSize,
             Math.min(maxFontSize, Math.sqrt((node.x1 - node.x0) * (node.y1 - node.y0)) / 8)
@@ -206,14 +212,28 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .style('font-size', function(d) {
-          const node = d3.select((this as any).parentNode).datum() as any;
+          const parentNode = (this as any).parentNode;
+          if (!parentNode) return `${minFontSize}px`;
+          const node = d3.select(parentNode).datum() as any;
+          if (!node) return `${minFontSize}px`;
           const area = (node.x1 - node.x0) * (node.y1 - node.y0);
           return `${Math.max(minFontSize, Math.min(maxFontSize, Math.sqrt(area) / 8))}px`;
         })
         .style('font-weight', 'bold')
         .style('fill', function() {
-          const bgColor = d3.select((this as any).parentNode).select('rect').attr('fill');
-          return d3.hsl(bgColor).l > 0.5 ? '#000' : '#fff';
+          const parentNode = (this as any).parentNode;
+          if (!parentNode) return '#000';
+          const parentSelection = d3.select(parentNode);
+          if (parentSelection.empty()) return '#000';
+          const rectSelection = parentSelection.select('rect');
+          if (rectSelection.empty()) return '#000';
+          const bgColor = rectSelection.attr('fill');
+          if (!bgColor) return '#000';
+          try {
+            return d3.hsl(bgColor).l > 0.5 ? '#000' : '#fff';
+          } catch {
+            return '#000';
+          }
         })
         .style('pointer-events', 'none')
         .text(d => d);
@@ -257,6 +277,17 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
       .style('font-size', '12px')
       .text(d => d);
 
+    // Cleanup function to prevent errors on unmount
+    return () => {
+      if (svgRef.current) {
+        const svg = d3.select(svgRef.current);
+        svg.selectAll('*').remove();
+      }
+      if (tooltipRef.current) {
+        const tooltip = d3.select(tooltipRef.current);
+        tooltip.style('opacity', 0);
+      }
+    };
   }, [data, size, config, interactive, onNodeClick, onNodeHover, announce, title, colorScheme, showLabels, padding, minFontSize, maxFontSize]);
 
   return (

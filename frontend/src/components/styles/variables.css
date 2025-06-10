@@ -13,6 +13,30 @@
   --color-error: #ff4d4f;
   --color-info: #13c2c2;
 
+  /* Primary Color Variants */
+  --primary-50: #e6f7ff;
+  --primary-100: #bae7ff;
+  --primary-200: #91d5ff;
+  --primary-300: #69c0ff;
+  --primary-400: #40a9ff;
+  --primary-500: #1890ff;
+  --primary-600: #096dd9;
+  --primary-700: #0050b3;
+  --primary-800: #003a8c;
+  --primary-900: #002766;
+
+  /* Neutral Color Variants */
+  --neutral-50: #fafafa;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e8e8e8;
+  --neutral-300: #d9d9d9;
+  --neutral-400: #bfbfbf;
+  --neutral-500: #8c8c8c;
+  --neutral-600: #595959;
+  --neutral-700: #434343;
+  --neutral-800: #262626;
+  --neutral-900: #1f1f1f;
+
   /* Text Colors */
   --text-primary: #262626;
   --text-secondary: #595959;

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Typography, Spin, Tag, Card, Space, Tooltip } from 'antd';
+import { Button, Typography, Spin, Tag, Card, Space, Tooltip, Collapse } from 'antd';
 import {
   ThunderboltOutlined,
   StarOutlined,
   RocketOutlined,
   ReloadOutlined,
   FireOutlined,
-  SendOutlined
+  SendOutlined,
+  DownOutlined,
+  UpOutlined
 } from '@ant-design/icons';
 import { querySuggestionService, GroupedSuggestions, QuerySuggestion } from '../../services/querySuggestionService';
 
@@ -30,6 +32,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
   const [randomizing, setRandomizing] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [shufflingCategory, setShufflingCategory] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(true); // Collapsed by default
 
   useEffect(() => {
     loadSuggestions();
@@ -836,10 +839,10 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
       padding: '0 0 24px 0',
       width: '100%'
     }}>
-      {/* Header */}
+      {/* Header with Toggle */}
       <div style={{
         textAlign: 'center',
-        marginBottom: '32px',
+        marginBottom: isCollapsed ? '16px' : '32px',
         position: 'relative'
       }}>
         <div style={{
@@ -861,17 +864,21 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
             background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
+            backgroundClip: 'text',
+            cursor: 'pointer'
+          }}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          >
             Try These Examples
           </Title>
-          <Tooltip title="Shuffle all examples">
+
+          {/* Toggle Button */}
+          <Tooltip title={isCollapsed ? "Show examples" : "Hide examples"}>
             <Button
               type="text"
               size="small"
-              icon={<ReloadOutlined spin={randomizing} />}
-              onClick={randomizeSuggestions}
-              loading={randomizing}
+              icon={isCollapsed ? <DownOutlined /> : <UpOutlined />}
+              onClick={() => setIsCollapsed(!isCollapsed)}
               style={{
                 borderRadius: '50%',
                 width: '32px',
@@ -886,6 +893,31 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
               }}
             />
           </Tooltip>
+
+          {!isCollapsed && (
+            <Tooltip title="Shuffle all examples">
+              <Button
+                type="text"
+                size="small"
+                icon={<ReloadOutlined spin={randomizing} />}
+                onClick={randomizeSuggestions}
+                loading={randomizing}
+                style={{
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid #e2e8f0',
+                  backgroundColor: '#ffffff',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.3s ease'
+                }}
+              />
+            </Tooltip>
+          )}
+
           <FireOutlined style={{
             fontSize: '24px',
             color: '#f59e0b',
@@ -893,25 +925,28 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           }} />
         </div>
 
-        <Text type="secondary" style={{
-          fontSize: '14px',
-          display: 'block',
-          marginBottom: '16px'
-        }}>
-          Organized by category for easy discovery
-        </Text>
+        {!isCollapsed && (
+          <Text type="secondary" style={{
+            fontSize: '14px',
+            display: 'block',
+            marginBottom: '16px'
+          }}>
+            Organized by category for easy discovery
+          </Text>
+        )}
       </div>
 
-      {/* Categories Grid */}
-      <div
-        className="suggestions-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '24px',
-          alignItems: 'start',
-          width: '100%'
-        }}>
+      {/* Categories Grid - Only show when not collapsed */}
+      {!isCollapsed && (
+        <div
+          className="suggestions-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '24px',
+            alignItems: 'start',
+            width: '100%'
+          }}>
         {groupedSuggestions.map((group, index) => {
           const isHovered = hoveredCategory === group.category.categoryKey;
           const displaySuggestions = isHovered
@@ -925,7 +960,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
               onMouseLeave={() => setHoveredCategory(null)}
               style={{
                 borderRadius: '20px',
-                border: '1px solid #e1e5e9',
+                border: 'none',
                 boxShadow: isHovered
                   ? '0 16px 48px rgba(0, 0, 0, 0.15)'
                   : '0 8px 32px rgba(0, 0, 0, 0.08)',
@@ -1036,7 +1071,7 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
                     padding: '16px 18px',
                     textAlign: 'left',
                     borderRadius: '14px',
-                    border: '1px solid #e2e8f0',
+                    border: 'none',
                     backgroundColor: '#ffffff',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
@@ -1155,7 +1190,8 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
           </Card>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {/* Add CSS animations and responsive styles */}
       <style>{`

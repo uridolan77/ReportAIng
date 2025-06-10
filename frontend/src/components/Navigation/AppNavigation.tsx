@@ -332,16 +332,17 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
                     borderRadius: '6px',
                     height: 'auto',
                     lineHeight: 'normal',
-                    padding: collapsed ? '8px 24px' : '8px 12px',
+                    padding: collapsed ? '12px' : '8px 12px',
                     cursor: item.disabled ? 'not-allowed' : 'pointer',
                     opacity: item.disabled ? 0.5 : 1,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    justifyContent: collapsed ? 'center' : 'flex-start',
+                    gap: collapsed ? '0' : '8px'
                   }}
                 >
                   {item.icon}
-                  {!collapsed ? (
+                  {!collapsed && (
                     <div style={{ minHeight: '20px' }}>
                       <div style={{
                         fontSize: '14px',
@@ -364,8 +365,6 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
                         </Text>
                       )}
                     </div>
-                  ) : (
-                    <span>{item.label}</span>
                   )}
                 </div>
               ))}

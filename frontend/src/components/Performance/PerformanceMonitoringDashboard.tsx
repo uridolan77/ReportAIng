@@ -48,6 +48,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import dayjs, { type Dayjs } from 'dayjs';
+import './PerformanceMonitoringDashboard.css';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -427,7 +428,7 @@ export const PerformanceMonitoringDashboard: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto' }}>
+    <div className="performance-dashboard">
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <Title level={2}>

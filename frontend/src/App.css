@@ -176,6 +176,24 @@
   font-family: var(--font-family-secondary) !important;
 }
 
+/* Hide text when sidebar is collapsed */
+.ant-layout-sider-collapsed .ant-menu-item span,
+.ant-layout-sider-collapsed .ant-menu-submenu-title span,
+.ant-layout-sider-collapsed .ant-menu-item-group-title {
+  display: none !important;
+}
+
+/* Center icons when collapsed */
+.ant-layout-sider-collapsed .ant-menu-item {
+  text-align: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.ant-layout-sider-collapsed .ant-menu-item .anticon {
+  margin-right: 0 !important;
+}
+
 /* Enhanced Query Card Styles */
 .query-card {
   background: white;
@@ -299,21 +317,7 @@
   left: 100%;
 }
 
-/* Tab Styling */
-.ant-tabs-tab {
-  border-radius: 8px 8px 0 0;
-  margin-right: 8px;
-  transition: all 0.3s ease;
-}
-
-.ant-tabs-tab-active {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white !important;
-}
-
-.ant-tabs-tab-active .ant-tabs-tab-btn {
-  color: white !important;
-}
+/* Tab Styling - Removed to use global styles from enhanced-ui.css */
 
 /* Enhanced Tuning Dashboard Tabs */
 .tuning-dashboard-tabs .ant-tabs-nav {
