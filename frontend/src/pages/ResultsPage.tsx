@@ -5,13 +5,9 @@
 import React from 'react';
 import {
   Card,
-  Typography,
-  Space,
   Button,
-  Row,
-  Col,
   Empty,
-  Breadcrumb
+  Spin
 } from 'antd';
 import {
   HomeOutlined,
@@ -22,6 +18,18 @@ import { useNavigate } from 'react-router-dom';
 import { useActiveResult } from '../stores/activeResultStore';
 import { QueryResult } from '../components/QueryInterface/QueryResult';
 import { DataInsightsPanel } from '../components/Insights/DataInsightsPanel';
+// Import new UI components
+import {
+  Container,
+  FlexContainer,
+  GridContainer,
+  Stack,
+  Breadcrumb,
+  BreadcrumbItem,
+  InView,
+  PerformanceMonitor
+} from '../components/ui';
+import type { ButtonProps } from '../components/ui/types';
 
 const { Title, Text } = Typography;
 

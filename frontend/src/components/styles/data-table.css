@@ -311,12 +311,135 @@
   .data-table-container {
     border: 2px solid #000;
   }
-  
+
   .data-table-wrapper .ant-table-thead > tr > th {
     border-bottom: 3px solid #000;
   }
-  
+
   .data-table-wrapper .ant-table-tbody > tr > td {
     border-bottom: 1px solid #000;
   }
+}
+
+/* DB Explorer Specific Styles (consolidated from DBExplorer.css) */
+.db-explorer-container {
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  min-height: 100vh;
+}
+
+.db-explorer-header {
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.db-explorer-content {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: var(--space-4);
+  height: calc(100vh - 200px);
+}
+
+.db-explorer-sidebar {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.db-explorer-main {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+/* DB Explorer Table Overrides */
+.db-explorer-container .ant-table,
+.db-explorer-container .ant-table *,
+.db-explorer-container .ant-table .ant-typography,
+.db-explorer-container .ant-table strong,
+.db-explorer-container .ant-table .ant-typography-text,
+.db-explorer-container .ant-table span,
+.db-explorer-container .ant-table div {
+  font-weight: normal !important;
+  font-size: 11px !important;
+}
+
+.db-explorer-container .ant-table .ant-typography-caption {
+  font-size: 10px !important;
+}
+
+.db-explorer-container .ant-table .ant-tag {
+  font-size: 10px !important;
+  padding: 0 4px !important;
+  line-height: 16px !important;
+}
+
+/* Schema Tree Styles */
+.schema-tree-container {
+  padding: var(--space-3);
+  height: 100%;
+  overflow-y: auto;
+}
+
+.schema-tree-node {
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.schema-tree-node:hover {
+  background: var(--bg-tertiary);
+}
+
+.schema-tree-node.selected {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* Table Data Preview */
+.table-data-preview {
+  padding: var(--space-4);
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-data-preview-header {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.table-data-preview-content {
+  flex: 1;
+  overflow: auto;
+}
+
+/* Table Explorer Styles */
+.table-explorer-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-explorer-toolbar {
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.table-explorer-content {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-3);
 }

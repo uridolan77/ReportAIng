@@ -1,9 +1,25 @@
+/**
+ * UI Components Library
+ * Comprehensive, type-safe UI component system
+ */
+
+// Core Components
+export * from './Button';
+export * from './Card';
+export * from './Layout';
+export * from './Form';
+export * from './Feedback';
+export * from './Navigation';
+export * from './Modal';
+export * from './Data';
+export * from './Performance';
+
+// Type Definitions
+export * from './types';
+
+// Re-export for backward compatibility
 import React from 'react';
 import {
-  Button as AntButton,
-  ButtonProps as AntButtonProps,
-  Card as AntCard,
-  CardProps as AntCardProps,
   Input as AntInput,
   InputProps as AntInputProps,
   Badge as AntBadge,

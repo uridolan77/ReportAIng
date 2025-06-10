@@ -11,9 +11,14 @@ import './query-interface.css';
 import './layout.css';
 import './data-table.css';
 import './visualization.css';
+import './schema-management.css';
+
+// All CSS files now consolidated into centralized system
+// No remaining scattered CSS files to import
 
 // Re-export component-specific styles for backward compatibility
 export * from './query-interface';
 export * from './layout';
 export * from './data-table';
 export * from './visualization';
+export * from './schema-management';

@@ -37,10 +37,7 @@ export * from './Common';
 export * from './Admin/QuerySuggestionsManager';
 
 // Performance Components
-export * from './Performance/MemoizedComponents';
-export * from './Performance/PerformanceMonitoringDashboard';
-export * from './Performance/PerformanceOptimizer';
-export * from './Performance/VirtualScrollList';
+export * from './Performance';
 
 // Tuning Components
 export * from './Tuning';

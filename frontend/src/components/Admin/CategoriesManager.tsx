@@ -27,8 +27,8 @@ import {
   EyeOutlined,
   EyeInvisibleOutlined
 } from '@ant-design/icons';
-import DataTable from '../../DataTable';
-import { querySuggestionService, SuggestionCategory, CreateUpdateCategory } from '../../../services/querySuggestionService';
+import DataTable from '../DataTable';
+import { querySuggestionService, SuggestionCategory, CreateUpdateCategory } from '../../services/querySuggestionService';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -344,3 +344,5 @@ export const CategoriesManager: React.FC<CategoriesManagerProps> = ({
     </div>
   );
 };
+
+export default CategoriesManager;
