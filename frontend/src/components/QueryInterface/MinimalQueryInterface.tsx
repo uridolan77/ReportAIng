@@ -186,13 +186,12 @@ export const MinimalQueryInterface: React.FC = () => {
           <Title
             level={1}
             style={{
-              fontSize: '48px',
-              fontWeight: 700,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              fontSize: '52px',
+              fontWeight: 800,
+              color: '#1a1a1a',
               marginBottom: '16px',
-              fontFamily: "'Poppins', sans-serif"
+              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+              letterSpacing: '-0.02em'
             }}
           >
             Talk with DailyActionsDB
@@ -207,35 +206,38 @@ export const MinimalQueryInterface: React.FC = () => {
           </Text>
         </div>
 
-        {/* Query Input Container - Extra wide and prominent */}
+        {/* Query Input Container - Much wider for better screen utilization */}
         <div style={{
-          marginBottom: '40px',
-          maxWidth: '2000px',
-          margin: '0 auto 40px auto',
-          padding: '0 24px'
+          marginBottom: '32px',
+          maxWidth: '1400px',
+          margin: '0 auto 32px auto',
+          padding: '0 24px',
+          width: '100%'
         }}>
-          <div data-testid="query-input" style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '24px',
-            padding: '32px',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
+          {/* Outer glass frame (passepartout) - Shiny glass effect */}
+          <div style={{
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #ffffff 100%)',
+            borderRadius: '28px',
+            padding: '28px',
+            boxShadow: '0 16px 48px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
             position: 'relative',
-            overflow: 'hidden'
+            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+            border: '1px solid rgba(255, 255, 255, 0.6)',
+            width: '100%',
+            backdropFilter: 'blur(10px)'
           }}>
-            {/* Background decoration */}
-            <div style={{
-              position: 'absolute',
-              top: '-50%',
-              left: '-50%',
-              width: '200%',
-              height: '200%',
-              background: 'radial-gradient(circle, rgba(102, 126, 234, 0.03) 0%, transparent 70%)',
-              animation: 'rotate 30s linear infinite',
-              zIndex: 0
-            }} />
-
+            {/* Inner text box with subtle inset */}
+            <div data-testid="query-input" style={{
+              background: '#fafbfc',
+              borderRadius: '20px',
+              padding: '0',
+              boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)',
+              border: '1px solid rgba(229, 231, 235, 0.4)',
+              position: 'relative',
+              overflow: 'hidden',
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              width: '100%'
+            }}>
             <Input.TextArea
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -245,58 +247,103 @@ export const MinimalQueryInterface: React.FC = () => {
                   handleCustomSubmitQuery();
                 }
               }}
-              placeholder="Ask a question about your data... (e.g., 'Show me revenue by country last month')"
-              autoSize={{ minRows: 4, maxRows: 12 }}
+              placeholder="New player registrations by country this week"
+              autoSize={{ minRows: 8, maxRows: 16 }}
               style={{
                 fontSize: '18px',
-                borderRadius: '16px',
-                border: '2px solid #e1e5e9',
-                padding: '24px',
+                borderRadius: '18px',
+                border: 'none',
+                padding: '32px',
                 resize: 'none',
                 background: '#ffffff',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                position: 'relative',
-                zIndex: 1,
+                boxShadow: 'none',
+                transition: 'all 0.3s ease',
                 fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-                lineHeight: '1.6'
+                lineHeight: '1.6',
+                color: '#2c3e50',
+                fontWeight: '400',
+                margin: '0',
+                width: '100%'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#667eea';
-                e.target.style.boxShadow = '0 0 0 4px rgba(102, 126, 234, 0.15), 0 8px 24px rgba(0, 0, 0, 0.12)';
+                // Target the inner white box
+                if (e.target.parentElement) {
+                  e.target.parentElement.style.border = '1px solid rgba(59, 130, 246, 0.6)';
+                  e.target.parentElement.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 1)';
+                  e.target.parentElement.style.background = 'linear-gradient(145deg, #ffffff 0%, #fafbff 100%)';
+                }
+                // Target the outer glass frame - Enhanced glass effect on focus
+                if (e.target.parentElement?.parentElement) {
+                  e.target.parentElement.parentElement.style.background = 'linear-gradient(145deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%)';
+                  e.target.parentElement.parentElement.style.transform = 'translateY(-2px) scale(1.01)';
+                  e.target.parentElement.parentElement.style.boxShadow = '0 20px 56px rgba(59, 130, 246, 0.15), 0 12px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1)';
+                  e.target.parentElement.parentElement.style.border = '1px solid rgba(255, 255, 255, 0.8)';
+                }
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = '#e1e5e9';
-                e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)';
+                // Reset inner white box
+                if (e.target.parentElement) {
+                  e.target.parentElement.style.border = '1px solid rgba(229, 231, 235, 0.8)';
+                  e.target.parentElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+                  e.target.parentElement.style.background = 'linear-gradient(145deg, #ffffff 0%, #fefefe 100%)';
+                }
+                // Reset outer glass frame - Back to shiny glass effect
+                if (e.target.parentElement?.parentElement) {
+                  e.target.parentElement.parentElement.style.background = 'linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #ffffff 100%)';
+                  e.target.parentElement.parentElement.style.transform = 'translateY(0) scale(1)';
+                  e.target.parentElement.parentElement.style.boxShadow = '0 16px 48px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
+                  e.target.parentElement.parentElement.style.border = '1px solid rgba(255, 255, 255, 0.6)';
+                }
               }}
             />
+            </div>
           </div>
 
           {/* Action Buttons */}
-          <div style={{ textAlign: 'center', marginTop: '16px' }}>
-            {/* Primary Submit Button - Always visible when there's a query */}
-            {query?.trim() && (
-              <Button
-                type="primary"
-                size="large"
-                loading={isLoading || aiProcessing.isProcessing}
-                onClick={handleCustomSubmitQuery}
-                disabled={!query?.trim()}
-                style={{
-                  marginRight: '8px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                  border: 'none',
-                  boxShadow: '0 4px 16px rgba(59, 130, 246, 0.3)',
-                  fontWeight: 600,
-                  height: '44px',
-                  padding: '0 32px',
-                  fontSize: '16px'
-                }}
-              >
-                {isLoading || aiProcessing.isProcessing ? 'Processing...' : 'Submit Query'}
-              </Button>
-            )}
+          <div style={{ textAlign: 'center', marginTop: '24px', marginBottom: '32px' }}>
+            {/* Primary Submit Button - Always visible */}
+            <Button
+              type="primary"
+              size="large"
+              loading={isLoading || aiProcessing.isProcessing}
+              onClick={handleCustomSubmitQuery}
+              disabled={!query?.trim()}
+              style={{
+                borderRadius: '12px',
+                background: !query?.trim()
+                  ? 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)'
+                  : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                border: 'none',
+                boxShadow: !query?.trim()
+                  ? '0 4px 12px rgba(148, 163, 184, 0.2)'
+                  : '0 8px 24px rgba(59, 130, 246, 0.4)',
+                fontWeight: 600,
+                height: '52px',
+                padding: '0 40px',
+                fontSize: '16px',
+                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+                minWidth: '160px',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: !query?.trim() ? 'not-allowed' : 'pointer',
+                color: !query?.trim() ? '#64748b' : '#ffffff'
+              }}
+              onMouseEnter={(e) => {
+                if (query?.trim()) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 12px 32px rgba(59, 130, 246, 0.5)';
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (query?.trim()) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.4)';
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
+                }
+              }}
+            >
+              {isLoading || aiProcessing.isProcessing ? 'Analyzing...' : 'Submit Query'}
+            </Button>
 
             {/* Show Results Button - Show when there are persisted results but in initial state */}
             {currentResult && forceInitialState && (

@@ -79,15 +79,8 @@ export const DatabaseConnectionBanner: React.FC<DatabaseConnectionBannerProps> =
     return () => clearInterval(interval);
   }, []);
 
-  // Don't show banner if connected
-  if (isConnected === true) {
-    return null;
-  }
-
-  // Don't show banner while initial check is loading
-  if (isConnected === null && isChecking) {
-    return null;
-  }
+  // Don't show banner - database status is handled by header indicator
+  return null;
 
   const getAlertType = () => {
     if (isConnected === false) return 'error';

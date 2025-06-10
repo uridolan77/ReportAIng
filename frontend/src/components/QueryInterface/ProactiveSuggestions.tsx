@@ -769,31 +769,29 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
     }
   };
 
-  const handleQuerySelect = async (suggestion: QuerySuggestion) => {
-    try {
-      // Record usage analytics
-      await querySuggestionService.recordUsage({
-        suggestionId: suggestion.id,
-        sessionId: sessionStorage.getItem('sessionId') || undefined,
-        timeFrameUsed: suggestion.defaultTimeFrame,
-        wasSuccessful: true
-      });
-      
-      // Apply time frame to query if specified
-      let queryText = suggestion.queryText;
-      if (suggestion.defaultTimeFrame && suggestion.defaultTimeFrame !== 'all_time') {
-        const timeFrameDisplay = querySuggestionService.formatTimeFrame(suggestion.defaultTimeFrame);
-        if (!queryText.toLowerCase().includes(timeFrameDisplay.toLowerCase())) {
-          queryText = `${queryText} (${timeFrameDisplay})`;
-        }
+  const handleQuerySelect = (suggestion: QuerySuggestion) => {
+    // Apply time frame to query if specified
+    let queryText = suggestion.queryText;
+    if (suggestion.defaultTimeFrame && suggestion.defaultTimeFrame !== 'all_time') {
+      const timeFrameDisplay = querySuggestionService.formatTimeFrame(suggestion.defaultTimeFrame);
+      if (!queryText.toLowerCase().includes(timeFrameDisplay.toLowerCase())) {
+        queryText = `${queryText} (${timeFrameDisplay})`;
       }
-      
-      onQuerySelect(queryText);
-    } catch (err) {
-      console.error('Failed to record usage:', err);
-      // Still execute the query even if analytics fail
-      onQuerySelect(suggestion.queryText);
     }
+
+    // Update UI immediately for better UX
+    onQuerySelect(queryText);
+
+    // Record usage analytics in background (don't await)
+    querySuggestionService.recordUsage({
+      suggestionId: suggestion.id,
+      sessionId: sessionStorage.getItem('sessionId') || undefined,
+      timeFrameUsed: suggestion.defaultTimeFrame,
+      wasSuccessful: true
+    }).catch(err => {
+      console.error('Failed to record usage analytics:', err);
+      // Analytics failure shouldn't affect user experience
+    });
   };
 
   const getComplexityIcon = (complexity: number) => {
@@ -839,21 +837,43 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
       padding: '0 0 24px 0',
       width: '100%'
     }}>
-      {/* Header with Toggle */}
+      {/* Header with Toggle - Enhanced Design */}
       <div style={{
         textAlign: 'center',
-        marginBottom: isCollapsed ? '16px' : '32px',
+        marginBottom: isCollapsed ? '24px' : '40px',
         position: 'relative'
       }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '16px',
-          marginBottom: '8px'
-        }}>
+        {/* Main Toggle Button */}
+        <div
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+            padding: '16px 32px',
+            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%)',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.8)',
+            boxShadow: '0 8px 24px rgba(102, 126, 234, 0.12)',
+            cursor: 'pointer',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 12px 32px rgba(102, 126, 234, 0.18)';
+            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.12) 100%)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.12)';
+            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%)';
+          }}
+        >
           <FireOutlined style={{
-            fontSize: '24px',
+            fontSize: '20px',
             color: '#f59e0b',
             animation: 'pulse 2s infinite'
           }} />
@@ -861,40 +881,34 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
             margin: 0,
             color: '#1f2937',
             fontWeight: 700,
+            fontSize: '20px',
             background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            cursor: 'pointer'
-          }}
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          >
+            backgroundClip: 'text'
+          }}>
             Try These Examples
           </Title>
 
-          {/* Toggle Button */}
-          <Tooltip title={isCollapsed ? "Show examples" : "Hide examples"}>
-            <Button
-              type="text"
-              size="small"
-              icon={isCollapsed ? <DownOutlined /> : <UpOutlined />}
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              style={{
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid #e2e8f0',
-                backgroundColor: '#ffffff',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                transition: 'all 0.3s ease'
-              }}
-            />
-          </Tooltip>
+          {/* Dropdown Arrow */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginLeft: '8px'
+          }}>
+            {isCollapsed ? <DownOutlined style={{ fontSize: '16px', color: '#6b7280' }} /> : <UpOutlined style={{ fontSize: '16px', color: '#6b7280' }} />}
+          </div>
+        </div>
 
-          {!isCollapsed && (
+        {/* Secondary Controls - Only show when expanded */}
+        {!isCollapsed && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '16px',
+            marginTop: '16px'
+          }}>
             <Tooltip title="Shuffle all examples">
               <Button
                 type="text"
@@ -916,20 +930,16 @@ export const ProactiveSuggestions: React.FC<ProactiveSuggestionsProps> = ({
                 }}
               />
             </Tooltip>
-          )}
-
-          <FireOutlined style={{
-            fontSize: '24px',
-            color: '#f59e0b',
-            animation: 'pulse 2s infinite'
-          }} />
-        </div>
+          </div>
+        )}
 
         {!isCollapsed && (
           <Text type="secondary" style={{
             fontSize: '14px',
             display: 'block',
-            marginBottom: '16px'
+            marginTop: '16px',
+            marginBottom: '16px',
+            textAlign: 'center'
           }}>
             Organized by category for easy discovery
           </Text>
