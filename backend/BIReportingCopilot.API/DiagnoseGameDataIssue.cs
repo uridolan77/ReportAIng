@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Infrastructure.Data;
-using BIReportingCopilot.Infrastructure.Services;
+using BIReportingCopilot.Infrastructure.Query;
 using BIReportingCopilot.Core.Interfaces;
 
 namespace BIReportingCopilot.API

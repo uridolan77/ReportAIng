@@ -9,7 +9,7 @@ using System.Text.Json;
 using Microsoft.Data.SqlClient;
 using CoreModels = BIReportingCopilot.Core.Models;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.AI.Management;
 
 public class PromptService : IPromptService
 {

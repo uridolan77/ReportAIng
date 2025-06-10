@@ -10,8 +10,17 @@ using System.Text;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Infrastructure.Data;
-using BIReportingCopilot.Infrastructure.Services;
-using SignalRProgressReporter = BIReportingCopilot.Infrastructure.Services.SignalRProgressReporter;
+// Import all the reorganized service namespaces
+using BIReportingCopilot.Infrastructure.Authentication;
+using BIReportingCopilot.Infrastructure.Business;
+using BIReportingCopilot.Infrastructure.Query;
+using BIReportingCopilot.Infrastructure.Schema;
+using BIReportingCopilot.Infrastructure.Visualization;
+using BIReportingCopilot.Infrastructure.Jobs;
+using BIReportingCopilot.Infrastructure.Messaging;
+using BIReportingCopilot.Infrastructure.AI.Management;
+using BIReportingCopilot.Infrastructure.Monitoring;
+using SignalRProgressReporter = BIReportingCopilot.Infrastructure.Messaging.SignalRProgressReporter;
 using BIReportingCopilot.API.Middleware;
 using BIReportingCopilot.API.Hubs;
 
@@ -399,13 +408,13 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.Perform
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Health.HealthManagementService>();
 
 // Unified background job management service - consolidates all background operations
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Services.BackgroundJobManagementService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Jobs.BackgroundJobManagementService>();
 
 // Unified monitoring management service - consolidates metrics, tracing, and logging
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Monitoring.MonitoringManagementService>();
 
 // Unified notification management service - consolidates email, SMS, and real-time notifications
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Services.NotificationManagementService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.NotificationManagementService>();
 
 // Unified security management service - consolidates rate limiting, SQL validation, and security monitoring
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.SecurityManagementService>();
@@ -468,11 +477,11 @@ builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI
 // ===== PERFORMANCE & MONITORING =====
 // StreamingDataService functionality consolidated into PerformanceManagementService
 // Unified monitoring service - MonitoringManagementService implements both IMetricsCollector and monitoring functionality
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Services.MonitoringManagementService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Monitoring.MonitoringManagementService>();
 // MetricsCollector functionality consolidated into MonitoringManagementService
 // Register IMetricsCollector interface to use MonitoringManagementService
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IMetricsCollector>(provider =>
-    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Services.MonitoringManagementService>());
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Monitoring.MonitoringManagementService>());
 
 // ===== MESSAGING & EVENTS =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.IEventBus, BIReportingCopilot.Infrastructure.Messaging.InMemoryEventBus>();
@@ -555,10 +564,10 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHand
 // Base services
 builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.Core.AIService>();
 builder.Services.AddScoped<IQueryProgressNotifier, BIReportingCopilot.API.Hubs.SignalRQueryProgressNotifier>();
-builder.Services.AddScoped<IQueryService, QueryService>();
-builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Services.SchemaService>(); // Unified with built-in caching
-builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Services.SqlQueryService>();
-builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.Services.PromptService>();
+builder.Services.AddScoped<IQueryService, BIReportingCopilot.Infrastructure.Query.QueryService>();
+builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Schema.SchemaService>(); // Unified with built-in caching
+builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Query.SqlQueryService>();
+builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.AI.Management.PromptService>();
 
 // ===== ENHANCED AI SERVICES (Strategic Enhancements #2 & #3) =====
 builder.Services.AddScoped<IAdvancedNLUService, BIReportingCopilot.Infrastructure.AI.Intelligence.NLUService>();
@@ -572,7 +581,7 @@ builder.Services.AddScoped<IRealTimeStreamingService, BIReportingCopilot.Infrast
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Dashboard.DashboardCreationService>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Dashboard.DashboardTemplateService>();
 builder.Services.AddScoped<IMultiModalDashboardService, BIReportingCopilot.Infrastructure.AI.Dashboard.MultiModalDashboardService>();
-builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Services.VisualizationService>();
+builder.Services.AddScoped<IVisualizationService, BIReportingCopilot.Infrastructure.Visualization.VisualizationService>();
 
 // Performance Optimization Services
 builder.Services.AddHostedService<BIReportingCopilot.Infrastructure.Performance.AutoOptimizationService>();
@@ -598,15 +607,15 @@ builder.Services.AddScoped<IStreamingSqlQueryService>(provider =>
 });
 
 // ===== BUSINESS SERVICES =====
-builder.Services.AddScoped<IUserService, BIReportingCopilot.Infrastructure.Services.UserService>();
-builder.Services.AddScoped<IAuditService, BIReportingCopilot.Infrastructure.Services.AuditService>();
-builder.Services.AddScoped<IAuthenticationService, BIReportingCopilot.Infrastructure.Services.AuthenticationService>();
-builder.Services.AddScoped<IMfaService, BIReportingCopilot.Infrastructure.Services.MfaService>();
+builder.Services.AddScoped<IUserService, BIReportingCopilot.Infrastructure.Authentication.UserService>();
+builder.Services.AddScoped<IAuditService, BIReportingCopilot.Infrastructure.Data.AuditService>();
+builder.Services.AddScoped<IAuthenticationService, BIReportingCopilot.Infrastructure.Authentication.AuthenticationService>();
+builder.Services.AddScoped<IMfaService, BIReportingCopilot.Infrastructure.Authentication.MfaService>();
 // Unified notification services - NotificationManagementService implements both IEmailService and ISmsService
 builder.Services.AddScoped<IEmailService>(provider =>
-    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Services.NotificationManagementService>());
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Messaging.NotificationManagementService>());
 builder.Services.AddScoped<ISmsService>(provider =>
-    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Services.NotificationManagementService>());
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Messaging.NotificationManagementService>());
 
 // ===== SECURITY SERVICES =====
 // Consolidated SQL validator - EnhancedSqlQueryValidator implements both interfaces
@@ -627,22 +636,22 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISecretsMa
 // ===== INFRASTRUCTURE SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IPasswordHasher, BIReportingCopilot.Infrastructure.Security.PasswordHasher>();
 // IConnectionStringProvider already registered before configuration validation
-builder.Services.AddScoped<IDatabaseInitializationService, DatabaseInitializationService>();
-builder.Services.AddScoped<ISchemaManagementService, SchemaManagementService>();
+builder.Services.AddScoped<IDatabaseInitializationService, BIReportingCopilot.Infrastructure.Data.DatabaseInitializationService>();
+builder.Services.AddScoped<ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
 // Focused tuning services (Enhancement #1: Refactor "God" Services)
-builder.Services.AddScoped<IBusinessTableManagementService, BusinessTableManagementService>();
-builder.Services.AddScoped<IQueryPatternManagementService, QueryPatternManagementService>();
-builder.Services.AddScoped<IGlossaryManagementService, GlossaryManagementService>();
-builder.Services.AddScoped<IQueryCacheService, QueryCacheService>();
+builder.Services.AddScoped<IBusinessTableManagementService, BIReportingCopilot.Infrastructure.Business.BusinessTableManagementService>();
+builder.Services.AddScoped<IQueryPatternManagementService, BIReportingCopilot.Infrastructure.Query.QueryPatternManagementService>();
+builder.Services.AddScoped<IGlossaryManagementService, BIReportingCopilot.Infrastructure.Business.GlossaryManagementService>();
+builder.Services.AddScoped<IQueryCacheService, BIReportingCopilot.Infrastructure.Query.QueryCacheService>();
 
 // Main tuning service (now delegates to focused services and uses bounded contexts)
-builder.Services.AddScoped<ITuningService, TuningService>();
+builder.Services.AddScoped<ITuningService, BIReportingCopilot.Infrastructure.Business.TuningService>();
 
 // Register AI tuning settings service (implements Core interface directly)
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IAITuningSettingsService, BIReportingCopilot.Infrastructure.Services.AITuningSettingsService>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IAITuningSettingsService, BIReportingCopilot.Infrastructure.Business.AITuningSettingsService>();
 
 builder.Services.AddScoped<IBusinessContextAutoGenerator, BIReportingCopilot.Infrastructure.AI.Management.BusinessContextAutoGenerator>();
-builder.Services.AddScoped<IQuerySuggestionService, BIReportingCopilot.Infrastructure.Services.QuerySuggestionService>();
+builder.Services.AddScoped<IQuerySuggestionService, BIReportingCopilot.Infrastructure.Query.QuerySuggestionService>();
 // Register SignalRProgressReporter with QueryStatusHub context
 builder.Services.AddScoped<IProgressReporter>(provider =>
 {

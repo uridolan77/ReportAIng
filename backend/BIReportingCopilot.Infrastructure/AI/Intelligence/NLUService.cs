@@ -519,14 +519,14 @@ public class NLUService : IAdvancedNLUService
 
         suggestions.Add(new QuerySuggestion
         {
-            Text = "Show me total revenue for last week",
+            QueryText = "Show me total revenue for last week",
             CategoryId = 1, // Financial category
             Relevance = 0.9
         });
 
         suggestions.Add(new QuerySuggestion
         {
-            Text = "Count active players yesterday",
+            QueryText = "Count active players yesterday",
             CategoryId = 2, // Players category
             Relevance = 0.8
         });
@@ -540,7 +540,7 @@ public class NLUService : IAdvancedNLUService
 
         suggestions.Add(new QuerySuggestion
         {
-            Text = "Show me top 10 players by deposits",
+            QueryText = "Show me top 10 players by deposits",
             CategoryId = 2, // Players category
             Relevance = 0.8
         });
@@ -558,7 +558,7 @@ public class NLUService : IAdvancedNLUService
         {
             suggestions.Add(new QuerySuggestion
             {
-                Text = "Show me player activity trends",
+                QueryText = "Show me player activity trends",
                 CategoryId = 2, // Players category
                 Relevance = 0.9
             });

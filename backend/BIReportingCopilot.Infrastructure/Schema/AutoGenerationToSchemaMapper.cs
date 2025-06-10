@@ -1,7 +1,7 @@
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.DTOs;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Schema;
 
 /// <summary>
 /// Maps auto-generation results to schema management DTOs

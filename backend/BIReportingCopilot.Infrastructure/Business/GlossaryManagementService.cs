@@ -6,7 +6,7 @@ using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Business;
 
 /// <summary>
 /// Service responsible for managing business glossary terms and definitions

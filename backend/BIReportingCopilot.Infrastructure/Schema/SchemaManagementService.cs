@@ -6,7 +6,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Schema;
 
 public class SchemaManagementService : ISchemaManagementService
 {

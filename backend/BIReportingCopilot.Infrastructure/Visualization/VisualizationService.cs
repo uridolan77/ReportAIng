@@ -4,7 +4,7 @@ using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
 using VisualizationRecommendation = BIReportingCopilot.Core.Models.VisualizationRecommendation;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Visualization;
 
 public interface IVisualizationService
 {

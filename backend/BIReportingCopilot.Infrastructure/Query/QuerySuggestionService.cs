@@ -7,7 +7,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.QuerySuggestions;
 using BIReportingCopilot.Infrastructure.Data;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Query;
 
 public class QuerySuggestionService : IQuerySuggestionService
 {

@@ -4,7 +4,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Infrastructure.Configuration;
 using BIReportingCopilot.Core.Configuration;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Messaging;
 
 /// <summary>
 /// Unified notification management service consolidating email, SMS, and real-time notifications

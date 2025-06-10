@@ -10,7 +10,7 @@ using BIReportingCopilot.Infrastructure.Interfaces;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using OtpNet;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Authentication;
 
 /// <summary>
 /// Multi-factor authentication service supporting TOTP, SMS, and Email

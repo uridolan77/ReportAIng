@@ -5,7 +5,7 @@ using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.DTOs;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Business;
 
 /// <summary>
 /// AI Tuning Settings Service - Provides AI tuning settings functionality

@@ -4,7 +4,7 @@ using System.Text;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Query;
 
 /// <summary>
 /// Service responsible for query caching operations

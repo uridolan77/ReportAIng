@@ -6,7 +6,7 @@ using BIReportingCopilot.Infrastructure.Configuration;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Core.Interfaces;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Monitoring;
 
 /// <summary>
 /// Unified monitoring management service consolidating metrics collection, tracing, and logging

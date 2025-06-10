@@ -6,7 +6,7 @@ using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Query;
 
 /// <summary>
 /// Service responsible for managing query patterns and templates

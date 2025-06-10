@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Messaging;
 
 /// <summary>
 /// SignalR-based implementation of progress reporting

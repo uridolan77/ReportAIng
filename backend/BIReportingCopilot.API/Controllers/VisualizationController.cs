@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Infrastructure.Visualization;
 using System.ComponentModel.DataAnnotations;
 
 namespace BIReportingCopilot.API.Controllers;
@@ -15,12 +16,12 @@ namespace BIReportingCopilot.API.Controllers;
 public class VisualizationController : ControllerBase
 {
     private readonly ILogger<VisualizationController> _logger;
-    private readonly BIReportingCopilot.Infrastructure.Services.IVisualizationService _visualizationService;
+    private readonly IVisualizationService _visualizationService;
     private readonly IQueryService _queryService;
 
     public VisualizationController(
         ILogger<VisualizationController> logger,
-        BIReportingCopilot.Infrastructure.Services.IVisualizationService visualizationService,
+        IVisualizationService visualizationService,
         IQueryService queryService)
     {
         _logger = logger;

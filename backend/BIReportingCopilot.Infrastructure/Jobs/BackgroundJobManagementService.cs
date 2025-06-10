@@ -8,7 +8,7 @@ using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Configuration;
 using BIReportingCopilot.Core.Configuration;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Jobs;
 
 /// <summary>
 /// Unified background job management service consolidating all background operations

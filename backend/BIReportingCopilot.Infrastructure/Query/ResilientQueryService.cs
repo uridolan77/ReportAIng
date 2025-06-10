@@ -9,7 +9,7 @@ using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Core.Models.QuerySuggestions;
 using Microsoft.Data.SqlClient;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Query;
 
 /// <summary>
 /// Resilient query service with circuit breaker, retry policies, and timeout handling

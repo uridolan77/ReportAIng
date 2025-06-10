@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Infrastructure.AI;
-using BIReportingCopilot.Infrastructure.Services;
+using BIReportingCopilot.Infrastructure.Monitoring;
 using System.Diagnostics;
 
 namespace BIReportingCopilot.Infrastructure.Performance;
@@ -68,7 +68,7 @@ public class AutoOptimizationService : IHostedService, IDisposable
         {
             using var scope = _serviceScopeFactory.CreateScope();
             var performanceService = scope.ServiceProvider.GetRequiredService<PerformanceManagementService>();
-            var monitoringService = scope.ServiceProvider.GetRequiredService<Services.MonitoringManagementService>();
+            var monitoringService = scope.ServiceProvider.GetRequiredService<MonitoringManagementService>();
 
             var stopwatch = Stopwatch.StartNew();
 
@@ -102,7 +102,7 @@ public class AutoOptimizationService : IHostedService, IDisposable
             using var scope = _serviceScopeFactory.CreateScope();
             var performanceService = scope.ServiceProvider.GetRequiredService<PerformanceManagementService>();
             var cacheService = scope.ServiceProvider.GetRequiredService<ISemanticCacheService>();
-            var monitoringService = scope.ServiceProvider.GetRequiredService<Services.MonitoringManagementService>();
+            var monitoringService = scope.ServiceProvider.GetRequiredService<MonitoringManagementService>();
 
             _logger.LogInformation("🔧 Starting automatic optimization cycle");
             var stopwatch = Stopwatch.StartNew();

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Data;
 
 /// <summary>
 /// Enhanced AuditService using bounded contexts for better performance and maintainability
