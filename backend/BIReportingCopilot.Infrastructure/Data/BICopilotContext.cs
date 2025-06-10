@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Core.Models;
-using BIReportingCopilot.Core.Models.SchemaManagement;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Data.Configurations;
 

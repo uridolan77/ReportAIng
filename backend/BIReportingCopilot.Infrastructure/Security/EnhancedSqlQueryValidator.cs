@@ -3,8 +3,9 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using BIReportingCopilot.Core.Interfaces;
-using BIReportingCopilot.Core.Models.ML;
+using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.AI;
+using BIReportingCopilot.Infrastructure.AI.Core;
 using BIReportingCopilot.Infrastructure.Monitoring;
 
 namespace BIReportingCopilot.Infrastructure.Security;

@@ -1,5 +1,6 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
@@ -236,7 +237,9 @@ public class SqlQueryService : ISqlQueryService
             return new QueryPerformanceMetrics
             {
                 ExecutionTime = stopwatch.Elapsed,
-                PerformanceLevel = performanceLevel
+                PerformanceLevel = performanceLevel,
+                QueryHash = ComputeQueryHash(sql),
+                ExecutedAt = DateTime.UtcNow
             };
         }
         catch (Exception ex)
@@ -245,7 +248,9 @@ public class SqlQueryService : ISqlQueryService
             return new QueryPerformanceMetrics
             {
                 ExecutionTime = TimeSpan.Zero,
-                PerformanceLevel = "Unknown"
+                PerformanceLevel = "Unknown",
+                QueryHash = ComputeQueryHash(sql),
+                ExecutedAt = DateTime.UtcNow
             };
         }
     }

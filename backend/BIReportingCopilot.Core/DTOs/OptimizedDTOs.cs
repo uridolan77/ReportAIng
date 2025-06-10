@@ -95,6 +95,10 @@ public class QueryPerformanceMetrics
     public double CpuTime { get; set; }
     public string PerformanceLevel { get; set; } = "Good"; // Good, Fair, Poor
     public List<string> OptimizationSuggestions { get; set; } = new();
+
+    // Additional properties expected by Infrastructure services
+    public double ExecutionTimeMs => ExecutionTime.TotalMilliseconds;
+    public int RowCount => RowsAffected;
 }
 
 /// <summary>
@@ -121,4 +125,31 @@ public class AggregatedStatistics
     public Dictionary<int, int> PatternsByPriority { get; set; } = new();
     public Dictionary<string, int> UsageByTimeframe { get; set; } = new();
     public DateTime CalculatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Business column info DTO
+/// </summary>
+public class BusinessColumnInfoDto
+{
+    public long Id { get; set; }
+    public string ColumnId { get; set; } = string.Empty;
+    public string ColumnName { get; set; } = string.Empty;
+    public string TableName { get; set; } = string.Empty;
+    public string BusinessName { get; set; } = string.Empty;
+    public string BusinessDescription { get; set; } = string.Empty;
+    public string BusinessMeaning { get; set; } = string.Empty; // Added missing property
+    public string BusinessContext { get; set; } = string.Empty; // Added missing property
+    public string DataType { get; set; } = string.Empty;
+    public List<string> DataExamples { get; set; } = new(); // Added missing property
+    public string ValidationRules { get; set; } = string.Empty; // Added missing property
+    public bool IsNullable { get; set; }
+    public bool IsPrimaryKey { get; set; }
+    public bool IsForeignKey { get; set; }
+    public bool IsKeyColumn { get; set; } // Added missing property
+    public bool IsActive { get; set; } = true; // Added missing property
+    public string? DefaultValue { get; set; }
+    public string? BusinessRules { get; set; }
+    public List<string> Tags { get; set; } = new();
+    public DateTime LastUpdated { get; set; }
 }

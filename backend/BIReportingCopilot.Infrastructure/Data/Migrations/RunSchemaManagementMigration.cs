@@ -82,7 +82,7 @@ public class SchemaManagementMigrationRunner
             {
                 _logger.LogInformation("Creating default business schema...");
 
-                var defaultSchema = new Core.Models.SchemaManagement.BusinessSchema
+                var defaultSchema = new Core.Models.BusinessSchema
                 {
                     Id = Guid.NewGuid(),
                     Name = "Default Schema",
@@ -98,7 +98,7 @@ public class SchemaManagementMigrationRunner
 
                 _context.BusinessSchemas.Add(defaultSchema);
 
-                var defaultVersion = new Core.Models.SchemaManagement.BusinessSchemaVersion
+                var defaultVersion = new Core.Models.BusinessSchemaVersion
                 {
                     Id = Guid.NewGuid(),
                     SchemaId = defaultSchema.Id,

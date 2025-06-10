@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using BIReportingCopilot.Core.Constants;
+using BIReportingCopilot.Core;
 using System.Text.Json;
 using System.Security;
 

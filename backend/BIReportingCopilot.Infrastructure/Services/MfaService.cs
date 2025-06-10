@@ -17,7 +17,7 @@ namespace BIReportingCopilot.Infrastructure.Services;
 /// </summary>
 public class MfaService : IMfaService
 {
-    private readonly IUserEntityRepository _userRepository;
+    private readonly IUserRepository _userRepository;
     private readonly IMfaChallengeRepository _mfaChallengeRepository;
     private readonly IEmailService _emailService;
     private readonly ISmsService _smsService;
@@ -25,7 +25,7 @@ public class MfaService : IMfaService
     private readonly SecurityConfiguration _securitySettings;
 
     public MfaService(
-        IUserEntityRepository userRepository,
+        IUserRepository userRepository,
         IMfaChallengeRepository mfaChallengeRepository,
         IEmailService emailService,
         ISmsService smsService,
@@ -45,20 +45,16 @@ public class MfaService : IMfaService
     {
         try
         {
-            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
                 return null;
 
-            var backupCodesCount = 0;
-            if (!string.IsNullOrEmpty(user.BackupCodes))
-            {
-                backupCodesCount = user.BackupCodes.Split(',', StringSplitOptions.RemoveEmptyEntries).Length;
-            }
+            var backupCodesCount = user.BackupCodes?.Length ?? 0;
 
             return new MfaStatus
             {
                 IsEnabled = user.IsMfaEnabled,
-                Method = !string.IsNullOrEmpty(user.MfaMethod) ? Enum.Parse<MfaMethod>(user.MfaMethod) : MfaMethod.None,
+                Method = user.MfaMethod,
                 BackupCodesCount = backupCodesCount,
                 HasBackupCodes = backupCodesCount > 0,
                 HasPhoneNumber = !string.IsNullOrEmpty(user.PhoneNumber),
@@ -79,7 +75,7 @@ public class MfaService : IMfaService
     {
         try
         {
-            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
                 return null;
 
@@ -97,10 +93,10 @@ public class MfaService : IMfaService
 
             // Store the secret temporarily (user needs to verify before enabling)
             user.MfaSecret = setupInfo.TotpSecret;
-            user.MfaMethod = method.ToString();
+            user.MfaMethod = method;
             // Don't enable MFA yet - wait for verification
 
-            await _userRepository.UpdateAsync(user);
+            await _userRepository.UpdateUserAsync(user);
 
             _logger.LogInformation("MFA setup initiated for user {UserId} with method {Method}", userId, method);
             return setupInfo;
@@ -121,12 +117,12 @@ public class MfaService : IMfaService
     {
         try
         {
-            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null || string.IsNullOrEmpty(user.MfaSecret))
                 return false;
 
             var isValid = false;
-            var method = !string.IsNullOrEmpty(user.MfaMethod) ? Enum.Parse<MfaMethod>(user.MfaMethod) : MfaMethod.None;
+            var method = user.MfaMethod;
 
             switch (method)
             {
@@ -149,7 +145,7 @@ public class MfaService : IMfaService
             {
                 user.IsMfaEnabled = true;
                 user.LastMfaValidationDate = DateTime.UtcNow;
-                await _userRepository.UpdateAsync(user);
+                await _userRepository.UpdateUserAsync(user);
 
                 _logger.LogInformation("MFA setup verified and enabled for user {UserId}", userId);
             }
@@ -167,7 +163,7 @@ public class MfaService : IMfaService
     {
         try
         {
-            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null || !user.IsMfaEnabled)
                 return false;
 
@@ -178,9 +174,9 @@ public class MfaService : IMfaService
 
             user.IsMfaEnabled = false;
             user.MfaSecret = null;
-            user.MfaMethod = MfaMethod.None.ToString();
-            user.BackupCodes = null;
-            await _userRepository.UpdateAsync(user);
+            user.MfaMethod = MfaMethod.None;
+            user.BackupCodes = Array.Empty<string>();
+            await _userRepository.UpdateUserAsync(user);
 
             _logger.LogInformation("MFA disabled for user {UserId}", userId);
             return true;
@@ -197,21 +193,20 @@ public class MfaService : IMfaService
     {
         try
         {
-            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null || !user.IsMfaEnabled)
                 return false;
 
             // Check if it's a backup code
-            if (!string.IsNullOrEmpty(user.BackupCodes))
+            if (user.BackupCodes != null && user.BackupCodes.Length > 0)
             {
-                var backupCodes = user.BackupCodes.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                if (backupCodes.Contains(code))
+                if (user.BackupCodes.Contains(code))
                 {
                     // Remove used backup code
-                    var remainingCodes = backupCodes.Where(c => c != code).ToArray();
-                    user.BackupCodes = string.Join(",", remainingCodes);
+                    var remainingCodes = user.BackupCodes.Where(c => c != code).ToArray();
+                    user.BackupCodes = remainingCodes;
                     user.LastMfaValidationDate = DateTime.UtcNow;
-                    await _userRepository.UpdateAsync(user);
+                    await _userRepository.UpdateUserAsync(user);
 
                     _logger.LogInformation("Backup code used for user {UserId}", userId);
                     return true;
@@ -219,7 +214,7 @@ public class MfaService : IMfaService
             }
 
             // Validate based on MFA method
-            var method = !string.IsNullOrEmpty(user.MfaMethod) ? Enum.Parse<MfaMethod>(user.MfaMethod) : MfaMethod.None;
+            var method = user.MfaMethod;
             var isValid = method switch
             {
                 MfaMethod.TOTP => await ValidateTotpAsync(user.MfaSecret ?? "", code),
@@ -230,7 +225,7 @@ public class MfaService : IMfaService
             if (isValid)
             {
                 user.LastMfaValidationDate = DateTime.UtcNow;
-                await _userRepository.UpdateAsync(user);
+                await _userRepository.UpdateUserAsync(user);
             }
 
             return isValid;
@@ -256,11 +251,11 @@ public class MfaService : IMfaService
 
             await _mfaChallengeRepository.MarkChallengeAsUsedAsync(challenge.ChallengeId);
 
-            var user = await _userRepository.GetByIdAsync(Guid.Parse(challenge.UserId));
+            var user = await _userRepository.GetByIdAsync(challenge.UserId);
             if (user != null)
             {
                 user.LastMfaValidationDate = DateTime.UtcNow;
-                await _userRepository.UpdateAsync(user);
+                await _userRepository.UpdateUserAsync(user);
             }
 
             return true;
@@ -276,7 +271,7 @@ public class MfaService : IMfaService
     {
         try
         {
-            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
                 return new MfaChallengeResponse
@@ -337,16 +332,16 @@ public class MfaService : IMfaService
     {
         try
         {
-            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
                 return Array.Empty<string>();
 
-            var backupCodes = await GenerateBackupCodesInternalAsync();
-            user.BackupCodes = string.Join(",", backupCodes);
-            await _userRepository.UpdateAsync(user);
+            var backupCodesArray = await GenerateBackupCodesInternalAsync();
+            user.BackupCodes = backupCodesArray;
+            await _userRepository.UpdateUserAsync(user);
 
             _logger.LogInformation("Generated new backup codes for user {UserId}", userId);
-            return backupCodes;
+            return backupCodesArray;
         }
         catch (Exception ex)
         {
@@ -359,11 +354,11 @@ public class MfaService : IMfaService
     {
         try
         {
-            var user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
-            if (user == null || string.IsNullOrEmpty(user.BackupCodes))
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null || user.BackupCodes == null)
                 return 0;
 
-            return user.BackupCodes.Split(',', StringSplitOptions.RemoveEmptyEntries).Length;
+            return user.BackupCodes.Length;
         }
         catch (Exception ex)
         {

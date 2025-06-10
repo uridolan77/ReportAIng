@@ -1,4 +1,4 @@
-using BIReportingCopilot.Core.Models.ML;
+using BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Core.Interfaces;
 
@@ -80,5 +80,13 @@ public interface IPromptOptimizer
     Task<List<string>> GetBestPromptsAsync(string category);
 }
 
-
-
+/// <summary>
+/// User entity repository interface
+/// </summary>
+public interface IUserEntityRepository
+{
+    Task<object?> GetByIdAsync(string id);
+    Task<object> CreateAsync(object entity);
+    Task UpdateAsync(object entity);
+    Task DeleteAsync(string id);
+}

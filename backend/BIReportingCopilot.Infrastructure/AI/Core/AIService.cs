@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
-using BIReportingCopilot.Core.Models.ML;
+using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Configuration;
 using System.Text.Json;
 using System.Text;
@@ -601,7 +601,7 @@ EXAMPLES:
         try
         {
             // Convert QueryFeedback to UserFeedback
-            var userFeedback = new BIReportingCopilot.Core.Models.ML.UserFeedback
+            var userFeedback = new BIReportingCopilot.Core.Models.UserFeedback
             {
                 UserId = userId,
                 QueryId = feedback.QueryId,

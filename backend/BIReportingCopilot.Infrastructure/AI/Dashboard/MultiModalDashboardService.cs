@@ -4,6 +4,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using DashboardModel = BIReportingCopilot.Core.Models.Dashboard;
 
 namespace BIReportingCopilot.Infrastructure.AI.Dashboard;
 
@@ -41,7 +42,7 @@ public class MultiModalDashboardService : IMultiModalDashboardService
     /// <summary>
     /// Create multi-modal dashboard
     /// </summary>
-    public async Task<Dashboard> CreateDashboardAsync(CreateDashboardRequest request, string userId)
+    public async Task<DashboardModel> CreateDashboardAsync(CreateDashboardRequest request, string userId)
     {
         try
         {
@@ -66,7 +67,7 @@ public class MultiModalDashboardService : IMultiModalDashboardService
     /// <summary>
     /// Update existing dashboard
     /// </summary>
-    public async Task<Dashboard> UpdateDashboardAsync(string dashboardId, UpdateDashboardRequest request, string userId)
+    public async Task<DashboardModel> UpdateDashboardAsync(string dashboardId, UpdateDashboardRequest request, string userId)
     {
         try
         {
@@ -132,7 +133,7 @@ public class MultiModalDashboardService : IMultiModalDashboardService
     /// <summary>
     /// Get dashboard by ID
     /// </summary>
-    public async Task<Dashboard?> GetDashboardAsync(string dashboardId, string userId)
+    public async Task<DashboardModel?> GetDashboardAsync(string dashboardId, string userId)
     {
         try
         {
@@ -168,7 +169,7 @@ public class MultiModalDashboardService : IMultiModalDashboardService
     /// <summary>
     /// Get user's dashboards
     /// </summary>
-    public async Task<List<Dashboard>> GetUserDashboardsAsync(string userId, DashboardFilter? filter = null)
+    public async Task<List<DashboardModel>> GetUserDashboardsAsync(string userId, DashboardFilter? filter = null)
     {
         try
         {
@@ -182,7 +183,7 @@ public class MultiModalDashboardService : IMultiModalDashboardService
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error getting dashboards for user {UserId}", userId);
-            return new List<Dashboard>();
+            return new List<DashboardModel>();
         }
     }
 
@@ -223,7 +224,7 @@ public class MultiModalDashboardService : IMultiModalDashboardService
     /// <summary>
     /// Generate dashboard from natural language description
     /// </summary>
-    public async Task<Dashboard> GenerateDashboardFromDescriptionAsync(
+    public async Task<DashboardModel> GenerateDashboardFromDescriptionAsync(
         string description,
         string userId,
         SchemaMetadata? schema = null)
@@ -326,7 +327,7 @@ public class MultiModalDashboardService : IMultiModalDashboardService
     /// <summary>
     /// Create dashboard from template
     /// </summary>
-    public async Task<Dashboard> CreateDashboardFromTemplateAsync(
+    public async Task<DashboardModel> CreateDashboardFromTemplateAsync(
         string templateId,
         string name,
         string userId,
@@ -420,9 +421,9 @@ public class MultiModalDashboardService : IMultiModalDashboardService
         return Task.FromResult(new DashboardAnalytics());
     }
 
-    public Task<Dashboard> CloneDashboardAsync(string dashboardId, string newName, string userId)
+    public Task<DashboardModel> CloneDashboardAsync(string dashboardId, string newName, string userId)
     {
-        return Task.FromResult(new Dashboard());
+        return Task.FromResult(new DashboardModel());
     }
 
     // Helper methods
@@ -466,11 +467,11 @@ public class MultiModalDashboardService : IMultiModalDashboardService
         }
     }
 
-    private Core.Models.DashboardLayout CreateDefaultLayout()
+    private BIReportingCopilot.Core.Models.DashboardLayout CreateDefaultLayout()
     {
-        return new Core.Models.DashboardLayout
+        return new BIReportingCopilot.Core.Models.DashboardLayout
         {
-            Type = Core.Models.LayoutType.Grid,
+            Type = BIReportingCopilot.Core.Models.LayoutType.Grid,
             Columns = 12,
             Rows = 10,
             Configuration = new LayoutConfiguration
@@ -482,14 +483,14 @@ public class MultiModalDashboardService : IMultiModalDashboardService
         };
     }
 
-    private bool HasDashboardAccess(Dashboard dashboard, string userId)
+    private bool HasDashboardAccess(DashboardModel dashboard, string userId)
     {
         return dashboard.UserId == userId ||
                dashboard.IsPublic ||
                dashboard.Permissions.UserPermissions.Any(up => up.UserId == userId);
     }
 
-    private bool HasEditAccess(Dashboard dashboard, string userId)
+    private bool HasEditAccess(DashboardModel dashboard, string userId)
     {
         if (dashboard.UserId == userId) return true;
 
@@ -500,12 +501,12 @@ public class MultiModalDashboardService : IMultiModalDashboardService
     }
 
     // Database operations (placeholder implementations)
-    private Task StoreDashboardAsync(Dashboard dashboard)
+    private Task StoreDashboardAsync(DashboardModel dashboard)
     {
         return Task.CompletedTask;
     }
 
-    private Task UpdateDashboardInDatabaseAsync(Dashboard dashboard)
+    private Task UpdateDashboardInDatabaseAsync(DashboardModel dashboard)
     {
         return Task.CompletedTask;
     }
@@ -515,14 +516,14 @@ public class MultiModalDashboardService : IMultiModalDashboardService
         return Task.CompletedTask;
     }
 
-    private Task<Dashboard?> LoadDashboardFromDatabaseAsync(string dashboardId)
+    private Task<DashboardModel?> LoadDashboardFromDatabaseAsync(string dashboardId)
     {
-        return Task.FromResult<Dashboard?>(null);
+        return Task.FromResult<DashboardModel?>(null);
     }
 
-    private Task<List<Dashboard>> LoadUserDashboardsFromDatabaseAsync(string userId, DashboardFilter? filter)
+    private Task<List<DashboardModel>> LoadUserDashboardsFromDatabaseAsync(string userId, DashboardFilter? filter)
     {
-        return Task.FromResult(new List<Dashboard>());
+        return Task.FromResult(new List<DashboardModel>());
     }
 
     private Task UpdateLastViewedAsync(string dashboardId, string userId)
@@ -531,12 +532,12 @@ public class MultiModalDashboardService : IMultiModalDashboardService
     }
 
     // Export implementations (placeholder)
-    private Task<byte[]> GeneratePdfExportAsync(Dashboard dashboard, ExportOptions? options)
+    private Task<byte[]> GeneratePdfExportAsync(DashboardModel dashboard, ExportOptions? options)
     {
         return Task.FromResult(Array.Empty<byte>());
     }
 
-    private Task<byte[]> GenerateImageExportAsync(Dashboard dashboard, ExportOptions? options)
+    private Task<byte[]> GenerateImageExportAsync(DashboardModel dashboard, ExportOptions? options)
     {
         return Task.FromResult(Array.Empty<byte>());
     }

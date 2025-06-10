@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Core.Models;
-using BIReportingCopilot.Core.Models.DTOs;
+using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Infrastructure.Data;
 using System.Security.Claims;
@@ -616,7 +616,8 @@ public class TuningController : ControllerBase
     {
         try
         {
-            await Scripts.UpdatePromptTemplate.UpdateSqlGenerationTemplate(_context);
+            // Update SQL generation template directly
+            await BIReportingCopilot.API.UpdatePromptTemplate.UpdateSqlGenerationTemplate(_context);
             return Ok(new { message = "SQL generation template updated successfully" });
         }
         catch (Exception ex)

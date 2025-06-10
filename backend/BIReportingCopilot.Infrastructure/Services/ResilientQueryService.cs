@@ -4,7 +4,9 @@ using Polly.CircuitBreaker;
 using BIReportingCopilot.Core.Exceptions;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Models.DTOs;
+using BIReportingCopilot.Core.Models.QuerySuggestions;
 using Microsoft.Data.SqlClient;
 
 namespace BIReportingCopilot.Infrastructure.Services;
@@ -217,7 +219,8 @@ public class ResilientQueryService : IQueryService
             {
                 QueryHash = queryHash,
                 ExecutionTime = TimeSpan.Zero,
-                FromCache = false
+                FromCache = false,
+                ExecutedAt = DateTime.UtcNow
             };
         }
     }

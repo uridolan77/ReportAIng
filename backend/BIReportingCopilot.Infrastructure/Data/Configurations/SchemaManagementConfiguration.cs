@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using BIReportingCopilot.Core.Models.SchemaManagement;
+using BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.Data.Configurations;
 

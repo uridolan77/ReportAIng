@@ -3,6 +3,7 @@ using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using BIReportingCopilot.Infrastructure.Services;
 using BIReportingCopilot.Infrastructure.Jobs;
 
 namespace BIReportingCopilot.Infrastructure.Configuration;

@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Commands;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Interfaces;
-using BIReportingCopilot.Core.Queries;
+using BIReportingCopilot.Core.Commands;
 
 namespace BIReportingCopilot.Infrastructure.Handlers;
 

@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
-using BIReportingCopilot.Core.Queries;
+using BIReportingCopilot.Core.Commands;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Infrastructure.Data.Contexts;

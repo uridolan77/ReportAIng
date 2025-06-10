@@ -119,19 +119,7 @@ public class ThemeConfig
     public bool DarkMode { get; set; } = false;
 }
 
-/// <summary>
-/// Color palette configuration
-/// </summary>
-public class ColorPalette
-{
-    public string[] Primary { get; set; } = Array.Empty<string>();
-    public string[] Secondary { get; set; } = Array.Empty<string>();
-    public string Background { get; set; } = "#ffffff";
-    public string Text { get; set; } = "#333333";
-    public string Grid { get; set; } = "#e0e0e0";
-    public string Axis { get; set; } = "#666666";
-    public GradientConfig? Gradients { get; set; }
-}
+// ColorPalette moved to VisualizationModels.cs to avoid duplicates
 
 /// <summary>
 /// Gradient configuration

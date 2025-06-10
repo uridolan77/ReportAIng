@@ -46,48 +46,19 @@ public class BusinessColumnInfo
     public bool IsPrimaryKey { get; set; } = false;
     public bool IsForeignKey { get; set; } = false;
     public bool IsKeyColumn { get; set; } = false; // Added missing property
+    public bool IsActive { get; set; } = true; // Added missing property
+    public bool IsNullable { get; set; } = true;
     public string? DefaultValue { get; set; }
     public List<string> AllowedValues { get; set; } = new();
     public string Format { get; set; } = string.Empty;
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
-/// <summary>
-/// Business column information DTO for infrastructure services
-/// </summary>
-public class BusinessColumnInfoDto
-{
-    public int Id { get; set; }
-    public string ColumnName { get; set; } = string.Empty;
-    public string BusinessMeaning { get; set; } = string.Empty;
-    public string BusinessContext { get; set; } = string.Empty;
-    public List<string> DataExamples { get; set; } = new();
-    public string ValidationRules { get; set; } = string.Empty;
-    public bool IsKeyColumn { get; set; }
-    public bool IsActive { get; set; } = true;
-}
+// BusinessColumnInfoDto moved to BIReportingCopilot.Core.DTOs.OptimizedDTOs
+// This duplicate definition has been removed to avoid conflicts
 
-/// <summary>
-/// Create table info request
-/// </summary>
-public class CreateTableInfoRequest
-{
-    [Required]
-    public string TableName { get; set; } = string.Empty;
-    public string SchemaName { get; set; } = string.Empty; // Added missing property
-    [Required]
-    public string BusinessName { get; set; } = string.Empty;
-    public string BusinessPurpose { get; set; } = string.Empty; // Added missing property
-    public string BusinessContext { get; set; } = string.Empty; // Added missing property
-    public string PrimaryUseCase { get; set; } = string.Empty; // Added missing property
-    public List<string> CommonQueryPatterns { get; set; } = new(); // Added missing property
-    public string BusinessRules { get; set; } = string.Empty; // Added missing property
-    public string Description { get; set; } = string.Empty;
-    public string Category { get; set; } = string.Empty;
-    public List<BusinessColumnInfo> Columns { get; set; } = new();
-    public List<string> Tags { get; set; } = new();
-    public string Owner { get; set; } = string.Empty;
-}
+// CreateTableInfoRequest moved to BIReportingCopilot.Core.DTOs.BusinessTableInfoDto
+// This duplicate definition has been removed to avoid conflicts
 
 /// <summary>
 /// Business glossary DTO

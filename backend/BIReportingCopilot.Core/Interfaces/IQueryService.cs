@@ -1,8 +1,7 @@
 using BIReportingCopilot.Core.Models;
-using CoreQueryPerformanceMetrics = BIReportingCopilot.Core.Models.DTOs.QueryPerformanceMetrics;
-using BIReportingCopilot.Core.Models.DTOs;
-using BIReportingCopilot.Core.DTOs.SchemaManagement;
+using BIReportingCopilot.Core.DTOs;
 using CoreModels = BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.QuerySuggestions;
 
 namespace BIReportingCopilot.Core.Interfaces;
 
@@ -27,7 +26,7 @@ public interface IQueryService
     Task<List<ProcessedQuery>> FindSimilarQueriesAsync(string query, string userId, int limit = 5);
 
     // Performance and optimization methods
-    Task<CoreQueryPerformanceMetrics> GetQueryPerformanceAsync(string queryHash);
+    Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(string queryHash);
     Task<bool> ValidateQueryAsync(string sql);
     Task<List<QuerySuggestion>> GetSmartSuggestionsAsync(string userId, string? context = null);
     Task<QueryOptimizationResult> OptimizeQueryAsync(string sql);
@@ -134,7 +133,7 @@ public interface ISqlQueryService
     Task<bool> ValidateSqlAsync(string sql);
     Task<string> OptimizeSqlAsync(string sql);
     Task<QueryExecutionPlan> GetExecutionPlanAsync(string sql);
-    Task<CoreQueryPerformanceMetrics> GetQueryPerformanceAsync(string sql);
+    Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(string sql);
     Task<bool> TestConnectionAsync(string? dataSource = null);
     Task<List<string>> GetAvailableDataSourcesAsync();
 }

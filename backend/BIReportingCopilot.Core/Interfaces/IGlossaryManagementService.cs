@@ -1,4 +1,4 @@
-using BIReportingCopilot.Core.Models.DTOs;
+using BIReportingCopilot.Core.DTOs;
 
 namespace BIReportingCopilot.Core.Interfaces;
 

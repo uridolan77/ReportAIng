@@ -5,7 +5,6 @@ using MediatR;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Commands;
-using BIReportingCopilot.Core.Queries;
 using BIReportingCopilot.API.Hubs;
 using System.Security.Claims;
 using System.Runtime.CompilerServices;
@@ -26,7 +25,7 @@ public class QueryController : ControllerBase
     private readonly IAIService _aiService;
     private readonly ISchemaService _schemaService;
     private readonly BIReportingCopilot.Infrastructure.Performance.IStreamingSqlQueryService _streamingQueryService;
-    private readonly BIReportingCopilot.Infrastructure.AI.IQueryProcessor _queryProcessor;
+    private readonly IQueryProcessor _queryProcessor;
     private readonly ISemanticAnalyzer _semanticAnalyzer;
     private readonly ISqlQueryService _sqlQueryService;
     private readonly IAuditService _auditService;
@@ -39,7 +38,7 @@ public class QueryController : ControllerBase
         IAIService aiService,
         ISchemaService schemaService,
         BIReportingCopilot.Infrastructure.Performance.IStreamingSqlQueryService streamingQueryService,
-        BIReportingCopilot.Infrastructure.AI.IQueryProcessor queryProcessor,
+        IQueryProcessor queryProcessor,
         ISemanticAnalyzer semanticAnalyzer,
         ISqlQueryService sqlQueryService,
         IAuditService auditService,

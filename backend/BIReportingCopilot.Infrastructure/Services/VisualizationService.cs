@@ -2,6 +2,7 @@ using BIReportingCopilot.Core.Models;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
+using VisualizationRecommendation = BIReportingCopilot.Core.Models.VisualizationRecommendation;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
@@ -303,9 +304,9 @@ public class VisualizationService : IVisualizationService
             {
                 Title = preferences?.Title ?? $"Advanced Analysis: {ExtractQuerySubject(query)}",
                 Description = $"Comprehensive dashboard generated from: {query}",
-                Charts = advancedCharts.Cast<VisualizationConfig>().ToArray(),
+                Charts = advancedCharts.ToArray(),
                 Layout = GenerateAdvancedDashboardLayout(advancedCharts.Count, preferences),
-                GlobalFilters = new FilterConfig[0],
+                GlobalFilters = Array.Empty<FilterConfig>(),
                 RefreshInterval = preferences?.RefreshInterval
             };
 
@@ -332,19 +333,12 @@ public class VisualizationService : IVisualizationService
             {
                 recommendations.Add(new VisualizationRecommendation
                 {
-                    ChartType = AdvancedChartType.Scatter,
+                    ChartType = AdvancedChartType.Scatter.ToString(),
                     Confidence = 0.85,
                     Reasoning = "Multiple numeric columns detected",
                     BestFor = "Correlation analysis",
-                    Limitations = new[] { "May be cluttered with large datasets" },
-                    EstimatedPerformance = new PerformanceEstimate
-                    {
-                        EstimatedRenderTime = TimeSpan.FromMilliseconds(100),
-                        MemoryUsageMB = 50,
-                        RequiresWebGL = false,
-                        RequiresSampling = false,
-                        RecommendedMaxDataPoints = 10000
-                    },
+                    Limitations = new List<string> { "May be cluttered with large datasets" },
+                    EstimatedPerformance = "Good",
                     SuggestedConfig = new Dictionary<string, object> { ["enableRegression"] = true }
                 });
             }
@@ -603,7 +597,7 @@ public class VisualizationService : IVisualizationService
             options.Add(new DrillDownOption
             {
                 Name = column.Name,
-                Levels = new[] { column.Name },
+                Levels = new string[] { column.Name },
                 TargetColumn = column.Name
             });
         }
@@ -675,7 +669,7 @@ public class VisualizationService : IVisualizationService
             DelayByCategory = false,
             DelayIncrement = 0,
             AnimateOnDataChange = dataSize <= 5000,
-            AnimatedProperties = new[] { "opacity", "transform" }
+            AnimatedProperties = new string[] { "opacity", "transform" }
         };
     }
 
@@ -702,8 +696,8 @@ public class VisualizationService : IVisualizationService
             DarkMode = false,
             Colors = new ColorPalette
             {
-                Primary = new[] { "#007acc", "#0066cc", "#004499" },
-                Secondary = new[] { "#6c757d", "#5a6268", "#495057" },
+                Primary = new List<string> { "#007acc", "#0066cc", "#004499" },
+                Secondary = new List<string> { "#6c757d", "#5a6268", "#495057" },
                 Background = "#ffffff",
                 Text = "#333333",
                 Grid = "#e0e0e0",
@@ -731,7 +725,7 @@ public class VisualizationService : IVisualizationService
     {
         return new ExportConfig
         {
-            SupportedFormats = new[] { "PNG", "SVG", "PDF", "Excel", "CSV" },
+            SupportedFormats = new string[] { "PNG", "SVG", "PDF", "Excel", "CSV" },
             ImageWidth = 1200,
             ImageHeight = 800,
             ImageDPI = 300,
@@ -750,7 +744,7 @@ public class VisualizationService : IVisualizationService
             ColorBlindFriendly = true,
             ScreenReaderSupport = true,
             KeyboardNavigation = true,
-            AriaLabels = new[] { "Chart", "Data visualization" }
+            AriaLabels = new string[] { "Chart", "Data visualization" }
         };
     }
 
@@ -796,9 +790,9 @@ public class VisualizationService : IVisualizationService
             Enabled = true,
             Breakpoints = new Dictionary<string, BreakpointConfig>
             {
-                ["mobile"] = new BreakpointConfig { MinWidth = 0, MaxWidth = 768, Columns = 1, ChartSizes = new[] { "full" } },
-                ["tablet"] = new BreakpointConfig { MinWidth = 769, MaxWidth = 1024, Columns = 2, ChartSizes = new[] { "half", "half" } },
-                ["desktop"] = new BreakpointConfig { MinWidth = 1025, MaxWidth = 9999, Columns = 3, ChartSizes = new[] { "third", "third", "third" } }
+                ["mobile"] = new BreakpointConfig { MinWidth = 0, MaxWidth = 768, Columns = 1, ChartSizes = new string[] { "full" } },
+                ["tablet"] = new BreakpointConfig { MinWidth = 769, MaxWidth = 1024, Columns = 2, ChartSizes = new string[] { "half", "half" } },
+                ["desktop"] = new BreakpointConfig { MinWidth = 1025, MaxWidth = 9999, Columns = 3, ChartSizes = new string[] { "third", "third", "third" } }
             },
             AutoResize = true,
             MaintainAspectRatio = true

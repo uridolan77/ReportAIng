@@ -4,8 +4,6 @@ using MediatR;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Commands;
-using BIReportingCopilot.Core.Queries;
-using BIReportingCopilot.Core.Constants;
 using System.Security.Claims;
 using System.Text.Json;
 

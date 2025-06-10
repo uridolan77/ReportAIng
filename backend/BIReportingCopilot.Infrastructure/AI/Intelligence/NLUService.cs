@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.QuerySuggestions;
 using System.Text.RegularExpressions;
 
 namespace BIReportingCopilot.Infrastructure.AI.Intelligence;
@@ -294,7 +295,7 @@ public class NLUService : IAdvancedNLUService
                     Type = "Table",
                     Value = table.Name,
                     Confidence = 0.9,
-                    Position = query.IndexOf(table.Name, StringComparison.OrdinalIgnoreCase)
+                    StartPosition = query.IndexOf(table.Name, StringComparison.OrdinalIgnoreCase)
                 });
             }
         }
@@ -519,14 +520,14 @@ public class NLUService : IAdvancedNLUService
         suggestions.Add(new QuerySuggestion
         {
             Text = "Show me total revenue for last week",
-            Category = "Revenue Analysis",
+            CategoryId = 1, // Financial category
             Relevance = 0.9
         });
 
         suggestions.Add(new QuerySuggestion
         {
             Text = "Count active players yesterday",
-            Category = "Player Analytics",
+            CategoryId = 2, // Players category
             Relevance = 0.8
         });
 
@@ -540,7 +541,7 @@ public class NLUService : IAdvancedNLUService
         suggestions.Add(new QuerySuggestion
         {
             Text = "Show me top 10 players by deposits",
-            Category = "Player Analysis",
+            CategoryId = 2, // Players category
             Relevance = 0.8
         });
 
@@ -558,7 +559,7 @@ public class NLUService : IAdvancedNLUService
             suggestions.Add(new QuerySuggestion
             {
                 Text = "Show me player activity trends",
-                Category = "Follow-up",
+                CategoryId = 2, // Players category
                 Relevance = 0.9
             });
         }
@@ -628,10 +629,10 @@ public class NLUService : IAdvancedNLUService
             var primaryIntent = sortedIntents.FirstOrDefault();
 
             var alternatives = sortedIntents.Skip(1).Take(3)
-                .Select(kvp => new Core.Models.IntentCandidate
+                .Select(kvp => new IntentCandidate
                 {
                     Intent = kvp.Key,
-                    Confidence = kvp.Value
+                    Score = kvp.Value
                 }).ToList();
 
             return Task.FromResult(new IntentAnalysis
@@ -650,7 +651,7 @@ public class NLUService : IAdvancedNLUService
             {
                 PrimaryIntent = "Unknown",
                 Confidence = 0.0,
-                AlternativeIntents = new List<Core.Models.IntentCandidate>(),
+                AlternativeIntents = new List<IntentCandidate>(),
                 Category = IntentCategory.Other,
                 SubIntents = new List<string>()
             });
@@ -664,8 +665,8 @@ public class NLUService : IAdvancedNLUService
     {
         try
         {
-            var entities = new List<Core.Models.ExtractedEntity>();
-            var relations = new List<Core.Models.EntityRelation>();
+            var entities = new List<ExtractedEntity>();
+            var relations = new List<EntityRelation>();
 
             // Simple entity extraction for interface compliance
             var words = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -673,12 +674,12 @@ public class NLUService : IAdvancedNLUService
             {
                 if (int.TryParse(word, out _))
                 {
-                    entities.Add(new Core.Models.ExtractedEntity
+                    entities.Add(new ExtractedEntity
                     {
                         Type = "Number",
                         Value = word,
                         Confidence = 0.9,
-                        Position = query.IndexOf(word)
+                        StartPosition = query.IndexOf(word)
                     });
                 }
             }
@@ -704,11 +705,11 @@ public class NLUService : IAdvancedNLUService
             _logger.LogError(ex, "Error extracting entities");
             return new EntityAnalysis
             {
-                Entities = new List<Core.Models.ExtractedEntity>(),
-                Relations = new List<Core.Models.EntityRelation>(),
+                Entities = new List<ExtractedEntity>(),
+                Relations = new List<EntityRelation>(),
                 MissingEntities = new List<string>(),
                 OverallConfidence = 0.0,
-                EntitiesByType = new Dictionary<string, List<Core.Models.ExtractedEntity>>()
+                EntitiesByType = new Dictionary<string, List<ExtractedEntity>>()
             };
         }
     }

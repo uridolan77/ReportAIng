@@ -1,5 +1,5 @@
 using BIReportingCopilot.Core.Interfaces;
-using BIReportingCopilot.Core.Constants;
+using BIReportingCopilot.Core;
 using BIReportingCopilot.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

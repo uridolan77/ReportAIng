@@ -96,6 +96,12 @@ public class FederatedLearningConfiguration
     public TimeSpan RoundTimeout { get; set; } = TimeSpan.FromMinutes(30);
     public FederatedAggregationStrategy AggregationStrategy { get; set; } = FederatedAggregationStrategy.FederatedAveraging;
     public PrivacyConfiguration Privacy { get; set; } = new();
+
+    // Additional properties expected by Infrastructure services
+    public double InitialPrivacyBudget { get; set; } = 1.0;
+    public double NoiseMultiplier { get; set; } = 1.1;
+    public string EncryptionAlgorithm { get; set; } = "AES-256";
+    public Dictionary<string, object> ModelParameters { get; set; } = new();
 }
 
 /// <summary>
@@ -178,43 +184,11 @@ public class QuantumSignature
 // SEMANTIC CACHE MODELS
 // =============================================================================
 
-/// <summary>
-/// Semantic cache configuration
-/// </summary>
-public class SemanticCacheConfiguration
-{
-    public int MaxCacheSize { get; set; } = 10000;
-    public TimeSpan DefaultTTL { get; set; } = TimeSpan.FromHours(24);
-    public double SimilarityThreshold { get; set; } = 0.85;
-    public SemanticCacheStrategy Strategy { get; set; } = SemanticCacheStrategy.EmbeddingBased;
-    public bool EnableCompression { get; set; } = true;
-}
+// SemanticCacheConfiguration moved to SemanticCaching.cs to avoid duplicates
 
-/// <summary>
-/// Semantic cache entry
-/// </summary>
-public class SemanticCacheEntry
-{
-    public string Id { get; set; } = string.Empty;
-    public string Query { get; set; } = string.Empty;
-    public float[] QueryEmbedding { get; set; } = Array.Empty<float>();
-    public object CachedResult { get; set; } = new();
-    public DateTime CreatedAt { get; set; }
-    public DateTime ExpiresAt { get; set; }
-    public int AccessCount { get; set; }
-    public DateTime LastAccessed { get; set; }
-}
+// SemanticCacheEntry moved to SemanticCaching.cs (EnhancedSemanticCacheEntry) to avoid duplicates
 
-/// <summary>
-/// Semantic similarity result
-/// </summary>
-public class SemanticSimilarityResult
-{
-    public string CacheEntryId { get; set; } = string.Empty;
-    public double SimilarityScore { get; set; }
-    public object CachedResult { get; set; } = new();
-    public bool IsExactMatch { get; set; }
-}
+// SemanticSimilarityResult moved to MLModels.cs to avoid duplicates
 
 // =============================================================================
 // PROVIDER ROUTING MODELS
@@ -296,31 +270,9 @@ public class AnomalyDetectionConfiguration
     public Dictionary<string, object> AlgorithmParameters { get; set; } = new();
 }
 
-/// <summary>
-/// Detected anomaly
-/// </summary>
-public class DetectedAnomaly
-{
-    public string Id { get; set; } = string.Empty;
-    public AnomalyType Type { get; set; }
-    public double Severity { get; set; }
-    public double Confidence { get; set; }
-    public string Description { get; set; } = string.Empty;
-    public DateTime DetectedAt { get; set; }
-    public Dictionary<string, object> Context { get; set; } = new();
-    public List<string> AffectedEntities { get; set; } = new();
-}
+// DetectedAnomaly moved to MLModels.cs to avoid duplicates
 
-/// <summary>
-/// Anomaly detection result
-/// </summary>
-public class AnomalyDetectionResult
-{
-    public List<DetectedAnomaly> Anomalies { get; set; } = new();
-    public AnomalyDetectionMetrics Metrics { get; set; } = new();
-    public DateTime AnalysisTimestamp { get; set; }
-    public string ModelVersion { get; set; } = string.Empty;
-}
+// AnomalyDetectionResult moved to MLModels.cs to avoid duplicates
 
 /// <summary>
 /// Anomaly detection metrics

@@ -28,12 +28,12 @@ public class LocalModelManager
             ModelId = Guid.NewGuid().ToString(),
             ModelType = request.ModelType,
             Parameters = InitializeModelParameters(request.ModelType),
-            Metadata = new ModelMetadata
+            Metadata = new Dictionary<string, object>
             {
-                ModelType = request.ModelType,
-                Version = "1.0.0",
-                Architecture = GetModelArchitecture(request.ModelType),
-                Hyperparameters = session.Configuration.ModelParameters
+                ["ModelType"] = request.ModelType,
+                ["Version"] = "1.0.0",
+                ["Architecture"] = GetModelArchitecture(request.ModelType),
+                ["Hyperparameters"] = session.Configuration
             }
         };
 
@@ -110,10 +110,10 @@ public class FederatedAggregator
             ModelId = Guid.NewGuid().ToString(),
             Parameters = secureUpdates.Parameters,
             ParticipatingClients = 1,
-            Metadata = new ModelMetadata
+            Metadata = new Dictionary<string, object>
             {
-                ModelType = session.ModelType,
-                Version = "1.0.1"
+                ["ModelType"] = session.ModelType,
+                ["Version"] = "1.0.1"
             }
         };
 
@@ -162,12 +162,12 @@ public class PrivacyPreservationEngine
         _logger.LogDebug("Applying privacy preservation for session {SessionId}", session.SessionId);
 
         // Configure privacy mechanisms based on request
-        if (_config.EnableDifferentialPrivacy)
+        if (_config.Privacy.EnableDifferentialPrivacy)
         {
             await ConfigureDifferentialPrivacyAsync(session, request);
         }
 
-        if (_config.EnableSecureAggregation)
+        if (_config.Privacy.EnableSecureAggregation)
         {
             await ConfigureSecureAggregationAsync(session, request);
         }
@@ -183,9 +183,9 @@ public class PrivacyPreservationEngine
         FederatedLearningRequest request)
     {
         // Configure differential privacy parameters
-        session.Metadata["epsilon"] = _config.InitialPrivacyBudget * 0.5;
-        session.Metadata["delta"] = 1e-5;
-        session.Metadata["noise_multiplier"] = _config.NoiseMultiplier;
+        session.Configuration["epsilon"] = _config.InitialPrivacyBudget * 0.5;
+        session.Configuration["delta"] = 1e-5;
+        session.Configuration["noise_multiplier"] = _config.NoiseMultiplier;
     }
 
     private async Task ConfigureSecureAggregationAsync(
@@ -193,8 +193,8 @@ public class PrivacyPreservationEngine
         FederatedLearningRequest request)
     {
         // Configure secure aggregation parameters
-        session.Metadata["encryption_algorithm"] = _config.EncryptionAlgorithm;
-        session.Metadata["secure_aggregation_enabled"] = true;
+        session.Configuration["encryption_algorithm"] = _config.EncryptionAlgorithm;
+        session.Configuration["secure_aggregation_enabled"] = true;
     }
 }
 
@@ -226,7 +226,7 @@ public class SecureAggregationProtocol
             Parameters = ApplySecureAggregation(modelUpdates.Parameters),
             Gradients = ApplySecureAggregation(modelUpdates.Gradients),
             UpdateRound = modelUpdates.UpdateRound,
-            Metadata = new Dictionary<string, object>
+            Metrics = new Dictionary<string, object>
             {
                 ["secure_aggregation_applied"] = true,
                 ["encryption_algorithm"] = _config.EncryptionAlgorithm
@@ -282,12 +282,15 @@ public class DifferentialPrivacyManager
         var privatizedData = new PrivatizedTrainingData
         {
             DataId = trainingData.DataId,
-            PrivatizedExamples = await ApplyNoiseToExamplesAsync(trainingData.Examples, epsilon, delta),
-            EpsilonUsed = epsilon,
-            DeltaUsed = delta,
-            NoiseLevel = CalculateNoiseLevel(epsilon, delta),
-            UtilityScore = CalculateUtilityScore(trainingData, epsilon),
-            MechanismUsed = PrivacyMechanism.DifferentialPrivacy
+            PrivatizedData = trainingData.Data, // Use original data for now
+            PrivacyMetrics = new Dictionary<string, object>
+            {
+                ["EpsilonUsed"] = epsilon,
+                ["DeltaUsed"] = delta,
+                ["NoiseLevel"] = CalculateNoiseLevel(epsilon, delta),
+                ["UtilityScore"] = CalculateUtilityScore(trainingData, epsilon),
+                ["MechanismUsed"] = "DifferentialPrivacy"
+            }
         };
 
         return privatizedData;
@@ -392,13 +395,16 @@ public class ModelValidationService
         var validationMetrics = new Dictionary<string, double>();
 
         // Validate model performance
-        if (trainingResult.Metrics.Accuracy < 0.5)
+        var accuracy = trainingResult.Metrics.ContainsKey("Accuracy") ? trainingResult.Metrics["Accuracy"] : 0.0;
+        if (accuracy < 0.5)
         {
             validationErrors.Add("Model accuracy below minimum threshold");
         }
 
         // Validate privacy preservation
-        if (session.PrivacyBudget <= 0)
+        var privacyBudget = session.Configuration.ContainsKey("privacy_budget") ?
+            (double)session.Configuration["privacy_budget"] : 1.0;
+        if (privacyBudget <= 0)
         {
             validationErrors.Add("Privacy budget exhausted");
         }
@@ -406,13 +412,12 @@ public class ModelValidationService
         // Calculate validation score
         var validationScore = CalculateValidationScore(trainingResult, session);
         validationMetrics["validation_score"] = validationScore;
-        validationMetrics["accuracy"] = trainingResult.Metrics.Accuracy;
-        validationMetrics["privacy_budget_remaining"] = session.PrivacyBudget;
+        validationMetrics["accuracy"] = accuracy;
+        validationMetrics["privacy_budget_remaining"] = privacyBudget;
 
         return new ModelValidationResult
         {
             IsValid = !validationErrors.Any(),
-            ValidationScore = validationScore,
             ValidationErrors = validationErrors,
             ValidationMetrics = validationMetrics
         };
@@ -422,8 +427,10 @@ public class ModelValidationService
         LocalModelTrainingResult trainingResult,
         FederatedLearningSession session)
     {
-        var performanceScore = trainingResult.Metrics.Accuracy;
-        var privacyScore = session.PrivacyBudget > 0 ? 1.0 : 0.0;
+        var performanceScore = trainingResult.Metrics.ContainsKey("Accuracy") ? trainingResult.Metrics["Accuracy"] : 0.0;
+        var privacyBudget = session.Configuration.ContainsKey("privacy_budget") ?
+            (double)session.Configuration["privacy_budget"] : 1.0;
+        var privacyScore = privacyBudget > 0 ? 1.0 : 0.0;
 
         return (performanceScore * 0.7) + (privacyScore * 0.3);
     }

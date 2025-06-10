@@ -74,6 +74,15 @@ public class QueryPattern
     public DateTime LastUsed { get; set; }
     public List<string> AssociatedTables { get; set; } = new();
     public QueryIntent Intent { get; set; }
+
+    // Additional properties expected by Infrastructure services
+    public string PatternType { get; set; } = "analytical";
+    public string PatternId { get; set; } = Guid.NewGuid().ToString();
+    public List<string> Examples { get; set; } = new();
+    public double Confidence { get; set; } = 0.8;
+    public string Category { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public DateTime IdentifiedAt { get; set; } = DateTime.UtcNow;
 }
 
 public class SchemaContext
@@ -417,10 +426,47 @@ public class StreamingResponse
 public enum StreamingResponseType
 {
     SQLGeneration,
+    SqlGeneration, // Added alias for compatibility
     Insight,
     Explanation,
     Error,
-    Progress
+    Progress,
+    Analysis, // Added missing enum value
+    Validation, // Added missing enum value
+    Execution, // Added missing enum value
+    Complete // Added missing enum value
+}
+
+/// <summary>
+/// Types of streaming insights
+/// </summary>
+public enum StreamingInsightType
+{
+    DataAnalysis,
+    PerformanceInsight,
+    TrendAnalysis,
+    AnomalyDetection,
+    Recommendation,
+    Error,
+    Warning,
+    Info,
+    Analysis, // Added missing enum value
+    PatternDetection, // Added missing enum value
+    InsightGeneration, // Added missing enum value
+    Complete // Added missing enum value
+}
+
+/// <summary>
+/// Streaming session status
+/// </summary>
+public enum StreamingSessionStatus
+{
+    Active,
+    Inactive,
+    Paused,
+    Stopped,
+    Error,
+    Terminated
 }
 
 // AI Provider Models

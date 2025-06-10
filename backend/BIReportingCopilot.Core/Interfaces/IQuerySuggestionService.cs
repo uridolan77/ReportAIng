@@ -1,4 +1,4 @@
-using BIReportingCopilot.Core.DTOs.QuerySuggestions;
+using BIReportingCopilot.Core.DTOs;
 
 namespace BIReportingCopilot.Core.Interfaces;
 

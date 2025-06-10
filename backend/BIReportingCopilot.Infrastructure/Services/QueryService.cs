@@ -1,8 +1,8 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
-using BIReportingCopilot.Core.Models.DTOs;
+using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Commands;
-using BIReportingCopilot.Core.Queries;
+using BIReportingCopilot.Core.Models.QuerySuggestions;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
@@ -223,9 +223,11 @@ public class QueryService : IQueryService
         _logger.LogInformation("🎯 Query performance metrics not yet implemented in CQRS pattern");
         return Task.FromResult(new QueryPerformanceMetrics
         {
+            QueryHash = queryHash,
             ExecutionTime = TimeSpan.FromMilliseconds(100),
             RowsAffected = 0,
-            FromCache = false
+            FromCache = false,
+            ExecutedAt = DateTime.UtcNow
         });
     }
 

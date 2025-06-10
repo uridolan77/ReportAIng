@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using BIReportingCopilot.Core.DTOs;
 
 namespace BIReportingCopilot.Core.Models.DTOs;
 
@@ -25,27 +26,8 @@ public class TuningDashboardData
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
 }
 
-/// <summary>
-/// AI Tuning settings DTO
-/// </summary>
-public class AITuningSettingsDto
-{
-    public long Id { get; set; } // Added missing property
-    public string SettingsId { get; set; } = Guid.NewGuid().ToString();
-    public string SettingKey { get; set; } = string.Empty; // Added missing property
-    public string SettingValue { get; set; } = string.Empty; // Added missing property
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public string Category { get; set; } = string.Empty; // Added missing property
-    public string DataType { get; set; } = "string"; // Added missing property
-    public bool IsActive { get; set; } = true;
-    public TuningConfiguration Configuration { get; set; } = new();
-    public List<TuningParameter> Parameters { get; set; } = new();
-    public string CreatedBy { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public Dictionary<string, object> Metadata { get; set; } = new();
-}
+// AITuningSettingsDto moved to BIReportingCopilot.Core.DTOs namespace
+// This duplicate definition has been removed to avoid conflicts
 
 /// <summary>
 /// Tuning configuration

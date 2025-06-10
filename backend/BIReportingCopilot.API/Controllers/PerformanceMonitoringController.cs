@@ -18,13 +18,13 @@ public class PerformanceMonitoringController : ControllerBase
 {
     private readonly PerformanceManagementService _performanceService;
     private readonly MonitoringManagementService _monitoringService;
-    private readonly UnifiedSemanticCacheService _cacheService;
+    private readonly BIReportingCopilot.Core.Interfaces.ISemanticCacheService _cacheService;
     private readonly ILogger<PerformanceMonitoringController> _logger;
 
     public PerformanceMonitoringController(
         PerformanceManagementService performanceService,
         MonitoringManagementService monitoringService,
-        UnifiedSemanticCacheService cacheService,
+        BIReportingCopilot.Core.Interfaces.ISemanticCacheService cacheService,
         ILogger<PerformanceMonitoringController> logger)
     {
         _performanceService = performanceService;
@@ -230,7 +230,7 @@ public class PerformanceMonitoringController : ControllerBase
             }
             else
             {
-                await _cacheService.ClearCacheAsync();
+                await _cacheService.ClearSemanticCacheAsync();
             }
             
             return Ok(new

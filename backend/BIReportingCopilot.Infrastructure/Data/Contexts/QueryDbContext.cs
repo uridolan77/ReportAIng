@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Core.Models;
-using CoreQuerySuggestion = BIReportingCopilot.Core.Models.QuerySuggestion;
 using BIReportingCopilot.Core.Models.QuerySuggestions;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 

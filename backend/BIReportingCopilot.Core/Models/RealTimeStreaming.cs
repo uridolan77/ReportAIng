@@ -63,6 +63,9 @@ public class QueryStreamEvent
     public string? Error { get; set; }
     public QueryMetrics Metrics { get; set; } = new();
     public Dictionary<string, object> Context { get; set; } = new();
+
+    // Additional properties expected by Infrastructure services
+    public string EventType { get; set; } = "QueryExecution";
 }
 
 /// <summary>
@@ -80,6 +83,10 @@ public class RealTimeDashboard
     public List<RealTimeAlert> StreamingAlerts { get; set; } = new();
     public List<PerformanceIndicator> PerformanceIndicators { get; set; } = new();
     public TrendAnalysis TrendAnalysis { get; set; } = new();
+
+    // Additional properties expected by Infrastructure services
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public bool IsLive { get; set; } = true;
     public List<RealTimeRecommendation> Recommendations { get; set; } = new();
     public DashboardLayout Layout { get; set; } = new();
 }
@@ -100,6 +107,10 @@ public class StreamingAnalyticsResult
     public PerformanceMetrics PerformanceMetrics { get; set; } = new();
     public UserActivitySummary UserActivitySummary { get; set; } = new();
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+
+    // Additional properties expected by Infrastructure services
+    public int ActiveSessions { get; set; }
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
@@ -129,6 +140,10 @@ public class RealTimeMetrics
     public int CacheHitRate { get; set; }
     public List<MetricDataPoint> TimeSeries { get; set; } = new();
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    // Additional properties expected by Infrastructure services
+    public int ActiveConnections { get; set; }
+    public double QueriesPerSecond { get; set; }
 }
 
 /// <summary>
@@ -223,6 +238,12 @@ public class StreamingPerformanceMetrics
     public Dictionary<string, double> EventTypeBreakdown { get; set; } = new();
     public List<PerformanceDataPoint> PerformanceHistory { get; set; } = new();
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+
+    // Additional properties expected by Infrastructure services
+    public int TotalStreams { get; set; }
+    public double ThroughputPerSecond { get; set; }
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public int ActiveStreams { get; set; }
 }
 
 // Supporting classes
@@ -418,4 +439,103 @@ public enum ChartType
     Scatter,
     Gauge,
     Heatmap
+}
+
+/// <summary>
+/// Streaming query response
+/// </summary>
+public class StreamingQueryResponse
+{
+    public string QueryId { get; set; } = string.Empty;
+    public string SessionId { get; set; } = string.Empty;
+    public StreamingResponseType Type { get; set; } = StreamingResponseType.SQLGeneration; // Added missing property
+    public string Content { get; set; } = string.Empty; // Added missing property
+    public double Progress { get; set; } = 0.0; // Added missing property
+    public string? PartialSql { get; set; } // Added missing property
+    public string? GeneratedSql { get; set; } // Added missing property
+    public bool IsComplete { get; set; }
+    public int RowCount { get; set; }
+    public object Data { get; set; } = new();
+    public string? ErrorMessage { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Streaming insight response
+/// </summary>
+public class StreamingInsightResponse
+{
+    public string InsightId { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty; // Added missing property
+    public double Progress { get; set; } = 0.0; // Added missing property
+    public string? PartialInsight { get; set; } // Added missing property
+    public bool IsComplete { get; set; } // Added missing property
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow; // Added missing property
+    public double Confidence { get; set; }
+    public Dictionary<string, object> Data { get; set; } = new();
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Streaming analytics update
+/// </summary>
+public class StreamingAnalyticsUpdate
+{
+    public string UpdateId { get; set; } = string.Empty;
+    public string SessionId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty; // Added missing property
+    public string MetricType { get; set; } = string.Empty;
+    public Dictionary<string, object> Metrics { get; set; } = new();
+    public List<string> Trends { get; set; } = new(); // Added missing property
+    public List<string> Alerts { get; set; } = new(); // Added missing property
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Streaming session configuration
+/// </summary>
+public class StreamingSessionConfig
+{
+    public string SessionId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public Dictionary<string, object> Configuration { get; set; } = new();
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(30);
+    public int MaxConnections { get; set; } = 100;
+    public bool EnableCompression { get; set; } = true;
+}
+
+/// <summary>
+/// Streaming session information
+/// </summary>
+public class StreamingSessionInfo
+{
+    public string SessionId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public DateTime StartTime { get; set; }
+    public DateTime StartedAt { get; set; } = DateTime.UtcNow; // Added missing property
+    public DateTime? EndTime { get; set; }
+    public DateTime? EndedAt { get; set; } // Added missing property
+    public string Status { get; set; } = string.Empty;
+    public StreamingSessionConfig Configuration { get; set; } = new(); // Added missing property
+    public int ActiveConnections { get; set; }
+    public int ConnectionCount { get; set; } // Added missing property
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
+/// Streaming alert
+/// </summary>
+public class StreamingAlert
+{
+    public string AlertId { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string Severity { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public Dictionary<string, object> Context { get; set; } = new();
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow; // Added missing property
+    public bool IsAcknowledged { get; set; }
 }

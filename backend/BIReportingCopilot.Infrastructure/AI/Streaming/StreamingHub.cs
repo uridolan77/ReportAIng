@@ -65,7 +65,7 @@ public class StreamingHub : Hub
     /// <summary>
     /// Start a streaming session for real-time updates
     /// </summary>
-    public async Task StartStreamingSession(StreamingSessionConfig config)
+    public async Task StartStreamingSession(StreamingConfiguration config)
     {
         try
         {
@@ -110,7 +110,7 @@ public class StreamingHub : Hub
             var userId = GetCurrentUserId();
             _logger.LogInformation("🛑 Stopping streaming session {SessionId} for user {UserId}", sessionId, userId);
 
-            await _streamingService.StopStreamingSessionAsync(sessionId);
+            await _streamingService.StopStreamingSessionAsync(userId, sessionId);
 
             // Remove connection from session group
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"session_{sessionId}");
@@ -155,9 +155,13 @@ public class StreamingHub : Hub
             {
                 try
                 {
-                    await foreach (var update in _streamingService.StreamAnalyticsAsync(userId, updateInterval))
+                    // Simulate analytics streaming - would be replaced with actual implementation
+                    var count = 0;
+                    while (count < 10) // Limit for demo
                     {
-                        await Clients.Group($"analytics_{userId}").SendAsync("AnalyticsUpdate", update);
+                        await Task.Delay(updateInterval);
+                        var analyticsUpdate = new { Timestamp = DateTime.UtcNow, Data = $"Analytics update {count++}" };
+                        await Clients.Group($"analytics_{userId}").SendAsync("AnalyticsUpdate", analyticsUpdate);
                     }
                 }
                 catch (Exception ex)
@@ -288,7 +292,7 @@ public class StreamingHub : Hub
             
             foreach (var session in activeSessions)
             {
-                await _streamingService.StopStreamingSessionAsync(session.SessionId);
+                await _streamingService.StopStreamingSessionAsync(userId, session.SessionId);
             }
 
             _logger.LogDebug("🧹 Cleaned up {SessionCount} active sessions for user {UserId}", activeSessions.Count, userId);

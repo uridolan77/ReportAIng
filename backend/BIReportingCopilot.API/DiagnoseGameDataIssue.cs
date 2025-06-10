@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Services;
+using BIReportingCopilot.Core.Interfaces;
 
 namespace BIReportingCopilot.API
 {
@@ -69,20 +70,27 @@ namespace BIReportingCopilot.API
                     Console.WriteLine($"\n📊 Query {i + 1}:");
                     Console.WriteLine($"SQL: {diagnosticQueries[i]}");
                     
-                    var result = await queryService.ExecuteQueryAsync(diagnosticQueries[i]);
+                    var result = await queryService.ExecuteSelectQueryAsync(diagnosticQueries[i]);
                     
-                    if (result.IsSuccess && result.Data?.Rows?.Count > 0)
+                    if (result.IsSuccessful && result.Data?.Length > 0)
                     {
                         Console.WriteLine("✅ Results:");
-                        foreach (var row in result.Data.Rows.Take(10))
+                        foreach (var row in result.Data.Take(10))
                         {
-                            var values = string.Join(" | ", row.Values.Select(v => v?.ToString() ?? "NULL"));
-                            Console.WriteLine($"   {values}");
+                            if (row is Dictionary<string, object> dict)
+                            {
+                                var values = string.Join(" | ", dict.Values.Select(v => v?.ToString() ?? "NULL"));
+                                Console.WriteLine($"   {values}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"   {row?.ToString() ?? "NULL"}");
+                            }
                         }
                     }
                     else
                     {
-                        Console.WriteLine($"❌ No results or error: {result.ErrorMessage}");
+                        Console.WriteLine($"❌ No results or error: {result.Metadata.Error}");
                     }
                 }
                 catch (Exception ex)

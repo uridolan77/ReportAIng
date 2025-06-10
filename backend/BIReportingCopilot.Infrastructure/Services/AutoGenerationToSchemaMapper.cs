@@ -1,5 +1,5 @@
 using BIReportingCopilot.Core.Models;
-using BIReportingCopilot.Core.DTOs.SchemaManagement;
+using BIReportingCopilot.Core.DTOs;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 

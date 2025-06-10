@@ -17,20 +17,7 @@ public class QueryExecutionMetrics
     public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
 }
 
-/// <summary>
-/// Query metrics for analysis and optimization
-/// </summary>
-public class QueryMetrics
-{
-    public double NLUConfidence { get; set; }
-    public double QueryIntelligenceScore { get; set; }
-    public double OptimizationScore { get; set; }
-    public int ExecutionTimeMs { get; set; }
-    public int RowCount { get; set; }
-    public bool CacheHit { get; set; }
-    public Dictionary<string, double> PerformanceIndicators { get; set; } = new();
-    public List<string> OptimizationSuggestions { get; set; } = new();
-}
+// QueryMetrics moved to MLModels.cs to avoid duplicates
 
 /// <summary>
 /// Performance goal for optimization
@@ -93,6 +80,9 @@ public class CacheStatistics
     public int SemanticCacheMisses { get; set; }
     public double SemanticCacheHitRate { get; set; }
     public int TotalSemanticEntries { get; set; }
+
+    // Additional properties expected by Infrastructure services
+    public long TotalMemoryUsage { get; set; }
 }
 
 /// <summary>
@@ -501,16 +491,7 @@ public class SchemaOptimizationMetrics
     public Dictionary<string, int> OptimizationTypes { get; set; } = new();
 }
 
-/// <summary>
-/// Data point for charts and visualizations
-/// </summary>
-public class DataPoint
-{
-    public object X { get; set; } = new();
-    public object Y { get; set; } = new();
-    public string? Label { get; set; }
-    public Dictionary<string, object> Metadata { get; set; } = new();
-}
+// DataPoint moved to VisualizationModels.cs to avoid duplicates
 
 public enum MaintenancePriority
 {

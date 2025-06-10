@@ -236,6 +236,9 @@ public class UnifiedSemanticCacheEntry
     // Metadata and Extensions
     public string? Metadata { get; set; } // JSON for additional metadata
 
+    // Additional properties expected by Infrastructure services
+    public string SerializedResponse { get; set; } = string.Empty;
+
     // Base Entity Properties
     public string CreatedBy { get; set; } = string.Empty;
     public string UpdatedBy { get; set; } = string.Empty;

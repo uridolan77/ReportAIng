@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
-using BIReportingCopilot.Core.Models.SchemaManagement;
-using BIReportingCopilot.Core.DTOs.SchemaManagement;
+using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 
 namespace BIReportingCopilot.Infrastructure.Services;

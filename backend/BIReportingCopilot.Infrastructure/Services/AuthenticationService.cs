@@ -7,7 +7,7 @@ using System.Text;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Configuration;
-using BIReportingCopilot.Core.Constants;
+using BIReportingCopilot.Core;
 using System.Linq;
 
 namespace BIReportingCopilot.Infrastructure.Services;

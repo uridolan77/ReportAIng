@@ -100,6 +100,11 @@ public class CachePerformanceMetrics
     public long TotalHits { get; set; }
     public long TotalMisses { get; set; }
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    // Additional properties expected by Infrastructure services
+    public TimeSpan AverageHitTime { get; set; }
+    public TimeSpan AverageMissTime { get; set; }
+    public double HitRatio { get; set; }
 }
 
 /// <summary>
@@ -112,4 +117,7 @@ public class CacheHealthStatus
     public List<string> Issues { get; set; } = new();
     public Dictionary<string, object> Metrics { get; set; } = new();
     public DateTime CheckedAt { get; set; } = DateTime.UtcNow;
+
+    // Additional properties expected by Infrastructure services
+    public DateTime LastChecked { get; set; } = DateTime.UtcNow;
 }

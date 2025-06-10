@@ -34,6 +34,11 @@ public class AIConfiguration
     /// Learning and ML configuration
     /// </summary>
     public LearningConfig Learning { get; set; } = new();
+
+    // Additional properties expected by Infrastructure services
+    public string OpenAIApiKey { get; set; } = string.Empty;
+    public bool EnableSemanticAnalysis { get; set; } = true;
+    public bool EnableQueryClassification { get; set; } = true;
 }
 
 /// <summary>

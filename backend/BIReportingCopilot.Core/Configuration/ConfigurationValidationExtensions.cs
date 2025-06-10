@@ -82,27 +82,34 @@ public static class ConfigurationValidationExtensions
     }
 
     /// <summary>
-    /// Validates OpenAI-specific settings (allows empty/test configurations)
+    /// Validates AI-specific settings (allows empty/test configurations)
     /// </summary>
     private static bool ValidateOpenAISettings(AIConfiguration settings)
     {
-        // Allow empty API key for testing/development
-        if (string.IsNullOrEmpty(settings.OpenAIApiKey) || settings.OpenAIApiKey == "test-api-key")
-        {
-            return true;
-        }
-
-        // Validate API key format (basic check) for real keys
-        if (!settings.OpenAIApiKey.StartsWith("sk-"))
+        // Basic validation for AI configuration structure
+        if (settings.Core == null)
         {
             return false;
         }
 
-        // Validate model name
-        var validModels = new[] { "gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4o" };
-        if (!validModels.Contains(settings.OpenAIModel))
+        // Validate core AI settings
+        if (settings.Core.MaxRetries < 0 || settings.Core.MaxRetries > 10)
         {
             return false;
+        }
+
+        if (settings.Core.Timeout <= TimeSpan.Zero || settings.Core.Timeout > TimeSpan.FromMinutes(5))
+        {
+            return false;
+        }
+
+        // Validate semantic cache settings if enabled
+        if (settings.SemanticCache?.EnableVectorSearch == true)
+        {
+            if (settings.SemanticCache.SimilarityThreshold < 0 || settings.SemanticCache.SimilarityThreshold > 1)
+            {
+                return false;
+            }
         }
 
         return true;

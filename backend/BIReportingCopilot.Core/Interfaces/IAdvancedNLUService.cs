@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.QuerySuggestions;
 
 namespace BIReportingCopilot.Core.Interfaces;
 

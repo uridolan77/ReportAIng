@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
-using BIReportingCopilot.Core.Constants;
+using BIReportingCopilot.Core;
 using BIReportingCopilot.Core.Commands;
-using BIReportingCopilot.Core.Queries;
 using BIReportingCopilot.Infrastructure.Handlers;
 using MediatR;
 using System.Security.Cryptography;

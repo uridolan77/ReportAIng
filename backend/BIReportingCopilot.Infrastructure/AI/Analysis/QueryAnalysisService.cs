@@ -223,7 +223,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         return Task.FromResult(result);
     }
 
-    public Task<Core.Models.QueryIntent> ClassifyIntentAsync(string query)
+    public Task<BIReportingCopilot.Core.Models.QueryIntent> ClassifyIntentAsync(string query)
     {
         var lowerQuery = query.ToLowerInvariant();
 
@@ -231,31 +231,31 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         if (lowerQuery.Contains("sum") || lowerQuery.Contains("total") || lowerQuery.Contains("count") ||
             lowerQuery.Contains("average") || lowerQuery.Contains("avg") || lowerQuery.Contains("group"))
         {
-            return Task.FromResult(Core.Models.QueryIntent.Aggregation);
+            return Task.FromResult(BIReportingCopilot.Core.Models.QueryIntent.Aggregation);
         }
 
         // Trend intent
         if (lowerQuery.Contains("trend") || lowerQuery.Contains("over time") || lowerQuery.Contains("growth") ||
             lowerQuery.Contains("change") || lowerQuery.Contains("monthly") || lowerQuery.Contains("yearly"))
         {
-            return Task.FromResult(Core.Models.QueryIntent.Trend);
+            return Task.FromResult(BIReportingCopilot.Core.Models.QueryIntent.Trend);
         }
 
         // Comparison intent
         if (lowerQuery.Contains("compare") || lowerQuery.Contains("vs") || lowerQuery.Contains("versus") ||
             lowerQuery.Contains("top") || lowerQuery.Contains("best") || lowerQuery.Contains("highest"))
         {
-            return Task.FromResult(Core.Models.QueryIntent.Comparison);
+            return Task.FromResult(BIReportingCopilot.Core.Models.QueryIntent.Comparison);
         }
 
         // Filtering intent
         if (lowerQuery.Contains("where") || lowerQuery.Contains("filter") || lowerQuery.Contains("only") ||
             lowerQuery.Contains("specific") || lowerQuery.Contains("between"))
         {
-            return Task.FromResult(Core.Models.QueryIntent.Filtering);
+            return Task.FromResult(BIReportingCopilot.Core.Models.QueryIntent.Filtering);
         }
 
-        return Task.FromResult(Core.Models.QueryIntent.General);
+        return Task.FromResult(BIReportingCopilot.Core.Models.QueryIntent.General);
     }
 
     #endregion
@@ -478,7 +478,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         score += Math.Min(0.3, analysis.Entities.Count * 0.05);
 
         // Boost for clear intent
-        if (analysis.Intent != Core.Models.QueryIntent.General)
+        if (analysis.Intent != QueryIntent.General)
             score += 0.2;
 
         // Boost for meaningful keywords
@@ -600,7 +600,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         {
             OriginalQuery = query,
             ProcessedQuery = query,
-            Intent = Core.Models.QueryIntent.General,
+            Intent = QueryIntent.General,
             Entities = new List<SemanticEntity>(),
             Keywords = ExtractKeywords(query),
             ConfidenceScore = 0.3,
@@ -634,16 +634,16 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         // Score based on semantic analysis
         switch (semanticAnalysis.Intent)
         {
-            case Core.Models.QueryIntent.Aggregation:
+            case QueryIntent.Aggregation:
                 scores[QueryCategory.Aggregation] += 3;
                 break;
-            case Core.Models.QueryIntent.Trend:
+            case QueryIntent.Trend:
                 scores[QueryCategory.Trend] += 3;
                 break;
-            case Core.Models.QueryIntent.Comparison:
+            case QueryIntent.Comparison:
                 scores[QueryCategory.Comparison] += 3;
                 break;
-            case Core.Models.QueryIntent.Filtering:
+            case QueryIntent.Filtering:
                 scores[QueryCategory.Filtering] += 3;
                 break;
         }
@@ -733,21 +733,21 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         var lowerQuery = query.ToLowerInvariant();
 
         // Time-based queries suggest line charts
-        if (semanticAnalysis.Intent == Core.Models.QueryIntent.Trend ||
+        if (semanticAnalysis.Intent == QueryIntent.Trend ||
             lowerQuery.Contains("over time") || lowerQuery.Contains("monthly") || lowerQuery.Contains("yearly"))
         {
             return VisualizationType.LineChart;
         }
 
         // Aggregation queries suggest bar charts
-        if (semanticAnalysis.Intent == Core.Models.QueryIntent.Aggregation ||
+        if (semanticAnalysis.Intent == QueryIntent.Aggregation ||
             lowerQuery.Contains("group by") || lowerQuery.Contains("sum") || lowerQuery.Contains("count"))
         {
             return VisualizationType.BarChart;
         }
 
         // Comparison queries suggest bar charts
-        if (semanticAnalysis.Intent == Core.Models.QueryIntent.Comparison ||
+        if (semanticAnalysis.Intent == QueryIntent.Comparison ||
             lowerQuery.Contains("top") || lowerQuery.Contains("compare"))
         {
             return VisualizationType.BarChart;
@@ -768,7 +768,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         var confidence = 0.5; // Base confidence
 
         // Boost for clear semantic intent
-        if (semanticAnalysis.Intent != Core.Models.QueryIntent.General)
+        if (semanticAnalysis.Intent != QueryIntent.General)
             confidence += 0.2;
 
         // Boost for recognized entities
@@ -794,7 +794,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
             suggestions.Add("Add WHERE clause or LIMIT to reduce result set size");
         }
 
-        if (semanticAnalysis.Intent == Core.Models.QueryIntent.Aggregation && !query.ToLowerInvariant().Contains("group by"))
+        if (semanticAnalysis.Intent == QueryIntent.Aggregation && !query.ToLowerInvariant().Contains("group by"))
         {
             suggestions.Add("Consider using GROUP BY for aggregation queries");
         }

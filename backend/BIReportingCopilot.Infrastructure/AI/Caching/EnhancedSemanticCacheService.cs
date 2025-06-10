@@ -81,7 +81,16 @@ public class EnhancedSemanticCacheService
                     IsHit = true,
                     SimilarityScore = bestMatch.SimilarityScore,
                     CachedResponse = bestMatch.CachedResponse,
-                    SimilarQueries = similarQueries.Select(sq => sq.OriginalQuery).ToList(),
+                    SimilarQueries = similarQueries.Select(sq => new EnhancedSemanticCacheEntry
+                    {
+                        Id = sq.EmbeddingId,
+                        OriginalQuery = sq.OriginalQuery,
+                        SqlQuery = sq.SqlQuery,
+                        SerializedResponse = JsonSerializer.Serialize(sq.CachedResponse),
+                        ConfidenceScore = sq.SimilarityScore,
+                        CreatedAt = DateTime.UtcNow,
+                        LastAccessedAt = DateTime.UtcNow
+                    }).ToList(),
                     LookupTime = DateTime.UtcNow - startTime,
                     CacheStrategy = "vector",
                     Metadata = new Dictionary<string, object>
@@ -143,7 +152,7 @@ public class EnhancedSemanticCacheService
                 Embedding = embedding,
                 EmbeddingModel = _config.EmbeddingModel,
                 SemanticFeatures = semanticFeatures,
-                Classification = new Core.Models.CacheQueryClassification
+                Classification = new CacheQueryClassification
                 {
                     Category = classification.Category.ToString().ToLowerInvariant(),
                     Type = "analytical",
@@ -152,7 +161,7 @@ public class EnhancedSemanticCacheService
                 },
                 ExpiresAt = DateTime.UtcNow.Add(expiry ?? _config.DefaultExpiration),
                 ConfidenceScore = response.Confidence,
-                Performance = new Core.Models.CachePerformanceMetrics
+                Performance = new BIReportingCopilot.Core.Models.CachePerformanceMetrics
                 {
                     OriginalExecutionTime = TimeSpan.FromMilliseconds(response.ExecutionTimeMs),
                     ResultSizeBytes = EstimateResponseSize(response)
@@ -183,12 +192,12 @@ public class EnhancedSemanticCacheService
     /// <summary>
     /// Extract semantic features from natural language query
     /// </summary>
-    private Task<Core.Models.SemanticFeatures> ExtractSemanticFeaturesAsync(string query, string sqlQuery)
+    private Task<BIReportingCopilot.Core.Models.SemanticFeatures> ExtractSemanticFeaturesAsync(string query, string sqlQuery)
     {
         try
         {
             // Extract semantic features using built-in analysis
-            return Task.FromResult(new Core.Models.SemanticFeatures
+            return Task.FromResult(new BIReportingCopilot.Core.Models.SemanticFeatures
             {
                 Entities = ExtractEntities(query, sqlQuery),
                 Intents = ExtractIntents(query, sqlQuery),
@@ -196,7 +205,7 @@ public class EnhancedSemanticCacheService
                 NumericalExpressions = ExtractNumericalExpressions(query),
                 DomainConcepts = ExtractDomainConcepts(query),
                 ComplexityScore = CalculateComplexityScore(query, sqlQuery),
-                Linguistic = new Core.Models.LinguisticFeatures
+                Linguistic = new BIReportingCopilot.Core.Models.LinguisticFeatures
                 {
                     Language = DetectLanguage(query),
                     Keywords = ExtractKeywords(query),
@@ -214,14 +223,14 @@ public class EnhancedSemanticCacheService
     /// <summary>
     /// Classify query for optimal caching strategy
     /// </summary>
-    private Task<Core.Models.QueryClassification> ClassifyQueryAsync(
+    private Task<BIReportingCopilot.Core.Models.QueryClassification> ClassifyQueryAsync(
         string query,
         string sqlQuery,
-        Core.Models.SemanticFeatures features)
+        BIReportingCopilot.Core.Models.SemanticFeatures features)
     {
         try
         {
-            return Task.FromResult(new Core.Models.QueryClassification
+            return Task.FromResult(new BIReportingCopilot.Core.Models.QueryClassification
             {
                 Category = DetermineCategoryEnum(query, sqlQuery),
                 Complexity = DetermineComplexityEnum(features.ComplexityScore),
@@ -231,7 +240,7 @@ public class EnhancedSemanticCacheService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error classifying query, using default classification");
-            return Task.FromResult(new Core.Models.QueryClassification());
+            return Task.FromResult(new BIReportingCopilot.Core.Models.QueryClassification());
         }
     }
 
@@ -352,20 +361,20 @@ public class EnhancedSemanticCacheService
         return "general";
     }
 
-    private Core.Models.SemanticFeatures CreateBasicSemanticFeatures(string query, string sqlQuery) =>
-        new Core.Models.SemanticFeatures
+    private BIReportingCopilot.Core.Models.SemanticFeatures CreateBasicSemanticFeatures(string query, string sqlQuery) =>
+        new BIReportingCopilot.Core.Models.SemanticFeatures
         {
             Entities = ExtractEntities(query, sqlQuery),
             Intents = ExtractIntents(query, sqlQuery),
             ComplexityScore = CalculateComplexityScore(query, sqlQuery)
         };
 
-    private Core.Models.QueryCategory DetermineCategoryEnum(string query, string sqlQuery) => Core.Models.QueryCategory.Analytics;
-    private Core.Models.QueryComplexity DetermineComplexityEnum(double score) =>
-        score > 0.7 ? Core.Models.QueryComplexity.High :
-        score > 0.3 ? Core.Models.QueryComplexity.Medium :
-        Core.Models.QueryComplexity.Low;
-    private string RecommendCachingStrategy(Core.Models.SemanticFeatures features) => "vector";
+    private BIReportingCopilot.Core.Models.QueryCategory DetermineCategoryEnum(string query, string sqlQuery) => BIReportingCopilot.Core.Models.QueryCategory.Analytics;
+    private BIReportingCopilot.Core.Models.QueryComplexity DetermineComplexityEnum(double score) =>
+        score > 0.7 ? BIReportingCopilot.Core.Models.QueryComplexity.High :
+        score > 0.3 ? BIReportingCopilot.Core.Models.QueryComplexity.Medium :
+        BIReportingCopilot.Core.Models.QueryComplexity.Low;
+    private string RecommendCachingStrategy(BIReportingCopilot.Core.Models.SemanticFeatures features) => "vector";
 
     private string NormalizeQuery(string query) =>
         query.Trim().ToLowerInvariant()

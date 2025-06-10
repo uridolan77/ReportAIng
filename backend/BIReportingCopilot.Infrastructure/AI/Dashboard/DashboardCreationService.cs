@@ -1,6 +1,7 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using Microsoft.Extensions.Logging;
+using DashboardModel = BIReportingCopilot.Core.Models.Dashboard;
 
 namespace BIReportingCopilot.Infrastructure.AI.Dashboard;
 
@@ -27,20 +28,20 @@ public class DashboardCreationService
     /// <summary>
     /// Create dashboard from request
     /// </summary>
-    public Task<Dashboard> CreateDashboardAsync(CreateDashboardRequest request, string userId)
+    public Task<DashboardModel> CreateDashboardAsync(CreateDashboardRequest request, string userId)
     {
         try
         {
             _logger.LogInformation("🎨 Creating dashboard '{Name}' for user {UserId}", request.Name, userId);
 
-            var dashboard = new Dashboard
+            var dashboard = new DashboardModel
             {
                 Name = request.Name,
                 Description = request.Description ?? "",
                 UserId = userId,
                 Category = request.Category,
-                Layout = request.Layout ?? new Core.Models.DashboardLayout { Type = Core.Models.LayoutType.Grid, Columns = 12 },
-                Configuration = request.Configuration ?? new Core.Models.DashboardConfiguration(),
+                Layout = request.Layout ?? new BIReportingCopilot.Core.Models.DashboardLayout { Type = BIReportingCopilot.Core.Models.LayoutType.Grid, Columns = 12 },
+                Configuration = request.Configuration ?? new BIReportingCopilot.Core.Models.DashboardConfiguration(),
                 Permissions = new DashboardPermissions { OwnerId = userId },
                 IsPublic = request.IsPublic,
                 Tags = request.Tags,
@@ -76,7 +77,7 @@ public class DashboardCreationService
     /// <summary>
     /// Generate dashboard from natural language description
     /// </summary>
-    public async Task<Dashboard> GenerateFromDescriptionAsync(string description, string userId, SchemaMetadata? schema = null)
+    public async Task<DashboardModel> GenerateFromDescriptionAsync(string description, string userId, SchemaMetadata? schema = null)
     {
         try
         {
@@ -95,7 +96,7 @@ public class DashboardCreationService
                 Description = $"Auto-generated dashboard: {description}",
                 Category = "AI Generated",
                 Widgets = await GenerateWidgetsFromNLUAsync(nluResult, schema),
-                Layout = new Core.Models.DashboardLayout { Type = Core.Models.LayoutType.Grid, Columns = 12 },
+                Layout = new BIReportingCopilot.Core.Models.DashboardLayout { Type = BIReportingCopilot.Core.Models.LayoutType.Grid, Columns = 12 },
                 Tags = new List<string> { "ai-generated", "auto-created" }
             };
 
@@ -111,11 +112,11 @@ public class DashboardCreationService
     /// <summary>
     /// Create default dashboard layout
     /// </summary>
-    public Core.Models.DashboardLayout CreateDefaultLayout()
+    public BIReportingCopilot.Core.Models.DashboardLayout CreateDefaultLayout()
     {
-        return new Core.Models.DashboardLayout
+        return new BIReportingCopilot.Core.Models.DashboardLayout
         {
-            Type = Core.Models.LayoutType.Grid,
+            Type = BIReportingCopilot.Core.Models.LayoutType.Grid,
             Columns = 12
         };
     }

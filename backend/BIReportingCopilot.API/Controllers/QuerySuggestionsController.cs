@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
-using BIReportingCopilot.Core.DTOs.QuerySuggestions;
-using BIReportingCopilot.Core.Constants;
+using BIReportingCopilot.Core.DTOs;
+using BIReportingCopilot.Core;
 
 namespace BIReportingCopilot.API.Controllers;
 

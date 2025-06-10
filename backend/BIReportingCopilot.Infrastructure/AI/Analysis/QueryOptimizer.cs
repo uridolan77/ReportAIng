@@ -93,7 +93,7 @@ public class QueryOptimizer : IQueryOptimizer
             });
 
             // Generate alternative candidates with different approaches
-            if (analysis.Intent == Core.Models.QueryIntent.Aggregation)
+            if (analysis.Intent == QueryIntent.Aggregation)
             {
                 var aggregationSql = await GenerateAggregationCandidate(analysis, schema);
                 if (!string.IsNullOrEmpty(aggregationSql) && aggregationSql != primarySql)
@@ -109,7 +109,7 @@ public class QueryOptimizer : IQueryOptimizer
                 }
             }
 
-            if (analysis.Intent == Core.Models.QueryIntent.Trend)
+            if (analysis.Intent == QueryIntent.Trend)
             {
                 var trendSql = await GenerateTrendCandidate(analysis, schema);
                 if (!string.IsNullOrEmpty(trendSql) && trendSql != primarySql)

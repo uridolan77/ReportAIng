@@ -440,6 +440,13 @@ public class IntentCandidate
     public string Intent { get; set; } = string.Empty;
     public double Confidence { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
+
+    // Additional properties expected by Infrastructure services
+    public string CandidateId { get; set; } = Guid.NewGuid().ToString();
+    public double Score { get; set; }
+    public List<string> MatchedKeywords { get; set; } = new();
+    public Dictionary<string, object> Evidence { get; set; } = new();
+    public string Reasoning { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -814,6 +821,12 @@ public class QueryIntelligenceResult
     public List<IntelligenceRecommendation> Recommendations { get; set; } = new();
     public QueryIntelligenceMetrics ProcessingMetrics { get; set; } = new();
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    // Infrastructure compatibility properties
+    public string Query { get; set; } = string.Empty;
+    public List<QueryInsight> Insights { get; set; } = new();
+    public QueryPerformanceAnalysis PerformanceAnalysis { get; set; } = new();
+    public QuerySemanticAnalysis SemanticAnalysis { get; set; } = new();
 }
 
 /// <summary>
@@ -836,6 +849,12 @@ public class IntelligentQuerySuggestion
     public double SchemaRelevance { get; set; }
     public string ComplexityLevel { get; set; } = string.Empty;
     public string EstimatedPerformance { get; set; } = string.Empty;
+
+    // Additional properties expected by Infrastructure services
+    public string Query { get; set; } = string.Empty;
+    public List<QueryInsight> Insights { get; set; } = new();
+    public QueryPerformanceAnalysis PerformanceAnalysis { get; set; } = new();
+    public QuerySemanticAnalysis SemanticAnalysis { get; set; } = new();
 }
 
 /// <summary>
@@ -848,6 +867,53 @@ public class QueryIntelligenceMetrics
     public TimeSpan SchemaAnalysisTime { get; set; }
     public List<string> ComponentsUsed { get; set; } = new();
     public Dictionary<string, double> PerformanceMetrics { get; set; } = new();
+}
+
+/// <summary>
+/// Query insight for intelligence analysis
+/// </summary>
+public class QueryInsight
+{
+    public string InsightId { get; set; } = Guid.NewGuid().ToString();
+    public string Type { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public double Confidence { get; set; } = 0.8;
+    public string Severity { get; set; } = "Info"; // Info, Warning, Error
+    public List<string> Recommendations { get; set; } = new();
+    public Dictionary<string, object> Metadata { get; set; } = new();
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Query performance analysis result
+/// </summary>
+public class QueryPerformanceAnalysis
+{
+    public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
+    public double EstimatedExecutionTime { get; set; }
+    public double EstimatedCost { get; set; }
+    public string PerformanceCategory { get; set; } = "Medium"; // Fast, Medium, Slow
+    public List<string> PerformanceWarnings { get; set; } = new();
+    public List<string> OptimizationSuggestions { get; set; } = new();
+    public double Confidence { get; set; } = 0.8;
+    public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Query semantic analysis result
+/// </summary>
+public class QuerySemanticAnalysis
+{
+    public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
+    public string Intent { get; set; } = string.Empty;
+    public List<string> Entities { get; set; } = new();
+    public List<string> Keywords { get; set; } = new();
+    public double SemanticComplexity { get; set; } = 0.5;
+    public List<string> SuggestedTables { get; set; } = new();
+    public List<string> SuggestedColumns { get; set; } = new();
+    public double Confidence { get; set; } = 0.8;
+    public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
@@ -866,6 +932,13 @@ public class QueryAssistance
         .Where(v => v.Severity == ValidationSeverity.Error)
         .Select(v => v.Message)
         .ToList();
+
+    // Additional properties expected by Infrastructure services
+    public string SuggestionType { get; set; } = "autocomplete";
+    public List<string> Suggestions { get; set; } = new();
+    public List<string> AutoComplete { get; set; } = new();
+    public List<string> Explanations { get; set; } = new();
+    public double Confidence { get; set; } = 0.8;
 }
 
 /// <summary>
@@ -879,20 +952,7 @@ public class QueryValidation
     public string? Suggestion { get; set; }
 }
 
-/// <summary>
-/// User feedback for learning
-/// </summary>
-public class UserFeedback
-{
-    public string FeedbackId { get; set; } = Guid.NewGuid().ToString();
-    public string UserId { get; set; } = string.Empty;
-    public string QueryId { get; set; } = string.Empty;
-    public FeedbackType Type { get; set; }
-    public int Rating { get; set; } // 1-5 scale
-    public string? Comments { get; set; }
-    public Dictionary<string, object> Metadata { get; set; } = new();
-    public DateTime ProvidedAt { get; set; } = DateTime.UtcNow;
-}
+// UserFeedback moved to MLModels.cs to avoid duplicates
 
 // Enumerations for new models
 public enum ValidationSeverity

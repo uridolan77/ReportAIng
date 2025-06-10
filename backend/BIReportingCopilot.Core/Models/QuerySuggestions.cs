@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace BIReportingCopilot.Core.Models;
+namespace BIReportingCopilot.Core.Models.QuerySuggestions;
 
 /// <summary>
 /// Represents a category for organizing query suggestions
@@ -56,6 +56,10 @@ public class QuerySuggestion
     public string QueryText { get; set; } = string.Empty;
 
     [Required]
+    [StringLength(500)]
+    public string Text { get; set; } = string.Empty; // Alias for QueryText to fix interface conflicts
+
+    [Required]
     [StringLength(200)]
     public string Description { get; set; } = string.Empty;
 
@@ -80,6 +84,8 @@ public class QuerySuggestion
     public int UsageCount { get; set; } = 0;
 
     public DateTime? LastUsed { get; set; }
+
+    public double Relevance { get; set; } = 0.8; // Added missing property for NLU service compatibility
 
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 

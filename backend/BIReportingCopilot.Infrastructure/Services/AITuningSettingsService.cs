@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Core.Interfaces;
-using BIReportingCopilot.Core.Models.DTOs;
+using BIReportingCopilot.Core.DTOs;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
@@ -515,4 +515,6 @@ public class AITuningSettingsService : IAITuningSettingsService
             _logger.LogError(ex, "Error refreshing AI tuning settings cache");
         }
     }
+
+    #endregion
 }

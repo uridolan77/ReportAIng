@@ -78,6 +78,12 @@ public class ColorPalette
     public List<string> Primary { get; set; } = new() { "#007bff", "#28a745", "#ffc107", "#dc3545" };
     public List<string> Secondary { get; set; } = new() { "#6c757d", "#17a2b8", "#fd7e14", "#e83e8c" };
     public string Accent { get; set; } = "#6f42c1";
+
+    // Additional properties expected by Infrastructure services
+    public string Background { get; set; } = "#ffffff";
+    public string Text { get; set; } = "#333333";
+    public string Grid { get; set; } = "#e0e0e0";
+    public string Axis { get; set; } = "#666666";
 }
 
 /// <summary>
@@ -153,20 +159,7 @@ public class AIDataAnalysisResult
     public double ConfidenceScore { get; set; }
 }
 
-/// <summary>
-/// Data insight discovered by AI
-/// </summary>
-public class DataInsight
-{
-    public string InsightId { get; set; } = string.Empty;
-    public string Type { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public double Significance { get; set; }
-    public double Confidence { get; set; }
-    public Dictionary<string, object> Evidence { get; set; } = new();
-    public List<string> AffectedColumns { get; set; } = new();
-}
+// DataInsight moved to ReportingModels.cs to avoid duplicates
 
 /// <summary>
 /// Data pattern identified by AI
@@ -209,6 +202,13 @@ public class VisualizationRecommendation
     public List<string> RequiredColumns { get; set; } = new();
     public Dictionary<string, object> Configuration { get; set; } = new();
     public List<string> Benefits { get; set; } = new();
+
+    // Additional properties expected by Infrastructure services
+    public double Confidence { get; set; } = 0.8;
+    public string BestFor { get; set; } = string.Empty;
+    public List<string> Limitations { get; set; } = new();
+    public string EstimatedPerformance { get; set; } = "Good";
+    public Dictionary<string, object> SuggestedConfig { get; set; } = new();
 }
 
 /// <summary>

@@ -3,8 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using MediatR;
 using BIReportingCopilot.Core.Commands;
 using BIReportingCopilot.Core.Models;
-using BIReportingCopilot.Core.Queries;
-using BIReportingCopilot.Infrastructure.AI.Enhanced;
+using BIReportingCopilot.Infrastructure.AI.Core;
 using BIReportingCopilot.Infrastructure.AI.Management;
 
 namespace BIReportingCopilot.API.Controllers;

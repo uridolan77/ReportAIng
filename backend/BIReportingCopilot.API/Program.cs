@@ -27,7 +27,7 @@ using BIReportingCopilot.Infrastructure.Security;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Core.Commands;
 using Hangfire;
-using BIReportingCopilot.Core.Validation;
+using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -168,7 +168,7 @@ builder.Services.AddSwaggerGen(options =>
 // Add FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-builder.Services.AddValidatorsFromAssemblyContaining<QueryRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<BIReportingCopilot.Core.QueryRequestValidator>();
 
 // Configure application settings (using configuration)
 builder.Services.Configure<BIReportingCopilot.Core.Configuration.ApplicationSettings>(
@@ -375,7 +375,7 @@ builder.Services.AddSingleton(provider =>
 // Unified UserRepository implements both IUserRepository and IUserEntityRepository
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Repositories.UserRepository>();
 builder.Services.AddScoped<IUserRepository>(provider => provider.GetRequiredService<BIReportingCopilot.Infrastructure.Repositories.UserRepository>());
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.IUserEntityRepository>(provider => provider.GetRequiredService<BIReportingCopilot.Infrastructure.Repositories.UserRepository>());
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Repositories.IUserEntityRepository>(provider => provider.GetRequiredService<BIReportingCopilot.Infrastructure.Repositories.UserRepository>());
 builder.Services.AddScoped<ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
 builder.Services.AddScoped<IMfaChallengeRepository, BIReportingCopilot.Infrastructure.Repositories.MfaChallengeRepository>();
 
@@ -399,7 +399,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.Perform
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Health.HealthManagementService>();
 
 // Unified background job management service - consolidates all background operations
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Jobs.BackgroundJobManagementService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Services.BackgroundJobManagementService>();
 
 // Unified monitoring management service - consolidates metrics, tracing, and logging
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Monitoring.MonitoringManagementService>();
@@ -467,10 +467,12 @@ builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI
 
 // ===== PERFORMANCE & MONITORING =====
 // StreamingDataService functionality consolidated into PerformanceManagementService
+// Unified monitoring service - MonitoringManagementService implements both IMetricsCollector and monitoring functionality
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Services.MonitoringManagementService>();
 // MetricsCollector functionality consolidated into MonitoringManagementService
 // Register IMetricsCollector interface to use MonitoringManagementService
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IMetricsCollector>(provider =>
-    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Monitoring.MonitoringManagementService>());
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Services.MonitoringManagementService>());
 
 // ===== MESSAGING & EVENTS =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.IEventBus, BIReportingCopilot.Infrastructure.Messaging.InMemoryEventBus>();
@@ -654,7 +656,7 @@ builder.Services.AddScoped<IProgressReporter>(provider =>
 
 // ===== FRAMEWORK SERVICES =====
 // AutoMapper
-builder.Services.AddAutoMapper(typeof(Program), typeof(BIReportingCopilot.Infrastructure.Mapping.QueryHistoryMappingProfile));
+builder.Services.AddAutoMapper(typeof(Program), typeof(BIReportingCopilot.Infrastructure.Data.QueryHistoryMappingProfile));
 
 // MediatR with assemblies
 builder.Services.AddMediatR(cfg => {

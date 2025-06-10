@@ -2,10 +2,11 @@ using Microsoft.Extensions.Logging;
 using System.Diagnostics.Metrics;
 using BIReportingCopilot.Core.Interfaces;
 using CoreISemanticCacheService = BIReportingCopilot.Core.Interfaces.ISemanticCacheService;
-using BIReportingCopilot.Core.Models.ML;
+using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Monitoring;
 using BIReportingCopilot.Infrastructure.Security;
 using BIReportingCopilot.Infrastructure.AI;
+using BIReportingCopilot.Infrastructure.AI.Core;
 using System.Diagnostics;
 
 namespace BIReportingCopilot.Infrastructure.Messaging.EventHandlers;

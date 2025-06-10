@@ -1,5 +1,6 @@
 using BIReportingCopilot.Core.Models;
 using Microsoft.Extensions.Logging;
+using DashboardModel = BIReportingCopilot.Core.Models.Dashboard;
 
 namespace BIReportingCopilot.Infrastructure.AI.Dashboard;
 
@@ -48,7 +49,7 @@ public class DashboardTemplateService
     /// <summary>
     /// Create dashboard from template
     /// </summary>
-    public async Task<Dashboard> CreateFromTemplateAsync(
+    public async Task<DashboardModel> CreateFromTemplateAsync(
         string templateId, 
         string name, 
         string userId, 
@@ -166,7 +167,7 @@ public class DashboardTemplateService
                 Name = "Sales Overview",
                 Description = "Comprehensive sales performance dashboard",
                 Category = "Sales",
-                Layout = new Core.Models.DashboardLayout { Type = Core.Models.LayoutType.Grid, Columns = 12 },
+                Layout = new DashboardLayout { Type = LayoutType.Grid, Columns = 12 },
                 Widgets = new List<TemplateWidget>
                 {
                     new TemplateWidget
@@ -200,7 +201,7 @@ public class DashboardTemplateService
                 Name = "User Analytics",
                 Description = "User behavior and engagement analytics",
                 Category = "Analytics",
-                Layout = new Core.Models.DashboardLayout { Type = Core.Models.LayoutType.Grid, Columns = 12 },
+                Layout = new DashboardLayout { Type = LayoutType.Grid, Columns = 12 },
                 Widgets = new List<TemplateWidget>
                 {
                     new TemplateWidget
