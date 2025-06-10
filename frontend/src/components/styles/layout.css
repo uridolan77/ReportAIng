@@ -1,0 +1,276 @@
+/**
+ * Layout Component Styles
+ * Consolidated from Layout/Header.css and Layout/DatabaseStatus.css
+ */
+
+/* Enhanced Header Styles */
+.app-header {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  border-bottom: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding-left: var(--space-6) !important;
+  padding-right: var(--space-6) !important;
+  overflow: visible !important;
+  white-space: nowrap;
+}
+
+/* Logo container hover effect */
+.app-logo-container {
+  margin-left: var(--space-2);
+  flex-shrink: 0;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.app-logo-container:hover .app-logo-icon {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.app-logo-icon {
+  transition: all var(--transition-normal);
+}
+
+/* Header buttons */
+.header-button,
+.user-dropdown-button {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: var(--radius-lg) !important;
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+  transition: all var(--transition-fast) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+}
+
+.header-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left var(--transition-normal);
+}
+
+.header-button:hover::before {
+  left: 100%;
+}
+
+.header-button:hover,
+.user-dropdown-button:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: var(--color-primary) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Database Status Styles */
+.database-status-enhanced {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: var(--radius-lg) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all var(--transition-fast) !important;
+  font-weight: 500 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.database-status-enhanced::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--color-success);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.database-status-enhanced.connected::after {
+  opacity: 1;
+}
+
+.database-status-enhanced:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: var(--color-primary) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Status indicators */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.status-indicator.connected {
+  background: rgba(82, 196, 26, 0.1);
+  color: var(--color-success);
+  border: 1px solid rgba(82, 196, 26, 0.2);
+}
+
+.status-indicator.disconnected {
+  background: rgba(255, 77, 79, 0.1);
+  color: var(--color-error);
+  border: 1px solid rgba(255, 77, 79, 0.2);
+}
+
+.status-indicator.loading {
+  background: rgba(24, 144, 255, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(24, 144, 255, 0.2);
+}
+
+/* Connection banner */
+.database-connection-banner {
+  background: linear-gradient(135deg, var(--color-primary) 0%, #40a9ff 100%);
+  color: white;
+  padding: var(--space-3) var(--space-6);
+  text-align: center;
+  font-weight: 500;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.database-connection-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* Layout container */
+.layout-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+}
+
+.layout-content {
+  flex: 1;
+  padding: var(--space-4);
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.layout-sidebar {
+  width: 280px;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.layout-sidebar.collapsed {
+  width: 64px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .app-header {
+    padding-left: var(--space-4) !important;
+    padding-right: var(--space-4) !important;
+  }
+  
+  .layout-content {
+    padding: var(--space-3);
+  }
+  
+  .layout-sidebar {
+    width: 100%;
+    position: fixed;
+    top: 64px;
+    left: -100%;
+    height: calc(100vh - 64px);
+    z-index: var(--z-modal);
+    transition: left var(--transition-normal);
+  }
+  
+  .layout-sidebar.open {
+    left: 0;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .app-header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-bottom-color: #334155;
+  }
+  
+  .header-button,
+  .user-dropdown-button,
+  .database-status-enhanced {
+    background: rgba(30, 41, 59, 0.8) !important;
+    border-color: #334155 !important;
+    color: #e2e8f0 !important;
+  }
+  
+  .header-button:hover,
+  .user-dropdown-button:hover,
+  .database-status-enhanced:hover {
+    background: rgba(30, 41, 59, 0.95) !important;
+    border-color: var(--color-primary) !important;
+  }
+}
+
+/* Focus states for accessibility */
+.header-button:focus-visible,
+.user-dropdown-button:focus-visible,
+.database-status-enhanced:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .app-header {
+    border-bottom: 2px solid #000;
+  }
+  
+  .header-button,
+  .user-dropdown-button,
+  .database-status-enhanced {
+    border: 2px solid #000 !important;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .app-logo-icon,
+  .header-button,
+  .user-dropdown-button,
+  .database-status-enhanced,
+  .status-indicator,
+  .layout-sidebar {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .header-button::before,
+  .database-connection-banner::before {
+    display: none !important;
+  }
+}

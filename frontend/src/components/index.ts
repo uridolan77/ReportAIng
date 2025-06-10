@@ -30,11 +30,8 @@ export * from './Layout/DatabaseStatusIndicator';
 // Navigation
 export * from './Navigation';
 
-// Authentication
-export * from './Auth/Login';
-
-// Error Handling
-export * from './ErrorBoundary/ErrorBoundary';
+// Common Components (consolidated single-file components)
+export * from './Common';
 
 // Admin Components
 export * from './Admin/QuerySuggestionsManager';
@@ -49,28 +46,14 @@ export * from './Performance/VirtualScrollList';
 export * from './Tuning';
 
 // Schema Management
-export * from './SchemaManagement/DatabaseSchemaViewer';
-export * from './SchemaManagement/SchemaManagement';
-export * from './SchemaManagement/SchemaEditor';
+export * from './SchemaManagement';
 
 // Providers
 export * from './Providers/ReactQueryProvider';
 export * from './Providers/StateSyncProvider';
 
-// Interactive Components
-export * from './Interactive/InteractiveVisualization';
-
-// Insights
-export * from './Insights/DataInsightsPanel';
-
-// Command Palette
-export * from './CommandPalette/CommandPalette';
-
-// Collaboration
-export * from './Collaboration/CollaborativeDashboard';
-
 // Demo Components
-export * from './Demo/AdvancedFeaturesDemo';
+export * from './Demo';
 
 // Debug Components (moved to DevTools)
 export * from './DevTools/ConnectionStatus';
@@ -80,19 +63,5 @@ export * from './DevTools/KeyVaultStatus';
 // Onboarding
 export * from './Onboarding';
 
-// Query Templates
-export * from './QueryTemplates/QueryTemplateLibrary';
-
-// Security
-export * from './Security/SecurityDashboard';
-export * from './Security/RequestSigningDemo';
-
-// State Sync
-export * from './StateSync/StateSyncDemo';
-
-// Type Safety
-export * from './TypeSafety/TypeSafetyDemo';
-
-// AI Components
-export * from './AI/QuerySimilarityAnalyzer';
-export * from './AI/UserContextPanel';
+// Styles (centralized design system)
+export * from './styles';

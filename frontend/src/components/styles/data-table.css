@@ -1,0 +1,322 @@
+/**
+ * Data Table Styles
+ * Consolidated from DBExplorer.css and other table-related styles
+ */
+
+/* DB Explorer Container */
+.db-explorer-container {
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  min-height: 100vh;
+}
+
+/* Universal font size control for DB Explorer */
+.db-explorer-container,
+.db-explorer-container * {
+  font-size: 12px !important;
+  font-weight: normal !important;
+}
+
+/* Table specific overrides */
+.db-explorer-container .ant-table,
+.db-explorer-container .ant-table *,
+.db-explorer-container .ant-table .ant-typography,
+.db-explorer-container .ant-table strong,
+.db-explorer-container .ant-table .ant-typography-text,
+.db-explorer-container .ant-table span,
+.db-explorer-container .ant-table div {
+  font-weight: normal !important;
+  font-size: 11px !important;
+}
+
+/* Table headers */
+.db-explorer-container .ant-table-thead th,
+.db-explorer-container .ant-table-thead th * {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  background: var(--bg-tertiary) !important;
+  border-bottom: 1px solid var(--border-primary) !important;
+}
+
+/* Table cells */
+.db-explorer-container .ant-table-tbody td {
+  padding: var(--space-2) var(--space-3) !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  font-size: 11px !important;
+}
+
+/* Card titles */
+.db-explorer-container .ant-card-head-title,
+.db-explorer-container .ant-card-head-title *,
+.db-explorer-container .ant-card-head-title span,
+.db-explorer-container .ant-card-head-title div {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Typography overrides */
+.ant-table .ant-typography-caption {
+  font-size: 10px !important;
+}
+
+.ant-table .ant-tag {
+  font-size: 10px !important;
+  padding: 0 var(--space-1) !important;
+  line-height: 16px !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+/* Data Table Main Styles */
+.data-table-container {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-secondary);
+  overflow: hidden;
+}
+
+.data-table-header {
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.data-table-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.data-table-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* Table wrapper */
+.data-table-wrapper {
+  overflow: auto;
+  max-height: 600px;
+}
+
+.data-table-wrapper .ant-table {
+  font-size: var(--font-size-sm);
+}
+
+.data-table-wrapper .ant-table-thead > tr > th {
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border-primary);
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: var(--space-3) var(--space-4);
+}
+
+.data-table-wrapper .ant-table-tbody > tr > td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.data-table-wrapper .ant-table-tbody > tr:hover > td {
+  background: var(--bg-secondary);
+}
+
+/* Row selection */
+.data-table-wrapper .ant-table-row-selected > td {
+  background: rgba(24, 144, 255, 0.05) !important;
+}
+
+.data-table-wrapper .ant-table-row-selected:hover > td {
+  background: rgba(24, 144, 255, 0.1) !important;
+}
+
+/* Pagination */
+.data-table-pagination {
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.data-table-pagination .ant-pagination {
+  margin: 0;
+}
+
+/* Loading states */
+.data-table-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-8);
+  background: var(--bg-primary);
+}
+
+.data-table-skeleton {
+  padding: var(--space-4);
+}
+
+.data-table-skeleton .ant-skeleton-content .ant-skeleton-title {
+  height: 16px;
+  margin-bottom: var(--space-3);
+}
+
+.data-table-skeleton .ant-skeleton-content .ant-skeleton-paragraph > li {
+  height: 12px;
+  margin-bottom: var(--space-2);
+}
+
+/* Empty state */
+.data-table-empty {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.data-table-empty-icon {
+  font-size: 48px;
+  color: var(--text-disabled);
+  margin-bottom: var(--space-4);
+}
+
+.data-table-empty-text {
+  font-size: var(--font-size-md);
+  margin-bottom: var(--space-2);
+}
+
+.data-table-empty-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}
+
+/* Filters and search */
+.data-table-filters {
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.data-table-search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.data-table-filter-group {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* Column controls */
+.data-table-column-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.data-table-column-toggle {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: var(--font-size-xs);
+}
+
+.data-table-column-toggle:hover {
+  background: var(--bg-secondary);
+  border-color: var(--color-primary);
+}
+
+.data-table-column-toggle.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* Export controls */
+.data-table-export {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.data-table-export-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: var(--font-size-sm);
+}
+
+.data-table-export-button:hover {
+  background: var(--bg-secondary);
+  border-color: var(--color-primary);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .data-table-header {
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: stretch;
+  }
+  
+  .data-table-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .data-table-search {
+    min-width: auto;
+  }
+  
+  .data-table-wrapper {
+    overflow-x: auto;
+  }
+  
+  .data-table-pagination {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .db-explorer-container .ant-table-thead th {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+  }
+  
+  .db-explorer-container .ant-table-tbody td {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .data-table-container {
+    border: 2px solid #000;
+  }
+  
+  .data-table-wrapper .ant-table-thead > tr > th {
+    border-bottom: 3px solid #000;
+  }
+  
+  .data-table-wrapper .ant-table-tbody > tr > td {
+    border-bottom: 1px solid #000;
+  }
+}
