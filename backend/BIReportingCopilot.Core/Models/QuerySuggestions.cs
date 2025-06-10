@@ -57,7 +57,7 @@ public class QuerySuggestion
 
     [Required]
     [StringLength(500)]
-    public string Text { get; set; } = string.Empty; // Alias for QueryText to fix interface conflicts
+    public string Text => QueryText; // Computed property - alias for QueryText to fix interface conflicts
 
     [Required]
     [StringLength(200)]

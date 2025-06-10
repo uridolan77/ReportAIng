@@ -26,6 +26,7 @@ CREATE TABLE [dbo].[QuerySuggestions] (
     [Id] BIGINT IDENTITY(1,1) PRIMARY KEY,
     [CategoryId] BIGINT NOT NULL,
     [QueryText] NVARCHAR(500) NOT NULL,
+    [Text] NVARCHAR(500) NOT NULL, -- Alias for QueryText to fix interface conflicts
     [Description] NVARCHAR(200) NOT NULL,
     [DefaultTimeFrame] NVARCHAR(50) NULL, -- 'today', 'yesterday', 'last_7_days', 'last_30_days', 'this_month', 'last_month', etc.
     [SortOrder] INT NOT NULL DEFAULT 0,
@@ -36,17 +37,19 @@ CREATE TABLE [dbo].[QuerySuggestions] (
     [Tags] NVARCHAR(300) NULL, -- JSON array of tags for filtering
     [UsageCount] INT NOT NULL DEFAULT 0,
     [LastUsed] DATETIME2 NULL,
+    [Relevance] FLOAT NOT NULL DEFAULT 0.8, -- Added for NLU service compatibility
     [CreatedDate] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     [CreatedBy] NVARCHAR(256) NOT NULL,
     [UpdatedDate] DATETIME2 NULL,
     [UpdatedBy] NVARCHAR(256) NULL,
-    
+
     FOREIGN KEY ([CategoryId]) REFERENCES [dbo].[SuggestionCategories]([Id]) ON DELETE CASCADE,
-    
+
     INDEX IX_QuerySuggestions_Category_Active_Sort (CategoryId, IsActive, SortOrder),
     INDEX IX_QuerySuggestions_Usage (UsageCount DESC, LastUsed DESC),
     INDEX IX_QuerySuggestions_TimeFrame (DefaultTimeFrame),
-    INDEX IX_QuerySuggestions_Active (IsActive)
+    INDEX IX_QuerySuggestions_Active (IsActive),
+    INDEX IX_QuerySuggestions_Relevance (Relevance DESC)
 );
 
 -- Usage analytics table

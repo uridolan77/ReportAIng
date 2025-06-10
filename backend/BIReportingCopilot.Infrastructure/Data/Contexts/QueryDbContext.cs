@@ -133,11 +133,13 @@ public class QueryDbContext : DbContext
             entity.ToTable("QuerySuggestions");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.QueryText).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Text).IsRequired().HasMaxLength(500).HasComputedColumnSql("[QueryText]");
             entity.Property(e => e.Description).IsRequired().HasMaxLength(200);
             entity.Property(e => e.DefaultTimeFrame).HasMaxLength(50);
             entity.Property(e => e.TargetTables).HasMaxLength(500);
             entity.Property(e => e.RequiredPermissions).HasMaxLength(200);
             entity.Property(e => e.Tags).HasMaxLength(300);
+            entity.Property(e => e.Relevance).HasDefaultValue(0.8);
             entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(256);
             entity.Property(e => e.UpdatedBy).HasMaxLength(256);
 
