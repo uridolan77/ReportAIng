@@ -10,7 +10,7 @@ using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Core;
 using System.Linq;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Authentication;
 
 /// <summary>
 /// Consolidated authentication service with comprehensive security features

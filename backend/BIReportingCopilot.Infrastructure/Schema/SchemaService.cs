@@ -11,7 +11,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Schema;
 
 /// <summary>
 /// Enhanced schema service using bounded contexts for better performance and maintainability

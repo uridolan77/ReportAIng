@@ -13,7 +13,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace BIReportingCopilot.Infrastructure.Services;
+namespace BIReportingCopilot.Infrastructure.Query;
 
 public class SqlQueryService : ISqlQueryService
 {
