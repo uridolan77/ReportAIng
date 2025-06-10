@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfigProvider, theme } from 'antd';
+import { ConfigProvider } from 'antd';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 import { Layout } from './components/Layout/Layout';
 import { Login } from './components/Auth/Login';
@@ -9,6 +9,7 @@ import { ErrorService } from './services/errorService';
 import { DevTools } from './components/DevTools/DevTools';
 import { ReactQueryProvider } from './components/Providers/ReactQueryProvider';
 import { StateSyncProvider } from './components/Providers/StateSyncProvider';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { secureApiClient } from './services/secureApiClient';
 // Import new UI components
 import {
@@ -24,6 +25,7 @@ const ResultsPage = lazy(() => import('./pages/ResultsPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const SuggestionsPage = lazy(() => import('./pages/SuggestionsPage'));
+const EnhancedUIDemo = lazy(() => import('./pages/EnhancedUIDemo'));
 const EnhancedQueryBuilder = lazy(() => import('./components/QueryInterface/QueryBuilder').then(module => ({ default: module.QueryBuilder })));
 const UserContextPanel = lazy(() => import('./components/AI/UserContextPanel'));
 const QuerySimilarityAnalyzer = lazy(() => import('./components/AI/QuerySimilarityAnalyzer'));
@@ -88,156 +90,96 @@ const App: React.FC = () => {
           console.log('Bundle analysis:', analysis);
         }}
       />
-      <ReactQueryProvider>
-        <StateSyncProvider>
-          <ErrorBoundary>
-            <ConfigProvider
-            theme={{
-              algorithm: theme.defaultAlgorithm,
-              token: {
-                // Primary Colors
-                colorPrimary: '#3b82f6',
-                colorSuccess: '#10b981',
-                colorWarning: '#f59e0b',
-                colorError: '#ef4444',
-                colorInfo: '#3b82f6',
-
-                // Typography
-                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif",
-                fontSize: 16,
-                fontSizeHeading1: 36,
-                fontSizeHeading2: 30,
-                fontSizeHeading3: 24,
-                fontSizeHeading4: 20,
-                fontSizeHeading5: 16,
-
-                // Layout
-                borderRadius: 12,
-                borderRadiusLG: 16,
-                borderRadiusSM: 8,
-
-                // Spacing
-                padding: 16,
-                paddingLG: 24,
-                paddingSM: 12,
-                margin: 16,
-                marginLG: 24,
-                marginSM: 12,
-
-                // Colors
-                colorBgContainer: '#ffffff',
-                colorBgElevated: '#ffffff',
-                colorBgLayout: '#f9fafb',
-                colorBorder: '#e5e7eb',
-                colorBorderSecondary: '#f3f4f6',
-                colorText: '#374151',
-                colorTextSecondary: '#6b7280',
-                colorTextTertiary: '#9ca3af',
-
-                // Shadows
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                boxShadowSecondary: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                boxShadowTertiary: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-              },
-              components: {
-                Button: {
-                  borderRadius: 12,
-                  fontWeight: 600,
-                  primaryShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)',
-                },
-                Input: {
-                  borderRadius: 12,
-                  fontSize: 16,
-                  paddingBlock: 12,
-                  paddingInline: 16,
-                },
-                Card: {
-                  borderRadius: 16,
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                },
-                Menu: {
-                  borderRadius: 12,
-                  itemBorderRadius: 8,
-                },
-                Tabs: {
-                  borderRadius: 12,
-                  cardBg: '#ffffff',
-                },
-              },
-            }}
-          >
-            <Router>
-              <div className="App">
-                {isAuthenticated ? (
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Routes>
-                      {/* Minimalist Interface - No Layout */}
-                      <Route path="/minimal" element={<MinimalistQueryPage />} />
-
-                      {/* Standard Interface with Layout */}
-                      <Route path="/*" element={
-                        <Layout>
-                          <Routes>
-                            {/* Main Interface */}
-                            <Route path="/" element={<QueryInterface />} />
-
-                            {/* Analytics & Visualization */}
-                            <Route path="/results" element={<ResultsPage />} />
-                            <Route path="/dashboard" element={<DashboardBuilder />} />
-                            <Route path="/interactive" element={<InteractiveVisualization />} />
-                            {/* Legacy route redirect */}
-                            <Route path="/advanced-viz" element={<Navigate to="/interactive" replace />} />
-
-                            {/* Query Tools */}
-                            <Route path="/history" element={<HistoryPage />} />
-                            <Route path="/templates" element={<TemplatesPage />} />
-                            <Route path="/suggestions" element={<SuggestionsPage />} />
-                            <Route path="/streaming" element={<AdvancedStreamingQuery />} />
-                            <Route path="/enhanced-query" element={<EnhancedQueryBuilder onExecuteQuery={(query) => console.log('Executing query:', query)} />} />
-                            <Route path="/enhanced-ai" element={<EnhancedQueryInterface />} />
-                            <Route path="/enhanced-demo" element={<EnhancedFeaturesDemo />} />
-                            <Route path="/performance-monitoring" element={<PerformanceMonitoringDashboard />} />
-                            <Route path="/db-explorer" element={<DBExplorer />} />
-                            <Route path="/global-result-demo" element={<GlobalResultDemo />} />
-
-                            {/* Admin Routes */}
-                            <Route path="/admin/tuning" element={<TuningDashboard />} />
-                            <Route path="/admin/schemas" element={<SchemaManagementDashboard />} />
-                            <Route path="/admin/cache" element={<CacheManager />} />
-                            <Route path="/admin/security" element={<SecurityDashboard />} />
-                            <Route path="/admin/suggestions" element={<QuerySuggestionsManager />} />
-
-                            {/* Legacy Routes */}
-                            <Route path="/query" element={<Navigate to="/" replace />} />
-                            <Route path="/ai-profile" element={<UserContextPanel />} />
-                            <Route path="/similarity" element={<QuerySimilarityAnalyzer />} />
-                            <Route path="/demo" element={<AdvancedFeaturesDemo />} />
-                            <Route path="/showcase" element={<AdvancedFeaturesDemo />} />
-                            <Route path="/security" element={<Navigate to="/admin/security" replace />} />
-                            <Route path="/security/signing" element={<RequestSigningDemo />} />
-                            <Route path="/security/types" element={<TypeSafetyDemo />} />
-
-                            {/* Catch all */}
-                            <Route path="*" element={<Navigate to="/" replace />} />
-                          </Routes>
-                        </Layout>
-                      } />
-                    </Routes>
-                  </Suspense>
-                ) : (
-                  <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="*" element={<Navigate to="/login" replace />} />
-                  </Routes>
-                )}
-                <DevTools />
-              </div>
-            </Router>
-          </ConfigProvider>
-        </ErrorBoundary>
-      </StateSyncProvider>
-    </ReactQueryProvider>
+      <ThemeProvider>
+        <ReactQueryProvider>
+          <StateSyncProvider>
+            <ErrorBoundary>
+              <AppWithTheme isAuthenticated={isAuthenticated} />
+            </ErrorBoundary>
+          </StateSyncProvider>
+        </ReactQueryProvider>
+      </ThemeProvider>
     </PerformanceMonitor>
+  );
+};
+
+// Separate component that uses the theme context
+const AppWithTheme: React.FC<{ isAuthenticated: boolean }> = ({ isAuthenticated }) => {
+  const { antdTheme } = useTheme();
+
+  return (
+    <ConfigProvider theme={antdTheme}>
+      <Router>
+        <div className="App">
+          {isAuthenticated ? (
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                {/* Minimalist Interface - No Layout */}
+                <Route path="/minimal" element={<MinimalistQueryPage />} />
+
+                {/* Standard Interface with Layout */}
+                <Route path="/*" element={
+                  <Layout>
+                    <Routes>
+                      {/* Main Interface */}
+                      <Route path="/" element={<QueryInterface />} />
+
+                      {/* Enhanced UI Demo */}
+                      <Route path="/ui-demo" element={<EnhancedUIDemo />} />
+
+                      {/* Analytics & Visualization */}
+                      <Route path="/results" element={<ResultsPage />} />
+                      <Route path="/dashboard" element={<DashboardBuilder />} />
+                      <Route path="/interactive" element={<InteractiveVisualization />} />
+                      {/* Legacy route redirect */}
+                      <Route path="/advanced-viz" element={<Navigate to="/interactive" replace />} />
+
+                      {/* Query Tools */}
+                      <Route path="/history" element={<HistoryPage />} />
+                      <Route path="/templates" element={<TemplatesPage />} />
+                      <Route path="/suggestions" element={<SuggestionsPage />} />
+                      <Route path="/streaming" element={<AdvancedStreamingQuery />} />
+                      <Route path="/enhanced-query" element={<EnhancedQueryBuilder onExecuteQuery={(query) => console.log('Executing query:', query)} />} />
+                      <Route path="/enhanced-ai" element={<EnhancedQueryInterface />} />
+                      <Route path="/enhanced-demo" element={<EnhancedFeaturesDemo />} />
+                      <Route path="/performance-monitoring" element={<PerformanceMonitoringDashboard />} />
+                      <Route path="/db-explorer" element={<DBExplorer />} />
+                      <Route path="/global-result-demo" element={<GlobalResultDemo />} />
+
+                      {/* Admin Routes */}
+                      <Route path="/admin/tuning" element={<TuningDashboard />} />
+                      <Route path="/admin/schemas" element={<SchemaManagementDashboard />} />
+                      <Route path="/admin/cache" element={<CacheManager />} />
+                      <Route path="/admin/security" element={<SecurityDashboard />} />
+                      <Route path="/admin/suggestions" element={<QuerySuggestionsManager />} />
+
+                      {/* Legacy Routes */}
+                      <Route path="/query" element={<Navigate to="/" replace />} />
+                      <Route path="/ai-profile" element={<UserContextPanel />} />
+                      <Route path="/similarity" element={<QuerySimilarityAnalyzer />} />
+                      <Route path="/demo" element={<AdvancedFeaturesDemo />} />
+                      <Route path="/showcase" element={<AdvancedFeaturesDemo />} />
+                      <Route path="/security" element={<Navigate to="/admin/security" replace />} />
+                      <Route path="/security/signing" element={<RequestSigningDemo />} />
+                      <Route path="/security/types" element={<TypeSafetyDemo />} />
+
+                      {/* Catch all */}
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </Layout>
+                } />
+              </Routes>
+            </Suspense>
+          ) : (
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          )}
+          <DevTools />
+        </div>
+      </Router>
+    </ConfigProvider>
   );
 };
 

@@ -1,11 +1,12 @@
 /* Query Tabs Component Styles */
 
 .query-tabs {
-  background: #fff;
+  background: var(--bg-primary, #fff);
   border-radius: 12px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-secondary, #f0f0f0);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.06));
+  color: var(--text-primary, #000);
 }
 
 /* Enhanced Query Tabs Styling */
@@ -87,8 +88,8 @@
 }
 
 .query-tabs-header {
-  background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
+  background: var(--bg-secondary, #fafafa);
+  border-bottom: 1px solid var(--border-light, #f0f0f0);
   padding: 0;
   position: relative;
 }
@@ -111,7 +112,7 @@
   padding: 12px 16px;
   border: none;
   background: transparent;
-  color: #595959;
+  color: var(--text-secondary, #595959);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -128,8 +129,8 @@
 }
 
 .query-tab.active {
-  background: #fff;
-  color: #667eea;
+  background: var(--bg-primary, #fff);
+  color: var(--color-primary, #667eea);
   font-weight: 600;
 }
 
@@ -382,6 +383,62 @@
   .query-tab-empty-description {
     font-size: 13px;
   }
+}
+
+/* Dark Mode Support */
+[data-theme="dark"] .query-tabs,
+.dark-theme .query-tabs {
+  background: var(--bg-primary);
+  border-color: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .query-tabs-header,
+.dark-theme .query-tabs-header {
+  background: var(--bg-secondary);
+  border-bottom-color: var(--border-light);
+}
+
+[data-theme="dark"] .query-tab,
+.dark-theme .query-tab {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .query-tab:hover,
+.dark-theme .query-tab:hover {
+  background: var(--bg-tertiary);
+  color: var(--color-primary);
+}
+
+[data-theme="dark"] .query-tab.active,
+.dark-theme .query-tab.active {
+  background: var(--bg-primary);
+  color: var(--color-primary);
+}
+
+[data-theme="dark"] .query-tab-add,
+.dark-theme .query-tab-add {
+  border-color: var(--border-secondary);
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .query-tab-add:hover,
+.dark-theme .query-tab-add:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .query-tabs-content,
+.dark-theme .query-tabs-content {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .query-tab-empty,
+.dark-theme .query-tab-empty {
+  color: var(--text-tertiary);
 }
 
 /* Animations */

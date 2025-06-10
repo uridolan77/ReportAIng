@@ -213,26 +213,74 @@
   }
 }
 
-/* Dark mode support */
+/* Dark mode support - Manual Theme Control */
+[data-theme="dark"] .app-header,
+.dark-theme .app-header {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-bottom-color: #334155;
+}
+
+[data-theme="dark"] .header-button,
+[data-theme="dark"] .user-dropdown-button,
+[data-theme="dark"] .database-status-enhanced,
+.dark-theme .header-button,
+.dark-theme .user-dropdown-button,
+.dark-theme .database-status-enhanced {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .header-button:hover,
+[data-theme="dark"] .user-dropdown-button:hover,
+[data-theme="dark"] .database-status-enhanced:hover,
+.dark-theme .header-button:hover,
+.dark-theme .user-dropdown-button:hover,
+.dark-theme .database-status-enhanced:hover {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: var(--color-primary) !important;
+}
+
+[data-theme="dark"] .layout-sidebar,
+.dark-theme .layout-sidebar {
+  background: var(--bg-primary);
+  border-right-color: var(--border-primary);
+}
+
+[data-theme="dark"] .layout-content,
+.dark-theme .layout-content {
+  background: var(--bg-secondary);
+}
+
+/* Dark mode support - System Preference Fallback */
 @media (prefers-color-scheme: dark) {
-  .app-header {
+  :root:not([data-theme="light"]) .app-header {
     background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
     border-bottom-color: #334155;
   }
-  
-  .header-button,
-  .user-dropdown-button,
-  .database-status-enhanced {
+
+  :root:not([data-theme="light"]) .header-button,
+  :root:not([data-theme="light"]) .user-dropdown-button,
+  :root:not([data-theme="light"]) .database-status-enhanced {
     background: rgba(30, 41, 59, 0.8) !important;
     border-color: #334155 !important;
     color: #e2e8f0 !important;
   }
-  
-  .header-button:hover,
-  .user-dropdown-button:hover,
-  .database-status-enhanced:hover {
+
+  :root:not([data-theme="light"]) .header-button:hover,
+  :root:not([data-theme="light"]) .user-dropdown-button:hover,
+  :root:not([data-theme="light"]) .database-status-enhanced:hover {
     background: rgba(30, 41, 59, 0.95) !important;
     border-color: var(--color-primary) !important;
+  }
+
+  :root:not([data-theme="light"]) .layout-sidebar {
+    background: var(--bg-primary);
+    border-right-color: var(--border-primary);
+  }
+
+  :root:not([data-theme="light"]) .layout-content {
+    background: var(--bg-secondary);
   }
 }
 

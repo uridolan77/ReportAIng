@@ -1,6 +1,8 @@
 /* Import enhanced styles */
+@import './components/styles/variables.css';
 @import './styles/accessibility.css';
 @import './styles/enhanced-ui.css';
+@import './components/styles/enhanced-navigation.css';
 
 body {
   margin: 0;

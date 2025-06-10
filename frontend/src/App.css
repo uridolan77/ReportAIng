@@ -1,3 +1,7 @@
+/* Import Enhanced Design System Styles */
+@import './components/styles/enhanced-ui.css';
+@import './components/styles/enhanced-navigation.css';
+
 /* Enhanced Color Palette & Design System */
 :root {
   /* Primary Colors */
@@ -11,6 +15,9 @@
   --primary-700: #1d4ed8;
   --primary-800: #1e40af;
   --primary-900: #1e3a8a;
+
+  /* Theme transition */
+  --theme-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Neutral Colors */
   --neutral-50: #f9fafb;
@@ -196,11 +203,12 @@
 
 /* Enhanced Query Card Styles */
 .query-card {
-  background: white;
-  border: 1px solid var(--neutral-200);
+  background: var(--bg-primary, white);
+  border: 1px solid var(--border-secondary, var(--neutral-200));
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-lg);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-primary, #000);
 }
 
 .query-card:hover {
@@ -235,12 +243,12 @@
 .query-textarea {
   border-radius: var(--radius-xl) !important;
   font-size: var(--text-lg) !important;
-  border: 2px solid var(--neutral-200) !important;
+  border: 2px solid var(--border-secondary, var(--neutral-200)) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   box-shadow: var(--shadow-sm) !important;
   font-family: var(--font-family-primary) !important;
-  color: var(--neutral-700) !important;
-  background: white !important;
+  color: var(--text-primary, var(--neutral-700)) !important;
+  background: var(--bg-primary, white) !important;
 }
 
 .query-textarea:focus {
@@ -282,11 +290,12 @@
 /* Enhanced Card Styles */
 .enhanced-card {
   border-radius: var(--radius-lg);
-  border: 1px solid var(--neutral-200);
-  background: white;
+  border: 1px solid var(--border-secondary, var(--neutral-200));
+  background: var(--bg-primary, white);
   box-shadow: var(--shadow-sm);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: var(--font-family-primary);
+  color: var(--text-primary, #000);
 }
 
 .enhanced-card:hover {
@@ -694,14 +703,591 @@
 
 .query-progress {
   margin-top: 16px;
-  border-radius: 8px;
+}
+
+/* Dark Mode Styles */
+[data-theme="dark"],
+.dark-theme {
+  /* Override light mode colors for dark theme */
+  --neutral-50: #111827;
+  --neutral-100: #1f2937;
+  --neutral-200: #374151;
+  --neutral-300: #4b5563;
+  --neutral-400: #6b7280;
+  --neutral-500: #9ca3af;
+  --neutral-600: #d1d5db;
+  --neutral-700: #e5e7eb;
+  --neutral-800: #f3f4f6;
+  --neutral-900: #f9fafb;
+}
+
+/* Global body styles for dark mode */
+html[data-theme="dark"],
+html.dark-theme,
+body[data-theme="dark"],
+body.dark-theme {
+  background: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* App container dark mode */
+[data-theme="dark"] .App,
+.dark-theme .App,
+[data-theme="dark"],
+.dark-theme {
+  background: #1f2937 !important;
+  color: #f9fafb !important;
+  min-height: 100vh;
+}
+
+/* Force dark mode on all major containers */
+[data-theme="dark"] *,
+.dark-theme * {
+  border-color: #374151;
+}
+
+[data-theme="dark"] .ant-layout,
+.dark-theme .ant-layout {
+  background: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .ant-layout-content,
+.dark-theme .ant-layout-content {
+  background: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .query-card,
+.dark-theme .query-card {
+  background: #111827 !important;
+  border-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .query-card:hover,
+.dark-theme .query-card:hover {
+  border-color: var(--primary-400);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .query-textarea,
+.dark-theme .query-textarea {
+  background: #111827 !important;
+  border-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .query-textarea:focus,
+.dark-theme .query-textarea:focus {
+  border-color: var(--primary-400) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .query-textarea:hover,
+.dark-theme .query-textarea:hover {
+  border-color: var(--primary-300) !important;
+}
+
+[data-theme="dark"] .enhanced-card,
+.dark-theme .enhanced-card {
+  background: #111827 !important;
+  border-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .enhanced-card:hover,
+.dark-theme .enhanced-card:hover {
+  border-color: var(--neutral-300);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark mode tuning dashboard tabs */
+[data-theme="dark"] .tuning-dashboard-tabs .ant-tabs-tab,
+.dark-theme .tuning-dashboard-tabs .ant-tabs-tab {
+  background: var(--neutral-200) !important;
+  border-color: var(--neutral-300) !important;
+  color: var(--neutral-800) !important;
+}
+
+[data-theme="dark"] .tuning-dashboard-tabs .ant-tabs-tab:hover:not(.ant-tabs-tab-active),
+.dark-theme .tuning-dashboard-tabs .ant-tabs-tab:hover:not(.ant-tabs-tab-active) {
+  background: var(--neutral-300) !important;
+  border-color: var(--neutral-400) !important;
+}
+
+[data-theme="dark"] .tuning-dashboard-tabs .ant-tabs-tabpane,
+.dark-theme .tuning-dashboard-tabs .ant-tabs-tabpane {
+  background: var(--neutral-100) !important;
+  border-color: var(--neutral-300) !important;
+  color: var(--neutral-900) !important;
+}
+
+/* Dark mode processing details */
+[data-theme="dark"] .processing-detail-item,
+.dark-theme .processing-detail-item {
+  border-bottom-color: var(--neutral-200);
+}
+
+[data-theme="dark"] .overall-progress-section,
+.dark-theme .overall-progress-section {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-color: var(--neutral-300);
+}
+
+[data-theme="dark"] .current-status-card,
+.dark-theme .current-status-card {
+  background: linear-gradient(135deg, var(--neutral-200) 0%, var(--neutral-100) 100%) !important;
+  border-color: var(--neutral-300) !important;
+  color: var(--neutral-900) !important;
+}
+
+[data-theme="dark"] .status-info-item,
+.dark-theme .status-info-item {
+  background: rgba(31, 41, 59, 0.8);
+  border-color: var(--neutral-300);
+  color: var(--neutral-900);
+}
+
+[data-theme="dark"] .task-indicator,
+.dark-theme .task-indicator {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* Dark mode error states */
+[data-theme="dark"] .query-error,
+.dark-theme .query-error {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color var(--theme-transition),
+              border-color var(--theme-transition),
+              color var(--theme-transition),
+              box-shadow var(--theme-transition);
+}
+
+/* Disable transitions during theme change to prevent flashing */
+.theme-changing * {
+  transition: none !important;
+}
+
+/* Comprehensive Dark Mode Overrides */
+[data-theme="dark"],
+.dark-theme {
+  /* Force dark backgrounds on all major elements */
+  background: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Force all white backgrounds to dark in dark mode */
+[data-theme="dark"] *,
+.dark-theme * {
+  /* Override any white backgrounds */
+  background-color: inherit;
+}
+
+[data-theme="dark"] .ant-layout-content,
+.dark-theme .ant-layout-content {
+  background: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Main content areas */
+[data-theme="dark"] .main-content,
+[data-theme="dark"] .content-area,
+[data-theme="dark"] .page-content,
+.dark-theme .main-content,
+.dark-theme .content-area,
+.dark-theme .page-content {
+  background: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* All divs and containers */
+[data-theme="dark"] div,
+.dark-theme div {
+  color: #f9fafb;
+}
+
+/* Specific white background overrides */
+[data-theme="dark"] [style*="background: white"],
+[data-theme="dark"] [style*="background-color: white"],
+[data-theme="dark"] [style*="background: #fff"],
+[data-theme="dark"] [style*="background-color: #fff"],
+.dark-theme [style*="background: white"],
+.dark-theme [style*="background-color: white"],
+.dark-theme [style*="background: #fff"],
+.dark-theme [style*="background-color: #fff"] {
+  background: #111827 !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .ant-card,
+.dark-theme .ant-card {
+  background: #111827 !important;
+  border-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .ant-card .ant-card-body,
+.dark-theme .ant-card .ant-card-body {
+  background: #111827 !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .ant-input,
+[data-theme="dark"] .ant-input-affix-wrapper,
+.dark-theme .ant-input,
+.dark-theme .ant-input-affix-wrapper {
+  background: #111827 !important;
+  border-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .ant-btn,
+.dark-theme .ant-btn {
+  border-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .ant-btn:not(.ant-btn-primary),
+.dark-theme .ant-btn:not(.ant-btn-primary) {
+  background: #111827 !important;
+}
+
+[data-theme="dark"] .ant-typography,
+[data-theme="dark"] .ant-typography h1,
+[data-theme="dark"] .ant-typography h2,
+[data-theme="dark"] .ant-typography h3,
+[data-theme="dark"] .ant-typography h4,
+[data-theme="dark"] .ant-typography h5,
+[data-theme="dark"] .ant-typography h6,
+.dark-theme .ant-typography,
+.dark-theme .ant-typography h1,
+.dark-theme .ant-typography h2,
+.dark-theme .ant-typography h3,
+.dark-theme .ant-typography h4,
+.dark-theme .ant-typography h5,
+.dark-theme .ant-typography h6 {
+  color: #f9fafb !important;
+}
+
+/* Force all text elements to light color */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6,
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] div,
+[data-theme="dark"] label,
+[data-theme="dark"] .ant-typography-title,
+[data-theme="dark"] .ant-typography-paragraph,
+[data-theme="dark"] .ant-typography-text,
+.dark-theme h1,
+.dark-theme h2,
+.dark-theme h3,
+.dark-theme h4,
+.dark-theme h5,
+.dark-theme h6,
+.dark-theme p,
+.dark-theme span,
+.dark-theme div,
+.dark-theme label,
+.dark-theme .ant-typography-title,
+.dark-theme .ant-typography-paragraph,
+.dark-theme .ant-typography-text {
+  color: #f9fafb !important;
+}
+
+/* Override any black text */
+[data-theme="dark"] [style*="color: black"],
+[data-theme="dark"] [style*="color: #000"],
+[data-theme="dark"] [style*="color: rgb(0, 0, 0)"],
+.dark-theme [style*="color: black"],
+.dark-theme [style*="color: #000"],
+.dark-theme [style*="color: rgb(0, 0, 0)"] {
+  color: #f9fafb !important;
+}
+
+/* Comprehensive Ant Design component overrides */
+[data-theme="dark"] .ant-tabs,
+[data-theme="dark"] .ant-tabs-content,
+[data-theme="dark"] .ant-tabs-content-holder,
+[data-theme="dark"] .ant-tabs-tabpane,
+[data-theme="dark"] .ant-space,
+[data-theme="dark"] .ant-row,
+[data-theme="dark"] .ant-col,
+[data-theme="dark"] .ant-form,
+[data-theme="dark"] .ant-form-item,
+[data-theme="dark"] .ant-select,
+[data-theme="dark"] .ant-select-selector,
+[data-theme="dark"] .ant-dropdown,
+[data-theme="dark"] .ant-dropdown-menu,
+[data-theme="dark"] .ant-menu,
+[data-theme="dark"] .ant-menu-item,
+[data-theme="dark"] .ant-table,
+[data-theme="dark"] .ant-table-tbody,
+[data-theme="dark"] .ant-table-thead,
+[data-theme="dark"] .ant-table-cell,
+[data-theme="dark"] .ant-empty,
+[data-theme="dark"] .ant-empty-description,
+[data-theme="dark"] .ant-result,
+[data-theme="dark"] .ant-result-content,
+.dark-theme .ant-tabs,
+.dark-theme .ant-tabs-content,
+.dark-theme .ant-tabs-content-holder,
+.dark-theme .ant-tabs-tabpane,
+.dark-theme .ant-space,
+.dark-theme .ant-row,
+.dark-theme .ant-col,
+.dark-theme .ant-form,
+.dark-theme .ant-form-item,
+.dark-theme .ant-select,
+.dark-theme .ant-select-selector,
+.dark-theme .ant-dropdown,
+.dark-theme .ant-dropdown-menu,
+.dark-theme .ant-menu,
+.dark-theme .ant-menu-item,
+.dark-theme .ant-table,
+.dark-theme .ant-table-tbody,
+.dark-theme .ant-table-thead,
+.dark-theme .ant-table-cell,
+.dark-theme .ant-empty,
+.dark-theme .ant-empty-description,
+.dark-theme .ant-result,
+.dark-theme .ant-result-content {
+  background: #111827 !important;
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+  border-color: #374151 !important;
+}
+
+/* Specific overrides for main content areas visible in screenshot */
+[data-theme="dark"] .query-interface,
+[data-theme="dark"] .query-container,
+[data-theme="dark"] .main-query-area,
+[data-theme="dark"] .content-wrapper,
+[data-theme="dark"] .page-wrapper,
+[data-theme="dark"] .app-content,
+.dark-theme .query-interface,
+.dark-theme .query-container,
+.dark-theme .main-query-area,
+.dark-theme .content-wrapper,
+.dark-theme .page-wrapper,
+.dark-theme .app-content {
+  background: #1f2937 !important;
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Force all containers with padding/margin to dark */
+[data-theme="dark"] .container,
+[data-theme="dark"] .wrapper,
+[data-theme="dark"] .content,
+[data-theme="dark"] .main,
+[data-theme="dark"] .section,
+[data-theme="dark"] .panel,
+[data-theme="dark"] .box,
+.dark-theme .container,
+.dark-theme .wrapper,
+.dark-theme .content,
+.dark-theme .main,
+.dark-theme .section,
+.dark-theme .panel,
+.dark-theme .box {
+  background: #1f2937 !important;
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Override any remaining light backgrounds */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .bg-gray-50,
+[data-theme="dark"] .bg-gray-100,
+[data-theme="dark"] .background-white,
+.dark-theme .bg-white,
+.dark-theme .bg-gray-50,
+.dark-theme .bg-gray-100,
+.dark-theme .background-white {
+  background: #111827 !important;
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+/* Specific layout component overrides */
+[data-theme="dark"] .main-content-area,
+[data-theme="dark"] .ant-layout-content.main-content-area,
+.dark-theme .main-content-area,
+.dark-theme .ant-layout-content.main-content-area {
+  background: #1f2937 !important;
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Force all children of main content to inherit dark theme */
+[data-theme="dark"] .main-content-area *,
+.dark-theme .main-content-area * {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .main-content-area .ant-card,
+[data-theme="dark"] .main-content-area .ant-tabs,
+[data-theme="dark"] .main-content-area .ant-space,
+.dark-theme .main-content-area .ant-card,
+.dark-theme .main-content-area .ant-tabs,
+.dark-theme .main-content-area .ant-space {
+  background: #111827 !important;
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+  border-color: #374151 !important;
+}
+
+/* Override inline styles that might be setting white backgrounds */
+[data-theme="dark"] [style*="background:#fff"],
+[data-theme="dark"] [style*="background: #fff"],
+[data-theme="dark"] [style*="backgroundColor:#fff"],
+[data-theme="dark"] [style*="backgroundColor: #fff"],
+[data-theme="dark"] [style*="background:white"],
+[data-theme="dark"] [style*="background: white"],
+[data-theme="dark"] [style*="backgroundColor:white"],
+[data-theme="dark"] [style*="backgroundColor: white"],
+.dark-theme [style*="background:#fff"],
+.dark-theme [style*="background: #fff"],
+.dark-theme [style*="backgroundColor:#fff"],
+.dark-theme [style*="backgroundColor: #fff"],
+.dark-theme [style*="background:white"],
+.dark-theme [style*="background: white"],
+.dark-theme [style*="backgroundColor:white"],
+.dark-theme [style*="backgroundColor: white"] {
+  background: #111827 !important;
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+/* Nuclear option - force all elements to dark theme */
+[data-theme="dark"] * {
+  background-color: inherit !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] *:not(.ant-btn-primary):not(.ant-btn-danger):not(.ant-btn-success):not([class*="color"]):not([class*="bg-"]) {
+  background: transparent !important;
+}
+
+/* Ensure root containers are dark */
+[data-theme="dark"] #root,
+[data-theme="dark"] .App,
+[data-theme="dark"] .ant-app,
+.dark-theme #root,
+.dark-theme .App,
+.dark-theme .ant-app {
+  background: #1f2937 !important;
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Force specific problematic elements */
+[data-theme="dark"] .ant-layout,
+[data-theme="dark"] .ant-layout-header,
+[data-theme="dark"] .ant-layout-sider,
+[data-theme="dark"] .ant-layout-content,
+[data-theme="dark"] .ant-layout-footer,
+.dark-theme .ant-layout,
+.dark-theme .ant-layout-header,
+.dark-theme .ant-layout-sider,
+.dark-theme .ant-layout-content,
+.dark-theme .ant-layout-footer {
+  background: #1f2937 !important;
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Override any CSS that might be setting white */
+[data-theme="dark"] .white,
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .background-white,
+[data-theme="dark"] [class*="white"],
+.dark-theme .white,
+.dark-theme .bg-white,
+.dark-theme .background-white,
+.dark-theme [class*="white"] {
+  background: #111827 !important;
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+/* Additional dark mode component styles */
+[data-theme="dark"] .empty-result,
+.dark-theme .empty-result {
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+  border-color: var(--border-secondary);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .shortcuts-panel,
+.dark-theme .shortcuts-panel {
+  background: rgba(31, 41, 59, 0.95);
+  border-color: var(--border-secondary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .login-card,
+.dark-theme .login-card {
+  background: rgba(31, 41, 59, 0.95);
+  border-color: var(--border-secondary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .login-form-inputs .ant-input,
+[data-theme="dark"] .login-form-inputs .ant-input-password,
+.dark-theme .login-form-inputs .ant-input,
+.dark-theme .login-form-inputs .ant-input-password {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .minimal-query-card,
+.dark-theme .minimal-query-card {
+  border-color: var(--border-secondary);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .quick-action-card,
+.dark-theme .quick-action-card {
+  background: var(--bg-primary);
+  border-color: var(--border-secondary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .quick-action-card:hover,
+.dark-theme .quick-action-card:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--color-primary);
 }
 
 .query-tabs {
   min-height: 500px;
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-lg, 0 4px 16px rgba(0, 0, 0, 0.06));
+  border: 1px solid var(--border-secondary, #f0f0f0);
+  color: var(--text-primary, #000);
+}
+
+/* Dark mode query tabs */
+[data-theme="dark"] .query-tabs,
+.dark-theme .query-tabs {
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-secondary);
+  color: var(--text-primary);
 }
 
 /* Modern Suggestion Buttons */

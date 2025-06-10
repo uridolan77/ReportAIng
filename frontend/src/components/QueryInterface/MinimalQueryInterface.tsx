@@ -163,18 +163,18 @@ export const MinimalQueryInterface: React.FC = () => {
 
   return (
     <div
-      className="query-interface-container"
+      className="enhanced-query-interface"
       style={{
         width: '100%',
         margin: '0',
         padding: '40px 24px',
-        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+        background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)',
         minHeight: '100vh'
       }}
     >
-      {/* Main Content Container - Extra wide for maximum screen usage */}
+      {/* Main Content Container - Enhanced with better spacing */}
       <div style={{
-        maxWidth: '2000px',
+        maxWidth: '1400px',
         margin: '0 auto',
         width: '100%',
         position: 'relative'
@@ -189,67 +189,67 @@ export const MinimalQueryInterface: React.FC = () => {
           <MockDataToggle size="default" showDetails={true} />
         </div>
 
-        {/* Main Title */}
+        {/* Enhanced Header Section */}
         <div style={{
           textAlign: 'center',
           marginBottom: '48px',
-          padding: '0 24px'
+          padding: '0 24px',
+          animation: 'fadeInUp 0.6s ease-out'
         }}>
-          <Title
-            level={1}
-            style={{
-              fontSize: '52px',
-              fontWeight: 800,
-              color: '#1a1a1a',
-              marginBottom: '16px',
-              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-              letterSpacing: '-0.02em'
-            }}
-          >
-            Talk with DailyActionsDB
-          </Title>
-          <Text style={{
-            fontSize: '20px',
-            color: '#6b7280',
-            fontWeight: 500,
-            display: 'block'
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '16px',
+            marginBottom: '24px'
           }}>
-            Get instant insights with natural language queries
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '20px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 20px 40px rgba(59, 130, 246, 0.3)',
+              animation: 'slideInRight 0.4s ease-out'
+            }}>
+              <span style={{ fontSize: '32px', color: 'white' }}>🤖</span>
+            </div>
+            <Title
+              level={1}
+              style={{
+                margin: 0,
+                fontSize: '3.5rem',
+                fontWeight: 800,
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                letterSpacing: '-0.02em',
+                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+              }}
+            >
+              Talk with DailyActionsDB
+            </Title>
+          </div>
+          <Text style={{
+            fontSize: '1.25rem',
+            color: '#4a5568',
+            fontWeight: 400,
+            maxWidth: '600px',
+            display: 'block',
+            margin: '0 auto'
+          }}>
+            Ask questions about your data in natural language and get instant insights
           </Text>
         </div>
 
-        {/* Query Input Container - Much wider for better screen utilization */}
-        <div style={{
+        {/* Enhanced Query Input Container */}
+        <div className="enhanced-query-input-container fade-in-up" style={{
           marginBottom: '32px',
-          maxWidth: '1400px',
-          margin: '0 auto 32px auto',
-          padding: '0 24px',
-          width: '100%'
+          animationDelay: '0.2s'
         }}>
-          {/* Outer glass frame (passepartout) - Shiny glass effect */}
-          <div style={{
-            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #ffffff 100%)',
-            borderRadius: '28px',
-            padding: '28px',
-            boxShadow: '0 16px 48px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
-            position: 'relative',
-            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-            border: '1px solid rgba(255, 255, 255, 0.6)',
-            width: '100%',
-            backdropFilter: 'blur(10px)'
-          }}>
-            {/* Inner text box with subtle inset */}
-            <div data-testid="query-input" style={{
-              background: '#fafbfc',
-              borderRadius: '20px',
-              padding: '0',
-              boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)',
-              border: '1px solid rgba(229, 231, 235, 0.4)',
-              position: 'relative',
-              overflow: 'hidden',
-              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              width: '100%'
-            }}>
+          <div className="query-input-passepartout">
             <Input.TextArea
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -259,110 +259,44 @@ export const MinimalQueryInterface: React.FC = () => {
                   handleCustomSubmitQuery();
                 }
               }}
-              placeholder="New player registrations by country this week"
-              autoSize={{ minRows: 8, maxRows: 16 }}
+              placeholder="Ask me anything about your data..."
+              autoSize={{ minRows: 6, maxRows: 12 }}
+              className="enhanced-query-input"
               style={{
                 fontSize: '18px',
-                borderRadius: '18px',
-                border: 'none',
-                padding: '32px',
-                resize: 'none',
-                background: '#ffffff',
-                boxShadow: 'none',
-                transition: 'all 0.3s ease',
-                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
                 lineHeight: '1.6',
-                color: '#2c3e50',
-                fontWeight: '400',
-                margin: '0',
-                width: '100%'
-              }}
-              onFocus={(e) => {
-                // Target the inner white box
-                if (e.target.parentElement) {
-                  e.target.parentElement.style.border = '1px solid rgba(59, 130, 246, 0.6)';
-                  e.target.parentElement.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 1)';
-                  e.target.parentElement.style.background = 'linear-gradient(145deg, #ffffff 0%, #fafbff 100%)';
-                }
-                // Target the outer glass frame - Enhanced glass effect on focus
-                if (e.target.parentElement?.parentElement) {
-                  e.target.parentElement.parentElement.style.background = 'linear-gradient(145deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%)';
-                  e.target.parentElement.parentElement.style.transform = 'translateY(-2px) scale(1.01)';
-                  e.target.parentElement.parentElement.style.boxShadow = '0 20px 56px rgba(59, 130, 246, 0.15), 0 12px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1)';
-                  e.target.parentElement.parentElement.style.border = '1px solid rgba(255, 255, 255, 0.8)';
-                }
-              }}
-              onBlur={(e) => {
-                // Reset inner white box
-                if (e.target.parentElement) {
-                  e.target.parentElement.style.border = '1px solid rgba(229, 231, 235, 0.8)';
-                  e.target.parentElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
-                  e.target.parentElement.style.background = 'linear-gradient(145deg, #ffffff 0%, #fefefe 100%)';
-                }
-                // Reset outer glass frame - Back to shiny glass effect
-                if (e.target.parentElement?.parentElement) {
-                  e.target.parentElement.parentElement.style.background = 'linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #ffffff 100%)';
-                  e.target.parentElement.parentElement.style.transform = 'translateY(0) scale(1)';
-                  e.target.parentElement.parentElement.style.boxShadow = '0 16px 48px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
-                  e.target.parentElement.parentElement.style.border = '1px solid rgba(255, 255, 255, 0.6)';
-                }
+                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
               }}
             />
-            </div>
           </div>
 
-          {/* Action Buttons */}
-          <div style={{ textAlign: 'center', marginTop: '24px', marginBottom: '32px' }}>
+          {/* Enhanced Action Buttons */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '16px',
+            marginTop: '24px',
+            marginBottom: '32px',
+            flexWrap: 'wrap'
+          }}>
             {/* Mock Data Quick Toggle */}
-            <div style={{ marginBottom: '16px' }}>
-              <MockDataToggle size="small" showDetails={false} />
-            </div>
+            <MockDataToggle size="small" showDetails={false} />
 
-            {/* Primary Submit Button - Always visible */}
+            {/* Enhanced Submit Button */}
             <Button
               type="primary"
               size="large"
               loading={isLoading || aiProcessing.isProcessing}
               onClick={handleCustomSubmitQuery}
               disabled={!query?.trim()}
-              style={{
-                borderRadius: '12px',
-                background: !query?.trim()
-                  ? 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)'
-                  : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                border: 'none',
-                boxShadow: !query?.trim()
-                  ? '0 4px 12px rgba(148, 163, 184, 0.2)'
-                  : '0 8px 24px rgba(59, 130, 246, 0.4)',
-                fontWeight: 600,
-                height: '52px',
-                padding: '0 40px',
-                fontSize: '16px',
-                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-                minWidth: '160px',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                cursor: !query?.trim() ? 'not-allowed' : 'pointer',
-                color: !query?.trim() ? '#64748b' : '#ffffff'
-              }}
-              onMouseEnter={(e) => {
-                if (query?.trim()) {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 12px 32px rgba(59, 130, 246, 0.5)';
-                  e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (query?.trim()) {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.4)';
-                  e.currentTarget.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
-                }
-              }}
+              className="enhanced-submit-button"
+              icon={isLoading || aiProcessing.isProcessing ? undefined : <span className="button-icon">→</span>}
             >
-              {isLoading || aiProcessing.isProcessing ? 'Analyzing...' : 'Submit Query'}
+              {isLoading || aiProcessing.isProcessing ? 'Analyzing...' : 'Ask Question'}
             </Button>
 
-            {/* Show Results Button - Show when there are persisted results but in initial state */}
+            {/* Show Results Button - Enhanced styling */}
             {currentResult && forceInitialState && (
               <Button
                 type="primary"
@@ -370,40 +304,33 @@ export const MinimalQueryInterface: React.FC = () => {
                   setForceInitialState(false);
                   setHasSubmittedQuery(true);
                 }}
-                style={{
-                  marginRight: '8px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                  border: 'none',
-                  boxShadow: '0 4px 16px rgba(59, 130, 246, 0.3)',
-                  fontWeight: 600
-                }}
+                className="enhanced-submit-button"
+                style={{ minWidth: '180px' }}
               >
                 View Previous Results
               </Button>
             )}
 
-            {/* Clear Results Button - Show when viewing results */}
+            {/* Clear Results Button - Enhanced styling */}
             {!forceInitialState && currentResult && (
               <Button
-                type="text"
+                type="default"
                 onClick={() => {
                   handleClearResults();
                   setForceInitialState(true);
                 }}
                 style={{
-                  color: '#6b7280',
-                  fontSize: '14px',
-                  padding: '8px 16px',
-                  height: 'auto',
-                  marginRight: '8px',
                   borderRadius: '12px',
                   border: '1px solid #e2e8f0',
-                  background: 'rgba(255, 255, 255, 0.8)',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  color: '#6b7280',
+                  fontWeight: 500,
+                  height: '40px',
+                  padding: '0 16px',
                   transition: 'all 0.3s ease'
                 }}
               >
-                Clear results and start fresh
+                Clear & Start Fresh
               </Button>
             )}
           </div>

@@ -235,6 +235,12 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
           icon: <BulbOutlined />,
           label: 'Query Suggestions',
           description: 'Manage AI query suggestions and categories'
+        },
+        {
+          key: '/ui-demo',
+          icon: <RocketOutlined />,
+          label: 'Enhanced UI Demo',
+          description: 'Preview the new enhanced UI components'
         }
       ]
     });

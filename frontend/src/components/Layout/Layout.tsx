@@ -5,11 +5,14 @@ import {
   LogoutOutlined,
   UserOutlined,
   SettingOutlined,
-  QuestionCircleOutlined
+  QuestionCircleOutlined,
+  BgColorsOutlined
 } from '@ant-design/icons';
 import { useAuthStore } from '../../stores/authStore';
 import { DatabaseStatusIndicator } from './DatabaseStatusIndicator';
 import { AppNavigation } from '../Navigation/AppNavigation';
+import { EnhancedNavigation } from '../Navigation/EnhancedNavigation';
+import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
 import './Header.css';
 
 const { Header, Content } = AntLayout;
@@ -70,6 +73,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </Menu.Item>
       <Menu.Item key="settings" icon={<SettingOutlined />}>
         Settings
+      </Menu.Item>
+      <Menu.Item key="theme" icon={<BgColorsOutlined />}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <span>Theme</span>
+          <ThemeToggle variant="compact" size="small" showLabel />
+        </div>
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item key="logout" icon={<LogoutOutlined />}>
@@ -164,6 +173,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           }}
         >
           <DatabaseStatusIndicator />
+
+          <ThemeToggle variant="icon" size="middle" />
 
           <Button
             type="text"
@@ -285,17 +296,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </Header>
 
       <AntLayout>
-        {/* Sidebar */}
-        <AppNavigation isAdmin={isAdmin} />
+        {/* Enhanced Sidebar */}
+        <EnhancedNavigation isAdmin={isAdmin} />
 
-        {/* Main Content */}
-        <Content style={{
-          padding: '0',
-          background: '#f9fafb',
-          minHeight: 'calc(100vh - 64px)',
-          overflow: 'auto',
-          position: 'relative'
-        }}>
+        {/* Enhanced Main Content */}
+        <Content
+          className="main-content-area"
+          style={{
+            padding: '0',
+            background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)',
+            minHeight: 'calc(100vh - 64px)',
+            overflow: 'auto',
+            position: 'relative'
+          }}>
           {children}
         </Content>
       </AntLayout>

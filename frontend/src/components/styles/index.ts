@@ -12,6 +12,8 @@ import './layout.css';
 import './data-table.css';
 import './visualization.css';
 import './schema-management.css';
+import './enhanced-ui.css';
+import './enhanced-navigation.css';
 
 // All CSS files now consolidated into centralized system
 // No remaining scattered CSS files to import
