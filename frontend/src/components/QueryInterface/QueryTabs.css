@@ -8,6 +8,84 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+/* Enhanced Query Tabs Styling */
+.enhanced-query-tabs .ant-tabs-tab {
+  background: transparent !important;
+  border: none !important;
+  color: #6b7280 !important;
+  font-weight: 500 !important;
+  padding: 12px 20px !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+}
+
+.enhanced-query-tabs .ant-tabs-tab:hover {
+  background: rgba(59, 130, 246, 0.05) !important;
+  color: #3b82f6 !important;
+}
+
+.enhanced-query-tabs .ant-tabs-tab.ant-tabs-tab-active {
+  background: white !important;
+  color: #1f2937 !important;
+  font-weight: 600 !important;
+  border-bottom: 3px solid #3b82f6 !important;
+}
+
+.enhanced-query-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #1f2937 !important;
+}
+
+.enhanced-query-tabs .ant-tabs-tab.ant-tabs-tab-active span {
+  color: #1f2937 !important;
+}
+
+.enhanced-query-tabs .ant-tabs-tab.ant-tabs-tab-active .anticon {
+  color: #3b82f6 !important;
+}
+
+.enhanced-query-tabs .ant-tabs-tab.ant-tabs-tab-active div {
+  color: #1f2937 !important;
+}
+
+.enhanced-query-tabs .ant-tabs-tab.ant-tabs-tab-active::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 2px 2px 0 0;
+}
+
+.enhanced-query-tabs .ant-tabs-nav {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  margin: 0 !important;
+}
+
+.enhanced-query-tabs .ant-tabs-nav-wrap {
+  padding: 0 !important;
+}
+
+.enhanced-query-tabs .ant-tabs-nav-list {
+  padding: 0 !important;
+}
+
+.enhanced-query-tabs .ant-tabs-ink-bar {
+  display: none !important;
+}
+
+.enhanced-query-tabs .ant-tabs-content-holder {
+  padding: 0 !important;
+}
+
+.enhanced-query-tabs .ant-tabs-tabpane {
+  padding: 24px !important;
+}
+
 .query-tabs-header {
   background: #fafafa;
   border-bottom: 1px solid #f0f0f0;

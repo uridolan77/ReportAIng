@@ -32,6 +32,8 @@ import { VisualizationRecommendation } from '../../types/visualization';
 import { useVisualizationStore } from '../../stores/visualizationStore';
 import { QueryResponse as FrontendQueryResponse } from '../../types/query';
 import { useActiveResultActions } from '../../stores/activeResultStore';
+import { useGlobalResultActions } from '../../stores/globalResultStore';
+import { useCurrentResult } from '../../hooks/useCurrentResult';
 
 const { Text } = Typography;
 const { TabPane } = Tabs;
@@ -54,6 +56,7 @@ export const QueryTabs: React.FC = () => {
   } = useQueryContext();
 
   const { setActiveResult } = useActiveResultActions();
+  const { setCurrentResult: setGlobalResult } = useGlobalResultActions();
 
   // Use visualization store for persistent chart state
   const { currentVisualization, setVisualization } = useVisualizationStore();
@@ -87,8 +90,16 @@ export const QueryTabs: React.FC = () => {
   // Handle SQL editor execution
   const handleSqlExecute = (sqlResult: FrontendQueryResponse) => {
     console.log('🔍 QueryTabs - SQL Editor result:', sqlResult);
-    // Update the active result with the new SQL execution result
-    setActiveResult(sqlResult, `SQL: ${sqlResult.sql?.substring(0, 50)}...`);
+    const sqlQuery = `SQL: ${sqlResult.sql?.substring(0, 50)}...`;
+
+    // Update both active and global result stores
+    setActiveResult(sqlResult, sqlQuery);
+    setGlobalResult(sqlResult, sqlQuery, 'query', {
+      pageSource: 'charts',
+      source: 'sql_editor',
+      timestamp: Date.now()
+    });
+
     setActiveTab('result');
   };
 
@@ -346,13 +357,26 @@ export const QueryTabs: React.FC = () => {
                 letterSpacing: '0.05em',
                 boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
               }}>
-                ✓ Available
+                ✓ Available ({currentResult.result.data.length} rows)
               </div>
             )}
           </div>
         }
         key="charts"
       >
+        {/* Debug Information */}
+        {console.log('🎯 QueryTabs Charts Tab - Debug Info:', {
+          hasCurrentResult: !!currentResult,
+          isSuccess: currentResult?.success,
+          hasData: !!currentResult?.result?.data,
+          dataLength: currentResult?.result?.data?.length,
+          hasColumns: !!currentResult?.result?.metadata?.columns,
+          columnsLength: currentResult?.result?.metadata?.columns?.length,
+          filteredDataLength: filteredData.length,
+          sampleData: currentResult?.result?.data?.slice(0, 2),
+          sampleColumns: currentResult?.result?.metadata?.columns?.slice(0, 5)
+        })}
+
         {currentResult && currentResult.success && currentResult.result?.data?.length > 0 ? (
           <div style={{
             background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
@@ -461,11 +485,29 @@ export const QueryTabs: React.FC = () => {
                     bodyStyle={{ padding: '16px' }}
                   >
                     <ChartConfigurationPanel
-                      data={filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }))}
-                      columns={currentResult.result?.metadata.columns || []}
+                      data={(() => {
+                        const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }));
+                        console.log('🎯 QueryTabs - Passing data to ChartConfigurationPanel:', {
+                          dataLength: dataToUse.length,
+                          sampleRow: dataToUse[0],
+                          dataKeys: dataToUse.length > 0 ? Object.keys(dataToUse[0]) : [],
+                          filteredDataLength: filteredData.length,
+                          originalDataLength: currentResult.result.data.length
+                        });
+                        return dataToUse;
+                      })()}
+                      columns={(() => {
+                        const cols = currentResult.result?.metadata.columns || [];
+                        console.log('🎯 QueryTabs - Passing columns to ChartConfigurationPanel:', {
+                          columnsLength: cols.length,
+                          columns: cols,
+                          columnNames: cols.map(col => col.name || col)
+                        });
+                        return cols;
+                      })()}
                       currentConfig={currentVisualization}
                       onConfigChange={(config) => {
-                        console.log('QueryTabs - Chart config changed:', config);
+                        console.log('🎯 QueryTabs - Chart config changed:', config);
                         setVisualization(config);
                       }}
                     />
@@ -553,14 +595,24 @@ export const QueryTabs: React.FC = () => {
                     </div>
 
                     <AdvancedChart
-                      data={filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }))}
-                      type={currentVisualization?.chartType as any || 'bar'}
+                      data={(() => {
+                        const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }));
+                        console.log('🎯 QueryTabs - Passing data to AdvancedChart:', {
+                          dataLength: dataToUse.length,
+                          sampleRow: dataToUse[0],
+                          xAxisKey: currentVisualization?.xAxis,
+                          yAxisKey: currentVisualization?.yAxis,
+                          chartType: currentVisualization?.chartType
+                        });
+                        return dataToUse;
+                      })()}
+                      type={currentVisualization?.chartType?.toLowerCase() as any || 'bar'}
                       title={currentVisualization?.title}
-                      xAxisKey={currentVisualization?.xAxis || 'name'}
-                      yAxisKey={currentVisualization?.yAxis || 'value'}
+                      xAxisKey={currentVisualization?.xAxis || Object.keys(currentResult.result.data[0] || {})[0] || 'name'}
+                      yAxisKey={currentVisualization?.yAxis || Object.keys(currentResult.result.data[0] || {}).find(key => typeof currentResult.result.data[0][key] === 'number') || 'value'}
                       onTypeChange={(type) => {
                         if (currentVisualization) {
-                          setVisualization({ ...currentVisualization, chartType: type as any });
+                          setVisualization({ ...currentVisualization, chartType: type.charAt(0).toUpperCase() + type.slice(1) as any });
                         }
                       }}
                       onExport={() => {
@@ -569,7 +621,99 @@ export const QueryTabs: React.FC = () => {
                     />
                   </Card>
                 ) : (
-                  <Card
+                  /* Quick Chart Preview - Show a default chart even without configuration */
+                  currentResult?.result?.data?.length > 0 ? (
+                    <Card
+                      style={{
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                        minHeight: '500px'
+                      }}
+                      bodyStyle={{ padding: '20px' }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '20px',
+                        paddingBottom: '16px',
+                        borderBottom: '1px solid #f3f4f6'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <BarChartOutlined style={{ fontSize: '20px', color: '#3b82f6' }} />
+                          <Text style={{
+                            fontSize: '16px',
+                            fontWeight: 600,
+                            color: '#1f2937'
+                          }}>
+                            Quick Preview Chart
+                          </Text>
+                          <Tag color="orange" style={{ fontSize: '10px' }}>
+                            Auto-Generated
+                          </Tag>
+                        </div>
+                        <Button
+                          type="primary"
+                          size="small"
+                          onClick={() => {
+                            // Auto-generate a basic chart configuration
+                            const dataKeys = Object.keys(currentResult.result.data[0] || {});
+                            const xAxis = dataKeys.find(key => typeof currentResult.result.data[0][key] === 'string') || dataKeys[0];
+                            const yAxis = dataKeys.find(key => typeof currentResult.result.data[0][key] === 'number') || dataKeys[1];
+
+                            const quickConfig = {
+                              type: 'advanced',
+                              chartType: 'Bar' as any,
+                              title: 'Data Visualization',
+                              xAxis,
+                              yAxis,
+                              series: [yAxis],
+                              config: {}
+                            };
+
+                            console.log('🚀 Auto-generating quick chart config:', quickConfig);
+                            setVisualization(quickConfig);
+                          }}
+                          style={{ borderRadius: '8px' }}
+                        >
+                          Configure Chart
+                        </Button>
+                      </div>
+
+                      <AdvancedChart
+                        data={(() => {
+                          const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }));
+                          const dataKeys = Object.keys(dataToUse[0] || {});
+                          const xKey = dataKeys.find(key => typeof dataToUse[0][key] === 'string') || dataKeys[0] || 'name';
+                          const yKey = dataKeys.find(key => typeof dataToUse[0][key] === 'number') || dataKeys[1] || 'value';
+
+                          console.log('🎯 QueryTabs - Quick preview chart data:', {
+                            dataLength: dataToUse.length,
+                            detectedXKey: xKey,
+                            detectedYKey: yKey,
+                            sampleRow: dataToUse[0]
+                          });
+
+                          return dataToUse;
+                        })()}
+                        type="bar"
+                        title="Data Preview"
+                        xAxisKey={(() => {
+                          const dataKeys = Object.keys(currentResult.result.data[0] || {});
+                          return dataKeys.find(key => typeof currentResult.result.data[0][key] === 'string') || dataKeys[0] || 'name';
+                        })()}
+                        yAxisKey={(() => {
+                          const dataKeys = Object.keys(currentResult.result.data[0] || {});
+                          return dataKeys.find(key => typeof currentResult.result.data[0][key] === 'number') || dataKeys[1] || 'value';
+                        })()}
+                        onTypeChange={(type) => {
+                          console.log('Chart type changed to:', type);
+                        }}
+                      />
+                    </Card>
+                  ) : (
+                    <Card
                     style={{
                       borderRadius: '12px',
                       border: '2px dashed #d1d5db',
@@ -624,6 +768,7 @@ export const QueryTabs: React.FC = () => {
                       <Tag color="cyan">Scatter Plots</Tag>
                     </div>
                   </Card>
+                  )
                 )}
               </Col>
             </Row>

@@ -31,6 +31,7 @@ import {
 } from '@ant-design/icons';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { useDashboardResult } from '../../hooks/useCurrentResult';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -67,6 +68,23 @@ interface StoredData {
 }
 
 const DashboardBuilder: React.FC = () => {
+  // Use global result system for dashboard creation
+  const { result, hasResult, canCreateDashboard, suggestedChartTypes } = useDashboardResult();
+
+  // Debug logging in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎯 DashboardBuilder - Result status:', {
+        hasResult,
+        canCreateDashboard,
+        suggestedChartTypesCount: suggestedChartTypes.length,
+        resultSource: result?.source,
+        resultSuccess: result?.result?.success,
+        dataLength: result?.result?.data?.length
+      });
+    }
+  }, [hasResult, canCreateDashboard, result]);
+
   const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig>({
     id: 'dashboard-' + Date.now(),
     title: 'New Dashboard',
@@ -100,8 +118,18 @@ const DashboardBuilder: React.FC = () => {
   useEffect(() => {
     const loadDataSources = () => {
       const sources: StoredData[] = [];
-      
-      // Load from localStorage
+
+      // Load from global result system
+      if (hasResult && result?.result?.data) {
+        sources.push({
+          data: result.result.data,
+          columns: result.result.metadata?.columns?.map((col: any) => col.name || col) || [],
+          query: result.query || 'Current Query Result',
+          timestamp: Date.now()
+        });
+      }
+
+      // Load from localStorage as fallback
       const storedResult = localStorage.getItem('current-query-result');
       if (storedResult) {
         try {
@@ -109,7 +137,7 @@ const DashboardBuilder: React.FC = () => {
           sources.push({
             data: parsed.data || [],
             columns: parsed.columns || [],
-            query: parsed.query || 'Current Query Result',
+            query: parsed.query || 'Stored Query Result',
             timestamp: parsed.timestamp || Date.now()
           });
         } catch (error) {
@@ -136,7 +164,7 @@ const DashboardBuilder: React.FC = () => {
     };
 
     loadDataSources();
-  }, []);
+  }, [hasResult, result]);
 
   // Generate sample data
   const generateSampleData = (type: string) => {
@@ -313,6 +341,31 @@ const DashboardBuilder: React.FC = () => {
               {dashboardConfig.title}
             </Title>
             <Text type="secondary">{dashboardConfig.description}</Text>
+            <div style={{ marginTop: 8 }}>
+              {hasResult && (
+                <Tag color="green">
+                  ✓ Current Result Available ({result?.result?.data?.length || 0} rows)
+                </Tag>
+              )}
+              {canCreateDashboard && (
+                <Tag color="blue">
+                  Dashboard Ready
+                </Tag>
+              )}
+              {suggestedChartTypes.length > 0 && (
+                <Tag color="purple">
+                  {suggestedChartTypes.length} Chart Types Available
+                </Tag>
+              )}
+              {/* Debug info in development */}
+              {process.env.NODE_ENV === 'development' && (
+                <div style={{ marginTop: 4 }}>
+                  <Tag color="orange">
+                    Debug: hasResult={String(hasResult)}, source={result?.source || 'none'}
+                  </Tag>
+                </div>
+              )}
+            </div>
           </Col>
           <Col>
             <Space>

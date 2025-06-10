@@ -29,7 +29,8 @@ import {
   LeftOutlined,
   RightOutlined,
   DatabaseOutlined,
-  RobotOutlined
+  RobotOutlined,
+  ShareAltOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApplicationState } from '../../hooks/useEnhancedState';
@@ -102,22 +103,15 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
         {
           key: '/dashboard',
           icon: <DashboardOutlined />,
-          label: 'Dashboard View',
-          description: 'Interactive dashboard builder',
+          label: 'Dashboard Builder',
+          description: 'Create and manage interactive dashboards',
           disabled: false
         },
         {
           key: '/interactive',
-          icon: <InteractionOutlined />,
-          label: 'Interactive Viz',
-          description: 'Advanced interactive visualizations',
-          disabled: false
-        },
-        {
-          key: '/advanced-viz',
           icon: <RocketOutlined />,
-          label: 'AI-Powered Charts',
-          description: 'AI-generated advanced visualizations',
+          label: 'Interactive Charts',
+          description: 'Advanced interactive visualizations with AI-powered features',
           disabled: false
         }
       ]
@@ -153,12 +147,6 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
           description: 'AI-powered query suggestions'
         },
         {
-          key: '/streaming',
-          icon: <ThunderboltOutlined />,
-          label: 'Streaming Queries',
-          description: 'Real-time data streaming'
-        },
-        {
           key: '/enhanced-query',
           icon: <CodeOutlined />,
           label: 'Query Builder',
@@ -167,38 +155,45 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
         {
           key: '/enhanced-ai',
           icon: <RobotOutlined />,
-          label: 'Enhanced AI Interface',
+          label: 'AI Interface',
           description: 'Next-gen AI with real-time streaming'
         },
         {
-          key: '/enhanced-demo',
-          icon: <RocketOutlined />,
-          label: 'Enhanced Features Demo',
-          description: 'Comprehensive demo of all enhanced features'
-        },
+          key: '/streaming',
+          icon: <ThunderboltOutlined />,
+          label: 'Streaming Queries',
+          description: 'Real-time data streaming'
+        }
+      ]
+    },
+    {
+      key: 'system',
+      label: 'System & Tools',
+      type: 'group',
+      children: [
         {
-          key: '/enhanced-dashboard',
-          icon: <DashboardOutlined />,
-          label: 'Multi-Modal Dashboards',
-          description: 'AI-powered dashboard creation and management'
-        },
-        {
-          key: '/enhanced-visualization',
-          icon: <BarChartOutlined />,
-          label: 'Advanced Visualizations',
-          description: 'D3.js-powered interactive charts and graphs'
+          key: '/db-explorer',
+          icon: <DatabaseOutlined />,
+          label: 'Database Explorer',
+          description: 'Explore database schema and preview table data'
         },
         {
           key: '/performance-monitoring',
           icon: <ThunderboltOutlined />,
-          label: 'Performance Monitoring',
+          label: 'Performance Monitor',
           description: 'Real-time system performance and optimization'
         },
         {
-          key: '/db-explorer',
-          icon: <DatabaseOutlined />,
-          label: 'DB Explorer',
-          description: 'Explore database schema and preview table data'
+          key: '/global-result-demo',
+          icon: <ShareAltOutlined />,
+          label: 'Global Result Demo',
+          description: 'See how results work across pages'
+        },
+        {
+          key: '/enhanced-demo',
+          icon: <RocketOutlined />,
+          label: 'Features Demo',
+          description: 'Comprehensive demo of all enhanced features'
         }
       ]
     }

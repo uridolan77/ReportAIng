@@ -21,6 +21,7 @@ import { useAIProcessingFeedback } from './AIProcessingFeedback';
 import { QueryProcessingViewer } from './QueryProcessingViewer';
 // import { AccessibilityFeatures } from './AccessibilityFeatures';
 import { useActiveResultActions } from '../../stores/activeResultStore';
+import { MockDataToggle } from './MockDataToggle';
 import './animations.css';
 import './professional-polish.css';
 import './MinimalQueryInterface.css';
@@ -175,8 +176,19 @@ export const MinimalQueryInterface: React.FC = () => {
       <div style={{
         maxWidth: '2000px',
         margin: '0 auto',
-        width: '100%'
+        width: '100%',
+        position: 'relative'
       }}>
+        {/* Mock Data Toggle - Top Right */}
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          right: '24px',
+          zIndex: 1000
+        }}>
+          <MockDataToggle size="default" showDetails={true} />
+        </div>
+
         {/* Main Title */}
         <div style={{
           textAlign: 'center',
@@ -301,6 +313,11 @@ export const MinimalQueryInterface: React.FC = () => {
 
           {/* Action Buttons */}
           <div style={{ textAlign: 'center', marginTop: '24px', marginBottom: '32px' }}>
+            {/* Mock Data Quick Toggle */}
+            <div style={{ marginBottom: '16px' }}>
+              <MockDataToggle size="small" showDetails={false} />
+            </div>
+
             {/* Primary Submit Button - Always visible */}
             <Button
               type="primary"

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useActiveResult, useActiveResultActions } from '../../stores/activeResultStore';
+import { useGlobalResult, useGlobalResultActions } from '../../stores/globalResultStore';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 import { getOrCreateSessionId } from '../../utils/sessionUtils';
@@ -11,6 +12,7 @@ import {
   useAddToFavorites,
   usePrefetchRelatedData
 } from '../../hooks/useQueryApi';
+import { MockDataService } from '../../services/mockDataService';
 import type { QueryRequest } from '../../types/query';
 
 interface QueryContextType {
@@ -102,6 +104,34 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   // Active result management
   const { result: currentResult } = useActiveResult();
   const { setActiveResult, clearActiveResult } = useActiveResultActions();
+
+  // Global result management for cross-page availability
+  const { currentResult: globalCurrentResult } = useGlobalResult();
+  const { setCurrentResult: setGlobalResult, setActivePageId } = useGlobalResultActions();
+
+  // Unified result setter that syncs both stores
+  const setUnifiedResult = useCallback((result: any, query: string, source = 'query', pageContext = 'main') => {
+    // Set in active result store (for current session)
+    setActiveResult(result, query);
+
+    // Set in global result store (for cross-page availability)
+    setGlobalResult(result, query, source, {
+      pageSource: pageContext,
+      timestamp: Date.now(),
+      sessionId: result.sessionId || getOrCreateSessionId()
+    });
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 Unified result set:', {
+        hasResult: !!result,
+        success: result?.success,
+        query: query.substring(0, 50) + '...',
+        source,
+        pageContext,
+        dataLength: result?.result?.data?.length
+      });
+    }
+  }, [setActiveResult, setGlobalResult]);
 
   // React Query hooks
   const executeQueryMutation = useExecuteQuery();
@@ -248,7 +278,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
             };
 
             // Set this as the current result so it shows in the UI
-            setActiveResult(errorResult, query);
+            setUnifiedResult(errorResult, query, 'query', 'main');
             setActiveTab('result');
           }
 
@@ -278,7 +308,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
             };
 
             // Set this as the current result so it shows in the UI
-            setActiveResult(errorResult, query);
+            setUnifiedResult(errorResult, query, 'query', 'main');
             setActiveTab('result');
           }
 
@@ -384,6 +414,62 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   // Handle query submission
   const handleSubmitQuery = useCallback(async () => {
     if (!query.trim() || executeQueryMutation.isPending) return;
+
+    // Check if mock data is enabled
+    const mockResult = MockDataService.getMockData(query);
+    if (mockResult) {
+      console.log('🎭 Using mock data for query:', query);
+
+      // Initialize processing state with immediate feedback
+      setProgress(0);
+      setShowProcessingDetails(true);
+      setProcessingStages([]);
+      setCurrentProcessingStage('initializing');
+      clearActiveResult(); // Clear previous result
+
+      // Simulate processing stages for mock data
+      const mockStages = [
+        {
+          stage: 'initializing',
+          message: 'Preparing your query...',
+          progress: 20,
+          timestamp: new Date().toISOString(),
+          details: { mockData: true, query },
+          status: 'active'
+        },
+        {
+          stage: 'mock_processing',
+          message: 'Loading mock data...',
+          progress: 60,
+          timestamp: new Date().toISOString(),
+          details: { mockData: true, dataSource: 'Mock Data Service' },
+          status: 'active'
+        },
+        {
+          stage: 'completed',
+          message: 'Mock data loaded successfully',
+          progress: 100,
+          timestamp: new Date().toISOString(),
+          details: { mockData: true, recordCount: mockResult.result?.data?.length || 0 },
+          status: 'completed'
+        }
+      ];
+
+      // Simulate processing with delays
+      for (let i = 0; i < mockStages.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 200 + i * 100));
+        setProcessingStages(prev => [...prev, mockStages[i]]);
+        setCurrentProcessingStage(mockStages[i].stage);
+        setProgress(mockStages[i].progress);
+      }
+
+      // Set the mock result
+      setUnifiedResult(mockResult, query, 'query', 'main');
+      setActiveTab('result');
+      setProgress(0);
+      setProcessingViewMode('hidden');
+      return;
+    }
 
     // Create query request first
     const queryRequest = createQueryRequest(query);
@@ -534,7 +620,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
       });
 
       setCurrentProcessingStage('completed');
-      setActiveResult(result, query); // Save to active result store
+      setUnifiedResult(result, query, 'query', 'main'); // Save to both stores
       setActiveTab('result');
 
       // Set processing view mode to hidden after completion to show the collapsed panel
@@ -574,6 +660,16 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     setProgress(10);
     clearActiveResult(); // Clear previous result
 
+    // Check if mock data is enabled
+    const mockResult = MockDataService.getMockData(suggestion);
+    if (mockResult) {
+      console.log('🎭 Using mock data for follow-up suggestion:', suggestion);
+      setActiveResult(mockResult, suggestion);
+      setActiveTab('result');
+      setProgress(0);
+      return;
+    }
+
     const queryRequest = createQueryRequest(suggestion);
 
     try {
@@ -605,11 +701,21 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     setProgress(10);
     clearActiveResult(); // Clear previous result
 
+    // Check if mock data is enabled
+    const mockResult = MockDataService.getMockData(generatedQuery);
+    if (mockResult) {
+      console.log('🎭 Using mock data for wizard query:', generatedQuery);
+      setUnifiedResult(mockResult, generatedQuery, 'query', 'wizard');
+      setActiveTab('result');
+      setProgress(0);
+      return;
+    }
+
     const queryRequest = createQueryRequest(generatedQuery);
 
     try {
       const result = await executeQueryMutation.mutateAsync(queryRequest);
-      setActiveResult(result, generatedQuery); // Save to active result store
+      setUnifiedResult(result, generatedQuery, 'query', 'wizard'); // Save to both stores
       setActiveTab('result');
     } catch (error) {
       console.error('Wizard query execution failed:', error);
@@ -625,11 +731,21 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     setProgress(10);
     clearActiveResult(); // Clear previous result
 
+    // Check if mock data is enabled
+    const mockResult = MockDataService.getMockData(generatedQuery);
+    if (mockResult) {
+      console.log('🎭 Using mock data for template query:', generatedQuery);
+      setUnifiedResult(mockResult, generatedQuery, 'query', 'template');
+      setActiveTab('result');
+      setProgress(0);
+      return;
+    }
+
     const queryRequest = createQueryRequest(generatedQuery);
 
     try {
       const result = await executeQueryMutation.mutateAsync(queryRequest);
-      setActiveResult(result, generatedQuery); // Save to active result store
+      setUnifiedResult(result, generatedQuery, 'query', 'template'); // Save to both stores
       setActiveTab('result');
     } catch (error) {
       console.error('Template query execution failed:', error);

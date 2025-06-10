@@ -27,7 +27,7 @@ const SuggestionsPage = lazy(() => import('./pages/SuggestionsPage'));
 const EnhancedQueryBuilder = lazy(() => import('./components/QueryInterface/QueryBuilder').then(module => ({ default: module.QueryBuilder })));
 const UserContextPanel = lazy(() => import('./components/AI/UserContextPanel'));
 const QuerySimilarityAnalyzer = lazy(() => import('./components/AI/QuerySimilarityAnalyzer'));
-const AdvancedVisualizationWrapper = lazy(() => import('./components/Visualization/InteractiveVisualization').then(module => ({ default: module.InteractiveVisualization })));
+
 const DashboardBuilder = lazy(() => import('./components/Dashboard/DashboardBuilder'));
 const InteractiveVisualization = lazy(() => import('./components/Visualization/InteractiveVisualization').then(module => ({ default: module.InteractiveVisualization })));
 const AdvancedFeaturesDemo = lazy(() => import('./components/Demo/AdvancedFeaturesDemo').then(module => ({ default: module.AdvancedFeaturesDemo })));
@@ -42,10 +42,10 @@ const MinimalistQueryPage = lazy(() => import('./pages/MinimalistQueryPage'));
 const DBExplorer = lazy(() => import('./components/DBExplorer/DBExplorer').then(module => ({ default: module.DBExplorer })));
 const EnhancedQueryInterface = lazy(() => import('./components/QueryInterface/QueryInterface').then(module => ({ default: module.default })));
 const EnhancedFeaturesDemo = lazy(() => import('./components/Demo/AdvancedFeaturesDemo').then(module => ({ default: module.AdvancedFeaturesDemo })));
-const EnhancedDashboardInterface = lazy(() => import('./components/Dashboard/DashboardBuilder').then(module => ({ default: module.default })));
-const EnhancedVisualizationInterface = lazy(() => import('./components/Visualization/InteractiveVisualization').then(module => ({ default: module.InteractiveVisualization })));
+
 const PerformanceMonitoringDashboard = lazy(() => import('./components/Performance/PerformanceMonitoringDashboard').then(module => ({ default: module.default })));
 const AdvancedStreamingQuery = lazy(() => import('./components/QueryInterface/AdvancedStreamingQuery').then(module => ({ default: module.default })));
+const GlobalResultDemo = lazy(() => import('./components/Demo/GlobalResultDemo').then(module => ({ default: module.GlobalResultDemo })));
 
 const App: React.FC = () => {
   const { isAuthenticated, user, isAdmin } = useAuthStore();
@@ -185,7 +185,8 @@ const App: React.FC = () => {
                             <Route path="/results" element={<ResultsPage />} />
                             <Route path="/dashboard" element={<DashboardBuilder />} />
                             <Route path="/interactive" element={<InteractiveVisualization />} />
-                            <Route path="/advanced-viz" element={<AdvancedVisualizationWrapper />} />
+                            {/* Legacy route redirect */}
+                            <Route path="/advanced-viz" element={<Navigate to="/interactive" replace />} />
 
                             {/* Query Tools */}
                             <Route path="/history" element={<HistoryPage />} />
@@ -195,10 +196,9 @@ const App: React.FC = () => {
                             <Route path="/enhanced-query" element={<EnhancedQueryBuilder onExecuteQuery={(query) => console.log('Executing query:', query)} />} />
                             <Route path="/enhanced-ai" element={<EnhancedQueryInterface />} />
                             <Route path="/enhanced-demo" element={<EnhancedFeaturesDemo />} />
-                            <Route path="/enhanced-dashboard" element={<EnhancedDashboardInterface />} />
-                            <Route path="/enhanced-visualization" element={<EnhancedVisualizationInterface />} />
                             <Route path="/performance-monitoring" element={<PerformanceMonitoringDashboard />} />
                             <Route path="/db-explorer" element={<DBExplorer />} />
+                            <Route path="/global-result-demo" element={<GlobalResultDemo />} />
 
                             {/* Admin Routes */}
                             <Route path="/admin/tuning" element={<TuningDashboard />} />

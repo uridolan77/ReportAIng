@@ -19,7 +19,8 @@ import {
   Tabs,
   Input,
   DatePicker,
-  Divider
+  Divider,
+  Tag
 } from 'antd';
 import {
   SettingOutlined,
@@ -28,7 +29,9 @@ import {
   ReloadOutlined,
   FilterOutlined,
   PlayCircleOutlined,
-  PauseCircleOutlined
+  PauseCircleOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined
 } from '@ant-design/icons';
 import {
   ResponsiveContainer,
@@ -52,6 +55,7 @@ import {
   ReferenceLine
 } from 'recharts';
 import dayjs from 'dayjs';
+import { useVisualizationResult } from '../../hooks/useCurrentResult';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -111,6 +115,24 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
   enableExport = true,
   autoRefresh = false
 }) => {
+  // Use global result system for visualization
+  const { result, hasResult, hasVisualizableData, dataLength, columnCount } = useVisualizationResult();
+
+  // Debug logging in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎨 InteractiveVisualization - Result status:', {
+        hasResult,
+        hasVisualizableData,
+        dataLength,
+        columnCount,
+        resultSource: result?.source,
+        resultSuccess: result?.result?.success,
+        standalone
+      });
+    }
+  }, [hasResult, hasVisualizableData, result, standalone]);
+
   const [loading, setLoading] = useState(false);
   const [chartConfig, setChartConfig] = useState<ChartConfig>({
     type: 'bar',
@@ -143,31 +165,45 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
     height: height
   });
 
-  // Get current data - either from props or standalone sources
+  // Get current data - either from props, global result system, or standalone sources
   const currentData = useMemo(() => {
+    // Priority 1: Props data (when used as a component)
     if (propData && propData.length > 0) {
       return propData;
     }
-    
+
+    // Priority 2: Global result system (when used as a standalone page)
+    if (hasResult && result?.result?.data && result.result.data.length > 0) {
+      return result.result.data;
+    }
+
+    // Priority 3: Local standalone data (fallback)
     if (standalone && availableData.length > 0) {
       return availableData;
     }
-    
+
     return [];
-  }, [propData, standalone, availableData]);
+  }, [propData, hasResult, result, standalone, availableData]);
 
   // Get current columns
   const currentColumns = useMemo(() => {
+    // Priority 1: Props columns (when used as a component)
     if (propColumns && propColumns.length > 0) {
       return propColumns.map(col => typeof col === 'string' ? col : col.name || col.key);
     }
-    
+
+    // Priority 2: Global result system columns
+    if (hasResult && result?.result?.columns && result.result.columns.length > 0) {
+      return result.result.columns.map(col => typeof col === 'string' ? col : col.name || col.key || col);
+    }
+
+    // Priority 3: Infer from data
     if (currentData.length > 0) {
       return Object.keys(currentData[0]);
     }
-    
+
     return [];
-  }, [propColumns, currentData]);
+  }, [propColumns, hasResult, result, currentData]);
 
   // Load data sources for standalone mode
   useEffect(() => {
@@ -178,8 +214,11 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
 
   const loadStandaloneData = () => {
     const sources: any[] = [];
-    
-    // Load from localStorage
+
+    // Priority 1: Global result system (already handled in currentData)
+    // This function is now mainly for fallback sample data
+
+    // Priority 2: Load from localStorage (legacy support)
     const storedResult = localStorage.getItem('current-query-result');
     if (storedResult) {
       try {
@@ -190,7 +229,7 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
       }
     }
 
-    // Add sample data if no stored data
+    // Priority 3: Add sample data if no stored data
     if (sources.length === 0) {
       sources.push(...generateSampleData());
     }
@@ -653,6 +692,44 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
 
   return (
     <div className="interactive-visualization">
+      {/* Global Result Status */}
+      {standalone && (
+        <Card size="small" style={{ marginBottom: '16px', background: '#f8f9fa' }}>
+          <Row justify="space-between" align="middle">
+            <Col>
+              <Space>
+                <Title level={4} style={{ margin: 0 }}>Interactive Visualization</Title>
+              </Space>
+            </Col>
+            <Col>
+              <Space>
+                {hasResult && (
+                  <Tag color="green" icon={<CheckCircleOutlined />}>
+                    Current Result Available ({dataLength} rows)
+                  </Tag>
+                )}
+                {hasVisualizableData && (
+                  <Tag color="blue">
+                    Visualizable Data ({columnCount} columns)
+                  </Tag>
+                )}
+                {!hasResult && (
+                  <Tag color="orange" icon={<ExclamationCircleOutlined />}>
+                    No Current Result - Using Sample Data
+                  </Tag>
+                )}
+                {/* Debug info in development */}
+                {process.env.NODE_ENV === 'development' && (
+                  <Tag color="purple">
+                    Debug: hasResult={String(hasResult)}, source={result?.source || 'none'}
+                  </Tag>
+                )}
+              </Space>
+            </Col>
+          </Row>
+        </Card>
+      )}
+
       {/* Chart Controls */}
       <Card size="small" style={{ marginBottom: '16px' }}>
         <Row justify="space-between" align="middle">

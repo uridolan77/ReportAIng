@@ -16,6 +16,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useActiveResult } from '../stores/activeResultStore';
+import { useCurrentResult } from '../hooks/useCurrentResult';
 import { QueryResult } from '../components/QueryInterface/QueryResult';
 import { DataInsightsPanel } from '../components/Insights/DataInsightsPanel';
 // Import new UI components
@@ -35,7 +36,8 @@ import type { ButtonProps } from '../components/ui/types';
 
 const ResultsPageContent: React.FC = () => {
   const navigate = useNavigate();
-  const { result: currentResult, query, hasResult } = useActiveResult();
+  // Use global result system for cross-page availability
+  const { result: currentResult, query, hasResult } = useCurrentResult('results');
 
   // Handle requery - navigate back to main page with the current query
   const handleRequery = () => {
