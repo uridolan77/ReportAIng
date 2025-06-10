@@ -5,6 +5,11 @@ import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+// Import new UI components
+import { PerformanceMonitor, VirtualList } from '../ui';
+
+// Large dataset threshold for virtual scrolling
+const VIRTUAL_SCROLL_THRESHOLD = 1000;
 
 import { DataTableProps } from './types';
 import { useDataTableState } from './hooks/useDataTableState';
@@ -213,18 +218,25 @@ const DataTable: React.FC<DataTableProps> = (props) => {
   }
 
   return (
-    <ConfigProvider theme={{ token }}>
-      <ContextMenuProvider>
-        <div 
-          ref={tableRef}
-          className={`data-table-container ${className || ''}`}
-          style={{
-            ...style,
-            height: config.maxHeight,
-            overflow: 'hidden',
-            position: 'relative'
-          }}
-        >
+    <PerformanceMonitor
+      onMetrics={(metrics) => {
+        if (enabledFeatures.performanceMonitoring) {
+          console.log('DataTable performance metrics:', metrics);
+        }
+      }}
+    >
+      <ConfigProvider theme={{ token }}>
+        <ContextMenuProvider>
+          <div
+            ref={tableRef}
+            className={`data-table-container ${className || ''}`}
+            style={{
+              ...style,
+              height: config.maxHeight,
+              overflow: 'hidden',
+              position: 'relative'
+            }}
+          >
           {/* Toolbar */}          {enabledFeatures.searching || enabledFeatures.export || enabledFeatures.columnChooser ? (
             components.toolbar ? (
               <components.toolbar />
@@ -278,24 +290,52 @@ const DataTable: React.FC<DataTableProps> = (props) => {
             )}
 
             {/* Main Table */}
-            {enabledFeatures.virtualScroll || enabledFeatures.advancedVirtualization ? (
-              <VirtualizedTable
-                data={finalData}
-                columns={visibleColumns}
-                keyField={keyField}
-                height={typeof config.maxHeight === 'number' ? config.maxHeight - 100 : 400}
-                width={800}
-                onRowClick={props.onRowClick}
-                onContextMenu={handleTableContextMenu}
-                rowSelection={enabledFeatures.selection ? {
-                  selectedRowKeys: state.selectedRows.map(row => row[keyField]),
-                  onChange: handlers.handleSelectionChange
-                } : undefined}
-                rowStyle={rowStyle}
-                virtualizationService={virtualizationServiceRef.current}
-                enableDynamicHeight={enabledFeatures.dynamicRowHeight}
-                enablePerformanceMonitoring={enabledFeatures.performanceMonitoring}
-              />
+            {enabledFeatures.virtualScroll || enabledFeatures.advancedVirtualization || finalData.length > VIRTUAL_SCROLL_THRESHOLD ? (
+              // Use VirtualizedTable if available, otherwise fallback to VirtualList
+              typeof VirtualizedTable !== 'undefined' ? (
+                <VirtualizedTable
+                  data={finalData}
+                  columns={visibleColumns}
+                  keyField={keyField}
+                  height={typeof config.maxHeight === 'number' ? config.maxHeight - 100 : 400}
+                  width={800}
+                  onRowClick={props.onRowClick}
+                  onContextMenu={handleTableContextMenu}
+                  rowSelection={enabledFeatures.selection ? {
+                    selectedRowKeys: state.selectedRows.map(row => row[keyField]),
+                    onChange: handlers.handleSelectionChange
+                  } : undefined}
+                  rowStyle={rowStyle}
+                  virtualizationService={virtualizationServiceRef.current}
+                  enableDynamicHeight={enabledFeatures.dynamicRowHeight}
+                  enablePerformanceMonitoring={enabledFeatures.performanceMonitoring}
+                />
+              ) : (
+                <VirtualList
+                  items={finalData}
+                  itemHeight={50}
+                  containerHeight={typeof config.maxHeight === 'number' ? config.maxHeight - 100 : 400}
+                  renderItem={(item, index) => (
+                    <div
+                      key={item[keyField]}
+                      style={{
+                        display: 'flex',
+                        padding: '8px 16px',
+                        borderBottom: '1px solid #f0f0f0',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => props.onRowClick?.(item, index)}
+                    >
+                      {visibleColumns.map(col => (
+                        <div key={col.key} style={{ flex: 1, marginRight: '16px' }}>
+                          {item[col.key]}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  overscan={5}
+                />
+              )
             ) : (
               <StandardTable
                 data={finalData}
@@ -357,6 +397,7 @@ const DataTable: React.FC<DataTableProps> = (props) => {
         </div>
       </ContextMenuProvider>
     </ConfigProvider>
+    </PerformanceMonitor>
   );
 };
 

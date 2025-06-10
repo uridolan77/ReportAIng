@@ -4,13 +4,7 @@
 
 import React, { useState } from 'react';
 import {
-  Card,
-  Typography,
   Space,
-  Button,
-  Breadcrumb,
-  Row,
-  Col,
   Input,
   Select,
   Tag,
@@ -28,8 +22,21 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
+// Import new UI components
+import {
+  Container,
+  FlexContainer,
+  GridContainer,
+  Stack,
+  Breadcrumb,
+  BreadcrumbItem,
+  PerformanceMonitor,
+  VirtualList,
+  Card,
+  Button
+} from '../components/ui';
+import type { ButtonProps } from '../components/ui/types';
 
-const { Title, Text } = Typography;
 const { Option } = Select;
 
 const TemplatesPageContent: React.FC = () => {
@@ -114,28 +121,37 @@ const TemplatesPageContent: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
-      <Breadcrumb style={{ marginBottom: '24px' }}>
-        <Breadcrumb.Item>
-          <HomeOutlined />
-          <span onClick={() => navigate('/')} style={{ cursor: 'pointer', marginLeft: '8px' }}>
-            Home
-          </span>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>
-          <BookOutlined />
-          Query Templates
-        </Breadcrumb.Item>
-      </Breadcrumb>
+    <PerformanceMonitor onMetrics={(metrics) => console.log('Templates page metrics:', metrics)}>
+      <Container size="full">
+        <Stack spacing="var(--space-6)">
+          <Breadcrumb>
+            <BreadcrumbItem>
+              <FlexContainer align="center" gap="var(--space-2)">
+                <HomeOutlined />
+                <span
+                  onClick={() => navigate('/')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Home
+                </span>
+              </FlexContainer>
+            </BreadcrumbItem>
+            <BreadcrumbItem>
+              <FlexContainer align="center" gap="var(--space-2)">
+                <BookOutlined />
+                Query Templates
+              </FlexContainer>
+            </BreadcrumbItem>
+          </Breadcrumb>
 
-      <div className="animate-fade-in-up" style={{ marginBottom: '32px' }}>
-        <Title level={2} style={{ margin: 0, color: '#667eea' }}>
-          Query Templates
-        </Title>
-        <Text type="secondary" style={{ fontSize: '16px' }}>
-          Pre-built queries to help you get started quickly ({templates.length} available)
-        </Text>
-      </div>
+          <Stack spacing="var(--space-2)" className="animate-fade-in-up">
+            <h2 style={{ margin: 0, color: '#667eea', fontSize: '2rem', fontWeight: 600 }}>
+              Query Templates
+            </h2>
+            <p style={{ color: '#8c8c8c', fontSize: '16px', margin: 0 }}>
+              Pre-built queries to help you get started quickly ({templates.length} available)
+            </p>
+          </Stack>
 
       {/* Search and Filters */}
       <Card className="enhanced-card animate-fade-in-up stagger-1" style={{ marginBottom: '24px' }}>

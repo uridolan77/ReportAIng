@@ -2,7 +2,6 @@ import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, theme } from 'antd';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
-import { LoadingFallback } from './components/ui';
 import { Layout } from './components/Layout/Layout';
 import { Login } from './components/Auth/Login';
 import { useAuthStore } from './stores/authStore';
@@ -11,6 +10,12 @@ import { EnhancedDevTools } from './components/DevTools/EnhancedDevTools';
 import { ReactQueryProvider } from './components/Providers/ReactQueryProvider';
 import { StateSyncProvider } from './components/Providers/StateSyncProvider';
 import { secureApiClient } from './services/secureApiClient';
+// Import new UI components
+import {
+  LoadingFallback,
+  PerformanceMonitor,
+  BundleAnalyzer
+} from './components/ui';
 import './App.css';
 
 // Lazy load heavy components
@@ -24,7 +29,7 @@ const UserContextPanel = lazy(() => import('./components/AI/UserContextPanel'));
 const QuerySimilarityAnalyzer = lazy(() => import('./components/AI/QuerySimilarityAnalyzer'));
 const AdvancedVisualizationWrapper = lazy(() => import('./components/Visualization/AdvancedVisualizationWrapper'));
 const DashboardBuilder = lazy(() => import('./components/Dashboard/DashboardBuilder'));
-const InteractiveVisualization = lazy(() => import('./components/Interactive/InteractiveVisualization'));
+const InteractiveVisualization = lazy(() => import('./components/Visualization/InteractiveVisualization').then(module => ({ default: module.InteractiveVisualization })));
 const AdvancedFeaturesDemo = lazy(() => import('./components/Demo/AdvancedFeaturesDemo').then(module => ({ default: module.AdvancedFeaturesDemo })));
 const SecurityDashboard = lazy(() => import('./components/Security/SecurityDashboard').then(module => ({ default: module.SecurityDashboard })));
 const RequestSigningDemo = lazy(() => import('./components/Security/RequestSigningDemo').then(module => ({ default: module.RequestSigningDemo })));
@@ -35,11 +40,12 @@ const SchemaManagementDashboard = lazy(() => import('./components/SchemaManageme
 const QuerySuggestionsManager = lazy(() => import('./components/Admin/QuerySuggestionsManager').then(module => ({ default: module.QuerySuggestionsManager })));
 const MinimalistQueryPage = lazy(() => import('./pages/MinimalistQueryPage'));
 const DBExplorer = lazy(() => import('./components/DBExplorer/DBExplorer').then(module => ({ default: module.DBExplorer })));
-const EnhancedQueryInterface = lazy(() => import('./components/Enhanced/EnhancedQueryInterface').then(module => ({ default: module.default })));
-const EnhancedFeaturesDemo = lazy(() => import('./pages/EnhancedFeaturesDemo').then(module => ({ default: module.default })));
-const EnhancedDashboardInterface = lazy(() => import('./components/Enhanced/EnhancedDashboardInterface').then(module => ({ default: module.default })));
-const EnhancedVisualizationInterface = lazy(() => import('./components/Enhanced/EnhancedVisualizationInterface').then(module => ({ default: module.default })));
+const EnhancedQueryInterface = lazy(() => import('./components/QueryInterface/QueryInterface').then(module => ({ default: module.default })));
+const EnhancedFeaturesDemo = lazy(() => import('./components/Demo/AdvancedFeaturesDemo').then(module => ({ default: module.AdvancedFeaturesDemo })));
+const EnhancedDashboardInterface = lazy(() => import('./components/Dashboard/DashboardBuilder').then(module => ({ default: module.default })));
+const EnhancedVisualizationInterface = lazy(() => import('./components/Visualization/InteractiveVisualization').then(module => ({ default: module.InteractiveVisualization })));
 const PerformanceMonitoringDashboard = lazy(() => import('./components/Performance/PerformanceMonitoringDashboard').then(module => ({ default: module.default })));
+const AdvancedStreamingQuery = lazy(() => import('./components/QueryInterface/AdvancedStreamingQuery').then(module => ({ default: module.default })));
 
 const App: React.FC = () => {
   const { isAuthenticated, user, isAdmin } = useAuthStore();
@@ -71,10 +77,21 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <ReactQueryProvider>
-      <StateSyncProvider>
-        <ErrorBoundary>
-          <ConfigProvider
+    <PerformanceMonitor
+      onMetrics={(metrics) => {
+        console.log('App performance metrics:', metrics);
+        // Send to analytics service in production
+      }}
+    >
+      <BundleAnalyzer
+        onAnalysis={(analysis) => {
+          console.log('Bundle analysis:', analysis);
+        }}
+      />
+      <ReactQueryProvider>
+        <StateSyncProvider>
+          <ErrorBoundary>
+            <ConfigProvider
             theme={{
               algorithm: theme.defaultAlgorithm,
               token: {
@@ -174,7 +191,7 @@ const App: React.FC = () => {
                             <Route path="/history" element={<HistoryPage />} />
                             <Route path="/templates" element={<TemplatesPage />} />
                             <Route path="/suggestions" element={<SuggestionsPage />} />
-                            <Route path="/streaming" element={<div style={{ padding: '40px', textAlign: 'center' }}>Streaming Queries - Coming Soon</div>} />
+                            <Route path="/streaming" element={<AdvancedStreamingQuery />} />
                             <Route path="/enhanced-query" element={<EnhancedQueryBuilder />} />
                             <Route path="/enhanced-ai" element={<EnhancedQueryInterface />} />
                             <Route path="/enhanced-demo" element={<EnhancedFeaturesDemo />} />
@@ -220,6 +237,7 @@ const App: React.FC = () => {
         </ErrorBoundary>
       </StateSyncProvider>
     </ReactQueryProvider>
+    </PerformanceMonitor>
   );
 };
 

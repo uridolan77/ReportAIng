@@ -5,14 +5,14 @@
 
 import React from 'react';
 import {
-  Menu,
   Layout,
-  Button,
   Space,
   Typography,
   Badge,
   Divider
 } from 'antd';
+// Import new UI components
+import { Menu, Button } from '../ui';
 import {
   HomeOutlined,
   BarChartOutlined,
