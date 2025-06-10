@@ -1,3 +1,8 @@
+/**
+ * Unified Dashboard View Component
+ * Displays interactive dashboards with charts and filters
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Row, Col, Typography, Button, Space, Spin, Select, DatePicker, Tooltip } from 'antd';
 import { FullscreenOutlined, DownloadOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';

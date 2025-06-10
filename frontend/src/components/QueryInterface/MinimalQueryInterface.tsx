@@ -6,12 +6,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   Typography,
-  Button
+  Button,
+  Input
 } from 'antd';
 
 import { useLocation } from 'react-router-dom';
 import { useQueryContext } from './QueryProvider';
-import { EnhancedQueryInput } from './EnhancedQueryInput';
 import { QueryTabs } from './QueryTabs';
 import { OnboardingTour } from '../Onboarding/OnboardingTour';
 import { ProactiveSuggestions } from './ProactiveSuggestions';
@@ -214,15 +214,24 @@ export const MinimalQueryInterface: React.FC = () => {
           padding: '0 24px'
         }}>
           <div data-testid="query-input">
-            <EnhancedQueryInput
+            <Input.TextArea
               value={query}
-              onChange={setQuery}
-              onSubmit={handleCustomSubmitQuery}
-              loading={isLoading}
+              onChange={(e) => setQuery(e.target.value)}
+              onPressEnter={(e) => {
+                if (e.ctrlKey || e.metaKey) {
+                  e.preventDefault();
+                  handleCustomSubmitQuery();
+                }
+              }}
               placeholder="Ask a question about your data... (e.g., 'Show me revenue by country last month')"
-              showShortcuts={false}
-              autoHeight={true}
-              maxRows={8}
+              autoSize={{ minRows: 2, maxRows: 8 }}
+              style={{
+                fontSize: '16px',
+                borderRadius: '12px',
+                border: '2px solid #e9ecef',
+                padding: '16px',
+                resize: 'none'
+              }}
             />
           </div>
 

@@ -1,63 +1,127 @@
-import React, { useState, useEffect, useRef } from 'react';
+/**
+ * Unified Developer Tools Component
+ * Consolidates debugging, monitoring, and development utilities
+ */
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Drawer,
-  Tabs,
   Button,
-  Space,
+  Tabs,
   List,
+  Typography,
+  Space,
   Tag,
+  Card,
   Statistic,
   Row,
   Col,
-  Typography,
+  Badge,
+  Tooltip,
+  Switch,
+  Input,
+  Select,
+  Alert,
+  Progress,
+  Timeline,
+  Collapse
 } from 'antd';
 import {
   BugOutlined,
+  PlayCircleOutlined,
+  PauseCircleOutlined,
+  SettingOutlined,
+  DatabaseOutlined,
+  ThunderboltOutlined,
+  ClockCircleOutlined,
+  ApiOutlined,
+  ConsoleOutlined,
+  BarChartOutlined,
+  NetworkOutlined
 } from '@ant-design/icons';
 import { useAuthStore } from '../../stores/authStore';
 import { useVisualizationStore } from '../../stores/visualizationStore';
 import { useQueryClient } from '@tanstack/react-query';
 
+const { Text, Title } = Typography;
 const { TabPane } = Tabs;
-const { Text } = Typography;
+const { Panel } = Collapse;
+const { Option } = Select;
 
-// Mock data for development
-const mockQueryHistory = [
-  {
-    question: "Show me total deposits for yesterday",
-    sql: "SELECT SUM(amount) FROM deposits WHERE DATE(created_at) = CURDATE() - INTERVAL 1 DAY",
-    successful: true,
-    executionTimeMs: 245
-  },
-  {
-    question: "Top 10 players by deposits",
-    sql: "SELECT player_id, SUM(amount) as total FROM deposits GROUP BY player_id ORDER BY total DESC LIMIT 10",
-    successful: true,
-    executionTimeMs: 156
-  },
-  {
-    question: "Invalid query test",
-    sql: "SELECT * FROM non_existent_table",
-    successful: false,
-    executionTimeMs: 89
-  }
-];
+interface DevToolsProps {
+  position?: 'left' | 'right' | 'top' | 'bottom';
+  width?: number;
+  height?: number;
+}
 
-const calculateAvgQueryTime = (queries: any[]) => {
-  if (queries.length === 0) return 0;
-  const total = queries.reduce((sum, q) => sum + q.executionTimeMs, 0);
-  return Math.round(total / queries.length);
-};
+interface QueryHistoryItem {
+  id: string;
+  question: string;
+  sql: string;
+  successful: boolean;
+  executionTimeMs: number;
+  timestamp: string;
+  error?: string;
+}
 
-const calculateCacheHitRate = (queries: any[]) => {
-  const successful = queries.filter(q => q.successful).length;
-  return queries.length > 0 ? Math.round((successful / queries.length) * 100) : 0;
-};
+interface PerformanceMetric {
+  timestamp: string;
+  memoryUsage: number;
+  renderTime: number;
+  queryTime: number;
+  cacheHitRate: number;
+}
 
-// Enhanced DevTools with comprehensive debugging and monitoring
-export const DevTools: React.FC = () => {
+interface NetworkRequest {
+  id: string;
+  url: string;
+  method: string;
+  status: number;
+  duration: number;
+  timestamp: string;
+  size: number;
+}
+
+interface ConsoleMessage {
+  id: string;
+  level: 'log' | 'warn' | 'error' | 'info';
+  message: string;
+  timestamp: string;
+  stack?: string;
+}
+
+interface DebugSettings {
+  enableLogging: boolean;
+  enablePerformanceMonitoring: boolean;
+  enableNetworkMonitoring: boolean;
+  logLevel: 'debug' | 'info' | 'warn' | 'error';
+  maxLogEntries: number;
+  autoRefresh: boolean;
+  refreshInterval: number;
+}
+
+export const DevTools: React.FC<DevToolsProps> = ({
+  position = 'right',
+  width = 800,
+  height = 600,
+}) => {
   const [visible, setVisible] = useState(false);
-  const [isMonitoring] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetric[]>([]);
+  const [networkRequests, setNetworkRequests] = useState<NetworkRequest[]>([]);
+  const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
+  const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([]);
+  const [debugSettings, setDebugSettings] = useState<DebugSettings>({
+    enableLogging: true,
+    enablePerformanceMonitoring: true,
+    enableNetworkMonitoring: true,
+    logLevel: 'info',
+    maxLogEntries: 1000,
+    autoRefresh: true,
+    refreshInterval: 1000,
+  });
 
   const currentUser = useAuthStore((state) => state.user);
   const dashboards = useVisualizationStore((state) => state.dashboards);
@@ -65,48 +129,133 @@ export const DevTools: React.FC = () => {
   const queryClient = useQueryClient();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Enhanced monitoring and debugging functionality
+  // Mock data for demonstration
+  const mockQueryHistory: QueryHistoryItem[] = [
+    {
+      id: '1',
+      question: 'Show me player statistics for last week',
+      sql: 'SELECT player_id, SUM(deposit_amount) as total_deposits FROM tbl_Daily_actions WHERE action_date >= DATEADD(day, -7, GETDATE()) GROUP BY player_id',
+      successful: true,
+      executionTimeMs: 245,
+      timestamp: '2024-01-15 14:30:00'
+    },
+    {
+      id: '2',
+      question: 'Revenue by country',
+      sql: 'SELECT c.country_name, SUM(da.deposit_amount) as revenue FROM tbl_Daily_actions da JOIN tbl_Countries c ON da.country_id = c.country_id GROUP BY c.country_name',
+      successful: true,
+      executionTimeMs: 189,
+      timestamp: '2024-01-15 14:25:00'
+    },
+    {
+      id: '3',
+      question: 'Invalid query test',
+      sql: 'SELECT * FROM non_existent_table',
+      successful: false,
+      executionTimeMs: 0,
+      timestamp: '2024-01-15 14:20:00',
+      error: 'Table "non_existent_table" does not exist'
+    }
+  ];
+
+  const collectPerformanceMetrics = useCallback(() => {
+    const now = new Date().toISOString();
+    const newMetric: PerformanceMetric = {
+      timestamp: now,
+      memoryUsage: (performance as any).memory?.usedJSHeapSize || Math.random() * 50000000,
+      renderTime: Math.random() * 16.67, // Target 60fps
+      queryTime: Math.random() * 500,
+      cacheHitRate: 75 + Math.random() * 20
+    };
+
+    setPerformanceMetrics(prev => {
+      const updated = [...prev, newMetric];
+      return updated.slice(-50); // Keep last 50 metrics
+    });
+  }, []);
+
+  const collectNetworkMetrics = useCallback(() => {
+    // Mock network request
+    if (Math.random() > 0.7) { // 30% chance of new request
+      const newRequest: NetworkRequest = {
+        id: Date.now().toString(),
+        url: '/api/query/execute',
+        method: 'POST',
+        status: Math.random() > 0.1 ? 200 : 500,
+        duration: Math.random() * 1000,
+        timestamp: new Date().toISOString(),
+        size: Math.random() * 10000
+      };
+
+      setNetworkRequests(prev => {
+        const updated = [...prev, newRequest];
+        return updated.slice(-20); // Keep last 20 requests
+      });
+    }
+  }, []);
+
+  const interceptConsole = useCallback(() => {
+    const originalConsole = { ...console };
+
+    ['log', 'warn', 'error', 'info'].forEach(level => {
+      (console as any)[level] = (...args: any[]) => {
+        originalConsole[level as keyof typeof originalConsole](...args);
+
+        if (debugSettings.enableLogging) {
+          const message: ConsoleMessage = {
+            id: Date.now().toString(),
+            level: level as ConsoleMessage['level'],
+            message: args.map(arg =>
+              typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' '),
+            timestamp: new Date().toISOString(),
+            stack: level === 'error' ? new Error().stack : undefined
+          };
+
+          setConsoleMessages(prev => {
+            const updated = [...prev, message];
+            return updated.slice(-debugSettings.maxLogEntries);
+          });
+        }
+      };
+    });
+
+    return () => {
+      Object.assign(console, originalConsole);
+    };
+  }, [debugSettings.enableLogging, debugSettings.maxLogEntries]);
+
+  const monitorQueryCache = useCallback(() => {
+    // Monitor query cache performance
+    const cacheKeys = Object.keys(localStorage).filter(key =>
+      key.includes('query-cache') || key.includes('query-result')
+    );
+
+    setLogs(prev => {
+      const newLog = {
+        timestamp: new Date().toISOString(),
+        type: 'cache',
+        message: `Cache entries: ${cacheKeys.length}`,
+        data: { cacheKeys: cacheKeys.length }
+      };
+      return [...prev.slice(-99), newLog]; // Keep last 100 logs
+    });
+  }, []);
+
+  // Enhanced monitoring functionality
   useEffect(() => {
-    const collectPerformanceMetrics = () => {
-      // Mock performance metrics for development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Collecting performance metrics...');
-      }
-    };
-
-    const collectNetworkMetrics = () => {
-      // Mock network metrics for development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Collecting network metrics...');
-      }
-    };
-
-    const interceptConsole = () => {
-      // Mock console interception for development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Intercepting console...');
-      }
-    };
-
-    const monitorQueryCache = () => {
-      const cache = queryClient.getQueryCache();
-      const queries = cache.getAll();
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`React Query Cache: ${queries.length} queries`);
-      }
-    };
-
     if (isMonitoring) {
-      // Start performance monitoring
       intervalRef.current = setInterval(() => {
         collectPerformanceMetrics();
         collectNetworkMetrics();
-      }, 1000);
+        monitorQueryCache();
+      }, debugSettings.refreshInterval);
 
-      interceptConsole();
-      monitorQueryCache();
+      if (debugSettings.enableLogging) {
+        const cleanup = interceptConsole();
+        return cleanup;
+      }
     } else {
-      // Stop monitoring
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -118,7 +267,209 @@ export const DevTools: React.FC = () => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isMonitoring, queryClient]);
+  }, [isMonitoring, debugSettings, collectPerformanceMetrics, interceptConsole, monitorQueryCache]);
+
+  // Calculate statistics
+  const avgResponseTime = networkRequests.length > 0
+    ? Math.round(networkRequests.reduce((sum, req) => sum + req.duration, 0) / networkRequests.length)
+    : 0;
+
+  const errorRate = networkRequests.length > 0
+    ? Math.round((networkRequests.filter(req => req.status >= 400).length / networkRequests.length) * 100)
+    : 0;
+
+  const avgMemoryUsage = performanceMetrics.length > 0
+    ? Math.round(performanceMetrics.reduce((sum, metric) => sum + metric.memoryUsage, 0) / performanceMetrics.length)
+    : 0;
+
+  const renderOverviewTab = () => (
+    <div>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Avg Response Time"
+              value={avgResponseTime}
+              suffix="ms"
+              prefix={<ClockCircleOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Error Rate"
+              value={errorRate}
+              suffix="%"
+              prefix={<BugOutlined />}
+              valueStyle={{ color: errorRate > 5 ? '#ff4d4f' : '#3f8600' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Memory Usage"
+              value={Math.round(avgMemoryUsage / 1024 / 1024)}
+              suffix="MB"
+              prefix={<BarChartOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Cache Hit Rate"
+              value={performanceMetrics.length > 0 ? Math.round(performanceMetrics[performanceMetrics.length - 1]?.cacheHitRate || 0) : 0}
+              suffix="%"
+              prefix={<DatabaseOutlined />}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Card title="System Status" style={{ marginTop: 16 }}>
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text>Real-time Monitoring</Text>
+            <Badge status={isMonitoring ? 'processing' : 'default'} text={isMonitoring ? 'Active' : 'Inactive'} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text>Performance Tracking</Text>
+            <Badge status={debugSettings.enablePerformanceMonitoring ? 'success' : 'default'} text={debugSettings.enablePerformanceMonitoring ? 'Enabled' : 'Disabled'} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text>Network Monitoring</Text>
+            <Badge status={debugSettings.enableNetworkMonitoring ? 'success' : 'default'} text={debugSettings.enableNetworkMonitoring ? 'Enabled' : 'Disabled'} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text>Console Logging</Text>
+            <Badge status={debugSettings.enableLogging ? 'success' : 'default'} text={debugSettings.enableLogging ? 'Enabled' : 'Disabled'} />
+          </div>
+        </Space>
+      </Card>
+    </div>
+  );
+
+  const renderQueryHistoryTab = () => (
+    <List
+      dataSource={mockQueryHistory}
+      renderItem={(item) => (
+        <List.Item>
+          <List.Item.Meta
+            title={item.question}
+            description={
+              <Space direction="vertical">
+                <Text code>{item.sql}</Text>
+                <Space>
+                  <Tag color={item.successful ? 'green' : 'red'}>
+                    {item.successful ? 'Success' : 'Failed'}
+                  </Tag>
+                  <Tag>{item.executionTimeMs}ms</Tag>
+                  <Tag>{item.timestamp}</Tag>
+                </Space>
+                {item.error && (
+                  <Alert message={item.error} type="error" size="small" />
+                )}
+              </Space>
+            }
+          />
+        </List.Item>
+      )}
+    />
+  );
+
+  const renderNetworkTab = () => (
+    <div>
+      <List
+        dataSource={networkRequests}
+        renderItem={(request) => (
+          <List.Item>
+            <List.Item.Meta
+              title={`${request.method} ${request.url}`}
+              description={
+                <Space>
+                  <Tag color={request.status < 400 ? 'green' : 'red'}>
+                    {request.status}
+                  </Tag>
+                  <Tag>{Math.round(request.duration)}ms</Tag>
+                  <Tag>{Math.round(request.size / 1024)}KB</Tag>
+                  <Text type="secondary">{request.timestamp}</Text>
+                </Space>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    </div>
+  );
+
+  const renderConsoleTab = () => (
+    <div>
+      <List
+        dataSource={consoleMessages}
+        renderItem={(msg) => (
+          <List.Item>
+            <List.Item.Meta
+              title={
+                <Space>
+                  <Tag color={
+                    msg.level === 'error' ? 'red' :
+                    msg.level === 'warn' ? 'orange' :
+                    msg.level === 'info' ? 'blue' : 'default'
+                  }>
+                    {msg.level.toUpperCase()}
+                  </Tag>
+                  <Text type="secondary">{msg.timestamp}</Text>
+                </Space>
+              }
+              description={
+                <div>
+                  <Text code>{msg.message}</Text>
+                  {msg.stack && (
+                    <pre style={{ fontSize: '12px', marginTop: '8px', background: '#f5f5f5', padding: '8px' }}>
+                      {msg.stack}
+                    </pre>
+                  )}
+                </div>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    </div>
+  );
+
+  const renderStateTab = () => (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Collapse>
+        <Panel header="Current User" key="user">
+          <pre style={{ background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+            {JSON.stringify(currentUser, null, 2)}
+          </pre>
+        </Panel>
+        <Panel header="Dashboards" key="dashboards">
+          <pre style={{ background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+            {JSON.stringify(dashboards, null, 2)}
+          </pre>
+        </Panel>
+        <Panel header="Preferences" key="preferences">
+          <pre style={{ background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+            {JSON.stringify(preferences, null, 2)}
+          </pre>
+        </Panel>
+        <Panel header="Query Cache" key="cache">
+          <pre style={{ background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+            {JSON.stringify(queryClient.getQueryCache().getAll().map(q => ({
+              queryKey: q.queryKey,
+              state: q.state.status,
+              dataUpdatedAt: q.state.dataUpdatedAt
+            })), null, 2)}
+          </pre>
+        </Panel>
+      </Collapse>
+    </Space>
+  );
 
   if (process.env.NODE_ENV === 'production') {
     return null;
@@ -139,114 +490,52 @@ export const DevTools: React.FC = () => {
         onClick={() => setVisible(true)}
       />
 
+      {/* DevTools Drawer */}
       <Drawer
-        title="Developer Tools"
-        placement="right"
+        title={
+          <Space>
+            <BugOutlined />
+            Developer Tools
+            <Badge
+              count={isMonitoring ? 'LIVE' : 'OFF'}
+              status={isMonitoring ? 'processing' : 'default'}
+            />
+          </Space>
+        }
+        placement={position}
         onClose={() => setVisible(false)}
         open={visible}
-        width={600}
+        width={width}
+        height={height}
+        extra={
+          <Space>
+            <Tooltip title={isMonitoring ? 'Stop Monitoring' : 'Start Monitoring'}>
+              <Button
+                type={isMonitoring ? 'primary' : 'default'}
+                icon={isMonitoring ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+                onClick={() => setIsMonitoring(!isMonitoring)}
+              >
+                {isMonitoring ? 'Stop' : 'Start'}
+              </Button>
+            </Tooltip>
+          </Space>
+        }
       >
-        <Tabs defaultActiveKey="queries">
+        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+          <TabPane tab="Overview" key="overview">
+            {renderOverviewTab()}
+          </TabPane>
           <TabPane tab="Query History" key="queries">
-            <List
-              dataSource={mockQueryHistory}
-              renderItem={(item) => (
-                <List.Item>
-                  <List.Item.Meta
-                    title={item.question}
-                    description={
-                      <Space direction="vertical">
-                        <Text code>{item.sql}</Text>
-                        <Space>
-                          <Tag color={item.successful ? 'green' : 'red'}>
-                            {item.successful ? 'Success' : 'Failed'}
-                          </Tag>
-                          <Tag>{item.executionTimeMs}ms</Tag>
-                        </Space>
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
+            {renderQueryHistoryTab()}
           </TabPane>
-
-          <TabPane tab="Performance" key="performance">
-            <Row gutter={16}>
-              <Col span={8}>
-                <Statistic
-                  title="Avg Query Time"
-                  value={calculateAvgQueryTime(mockQueryHistory)}
-                  suffix="ms"
-                />
-              </Col>
-              <Col span={8}>
-                <Statistic
-                  title="Cache Hit Rate"
-                  value={calculateCacheHitRate(mockQueryHistory)}
-                  suffix="%"
-                />
-              </Col>
-              <Col span={8}>
-                <Statistic
-                  title="Total Queries"
-                  value={mockQueryHistory.length}
-                />
-              </Col>
-            </Row>
+          <TabPane tab="Network" key="network">
+            {renderNetworkTab()}
           </TabPane>
-
+          <TabPane tab="Console" key="console">
+            {renderConsoleTab()}
+          </TabPane>
           <TabPane tab="State Inspector" key="state">
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <div>
-                <Text strong>Current User:</Text>
-                <pre style={{ background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
-                  {JSON.stringify(currentUser, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <Text strong>Dashboards:</Text>
-                <pre style={{ background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
-                  {JSON.stringify(dashboards, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <Text strong>Preferences:</Text>
-                <pre style={{ background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
-                  {JSON.stringify(preferences, null, 2)}
-                </pre>
-              </div>
-            </Space>
-          </TabPane>
-
-          <TabPane tab="Mock Data" key="mock">
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Button
-                onClick={() => {
-                  console.log('Generating mock data...');
-                  // Add mock data generation logic here
-                }}
-              >
-                Generate Mock Query Data
-              </Button>
-              <Button
-                onClick={() => {
-                  console.log('Clearing cache...');
-                  localStorage.clear();
-                  sessionStorage.clear();
-                }}
-              >
-                Clear All Cache
-              </Button>
-              <Button
-                onClick={() => {
-                  console.log('Testing API connection...');
-                  // Add connection test logic here
-                }}
-              >
-                Test API Connection
-              </Button>
-            </Space>
+            {renderStateTab()}
           </TabPane>
         </Tabs>
       </Drawer>

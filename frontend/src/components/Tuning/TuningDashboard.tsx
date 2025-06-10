@@ -33,7 +33,7 @@ import { BusinessGlossaryManager } from './BusinessGlossaryManager';
 import { AISettingsManager } from './AISettingsManager';
 import { PromptLogsViewer } from './PromptLogsViewer';
 import { PromptTemplateManager } from './PromptTemplateManager';
-import { AutoGenerationManager } from '../TuningDashboard/AutoGeneration/AutoGenerationManager';
+import { AutoGenerationManager } from './AutoGenerationManager';
 import { tuningApi } from '../../services/tuningApi';
 
 const { Title, Text } = Typography;
