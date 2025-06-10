@@ -34,7 +34,6 @@ import { querySuggestionService, SuggestionCategory, QuerySuggestion } from '../
 import '../../styles/enhanced-ui.css';
 
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
 
 interface SuggestionStats {
   totalCategories: number;
@@ -278,83 +277,83 @@ export const QuerySuggestionsManager: React.FC = () => {
           padding: '16px',
           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)'
         }}
-      >
-        <TabPane
-          tab={
-            <Space>
-              <BarChartOutlined />
-              <span>Overview</span>
-              <Badge count={stats.totalSuggestions} style={{ backgroundColor: '#52c41a' }} />
-            </Space>
+        items={[
+          {
+            key: 'overview',
+            label: (
+              <Space>
+                <BarChartOutlined />
+                <span>Overview</span>
+                <Badge count={stats.totalSuggestions} style={{ backgroundColor: '#52c41a' }} />
+              </Space>
+            ),
+            children: renderOverview()
+          },
+          {
+            key: 'categories',
+            label: (
+              <Space>
+                <AppstoreOutlined />
+                <span>Categories</span>
+                <Badge count={stats.totalCategories} style={{ backgroundColor: '#1890ff' }} />
+              </Space>
+            ),
+            children: (
+              <CategoriesManager
+                categories={categories}
+                onCategoriesChange={setCategories}
+                onRefresh={loadData}
+              />
+            )
+          },
+          {
+            key: 'suggestions',
+            label: (
+              <Space>
+                <FileTextOutlined />
+                <span>Suggestions</span>
+                <Badge count={stats.activeSuggestions} style={{ backgroundColor: '#faad14' }} />
+              </Space>
+            ),
+            children: (
+              <SuggestionsManager
+                suggestions={suggestions}
+                categories={categories}
+                onSuggestionsChange={setSuggestions}
+                onRefresh={loadData}
+              />
+            )
+          },
+          {
+            key: 'analytics',
+            label: (
+              <Space>
+                <BarChartOutlined />
+                <span>Analytics</span>
+              </Space>
+            ),
+            children: (
+              <SuggestionAnalytics
+                suggestions={suggestions}
+                categories={categories}
+                stats={stats}
+              />
+            )
+          },
+          {
+            key: 'sync',
+            label: (
+              <Space>
+                <SyncOutlined />
+                <span>Sync Database</span>
+              </Space>
+            ),
+            children: <SuggestionSyncUtility onSyncComplete={loadData} />
           }
-          key="overview"
-        >
-          {renderOverview()}
-        </TabPane>
-
-        <TabPane
-          tab={
-            <Space>
-              <AppstoreOutlined />
-              <span>Categories</span>
-              <Badge count={stats.totalCategories} style={{ backgroundColor: '#1890ff' }} />
-            </Space>
-          }
-          key="categories"
-        >
-          <CategoriesManager
-            categories={categories}
-            onCategoriesChange={setCategories}
-            onRefresh={loadData}
-          />
-        </TabPane>
-
-        <TabPane
-          tab={
-            <Space>
-              <FileTextOutlined />
-              <span>Suggestions</span>
-              <Badge count={stats.activeSuggestions} style={{ backgroundColor: '#faad14' }} />
-            </Space>
-          }
-          key="suggestions"
-        >
-          <SuggestionsManager
-            suggestions={suggestions}
-            categories={categories}
-            onSuggestionsChange={setSuggestions}
-            onRefresh={loadData}
-          />
-        </TabPane>
-
-        <TabPane
-          tab={
-            <Space>
-              <BarChartOutlined />
-              <span>Analytics</span>
-            </Space>
-          }
-          key="analytics"
-        >
-          <SuggestionAnalytics
-            suggestions={suggestions}
-            categories={categories}
-            stats={stats}
-          />
-        </TabPane>
-
-        <TabPane
-          tab={
-            <Space>
-              <SyncOutlined />
-              <span>Sync Database</span>
-            </Space>
-          }
-          key="sync"
-        >
-          <SuggestionSyncUtility onSyncComplete={loadData} />
-        </TabPane>
-      </Tabs>
+        ]}
+      />
     </div>
   );
 };
+
+export default QuerySuggestionsManager;

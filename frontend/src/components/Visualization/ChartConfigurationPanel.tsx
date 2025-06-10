@@ -286,10 +286,10 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
       xAxis: xAxis,
       yAxis: metricsToUse[0], // Primary metric
       series: metricsToUse, // All selected metrics
-      config: existingConfig.config || {},
+      config: (existingConfig as any)?.config || {},
 
       // Preserve existing animation settings or use defaults
-      animation: existingConfig.animation || {
+      animation: (existingConfig as any)?.animation || {
         enabled: true,
         duration: 1000,
         easing: 'ease-in-out',
@@ -300,7 +300,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
       },
 
       // Preserve existing interaction settings or use defaults
-      interaction: existingConfig.interaction || {
+      interaction: (existingConfig as any)?.interaction || {
         enableZoom: true,
         enablePan: true,
         enableBrush: false,
@@ -319,7 +319,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
       },
 
       // Preserve existing theme settings or use defaults
-      theme: existingConfig.theme || {
+      theme: (existingConfig as any)?.theme || {
         name: 'default',
         darkMode: false,
         colors: {
@@ -333,7 +333,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
       },
 
       // Preserve existing performance settings or use defaults
-      performance: existingConfig.performance || {
+      performance: (existingConfig as any)?.performance || {
         enableVirtualization: data.length > 10000,
         virtualizationThreshold: 10000,
         enableLazyLoading: true,
@@ -344,7 +344,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
       },
 
       // Preserve existing accessibility settings or use defaults
-      accessibility: existingConfig.accessibility || {
+      accessibility: (existingConfig as any)?.accessibility || {
         enabled: true,
         highContrast: false,
         screenReaderSupport: true,
@@ -472,7 +472,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
             xAxis: bestLabelColumn,
             yAxis: bestMetrics[0],
             series: bestMetrics,
-            labelColumn: bestLabelColumn, // This ensures the chart uses the correct column for labels
+            // labelColumn removed as it's not part of AdvancedVisualizationConfig
             config: {
               showLegend: bestMetrics.length > 1,
               showTooltip: true,
@@ -616,7 +616,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
         });
 
         // Smart X-axis selection: prefer meaningful categorical columns over dates
-        let selectedXAxis = null;
+        let selectedXAxis: string | undefined = undefined;
 
         // Priority 1: Look for meaningful categorical columns first
         const meaningfulColumns = categoricalColumns.filter(col =>
@@ -661,7 +661,7 @@ const ChartConfigurationPanel: React.FC<ChartConfigurationPanelProps> = ({
           setChartType('Bar'); // Country data works better as bar chart for comparison
         } else if (selectedXAxis === 'Currency' || selectedXAxis === 'Alias') {
           setChartType('Pie'); // Currency/Alias distribution works well as pie
-        } else if (dateColumns.includes(selectedXAxis)) {
+        } else if (selectedXAxis && dateColumns.includes(selectedXAxis)) {
           setChartType('Line'); // Time series data works well as line chart
         } else {
           setChartType('Bar'); // Default to bar chart

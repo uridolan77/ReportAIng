@@ -3,6 +3,9 @@ export interface QueryRequest {
   question: string;
   sessionId: string;
   options: QueryOptions;
+  naturalLanguageQuery?: string;
+  includeExplanation?: boolean;
+  maxRows?: number;
 }
 
 export interface QueryOptions {
@@ -30,11 +33,14 @@ export interface QueryResponse {
   timestamp: string;
   executionTimeMs: number;
   promptDetails?: PromptDetails;
+  sessionId?: string;
 }
 
 export interface QueryResult {
   data: any[];
   metadata: QueryMetadata;
+  totalRows?: number;
+  columns?: any[];
 }
 
 export interface QueryMetadata {

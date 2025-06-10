@@ -303,38 +303,44 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
           }}
         >
           {menuItems.map(group => (
-            <Menu.ItemGroup
+            <div
               key={group.key}
-              title={
-                !collapsed ? (
-                  <Text
-                    strong
-                    style={{
-                      color: '#8c8c8c',
-                      fontSize: '12px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}
-                  >
-                    {group.label}
-                  </Text>
-                ) : null
-              }
+              style={{ marginBottom: '16px' }}
             >
+              {!collapsed && (
+                <Text
+                  strong
+                  style={{
+                    color: '#8c8c8c',
+                    fontSize: '12px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    display: 'block',
+                    marginBottom: '8px',
+                    paddingLeft: '12px'
+                  }}
+                >
+                  {group.label}
+                </Text>
+              )}
               {group.children.map(item => (
-                <Menu.Item
+                <div
                   key={item.key}
-                  icon={item.icon}
-                  disabled={item.disabled}
-                  title={collapsed ? item.label : undefined}
+                  onClick={() => handleMenuClick({ key: item.key })}
                   style={{
                     marginBottom: '2px',
                     borderRadius: '6px',
                     height: 'auto',
                     lineHeight: 'normal',
-                    padding: collapsed ? '8px 24px' : '8px 12px'
+                    padding: collapsed ? '8px 24px' : '8px 12px',
+                    cursor: item.disabled ? 'not-allowed' : 'pointer',
+                    opacity: item.disabled ? 0.5 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                 >
+                  {item.icon}
                   {!collapsed ? (
                     <div style={{ minHeight: '20px' }}>
                       <div style={{
@@ -361,10 +367,10 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({ isAdmin = false })
                   ) : (
                     <span>{item.label}</span>
                   )}
-                </Menu.Item>
+                </div>
               ))}
               {!collapsed && <Divider style={{ margin: '12px 0 16px 0' }} />}
-            </Menu.ItemGroup>
+            </div>
           ))}
         </Menu>
       </div>

@@ -1,8 +1,8 @@
 export { Chart } from './Chart';
 export { VisualizationPanel } from './VisualizationPanel';
 export { InteractiveVisualization } from './InteractiveVisualization';
-export { ChartConfigurationPanel } from './ChartConfigurationPanel';
-export { VisualizationRecommendations } from './VisualizationRecommendations';
+export { default as ChartConfigurationPanel } from './ChartConfigurationPanel';
+export { default as VisualizationRecommendations } from './VisualizationRecommendations';
 export { AccessibleChart } from './AccessibleChart';
 export { AutoUpdatingChart } from './AutoUpdatingChart';
 export { InlineChart } from './InlineChart';

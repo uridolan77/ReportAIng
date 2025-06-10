@@ -252,7 +252,7 @@ export const TuningDashboard: React.FC = () => {
     return (
       <Alert
         message="Error Loading Dashboard"
-        description={typeof error === 'string' ? error : error?.message || 'An error occurred'}
+        description={typeof error === 'string' ? error : (error as any)?.message || 'An error occurred'}
         type="error"
         showIcon
         action={
@@ -340,7 +340,7 @@ export const TuningDashboard: React.FC = () => {
           }
           key="auto-generation"
         >
-          <AutoGenerationManager onRefresh={loadDashboardData} />
+          <AutoGenerationManager />
         </TabPane>
 
         <TabPane

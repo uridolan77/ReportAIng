@@ -267,11 +267,18 @@ export const AutoUpdatingChart: React.FC<AutoUpdatingChartProps> = ({
           bodyStyle={{ padding: '20px' }}
         >
           <AdvancedChart
-            config={currentConfig}
             data={data}
-            onConfigChange={handleConfigChange}
-            onExport={(format) => {
-              console.log('Export requested:', format);
+            type={currentConfig?.chartType as any || 'bar'}
+            title={currentConfig?.title}
+            xAxisKey={currentConfig?.xAxis || 'name'}
+            yAxisKey={currentConfig?.yAxis || 'value'}
+            onTypeChange={(type) => {
+              if (currentConfig) {
+                handleConfigChange({ ...currentConfig, chartType: type as any });
+              }
+            }}
+            onExport={() => {
+              console.log('Export requested');
             }}
           />
         </Card>

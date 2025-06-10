@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Typography, message, Space, Collapse } from 'antd';
-import { UserOutlined, LockOutlined, SettingOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, SettingOutlined, BugOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../../stores/authStore';
-import ConnectionStatus from '../Debug/ConnectionStatus';
-import DatabaseStatus from '../Debug/DatabaseStatus';
-import KeyVaultStatus from '../Debug/KeyVaultStatus';
+import ConnectionStatus from '../DevTools/ConnectionStatus';
+import DatabaseStatus from '../DevTools/DatabaseStatus';
+import KeyVaultStatus from '../DevTools/KeyVaultStatus';
+import { AuthDebugger } from '../Debug/AuthDebugger';
 
 const { Text } = Typography;
 
 export const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showSystemStatus, setShowSystemStatus] = useState(false);
+  const [showAuthDebugger, setShowAuthDebugger] = useState(false);
   const { login } = useAuthStore();
 
   const onFinish = async (values: { username: string; password: string }) => {
@@ -31,6 +33,8 @@ export const Login: React.FC = () => {
 
   return (
     <div className="login-container">
+      {showAuthDebugger && <AuthDebugger />}
+
       {showSystemStatus && (
         <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
           <Collapse
@@ -114,7 +118,7 @@ export const Login: React.FC = () => {
         <div style={{ textAlign: 'center', marginTop: '16px' }}>
           <Space direction="vertical" size="small">
             <Text type="secondary" style={{ fontSize: '12px' }}>
-              For development: Use any username and password
+              Try: <strong>admin</strong> / <strong>Admin123!</strong> or any credentials for development
             </Text>
             <Button
               type="link"
@@ -124,6 +128,15 @@ export const Login: React.FC = () => {
               style={{ fontSize: '12px' }}
             >
               {showSystemStatus ? 'Hide System Status' : 'Show System Status'}
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              icon={<BugOutlined />}
+              onClick={() => setShowAuthDebugger(!showAuthDebugger)}
+              style={{ fontSize: '12px' }}
+            >
+              {showAuthDebugger ? 'Hide Auth Debugger' : 'Show Auth Debugger'}
             </Button>
           </Space>
         </div>

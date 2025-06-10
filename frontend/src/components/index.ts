@@ -13,13 +13,40 @@ export * from './Dashboard';
 export * from './DevTools/DevTools';
 
 // Query Interface
-export * from './QueryInterface';
+export {
+  QueryInterface,
+  QueryBuilder,
+  MinimalQueryInterface,
+  QueryEditor,
+  SqlEditor,
+  QueryResult,
+  QueryProvider,
+  useQueryContext,
+  QueryTabs,
+  QueryModals,
+  LoadingStates,
+  QueryHistory,
+  QuerySuggestions,
+  ProactiveSuggestions,
+  QueryWizard,
+  GuidedQueryWizard,
+  AIProcessingFeedback,
+  QueryProcessingViewer,
+  PromptDetailsPanel,
+  AdvancedStreamingQuery,
+  InteractiveResultsDisplay,
+  AccessibilityFeatures,
+  QueryShortcuts
+} from './QueryInterface';
+export { ExportModal as QueryExportModal } from './QueryInterface';
 
 // Visualization Components
 export * from './Visualization';
 
 // Data Components
-export * from './DataTable';
+export { default as DataTable } from './DataTable';
+export type { DataTableProps, DataTableColumn, DataTableFeatures, DataTableConfig } from './DataTable';
+export { ExportModal as DataTableExportModal } from './DataTable';
 export * from './DBExplorer';
 
 // Layout Components
@@ -43,7 +70,25 @@ export * from './Performance';
 export * from './Tuning';
 
 // Schema Management
-export * from './SchemaManagement';
+export {
+  SchemaManagementDashboard,
+  DatabaseSchemaViewer,
+  SchemaEditor,
+  SchemaList,
+  SchemaVersions,
+  SchemaComparison,
+  ColumnContextEditor,
+  TableContextEditor,
+  GlossaryTermEditor,
+  RelationshipEditor,
+  CreateSchemaDialog,
+  ImportSchemaDialog
+} from './SchemaManagement';
+export type {
+  SchemaManagementProps as SchemaManagementComponentProps,
+  SchemaEditorProps as SchemaEditorComponentProps,
+  SchemaDialogProps
+} from './SchemaManagement';
 
 // Providers
 export * from './Providers/ReactQueryProvider';

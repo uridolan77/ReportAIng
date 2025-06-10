@@ -159,7 +159,7 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
             <span>Schema Information</span>
             <Button
               variant={editingSchema ? "default" : "outline"}
-              size="sm"
+              size="small"
               onClick={() => editingSchema ? handleSaveSchema() : setEditingSchema(true)}
               disabled={saving}
             >
@@ -283,7 +283,7 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs activeKey={activeTab} onChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="tables" className="flex items-center gap-2">
                 <Database className="h-4 w-4" />

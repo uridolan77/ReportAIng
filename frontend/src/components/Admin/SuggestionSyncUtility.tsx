@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Card, Button, Space, Typography, Alert, Divider, List, Tag } from 'antd';
 import { SyncOutlined, DatabaseOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import { syncSuggestionsToDatabase } from '../../../utils/syncSuggestionsToDatabase';
-import { suggestionCategories } from '../../QueryInterface/QuerySuggestions';
+import { syncSuggestionsToDatabase } from '../../utils/syncSuggestionsToDatabase';
+import { suggestionCategories } from '../QueryInterface/QuerySuggestions';
 
 const { Title, Text, Paragraph } = Typography;
 

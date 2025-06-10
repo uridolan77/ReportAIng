@@ -197,7 +197,17 @@ export class SecureApiClient {
             // Retry the original request
             return this.client.request(error.config);
           } else {
+            console.log('🚨 SECURE API CLIENT - ABOUT TO LOGOUT AND REDIRECT - PAUSING FOR 5 SECONDS');
+            console.log('🚨 Check the logs above this message!');
+
+            // Add a delay to see the logs
+            await new Promise(resolve => setTimeout(resolve, 5000));
+
             authStore.logout();
+
+            console.log('🚨 SECURE API CLIENT - REDIRECTING TO LOGIN IN 2 SECONDS...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
             window.location.href = '/login';
           }
         }

@@ -35,16 +35,15 @@ import {
   ThunderboltOutlined,
   ClockCircleOutlined,
   ApiOutlined,
-  ConsoleOutlined,
+  ConsoleSqlOutlined,
   BarChartOutlined,
-  NetworkOutlined
+  GlobalOutlined
 } from '@ant-design/icons';
 import { useAuthStore } from '../../stores/authStore';
 import { useVisualizationStore } from '../../stores/visualizationStore';
 import { useQueryClient } from '@tanstack/react-query';
 
 const { Text, Title } = Typography;
-const { TabPane } = Tabs;
 const { Panel } = Collapse;
 const { Option } = Select;
 
@@ -199,7 +198,10 @@ export const DevTools: React.FC<DevToolsProps> = ({
 
     ['log', 'warn', 'error', 'info'].forEach(level => {
       (console as any)[level] = (...args: any[]) => {
-        originalConsole[level as keyof typeof originalConsole](...args);
+        const originalMethod = originalConsole[level as keyof typeof originalConsole];
+        if (typeof originalMethod === 'function') {
+          (originalMethod as any).apply(console, args);
+        }
 
         if (debugSettings.enableLogging) {
           const message: ConsoleMessage = {
@@ -369,7 +371,7 @@ export const DevTools: React.FC<DevToolsProps> = ({
                   <Tag>{item.timestamp}</Tag>
                 </Space>
                 {item.error && (
-                  <Alert message={item.error} type="error" size="small" />
+                  <Alert message={item.error} type="error" />
                 )}
               </Space>
             }
@@ -521,23 +523,37 @@ export const DevTools: React.FC<DevToolsProps> = ({
           </Space>
         }
       >
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane tab="Overview" key="overview">
-            {renderOverviewTab()}
-          </TabPane>
-          <TabPane tab="Query History" key="queries">
-            {renderQueryHistoryTab()}
-          </TabPane>
-          <TabPane tab="Network" key="network">
-            {renderNetworkTab()}
-          </TabPane>
-          <TabPane tab="Console" key="console">
-            {renderConsoleTab()}
-          </TabPane>
-          <TabPane tab="State Inspector" key="state">
-            {renderStateTab()}
-          </TabPane>
-        </Tabs>
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'overview',
+              label: 'Overview',
+              children: renderOverviewTab()
+            },
+            {
+              key: 'queries',
+              label: 'Query History',
+              children: renderQueryHistoryTab()
+            },
+            {
+              key: 'network',
+              label: 'Network',
+              children: renderNetworkTab()
+            },
+            {
+              key: 'console',
+              label: 'Console',
+              children: renderConsoleTab()
+            },
+            {
+              key: 'state',
+              label: 'State Inspector',
+              children: renderStateTab()
+            }
+          ]}
+        />
       </Drawer>
     </>
   );

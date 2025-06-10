@@ -93,7 +93,7 @@ export const SchemaVersions: React.FC<SchemaVersionsProps> = ({
                     v{version.versionNumber}
                   </span>
                   {!version.isCurrent && (
-                    <Button variant="outline" size="sm">
+                    <Button size="small">
                       Set Current
                     </Button>
                   )}

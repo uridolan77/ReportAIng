@@ -1,3 +1,3 @@
 export { DashboardManager } from './DashboardManager';
-export { DashboardBuilder } from './DashboardBuilder';
+export { default as DashboardBuilder } from './DashboardBuilder';
 export { DashboardView } from './DashboardView';

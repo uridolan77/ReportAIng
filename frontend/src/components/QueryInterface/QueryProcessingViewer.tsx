@@ -427,7 +427,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
               displayKey = '📋 Prompt Template';
             } else if (key === 'confidence') {
               displayKey = '🎯 Confidence Score';
-              displayValue = `${(value * 100).toFixed(1)}%`;
+              displayValue = `${((value as number) * 100).toFixed(1)}%`;
             } else if (typeof value === 'object' && !isCacheStage) {
               displayValue = JSON.stringify(value, null, 2);
             } else if (typeof value === 'string') {
@@ -458,7 +458,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
                   overflowY: 'auto',
                   whiteSpace: 'pre-wrap'
                 }}>
-                  {displayValue}
+                  {displayValue as React.ReactNode}
                 </div>
               </div>
             );
@@ -685,13 +685,6 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
   return (
     <Card
       size="small"
-      style={{
-        borderRadius: '12px',
-        border: '1px solid #e5e7eb',
-        background: 'white',
-        marginBottom: '16px',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-      }}
       title={
         <div
           style={{ cursor: 'pointer', padding: '4px 0' }}

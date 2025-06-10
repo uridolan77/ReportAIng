@@ -190,7 +190,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <FallbackComponent
             error={this.state.error!}
             resetError={this.resetError}
-            errorInfo={this.state.errorInfo}
+            errorInfo={this.state.errorInfo || undefined}
           />
         );
       }

@@ -76,7 +76,7 @@ export const Modal: React.FC<ModalProps> = ({
 // Drawer Component
 export interface DrawerProps extends AntDrawerProps {
   variant?: 'default' | 'overlay' | 'push';
-  size?: 'small' | 'medium' | 'large';
+  size?: 'default' | 'large';
 }
 
 export const Drawer: React.FC<DrawerProps> = ({ 
@@ -164,9 +164,11 @@ export const Popover: React.FC<PopoverProps> = ({
 };
 
 // Tooltip Component
-export interface TooltipProps extends AntTooltipProps {
+export interface TooltipProps extends Omit<AntTooltipProps, 'className' | 'overlayClassName'> {
   variant?: 'default' | 'dark' | 'light' | 'colored';
   size?: 'small' | 'medium' | 'large';
+  className?: string;
+  overlayClassName?: string;
 }
 
 export const Tooltip: React.FC<TooltipProps> = ({ 
@@ -285,7 +287,7 @@ export const ConfirmDialog = {
       onOk: onConfirm,
       onCancel,
       cancelText,
-      confirmLoading: loading,
+
       className: `ui-confirm-dialog ui-confirm-dialog-${variant}`,
       ...getVariantProps(),
     });

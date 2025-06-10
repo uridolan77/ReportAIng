@@ -31,8 +31,9 @@ const { Group: RadioGroup } = AntRadio;
 const { Group: CheckboxGroup } = AntCheckbox;
 
 // Form Component
-export interface FormProps extends AntFormProps {
-  variant?: 'default' | 'compact' | 'spacious';
+export interface FormProps extends Omit<AntFormProps, 'children'> {
+  variant?: 'filled' | 'borderless' | 'outlined';
+  children?: React.ReactNode;
 }
 
 export const Form: React.FC<FormProps> = ({ 
@@ -103,7 +104,7 @@ export const FormItem: React.FC<FormItemProps> = ({
 
 // Input Components
 export interface InputProps extends AntInputProps {
-  variant?: 'default' | 'filled' | 'borderless';
+  variant?: 'filled' | 'borderless' | 'outlined';
 }
 
 export const Input: React.FC<InputProps> = ({ 
@@ -185,7 +186,7 @@ export const Textarea: React.FC<TextareaProps> = ({
 
 // Select Component
 export interface SelectProps extends AntSelectProps {
-  variant?: 'default' | 'filled' | 'borderless';
+  variant?: 'filled' | 'borderless' | 'outlined';
 }
 
 export const Select: React.FC<SelectProps> = ({ 

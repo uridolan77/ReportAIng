@@ -58,7 +58,7 @@ export function useValidatedMutation<TData, TError = Error, TVariables = void>(
 // Authentication hooks
 export function useLogin() {
   return useValidatedMutation(
-    (credentials: { username: string; password: string }) => validatedApi.login(credentials),
+    (credentials: { username: string; password: string }) => ApiService.login(credentials),
     AuthenticationResultSchema,
     {
       validationContext: 'login',
@@ -69,7 +69,7 @@ export function useLogin() {
 export function useCurrentUser() {
   return useValidatedQuery(
     ['auth', 'currentUser'],
-    () => validatedApi.getCurrentUser(),
+    () => ApiService.getCurrentUser(),
     UserProfileSchema,
     {
       validationContext: 'currentUser',

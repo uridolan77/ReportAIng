@@ -57,7 +57,7 @@ export const useBusinessGlossary = () => {
     staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 60 * 60 * 1000, // 1 hour
 
-    onError: errorHandlers.defaultQueryError,
+
   });
 };
 
@@ -86,7 +86,7 @@ export const useQueryPatterns = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
 
-    onError: errorHandlers.defaultQueryError,
+
   });
 };
 
@@ -110,7 +110,7 @@ export const useUpdateQueryPattern = () => {
 export const usePromptLogs = (page = 1, pageSize = 20) => {
   return useQuery({
     queryKey: queryKeys.tuning.prompts(page, pageSize),
-    queryFn: () => tuningApiService.getPromptLogs(page, pageSize),
+    queryFn: () => tuningApiService.getPromptLogs({ page, pageSize }),
 
     // Keep previous data while fetching new page
     placeholderData: (previousData) => previousData,
@@ -119,7 +119,7 @@ export const usePromptLogs = (page = 1, pageSize = 20) => {
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
 
-    onError: errorHandlers.defaultQueryError,
+
   });
 };
 
@@ -236,7 +236,7 @@ export const usePromptTemplates = () => {
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 60 * 60 * 1000, // 1 hour
 
-    onError: errorHandlers.defaultQueryError,
+
   });
 };
 

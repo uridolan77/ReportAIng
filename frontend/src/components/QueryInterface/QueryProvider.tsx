@@ -240,7 +240,11 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
               sql: details?.sql,
               queryId: currentQueryId,
               timestamp: new Date().toISOString(),
-              validationError: true
+              validationError: true,
+              confidence: 0,
+              suggestions: [],
+              cached: false,
+              executionTimeMs: 0
             };
 
             // Set this as the current result so it shows in the UI
@@ -266,7 +270,11 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
               sql: details?.sql,
               queryId: currentQueryId,
               timestamp: new Date().toISOString(),
-              executionError: true
+              executionError: true,
+              confidence: 0,
+              suggestions: [],
+              cached: false,
+              executionTimeMs: 0
             };
 
             // Set this as the current result so it shows in the UI
@@ -425,8 +433,8 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
         hasMetadata: !!result?.result?.metadata,
         error: result?.error,
         sql: result?.sql,
-        hasPromptDetails: !!(result?.promptDetails || result?.PromptDetails),
-        promptDetailsKeys: result?.promptDetails ? Object.keys(result.promptDetails) : (result?.PromptDetails ? Object.keys(result.PromptDetails) : 'None'),
+        hasPromptDetails: !!(result?.promptDetails),
+        promptDetailsKeys: result?.promptDetails ? Object.keys(result.promptDetails) : 'None',
         allKeys: result ? Object.keys(result) : 'N/A'
       });
 
@@ -460,8 +468,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
                 model: 'GPT-4 Turbo',
                 queryText: query,
                 analysisType: 'Natural language to SQL conversion',
-                ...(result?.promptDetails && { promptDetails: result.promptDetails }),
-                ...(result?.PromptDetails && { PromptDetails: result.PromptDetails })
+                ...(result?.promptDetails && { promptDetails: result.promptDetails })
               }
             },
             {
@@ -497,13 +504,12 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
             rowCount: result?.result?.data?.length || 0,
             queryText: query,
             sql: result?.sql || 'SQL not available',
-            hasVisualization: !!result?.result?.visualization,
+            hasVisualization: !!(result as any)?.result?.visualization,
             dataColumns: result?.result?.metadata?.columns?.length || 0,
             cacheUpdated: true,
             finalStatus: result?.success ? 'Success' : 'Error',
             ...(result?.error && { error: result.error }),
             ...(result?.promptDetails && { promptDetails: result.promptDetails }),
-            ...(result?.PromptDetails && { PromptDetails: result.PromptDetails }),
             ...(result?.result?.metadata && {
               metadata: {
                 totalColumns: result.result.metadata.columns?.length || 0,

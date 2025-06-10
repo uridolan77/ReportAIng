@@ -4,11 +4,17 @@
 
 import React, { useState, useEffect } from 'react';
 import {
+  Card,
+  Button,
+  Space,
+  Row,
+  Col,
   Tag,
   Empty,
   Spin,
   Badge,
-  Tooltip
+  Tooltip,
+  Typography
 } from 'antd';
 import {
   HomeOutlined,
@@ -22,21 +28,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
-// Import new UI components
-import {
-  Container,
-  FlexContainer,
-  GridContainer,
-  Stack,
-  Breadcrumb,
-  BreadcrumbItem,
-  InView,
-  PerformanceMonitor,
-  VirtualList,
-  Card,
-  Button
-} from '../components/ui';
-import type { ButtonProps } from '../components/ui/types';
+
+const { Text } = Typography;
 
 const SuggestionsPageContent: React.FC = () => {
   const navigate = useNavigate();
@@ -124,59 +117,50 @@ const SuggestionsPageContent: React.FC = () => {
   };
 
   return (
-    <PerformanceMonitor onMetrics={(metrics) => console.log('Suggestions page metrics:', metrics)}>
-      <Container size="full">
-        <Stack spacing="var(--space-6)">
-          <Breadcrumb>
-            <BreadcrumbItem>
-              <FlexContainer align="center" gap="var(--space-2)">
-                <HomeOutlined />
-                <span
-                  onClick={() => navigate('/')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  Home
-                </span>
-              </FlexContainer>
-            </BreadcrumbItem>
-            <BreadcrumbItem>
-              <FlexContainer align="center" gap="var(--space-2)">
-                <BulbOutlined />
-                Smart Suggestions
-              </FlexContainer>
-            </BreadcrumbItem>
-          </Breadcrumb>
-
-          <Stack spacing="var(--space-2)" className="animate-fade-in-up">
-            <h2 style={{ margin: 0, color: '#667eea', fontSize: '2rem', fontWeight: 600 }}>
-              AI-Powered Query Suggestions
-            </h2>
-            <p style={{ color: '#8c8c8c', fontSize: '16px', margin: 0 }}>
-              Intelligent recommendations based on your data patterns and query history
-            </p>
-          </Stack>
-
-          {/* AI Status Card */}
-          <Card
-            variant="elevated"
-            padding="medium"
-            className="animate-fade-in-up stagger-1"
+    <div style={{ padding: '24px', background: '#f5f5f5', minHeight: '100vh' }}>
+      {/* Breadcrumb */}
+      <div style={{ marginBottom: '24px' }}>
+        <Space>
+          <HomeOutlined />
+          <span
+            onClick={() => navigate('/')}
+            style={{ cursor: 'pointer', color: '#1890ff' }}
           >
-            <FlexContainer align="center" gap="var(--space-4)">
-              <RobotOutlined style={{ fontSize: '24px', color: '#667eea' }} />
-              <Stack spacing="var(--space-1)">
-                <span style={{ color: '#667eea', fontWeight: 600 }}>AI Analysis Status</span>
-                <span style={{ color: '#8c8c8c' }}>
-                  {loading ? 'Analyzing your data patterns...' : `Generated ${suggestions.length} personalized suggestions`}
-                </span>
-              </Stack>
-              {loading && <Spin />}
-            </FlexContainer>
-          </Card>
+            Home
+          </span>
+          <span>/</span>
+          <BulbOutlined />
+          <span>Smart Suggestions</span>
+        </Space>
+      </div>
+
+      {/* Header */}
+      <div style={{ marginBottom: '24px' }}>
+        <h2 style={{ margin: 0, color: '#667eea', fontSize: '2rem', fontWeight: 600 }}>
+          AI-Powered Query Suggestions
+        </h2>
+        <p style={{ color: '#8c8c8c', fontSize: '16px', margin: 0 }}>
+          Intelligent recommendations based on your data patterns and query history
+        </p>
+      </div>
+
+      {/* AI Status Card */}
+      <Card style={{ marginBottom: '24px' }}>
+        <Space align="center">
+          <RobotOutlined style={{ fontSize: '24px', color: '#667eea' }} />
+          <div>
+            <div style={{ color: '#667eea', fontWeight: 600 }}>AI Analysis Status</div>
+            <div style={{ color: '#8c8c8c' }}>
+              {loading ? 'Analyzing your data patterns...' : `Generated ${suggestions.length} personalized suggestions`}
+            </div>
+          </div>
+          {loading && <Spin />}
+        </Space>
+      </Card>
 
       {/* Suggestions Grid */}
       {loading ? (
-        <Card className="enhanced-card">
+        <Card>
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <Spin size="large" />
             <div style={{ marginTop: '16px' }}>
@@ -190,7 +174,6 @@ const SuggestionsPageContent: React.FC = () => {
             <Col xs={24} lg={12} key={suggestion.id}>
               <Card
                 hoverable
-                className={`enhanced-card hover-lift btn-press animate-fade-in-up stagger-${index + 2}`}
                 style={{ cursor: 'pointer', height: '100%' }}
                 onClick={() => handleSuggestionSelect(suggestion)}
               >
@@ -272,7 +255,7 @@ const SuggestionsPageContent: React.FC = () => {
           ))}
         </Row>
       ) : (
-        <Card className="enhanced-card">
+        <Card>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
@@ -304,7 +287,6 @@ const SuggestionsPageContent: React.FC = () => {
 
       {/* Quick Actions */}
       <Card
-        className="enhanced-card animate-fade-in-up"
         style={{ marginTop: '24px' }}
         title="Quick Actions"
       >

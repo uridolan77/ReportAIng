@@ -21,7 +21,7 @@ const { Title, Text, Paragraph } = Typography;
 
 // Mock data generators
 const generateHeatmapData = () => {
-  const data = [];
+  const data: Array<{ x: string; y: string; value: number; label: string }> = [];
   const categories = ['Q1', 'Q2', 'Q3', 'Q4'];
   const regions = ['North', 'South', 'East', 'West', 'Central'];
 

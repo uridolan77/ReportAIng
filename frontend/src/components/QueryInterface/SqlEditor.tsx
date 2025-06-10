@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, Button, Space, Typography, message, Tooltip, Alert } from 'antd';
 import { PlayCircleOutlined, CopyOutlined, FormatPainterOutlined, ReloadOutlined } from '@ant-design/icons';
 import { ApiService, SqlExecutionRequest } from '../../services/api';
-import { FrontendQueryResponse } from '../../types/api';
+import { QueryResponse as FrontendQueryResponse } from '../../types/query';
 
 const { Text } = Typography;
 

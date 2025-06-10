@@ -9,7 +9,7 @@ import {
   ExclamationCircleOutlined,
   LoadingOutlined
 } from '@ant-design/icons';
-import { EnhancedQueryInterface } from '../components/Enhanced/EnhancedQueryInterface';
+import { QueryInterface } from '../components/QueryInterface';
 
 const { Title, Paragraph, Text } = Typography;
 const { TabPane } = Tabs;
@@ -208,7 +208,10 @@ export const EnhancedFeaturesDemo: React.FC = () => {
             showIcon
             style={{ marginBottom: '24px' }}
           />
-          <EnhancedQueryInterface />
+          <Card title="Enhanced Query Interface">
+            <p>Enhanced Query Interface component - Coming Soon</p>
+            <p>This will include conversation context, query decomposition, and real-time streaming analytics.</p>
+          </Card>
         </TabPane>
 
         <TabPane tab={<span><CheckCircleOutlined />Feature Status</span>} key="2">

@@ -30,8 +30,8 @@ import {
   FullscreenOutlined
 } from '@ant-design/icons';
 import { Chart } from './Chart';
-import { ChartConfigurationPanel } from './ChartConfigurationPanel';
-import { VisualizationRecommendations } from './VisualizationRecommendations';
+import ChartConfigurationPanel from './ChartConfigurationPanel';
+import VisualizationRecommendations from './VisualizationRecommendations';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -236,14 +236,15 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
         </div>
       ) : (
         <VisualizationRecommendations
-          recommendations={recommendations}
-          onApplyRecommendation={(rec) => {
-            handleConfigChange({
-              type: rec.type,
-              title: rec.title,
-              xAxis: rec.xAxis,
-              yAxis: rec.yAxis
-            });
+          data={data}
+          columns={columns}
+          query={query || ''}
+          onRecommendationSelect={(rec) => {
+            // Handle recommendation selection
+            console.log('Recommendation selected:', rec);
+          }}
+          onConfigGenerated={(config) => {
+            handleConfigChange(config);
             setActiveTab('chart');
           }}
         />
@@ -253,8 +254,9 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
 
   const renderConfigurationTab = () => (
     <ChartConfigurationPanel
-      config={config}
+      data={data}
       columns={columns}
+      currentConfig={config as any}
       onConfigChange={handleConfigChange}
     />
   );
@@ -267,7 +269,7 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
       <Chart
         data={data}
         columns={columns}
-        config={config}
+        config={config as any}
         onConfigChange={handleConfigChange}
         height={fullscreen ? 600 : 400}
         loading={loading}

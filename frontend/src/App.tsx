@@ -6,7 +6,7 @@ import { Layout } from './components/Layout/Layout';
 import { Login } from './components/Auth/Login';
 import { useAuthStore } from './stores/authStore';
 import { ErrorService } from './services/errorService';
-import { EnhancedDevTools } from './components/DevTools/EnhancedDevTools';
+import { DevTools } from './components/DevTools/DevTools';
 import { ReactQueryProvider } from './components/Providers/ReactQueryProvider';
 import { StateSyncProvider } from './components/Providers/StateSyncProvider';
 import { secureApiClient } from './services/secureApiClient';
@@ -24,17 +24,17 @@ const ResultsPage = lazy(() => import('./pages/ResultsPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const SuggestionsPage = lazy(() => import('./pages/SuggestionsPage'));
-const EnhancedQueryBuilder = lazy(() => import('./components/QueryInterface/EnhancedQueryBuilder'));
+const EnhancedQueryBuilder = lazy(() => import('./components/QueryInterface/QueryBuilder').then(module => ({ default: module.QueryBuilder })));
 const UserContextPanel = lazy(() => import('./components/AI/UserContextPanel'));
 const QuerySimilarityAnalyzer = lazy(() => import('./components/AI/QuerySimilarityAnalyzer'));
-const AdvancedVisualizationWrapper = lazy(() => import('./components/Visualization/AdvancedVisualizationWrapper'));
+const AdvancedVisualizationWrapper = lazy(() => import('./components/Visualization/InteractiveVisualization').then(module => ({ default: module.InteractiveVisualization })));
 const DashboardBuilder = lazy(() => import('./components/Dashboard/DashboardBuilder'));
 const InteractiveVisualization = lazy(() => import('./components/Visualization/InteractiveVisualization').then(module => ({ default: module.InteractiveVisualization })));
 const AdvancedFeaturesDemo = lazy(() => import('./components/Demo/AdvancedFeaturesDemo').then(module => ({ default: module.AdvancedFeaturesDemo })));
 const SecurityDashboard = lazy(() => import('./components/Security/SecurityDashboard').then(module => ({ default: module.SecurityDashboard })));
 const RequestSigningDemo = lazy(() => import('./components/Security/RequestSigningDemo').then(module => ({ default: module.RequestSigningDemo })));
 const TypeSafetyDemo = lazy(() => import('./components/TypeSafety/TypeSafetyDemo').then(module => ({ default: module.TypeSafetyDemo })));
-const CacheManager = lazy(() => import('./components/Admin/CacheManager').then(module => ({ default: module.CacheManager })));
+const CacheManager = lazy(() => import('./components/Cache/CacheManager').then(module => ({ default: module.CacheManager })));
 const TuningDashboard = lazy(() => import('./components/Tuning/TuningDashboard').then(module => ({ default: module.TuningDashboard })));
 const SchemaManagementDashboard = lazy(() => import('./components/SchemaManagement/SchemaManagementDashboard').then(module => ({ default: module.SchemaManagementDashboard })));
 const QuerySuggestionsManager = lazy(() => import('./components/Admin/QuerySuggestionsManager').then(module => ({ default: module.QuerySuggestionsManager })));
@@ -192,7 +192,7 @@ const App: React.FC = () => {
                             <Route path="/templates" element={<TemplatesPage />} />
                             <Route path="/suggestions" element={<SuggestionsPage />} />
                             <Route path="/streaming" element={<AdvancedStreamingQuery />} />
-                            <Route path="/enhanced-query" element={<EnhancedQueryBuilder />} />
+                            <Route path="/enhanced-query" element={<EnhancedQueryBuilder onExecuteQuery={(query) => console.log('Executing query:', query)} />} />
                             <Route path="/enhanced-ai" element={<EnhancedQueryInterface />} />
                             <Route path="/enhanced-demo" element={<EnhancedFeaturesDemo />} />
                             <Route path="/enhanced-dashboard" element={<EnhancedDashboardInterface />} />
@@ -230,7 +230,7 @@ const App: React.FC = () => {
                     <Route path="*" element={<Navigate to="/login" replace />} />
                   </Routes>
                 )}
-                <EnhancedDevTools />
+                <DevTools />
               </div>
             </Router>
           </ConfigProvider>

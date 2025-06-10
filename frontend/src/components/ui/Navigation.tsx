@@ -116,7 +116,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
 // Tabs Component
 export interface TabsProps extends AntTabsProps {
   variant?: 'default' | 'card' | 'editable-card' | 'line';
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'large';
 }
 
 export const Tabs: React.FC<TabsProps> = ({ 
@@ -159,7 +159,7 @@ export const Tabs: React.FC<TabsProps> = ({
 // Steps Component
 export interface StepsProps extends AntStepsProps {
   variant?: 'default' | 'navigation' | 'dot';
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'default';
 }
 
 export const Steps: React.FC<StepsProps> = ({ 
@@ -172,7 +172,7 @@ export const Steps: React.FC<StepsProps> = ({
   const getType = () => {
     switch (variant) {
       case 'navigation': return 'navigation';
-      case 'dot': return 'dot';
+      case 'dot': return 'inline'; // Map 'dot' to 'inline' since 'dot' is not supported
       default: return 'default';
     }
   };

@@ -165,7 +165,7 @@ export const QueryLoadingState: React.FC<QueryLoadingProps> = ({
         </div>
       </Space>
 
-      <style jsx>{`
+      <style>{`
         @keyframes shimmer {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(100%); }
@@ -222,8 +222,8 @@ export const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({
   );
 };
 
-export const CopilotThinking: React.FC<{ message?: string }> = ({ 
-  message = "Copilot is thinking..." 
+export const CopilotThinking: React.FC<{ message?: string }> = ({
+  message = "Copilot is thinking..."
 }) => {
   return (
     <div style={{
@@ -262,7 +262,7 @@ export const CopilotThinking: React.FC<{ message?: string }> = ({
         {message}
       </Text>
 
-      <style jsx>{`
+      <style>{`
         @keyframes bounce {
           0%, 80%, 100% {
             transform: scale(0);
@@ -274,4 +274,11 @@ export const CopilotThinking: React.FC<{ message?: string }> = ({
       `}</style>
     </div>
   );
+};
+
+// Export as a collection for backward compatibility
+export const LoadingStates = {
+  QueryLoadingState,
+  ProcessingIndicator,
+  CopilotThinking
 };

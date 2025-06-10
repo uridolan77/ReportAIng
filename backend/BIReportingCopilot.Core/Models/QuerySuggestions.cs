@@ -51,13 +51,23 @@ public class QuerySuggestion
 
     public long CategoryId { get; set; }
 
-    [Required]
-    [StringLength(500)]
-    public string QueryText { get; set; } = string.Empty;
+    private string _queryText = string.Empty;
 
     [Required]
     [StringLength(500)]
-    public string Text => QueryText; // Computed property - alias for QueryText to fix interface conflicts
+    public string QueryText
+    {
+        get => _queryText;
+        set
+        {
+            _queryText = value;
+            Text = value; // Keep Text in sync
+        }
+    }
+
+    [Required]
+    [StringLength(500)]
+    public string Text { get; set; } = string.Empty; // Mapped property - alias for QueryText to fix interface conflicts
 
     [Required]
     [StringLength(200)]

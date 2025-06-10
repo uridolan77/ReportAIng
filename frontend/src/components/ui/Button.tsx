@@ -8,7 +8,7 @@ import { Button as AntButton, ButtonProps as AntButtonProps } from 'antd';
 
 export interface ButtonProps extends Omit<AntButtonProps, 'variant'> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'default';
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'large';
   fullWidth?: boolean;
 }
 
@@ -167,11 +167,19 @@ export const IconButton: React.FC<IconButtonProps> = ({
     }
   };
 
+  const getButtonSize = () => {
+    switch (size) {
+      case 'small': return 'small';
+      case 'large': return 'large';
+      default: return 'large'; // Default to large since 'medium' is not supported
+    }
+  };
+
   return (
     <Button
       {...props}
       variant={variant}
-      size={size}
+      size={getButtonSize()}
       style={{
         width: getIconSize(),
         height: getIconSize(),

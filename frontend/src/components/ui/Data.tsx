@@ -30,7 +30,7 @@ const { Group: AvatarGroup } = AntAvatar;
 // Table Component
 export interface TableProps extends AntTableProps<any> {
   variant?: 'default' | 'bordered' | 'striped' | 'compact';
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'large';
 }
 
 export const Table: React.FC<TableProps> = ({ 
@@ -62,7 +62,7 @@ export const Table: React.FC<TableProps> = ({
   const getSize = () => {
     switch (size) {
       case 'small': return 'small';
-      case 'large': return 'default';
+      case 'large': return 'middle';
       default: return 'middle';
     }
   };
@@ -83,7 +83,7 @@ export const Table: React.FC<TableProps> = ({
 // List Component
 export interface ListProps extends AntListProps<any> {
   variant?: 'default' | 'card' | 'bordered' | 'split';
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'large';
 }
 
 export const List: React.FC<ListProps> = ({ 
@@ -260,7 +260,7 @@ export const Tag: React.FC<TagProps> = ({
 // Badge Component
 export interface BadgeProps extends AntBadgeProps {
   variant?: 'default' | 'dot' | 'status' | 'ribbon';
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'default';
 }
 
 export const Badge: React.FC<BadgeProps> = ({ 
@@ -320,7 +320,7 @@ export const Badge: React.FC<BadgeProps> = ({
 // Avatar Component
 export interface AvatarProps extends AntAvatarProps {
   variant?: 'default' | 'square' | 'circle';
-  size?: 'small' | 'medium' | 'large' | 'extra-large' | number;
+  size?: 'small' | 'large' | number;
 }
 
 export const Avatar: React.FC<AvatarProps> = ({ 

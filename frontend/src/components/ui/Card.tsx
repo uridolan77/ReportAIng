@@ -8,7 +8,7 @@ import { Card as AntCard, CardProps as AntCardProps } from 'antd';
 
 export interface CardProps extends Omit<AntCardProps, 'children'> {
   children: React.ReactNode;
-  variant?: 'default' | 'outlined' | 'elevated' | 'flat';
+  variant?: 'outlined' | 'borderless';
   padding?: 'none' | 'small' | 'medium' | 'large';
   hover?: boolean;
 }

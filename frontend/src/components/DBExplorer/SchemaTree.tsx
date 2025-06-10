@@ -19,7 +19,7 @@ import {
   ReloadOutlined,
   EyeOutlined
 } from '@ant-design/icons';
-import type { TreeDataNode } from 'antd/es/tree';
+import type { DataNode } from 'antd/es/tree';
 import { DatabaseTable, DatabaseColumn } from '../../types/dbExplorer';
 
 const { Search } = Input;
@@ -76,7 +76,7 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
             <Space size="small">
               <TableOutlined style={{ color: '#1890ff' }} />
               <Text strong>{table.name}</Text>
-              {table.type === 'view' && <Tag color="purple" size="small">VIEW</Tag>}
+              {table.type === 'view' && <Tag color="purple">VIEW</Tag>}
               {table.rowCount !== undefined && (
                 <Text type="secondary" style={{ fontSize: '12px' }}>
                   ({table.rowCount.toLocaleString()} rows)
@@ -117,7 +117,7 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
                   </Tooltip>
                 )}
                 {!column.isNullable && (
-                  <Tag color="red" size="small" style={{ fontSize: '10px', padding: '0 4px' }}>
+                  <Tag color="red" style={{ fontSize: '10px', padding: '0 4px' }}>
                     NOT NULL
                   </Tag>
                 )}
@@ -132,7 +132,7 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
           data: { table, column }
         })),
         data: { table }
-      } as TreeDataNode;
+      } as DataNode;
     });
   }, [tables, searchValue, onPreviewTable]);
 

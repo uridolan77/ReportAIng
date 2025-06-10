@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, errorHandlers } from '../lib/react-query';
-import { advancedVisualizationService } from '../services/advancedVisualizationService';
+import advancedVisualizationService from '../services/advancedVisualizationService';
 
 // Hook for getting visualization recommendations
 export const useVisualizationRecommendations = (data: any[], enabled = true) => {
@@ -14,7 +14,7 @@ export const useVisualizationRecommendations = (data: any[], enabled = true) => 
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     
-    onError: errorHandlers.defaultQueryError,
+
   });
 };
 
@@ -62,7 +62,7 @@ export const useSavedCharts = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     
-    onError: errorHandlers.defaultQueryError,
+
   });
 };
 
@@ -77,7 +77,7 @@ export const useChart = (chartId: string, enabled = true) => {
     staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 60 * 60 * 1000, // 1 hour
     
-    onError: errorHandlers.defaultQueryError,
+
   });
 };
 
@@ -141,7 +141,7 @@ export const useRealtimeChart = (chartId: string, enabled = true) => {
     // Refetch frequently for real-time updates
     refetchInterval: 10 * 1000, // 10 seconds
     
-    onError: errorHandlers.defaultQueryError,
+
   });
 };
 
@@ -156,7 +156,7 @@ export const useChartAnalytics = (chartId: string, enabled = true) => {
     staleTime: 60 * 1000, // 1 minute
     gcTime: 5 * 60 * 1000, // 5 minutes
     
-    onError: errorHandlers.defaultQueryError,
+
   });
 };
 
@@ -202,7 +202,7 @@ export const useChartVersions = (chartId: string, enabled = true) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     
-    onError: errorHandlers.defaultQueryError,
+
   });
 };
 
@@ -251,7 +251,7 @@ export const useChartTemplates = () => {
     staleTime: 60 * 60 * 1000, // 1 hour
     gcTime: 2 * 60 * 60 * 1000, // 2 hours
     
-    onError: errorHandlers.defaultQueryError,
+
   });
 };
 

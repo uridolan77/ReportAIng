@@ -1,5 +1,5 @@
 import React from 'react';
-import MinimalistQueryInterface from '../components/QueryInterface/MinimalistQueryInterface';
+import { MinimalQueryInterface } from '../components/QueryInterface';
 import { QueryResponse } from '../types/query';
 
 const MinimalistQueryPage: React.FC = () => {
@@ -26,12 +26,11 @@ const MinimalistQueryPage: React.FC = () => {
   };
 
   return (
-    <MinimalistQueryInterface 
-      onQuery={handleQuery}
-      style={{
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-      }}
-    />
+    <div style={{
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    }}>
+      <MinimalQueryInterface />
+    </div>
   );
 };
 

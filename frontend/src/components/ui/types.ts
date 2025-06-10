@@ -315,14 +315,11 @@ export interface ComponentProps<T = HTMLElement> extends BaseComponentProps {
   ref?: React.Ref<T>;
 }
 
-// Export all types
-export type {
-  BaseComponentProps,
-  LayoutProps,
-  ResponsiveProps,
-  InteractiveProps,
-  FormProps,
-  ThemeProps,
-  AnimationProps,
-  AccessibilityProps,
-};
+// Additional type definitions for UI system
+export type ColorScheme = 'light' | 'dark' | 'auto';
+export type SpacingSize = 'none' | 'small' | 'medium' | 'large' | 'extra-large';
+export type BorderRadius = 'none' | 'small' | 'medium' | 'large' | 'full';
+export type BoxShadow = 'none' | 'small' | 'medium' | 'large' | 'extra-large';
+export type AccentColor = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
+
+

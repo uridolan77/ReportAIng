@@ -34,7 +34,7 @@ export interface ChartRecommendation {
  */
 export const useGamingChartProcessor = (data: any[], columns: string[]): GamingChartData => {
   return useMemo(() => {
-    const columnNames = columns.map(col => typeof col === 'string' ? col : col.name || col);
+    const columnNames = columns.map(col => typeof col === 'string' ? col : (col as any)?.name || col);
     
     // Detect gaming data patterns
     const gamingKeywords = ['GameName', 'Provider', 'GameType', 'TotalRevenue', 'NetGamingRevenue', 'TotalSessions', 'TotalBets'];

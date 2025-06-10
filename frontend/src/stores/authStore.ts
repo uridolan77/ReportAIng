@@ -37,14 +37,25 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (username: string, password: string) => {
         try {
+          console.log('🔐 Starting login process for user:', username);
+
           // Validate inputs
           if (!SecurityUtils.validateInput(username, 'username')) {
+            console.error('❌ Invalid username format:', username);
             throw new Error('Invalid username format');
           }
 
+          console.log('🔐 Calling ApiService.login...');
           const response = await ApiService.login({
             username,
             password
+          });
+
+          console.log('🔐 Login response received:', {
+            success: response?.success,
+            hasToken: !!response?.token,
+            hasUser: !!response?.user,
+            responseKeys: Object.keys(response || {})
           });
 
           if (process.env.NODE_ENV === 'development') {
@@ -54,13 +65,13 @@ export const useAuthStore = create<AuthState>()(
           if (response.success) {
             // Backend now returns camelCase properties due to JSON serialization fix
             console.log('🔐 Login response:', {
-              hasAccessToken: !!response.accessToken,
+              hasAccessToken: !!response.AccessToken,
               hasRefreshToken: !!response.refreshToken,
               user: response.user
             });
 
             // Encrypt tokens before storing (now async)
-            const accessToken = response.accessToken || '';
+            const accessToken = response.AccessToken || '';
             const refreshToken = response.refreshToken || '';
 
             if (!accessToken) {
@@ -114,13 +125,25 @@ export const useAuthStore = create<AuthState>()(
             return true;
           }
           return false;
-        } catch (error) {
-          console.error('Login failed:', error);
+        } catch (error: any) {
+          console.error('🔐 Login failed:', error);
+
+          if (error?.response?.status === 401) {
+            console.log('🔐 Login failed: Invalid credentials (401)');
+          } else if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network Error')) {
+            console.log('🔐 Login failed: Network error - backend may not be running');
+          } else {
+            console.log('🔐 Login failed: Unknown error:', error?.message || error);
+          }
+
           return false;
         }
       },
 
       logout: () => {
+        console.log('🚪 Logout called - clearing authentication state');
+        console.trace('🚪 Logout call stack:'); // This will show us where logout was called from
+
         // Clean up token manager
         tokenManager.destroy();
 
@@ -146,7 +169,7 @@ export const useAuthStore = create<AuthState>()(
           }
         });
 
-
+        console.log('🚪 Logout completed - auth state cleared');
       },
 
       refreshAuth: async () => {

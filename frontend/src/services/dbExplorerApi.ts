@@ -47,8 +47,8 @@ export class DBExplorerAPI {
       });
 
       // Handle different possible response structures
-      let tables = [];
-      let views = [];
+      let tables: any[] = [];
+      let views: any[] = [];
       let databaseName = 'Database';
 
       if (apiData.tables && Array.isArray(apiData.tables)) {
@@ -212,6 +212,7 @@ export class DBExplorerAPI {
     } = {}
   ): Promise<TableDataPreview> {
     const { limit = 1000, offset = 0, connectionName } = options;
+    let sql = ''; // Declare sql at function level
 
     try {
       console.log(`🔍 Getting table data preview for: ${tableName}, limit: ${limit}`);
@@ -223,11 +224,11 @@ export class DBExplorerAPI {
       }
 
       // Start with a simple query first, then add ordering if it works
-      let sql = `SELECT TOP ${limit} * FROM ${qualifiedTableName} WITH (NOLOCK)`;
+      sql = `SELECT TOP ${limit} * FROM ${qualifiedTableName} WITH (NOLOCK)`;
 
       // Try to get table schema to find primary key or ID column for ordering
       try {
-        const schema = await this.getSchema(connectionName);
+        const schema = await this.getDatabaseSchema(connectionName);
         const table = schema.tables?.find((t: any) => t.name === tableName);
 
         // Find the best column to order by (prefer ID, then primary key, then first column)

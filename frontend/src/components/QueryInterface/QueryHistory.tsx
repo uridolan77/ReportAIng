@@ -56,7 +56,7 @@ export const QueryHistory: React.FC<QueryHistoryProps> = ({ onQuerySelect }) => 
   return (
     <List
       dataSource={queryHistory}
-      renderItem={(item) => (
+      renderItem={(item: any) => (
         <List.Item>
           <Card
             size="small"

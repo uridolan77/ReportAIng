@@ -82,16 +82,12 @@ export const ContextTooltip: React.FC<ContextTooltipProps> = ({
       title={tooltipContent}
       placement={placement}
       trigger={trigger}
-      styles={{
-        root: {
-          maxWidth: '350px'
-        },
-        inner: {
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          border: 'none',
-          borderRadius: '8px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
-        }
+      overlayStyle={{
+        maxWidth: '350px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        border: 'none',
+        borderRadius: '8px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
       }}
     >
       {children}

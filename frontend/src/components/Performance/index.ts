@@ -4,7 +4,7 @@
  */
 
 // Core Performance Components
-export { MemoizedComponents } from './MemoizedComponents';
+export * from './MemoizedComponents';
 export { PerformanceMonitoringDashboard } from './PerformanceMonitoringDashboard';
 export { PerformanceOptimizer } from './PerformanceOptimizer';
 export { VirtualScrollList } from './VirtualScrollList';

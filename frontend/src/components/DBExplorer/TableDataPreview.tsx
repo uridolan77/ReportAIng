@@ -19,7 +19,7 @@ import {
 } from '@ant-design/icons';
 import DataTable from '../DataTable';
 import type { DataTableColumn } from '../DataTable/types';
-import { DatabaseTable, TableDataPreview as TableDataPreviewType } from '../../types/dbExplorer';
+import { DatabaseTable, DatabaseColumn, TableDataPreview as TableDataPreviewType } from '../../types/dbExplorer';
 import DBExplorerAPI from '../../services/dbExplorerApi';
 
 const { Title, Text } = Typography;
@@ -72,26 +72,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
 
     return table.columns.map(column => ({
       key: column.name,
-      title: (
-        <Space size="small">
-          <span>{column.name}</span>
-          {column.isPrimaryKey && (
-            <Tooltip title="Primary Key">
-              <Tag color="gold" size="small">PK</Tag>
-            </Tooltip>
-          )}
-          {column.isForeignKey && (
-            <Tooltip title={`Foreign Key → ${column.referencedTable}.${column.referencedColumn}`}>
-              <Tag color="green" size="small">FK</Tag>
-            </Tooltip>
-          )}
-          {!column.isNullable && (
-            <Tooltip title="Not Nullable">
-              <Tag color="red" size="small">NN</Tag>
-            </Tooltip>
-          )}
-        </Space>
-      ),
+      title: column.name,
       dataIndex: column.name,
       width: getColumnWidth(column),
       ellipsis: true,
@@ -117,7 +98,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
   // Get appropriate column width based on data type and name
   const getColumnWidth = (column: DatabaseColumn): number => {
     const name = column.name.toLowerCase();
-    const type = column.dataType.toLowerCase();
+    const type = column.dataType?.toLowerCase() || 'string';
 
     // ID columns - narrow
     if (name.includes('id') || name === 'selectid') {
@@ -152,7 +133,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
   };
 
   // Map database column types to DataTable types
-  const mapDatabaseTypeToDataTableType = (dbType: string): string => {
+  const mapDatabaseTypeToDataTableType = (dbType: string): "string" | "number" | "boolean" | "object" | "date" | "array" | "money" | "currency" => {
     const type = dbType.toLowerCase();
     if (type.includes('int') || type.includes('decimal') || type.includes('float') || type.includes('numeric')) {
       return 'number';
@@ -269,9 +250,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
               pageSize: 25,
               pageSizeOptions: [10, 25, 50, 100],
               maxHeight: 'calc(100vh - 180px)',
-              exportFileName: `${table.name}_preview`,
-              scrollX: true,
-              sticky: true
+              exportFileName: `${table.name}_preview`
             }}
             style={{ height: '100%' }}
           />

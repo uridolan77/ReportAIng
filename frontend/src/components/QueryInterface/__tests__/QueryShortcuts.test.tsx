@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryShortcuts } from '../QueryShortcuts';
 import { 
   renderWithProviders, 
@@ -382,7 +383,7 @@ describe('QueryShortcuts Component', () => {
       renderWithProviders(<QueryShortcuts {...mockProps} />);
 
       const firstTab = screen.getByRole('tab', { name: /suggestions/i });
-      await user.click(firstTab);
+      await userEvent.click(firstTab);
 
       // Tab should be focused after click
       expect(firstTab).toHaveFocus();

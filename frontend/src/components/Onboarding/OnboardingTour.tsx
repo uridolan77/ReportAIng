@@ -65,7 +65,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({
           </Text>
         </Space>
       ),
-      target: () => document.querySelector('.minimal-query-card'),
+      target: () => document.querySelector('.minimal-query-card') as HTMLElement,
       placement: 'bottom' as const,
     },
     {
@@ -82,7 +82,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({
           </ul>
         </Space>
       ),
-      target: () => document.querySelector('.quick-action-card'),
+      target: () => document.querySelector('.quick-action-card') as HTMLElement,
       placement: 'top' as const,
     },
     {
@@ -97,7 +97,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({
           </Text>
         </Space>
       ),
-      target: () => document.querySelector('.example-query-btn'),
+      target: () => document.querySelector('.example-query-btn') as HTMLElement,
       placement: 'top' as const,
     },
     {
@@ -114,7 +114,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({
           </ul>
         </Space>
       ),
-      target: () => document.querySelector('.ant-btn:has(.anticon-menu)'),
+      target: () => document.querySelector('.ant-btn:has(.anticon-menu)') as HTMLElement,
       placement: 'bottomLeft' as const,
     },
     {
@@ -129,7 +129,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({
           </Text>
         </Space>
       ),
-      target: () => document.querySelector('[data-testid="database-status"]'),
+      target: () => document.querySelector('[data-testid="database-status"]') as HTMLElement,
       placement: 'bottom' as const,
     },
     {
@@ -196,63 +196,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({
             boxShadow: 'inset 0 0 15px #fff',
           },
         }}
-        renderPanel={(props, { current, total }) => (
-          <Card
-            style={{
-              maxWidth: '400px',
-              borderRadius: '12px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
-            }}
-          >
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text strong style={{ color: '#667eea' }}>
-                  Step {current + 1} of {total}
-                </Text>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<CloseOutlined />}
-                  onClick={handleClose}
-                />
-              </div>
-              
-              <div>
-                <Text strong style={{ fontSize: '16px', display: 'block', marginBottom: '8px' }}>
-                  {props.title}
-                </Text>
-                <div>{props.description}</div>
-              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
-                <Button
-                  onClick={handlePrev}
-                  disabled={current === 0}
-                  style={{ borderRadius: '6px' }}
-                >
-                  Previous
-                </Button>
-                
-                <Space>
-                  <Button onClick={handleClose} style={{ borderRadius: '6px' }}>
-                    Skip Tour
-                  </Button>
-                  <Button
-                    type="primary"
-                    onClick={handleNext}
-                    style={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      border: 'none',
-                      borderRadius: '6px'
-                    }}
-                  >
-                    {current === steps.length - 1 ? 'Get Started' : 'Next'}
-                  </Button>
-                </Space>
-              </div>
-            </Space>
-          </Card>
-        )}
       />
 
       {/* Help Float Button */}

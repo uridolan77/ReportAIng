@@ -47,7 +47,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
-import dayjs from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -456,7 +456,7 @@ export const PerformanceMonitoringDashboard: React.FC = () => {
           </Select>
           <RangePicker
             value={timeRange}
-            onChange={(dates) => dates && setTimeRange(dates)}
+            onChange={(dates) => dates && setTimeRange(dates as [Dayjs, Dayjs])}
             showTime
             format="YYYY-MM-DD HH:mm"
           />

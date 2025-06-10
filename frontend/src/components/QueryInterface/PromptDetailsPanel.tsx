@@ -186,7 +186,7 @@ export const PromptDetailsPanel: React.FC<PromptDetailsPanelProps> = ({
                 <Space>
                   {getSectionIcon(section.type)}
                   <span>{section.title}</span>
-                  <Tag color={getSectionColor(section.type)} size="small">
+                  <Tag color={getSectionColor(section.type)}>
                     {section.type.replace('_', ' ')}
                   </Tag>
                   {section.metadata && (
@@ -238,7 +238,7 @@ export const PromptDetailsPanel: React.FC<PromptDetailsPanelProps> = ({
                     <Divider style={{ margin: '8px 0' }} />
                     <Space wrap>
                       {Object.entries(section.metadata).map(([key, value]) => (
-                        <Tag key={key} size="small" color="default">
+                        <Tag key={key} color="default">
                           {key}: {String(value)}
                         </Tag>
                       ))}

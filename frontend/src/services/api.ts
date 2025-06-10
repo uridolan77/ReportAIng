@@ -54,16 +54,27 @@ const getAuthToken = async (): Promise<string | null> => {
   }
 };
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token (except for login endpoint)
 api.interceptors.request.use(
   async (config) => {
-    const token = await getAuthToken();
-    if (token) {
-      console.log(`🔑 Adding auth token to ${config.method?.toUpperCase()} ${config.url}`);
-      config.headers.Authorization = `Bearer ${token}`;
+    // Don't add auth token to public auth endpoints
+    const isPublicAuthRequest = config.url?.includes('/auth/login') ||
+                               config.url?.includes('/auth/register') ||
+                               config.url?.includes('/auth/forgot-password') ||
+                               config.url?.includes('/auth/reset-password');
+
+    if (!isPublicAuthRequest) {
+      const token = await getAuthToken();
+      if (token) {
+        console.log(`🔑 Adding auth token to ${config.method?.toUpperCase()} ${config.url}`);
+        config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        console.log(`⚠️ No auth token available for ${config.method?.toUpperCase()} ${config.url}`);
+      }
     } else {
-      console.log(`⚠️ No auth token available for ${config.method?.toUpperCase()} ${config.url}`);
+      console.log(`🔐 Public auth request - skipping auth token for ${config.method?.toUpperCase()} ${config.url}`);
     }
+
     return config;
   },
   (error) => {
@@ -75,33 +86,60 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    console.log('🔍 API Response Error:', {
+      status: error.response?.status,
+      url: error.config?.url,
+      method: error.config?.method,
+      hasAuthHeader: !!error.config?.headers?.Authorization,
+      errorMessage: error.message
+    });
+
     if (error.response?.status === 401) {
-      if (process.env.NODE_ENV === 'development') {
+      const isLoginRequest = error.config?.url?.includes('/auth/login');
+
+      if (isLoginRequest) {
+        // 401 on login endpoint means invalid credentials, not expired session
+        console.warn('🔒 401 on login endpoint - invalid credentials');
+        console.log('❌ Login failed with credentials');
+        // Don't logout or redirect, just let the login component handle the error
+        return Promise.reject(error);
+      } else {
+        // 401 on other endpoints means expired/invalid session
         console.warn('🔒 401 Unauthorized - logging out user');
         console.log('❌ Request details:', {
           url: error.config?.url,
           method: error.config?.method,
           hasAuthHeader: !!error.config?.headers?.Authorization
         });
-      }
 
-      // Import and call the auth store logout method
-      try {
-        const { useAuthStore } = await import('../stores/authStore');
-        const authStore = useAuthStore.getState();
-        authStore.logout();
-      } catch (importError) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Failed to import auth store for logout:', importError);
+        // Import and call the auth store logout method
+        try {
+          console.log('🚨 ABOUT TO LOGOUT AND REDIRECT - PAUSING FOR 5 SECONDS');
+          console.log('🚨 Check the logs above this message!');
+
+          // Add a delay to see the logs
+          await new Promise(resolve => setTimeout(resolve, 5000));
+
+          const { useAuthStore } = await import('../stores/authStore');
+          const authStore = useAuthStore.getState();
+          authStore.logout();
+        } catch (importError) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Failed to import auth store for logout:', importError);
+          }
+          // Fallback to manual cleanup
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('auth-storage');
+          sessionStorage.clear();
         }
-        // Fallback to manual cleanup
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('auth-storage');
-        sessionStorage.clear();
-      }
 
-      // Redirect to login
-      window.location.href = '/login';
+        // Add another delay before redirect
+        console.log('🚨 REDIRECTING TO LOGIN IN 2 SECONDS...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Redirect to login
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -445,7 +483,7 @@ export class ApiService {
 
   static async logout(): Promise<void> {
     // Get refresh token from Zustand storage or fallback
-    let refreshToken = null;
+    let refreshToken: string | null = null;
     try {
       const authStorage = localStorage.getItem('auth-storage');
       if (authStorage) {
@@ -770,6 +808,48 @@ export class ApiService {
 
   static async checkCacheExists(query: string): Promise<any> {
     const response = await api.get('/api/cache/exists', { params: { query } });
+    return response.data;
+  }
+
+  // Additional methods for compatibility
+  static async getCurrentUser(): Promise<any> {
+    const response = await api.get('/api/auth/user');
+    return response.data;
+  }
+
+  // SQL validation
+  static async validateSql(sql: string): Promise<any> {
+    const response = await api.post('/api/query/validate', { sql });
+    return response.data;
+  }
+
+  // Schema metadata
+  static async getSchemaMetadata(): Promise<any> {
+    const response = await api.get('/api/schema/metadata');
+    return response.data;
+  }
+
+  static async getTableMetadata(tableName: string): Promise<any> {
+    const response = await api.get(`/api/schema/tables/${tableName}`);
+    return response.data;
+  }
+
+  // Streaming queries
+  static async startStreamingQuery(
+    query: string,
+    onData: (data: any) => void,
+    onError: (error: Error) => void,
+    onComplete: () => void
+  ): Promise<any> {
+    // Placeholder implementation
+    console.log('Streaming query not yet implemented:', query);
+    onComplete();
+    return Promise.resolve();
+  }
+
+  // Generic GET method
+  static async get<T>(url: string): Promise<T> {
+    const response = await api.get<T>(url);
     return response.data;
   }
 }

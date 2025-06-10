@@ -74,6 +74,8 @@ export const CacheManager: React.FC = () => {
   const [promptCacheEnabled, setPromptCacheEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [aiSettings, setAiSettings] = useState<any[]>([]);
+  const [cacheEnabledSetting, setCacheEnabledSetting] = useState<any>(null);
+  const [promptCacheEnabledSetting, setPromptCacheEnabledSetting] = useState<any>(null);
   const [stats, setStats] = useState<CacheStats>({
     totalEntries: 0,
     totalSize: '0 KB',
@@ -103,12 +105,14 @@ export const CacheManager: React.FC = () => {
       // Find cache-related settings
       const cacheEnabledSetting = settings.find((s: any) => s.key === 'cache-enabled');
       const promptCacheEnabledSetting = settings.find((s: any) => s.key === 'prompt-cache-enabled');
-      
+
       if (cacheEnabledSetting) {
-        setCacheEnabled(cacheEnabledSetting.value === 'true');
+        setCacheEnabledSetting(cacheEnabledSetting);
+        setCacheEnabled(cacheEnabledSetting.settingValue === 'true');
       }
       if (promptCacheEnabledSetting) {
-        setPromptCacheEnabled(promptCacheEnabledSetting.value === 'true');
+        setPromptCacheEnabledSetting(promptCacheEnabledSetting);
+        setPromptCacheEnabled(promptCacheEnabledSetting.settingValue === 'true');
       }
     } catch (error) {
       console.error('Failed to load AI settings:', error);
@@ -170,7 +174,7 @@ export const CacheManager: React.FC = () => {
 
   const loadCacheMetrics = useCallback(async () => {
     try {
-      const cacheMetrics = await queryCacheService.getMetrics();
+      const cacheMetrics = await queryCacheService.getCacheMetrics();
       setMetrics(cacheMetrics);
     } catch (error) {
       console.error('Failed to load cache metrics:', error);
@@ -187,7 +191,12 @@ export const CacheManager: React.FC = () => {
 
   const handleCacheToggle = async (enabled: boolean) => {
     try {
-      await tuningApi.updateAISetting('cache-enabled', enabled.toString());
+      if (cacheEnabledSetting) {
+        await tuningApi.updateAISetting(cacheEnabledSetting.id, {
+          ...cacheEnabledSetting,
+          settingValue: enabled.toString()
+        });
+      }
       setCacheEnabled(enabled);
       localStorage.setItem('cache-enabled', JSON.stringify(enabled));
       message.success(`Query caching ${enabled ? 'enabled' : 'disabled'}`);
@@ -199,7 +208,12 @@ export const CacheManager: React.FC = () => {
 
   const handlePromptCacheToggle = async (enabled: boolean) => {
     try {
-      await tuningApi.updateAISetting('prompt-cache-enabled', enabled.toString());
+      if (promptCacheEnabledSetting) {
+        await tuningApi.updateAISetting(promptCacheEnabledSetting.id, {
+          ...promptCacheEnabledSetting,
+          settingValue: enabled.toString()
+        });
+      }
       setPromptCacheEnabled(enabled);
       localStorage.setItem('prompt-cache-enabled', JSON.stringify(enabled));
       message.success(`Prompt caching ${enabled ? 'enabled' : 'disabled'}`);
@@ -247,7 +261,7 @@ export const CacheManager: React.FC = () => {
     }
 
     try {
-      await queryCacheService.clearByPattern(pattern);
+      await queryCacheService.invalidateCache(pattern);
       message.success(`Cleared cache entries matching pattern: ${pattern}`);
       setClearPattern('');
       loadCacheMetrics();

@@ -70,7 +70,7 @@ const HistoryPageContent: React.FC = () => {
             </p>
           </Stack>
 
-          <Card variant="elevated" padding="medium">
+          <Card>
             {queryHistory.length > 100 ? (
               <VirtualList
                 items={queryHistory}
@@ -102,10 +102,10 @@ const HistoryPageContent: React.FC = () => {
           </Card>
 
           {/* Quick Actions */}
-          <Card variant="elevated" padding="medium">
+          <Card>
             <Stack spacing="var(--space-4)">
               <h3 style={{ margin: 0, fontWeight: 600 }}>Quick Actions</h3>
-              <FlexContainer gap="var(--space-3)" wrap>
+              <FlexContainer gap="var(--space-3)">
                 <Button
                   variant="primary"
                   onClick={() => navigate('/')}

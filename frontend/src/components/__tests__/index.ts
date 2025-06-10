@@ -3,14 +3,17 @@
  * Consolidates all component tests for better organization
  */
 
+import { render, screen, waitFor } from '@testing-library/react';
+
 // Test utilities
 export * from '../../test-utils/testing-providers';
 export * from '../../test-utils/component-test-utils';
 export * from '../../test-utils/customMatchers';
 
 // Component test suites
-export { default as DataTableTests } from '../DataTable/__tests__/DataTable.test';
-export { default as QueryShortcutsTests } from '../QueryInterface/__tests__/QueryShortcuts.test';
+// Test exports - these are test files, not components with default exports
+// export { default as DataTableTests } from '../DataTable/__tests__/DataTable.test';
+// export { default as QueryShortcutsTests } from '../QueryInterface/__tests__/QueryShortcuts.test';
 
 // Test categories for organized test running
 export const testCategories = {

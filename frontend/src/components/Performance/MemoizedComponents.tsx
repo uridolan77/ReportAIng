@@ -112,13 +112,13 @@ export const MemoizedChartContainer = memo<MemoizedChartContainerProps>(({
     switch (chartType) {
       case 'heatmap':
         const HeatmapChart = React.lazy(() => import('../Visualization/D3Charts/HeatmapChart').then(m => ({ default: m.HeatmapChart })));
-        return <HeatmapChart {...chartProps} />;
+        return <HeatmapChart {...chartProps} data={Array.isArray(chartProps.data) ? chartProps.data : []} />;
       case 'treemap':
         const TreemapChart = React.lazy(() => import('../Visualization/D3Charts/TreemapChart').then(m => ({ default: m.TreemapChart })));
-        return <TreemapChart {...chartProps} />;
+        return <TreemapChart {...chartProps} data={(chartProps.data as any)?.name ? chartProps.data as any : { name: 'root', children: [] }} />;
       case 'network':
         const NetworkChart = React.lazy(() => import('../Visualization/D3Charts/NetworkChart').then(m => ({ default: m.NetworkChart })));
-        return <NetworkChart {...chartProps} />;
+        return <NetworkChart {...chartProps} data={Array.isArray(chartProps.data) ? { nodes: chartProps.data, links: [] } : { nodes: [], links: [] }} />;
       default:
         return <div>Chart type not supported</div>;
     }

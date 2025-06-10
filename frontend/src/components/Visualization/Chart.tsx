@@ -168,7 +168,7 @@ export const Chart: React.FC<ChartProps> = ({
               <RechartsTooltip />
               {config.showLegend && <Legend />}
               <Bar
-                dataKey={config.yAxis}
+                dataKey={config.yAxis || 'value'}
                 fill={getColor(0)}
                 animationDuration={config.showAnimation ? 1000 : 0}
               />
@@ -208,7 +208,7 @@ export const Chart: React.FC<ChartProps> = ({
               {config.showLegend && <Legend />}
               <Area
                 type="monotone"
-                dataKey={config.yAxis}
+                dataKey={config.yAxis || 'value'}
                 stroke={getColor(0)}
                 fill={getColor(0)}
                 animationDuration={config.showAnimation ? 1000 : 0}
@@ -224,7 +224,7 @@ export const Chart: React.FC<ChartProps> = ({
             <PieChart>
               <Pie
                 data={processedData}
-                dataKey={config.yAxis}
+                dataKey={config.yAxis || 'value'}
                 nameKey={config.xAxis}
                 cx="50%"
                 cy="50%"

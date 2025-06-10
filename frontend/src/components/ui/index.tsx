@@ -14,14 +14,26 @@ export * from './Modal';
 export * from './Data';
 export * from './Performance';
 
-// Type Definitions
-export * from './types';
+// Type Definitions - Import specific types to avoid conflicts
+export type {
+  Size,
+  Variant,
+  ColorScheme,
+  SpacingSize,
+  BorderRadius,
+  BoxShadow,
+  AccentColor
+} from './types';
 
 // Re-export for backward compatibility
 import React from 'react';
 import {
   Input as AntInput,
   InputProps as AntInputProps,
+  Button as AntButton,
+  ButtonProps as AntButtonProps,
+  Card as AntCard,
+  CardProps as AntCardProps,
   Badge as AntBadge,
   BadgeProps as AntBadgeProps,
   Tabs as AntTabs,

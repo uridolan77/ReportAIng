@@ -1,19 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
+import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 import { useComponentSize } from '../../../hooks/usePerformance';
 import { useAccessibility } from '../../../hooks/useAccessibility';
 
-// Note: d3-sankey types might need to be installed separately
-// For now, we'll use any types for sankey functions or provide fallback
-const sankey = (d3 as any).sankey || (() => {
-  console.warn('d3-sankey not available, using fallback');
-  return () => ({ nodes: [], links: [] });
-});
-const sankeyLinkHorizontal = (d3 as any).sankeyLinkHorizontal || (() => 'M0,0L0,0');
-
 interface SankeyData {
-  nodes: Array<{ id: string; name: string; category?: string; description?: string }>;
-  links: Array<{ source: string; target: string; value: number; label?: string }>;
+  nodes: Array<{ id?: string; name: string; category?: string; description?: string }>;
+  links: Array<{ source: string | number; target: string | number; value: number; label?: string }>;
 }
 
 interface SankeyChartProps {
@@ -56,20 +49,6 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
   useEffect(() => {
     if (!svgRef.current || !data.nodes.length || size.width === 0) return;
 
-    // Check if d3-sankey is available
-    if (!(d3 as any).sankey) {
-      const svg = d3.select(svgRef.current);
-      svg.selectAll('*').remove();
-      svg.append('text')
-        .attr('x', size.width / 2)
-        .attr('y', size.width * 0.3)
-        .attr('text-anchor', 'middle')
-        .style('font-size', '16px')
-        .style('fill', '#666')
-        .text('Sankey chart requires d3-sankey package');
-      return;
-    }
-
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
 
@@ -84,10 +63,22 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
     const g = svg.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Prepare data for sankey
+    // Prepare data for sankey - d3-sankey expects specific format
     const sankeyData = {
-      nodes: data.nodes.map(d => ({ ...d })),
-      links: data.links.map(d => ({ ...d }))
+      nodes: data.nodes.map((d, i) => ({
+        ...d,
+        id: d.id || i,
+        nodeId: i
+      })),
+      links: data.links.map(d => ({
+        ...d,
+        source: typeof d.source === 'string' ?
+          data.nodes.findIndex(n => n.name === d.source || n.id === d.source) :
+          d.source,
+        target: typeof d.target === 'string' ?
+          data.nodes.findIndex(n => n.name === d.target || n.id === d.target) :
+          d.target
+      }))
     };
 
     // Create sankey layout
@@ -96,7 +87,7 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({
       .nodePadding(nodePadding)
       .extent([[0, 0], [innerWidth, innerHeight]]);
 
-    const { nodes, links } = sankeyLayout(sankeyData);
+    const { nodes, links } = sankeyLayout(sankeyData as any);
 
     // Color scale
     const colorScale = d3.scaleOrdinal(colorScheme);

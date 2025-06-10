@@ -30,7 +30,7 @@ import AdvancedChart from '../Visualization/AdvancedChart';
 import ChartConfigurationPanel from '../Visualization/ChartConfigurationPanel';
 import { VisualizationRecommendation } from '../../types/visualization';
 import { useVisualizationStore } from '../../stores/visualizationStore';
-import { FrontendQueryResponse } from '../../services/api';
+import { QueryResponse as FrontendQueryResponse } from '../../types/query';
 import { useActiveResultActions } from '../../stores/activeResultStore';
 
 const { Text } = Typography;
@@ -554,12 +554,17 @@ export const QueryTabs: React.FC = () => {
 
                     <AdvancedChart
                       data={filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }))}
-                      config={currentVisualization}
-                      onConfigChange={(config) => {
-                        setVisualization(config);
+                      type={currentVisualization?.chartType as any || 'bar'}
+                      title={currentVisualization?.title}
+                      xAxisKey={currentVisualization?.xAxis || 'name'}
+                      yAxisKey={currentVisualization?.yAxis || 'value'}
+                      onTypeChange={(type) => {
+                        if (currentVisualization) {
+                          setVisualization({ ...currentVisualization, chartType: type as any });
+                        }
                       }}
-                      onExport={(format) => {
-                        console.log('Export requested:', format);
+                      onExport={() => {
+                        console.log('Export requested');
                       }}
                     />
                   </Card>

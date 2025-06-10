@@ -125,7 +125,7 @@ export const TableContextEditor: React.FC<TableContextEditorProps> = ({
               )}
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+          <Button size="small" onClick={() => setEditing(true)}>
             <Edit className="h-4 w-4 mr-2" />
             Edit
           </Button>
@@ -200,11 +200,11 @@ export const TableContextEditor: React.FC<TableContextEditorProps> = ({
       <div className="flex justify-between items-center">
         <h4 className="font-medium text-gray-900">Editing: {tableContext.tableName}</h4>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
+          <Button size="small" onClick={handleCancel} disabled={saving}>
             <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving}>
+          <Button size="small" onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4 mr-2" />
             {saving ? 'Saving...' : 'Save'}
           </Button>
@@ -255,7 +255,7 @@ export const TableContextEditor: React.FC<TableContextEditorProps> = ({
             placeholder="Add a metric"
             onKeyPress={(e) => e.key === 'Enter' && addMetric()}
           />
-          <Button type="button" variant="outline" size="sm" onClick={addMetric}>
+          <Button size="small" onClick={addMetric}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
@@ -281,7 +281,7 @@ export const TableContextEditor: React.FC<TableContextEditorProps> = ({
             placeholder="Add a query pattern"
             onKeyPress={(e) => e.key === 'Enter' && addPattern()}
           />
-          <Button type="button" variant="outline" size="sm" onClick={addPattern}>
+          <Button size="small" onClick={addPattern}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
@@ -307,7 +307,7 @@ export const TableContextEditor: React.FC<TableContextEditorProps> = ({
             placeholder="Add a business rule"
             onKeyPress={(e) => e.key === 'Enter' && addRule()}
           />
-          <Button type="button" variant="outline" size="sm" onClick={addRule}>
+          <Button size="small" onClick={addRule}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>

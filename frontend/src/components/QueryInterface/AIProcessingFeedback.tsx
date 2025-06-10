@@ -198,7 +198,7 @@ export const AIProcessingFeedback: React.FC<AIProcessingFeedbackProps> = ({
                         message="Step Error"
                         description={step.error}
                         type="error"
-                        size="small"
+
                         style={{ marginTop: '8px' }}
                       />
                     )}

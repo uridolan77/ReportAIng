@@ -4,8 +4,8 @@
  */
 
 // AI Components
-export { QuerySimilarityAnalyzer } from '../AI/QuerySimilarityAnalyzer';
-export { UserContextPanel } from '../AI/UserContextPanel';
+export { default as QuerySimilarityAnalyzer } from '../AI/QuerySimilarityAnalyzer';
+export { default as UserContextPanel } from '../AI/UserContextPanel';
 
 // Authentication
 export { Login } from '../Auth/Login';

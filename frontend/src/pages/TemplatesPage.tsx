@@ -9,7 +9,12 @@ import {
   Select,
   Tag,
   Empty,
-  Badge
+  Badge,
+  Row,
+  Col,
+  Typography,
+  Card,
+  Button
 } from 'antd';
 import {
   HomeOutlined,
@@ -22,22 +27,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
-// Import new UI components
-import {
-  Container,
-  FlexContainer,
-  GridContainer,
-  Stack,
-  Breadcrumb,
-  BreadcrumbItem,
-  PerformanceMonitor,
-  VirtualList,
-  Card,
-  Button
-} from '../components/ui';
-import type { ButtonProps } from '../components/ui/types';
 
 const { Option } = Select;
+const { Text } = Typography;
 
 const TemplatesPageContent: React.FC = () => {
   const navigate = useNavigate();
@@ -121,40 +113,33 @@ const TemplatesPageContent: React.FC = () => {
   };
 
   return (
-    <PerformanceMonitor onMetrics={(metrics) => console.log('Templates page metrics:', metrics)}>
-      <Container size="full">
-        <Stack spacing="var(--space-6)">
-          <Breadcrumb>
-            <BreadcrumbItem>
-              <FlexContainer align="center" gap="var(--space-2)">
-                <HomeOutlined />
-                <span
-                  onClick={() => navigate('/')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  Home
-                </span>
-              </FlexContainer>
-            </BreadcrumbItem>
-            <BreadcrumbItem>
-              <FlexContainer align="center" gap="var(--space-2)">
-                <BookOutlined />
-                Query Templates
-              </FlexContainer>
-            </BreadcrumbItem>
-          </Breadcrumb>
+    <div style={{ padding: '24px', background: '#f5f5f5', minHeight: '100vh' }}>
+      <div style={{ marginBottom: '24px' }}>
+        <Space>
+          <HomeOutlined />
+          <span
+            onClick={() => navigate('/')}
+            style={{ cursor: 'pointer', color: '#1890ff' }}
+          >
+            Home
+          </span>
+          <span>/</span>
+          <BookOutlined />
+          <span>Query Templates</span>
+        </Space>
+      </div>
 
-          <Stack spacing="var(--space-2)" className="animate-fade-in-up">
-            <h2 style={{ margin: 0, color: '#667eea', fontSize: '2rem', fontWeight: 600 }}>
-              Query Templates
-            </h2>
-            <p style={{ color: '#8c8c8c', fontSize: '16px', margin: 0 }}>
-              Pre-built queries to help you get started quickly ({templates.length} available)
-            </p>
-          </Stack>
+      <div style={{ marginBottom: '24px' }}>
+        <h2 style={{ margin: 0, color: '#667eea', fontSize: '2rem', fontWeight: 600 }}>
+          Query Templates
+        </h2>
+        <p style={{ color: '#8c8c8c', fontSize: '16px', margin: 0 }}>
+          Pre-built queries to help you get started quickly ({templates.length} available)
+        </p>
+      </div>
 
       {/* Search and Filters */}
-      <Card className="enhanced-card animate-fade-in-up stagger-1" style={{ marginBottom: '24px' }}>
+      <Card style={{ marginBottom: '24px' }}>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} md={12}>
             <Input
@@ -197,7 +182,6 @@ const TemplatesPageContent: React.FC = () => {
       {/* Popular Templates */}
       {popularTemplates.length > 0 && selectedCategory === 'all' && !searchTerm && (
         <Card
-          className="enhanced-card animate-fade-in-up stagger-2"
           title={
             <Space>
               <FireOutlined style={{ color: '#ff4d4f' }} />
@@ -212,7 +196,6 @@ const TemplatesPageContent: React.FC = () => {
                 <Card
                   size="small"
                   hoverable
-                  className={`hover-lift btn-press animate-fade-in-up stagger-${index + 3}`}
                   onClick={() => handleTemplateSelect(template)}
                   style={{ cursor: 'pointer' }}
                 >
@@ -239,7 +222,6 @@ const TemplatesPageContent: React.FC = () => {
             <Col xs={24} lg={12} key={template.id}>
               <Card
                 hoverable
-                className={`enhanced-card hover-lift btn-press animate-fade-in-up stagger-${index % 4 + 1}`}
                 style={{ cursor: 'pointer', height: '100%' }}
                 onClick={() => handleTemplateSelect(template)}
                 actions={[
@@ -287,7 +269,7 @@ const TemplatesPageContent: React.FC = () => {
           ))
         ) : (
           <Col span={24}>
-            <Card className="enhanced-card">
+            <Card>
               <Empty
                 description="No templates found"
                 style={{ padding: '40px 0' }}
@@ -314,7 +296,6 @@ const TemplatesPageContent: React.FC = () => {
 
       {/* Quick Actions */}
       <Card
-        className="enhanced-card animate-fade-in-up"
         style={{ marginTop: '24px' }}
         title="Quick Actions"
       >

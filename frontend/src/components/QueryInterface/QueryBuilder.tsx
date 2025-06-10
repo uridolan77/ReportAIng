@@ -191,7 +191,7 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
                     </Space>
                     <Space wrap>
                       {template.tags.map(tag => (
-                        <Tag key={tag} size="small">{tag}</Tag>
+                        <Tag key={tag}>{tag}</Tag>
                       ))}
                     </Space>
                   </Space>
@@ -210,6 +210,7 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
         setQuery(generatedQuery);
         setActiveTab('sql');
       }}
+      onClose={() => setActiveTab('sql')}
     />
   );
 
@@ -253,19 +254,27 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
         )}
 
         <SqlEditor
-          value={query}
-          onChange={setQuery}
-          onExecute={handleExecuteQuery}
-          loading={loading}
-          showLineNumbers={true}
-          enableAutoComplete={aiMode}
+          initialSql={query}
+          onExecute={(result) => {
+            // Handle the result from SQL execution
+            console.log('SQL execution result:', result);
+          }}
+          disabled={loading}
         />
 
         {aiProcessing && (
           <AIProcessingFeedback
-            stage="analyzing"
-            progress={75}
-            message="Analyzing query for optimization suggestions..."
+            isProcessing={true}
+            currentStep="Analyzing query for optimization suggestions..."
+            steps={[
+              {
+                id: 'analyze',
+                title: 'Analyzing Query',
+                description: 'Analyzing query for optimization suggestions...',
+                status: 'processing',
+                timestamp: new Date()
+              }
+            ]}
           />
         )}
 
@@ -325,8 +334,7 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
 
   const renderHistoryTab = () => (
     <QueryHistory
-      queries={queryHistory}
-      onSelectQuery={(selectedQuery) => {
+      onQuerySelect={(selectedQuery) => {
         setQuery(selectedQuery);
         setActiveTab('sql');
       }}
@@ -391,8 +399,7 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
       </Tabs>
 
       <ProactiveSuggestions
-        query={query}
-        onApplySuggestion={(suggestion) => setQuery(suggestion)}
+        onQuerySelect={(suggestion) => setQuery(suggestion)}
       />
     </Card>
   );

@@ -204,7 +204,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
           showIcon
           closable
           action={
-            <Button size="small" onClick={loadSchema}>
+            <Button size="small" onClick={() => loadSchema()}>
               Retry
             </Button>
           }

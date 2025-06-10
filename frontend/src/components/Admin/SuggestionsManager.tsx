@@ -32,8 +32,8 @@ import {
   BarChartOutlined,
   ClockCircleOutlined
 } from '@ant-design/icons';
-import DataTable from '../../DataTable';
-import { querySuggestionService, QuerySuggestion, SuggestionCategory, CreateUpdateSuggestion } from '../../../services/querySuggestionService';
+import DataTable from '../DataTable';
+import { querySuggestionService, QuerySuggestion, SuggestionCategory, CreateUpdateSuggestion } from '../../services/querySuggestionService';
 
 const { TextArea } = Input;
 const { Option } = Select;

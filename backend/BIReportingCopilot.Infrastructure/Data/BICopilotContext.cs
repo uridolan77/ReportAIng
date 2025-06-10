@@ -470,7 +470,7 @@ Return only the SQL query without any explanation or markdown formatting.",
             entity.ToTable("QuerySuggestions");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.QueryText).IsRequired().HasMaxLength(500);
-            entity.Property(e => e.Text).IsRequired().HasMaxLength(500).HasComputedColumnSql("[QueryText]");
+            entity.Property(e => e.Text).IsRequired().HasMaxLength(500);
             entity.Property(e => e.Description).IsRequired().HasMaxLength(200);
             entity.Property(e => e.DefaultTimeFrame).HasMaxLength(50);
             entity.Property(e => e.TargetTables).HasMaxLength(500);

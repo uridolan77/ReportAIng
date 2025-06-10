@@ -25,7 +25,7 @@ import {
   FireOutlined,
   EyeOutlined
 } from '@ant-design/icons';
-import { QuerySuggestion, SuggestionCategory } from '../../../services/querySuggestionService';
+import { QuerySuggestion, SuggestionCategory } from '../../services/querySuggestionService';
 
 const { Text } = Typography;
 
@@ -134,7 +134,7 @@ export const SuggestionAnalytics: React.FC<SuggestionAnalyticsProps> = ({
     return Object.entries(distribution).map(([complexity, count]) => ({
       complexity: parseInt(complexity),
       label: complexityLabels[parseInt(complexity) as keyof typeof complexityLabels] || `Level ${complexity}`,
-      count,
+      count: count as number,
       percentage: (count / suggestions.length) * 100
     })).sort((a, b) => a.complexity - b.complexity);
   }, [suggestions]);
@@ -353,7 +353,7 @@ export const SuggestionAnalytics: React.FC<SuggestionAnalyticsProps> = ({
                   <div key={item.complexity}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                       <Text>{item.label}</Text>
-                      <Text type="secondary">{item.count} ({item.percentage.toFixed(1)}%)</Text>
+                      <Text type="secondary">{`${item.count} (${item.percentage.toFixed(1)}%)`}</Text>
                     </div>
                     <Progress
                       percent={item.percentage}

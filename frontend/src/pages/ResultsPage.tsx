@@ -67,7 +67,7 @@ const ResultsPageContent: React.FC = () => {
               </BreadcrumbItem>
             </Breadcrumb>
 
-            <Card variant="elevated" padding="large">
+            <Card>
               <FlexContainer
                 direction="column"
                 align="center"
@@ -157,8 +157,8 @@ const ResultsPageContent: React.FC = () => {
             <div>
               <InView threshold={0.3} triggerOnce>
                 <Card
-                  variant="elevated"
-                  padding="medium"
+
+                  style={{ padding: '16px' }}
                 >
                   <Stack spacing="var(--space-4)">
                     <FlexContainer align="center" gap="var(--space-2)">
@@ -181,12 +181,12 @@ const ResultsPageContent: React.FC = () => {
 
           {/* Quick Actions */}
           <Card
-            variant="elevated"
-            padding="medium"
+
+            style={{ padding: '16px' }}
           >
             <Stack spacing="var(--space-4)">
               <h3 style={{ margin: 0, fontWeight: 600 }}>Quick Actions</h3>
-              <FlexContainer gap="var(--space-3)" wrap>
+              <FlexContainer gap="var(--space-3)">
                 <Button
                   variant="outline"
                   onClick={() => navigate('/')}

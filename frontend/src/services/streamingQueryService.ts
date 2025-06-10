@@ -24,9 +24,10 @@ export class StreamingQueryService {
     const token = authState.token;
 
     try {
+      const headers = await getAuthHeaders(token || undefined);
       const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.STREAMING.BASIC), {
         method: 'POST',
-        headers: getAuthHeaders(token || undefined),
+        headers,
         body: JSON.stringify(request),
       });
 
@@ -96,9 +97,10 @@ export class StreamingQueryService {
     const token = authState.token;
 
     try {
+      const headers = await getAuthHeaders(token || undefined);
       const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.STREAMING.BACKPRESSURE), {
         method: 'POST',
-        headers: getAuthHeaders(token || undefined),
+        headers,
         body: JSON.stringify(request),
       });
 
@@ -168,9 +170,10 @@ export class StreamingQueryService {
     const token = authState.token;
 
     try {
+      const headers = await getAuthHeaders(token || undefined);
       const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.STREAMING.PROGRESS), {
         method: 'POST',
-        headers: getAuthHeaders(token || undefined),
+        headers,
         body: JSON.stringify(request),
       });
 
@@ -243,9 +246,10 @@ export class StreamingQueryService {
     const token = authState.token;
 
     try {
+      const headers = await getAuthHeaders(token || undefined);
       const response = await fetch(getApiUrl(`/api/streaming/cancel/${queryId}`), {
         method: 'POST',
-        headers: getAuthHeaders(token || undefined),
+        headers,
       });
 
       return response.ok;

@@ -106,7 +106,7 @@ export const useQueryStore = create<QueryState>((set, get) => ({
 
       // Get the current auth token (encrypted) and decrypt it
       const encryptedToken = authStateForValidation.token;
-      let decryptedToken = null;
+      let decryptedToken: string | null = null;
 
       if (encryptedToken) {
         try {

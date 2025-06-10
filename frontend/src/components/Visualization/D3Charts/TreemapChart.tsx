@@ -173,7 +173,7 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
 
           // Split long names into multiple lines
           const words = d.data.name.split(' ');
-          const lines = [];
+          const lines: string[] = [];
           let currentLine = '';
 
           for (const word of words) {

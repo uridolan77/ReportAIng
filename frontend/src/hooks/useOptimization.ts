@@ -99,7 +99,7 @@ export const useChunkedProcessing = <TInput, TOutput>(
     setIsProcessing(true);
     setProgress(0);
 
-    const chunks = [];
+    const chunks: TInput[][] = [];
     for (let i = 0; i < data.length; i += chunkSize) {
       chunks.push(data.slice(i, i + chunkSize));
     }
@@ -270,10 +270,8 @@ export const usePerformanceMonitor = (componentName: string) => {
     renderCount: renderCount.current,
     performanceMetrics,
     getStats: () => ({
-      renderCount: renderCount.current,
-      lastRenderTime: lastRenderTime.current,
-      mountTime: mountTime.current,
-      ...performanceMetrics
+      ...performanceMetrics,
+      lastRenderTime: lastRenderTime.current
     })
   };
 };

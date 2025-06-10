@@ -221,6 +221,10 @@ class TokenManager {
       console.error('Failed to import auth store:', importError);
     }
 
+    // Add delay before redirect to see logs
+    console.log('🚨 TOKEN MANAGER - REDIRECTING TO LOGIN IN 3 SECONDS...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
     // Redirect to login
     window.location.href = '/login';
   }

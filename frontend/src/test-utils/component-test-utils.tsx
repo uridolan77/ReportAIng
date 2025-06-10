@@ -497,16 +497,4 @@ export class PerformanceTestUtils {
   }
 }
 
-// Export all utilities
-export {
-  QueryInterfaceTestUtils,
-  TemplateTestUtils,
-  ShortcutTestUtils,
-  VisualizationTestUtils,
-  FormTestUtils,
-  ModalTestUtils,
-  TableTestUtils,
-  NavigationTestUtils,
-  AccessibilityTestUtils,
-  PerformanceTestUtils,
-};
+// All utilities are already exported above as individual exports

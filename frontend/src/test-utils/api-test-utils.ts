@@ -3,7 +3,7 @@
  * Utilities for testing API calls, services, and data fetching
  */
 
-import { rest } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { QueryClient } from '@tanstack/react-query';
 import { 
@@ -95,61 +95,61 @@ export const mockApiResponses = {
 // MSW Request Handlers
 export const createApiHandlers = (overrides: Record<string, any> = {}) => [
   // Query API
-  rest.post(`${TEST_API_BASE_URL}/query/execute`, (req, res, ctx) => {
+  http.post(`${TEST_API_BASE_URL}/query/execute`, () => {
     const response = overrides.executeQuery || mockApiResponses.executeQuery.success;
-    return res(ctx.json(response));
+    return HttpResponse.json(response);
   }),
 
-  rest.get(`${TEST_API_BASE_URL}/query/tables`, (req, res, ctx) => {
+  http.get(`${TEST_API_BASE_URL}/query/tables`, () => {
     const response = overrides.tables || ['tbl_Daily_actions', 'tbl_Daily_actions_players'];
-    return res(ctx.json(response));
+    return HttpResponse.json(response);
   }),
 
   // Health API
-  rest.get(`${TEST_API_BASE_URL}/health`, (req, res, ctx) => {
+  http.get(`${TEST_API_BASE_URL}/health`, () => {
     const response = overrides.health || mockApiResponses.health.healthy;
-    return res(ctx.json(response));
+    return HttpResponse.json(response);
   }),
 
   // Tuning API
-  rest.get(`${TEST_API_BASE_URL}/tuning/dashboard`, (req, res, ctx) => {
+  http.get(`${TEST_API_BASE_URL}/tuning/dashboard`, () => {
     const response = overrides.tuningDashboard || mockApiResponses.tuning.dashboard;
-    return res(ctx.json(response));
+    return HttpResponse.json(response);
   }),
 
-  rest.get(`${TEST_API_BASE_URL}/tuning/business-tables`, (req, res, ctx) => {
+  http.get(`${TEST_API_BASE_URL}/tuning/business-tables`, () => {
     const response = overrides.businessTables || mockApiResponses.tuning.businessTables;
-    return res(ctx.json(response));
+    return HttpResponse.json(response);
   }),
 
-  rest.post(`${TEST_API_BASE_URL}/tuning/business-tables`, (req, res, ctx) => {
-    return res(ctx.json({ success: true, id: Date.now() }));
+  http.post(`${TEST_API_BASE_URL}/tuning/business-tables`, () => {
+    return HttpResponse.json({ success: true, id: Date.now() });
   }),
 
-  rest.put(`${TEST_API_BASE_URL}/tuning/business-tables/:id`, (req, res, ctx) => {
-    return res(ctx.json({ success: true }));
+  http.put(`${TEST_API_BASE_URL}/tuning/business-tables/:id`, () => {
+    return HttpResponse.json({ success: true });
   }),
 
-  rest.get(`${TEST_API_BASE_URL}/tuning/glossary`, (req, res, ctx) => {
+  http.get(`${TEST_API_BASE_URL}/tuning/glossary`, () => {
     const response = overrides.glossary || mockApiResponses.tuning.glossary;
-    return res(ctx.json(response));
+    return HttpResponse.json(response);
   }),
 
   // Authentication API
-  rest.post(`${TEST_API_BASE_URL}/auth/login`, (req, res, ctx) => {
+  http.post(`${TEST_API_BASE_URL}/auth/login`, () => {
     const response = overrides.login || mockApiResponses.auth.login;
-    return res(ctx.json(response));
+    return HttpResponse.json(response);
   }),
 
-  rest.post(`${TEST_API_BASE_URL}/auth/refresh`, (req, res, ctx) => {
+  http.post(`${TEST_API_BASE_URL}/auth/refresh`, () => {
     const response = overrides.refresh || mockApiResponses.auth.refresh;
-    return res(ctx.json(response));
+    return HttpResponse.json(response);
   }),
 
   // Catch-all handler for unhandled requests
-  rest.all('*', (req, res, ctx) => {
-    console.warn(`Unhandled ${req.method} request to ${req.url}`);
-    return res(ctx.status(404), ctx.json({ error: 'Not found' }));
+  http.all('*', ({ request }) => {
+    console.warn(`Unhandled ${request.method} request to ${request.url}`);
+    return new HttpResponse(null, { status: 404 });
   }),
 ];
 
@@ -173,32 +173,33 @@ export class ApiTestUtils {
 
   static mockApiResponse(endpoint: string, response: any, status: number = 200) {
     this.server.use(
-      rest.all(`${TEST_API_BASE_URL}${endpoint}`, (req, res, ctx) => {
-        return res(ctx.status(status), ctx.json(response));
+      http.all(`${TEST_API_BASE_URL}${endpoint}`, () => {
+        return HttpResponse.json(response, { status });
       })
     );
   }
 
   static mockApiError(endpoint: string, error: string, status: number = 500) {
     this.server.use(
-      rest.all(`${TEST_API_BASE_URL}${endpoint}`, (req, res, ctx) => {
-        return res(ctx.status(status), ctx.json({ error }));
+      http.all(`${TEST_API_BASE_URL}${endpoint}`, () => {
+        return HttpResponse.json({ error }, { status });
       })
     );
   }
 
   static mockApiDelay(endpoint: string, delay: number) {
     this.server.use(
-      rest.all(`${TEST_API_BASE_URL}${endpoint}`, (req, res, ctx) => {
-        return res(ctx.delay(delay), ctx.json({ success: true }));
+      http.all(`${TEST_API_BASE_URL}${endpoint}`, async () => {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return HttpResponse.json({ success: true });
       })
     );
   }
 
   static mockNetworkError(endpoint: string) {
     this.server.use(
-      rest.all(`${TEST_API_BASE_URL}${endpoint}`, (req, res, ctx) => {
-        return res.networkError('Network error');
+      http.all(`${TEST_API_BASE_URL}${endpoint}`, () => {
+        return HttpResponse.error();
       })
     );
   }
@@ -227,11 +228,6 @@ export class QueryClientTestUtils {
         mutations: {
           retry: false,
         },
-      },
-      logger: {
-        log: console.log,
-        warn: console.warn,
-        error: () => {}, // Suppress error logs in tests
       },
     });
   }
@@ -449,11 +445,4 @@ export class StorageTestUtils {
   }
 }
 
-// Export all utilities
-export {
-  mockServer,
-  createMockServer,
-  createApiHandlers,
-  mockApiResponses,
-  TEST_API_BASE_URL,
-};
+// All utilities are already exported above

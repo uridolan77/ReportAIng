@@ -126,7 +126,7 @@ export const getAuthHeaders = async (token?: string): Promise<Record<string, str
             authToken = await SecurityUtils.decryptToken(encryptedToken);
           } catch (decryptError) {
             console.warn('Failed to decrypt token in getAuthHeaders:', decryptError);
-            authToken = null;
+            authToken = undefined;
           }
         }
       }
