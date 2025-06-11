@@ -180,7 +180,7 @@ export const DatabaseStatusIndicator: React.FC = () => {
             alignItems: 'center',
             gap: '6px',
             padding: '6px 12px',
-            borderRadius: '10px',
+            borderRadius: '4px',
             cursor: 'pointer',
             background: status.isConnected
               ? 'rgba(34, 197, 94, 0.1)'

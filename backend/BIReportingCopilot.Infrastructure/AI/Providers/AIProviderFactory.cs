@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 namespace BIReportingCopilot.Infrastructure.AI.Providers;
 
 /// <summary>
-/// Factory for creating AI providers based on configuration
+/// Factory for creating AI providers based on LLM Management system configuration
 /// </summary>
 public class AIProviderFactory : IAIProviderFactory
 {
@@ -17,15 +17,18 @@ public class AIProviderFactory : IAIProviderFactory
     private readonly AIServiceConfiguration _config;
     private readonly ILogger<AIProviderFactory> _logger;
     private readonly Dictionary<string, Func<IAIProvider>> _providerFactories;
+    private readonly ILLMManagementService _llmManagementService;
 
     public AIProviderFactory(
         IServiceProvider serviceProvider,
         IOptions<AIServiceConfiguration> config,
-        ILogger<AIProviderFactory> logger)
+        ILogger<AIProviderFactory> logger,
+        ILLMManagementService llmManagementService)
     {
         _serviceProvider = serviceProvider;
         _config = config.Value;
         _logger = logger;
+        _llmManagementService = llmManagementService;
 
         _providerFactories = new Dictionary<string, Func<IAIProvider>>(StringComparer.OrdinalIgnoreCase)
         {
@@ -36,21 +39,57 @@ public class AIProviderFactory : IAIProviderFactory
 
     public IAIProvider GetProvider()
     {
+        try
+        {
+            // Get the default provider from LLM Management system
+            var providers = _llmManagementService.GetProvidersAsync().GetAwaiter().GetResult();
+            var defaultProvider = providers.FirstOrDefault(p => p.IsDefault && p.IsEnabled);
+
+            if (defaultProvider != null)
+            {
+                _logger.LogInformation("Using LLM managed provider: {ProviderName} ({ProviderId})",
+                    defaultProvider.Name, defaultProvider.ProviderId);
+                return GetManagedProvider(defaultProvider);
+            }
+
+            // Fallback to first enabled provider
+            var enabledProvider = providers.FirstOrDefault(p => p.IsEnabled);
+            if (enabledProvider != null)
+            {
+                _logger.LogInformation("Using first enabled LLM provider: {ProviderName} ({ProviderId})",
+                    enabledProvider.Name, enabledProvider.ProviderId);
+                return GetManagedProvider(enabledProvider);
+            }
+
+            _logger.LogWarning("No enabled providers found in LLM Management system. Falling back to configuration-based provider.");
+            return GetLegacyProvider();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting provider from LLM Management system. Falling back to configuration-based provider.");
+            return GetLegacyProvider();
+        }
+    }
+
+    /// <summary>
+    /// Get provider using legacy configuration (fallback)
+    /// </summary>
+    private IAIProvider GetLegacyProvider()
+    {
         // Prefer Azure OpenAI if configured, fallback to OpenAI
         if (_config.PreferAzureOpenAI && _config.AzureOpenAI.IsConfigured)
         {
-            _logger.LogInformation("Using Azure OpenAI provider");
+            _logger.LogInformation("Using legacy Azure OpenAI provider");
             return GetProvider("AzureOpenAI");
         }
 
         if (_config.OpenAI.IsConfigured)
         {
-            _logger.LogInformation("Using OpenAI provider");
+            _logger.LogInformation("Using legacy OpenAI provider");
             return GetProvider("OpenAI");
         }
 
         _logger.LogWarning("No AI provider is properly configured. Using fallback provider.");
-        // Return a fallback provider that returns mock responses
         return new FallbackAIProvider(_logger);
     }
 
@@ -61,6 +100,27 @@ public class AIProviderFactory : IAIProviderFactory
             throw new ArgumentException("Provider name cannot be null or empty", nameof(providerName));
         }
 
+        try
+        {
+            // First try to get from LLM Management system
+            var providers = _llmManagementService.GetProvidersAsync().GetAwaiter().GetResult();
+            var managedProvider = providers.FirstOrDefault(p =>
+                p.ProviderId.Equals(providerName, StringComparison.OrdinalIgnoreCase) ||
+                p.Name.Equals(providerName, StringComparison.OrdinalIgnoreCase));
+
+            if (managedProvider != null && managedProvider.IsEnabled)
+            {
+                _logger.LogInformation("Using LLM managed provider: {ProviderName} ({ProviderId})",
+                    managedProvider.Name, managedProvider.ProviderId);
+                return GetManagedProvider(managedProvider);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting managed provider {ProviderName}. Falling back to legacy provider.", providerName);
+        }
+
+        // Fallback to legacy provider factory
         if (_providerFactories.TryGetValue(providerName, out var factory))
         {
             var provider = factory();
@@ -74,6 +134,29 @@ public class AIProviderFactory : IAIProviderFactory
         }
 
         throw new ArgumentException($"Unknown provider: {providerName}", nameof(providerName));
+    }
+
+    /// <summary>
+    /// Create a provider instance from LLM Management configuration
+    /// </summary>
+    private IAIProvider GetManagedProvider(LLMProviderConfig config)
+    {
+        if (!_providerFactories.TryGetValue(config.Type, out var factory))
+        {
+            throw new ArgumentException($"Unknown provider type: {config.Type}");
+        }
+
+        var baseProvider = factory();
+
+        // Wrap the provider to make it configurable
+        var configurableProvider = new ConfigurableProviderWrapper(
+            baseProvider,
+            _serviceProvider.GetRequiredService<ILogger<ConfigurableProviderWrapper>>());
+
+        // Configure it with the managed settings
+        configurableProvider.Configure(config);
+
+        return configurableProvider;
     }
 
     public IEnumerable<string> GetAvailableProviders()

@@ -338,7 +338,8 @@ const SuggestionsPageContent: React.FC = () => {
             onClick={() => {
               setLoading(true);
               setTimeout(() => {
-                setSuggestions([...mockSuggestions].sort(() => Math.random() - 0.5));
+                // Refresh real AI suggestions instead of mock data
+                setSuggestions([...aiSuggestions].sort(() => Math.random() - 0.5));
                 setLoading(false);
               }, 1500);
             }}

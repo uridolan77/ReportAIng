@@ -567,7 +567,7 @@ export const AdvancedFeaturesDemo: React.FC = () => {
 
           <CollaborativeDashboard
             dashboardId="showcase-dashboard"
-            widgets={generateMockWidgets()}
+            widgets={[]}
             onWidgetUpdate={handleWidgetUpdate}
           />
           </>

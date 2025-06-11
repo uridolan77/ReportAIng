@@ -167,12 +167,12 @@ const DashboardPage: React.FC = () => {
               <Card.Header>
                 <Flex justify="between" align="center">
                   <h3 style={{ margin: 0 }}>Your Dashboards</h3>
-                  <Badge variant="secondary">{mockDashboards.length} dashboards</Badge>
+                  <Badge variant="secondary">{dashboards.length} dashboards</Badge>
                 </Flex>
               </Card.Header>
               <Card.Content>
                 <Grid columns={1} gap="md">
-                  {mockDashboards.map((dashboard) => (
+                  {dashboards.map((dashboard) => (
                     <Card 
                       key={dashboard.id} 
                       variant="outlined" 
@@ -221,7 +221,7 @@ const DashboardPage: React.FC = () => {
                 <Card.Header>
                   <Flex justify="between" align="center">
                     <h3 style={{ margin: 0 }}>
-                      {mockDashboards.find(d => d.id === selectedDashboard)?.name}
+                      {dashboards.find(d => d.id === selectedDashboard)?.name}
                     </h3>
                     <Button variant="ghost" onClick={() => setSelectedDashboard(null)}>
                       ✕ Close
@@ -244,7 +244,7 @@ const DashboardPage: React.FC = () => {
             </Card.Content>
           </Card>
         )}
-      </Container>
+      </div>
     </PageLayout>
   );
 };

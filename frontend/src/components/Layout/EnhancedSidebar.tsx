@@ -9,6 +9,8 @@ import { Link, useLocation } from 'react-router-dom';
 
 export interface EnhancedSidebarProps {
   className?: string;
+  collapsed?: boolean;
+  onCollapse?: (collapsed: boolean) => void;
 }
 
 interface NavItem {
@@ -19,7 +21,11 @@ interface NavItem {
   adminOnly?: boolean;
 }
 
-const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({ className = '' }) => {
+const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({
+  className = '',
+  collapsed = false,
+  onCollapse
+}) => {
   const location = useLocation();
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
@@ -44,6 +50,9 @@ const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({ className = '' }) => 
     
     // Admin Features
     { path: '/admin/tuning', label: '🤖 AI Tuning', category: 'Admin', adminOnly: true },
+    { path: '/admin/llm', label: '🧠 LLM Management', category: 'Admin', adminOnly: true },
+    { path: '/admin/llm-test', label: '🧪 LLM Test', category: 'Admin', adminOnly: true },
+    { path: '/admin/llm-debug', label: '🐛 LLM Debug', category: 'Admin', adminOnly: true },
     { path: '/admin/schemas', label: '🗂️ Schema Management', category: 'Admin', adminOnly: true },
     { path: '/admin/cache', label: '💾 Cache Management', category: 'Admin', adminOnly: true },
     { path: '/admin/security', label: '🔒 Security', category: 'Admin', adminOnly: true },
@@ -86,16 +95,24 @@ const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({ className = '' }) => 
         to={item.path}
         style={{
           display: 'block',
-          padding: '10px 20px',
+          padding: collapsed ? '8px' : '10px 20px',
           textDecoration: 'none',
           color: isActive(item.path) ? '#1890ff' : '#666',
           backgroundColor: isActive(item.path) ? '#e6f7ff' : 'transparent',
           borderRight: isActive(item.path) ? '3px solid #1890ff' : 'none',
           fontWeight: isActive(item.path) ? 600 : 400,
-          fontSize: '14px',
+          fontSize: collapsed ? '16px' : '14px',
           borderRadius: '4px',
           margin: '2px 8px',
           transition: 'all 0.2s ease',
+          textAlign: collapsed ? 'center' : 'left',
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          height: collapsed ? '32px' : 'auto',
+          lineHeight: collapsed ? '16px' : 'normal',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'flex-start',
         }}
         onMouseEnter={(e) => {
           if (!isActive(item.path)) {
@@ -107,18 +124,62 @@ const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({ className = '' }) => 
             e.currentTarget.style.backgroundColor = 'transparent';
           }
         }}
+        title={collapsed ? item.label : undefined}
       >
-        {item.label}
+        {collapsed ? (
+          <div
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: isActive(item.path) ? '#1890ff' : '#999',
+              transition: 'all 0.2s ease',
+            }}
+          />
+        ) : (
+          item.label
+        )}
       </Link>
     </li>
   );
 
   const renderCategory = (categoryName: string, items: NavItem[]) => {
-    const isCollapsed = collapsedCategories.has(categoryName);
-    
+    const isCategoryCollapsed = collapsedCategories.has(categoryName);
+
     if (categoryName === 'Main') {
       return (
         <div key={categoryName} style={{ marginBottom: '20px' }}>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {items.map(renderNavItem)}
+          </ul>
+        </div>
+      );
+    }
+
+    if (collapsed) {
+      // In collapsed sidebar, show only dots for categories
+      return (
+        <div key={categoryName} style={{ marginBottom: '8px' }}>
+          {categoryName !== 'Main' && (
+            <div
+              style={{
+                padding: '4px 8px',
+                textAlign: 'center',
+                marginBottom: '4px',
+              }}
+              title={categoryName}
+            >
+              <div
+                style={{
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: '50%',
+                  backgroundColor: '#ccc',
+                  margin: '0 auto',
+                }}
+              />
+            </div>
+          )}
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {items.map(renderNavItem)}
           </ul>
@@ -144,14 +205,14 @@ const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({ className = '' }) => 
           }}
         >
           {categoryName}
-          <span style={{ 
-            transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+          <span style={{
+            transform: isCategoryCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
             transition: 'transform 0.2s ease'
           }}>
             ▼
           </span>
         </div>
-        {!isCollapsed && (
+        {!isCategoryCollapsed && (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {items.map(renderNavItem)}
           </ul>
@@ -161,34 +222,87 @@ const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({ className = '' }) => 
   };
 
   return (
-    <div 
-      className={`enhanced-sidebar ${className}`}
+    <div
+      className={`enhanced-sidebar ${collapsed ? 'collapsed' : ''} ${className}`}
       style={{
-        width: '280px',
+        width: collapsed ? '80px' : '280px',
         minHeight: '100vh',
         backgroundColor: '#fafafa',
         borderRight: '1px solid #e8e8e8',
         padding: '20px 0',
         overflowY: 'auto',
+        transition: 'width 0.3s ease',
+        position: 'relative',
       }}
     >
-      <div style={{ padding: '0 20px', marginBottom: '30px' }}>
-        <h2 style={{ 
-          margin: 0, 
-          fontSize: '18px', 
-          fontWeight: 600,
-          color: '#1890ff'
-        }}>
-          BI Reporting Copilot
-        </h2>
-        <p style={{ 
-          margin: '4px 0 0 0', 
-          fontSize: '12px', 
-          color: '#999',
-          fontWeight: 400
-        }}>
-          AI-Powered Business Intelligence
-        </p>
+      {/* Collapse Toggle Button */}
+      <div
+        onClick={() => onCollapse?.(!collapsed)}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: collapsed ? '10px' : '20px',
+          width: '24px',
+          height: '24px',
+          borderRadius: '3px',
+          background: '#f5f5f5',
+          border: '1px solid #d9d9d9',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          fontSize: '12px',
+          color: '#666',
+          zIndex: 10,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = '#e6f7ff';
+          e.currentTarget.style.borderColor = '#91d5ff';
+          e.currentTarget.style.color = '#1890ff';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = '#f5f5f5';
+          e.currentTarget.style.borderColor = '#d9d9d9';
+          e.currentTarget.style.color = '#666';
+        }}
+      >
+        {collapsed ? '→' : '←'}
+      </div>
+
+      <div style={{
+        padding: collapsed ? '0 10px' : '0 20px',
+        marginBottom: '30px',
+        marginTop: '50px'
+      }}>
+        {!collapsed ? (
+          <>
+            <h2 style={{
+              margin: 0,
+              fontSize: '18px',
+              fontWeight: 600,
+              color: '#1890ff'
+            }}>
+              BI Reporting Copilot
+            </h2>
+            <p style={{
+              margin: '4px 0 0 0',
+              fontSize: '12px',
+              color: '#999',
+              fontWeight: 400
+            }}>
+              AI-Powered Business Intelligence
+            </p>
+          </>
+        ) : (
+          <div style={{
+            textAlign: 'center',
+            fontSize: '20px',
+            color: '#1890ff'
+          }}>
+            🤖
+          </div>
+        )}
       </div>
       
       <nav>
@@ -198,22 +312,31 @@ const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({ className = '' }) => 
       </nav>
 
       {isAdmin && (
-        <div style={{ 
-          position: 'absolute', 
-          bottom: '20px', 
-          left: '20px', 
-          right: '20px',
-          padding: '12px',
+        <div style={{
+          position: 'absolute',
+          bottom: '20px',
+          left: collapsed ? '10px' : '20px',
+          right: collapsed ? '10px' : '20px',
+          padding: collapsed ? '8px' : '12px',
           backgroundColor: '#e6f7ff',
           borderRadius: '6px',
-          border: '1px solid #91d5ff'
+          border: '1px solid #91d5ff',
+          textAlign: collapsed ? 'center' : 'left'
         }}>
-          <div style={{ fontSize: '12px', color: '#1890ff', fontWeight: 600 }}>
-            👑 Admin Access
-          </div>
-          <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
-            Full system access enabled
-          </div>
+          {collapsed ? (
+            <div style={{ fontSize: '16px' }} title="Admin Access">
+              👑
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize: '12px', color: '#1890ff', fontWeight: 600 }}>
+                👑 Admin Access
+              </div>
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
+                Full system access enabled
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

@@ -9,6 +9,9 @@
 export { DatabaseConnectionBanner } from './DatabaseConnectionBanner';
 export { DatabaseStatusIndicator } from './DatabaseStatusIndicator';
 
+// Corner Components
+export { CornerStatusPanel } from './AppHeader';
+
 // Note: Modern layout components are available from '../core/Layouts'
 // They are not re-exported here to avoid duplicate exports
 

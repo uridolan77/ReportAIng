@@ -52,6 +52,8 @@ public class GenerateSqlCommand : IRequest<GenerateSqlResponse>
     public SchemaMetadata Schema { get; set; } = new();
     public string UserId { get; set; } = string.Empty;
     public string SessionId { get; set; } = string.Empty;
+    public string? ProviderId { get; set; }
+    public string? ModelId { get; set; }
 }
 
 /// <summary>

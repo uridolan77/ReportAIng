@@ -37,6 +37,10 @@ public class QueryOptions
     public string[]? DataSources { get; set; }
 
     public Dictionary<string, object>? Parameters { get; set; }
+
+    // LLM Management options
+    public string? ProviderId { get; set; }
+    public string? ModelId { get; set; }
 }
 
 public class QueryResponse

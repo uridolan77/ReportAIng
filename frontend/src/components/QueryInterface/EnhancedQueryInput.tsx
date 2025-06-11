@@ -14,6 +14,7 @@ import {
   ExpandOutlined,
   CompressOutlined
 } from '@ant-design/icons';
+import { LLMSelector } from '../AI/LLMSelector';
 
 const { TextArea } = Input;
 
@@ -27,7 +28,7 @@ interface QuerySuggestion {
 interface EnhancedQueryInputProps {
   value?: string;
   onChange?: (value: string) => void;
-  onSubmit?: (query: string) => void;
+  onSubmit?: (query: string, options?: { providerId?: string; modelId?: string }) => void;
   placeholder?: string;
   disabled?: boolean;
   loading?: boolean;
@@ -35,6 +36,7 @@ interface EnhancedQueryInputProps {
   onSuggestionSelect?: (suggestion: QuerySuggestion) => void;
   showHistory?: boolean;
   showTemplates?: boolean;
+  showLLMSelector?: boolean;
   autoResize?: boolean;
   maxRows?: number;
   minRows?: number;
@@ -51,6 +53,7 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
   onSuggestionSelect,
   showHistory = true,
   showTemplates = true,
+  showLLMSelector = false,
   autoResize = true,
   maxRows = 8,
   minRows = 3
@@ -59,6 +62,8 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [selectedProviderId, setSelectedProviderId] = useState<string>();
+  const [selectedModelId, setSelectedModelId] = useState<string>();
   const inputRef = useRef<any>(null);
 
   useEffect(() => {
@@ -81,9 +86,12 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
 
   const handleSubmit = useCallback(() => {
     if (inputValue.trim() && !loading) {
-      onSubmit?.(inputValue.trim());
+      onSubmit?.(inputValue.trim(), {
+        providerId: selectedProviderId,
+        modelId: selectedModelId
+      });
     }
-  }, [inputValue, loading, onSubmit]);
+  }, [inputValue, loading, onSubmit, selectedProviderId, selectedModelId]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -144,12 +152,26 @@ export const EnhancedQueryInput: React.FC<EnhancedQueryInputProps> = ({
 
   return (
     <div style={{ position: 'relative' }}>
-      <div style={{ 
+      {/* LLM Selector */}
+      {showLLMSelector && (
+        <LLMSelector
+          selectedProviderId={selectedProviderId}
+          selectedModelId={selectedModelId}
+          useCase="SQL"
+          onProviderChange={setSelectedProviderId}
+          onModelChange={setSelectedModelId}
+          compact={true}
+          showStatus={true}
+        />
+      )}
+
+      <div style={{
         border: '2px solid #f0f0f0',
         borderRadius: '12px',
         padding: '16px',
         background: '#fff',
         transition: 'all 0.3s ease',
+        marginTop: showLLMSelector ? '8px' : '0',
         ...(inputRef.current?.focused && {
           borderColor: '#667eea',
           boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)'

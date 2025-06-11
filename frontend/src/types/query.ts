@@ -18,6 +18,9 @@ export interface QueryOptions {
   enableStreaming?: boolean;
   dataSources?: string[];
   parameters?: Record<string, any>;
+  // LLM Management options
+  providerId?: string;
+  modelId?: string;
 }
 
 export interface QueryResponse {

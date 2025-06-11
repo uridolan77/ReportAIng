@@ -44,8 +44,18 @@ public class GenerateSqlCommandHandler : IRequestHandler<GenerateSqlCommand, Gen
             _logger.LogInformation("📝 Prompt built - Template: {TemplateName}, Length: {Length}", 
                 promptDetails?.TemplateName, prompt?.Length ?? 0);
 
-            // Generate SQL using AI
-            var generatedSQL = await _aiService.GenerateSQLAsync(prompt, cancellationToken);
+            // Generate SQL using AI with managed provider/model if specified
+            string generatedSQL;
+            if (_aiService is ILLMAwareAIService llmAwareService &&
+                (!string.IsNullOrEmpty(request.ProviderId) || !string.IsNullOrEmpty(request.ModelId)))
+            {
+                generatedSQL = await llmAwareService.GenerateSQLWithManagedModelAsync(
+                    prompt, request.ProviderId, request.ModelId, cancellationToken);
+            }
+            else
+            {
+                generatedSQL = await _aiService.GenerateSQLAsync(prompt, cancellationToken);
+            }
             var aiExecutionTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
 
             if (string.IsNullOrWhiteSpace(generatedSQL))

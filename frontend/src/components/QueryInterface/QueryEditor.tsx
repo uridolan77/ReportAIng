@@ -71,7 +71,7 @@ export const QueryEditor: React.FC = () => {
               onSubmit={handleSubmitQuery}
               loading={isLoading}
               placeholder="Ask a question about your data... (e.g., 'Show me revenue by country last month')"
-
+              showLLMSelector={true}
             />
 
             {/* Enhanced Action Buttons */}

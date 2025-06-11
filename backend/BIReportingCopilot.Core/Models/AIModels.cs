@@ -469,6 +469,119 @@ public enum StreamingSessionStatus
     Terminated
 }
 
+// LLM Management Models
+/// <summary>
+/// LLM provider configuration model
+/// </summary>
+public class LLMProviderConfig
+{
+    public string ProviderId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty; // OpenAI, AzureOpenAI, etc.
+    public string ApiKey { get; set; } = string.Empty;
+    public string Endpoint { get; set; } = string.Empty;
+    public string Organization { get; set; } = string.Empty;
+    public bool IsEnabled { get; set; } = true;
+    public bool IsDefault { get; set; } = false;
+    public Dictionary<string, object> Settings { get; set; } = new();
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// LLM model configuration
+/// </summary>
+public class LLMModelConfig
+{
+    public string ModelId { get; set; } = string.Empty;
+    public string ProviderId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public float Temperature { get; set; } = 0.1f;
+    public int MaxTokens { get; set; } = 2000;
+    public float TopP { get; set; } = 1.0f;
+    public float FrequencyPenalty { get; set; } = 0.0f;
+    public float PresencePenalty { get; set; } = 0.0f;
+    public bool IsEnabled { get; set; } = true;
+    public string UseCase { get; set; } = string.Empty; // SQL, Insights, etc.
+    public decimal CostPerToken { get; set; } = 0.0m;
+    public Dictionary<string, object> Capabilities { get; set; } = new();
+}
+
+/// <summary>
+/// LLM usage log entry
+/// </summary>
+public class LLMUsageLog
+{
+    public long Id { get; set; }
+    public string RequestId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string ProviderId { get; set; } = string.Empty;
+    public string ModelId { get; set; } = string.Empty;
+    public string RequestType { get; set; } = string.Empty; // SQL, Insights, etc.
+    public string RequestText { get; set; } = string.Empty;
+    public string ResponseText { get; set; } = string.Empty;
+    public int InputTokens { get; set; }
+    public int OutputTokens { get; set; }
+    public int TotalTokens { get; set; }
+    public decimal Cost { get; set; }
+    public long DurationMs { get; set; }
+    public bool Success { get; set; }
+    public string? ErrorMessage { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
+/// LLM cost summary
+/// </summary>
+public class LLMCostSummary
+{
+    public string ProviderId { get; set; } = string.Empty;
+    public string ModelId { get; set; } = string.Empty;
+    public DateTime Date { get; set; }
+    public int TotalRequests { get; set; }
+    public int TotalTokens { get; set; }
+    public decimal TotalCost { get; set; }
+    public decimal AverageCost { get; set; }
+    public long AverageResponseTime { get; set; }
+    public double SuccessRate { get; set; }
+}
+
+/// <summary>
+/// LLM usage analytics
+/// </summary>
+public class LLMUsageAnalytics
+{
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public int TotalRequests { get; set; }
+    public int TotalTokens { get; set; }
+    public decimal TotalCost { get; set; }
+    public long AverageResponseTime { get; set; }
+    public double SuccessRate { get; set; }
+    public List<LLMCostSummary> CostByProvider { get; set; } = new();
+    public List<LLMCostSummary> CostByModel { get; set; } = new();
+    public Dictionary<string, int> RequestsByType { get; set; } = new();
+    public Dictionary<string, decimal> CostByType { get; set; } = new();
+    public List<LLMUsageLog> TopRequests { get; set; } = new();
+}
+
+/// <summary>
+/// LLM provider status
+/// </summary>
+public class LLMProviderStatus
+{
+    public string ProviderId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public bool IsConnected { get; set; }
+    public bool IsHealthy { get; set; }
+    public string? LastError { get; set; }
+    public DateTime LastChecked { get; set; }
+    public long LastResponseTime { get; set; }
+    public Dictionary<string, object> HealthDetails { get; set; } = new();
+}
+
 // AI Provider Models
 /// <summary>
 /// Options for AI provider operations

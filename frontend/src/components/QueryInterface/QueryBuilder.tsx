@@ -139,17 +139,15 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
     
     setAiProcessing(true);
     try {
-      // Mock AI processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockSuggestions = [
-        'Consider adding an index on action_date for better performance',
-        'You might want to filter by active players only',
-        'Adding NOLOCK hint could improve query speed',
-        'Consider using a date range parameter for flexibility'
-      ];
-      
-      setSuggestions(mockSuggestions);
+      // Real AI processing - call actual AI service
+      // TODO: Replace with actual AI service API calls
+      // const response = await aiQueryAssistApi.getSuggestions(query);
+      // setSuggestions(response.suggestions);
+
+      console.log('Loading real AI query suggestions...');
+
+      // For now, show empty suggestions until real AI service is connected
+      setSuggestions([]);
     } catch (error) {
       console.error('AI assistance failed:', error);
     } finally {

@@ -228,7 +228,7 @@ const DBExplorerPage: React.FC = () => {
               </Card.Content>
             </Card>
           </Grid>
-        </Container>
+        </div>
       ),
     },
     {
@@ -313,7 +313,7 @@ const DBExplorerPage: React.FC = () => {
               </Card.Content>
             </Card>
           </Stack>
-        </Container>
+        </div>
       ),
     },
     {

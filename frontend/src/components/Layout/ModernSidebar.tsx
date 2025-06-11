@@ -40,6 +40,9 @@ const ModernSidebar: React.FC<ModernSidebarProps> = ({ className = '' }) => {
 
     // Admin Features
     { path: '/admin/tuning', label: '🤖 AI Tuning', category: 'Admin', adminOnly: true },
+    { path: '/admin/llm', label: '🧠 LLM Management', category: 'Admin', adminOnly: true },
+    { path: '/admin/llm-test', label: '🧪 LLM Test', category: 'Admin', adminOnly: true },
+    { path: '/admin/llm-debug', label: '🐛 LLM Debug', category: 'Admin', adminOnly: true },
     { path: '/admin/schemas', label: '🗂️ Schema Management', category: 'Admin', adminOnly: true },
     { path: '/admin/cache', label: '💾 Cache Management', category: 'Admin', adminOnly: true },
     { path: '/admin/security', label: '🔒 Security', category: 'Admin', adminOnly: true },

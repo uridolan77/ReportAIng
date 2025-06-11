@@ -12,11 +12,11 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { secureApiClient } from './services/secureApiClient';
 // Import new modern UI components
 import {
-  AppLayout,
   LoadingFallback
 } from './components/core';
 import { PerformanceMonitor, BundleAnalyzer } from './components/ui';
 import EnhancedSidebar from './components/Layout/EnhancedSidebar';
+import { CornerStatusPanel } from './components/Layout/AppHeader';
 import './App.css';
 
 // Lazy load pages and features - Modern page components
@@ -31,6 +31,9 @@ const DBExplorerPage = lazy(() => import('./pages/DBExplorerPage'));
 
 // Admin pages
 const TuningPage = lazy(() => import('./pages/admin/TuningPage'));
+const LLMManagementPage = lazy(() => import('./pages/admin/LLMManagementPage'));
+const LLMTestPage = lazy(() => import('./pages/admin/LLMTestPage'));
+const LLMDebugPage = lazy(() => import('./pages/admin/LLMDebugPage'));
 const SchemaManagementPage = lazy(() => import('./components/SchemaManagement/SchemaManagementDashboard').then(module => ({ default: module.SchemaManagementDashboard })));
 const CacheManagementPage = lazy(() => import('./components/Cache/CacheManager').then(module => ({ default: module.CacheManager })));
 const SecurityPage = lazy(() => import('./components/Security/SecurityDashboard').then(module => ({ default: module.SecurityDashboard })));
@@ -91,6 +94,7 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
   isAdmin
 }) => {
   const { antdTheme } = useTheme();
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
 
   return (
     <ConfigProvider theme={antdTheme}>
@@ -98,12 +102,19 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
         <div className="App">
           {isAuthenticated ? (
             <Suspense fallback={<LoadingFallback />}>
-              <AppLayout
-                sidebar={<EnhancedSidebar />}
-                sidebarCollapsible={true}
-                sidebarDefaultCollapsed={false}
-              >
-                <Routes>
+              <CornerStatusPanel />
+              <div style={{ display: 'flex', minHeight: '100vh' }}>
+                <EnhancedSidebar
+                  collapsed={sidebarCollapsed}
+                  onCollapse={setSidebarCollapsed}
+                />
+                <div style={{
+                  flex: 1,
+                  backgroundColor: '#f5f5f5',
+                  padding: '24px',
+                  paddingTop: '80px' // Space for corner panel
+                }}>
+                  <Routes>
                   {/* Main Interface */}
                   <Route path="/" element={<QueryInterface />} />
 
@@ -125,6 +136,9 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
                   {isAdmin && (
                     <>
                       <Route path="/admin/tuning" element={<TuningPage />} />
+                      <Route path="/admin/llm" element={<LLMManagementPage />} />
+                      <Route path="/admin/llm-test" element={<LLMTestPage />} />
+                      <Route path="/admin/llm-debug" element={<LLMDebugPage />} />
                       <Route path="/admin/schemas" element={<SchemaManagementPage />} />
                       <Route path="/admin/cache" element={<CacheManagementPage />} />
                       <Route path="/admin/security" element={<SecurityPage />} />
@@ -142,7 +156,8 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
                   {/* Catch all */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-              </AppLayout>
+                </div>
+              </div>
             </Suspense>
           ) : (
             <Routes>

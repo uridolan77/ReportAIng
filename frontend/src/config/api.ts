@@ -66,6 +66,30 @@ export const API_CONFIG = {
       IMPORT: '/api/SchemaManagement/import',
     },
 
+    // LLM Management endpoints
+    LLM_MANAGEMENT: {
+      PROVIDERS: '/api/LLMManagement/providers',
+      PROVIDER_BY_ID: '/api/LLMManagement/providers',
+      PROVIDER_TEST: '/api/LLMManagement/providers',
+      PROVIDER_HEALTH: '/api/LLMManagement/providers/health',
+      MODELS: '/api/LLMManagement/models',
+      MODEL_BY_ID: '/api/LLMManagement/models',
+      DEFAULT_MODEL: '/api/LLMManagement/models/default',
+      SET_DEFAULT_MODEL: '/api/LLMManagement/models',
+      USAGE_HISTORY: '/api/LLMManagement/usage/history',
+      USAGE_ANALYTICS: '/api/LLMManagement/usage/analytics',
+      USAGE_EXPORT: '/api/LLMManagement/usage/export',
+      COST_SUMMARY: '/api/LLMManagement/costs/summary',
+      CURRENT_MONTH_COST: '/api/LLMManagement/costs/current-month',
+      COST_PROJECTIONS: '/api/LLMManagement/costs/projections',
+      COST_LIMITS: '/api/LLMManagement/costs/limits',
+      COST_ALERTS: '/api/LLMManagement/costs/alerts',
+      PERFORMANCE_METRICS: '/api/LLMManagement/performance/metrics',
+      CACHE_HIT_RATES: '/api/LLMManagement/performance/cache-hit-rates',
+      ERROR_ANALYSIS: '/api/LLMManagement/performance/error-analysis',
+      DASHBOARD_SUMMARY: '/api/LLMManagement/dashboard/summary',
+    },
+
     // Cache Management endpoints
     CACHE: {
       CLEAR: '/api/cache/clear',

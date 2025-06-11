@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Data.Configurations;
+using System.Text.Json;
 
 namespace BIReportingCopilot.Infrastructure.Data;
 
@@ -61,6 +62,11 @@ public class BICopilotContext : DbContext
     public DbSet<SchemaGlossaryTerm> SchemaGlossaryTerms { get; set; }
     public DbSet<SchemaRelationship> SchemaRelationships { get; set; }
     public DbSet<UserSchemaPreference> UserSchemaPreferences { get; set; }
+
+    // LLM Management entities
+    public DbSet<LLMProviderConfig> LLMProviderConfigs { get; set; }
+    public DbSet<LLMModelConfig> LLMModelConfigs { get; set; }
+    public DbSet<LLMUsageLog> LLMUsageLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -520,6 +526,64 @@ Return only the SQL query without any explanation or markdown formatting.",
             entity.Property(e => e.SqlExpression).IsRequired().HasMaxLength(500);
             entity.HasIndex(e => e.TimeFrameKey).IsUnique();
             entity.HasIndex(e => new { e.IsActive, e.SortOrder });
+        });
+
+        // LLM Management entity configurations
+        modelBuilder.Entity<LLMProviderConfig>(entity =>
+        {
+            entity.ToTable("LLMProviderConfigs");
+            entity.HasKey(e => e.ProviderId);
+            entity.Property(e => e.ProviderId).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Type).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ApiKey).HasMaxLength(500);
+            entity.Property(e => e.Endpoint).HasMaxLength(500);
+            entity.Property(e => e.Organization).HasMaxLength(100);
+            entity.Property(e => e.Settings).HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>());
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => new { e.IsEnabled, e.IsDefault });
+        });
+
+        modelBuilder.Entity<LLMModelConfig>(entity =>
+        {
+            entity.ToTable("LLMModelConfigs");
+            entity.HasKey(e => e.ModelId);
+            entity.Property(e => e.ModelId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.ProviderId).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(150);
+            entity.Property(e => e.UseCase).HasMaxLength(50);
+            entity.Property(e => e.CostPerToken).HasPrecision(18, 8);
+            entity.Property(e => e.Capabilities).HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>());
+            entity.HasIndex(e => e.ProviderId);
+            entity.HasIndex(e => new { e.IsEnabled, e.UseCase });
+        });
+
+        modelBuilder.Entity<LLMUsageLog>(entity =>
+        {
+            entity.ToTable("LLMUsageLogs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.RequestId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.ProviderId).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ModelId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.RequestType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.RequestText).IsRequired();
+            entity.Property(e => e.ResponseText).IsRequired();
+            entity.Property(e => e.Cost).HasPrecision(18, 8);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(1000);
+            entity.Property(e => e.Metadata).HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>());
+            entity.HasIndex(e => e.RequestId);
+            entity.HasIndex(e => new { e.UserId, e.Timestamp }).IsDescending();
+            entity.HasIndex(e => new { e.ProviderId, e.Timestamp }).IsDescending();
+            entity.HasIndex(e => new { e.ModelId, e.Timestamp }).IsDescending();
+            entity.HasIndex(e => new { e.RequestType, e.Timestamp }).IsDescending();
         });
     }
 }

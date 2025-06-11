@@ -129,22 +129,115 @@
 .query-interface {
   padding: 0;
   margin: 0;
-  min-height: calc(100vh - 64px);
+  min-height: 100vh;
   background: transparent;
   font-family: var(--font-family-primary);
   color: var(--neutral-700);
   line-height: 1.6;
 }
 
-/* Enhanced Sidebar Styles */
-.ant-layout-sider {
-  background: #ffffff !important;
-  border-right: 1px solid var(--neutral-200) !important;
-  box-shadow: var(--shadow-lg) !important;
-  position: sticky !important;
-  top: 0 !important;
-  height: 100vh !important;
-  z-index: 100 !important;
+/* Professional Corner Status Panel Styles */
+.corner-status-panel {
+  position: fixed;
+  z-index: 1050;
+  pointer-events: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Smooth content transitions */
+.corner-status-panel * {
+  transition: all 0.2s ease;
+}
+
+.corner-status-panel:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Professional styling to match sidebar */
+.corner-status-panel .ant-btn {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.corner-status-panel .ant-btn:hover {
+  transform: none !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Status indicator styling within panel */
+.corner-status-panel .database-status-enhanced,
+.corner-status-panel .llm-status-indicator {
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+  height: 26px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+  margin: 0 !important;
+}
+
+/* User panel styling within corner panel */
+.corner-status-panel .ant-dropdown-trigger {
+  border-radius: 4px !important;
+  height: 28px !important;
+  padding: 4px 8px !important;
+}
+
+/* Ensure proper spacing */
+.corner-status-panel > div {
+  line-height: 1.2;
+}
+
+/* Ensure content doesn't overlap with corner panel */
+.ant-layout-content {
+  padding-top: 24px !important;
+  padding-right: 24px !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .corner-status-panel {
+    transform: scale(0.9);
+    transform-origin: top right;
+  }
+}
+
+@media (max-width: 480px) {
+  .corner-status-panel {
+    transform: scale(0.8);
+    transform-origin: top right;
+  }
+}
+
+/* Ensure corner panel is always visible */
+.corner-status-panel {
+  min-width: 100px;
+  min-height: 40px;
+}
+
+/* Enhanced Sidebar Component Styles */
+.enhanced-sidebar {
+  transition: width 0.3s ease !important;
+  overflow-x: hidden !important;
+  flex-shrink: 0 !important;
+}
+
+/* Override any conflicting width styles */
+.enhanced-sidebar.collapsed {
+  width: 80px !important;
+  min-width: 80px !important;
+  max-width: 80px !important;
+}
+
+.enhanced-sidebar:not(.collapsed) {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+}
+
+/* Remove any width constraints */
+.enhanced-sidebar * {
+  box-sizing: border-box;
 }
 
 .ant-layout-sider .ant-menu {

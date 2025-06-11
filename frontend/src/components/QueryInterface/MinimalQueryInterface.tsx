@@ -167,8 +167,7 @@ export const MinimalQueryInterface: React.FC = () => {
       background: 'transparent',
       minHeight: 'calc(100vh - 64px)',
       padding: '32px',
-      maxWidth: '1600px',
-      margin: '0 auto',
+      width: '100%',
       position: 'relative'
     }}>
 
@@ -331,9 +330,12 @@ export const MinimalQueryInterface: React.FC = () => {
         </div>
       </div>
 
-      {/* Query Processing Viewer - Show only after query submission */}
+      {/* Query Processing Viewer - Show only after query submission - Full width like dashboard */}
       {hasSubmittedQuery && ((isLoading || aiProcessing.isProcessing) ? (
-        <div style={{ marginTop: '24px' }}>
+        <div style={{
+          marginTop: '24px',
+          width: '100%'
+        }}>
           <QueryProcessingViewer
             stages={processingStages}
             isProcessing={isLoading || aiProcessing.isProcessing}
@@ -346,7 +348,10 @@ export const MinimalQueryInterface: React.FC = () => {
           />
         </div>
       ) : currentResult && (
-        <div style={{ marginTop: '24px' }}>
+        <div style={{
+          marginTop: '24px',
+          width: '100%'
+        }}>
           <QueryProcessingViewer
             stages={processingStages}
             isProcessing={false}
@@ -369,9 +374,12 @@ export const MinimalQueryInterface: React.FC = () => {
         </div>
       ))}
 
-      {/* Results Section - Show only when user explicitly wants to see results */}
+      {/* Results Section - Show only when user explicitly wants to see results - Full width like dashboard */}
       {!forceInitialState && (hasSubmittedQuery || isLoading) && currentResult && (
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{
+          marginBottom: '32px',
+          width: '100%'
+        }}>
           <QueryTabs />
         </div>
       )}

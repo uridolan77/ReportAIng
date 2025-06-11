@@ -82,7 +82,9 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
                 Question = request.Question,
                 Schema = schema,
                 UserId = request.UserId,
-                SessionId = request.SessionId
+                SessionId = request.SessionId,
+                ProviderId = request.Options.ProviderId,
+                ModelId = request.Options.ModelId
             }, cancellationToken);
 
             if (!sqlResult.Success)

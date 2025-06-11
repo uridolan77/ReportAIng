@@ -393,6 +393,24 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Providers.OpenAI
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Providers.AzureOpenAIProvider>();
 builder.Services.AddScoped<IAIProviderFactory, BIReportingCopilot.Infrastructure.AI.Providers.AIProviderFactory>();
 
+// ===== LLM MANAGEMENT SERVICES =====
+builder.Services.AddScoped<ILLMManagementService, BIReportingCopilot.Infrastructure.AI.Management.LLMManagementService>();
+
+// ===== LLM-AWARE AI SERVICE =====
+// Register the base AI service first
+builder.Services.AddScoped<IAIService>(provider =>
+{
+    // Get the original AI service
+    var baseService = ActivatorUtilities.CreateInstance<BIReportingCopilot.Infrastructure.AI.Core.AIService>(provider);
+    return baseService;
+});
+
+// Register the LLM-aware service as a decorator
+builder.Services.AddScoped<ILLMAwareAIService, BIReportingCopilot.Infrastructure.AI.Core.LLMAwareAIService>();
+
+// Replace the IAIService registration to use the LLM-aware service
+builder.Services.AddScoped<IAIService>(provider => provider.GetRequiredService<ILLMAwareAIService>());
+
 // ===== UNIFIED SERVICES (ROUND 4, 5 & 6 CLEANUP) =====
 
 // Configuration service - consolidates all configuration management
@@ -562,7 +580,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHand
 
 // ===== CORE APPLICATION SERVICES =====
 // Base services
-builder.Services.AddScoped<IAIService, BIReportingCopilot.Infrastructure.AI.Core.AIService>();
+// IAIService is now registered above as LLM-aware service
 builder.Services.AddScoped<IQueryProgressNotifier, BIReportingCopilot.API.Hubs.SignalRQueryProgressNotifier>();
 builder.Services.AddScoped<IQueryService, BIReportingCopilot.Infrastructure.Query.QueryService>();
 builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Schema.SchemaService>(); // Unified with built-in caching

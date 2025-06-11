@@ -400,25 +400,30 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   }, [lastMessage]);
 
   // Create query request helper
-  const createQueryRequest = useCallback((question: string): QueryRequest => ({
+  const createQueryRequest = useCallback((
+    question: string,
+    llmOptions?: { providerId?: string; modelId?: string }
+  ): QueryRequest => ({
     question: question.trim(),
     sessionId: getOrCreateSessionId(),
     options: {
       includeVisualization: true,
       maxRows: 1000,
       enableCache: true,
-      confidenceThreshold: 0.7
+      confidenceThreshold: 0.7,
+      providerId: llmOptions?.providerId,
+      modelId: llmOptions?.modelId
     }
   }), []);
 
   // Handle query submission
-  const handleSubmitQuery = useCallback(async () => {
+  const handleSubmitQuery = useCallback(async (llmOptions?: { providerId?: string; modelId?: string }) => {
     if (!query.trim() || executeQueryMutation.isPending) return;
 
     // Always use real database connection - no mock data
 
     // Create query request first
-    const queryRequest = createQueryRequest(query);
+    const queryRequest = createQueryRequest(query, llmOptions);
 
     // Initialize processing state with immediate feedback
     setProgress(0);
