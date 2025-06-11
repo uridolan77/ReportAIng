@@ -76,8 +76,21 @@ export const CompactUserPanel: React.FC<CompactUserPanelProps> = ({ onLogout }) 
 
   const getUserDisplayName = () => {
     // Try to get user name from localStorage or context
-    const userName = localStorage.getItem('userName') || 'User';
-    return userName;
+    const userName = localStorage.getItem('userName');
+    const userRole = localStorage.getItem('userRole');
+
+    // If we have a role, use it to determine display name
+    if (userRole === 'admin' || userRole === 'administrator') {
+      return 'Administrator';
+    }
+
+    // For this BI system, default to Administrator if no specific role is set
+    if (!userRole && !userName) {
+      return 'Administrator';
+    }
+
+    // Otherwise use the stored name or default to User
+    return userName || 'User';
   };
 
   const getProfileSummary = () => {

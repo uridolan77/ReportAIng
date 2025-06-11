@@ -126,19 +126,7 @@ const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({
         }}
         title={collapsed ? item.label : undefined}
       >
-        {collapsed ? (
-          <div
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: isActive(item.path) ? '#1890ff' : '#999',
-              transition: 'all 0.2s ease',
-            }}
-          />
-        ) : (
-          item.label
-        )}
+        {collapsed ? item.label.split(' ')[0] : item.label}
       </Link>
     </li>
   );

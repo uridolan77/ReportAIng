@@ -165,27 +165,71 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Status indicator styling within panel */
+/* Status indicator styling within panel - Complete reset and unification */
 .corner-status-panel .database-status-enhanced,
-.corner-status-panel .llm-status-indicator {
-  border-radius: 4px !important;
-  font-size: 11px !important;
-  padding: 4px 8px !important;
-  height: 26px !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
-  margin: 0 !important;
-}
-
-/* User panel styling within corner panel */
+.corner-status-panel .llm-status-indicator,
 .corner-status-panel .ant-dropdown-trigger {
+  /* Reset everything */
+  all: unset !important;
+
+  /* Apply unified styling */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  /* Exact same dimensions */
+  width: 120px !important;
+  height: 32px !important;
+  min-width: 120px !important;
+  max-width: 120px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+
+  /* Exact same styling */
   border-radius: 4px !important;
-  height: 28px !important;
-  padding: 4px 8px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-family: 'Inter', sans-serif !important;
+
+  /* Exact same spacing */
+  padding: 0 8px !important;
+  margin: 0 !important;
+  gap: 4px !important;
+
+  /* Exact same effects */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-sizing: border-box !important;
 }
 
-/* Ensure proper spacing */
+/* Force text styling */
+.corner-status-panel .database-status-enhanced *,
+.corner-status-panel .llm-status-indicator *,
+.corner-status-panel .ant-dropdown-trigger * {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* Force perfect alignment */
 .corner-status-panel > div {
-  line-height: 1.2;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Fix avatar sizing in user panel */
+.corner-status-panel .ant-avatar {
+  width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  font-size: 10px !important;
+}
+
+/* Fix dropdown arrow */
+.corner-status-panel .anticon-down {
+  font-size: 8px !important;
 }
 
 /* Ensure content doesn't overlap with corner panel */
@@ -209,10 +253,37 @@
   }
 }
 
-/* Ensure corner panel is always visible */
+/* Ensure corner panel is always visible and proper height */
 .corner-status-panel {
-  min-width: 100px;
-  min-height: 40px;
+  min-width: 120px;
+  height: 60px !important;
+  max-height: 60px !important;
+}
+
+/* Loading animation for status dots */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Spinning animation for connecting state */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Enhanced Sidebar Component Styles */
