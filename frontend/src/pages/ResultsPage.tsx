@@ -6,8 +6,7 @@ import React from 'react';
 import {
   Empty,
   Space,
-  Row,
-  Col
+  Button as AntButton
 } from 'antd';
 import {
   HomeOutlined,
@@ -19,20 +18,9 @@ import { useActiveResult } from '../stores/activeResultStore';
 import { useCurrentResult } from '../hooks/useCurrentResult';
 import { QueryResult } from '../components/QueryInterface/QueryResult';
 import { DataInsightsPanel } from '../components/Insights/DataInsightsPanel';
-// Import new UI components
-import {
-  Container,
-  FlexContainer,
-  GridContainer,
-  Stack,
-  Breadcrumb,
-  BreadcrumbItem,
-  InView,
-  PerformanceMonitor,
-  Card,
-  Button
-} from '../components/ui';
-import type { ButtonProps } from '../components/ui/types';
+import { PageLayout, PageSection, PageGrid } from '../components/ui/PageLayout';
+import { Card, CardContent } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 
 const ResultsPageContent: React.FC = () => {
   const navigate = useNavigate();
@@ -46,182 +34,155 @@ const ResultsPageContent: React.FC = () => {
 
   if (!hasResult || !currentResult) {
     return (
-      <PerformanceMonitor onMetrics={(metrics) => console.log('Results page metrics:', metrics)}>
-        <Container size="large">
-          <Stack spacing="var(--space-6)">
-            <Breadcrumb>
-              <BreadcrumbItem>
-                <FlexContainer align="center" gap="var(--space-2)">
-                  <HomeOutlined />
-                  <span
-                    onClick={() => navigate('/')}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    Home
-                  </span>
-                </FlexContainer>
-              </BreadcrumbItem>
-              <BreadcrumbItem>
-                <FlexContainer align="center" gap="var(--space-2)">
-                  <BarChartOutlined />
-                  Results
-                </FlexContainer>
-              </BreadcrumbItem>
-            </Breadcrumb>
-
-            <Card>
-              <FlexContainer
-                direction="column"
-                align="center"
-                justify="center"
-                style={{ padding: '60px 0' }}
+      <PageLayout
+        title="Query Results & Analysis"
+        subtitle="Detailed view of your query results with insights and analysis"
+        breadcrumbs={[
+          { title: 'Home', href: '/', icon: <HomeOutlined /> },
+          { title: 'Results', icon: <BarChartOutlined /> }
+        ]}
+        maxWidth="lg"
+      >
+        <PageSection background="card" padding="lg">
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 'var(--space-16) 0',
+            textAlign: 'center'
+          }}>
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <div style={{ marginBottom: 'var(--space-6)' }}>
+                  <div style={{
+                    fontSize: 'var(--text-lg)',
+                    color: 'var(--text-secondary)',
+                    marginBottom: 'var(--space-2)'
+                  }}>
+                    No query results to display
+                  </div>
+                  <div style={{
+                    fontSize: 'var(--text-base)',
+                    color: 'var(--text-tertiary)'
+                  }}>
+                    Run a query first to see results here
+                  </div>
+                </div>
+              }
+            >
+              <Button
+                variant="primary"
+                size="large"
+                onClick={() => navigate('/')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-2)'
+                }}
               >
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
-                    <Stack spacing="var(--space-2)" style={{ textAlign: 'center' }}>
-                      <span style={{ fontSize: '16px', color: '#8c8c8c' }}>
-                        No query results to display
-                      </span>
-                      <span style={{ fontSize: '14px', color: '#8c8c8c' }}>
-                        Run a query first to see results here
-                      </span>
-                    </Stack>
-                  }
-                >
-                  <Button
-                    variant="primary"
-                    size="large"
-                    onClick={() => navigate('/')}
-                  >
-                    <FlexContainer align="center" gap="var(--space-2)">
-                      <ArrowLeftOutlined />
-                      Go to Query Interface
-                    </FlexContainer>
-                  </Button>
-                </Empty>
-              </FlexContainer>
-            </Card>
-          </Stack>
-        </Container>
-      </PerformanceMonitor>
+                <ArrowLeftOutlined />
+                Go to Query Interface
+              </Button>
+            </Empty>
+          </div>
+        </PageSection>
+      </PageLayout>
     );
   }
 
   return (
-    <PerformanceMonitor onMetrics={(metrics) => console.log('Results page metrics:', metrics)}>
-      <Container size="full">
-        <Stack spacing="var(--space-6)">
-          <Breadcrumb>
-            <BreadcrumbItem>
-              <FlexContainer align="center" gap="var(--space-2)">
-                <HomeOutlined />
-                <span
-                  onClick={() => navigate('/')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  Home
-                </span>
-              </FlexContainer>
-            </BreadcrumbItem>
-            <BreadcrumbItem>
-              <FlexContainer align="center" gap="var(--space-2)">
-                <BarChartOutlined />
-                Results
-              </FlexContainer>
-            </BreadcrumbItem>
-          </Breadcrumb>
-
-          <Stack spacing="var(--space-2)">
-            <h2 style={{ margin: 0, color: '#667eea', fontSize: '2rem', fontWeight: 600 }}>
-              Query Results & Analysis
-            </h2>
-            <p style={{ color: '#8c8c8c', fontSize: '16px', margin: 0 }}>
-              Detailed view of your query results with insights and analysis
-            </p>
-          </Stack>
-
-          <GridContainer columns={3} gap="var(--space-6)" responsive>
-            <div style={{ gridColumn: 'span 2' }}>
-              <InView threshold={0.3} triggerOnce>
-                <QueryResult
-                  result={currentResult}
-                  query={query}
-                  onRequery={handleRequery}
-                  onSuggestionClick={(suggestion) => {
-                    // Handle suggestion click - could navigate back to main page with the suggestion
-                    navigate('/', { state: { suggestedQuery: suggestion } });
-                  }}
-                />
-              </InView>
-            </div>
-
-            <div>
-              <InView threshold={0.3} triggerOnce>
-                <Card
-
-                  style={{ padding: '16px' }}
-                >
-                  <Stack spacing="var(--space-4)">
-                    <FlexContainer align="center" gap="var(--space-2)">
-                      <BarChartOutlined style={{ color: '#667eea' }} />
-                      <span style={{ color: '#667eea', fontWeight: 600 }}>Data Insights</span>
-                    </FlexContainer>
-                    <DataInsightsPanel
-                      queryResult={currentResult}
-                      onInsightAction={(action) => {
-                        console.log('Insight action:', action);
-                        // Handle insight actions like drill-down, filtering, etc.
-                      }}
-                      autoGenerate={true}
-                    />
-                  </Stack>
-                </Card>
-              </InView>
-            </div>
-          </GridContainer>
-
-          {/* Quick Actions */}
-          <Card
-
-            style={{ padding: '16px' }}
+    <PageLayout
+      title="Query Results & Analysis"
+      subtitle="Detailed view of your query results with insights and analysis"
+      breadcrumbs={[
+        { title: 'Home', href: '/', icon: <HomeOutlined /> },
+        { title: 'Results', icon: <BarChartOutlined /> }
+      ]}
+      maxWidth="xl"
+    >
+      <PageGrid columns={3} gap="lg">
+        <div style={{ gridColumn: 'span 2' }}>
+          <PageSection
+            title="Query Results"
+            background="card"
+            padding="lg"
           >
-            <Stack spacing="var(--space-4)">
-              <h3 style={{ margin: 0, fontWeight: 600 }}>Quick Actions</h3>
-              <FlexContainer gap="var(--space-3)">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/')}
-                >
-                  New Query
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => navigate('/dashboard')}
-                  disabled={!currentResult}
-                >
-                  Create Dashboard
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate('/interactive')}
-                  disabled={!currentResult}
-                >
-                  Interactive Visualization
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/advanced-viz')}
-                  disabled={!currentResult}
-                >
-                  AI-Powered Charts
-                </Button>
-              </FlexContainer>
-            </Stack>
-          </Card>
-        </Stack>
-      </Container>
-    </PerformanceMonitor>
+            <QueryResult
+              result={currentResult}
+              query={query}
+              onRequery={handleRequery}
+              onSuggestionClick={(suggestion) => {
+                // Handle suggestion click - could navigate back to main page with the suggestion
+                navigate('/', { state: { suggestedQuery: suggestion } });
+              }}
+            />
+          </PageSection>
+        </div>
+
+        <div>
+          <PageSection
+            title="Data Insights"
+            subtitle="AI-generated insights and analysis"
+            background="card"
+            padding="lg"
+            actions={<BarChartOutlined style={{ color: 'var(--color-primary)' }} />}
+          >
+            <DataInsightsPanel
+              queryResult={currentResult}
+              onInsightAction={(action) => {
+                console.log('Insight action:', action);
+                // Handle insight actions like drill-down, filtering, etc.
+              }}
+              autoGenerate={true}
+            />
+          </PageSection>
+        </div>
+      </PageGrid>
+
+      {/* Quick Actions */}
+      <PageSection
+        title="Quick Actions"
+        subtitle="Navigate to related tools and features"
+        background="card"
+        padding="lg"
+      >
+        <div style={{
+          display: 'flex',
+          gap: 'var(--space-4)',
+          flexWrap: 'wrap'
+        }}>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/')}
+          >
+            New Query
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/dashboard')}
+            disabled={!currentResult}
+          >
+            Create Dashboard
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/interactive')}
+            disabled={!currentResult}
+          >
+            Interactive Visualization
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/interactive')}
+            disabled={!currentResult}
+          >
+            AI-Powered Charts
+          </Button>
+        </div>
+      </PageSection>
+    </PageLayout>
   );
 };
 

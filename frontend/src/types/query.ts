@@ -34,6 +34,7 @@ export interface QueryResponse {
   executionTimeMs: number;
   promptDetails?: PromptDetails;
   sessionId?: string;
+  source?: string; // Added missing source property
 }
 
 export interface QueryResult {
@@ -41,6 +42,7 @@ export interface QueryResult {
   metadata: QueryMetadata;
   totalRows?: number;
   columns?: any[];
+  success?: boolean; // Added missing success property
 }
 
 export interface QueryMetadata {
@@ -55,9 +57,11 @@ export interface QueryMetadata {
 export interface ColumnInfo {
   name: string;
   dataType: string;
+  type?: string; // Added for backward compatibility with mock data
   isNullable: boolean;
   description?: string;
   semanticTags: string[];
+  displayName?: string; // Added for mock data compatibility
 }
 
 export interface VisualizationConfig {

@@ -15,14 +15,14 @@ import {
   Flex,
 } from 'antd';
 import {
-  UserOutlined as PersonIcon,
-  TableOutlined as TableChartIcon,
-  FilterOutlined as FilterListIcon,
-  AppstoreOutlined as PatternIcon,
-  RiseOutlined as TrendingUpIcon,
-  ClockCircleOutlined as ScheduleIcon,
-  GlobalOutlined as DomainIcon,
-  BulbOutlined as InsightsIcon,
+  UserOutlined,
+  TableOutlined,
+  FilterOutlined,
+  AppstoreOutlined,
+  RiseOutlined,
+  ClockCircleOutlined,
+  GlobalOutlined,
+  BulbOutlined,
 } from '@ant-design/icons';
 import { ApiService, UserContextResponse } from '../../services/api';
 
@@ -60,11 +60,11 @@ const UserContextPanel: React.FC = () => {
 
   const getIntentIcon = (intent: string) => {
     switch (intent.toLowerCase()) {
-      case 'aggregation': return <TrendingUpIcon />;
-      case 'trend': return <TrendingUpIcon />;
-      case 'comparison': return <InsightsIcon />;
-      case 'filtering': return <FilterListIcon />;
-      default: return <PatternIcon />;
+      case 'aggregation': return <RiseOutlined />;
+      case 'trend': return <RiseOutlined />;
+      case 'comparison': return <BulbOutlined />;
+      case 'filtering': return <FilterOutlined />;
+      default: return <AppstoreOutlined />;
     }
   };
 
@@ -111,7 +111,7 @@ const UserContextPanel: React.FC = () => {
   return (
     <div>
       <Typography.Title level={3}>
-        <PersonIcon style={{ marginRight: 8 }} />
+        <UserOutlined style={{ marginRight: 8 }} />
         Your AI Profile
       </Typography.Title>
       <Typography.Text type="secondary">
@@ -124,7 +124,7 @@ const UserContextPanel: React.FC = () => {
           <Col xs={24} md={12}>
             <Flex align="center" style={{ marginBottom: 16 }}>
               <Avatar style={{ backgroundColor: '#1890ff', marginRight: 16 }}>
-                <DomainIcon />
+                <GlobalOutlined />
               </Avatar>
               <div>
                 <Typography.Title level={5} style={{ margin: 0 }}>Domain Focus</Typography.Title>
@@ -139,7 +139,7 @@ const UserContextPanel: React.FC = () => {
           <Col xs={24} md={12}>
             <Flex align="center" style={{ marginBottom: 16 }}>
               <Avatar style={{ backgroundColor: '#722ed1', marginRight: 16 }}>
-                <ScheduleIcon />
+                <ClockCircleOutlined />
               </Avatar>
               <div>
                 <Typography.Title level={5} style={{ margin: 0 }}>Last Updated</Typography.Title>
@@ -158,7 +158,7 @@ const UserContextPanel: React.FC = () => {
           <Collapse.Panel
             header={
               <Flex align="center">
-                <TableChartIcon style={{ marginRight: 8 }} />
+                <TableOutlined style={{ marginRight: 8 }} />
                 <Typography.Title level={5} style={{ margin: 0 }}>
                   Preferred Tables
                 </Typography.Title>
@@ -174,7 +174,7 @@ const UserContextPanel: React.FC = () => {
               {userContext.preferredTables.map((table, index) => (
                 <Tag
                   key={index}
-                  icon={<TableChartIcon />}
+                  icon={<TableOutlined />}
                   color="blue"
                 >
                   {table}
@@ -191,7 +191,7 @@ const UserContextPanel: React.FC = () => {
           <Collapse.Panel
             header={
               <Flex align="center">
-                <FilterListIcon style={{ marginRight: 8 }} />
+                <FilterOutlined style={{ marginRight: 8 }} />
                 <Typography.Title level={5} style={{ margin: 0 }}>
                   Common Filters
                 </Typography.Title>
@@ -207,7 +207,7 @@ const UserContextPanel: React.FC = () => {
               {userContext.commonFilters.map((filter, index) => (
                 <Tag
                   key={index}
-                  icon={<FilterListIcon />}
+                  icon={<FilterOutlined />}
                   color="purple"
                 >
                   {filter}
@@ -224,7 +224,7 @@ const UserContextPanel: React.FC = () => {
           <Collapse.Panel
             header={
               <Flex align="center">
-                <PatternIcon style={{ marginRight: 8 }} />
+                <AppstoreOutlined style={{ marginRight: 8 }} />
                 <Typography.Title level={5} style={{ margin: 0 }}>
                   Query Patterns
                 </Typography.Title>
@@ -292,7 +292,7 @@ const UserContextPanel: React.FC = () => {
        userContext.recentPatterns.length === 0 && (
         <Card>
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <InsightsIcon style={{ fontSize: 64, color: '#bfbfbf', marginBottom: 16 }} />
+            <BulbOutlined style={{ fontSize: 64, color: '#bfbfbf', marginBottom: 16 }} />
             <Typography.Title level={4}>
               Start Building Your AI Profile
             </Typography.Title>

@@ -89,6 +89,8 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.Version).HasMaxLength(20);
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.CreatedBy).HasMaxLength(256);
+            // Fix decimal precision warning
+            entity.Property(e => e.SuccessRate).HasPrecision(5, 2);
         });
 
         // Configure QueryCache
@@ -476,7 +478,7 @@ Return only the SQL query without any explanation or markdown formatting.",
             entity.Property(e => e.TargetTables).HasMaxLength(500);
             entity.Property(e => e.RequiredPermissions).HasMaxLength(200);
             entity.Property(e => e.Tags).HasMaxLength(300);
-            entity.Property(e => e.Relevance).HasDefaultValue(0.8);
+            entity.Property(e => e.Relevance).HasDefaultValue(0.8).HasPrecision(3, 2);
             entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(256);
             entity.Property(e => e.UpdatedBy).HasMaxLength(256);
 

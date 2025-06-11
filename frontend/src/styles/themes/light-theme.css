@@ -1,0 +1,275 @@
+/**
+ * Light Theme Variables
+ * Light mode color palette and theme-specific overrides
+ */
+
+[data-theme="light"], :root {
+  /* ===== PRIMARY COLORS ===== */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-active: #1d4ed8;
+  --color-primary-light: rgba(59, 130, 246, 0.1);
+
+  --color-secondary: #8b5cf6;
+  --color-secondary-hover: #7c3aed;
+  --color-secondary-active: #6d28d9;
+
+  /* ===== SEMANTIC COLORS ===== */
+  --color-success: #10b981;
+  --color-success-hover: #059669;
+  --color-success-light: rgba(16, 185, 129, 0.1);
+
+  --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
+  --color-warning-light: rgba(245, 158, 11, 0.1);
+
+  --color-error: #ef4444;
+  --color-error-hover: #dc2626;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+
+  --color-info: #3b82f6;
+  --color-info-hover: #2563eb;
+  --color-info-light: rgba(59, 130, 246, 0.1);
+
+  /* ===== BACKGROUND COLORS ===== */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-quaternary: #e5e7eb;
+
+  /* ===== TEXT COLORS ===== */
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-tertiary: #6b7280;
+  --text-quaternary: #9ca3af;
+  --text-inverse: #ffffff;
+
+  /* ===== BORDER COLORS ===== */
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --border-tertiary: #9ca3af;
+
+  /* ===== NEUTRAL COLORS ===== */
+  --neutral-50: #f9fafb;
+  --neutral-100: #f3f4f6;
+  --neutral-200: #e5e7eb;
+  --neutral-300: #d1d5db;
+  --neutral-400: #9ca3af;
+  --neutral-500: #6b7280;
+  --neutral-600: #4b5563;
+  --neutral-700: #374151;
+  --neutral-800: #1f2937;
+  --neutral-900: #111827;
+
+  /* ===== SHADOWS ===== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* ===== COMPONENT-SPECIFIC OVERRIDES ===== */
+  
+  /* Cards */
+  --card-bg: var(--bg-primary);
+  --card-border: var(--border-primary);
+  --card-shadow: var(--shadow-sm);
+
+  /* Inputs */
+  --input-bg: var(--bg-primary);
+  --input-border: var(--border-primary);
+  --input-border-focus: var(--color-primary);
+  --input-text: var(--text-primary);
+  --input-placeholder: var(--text-tertiary);
+
+  /* Buttons */
+  --button-primary-bg: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  --button-secondary-bg: var(--bg-primary);
+  --button-secondary-border: var(--border-primary);
+  --button-secondary-text: var(--text-primary);
+
+  /* Navigation */
+  --nav-bg: var(--bg-primary);
+  --nav-border: var(--border-primary);
+  --nav-item-hover: var(--bg-tertiary);
+  --nav-item-active: var(--color-primary-light);
+
+  /* Tables */
+  --table-header-bg: var(--bg-tertiary);
+  --table-row-hover: var(--bg-tertiary);
+  --table-border: var(--border-primary);
+
+  /* Modals */
+  --modal-bg: var(--bg-primary);
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+  --modal-border: var(--border-primary);
+
+  /* Tooltips */
+  --tooltip-bg: var(--neutral-800);
+  --tooltip-text: var(--text-inverse);
+
+  /* Code blocks */
+  --code-bg: var(--bg-tertiary);
+  --code-border: var(--border-primary);
+  --code-text: var(--text-secondary);
+
+  /* Scrollbars */
+  --scrollbar-track: var(--bg-tertiary);
+  --scrollbar-thumb: var(--neutral-300);
+  --scrollbar-thumb-hover: var(--neutral-400);
+}
+
+/* ===== LIGHT MODE SPECIFIC STYLES ===== */
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="light"] body {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Image adjustments for light mode */
+[data-theme="light"] img {
+  opacity: 1;
+}
+
+/* Selection colors for light mode */
+[data-theme="light"] ::selection {
+  background: var(--color-primary);
+  color: var(--text-inverse);
+}
+
+[data-theme="light"] ::-moz-selection {
+  background: var(--color-primary);
+  color: var(--text-inverse);
+}
+
+/* Focus ring adjustments */
+[data-theme="light"] *:focus {
+  outline-color: var(--color-primary);
+}
+
+/* Link colors */
+[data-theme="light"] a {
+  color: var(--color-primary);
+}
+
+[data-theme="light"] a:hover {
+  color: var(--color-primary-hover);
+}
+
+/* Code syntax highlighting adjustments */
+[data-theme="light"] pre,
+[data-theme="light"] code {
+  background: var(--code-bg);
+  border-color: var(--code-border);
+  color: var(--code-text);
+}
+
+/* Blockquote styling */
+[data-theme="light"] blockquote {
+  border-left-color: var(--color-primary);
+  color: var(--text-secondary);
+}
+
+/* Form elements */
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--input-text);
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: var(--input-placeholder);
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] textarea:focus,
+[data-theme="light"] select:focus {
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+/* Table styling */
+[data-theme="light"] table {
+  border-color: var(--table-border);
+}
+
+[data-theme="light"] th {
+  background: var(--table-header-bg);
+  border-color: var(--table-border);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] td {
+  border-color: var(--table-border);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] tr:hover td {
+  background: var(--table-row-hover);
+}
+
+/* Scrollbar styling for light mode */
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+[data-theme="light"] * {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* High contrast mode adjustments */
+@media (prefers-contrast: high) {
+  [data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #ffffff;
+    --text-primary: #000000;
+    --border-primary: #000000;
+    --color-primary: #0000ff;
+  }
+}
+
+/* Auto dark mode based on system preference */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-primary: #60a5fa;
+    --color-primary-hover: #3b82f6;
+    --color-primary-active: #2563eb;
+    --color-primary-light: rgba(96, 165, 250, 0.1);
+
+    --bg-primary: #1f2937;
+    --bg-secondary: #111827;
+    --bg-tertiary: #374151;
+    --bg-quaternary: #4b5563;
+
+    --text-primary: #f9fafb;
+    --text-secondary: #d1d5db;
+    --text-tertiary: #9ca3af;
+    --text-quaternary: #6b7280;
+    --text-inverse: #111827;
+
+    --border-primary: #374151;
+    --border-secondary: #4b5563;
+    --border-tertiary: #6b7280;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+}

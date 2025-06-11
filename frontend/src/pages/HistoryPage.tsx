@@ -4,9 +4,6 @@
 
 import React from 'react';
 import {
-  Space
-} from 'antd';
-import {
   HomeOutlined,
   HistoryOutlined
 } from '@ant-design/icons';
@@ -14,19 +11,9 @@ import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
 import { QueryHistory } from '../components/QueryInterface/QueryHistory';
-// Import new UI components
-import {
-  Container,
-  FlexContainer,
-  Stack,
-  Breadcrumb,
-  BreadcrumbItem,
-  PerformanceMonitor,
-  VirtualList,
-  Card,
-  Button
-} from '../components/ui';
-import type { ButtonProps } from '../components/ui/types';
+import { PageLayout, PageSection } from '../components/ui/PageLayout';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 
 const HistoryPageContent: React.FC = () => {
   const navigate = useNavigate();
@@ -38,98 +25,98 @@ const HistoryPageContent: React.FC = () => {
   };
 
   return (
-    <PerformanceMonitor onMetrics={(metrics) => console.log('History page metrics:', metrics)}>
-      <Container size="large">
-        <Stack spacing="var(--space-6)">
-          <Breadcrumb>
-            <BreadcrumbItem>
-              <FlexContainer align="center" gap="var(--space-2)">
-                <HomeOutlined />
-                <span
-                  onClick={() => navigate('/')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  Home
-                </span>
-              </FlexContainer>
-            </BreadcrumbItem>
-            <BreadcrumbItem>
-              <FlexContainer align="center" gap="var(--space-2)">
-                <HistoryOutlined />
-                Query History
-              </FlexContainer>
-            </BreadcrumbItem>
-          </Breadcrumb>
+    <PageLayout
+      title="Query History"
+      subtitle={`Browse and reuse your previous queries (${queryHistory.length} saved)`}
+      breadcrumbs={[
+        { title: 'Home', href: '/', icon: <HomeOutlined /> },
+        { title: 'Query History', icon: <HistoryOutlined /> }
+      ]}
+      maxWidth="lg"
+    >
+      <PageSection
+        title="Recent Queries"
+        subtitle="Your most recent query history"
+        background="card"
+        padding="lg"
+      >
+        {queryHistory.length > 100 ? (
+          <div style={{
+            height: '600px',
+            overflow: 'auto',
+            border: '1px solid var(--border-primary)',
+            borderRadius: 'var(--radius-md)'
+          }}>
+            {queryHistory.map((item, index) => (
+              <div
+                key={index}
+                style={{
+                  padding: 'var(--space-4)',
+                  borderBottom: '1px solid var(--border-secondary)',
+                  cursor: 'pointer',
+                  transition: 'background-color var(--transition-fast)'
+                }}
+                onClick={() => handleQuerySelect(item.query)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <div style={{
+                  fontWeight: 'var(--font-weight-semibold)',
+                  marginBottom: 'var(--space-1)',
+                  color: 'var(--text-primary)'
+                }}>
+                  {item.query.substring(0, 100)}...
+                </div>
+                <div style={{
+                  fontSize: 'var(--text-sm)',
+                  color: 'var(--text-tertiary)'
+                }}>
+                  {item.timestamp}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <QueryHistory onQuerySelect={handleQuerySelect} />
+        )}
+      </PageSection>
 
-          <Stack spacing="var(--space-2)">
-            <h2 style={{ margin: 0, color: '#667eea', fontSize: '2rem', fontWeight: 600 }}>
-              Query History
-            </h2>
-            <p style={{ color: '#8c8c8c', fontSize: '16px', margin: 0 }}>
-              Browse and reuse your previous queries ({queryHistory.length} saved)
-            </p>
-          </Stack>
-
-          <Card>
-            {queryHistory.length > 100 ? (
-              <VirtualList
-                items={queryHistory}
-                itemHeight={80}
-                containerHeight={600}
-                renderItem={(item, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      padding: '12px 16px',
-                      borderBottom: '1px solid #f0f0f0',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => handleQuerySelect(item.query)}
-                  >
-                    <div style={{ fontWeight: 600, marginBottom: '4px' }}>
-                      {item.query.substring(0, 100)}...
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
-                      {item.timestamp}
-                    </div>
-                  </div>
-                )}
-                overscan={5}
-              />
-            ) : (
-              <QueryHistory onQuerySelect={handleQuerySelect} />
-            )}
-          </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <Stack spacing="var(--space-4)">
-              <h3 style={{ margin: 0, fontWeight: 600 }}>Quick Actions</h3>
-              <FlexContainer gap="var(--space-3)">
-                <Button
-                  variant="primary"
-                  onClick={() => navigate('/')}
-                >
-                  New Query
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => navigate('/templates')}
-                >
-                  Browse Templates
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/suggestions')}
-                >
-                  Smart Suggestions
-                </Button>
-              </FlexContainer>
-            </Stack>
-          </Card>
-        </Stack>
-      </Container>
-    </PerformanceMonitor>
+      <PageSection
+        title="Quick Actions"
+        subtitle="Navigate to related tools and features"
+        background="card"
+        padding="lg"
+      >
+        <div style={{
+          display: 'flex',
+          gap: 'var(--space-4)',
+          flexWrap: 'wrap'
+        }}>
+          <Button
+            variant="primary"
+            onClick={() => navigate('/')}
+          >
+            New Query
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/templates')}
+          >
+            Browse Templates
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/suggestions')}
+          >
+            Smart Suggestions
+          </Button>
+        </div>
+      </PageSection>
+    </PageLayout>
   );
 };
 

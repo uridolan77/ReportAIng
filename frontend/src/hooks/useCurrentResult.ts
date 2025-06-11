@@ -120,11 +120,12 @@ export const useVisualizationResult = () => {
   return useMemo(() => ({
     ...currentResult,
     // Additional visualization-specific helpers
-    hasVisualizableData: currentResult.hasResult && 
-                        currentResult.result?.success && 
-                        currentResult.result?.result?.data?.length > 0,
-    dataLength: currentResult.result?.result?.data?.length || 0,
-    columnCount: currentResult.result?.result?.metadata?.columns?.length || 0,
+    hasVisualizableData: currentResult.hasResult &&
+                        currentResult.result?.success &&
+                        Array.isArray(currentResult.result?.result?.data) &&
+                        currentResult.result.result.data.length > 0,
+    dataLength: Array.isArray(currentResult.result?.result?.data) ? currentResult.result.result.data.length : 0,
+    columnCount: Array.isArray(currentResult.result?.result?.metadata?.columns) ? currentResult.result.result.metadata.columns.length : 0,
     columns: currentResult.result?.result?.metadata?.columns || [],
     data: currentResult.result?.result?.data || [],
     isGamingData: currentResult.result?.result?.metadata?.columns?.some(
@@ -213,23 +214,26 @@ export const useResultAvailability = () => {
     // Basic availability
     hasAnyResult: currentResult.hasResult,
     hasValidResult: currentResult.hasResult && currentResult.result?.success,
-    hasData: currentResult.hasResult && 
-             currentResult.result?.success && 
-             currentResult.result?.result?.data?.length > 0,
-    
+    hasData: currentResult.hasResult &&
+             currentResult.result?.success &&
+             Array.isArray(currentResult.result?.result?.data) &&
+             currentResult.result.result.data.length > 0,
+
     // Feature-specific availability
-    canVisualize: currentResult.hasResult && 
-                  currentResult.result?.success && 
-                  currentResult.result?.result?.data?.length > 0,
+    canVisualize: currentResult.hasResult &&
+                  currentResult.result?.success &&
+                  Array.isArray(currentResult.result?.result?.data) &&
+                  currentResult.result.result.data.length > 0,
     canExport: currentResult.hasResult && currentResult.result?.success,
     canShare: currentResult.hasResult,
-    canCreateDashboard: currentResult.hasResult && 
+    canCreateDashboard: currentResult.hasResult &&
                        currentResult.result?.success &&
-                       currentResult.result?.result?.data?.length > 0,
-    
+                       Array.isArray(currentResult.result?.result?.data) &&
+                       currentResult.result.result.data.length > 0,
+
     // Data characteristics
-    isLargeDataset: (currentResult.result?.result?.data?.length || 0) > 1000,
-    hasMultipleColumns: (currentResult.result?.result?.metadata?.columns?.length || 0) > 1,
+    isLargeDataset: Array.isArray(currentResult.result?.result?.data) ? currentResult.result.result.data.length > 1000 : false,
+    hasMultipleColumns: Array.isArray(currentResult.result?.result?.metadata?.columns) ? currentResult.result.result.metadata.columns.length > 1 : false,
     hasNumericData: currentResult.result?.result?.metadata?.columns?.some(
       (col: any) => typeof currentResult.result?.result?.data?.[0]?.[col.name || col] === 'number'
     ) || false,

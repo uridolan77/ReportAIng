@@ -1,0 +1,293 @@
+/**
+ * Custom Scrollbars
+ * Consistent scrollbar styling across the application
+ */
+
+/* ===== WEBKIT SCROLLBARS ===== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neutral-300);
+  border-radius: var(--radius-full);
+  transition: background var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neutral-400);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--neutral-500);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--bg-tertiary);
+}
+
+/* ===== THIN SCROLLBARS ===== */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+/* ===== WIDE SCROLLBARS ===== */
+.scrollbar-wide::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+/* ===== HIDDEN SCROLLBARS ===== */
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+/* ===== CUSTOM SCROLLBAR COLORS ===== */
+.scrollbar-primary::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+}
+
+.scrollbar-primary::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-hover);
+}
+
+.scrollbar-secondary::-webkit-scrollbar-thumb {
+  background: var(--color-secondary);
+}
+
+.scrollbar-secondary::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary-hover);
+}
+
+/* ===== FIREFOX SCROLLBARS ===== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--neutral-300) var(--bg-tertiary);
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-wide {
+  scrollbar-width: auto;
+}
+
+.scrollbar-primary {
+  scrollbar-color: var(--color-primary) var(--bg-tertiary);
+}
+
+.scrollbar-secondary {
+  scrollbar-color: var(--color-secondary) var(--bg-tertiary);
+}
+
+/* ===== SMOOTH SCROLLING ===== */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+/* ===== SCROLL SNAP ===== */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+}
+
+.scroll-snap-y {
+  scroll-snap-type: y mandatory;
+}
+
+.scroll-snap-both {
+  scroll-snap-type: both mandatory;
+}
+
+.scroll-snap-start {
+  scroll-snap-align: start;
+}
+
+.scroll-snap-center {
+  scroll-snap-align: center;
+}
+
+.scroll-snap-end {
+  scroll-snap-align: end;
+}
+
+/* ===== SCROLL PADDING ===== */
+.scroll-p-0 { scroll-padding: 0; }
+.scroll-p-1 { scroll-padding: var(--space-1); }
+.scroll-p-2 { scroll-padding: var(--space-2); }
+.scroll-p-3 { scroll-padding: var(--space-3); }
+.scroll-p-4 { scroll-padding: var(--space-4); }
+.scroll-p-6 { scroll-padding: var(--space-6); }
+.scroll-p-8 { scroll-padding: var(--space-8); }
+
+.scroll-pt-0 { scroll-padding-top: 0; }
+.scroll-pt-1 { scroll-padding-top: var(--space-1); }
+.scroll-pt-2 { scroll-padding-top: var(--space-2); }
+.scroll-pt-3 { scroll-padding-top: var(--space-3); }
+.scroll-pt-4 { scroll-padding-top: var(--space-4); }
+.scroll-pt-6 { scroll-padding-top: var(--space-6); }
+.scroll-pt-8 { scroll-padding-top: var(--space-8); }
+
+.scroll-pb-0 { scroll-padding-bottom: 0; }
+.scroll-pb-1 { scroll-padding-bottom: var(--space-1); }
+.scroll-pb-2 { scroll-padding-bottom: var(--space-2); }
+.scroll-pb-3 { scroll-padding-bottom: var(--space-3); }
+.scroll-pb-4 { scroll-padding-bottom: var(--space-4); }
+.scroll-pb-6 { scroll-padding-bottom: var(--space-6); }
+.scroll-pb-8 { scroll-padding-bottom: var(--space-8); }
+
+.scroll-pl-0 { scroll-padding-left: 0; }
+.scroll-pl-1 { scroll-padding-left: var(--space-1); }
+.scroll-pl-2 { scroll-padding-left: var(--space-2); }
+.scroll-pl-3 { scroll-padding-left: var(--space-3); }
+.scroll-pl-4 { scroll-padding-left: var(--space-4); }
+.scroll-pl-6 { scroll-padding-left: var(--space-6); }
+.scroll-pl-8 { scroll-padding-left: var(--space-8); }
+
+.scroll-pr-0 { scroll-padding-right: 0; }
+.scroll-pr-1 { scroll-padding-right: var(--space-1); }
+.scroll-pr-2 { scroll-padding-right: var(--space-2); }
+.scroll-pr-3 { scroll-padding-right: var(--space-3); }
+.scroll-pr-4 { scroll-padding-right: var(--space-4); }
+.scroll-pr-6 { scroll-padding-right: var(--space-6); }
+.scroll-pr-8 { scroll-padding-right: var(--space-8); }
+
+/* ===== SCROLL MARGIN ===== */
+.scroll-m-0 { scroll-margin: 0; }
+.scroll-m-1 { scroll-margin: var(--space-1); }
+.scroll-m-2 { scroll-margin: var(--space-2); }
+.scroll-m-3 { scroll-margin: var(--space-3); }
+.scroll-m-4 { scroll-margin: var(--space-4); }
+.scroll-m-6 { scroll-margin: var(--space-6); }
+.scroll-m-8 { scroll-margin: var(--space-8); }
+
+.scroll-mt-0 { scroll-margin-top: 0; }
+.scroll-mt-1 { scroll-margin-top: var(--space-1); }
+.scroll-mt-2 { scroll-margin-top: var(--space-2); }
+.scroll-mt-3 { scroll-margin-top: var(--space-3); }
+.scroll-mt-4 { scroll-margin-top: var(--space-4); }
+.scroll-mt-6 { scroll-margin-top: var(--space-6); }
+.scroll-mt-8 { scroll-margin-top: var(--space-8); }
+
+.scroll-mb-0 { scroll-margin-bottom: 0; }
+.scroll-mb-1 { scroll-margin-bottom: var(--space-1); }
+.scroll-mb-2 { scroll-margin-bottom: var(--space-2); }
+.scroll-mb-3 { scroll-margin-bottom: var(--space-3); }
+.scroll-mb-4 { scroll-margin-bottom: var(--space-4); }
+.scroll-mb-6 { scroll-margin-bottom: var(--space-6); }
+.scroll-mb-8 { scroll-margin-bottom: var(--space-8); }
+
+.scroll-ml-0 { scroll-margin-left: 0; }
+.scroll-ml-1 { scroll-margin-left: var(--space-1); }
+.scroll-ml-2 { scroll-margin-left: var(--space-2); }
+.scroll-ml-3 { scroll-margin-left: var(--space-3); }
+.scroll-ml-4 { scroll-margin-left: var(--space-4); }
+.scroll-ml-6 { scroll-margin-left: var(--space-6); }
+.scroll-ml-8 { scroll-margin-left: var(--space-8); }
+
+.scroll-mr-0 { scroll-margin-right: 0; }
+.scroll-mr-1 { scroll-margin-right: var(--space-1); }
+.scroll-mr-2 { scroll-margin-right: var(--space-2); }
+.scroll-mr-3 { scroll-margin-right: var(--space-3); }
+.scroll-mr-4 { scroll-margin-right: var(--space-4); }
+.scroll-mr-6 { scroll-margin-right: var(--space-6); }
+.scroll-mr-8 { scroll-margin-right: var(--space-8); }
+
+/* ===== CUSTOM SCROLL AREAS ===== */
+.custom-scroll {
+  overflow: auto;
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: var(--neutral-400);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--bg-secondary);
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--neutral-500);
+}
+
+/* ===== OVERLAY SCROLLBARS ===== */
+.overlay-scroll {
+  overflow: overlay;
+}
+
+/* ===== SCROLL INDICATORS ===== */
+.scroll-indicator {
+  position: relative;
+}
+
+.scroll-indicator::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-primary) 0%, transparent 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--transition-normal);
+}
+
+.scroll-indicator.scrolled::before {
+  transform: scaleX(1);
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  .smooth-scroll {
+    scroll-behavior: auto;
+  }
+  
+  .scroll-indicator::before {
+    transition: none;
+  }
+}
+
+/* ===== MOBILE SCROLLBARS ===== */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .custom-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  * {
+    overflow: visible !important;
+  }
+  
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}

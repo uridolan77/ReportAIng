@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Card,
   Select,
   Button,
   Space,
@@ -31,8 +30,12 @@ import {
   PlayCircleOutlined,
   PauseCircleOutlined,
   CheckCircleOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  HomeOutlined,
+  DotChartOutlined
 } from '@ant-design/icons';
+import { PageLayout, PageSection, PageGrid } from '../ui/PageLayout';
+import { Card } from '../ui/Card';
 import {
   ResponsiveContainer,
   BarChart,
@@ -694,83 +697,85 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
     <div className="interactive-visualization">
       {/* Global Result Status */}
       {standalone && (
-        <Card size="small" style={{ marginBottom: '16px', background: '#f8f9fa' }}>
-          <Row justify="space-between" align="middle">
-            <Col>
-              <Space>
-                <Title level={4} style={{ margin: 0 }}>Interactive Visualization</Title>
-              </Space>
-            </Col>
-            <Col>
-              <Space>
-                {hasResult && (
-                  <Tag color="green" icon={<CheckCircleOutlined />}>
-                    Current Result Available ({dataLength} rows)
-                  </Tag>
-                )}
-                {hasVisualizableData && (
-                  <Tag color="blue">
-                    Visualizable Data ({columnCount} columns)
-                  </Tag>
-                )}
-                {!hasResult && (
-                  <Tag color="orange" icon={<ExclamationCircleOutlined />}>
-                    No Current Result - Using Sample Data
-                  </Tag>
-                )}
-                {/* Debug info in development */}
-                {process.env.NODE_ENV === 'development' && (
-                  <Tag color="purple">
-                    Debug: hasResult={String(hasResult)}, source={result?.source || 'none'}
-                  </Tag>
-                )}
-              </Space>
-            </Col>
-          </Row>
+        <Card
+          variant="outlined"
+          padding="medium"
+          style={{ marginBottom: 'var(--space-4)', background: 'var(--bg-tertiary)' }}
+        >
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 'var(--space-4)'
+          }}>
+            <Typography.Title level={4} style={{ margin: 0, color: 'var(--text-primary)' }}>
+              Interactive Visualization
+            </Typography.Title>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+              {hasResult && (
+                <Tag color="green" icon={<CheckCircleOutlined />}>
+                  Current Result Available ({dataLength} rows)
+                </Tag>
+              )}
+              {hasVisualizableData && (
+                <Tag color="blue">
+                  Visualizable Data ({columnCount} columns)
+                </Tag>
+              )}
+              {!hasResult && (
+                <Tag color="orange" icon={<ExclamationCircleOutlined />}>
+                  No Current Result - Using Sample Data
+                </Tag>
+              )}
+              {/* Debug info in development */}
+              {process.env.NODE_ENV === 'development' && (
+                <Tag color="purple">
+                  Debug: hasResult={String(hasResult)}, source={result?.source || 'none'}
+                </Tag>
+              )}
+            </div>
+          </div>
         </Card>
       )}
 
       {/* Chart Controls */}
-      <Card size="small" style={{ marginBottom: '16px' }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={4} style={{ margin: 0 }}>
-              {chartConfig.title}
-            </Title>
-          </Col>
-          <Col>
-            <Space>
-              {autoRefresh && (
-                <Tooltip title={isPlaying ? 'Pause Auto-refresh' : 'Start Auto-refresh'}>
-                  <Button
-                    icon={isPlaying ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
-                    onClick={() => setIsPlaying(!isPlaying)}
-                  />
-                </Tooltip>
-              )}
-              <Tooltip title="Chart Settings">
-                <Button icon={<SettingOutlined />} />
-              </Tooltip>
-              {enableExport && (
-                <Tooltip title="Export Data">
-                  <Button icon={<DownloadOutlined />} onClick={exportData} />
-                </Tooltip>
-              )}
-              <Tooltip title="Fullscreen">
-                <Button
-                  icon={<FullscreenOutlined />}
-                  onClick={() => setIsFullscreen(!isFullscreen)}
-                />
-              </Tooltip>
-              <Tooltip title="Refresh">
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={() => standalone ? loadStandaloneData() : window.location.reload()}
-                />
-              </Tooltip>
-            </Space>
-          </Col>
-        </Row>
+      <Card
+        variant="outlined"
+        padding="large"
+        title={chartConfig.title}
+        actions={[
+          ...(autoRefresh ? [
+            <Tooltip key="play-pause" title={isPlaying ? 'Pause Auto-refresh' : 'Start Auto-refresh'}>
+              <Button
+                icon={isPlaying ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+                onClick={() => setIsPlaying(!isPlaying)}
+              />
+            </Tooltip>
+          ] : []),
+          <Tooltip key="settings" title="Chart Settings">
+            <Button icon={<SettingOutlined />} />
+          </Tooltip>,
+          ...(enableExport ? [
+            <Tooltip key="export" title="Export Data">
+              <Button icon={<DownloadOutlined />} onClick={exportData} />
+            </Tooltip>
+          ] : []),
+          <Tooltip key="fullscreen" title="Fullscreen">
+            <Button
+              icon={<FullscreenOutlined />}
+              onClick={() => setIsFullscreen(!isFullscreen)}
+            />
+          </Tooltip>,
+          <Tooltip key="refresh" title="Refresh">
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => standalone ? loadStandaloneData() : window.location.reload()}
+            />
+          </Tooltip>
+        ]}
+        style={{ marginBottom: 'var(--space-4)' }}
+      >
 
         <Divider />
 
@@ -865,17 +870,39 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
       {renderFilters()}
 
       {/* Chart */}
-      <Card>
+      <Card variant="outlined" padding="large">
         <div style={{ minHeight: chartSettings.height + 50 }}>
           {renderChart()}
         </div>
-        <div style={{ marginTop: '16px', textAlign: 'center' }}>
-          <Text type="secondary">
+        <div style={{ marginTop: 'var(--space-4)', textAlign: 'center' }}>
+          <Text type="secondary" style={{ color: 'var(--text-secondary)' }}>
             Showing {filteredData.length} of {currentData.length} rows
             {Object.keys(activeFilters).length > 0 && ' (filtered)'}
           </Text>
         </div>
       </Card>
     </div>
+  );
+};
+
+// Wrapper component for standalone page usage
+export const InteractiveVisualizationPage: React.FC<Omit<InteractiveVisualizationProps, 'standalone'>> = (props) => {
+  return (
+    <PageLayout
+      title="Interactive Visualizations"
+      subtitle="Create dynamic, interactive charts and explore your data with advanced filtering and customization options"
+      breadcrumbs={[
+        { title: 'Home', href: '/', icon: <HomeOutlined /> },
+        { title: 'Interactive Visualizations', icon: <DotChartOutlined /> }
+      ]}
+      maxWidth="xl"
+    >
+      <PageSection
+        background="transparent"
+        padding="none"
+      >
+        <InteractiveVisualization {...props} standalone={true} />
+      </PageSection>
+    </PageLayout>
   );
 };

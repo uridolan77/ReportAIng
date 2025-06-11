@@ -7,6 +7,7 @@
 export * from './Button';
 export * from './Card';
 export * from './Layout';
+export * from './PageLayout';
 export * from './Form';
 export * from './Feedback';
 export * from './Navigation';

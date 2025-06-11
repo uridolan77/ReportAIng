@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card,
   Row,
   Col,
   Typography,
@@ -28,10 +27,14 @@ import {
   TableOutlined,
   DotChartOutlined,
   AreaChartOutlined,
+  HomeOutlined,
+  DashboardOutlined
 } from '@ant-design/icons';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { useDashboardResult } from '../../hooks/useCurrentResult';
+import { PageLayout, PageSection, PageGrid } from '../ui/PageLayout';
+import { Card } from '../ui/Card';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -332,72 +335,75 @@ const DashboardBuilder: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: 24 }}>
-      {/* Dashboard Header */}
-      <Card style={{ marginBottom: 16 }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={3} style={{ margin: 0 }}>
-              {dashboardConfig.title}
-            </Title>
-            <Text type="secondary">{dashboardConfig.description}</Text>
-            <div style={{ marginTop: 8 }}>
-              {hasResult && (
-                <Tag color="green">
-                  ✓ Current Result Available ({result?.result?.data?.length || 0} rows)
-                </Tag>
-              )}
-              {canCreateDashboard && (
-                <Tag color="blue">
-                  Dashboard Ready
-                </Tag>
-              )}
-              {suggestedChartTypes.length > 0 && (
-                <Tag color="purple">
-                  {suggestedChartTypes.length} Chart Types Available
-                </Tag>
-              )}
-              {/* Debug info in development */}
-              {process.env.NODE_ENV === 'development' && (
-                <div style={{ marginTop: 4 }}>
-                  <Tag color="orange">
-                    Debug: hasResult={String(hasResult)}, source={result?.source || 'none'}
-                  </Tag>
-                </div>
-              )}
-            </div>
-          </Col>
-          <Col>
-            <Space>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => setIsAddChartModalVisible(true)}
-              >
-                Add Chart
-              </Button>
-              <Button
-                icon={<SettingOutlined />}
-                onClick={() => setIsSettingsModalVisible(true)}
-              >
-                Settings
-              </Button>
-              <Button icon={<SaveOutlined />}>
-                Save Dashboard
-              </Button>
-              <Button icon={<ShareAltOutlined />}>
-                Share
-              </Button>
-              <Switch
-                checkedChildren="Preview"
-                unCheckedChildren="Edit"
-                checked={previewMode}
-                onChange={setPreviewMode}
-              />
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+    <PageLayout
+      title="Dashboard Builder"
+      subtitle="Create interactive dashboards from your query results"
+      breadcrumbs={[
+        { title: 'Home', href: '/', icon: <HomeOutlined /> },
+        { title: 'Dashboard Builder', icon: <DashboardOutlined /> }
+      ]}
+      maxWidth="xl"
+      actions={
+        <Space>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setIsAddChartModalVisible(true)}
+          >
+            Add Chart
+          </Button>
+          <Button
+            icon={<SettingOutlined />}
+            onClick={() => setIsSettingsModalVisible(true)}
+          >
+            Settings
+          </Button>
+          <Button icon={<SaveOutlined />}>
+            Save Dashboard
+          </Button>
+          <Button icon={<ShareAltOutlined />}>
+            Share
+          </Button>
+          <Switch
+            checkedChildren="Preview"
+            unCheckedChildren="Edit"
+            checked={previewMode}
+            onChange={setPreviewMode}
+          />
+        </Space>
+      }
+    >
+      {/* Dashboard Status */}
+      <PageSection
+        title={dashboardConfig.title}
+        subtitle={dashboardConfig.description}
+        background="card"
+        padding="lg"
+      >
+        <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+          {hasResult && (
+            <Tag color="green">
+              ✓ Current Result Available ({result?.result?.data?.length || 0} rows)
+            </Tag>
+          )}
+          {canCreateDashboard && (
+            <Tag color="blue">
+              Dashboard Ready
+            </Tag>
+          )}
+          {suggestedChartTypes.length > 0 && (
+            <Tag color="purple">
+              {suggestedChartTypes.length} Chart Types Available
+            </Tag>
+          )}
+          {/* Debug info in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <Tag color="orange">
+              Debug: hasResult={String(hasResult)}, source={result?.source || 'none'}
+            </Tag>
+          )}
+        </div>
+      </PageSection>
 
       {/* Add Chart Modal */}
       <Modal
@@ -569,58 +575,103 @@ const DashboardBuilder: React.FC = () => {
       </Modal>
 
       {/* Dashboard Stats */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={6}>
-          <Card size="small">
-            <Text type="secondary">Total Charts</Text>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#1890ff' }}>
-              {dashboardConfig.charts.length}
+      <PageSection
+        title="Dashboard Statistics"
+        subtitle="Overview of your dashboard configuration"
+        background="transparent"
+        padding="none"
+      >
+        <PageGrid columns={4} gap="md">
+          <Card variant="outlined" padding="medium">
+            <div style={{ textAlign: 'center' }}>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
+                Total Charts
+              </Text>
+              <div style={{
+                fontSize: 'var(--text-2xl)',
+                fontWeight: 'var(--font-weight-bold)',
+                color: 'var(--color-primary)'
+              }}>
+                {dashboardConfig.charts.length}
+              </div>
             </div>
           </Card>
-        </Col>
-        <Col span={6}>
-          <Card size="small">
-            <Text type="secondary">Data Sources</Text>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>
-              {availableData.length}
+          <Card variant="outlined" padding="medium">
+            <div style={{ textAlign: 'center' }}>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
+                Data Sources
+              </Text>
+              <div style={{
+                fontSize: 'var(--text-2xl)',
+                fontWeight: 'var(--font-weight-bold)',
+                color: 'var(--color-success)'
+              }}>
+                {availableData.length}
+              </div>
             </div>
           </Card>
-        </Col>
-        <Col span={6}>
-          <Card size="small">
-            <Text type="secondary">Layout</Text>
-            <div style={{ fontSize: 16, fontWeight: 'bold', color: '#722ed1' }}>
-              {dashboardConfig.layout}
+          <Card variant="outlined" padding="medium">
+            <div style={{ textAlign: 'center' }}>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
+                Layout
+              </Text>
+              <div style={{
+                fontSize: 'var(--text-lg)',
+                fontWeight: 'var(--font-weight-bold)',
+                color: 'var(--color-secondary)'
+              }}>
+                {dashboardConfig.layout}
+              </div>
             </div>
           </Card>
-        </Col>
-        <Col span={6}>
-          <Card size="small">
-            <Text type="secondary">Auto Refresh</Text>
-            <div style={{ fontSize: 16, fontWeight: 'bold', color: dashboardConfig.autoRefresh ? '#52c41a' : '#ff4d4f' }}>
-              {dashboardConfig.autoRefresh ? `${dashboardConfig.refreshInterval}s` : 'Off'}
+          <Card variant="outlined" padding="medium">
+            <div style={{ textAlign: 'center' }}>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
+                Auto Refresh
+              </Text>
+              <div style={{
+                fontSize: 'var(--text-lg)',
+                fontWeight: 'var(--font-weight-bold)',
+                color: dashboardConfig.autoRefresh ? 'var(--color-success)' : 'var(--color-error)'
+              }}>
+                {dashboardConfig.autoRefresh ? `${dashboardConfig.refreshInterval}s` : 'Off'}
+              </div>
             </div>
           </Card>
-        </Col>
-      </Row>
+        </PageGrid>
+      </PageSection>
 
       {/* Charts Grid */}
-      {dashboardConfig.charts.length === 0 ? (
-        <Card style={{ textAlign: 'center', padding: 60 }}>
-          <BarChartOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
-          <Title level={4} type="secondary">No Charts Added</Title>
-          <Text type="secondary">Start building your dashboard by adding charts</Text>
-          <div style={{ marginTop: 16 }}>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setIsAddChartModalVisible(true)}
-            >
-              Add Your First Chart
-            </Button>
-          </div>
-        </Card>
-      ) : (
+      <PageSection
+        title="Dashboard Charts"
+        subtitle="Drag and drop to rearrange your charts"
+        background="transparent"
+        padding="none"
+      >
+        {dashboardConfig.charts.length === 0 ? (
+          <Card variant="outlined" padding="large">
+            <div style={{ textAlign: 'center', padding: 'var(--space-16) 0' }}>
+              <BarChartOutlined style={{
+                fontSize: '64px',
+                color: 'var(--text-tertiary)',
+                marginBottom: 'var(--space-4)'
+              }} />
+              <Typography.Title level={4} style={{ color: 'var(--text-secondary)' }}>
+                No Charts Added
+              </Typography.Title>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 'var(--space-4)' }}>
+                Start building your dashboard by adding charts
+              </Text>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setIsAddChartModalVisible(true)}
+              >
+                Add Your First Chart
+              </Button>
+            </div>
+          </Card>
+        ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="dashboard">
             {(provided) => (
@@ -640,37 +691,37 @@ const DashboardBuilder: React.FC = () => {
                           }}
                         >
                           <Card
+                            variant="outlined"
+                            hover
                             title={
-                              <Space>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                                 <div {...provided.dragHandleProps}>
-                                  <DragOutlined style={{ cursor: 'grab' }} />
+                                  <DragOutlined style={{ cursor: 'grab', color: 'var(--text-tertiary)' }} />
                                 </div>
-                                {chart.title}
+                                <span style={{ color: 'var(--text-primary)' }}>{chart.title}</span>
                                 <Tag color="blue">{chart.type}</Tag>
-                              </Space>
+                              </div>
                             }
-                            extra={
-                              !previewMode && (
-                                <Space>
-                                  <Tooltip title="Chart Settings">
-                                    <Button
-                                      size="small"
-                                      icon={<SettingOutlined />}
-                                      onClick={() => setSelectedChart(chart)}
-                                    />
-                                  </Tooltip>
-                                  <Tooltip title="Remove Chart">
-                                    <Button
-                                      size="small"
-                                      danger
-                                      icon={<DeleteOutlined />}
-                                      onClick={() => handleRemoveChart(chart.id)}
-                                    />
-                                  </Tooltip>
-                                </Space>
-                              )
+                            actions={
+                              !previewMode ? [
+                                <Tooltip key="settings" title="Chart Settings">
+                                  <Button
+                                    size="small"
+                                    icon={<SettingOutlined />}
+                                    onClick={() => setSelectedChart(chart)}
+                                  />
+                                </Tooltip>,
+                                <Tooltip key="remove" title="Remove Chart">
+                                  <Button
+                                    size="small"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => handleRemoveChart(chart.id)}
+                                  />
+                                </Tooltip>
+                              ] : undefined
                             }
-                            style={{ height: 400 }}
+                            style={{ height: '400px' }}
                           >
                             {renderChart(chart)}
                           </Card>
@@ -684,8 +735,9 @@ const DashboardBuilder: React.FC = () => {
             )}
           </Droppable>
         </DragDropContext>
-      )}
-    </div>
+        )}
+      </PageSection>
+    </PageLayout>
   );
 };
 

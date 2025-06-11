@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'; // Updated with icons and toggle
 import { Layout, Menu, Button, Typography, Space, Tooltip, Badge } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -28,6 +28,7 @@ import {
 import { useApplicationState } from '../../hooks/useEnhancedState';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useActiveResult } from '../../stores/activeResultStore';
+import '../styles/enhanced-navigation.css';
 
 const { Sider } = Layout;
 const { Text } = Typography;
@@ -72,41 +73,42 @@ export const EnhancedNavigation: React.FC<EnhancedNavigationProps> = ({
     {
       key: 'main',
       type: 'group',
-      label: 'Main',
+      label: 'MAIN',
       children: [
         {
           key: '/',
-          icon: <HomeOutlined className="enhanced-nav-icon" />,
+          icon: <RobotOutlined style={{ fontSize: '20px', color: '#3b82f6' }} />,
           label: <span className="enhanced-nav-text">Query Interface</span>,
-          tooltip: 'Ask questions about your data'
+          tooltip: 'Ask questions about your data in natural language'
         }
       ]
     },
     {
       key: 'analytics',
       type: 'group',
-      label: 'Analytics & Visualization',
+      label: 'ANALYTICS & VISUALIZATION',
       children: [
         {
           key: '/results',
-          icon: <BarChartOutlined className="enhanced-nav-icon" />,
+          icon: <BarChartOutlined style={{ fontSize: '20px', color: '#10b981' }} />,
           label: (
-            <Badge dot={hasResult} offset={[8, 0]}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
               <span className="enhanced-nav-text">Results & Charts</span>
-            </Badge>
+              {hasResult && <Badge dot status="success" />}
+            </div>
           ),
           tooltip: 'View query results and basic charts',
           disabled: !hasResult
         },
         {
           key: '/dashboard',
-          icon: <DashboardOutlined className="enhanced-nav-icon" />,
+          icon: <DashboardOutlined style={{ fontSize: '20px', color: '#8b5cf6' }} />,
           label: <span className="enhanced-nav-text">Dashboard Builder</span>,
           tooltip: 'Create and manage interactive dashboards'
         },
         {
           key: '/interactive',
-          icon: <RocketOutlined className="enhanced-nav-icon" />,
+          icon: <LineChartOutlined style={{ fontSize: '20px', color: '#f59e0b' }} />,
           label: <span className="enhanced-nav-text">Interactive Charts</span>,
           tooltip: 'Advanced interactive visualizations with AI-powered features'
         }
@@ -115,67 +117,67 @@ export const EnhancedNavigation: React.FC<EnhancedNavigationProps> = ({
     {
       key: 'tools',
       type: 'group',
-      label: 'Query Tools',
+      label: 'QUERY TOOLS',
       children: [
         {
           key: '/history',
-          icon: <HistoryOutlined className="enhanced-nav-icon" />,
+          icon: <HistoryOutlined style={{ fontSize: '20px', color: '#6b7280' }} />,
           label: (
-            <Space>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
               <span className="enhanced-nav-text">Query History</span>
               {queryHistoryCount > 0 && (
-                <Badge count={queryHistoryCount} style={{ fontSize: '11px' }} />
+                <Badge count={queryHistoryCount} size="small" style={{ fontSize: '10px', minWidth: '16px', height: '16px' }} />
               )}
-            </Space>
+            </div>
           ),
           tooltip: 'Browse and reuse past queries'
         },
         {
           key: '/templates',
-          icon: <BookOutlined className="enhanced-nav-icon" />,
+          icon: <FileTextOutlined style={{ fontSize: '20px', color: '#6b7280' }} />,
           label: <span className="enhanced-nav-text">Query Templates</span>,
-          tooltip: 'Pre-built query templates'
+          tooltip: 'Pre-built query templates for common scenarios'
         },
         {
           key: '/suggestions',
-          icon: <BulbOutlined className="enhanced-nav-icon" />,
+          icon: <BulbOutlined style={{ fontSize: '20px', color: '#6b7280' }} />,
           label: <span className="enhanced-nav-text">Smart Suggestions</span>,
           tooltip: 'AI-powered query suggestions'
         },
         {
           key: '/enhanced-query',
-          icon: <CodeOutlined className="enhanced-nav-icon" />,
+          icon: <CodeOutlined style={{ fontSize: '20px', color: '#6b7280' }} />,
           label: <span className="enhanced-nav-text">Query Builder</span>,
-          tooltip: 'Advanced query building tools'
+          tooltip: 'Advanced visual query building tools'
         }
       ]
     },
     {
       key: 'system',
       type: 'group',
-      label: 'System & Tools',
+      label: 'SYSTEM & TOOLS',
       children: [
         {
           key: '/db-explorer',
-          icon: <DatabaseOutlined className="enhanced-nav-icon" />,
+          icon: <DatabaseOutlined style={{ fontSize: '20px', color: '#059669' }} />,
           label: <span className="enhanced-nav-text">Database Explorer</span>,
           tooltip: 'Explore database schema and preview table data'
         },
         {
           key: '/performance-monitoring',
-          icon: <ThunderboltOutlined className="enhanced-nav-icon" />,
+          icon: <ThunderboltOutlined style={{ fontSize: '20px', color: '#dc2626' }} />,
           label: <span className="enhanced-nav-text">Performance Monitor</span>,
           tooltip: 'Real-time system performance and optimization'
         },
         {
           key: '/global-result-demo',
-          icon: <ShareAltOutlined className="enhanced-nav-icon" />,
+          icon: <ShareAltOutlined style={{ fontSize: '20px', color: '#7c3aed' }} />,
           label: <span className="enhanced-nav-text">Global Result Demo</span>,
           tooltip: 'See how results work across pages'
         },
         {
           key: '/enhanced-demo',
-          icon: <RocketOutlined className="enhanced-nav-icon" />,
+          icon: <RocketOutlined style={{ fontSize: '20px', color: '#ea580c' }} />,
           label: <span className="enhanced-nav-text">Features Demo</span>,
           tooltip: 'Comprehensive demo of all enhanced features'
         }
@@ -188,7 +190,7 @@ export const EnhancedNavigation: React.FC<EnhancedNavigationProps> = ({
     navigationItems.push({
       key: 'admin',
       type: 'group',
-      label: 'Administration',
+      label: 'ADMINISTRATION',
       children: [
         {
           key: '/admin/tuning',
@@ -254,13 +256,61 @@ export const EnhancedNavigation: React.FC<EnhancedNavigationProps> = ({
           onClick={() => !isDisabled && handleMenuClick({ key: item.key })}
           style={{
             cursor: isDisabled ? 'not-allowed' : 'pointer',
-            opacity: isDisabled ? 0.5 : 1
+            opacity: isDisabled ? 0.5 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '12px 16px',
+            color: '#64748b',
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: '500',
+            transition: 'all 0.3s ease',
+            borderRadius: '10px'
           }}
         >
-          {item.icon}
-          {item.label}
+          <span style={{
+            fontSize: '20px',
+            minWidth: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#3b82f6',
+            background: 'rgba(59, 130, 246, 0.1)',
+            borderRadius: '6px',
+            padding: '4px'
+          }}>
+            {item.icon || '🔧'}
+          </span>
+          {!collapsed && (
+            <span style={{
+              whiteSpace: 'nowrap',
+              flex: 1
+            }}>
+              {item.label}
+            </span>
+          )}
           {collapsed && (
-            <div className="nav-tooltip">
+            <div className="nav-tooltip" style={{
+              position: 'absolute',
+              left: '100%',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: '#ffffff',
+              color: '#1f2937',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              border: '1px solid #e2e8f0',
+              opacity: 0,
+              visibility: 'hidden',
+              transition: 'all 0.3s ease',
+              zIndex: 1000,
+              marginLeft: '12px'
+            }}>
               {item.tooltip || (typeof item.label === 'string' ? item.label : 'Navigation Item')}
             </div>
           )}
@@ -272,65 +322,140 @@ export const EnhancedNavigation: React.FC<EnhancedNavigationProps> = ({
   const renderMenuGroup = (group: any) => (
     <div key={group.key}>
       {!collapsed && (
-        <div className="nav-section-title">
+        <div style={{
+          padding: '12px 16px 8px 16px',
+          color: '#9ca3af',
+          fontSize: '11px',
+          fontWeight: '600',
+          textTransform: 'uppercase',
+          letterSpacing: '0.8px',
+          fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+        }}>
           {group.label}
         </div>
       )}
       {group.children.map(renderMenuItem)}
-      <div className="nav-section-divider" />
+      <div style={{
+        height: '1px',
+        background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)',
+        margin: '24px 16px'
+      }} />
     </div>
   );
 
   return (
-    <Sider
-      collapsible={false}
-      collapsed={collapsed}
-      trigger={null}
-      width={collapsed ? 80 : 280}
-      collapsedWidth={80}
-      className={`enhanced-sidebar ${collapsed ? 'collapsed' : ''}`}
-      style={{
-        background: isDarkMode ? '#1e1e1e' : '#ffffff',
-        borderRight: `1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}`,
-        boxShadow: isDarkMode
-          ? '2px 0 8px rgba(0, 0, 0, 0.3)'
-          : '2px 0 8px rgba(0, 0, 0, 0.06)',
-        width: collapsed ? '80px !important' : '280px !important',
-        minWidth: collapsed ? '80px !important' : '280px !important',
-        maxWidth: collapsed ? '80px !important' : '280px !important'
-      }}
-    >
+    <>
+      <style>{`
+        .enhanced-nav-item:hover .nav-tooltip {
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+        .enhanced-nav-item:hover .enhanced-nav-link {
+          background: #f1f5f9 !important;
+          color: #1f2937 !important;
+          transform: translateX(2px) !important;
+        }
+        .enhanced-nav-item .enhanced-nav-link.active {
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.06) 100%) !important;
+          color: #2563eb !important;
+          font-weight: 600 !important;
+        }
+      `}</style>
+      <Sider
+        collapsible={false}
+        collapsed={collapsed}
+        trigger={null}
+        width={collapsed ? 70 : 260}
+        collapsedWidth={70}
+        className={`enhanced-sidebar ${collapsed ? 'collapsed' : ''}`}
+        style={{
+          background: isDarkMode ? '#1e1e1e' : 'linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)',
+          borderRight: `1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}`,
+          boxShadow: isDarkMode
+            ? '2px 0 8px rgba(0, 0, 0, 0.3)'
+            : '2px 0 12px rgba(0, 0, 0, 0.08)',
+          width: collapsed ? '70px !important' : '260px !important',
+          minWidth: collapsed ? '70px !important' : '260px !important',
+          maxWidth: collapsed ? '70px !important' : '260px !important',
+          flex: `0 0 ${collapsed ? '70px' : '260px'} !important`
+        }}
+      >
       {/* Sidebar Header */}
-      <div className="enhanced-sidebar-header">
-        <div className="sidebar-brand">
-          <div className="sidebar-brand-icon">
-            <RobotOutlined />
-          </div>
-          {!collapsed && (
-            <Text className="sidebar-brand-text">
+      <div style={{
+        padding: '20px 16px',
+        borderBottom: '1px solid #e2e8f0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'space-between',
+        height: '80px',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        position: 'relative'
+      }}>
+        {!collapsed && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '20px',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)'
+            }}>
+              <RobotOutlined />
+            </div>
+            <div style={{ color: '#1f2937', fontSize: '16px', fontWeight: '600' }}>
               BI Copilot
-            </Text>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
         <Tooltip title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}>
           <Button
             type="text"
             icon={collapsed ? <RightOutlined /> : <LeftOutlined />}
             onClick={toggleSidebar}
-            className="sidebar-toggle"
             style={{
-              backgroundColor: collapsed ? '#f0f0f0' : '#e6f7ff',
-              border: '1px solid #d9d9d9'
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              color: '#64748b',
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              display: 'flex !important',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              position: collapsed ? 'absolute' : 'static',
+              top: collapsed ? '24px' : 'auto',
+              right: collapsed ? '19px' : 'auto',
+              zIndex: 10
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#e2e8f0';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+              e.currentTarget.style.transform = 'scale(1)';
             }}
           />
         </Tooltip>
       </div>
 
-      {/* Navigation Menu */}
-      <div className="enhanced-nav-menu">
-        {navigationItems.map(renderMenuGroup)}
-      </div>
-    </Sider>
+        {/* Navigation Menu */}
+        <div style={{
+          padding: '16px 0',
+          height: 'calc(100vh - 80px)',
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}>
+          {navigationItems.map(renderMenuGroup)}
+        </div>
+      </Sider>
+    </>
   );
 };
 

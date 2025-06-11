@@ -141,6 +141,8 @@ public class TuningDbContext : DbContext
             entity.Property(e => e.Version).HasMaxLength(20);
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.CreatedBy).HasMaxLength(256);
+            // Fix decimal precision warning
+            entity.Property(e => e.SuccessRate).HasPrecision(5, 2);
         });
 
         // Configure PromptLogs

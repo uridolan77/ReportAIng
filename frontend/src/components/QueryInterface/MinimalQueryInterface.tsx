@@ -22,6 +22,7 @@ import { QueryProcessingViewer } from './QueryProcessingViewer';
 // import { AccessibilityFeatures } from './AccessibilityFeatures';
 import { useActiveResultActions } from '../../stores/activeResultStore';
 import { MockDataToggle } from './MockDataToggle';
+import { PageLayout, PageSection } from '../ui/PageLayout';
 import './animations.css';
 import './professional-polish.css';
 import './MinimalQueryInterface.css';
@@ -162,251 +163,236 @@ export const MinimalQueryInterface: React.FC = () => {
 
 
   return (
-    <div
-      className="enhanced-query-interface"
-      style={{
-        width: '100%',
-        margin: '0',
-        padding: '40px 24px',
-        background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)',
-        minHeight: '100vh'
-      }}
-    >
-      {/* Main Content Container - Enhanced with better spacing */}
+    <div className="enhanced-query-interface" style={{
+      background: 'transparent',
+      minHeight: 'calc(100vh - 64px)',
+      padding: '32px',
+      maxWidth: '1600px',
+      margin: '0 auto',
+      position: 'relative'
+    }}>
+
+      {/* Enhanced Header Section */}
       <div style={{
-        maxWidth: '1400px',
-        margin: '0 auto',
-        width: '100%',
-        position: 'relative'
+        textAlign: 'center',
+        marginBottom: '40px',
+        marginTop: '20px'
       }}>
-        {/* Mock Data Toggle - Top Right */}
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          right: '24px',
-          zIndex: 1000
+        <Title
+          level={1}
+          style={{
+            margin: 0,
+            fontSize: '36px',
+            fontWeight: 700,
+            color: '#1f2937',
+            letterSpacing: '-0.02em',
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+            marginBottom: '16px'
+          }}
+        >
+          Talk with DailyActionsDB
+        </Title>
+        <Text style={{
+          fontSize: '16px',
+          color: '#64748b',
+          fontWeight: 400,
+          maxWidth: '600px',
+          display: 'block',
+          margin: '0 auto',
+          lineHeight: '1.6'
         }}>
-          <MockDataToggle size="default" showDetails={true} />
+          Ask questions about your data in natural language and get instant insights
+        </Text>
+      </div>
+
+      {/* Enhanced Query Input Container */}
+      <div className="enhanced-query-input-container" style={{
+        marginBottom: '32px',
+        maxWidth: '1200px',
+        margin: '0 auto 32px auto',
+        background: 'white',
+        borderRadius: '16px',
+        padding: '24px',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+        border: '1px solid #e5e7eb'
+      }}>
+        <div className="query-input-passepartout" style={{
+          background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+          padding: '3px',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0'
+        }}>
+          <Input.TextArea
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onPressEnter={(e) => {
+              if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                handleCustomSubmitQuery();
+              }
+            }}
+            placeholder="Ask me anything about your data..."
+            autoSize={{ minRows: 5, maxRows: 10 }}
+            className="enhanced-query-input"
+            style={{
+              fontSize: '15px',
+              lineHeight: '1.6',
+              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+              borderRadius: '9px',
+              border: 'none',
+              padding: '16px',
+              background: '#ffffff',
+              boxShadow: 'none',
+              resize: 'none'
+            }}
+          />
         </div>
 
-        {/* Enhanced Header Section */}
+        {/* Enhanced Action Buttons */}
         <div style={{
-          textAlign: 'center',
-          marginBottom: '48px',
-          padding: '0 24px',
-          animation: 'fadeInUp 0.6s ease-out'
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '12px',
+          marginTop: '20px',
+          flexWrap: 'wrap'
         }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '16px',
-            marginBottom: '24px'
-          }}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '20px',
+          {/* Mock Data Quick Toggle */}
+          <MockDataToggle size="small" showDetails={false} />
+
+          {/* Enhanced Submit Button */}
+          <Button
+            type="primary"
+            size="large"
+            loading={isLoading || aiProcessing.isProcessing}
+            onClick={handleCustomSubmitQuery}
+            disabled={!query?.trim()}
+            className="enhanced-submit-button"
+            icon={isLoading || aiProcessing.isProcessing ? undefined : <span className="button-icon">→</span>}
+            style={{
+              borderRadius: '10px',
+              height: '44px',
+              padding: '0 28px',
+              fontSize: '15px',
+              fontWeight: 600,
               background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 20px 40px rgba(59, 130, 246, 0.3)',
-              animation: 'slideInRight 0.4s ease-out'
-            }}>
-              <span style={{ fontSize: '32px', color: 'white' }}>🤖</span>
-            </div>
-            <Title
-              level={1}
-              style={{
-                margin: 0,
-                fontSize: '3.5rem',
-                fontWeight: 800,
-                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                letterSpacing: '-0.02em',
-                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
-              }}
-            >
-              Talk with DailyActionsDB
-            </Title>
-          </div>
-          <Text style={{
-            fontSize: '1.25rem',
-            color: '#4a5568',
-            fontWeight: 400,
-            maxWidth: '600px',
-            display: 'block',
-            margin: '0 auto'
-          }}>
-            Ask questions about your data in natural language and get instant insights
-          </Text>
-        </div>
+              border: 'none',
+              boxShadow: '0 3px 10px rgba(59, 130, 246, 0.3)',
+              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+            }}
+          >
+            {isLoading || aiProcessing.isProcessing ? 'Analyzing...' : 'Ask Question'}
+          </Button>
 
-        {/* Enhanced Query Input Container */}
-        <div className="enhanced-query-input-container fade-in-up" style={{
-          marginBottom: '32px',
-          animationDelay: '0.2s'
-        }}>
-          <div className="query-input-passepartout">
-            <Input.TextArea
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onPressEnter={(e) => {
-                if (e.ctrlKey || e.metaKey) {
-                  e.preventDefault();
-                  handleCustomSubmitQuery();
-                }
-              }}
-              placeholder="Ask me anything about your data..."
-              autoSize={{ minRows: 6, maxRows: 12 }}
-              className="enhanced-query-input"
-              style={{
-                fontSize: '18px',
-                lineHeight: '1.6',
-                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
-              }}
-            />
-          </div>
-
-          {/* Enhanced Action Buttons */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '16px',
-            marginTop: '24px',
-            marginBottom: '32px',
-            flexWrap: 'wrap'
-          }}>
-            {/* Mock Data Quick Toggle */}
-            <MockDataToggle size="small" showDetails={false} />
-
-            {/* Enhanced Submit Button */}
+          {/* Show Results Button - Enhanced styling */}
+          {currentResult && forceInitialState && (
             <Button
               type="primary"
               size="large"
-              loading={isLoading || aiProcessing.isProcessing}
-              onClick={handleCustomSubmitQuery}
-              disabled={!query?.trim()}
-              className="enhanced-submit-button"
-              icon={isLoading || aiProcessing.isProcessing ? undefined : <span className="button-icon">→</span>}
-            >
-              {isLoading || aiProcessing.isProcessing ? 'Analyzing...' : 'Ask Question'}
-            </Button>
-
-            {/* Show Results Button - Enhanced styling */}
-            {currentResult && forceInitialState && (
-              <Button
-                type="primary"
-                onClick={() => {
-                  setForceInitialState(false);
-                  setHasSubmittedQuery(true);
-                }}
-                className="enhanced-submit-button"
-                style={{ minWidth: '180px' }}
-              >
-                View Previous Results
-              </Button>
-            )}
-
-            {/* Clear Results Button - Enhanced styling */}
-            {!forceInitialState && currentResult && (
-              <Button
-                type="default"
-                onClick={() => {
-                  handleClearResults();
-                  setForceInitialState(true);
-                }}
-                style={{
-                  borderRadius: '12px',
-                  border: '1px solid #e2e8f0',
-                  background: 'rgba(255, 255, 255, 0.9)',
-                  color: '#6b7280',
-                  fontWeight: 500,
-                  height: '40px',
-                  padding: '0 16px',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                Clear & Start Fresh
-              </Button>
-            )}
-          </div>
-
-          {/* Query Processing Viewer - Show only after query submission */}
-          {hasSubmittedQuery && ((isLoading || aiProcessing.isProcessing) ? (
-            <div style={{ marginTop: '24px' }}>
-              <QueryProcessingViewer
-                stages={processingStages}
-                isProcessing={isLoading || aiProcessing.isProcessing}
-                currentStage={currentProcessingStage}
-                queryId={currentQueryId}
-                isVisible={true}
-                mode={processingViewMode}
-                onModeChange={setProcessingViewMode}
-                onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
-              />
-            </div>
-          ) : currentResult && (
-            <div style={{ marginTop: '24px' }}>
-              <QueryProcessingViewer
-                stages={processingStages}
-                isProcessing={false}
-                currentStage={currentProcessingStage}
-                queryId={currentQueryId}
-                isVisible={true}
-                mode={processingViewMode === 'hidden' ? 'hidden' : processingViewMode}
-                onModeChange={(newMode) => {
-                  console.log('🔍 MinimalQueryInterface: Mode change requested from', processingViewMode, 'to', newMode);
-                  console.log('🔍 Available processing stages:', processingStages?.length || 0, processingStages?.map(s => s.stage) || []);
-                  setProcessingViewMode(newMode);
-
-                  // If expanding to show details, ensure we show processing details
-                  if (newMode !== 'hidden') {
-                    setShowProcessingDetails(true);
-                  }
-                }}
-                onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
-              />
-            </div>
-          ))}
-        </div>
-
-        {/* Results Section - Show only when user explicitly wants to see results */}
-        {!forceInitialState && (hasSubmittedQuery || isLoading) && currentResult && (
-          <div style={{
-            marginBottom: '32px',
-            maxWidth: '2000px',
-            margin: '0 auto 32px auto',
-            padding: '0 24px'
-          }}>
-            <QueryTabs />
-          </div>
-        )}
-
-        {/* Proactive Suggestions - Show when in initial state */}
-        {forceInitialState && !isLoading && (
-          <div style={{
-            maxWidth: '2000px',
-            margin: '0 auto',
-            padding: '0 24px'
-          }}>
-            <ProactiveSuggestions
-              onQuerySelect={(selectedQuery) => {
-                setQuery(selectedQuery);
-              }}
-              onSubmitQuery={(selectedQuery) => {
-                setQuery(selectedQuery);
+              onClick={() => {
                 setForceInitialState(false);
-                setTimeout(() => handleCustomSubmitQuery(), 100);
+                setHasSubmittedQuery(true);
               }}
-              onStartWizard={() => setShowWizard(true)}
-              recentQueries={Array.isArray(queryHistory) ? queryHistory.map(h => h.query || '').slice(0, 5) : []}
-            />
-          </div>
-        )}
+              style={{
+                minWidth: '160px',
+                borderRadius: '10px',
+                height: '44px',
+                fontSize: '15px',
+                fontWeight: 600
+              }}
+            >
+              View Previous Results
+            </Button>
+          )}
+
+          {/* Clear Results Button - Enhanced styling */}
+          {!forceInitialState && currentResult && (
+            <Button
+              type="default"
+              size="large"
+              onClick={() => {
+                handleClearResults();
+                setForceInitialState(true);
+              }}
+              style={{
+                borderRadius: '10px',
+                border: '1px solid #d1d5db',
+                background: 'white',
+                color: '#6b7280',
+                fontWeight: 500,
+                height: '44px',
+                padding: '0 20px',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Clear & Start Fresh
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Query Processing Viewer - Show only after query submission */}
+      {hasSubmittedQuery && ((isLoading || aiProcessing.isProcessing) ? (
+        <div style={{ marginTop: '24px' }}>
+          <QueryProcessingViewer
+            stages={processingStages}
+            isProcessing={isLoading || aiProcessing.isProcessing}
+            currentStage={currentProcessingStage}
+            queryId={currentQueryId}
+            isVisible={true}
+            mode={processingViewMode}
+            onModeChange={setProcessingViewMode}
+            onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
+          />
+        </div>
+      ) : currentResult && (
+        <div style={{ marginTop: '24px' }}>
+          <QueryProcessingViewer
+            stages={processingStages}
+            isProcessing={false}
+            currentStage={currentProcessingStage}
+            queryId={currentQueryId}
+            isVisible={true}
+            mode={processingViewMode === 'hidden' ? 'hidden' : processingViewMode}
+            onModeChange={(newMode) => {
+              console.log('🔍 MinimalQueryInterface: Mode change requested from', processingViewMode, 'to', newMode);
+              console.log('🔍 Available processing stages:', processingStages?.length || 0, processingStages?.map(s => s.stage) || []);
+              setProcessingViewMode(newMode);
+
+              // If expanding to show details, ensure we show processing details
+              if (newMode !== 'hidden') {
+                setShowProcessingDetails(true);
+              }
+            }}
+            onToggleVisibility={() => setShowProcessingDetails(!showProcessingDetails)}
+          />
+        </div>
+      ))}
+
+      {/* Results Section - Show only when user explicitly wants to see results */}
+      {!forceInitialState && (hasSubmittedQuery || isLoading) && currentResult && (
+        <div style={{ marginBottom: '32px' }}>
+          <QueryTabs />
+        </div>
+      )}
+
+      {/* Proactive Suggestions - Show when in initial state */}
+      {forceInitialState && !isLoading && (
+        <div style={{ padding: '24px 0' }}>
+          <ProactiveSuggestions
+            onQuerySelect={(selectedQuery) => {
+              setQuery(selectedQuery);
+            }}
+            onSubmitQuery={(selectedQuery) => {
+              setQuery(selectedQuery);
+              setForceInitialState(false);
+              setTimeout(() => handleCustomSubmitQuery(), 100);
+            }}
+            onStartWizard={() => setShowWizard(true)}
+            recentQueries={Array.isArray(queryHistory) ? queryHistory.map(h => h.query || '').slice(0, 5) : []}
+          />
+        </div>
+      )}
 
 
 
@@ -420,36 +406,17 @@ export const MinimalQueryInterface: React.FC = () => {
         {forceInitialState && !isLoading && (
           <div style={{
             textAlign: 'center',
-            padding: '80px 48px',
+            padding: '40px 24px',
             background: 'transparent',
-            borderRadius: '24px',
-            margin: '40px 24px',
-            maxWidth: '2000px',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            boxShadow: 'none'
+            borderRadius: '16px',
+            margin: '20px auto',
+            maxWidth: '1000px',
+            position: 'relative'
           }}>
-            {/* Background decoration */}
-            <div style={{
-              position: 'absolute',
-              top: '-50%',
-              left: '-50%',
-              width: '200%',
-              height: '200%',
-              background: 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%)',
-              animation: 'rotate 20s linear infinite'
-            }} />
-
             <div
               style={{
-                fontSize: '72px',
-                marginBottom: '24px',
-                animation: 'float 3s ease-in-out infinite',
-                position: 'relative',
-                zIndex: 1,
+                fontSize: '48px',
+                marginBottom: '16px',
                 cursor: 'pointer',
                 transition: 'transform 0.3s ease'
               }}
@@ -461,28 +428,26 @@ export const MinimalQueryInterface: React.FC = () => {
             {isRocketHovered && (
               <>
                 <Text style={{
-                  fontSize: '24px',
+                  fontSize: '20px',
                   color: '#1f2937',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   display: 'block',
-                  marginBottom: '12px',
-                  position: 'relative',
-                  zIndex: 1,
-                  fontFamily: "'Poppins', sans-serif"
+                  marginBottom: '8px',
+                  fontFamily: "'Inter', sans-serif"
                 }}>
                   Ready to Explore Your Data
                 </Text>
                 <Text style={{
-                  fontSize: '18px',
+                  fontSize: '16px',
                   color: '#6b7280',
-                  fontWeight: 500,
+                  fontWeight: 400,
                   display: 'block',
-                  marginBottom: '32px',
+                  marginBottom: '24px',
                   lineHeight: '1.6'
                 }}>
                   Ask questions in natural language and get instant insights
                   <br />
-                  <span style={{ fontSize: '16px', color: '#9ca3af' }}>
+                  <span style={{ fontSize: '14px', color: '#9ca3af' }}>
                     Try typing something like "Show me revenue trends" or use the examples above
                   </span>
                 </Text>
@@ -494,9 +459,9 @@ export const MinimalQueryInterface: React.FC = () => {
               <div style={{
                 display: 'flex',
                 justifyContent: 'center',
-                gap: '24px',
+                gap: '16px',
                 flexWrap: 'wrap',
-                marginTop: '32px'
+                marginTop: '24px'
               }}>
                 {[
                   { icon: '💬', text: 'Natural Language', desc: 'Ask in plain English' },
@@ -505,33 +470,33 @@ export const MinimalQueryInterface: React.FC = () => {
                 ].map((tip, index) => (
                   <div key={index} style={{
                     background: 'white',
-                    padding: '20px',
-                    borderRadius: '16px',
+                    padding: '16px',
+                    borderRadius: '12px',
                     border: '1px solid #e5e7eb',
-                    minWidth: '160px',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                    minWidth: '140px',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                    transition: 'all 0.2s ease'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.15)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.12)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
                   }}>
-                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>{tip.icon}</div>
+                    <div style={{ fontSize: '24px', marginBottom: '6px' }}>{tip.icon}</div>
                     <Text style={{
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: 600,
                       color: '#374151',
                       display: 'block',
-                      marginBottom: '4px'
+                      marginBottom: '3px'
                     }}>
                       {tip.text}
                     </Text>
                     <Text style={{
-                      fontSize: '12px',
+                      fontSize: '11px',
                       color: '#6b7280'
                     }}>
                       {tip.desc}
@@ -542,8 +507,6 @@ export const MinimalQueryInterface: React.FC = () => {
             )}
           </div>
         )}
-      </div> {/* Close main content container */}
-
       {/* Guided Query Wizard */}
       <GuidedQueryWizard
         visible={showWizard}

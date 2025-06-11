@@ -4,9 +4,6 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Card,
-  Button,
-  Space,
   Row,
   Col,
   Tag,
@@ -28,6 +25,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
+import { PageLayout, PageSection, PageGrid } from '../components/ui/PageLayout';
+import { Card, CardContent } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 
 const { Text } = Typography;
 
@@ -117,212 +117,248 @@ const SuggestionsPageContent: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px', background: '#f5f5f5', minHeight: '100vh' }}>
-      {/* Breadcrumb */}
-      <div style={{ marginBottom: '24px' }}>
-        <Space>
-          <HomeOutlined />
-          <span
-            onClick={() => navigate('/')}
-            style={{ cursor: 'pointer', color: '#1890ff' }}
-          >
-            Home
-          </span>
-          <span>/</span>
-          <BulbOutlined />
-          <span>Smart Suggestions</span>
-        </Space>
-      </div>
-
-      {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ margin: 0, color: '#667eea', fontSize: '2rem', fontWeight: 600 }}>
-          AI-Powered Query Suggestions
-        </h2>
-        <p style={{ color: '#8c8c8c', fontSize: '16px', margin: 0 }}>
-          Intelligent recommendations based on your data patterns and query history
-        </p>
-      </div>
-
+    <PageLayout
+      title="AI-Powered Query Suggestions"
+      subtitle="Intelligent recommendations based on your data patterns and query history"
+      breadcrumbs={[
+        { title: 'Home', href: '/', icon: <HomeOutlined /> },
+        { title: 'Smart Suggestions', icon: <BulbOutlined /> }
+      ]}
+      maxWidth="xl"
+    >
       {/* AI Status Card */}
-      <Card style={{ marginBottom: '24px' }}>
-        <Space align="center">
-          <RobotOutlined style={{ fontSize: '24px', color: '#667eea' }} />
-          <div>
-            <div style={{ color: '#667eea', fontWeight: 600 }}>AI Analysis Status</div>
-            <div style={{ color: '#8c8c8c' }}>
+      <PageSection
+        title="AI Analysis Status"
+        background="card"
+        padding="lg"
+        actions={<RobotOutlined style={{ color: 'var(--color-primary)' }} />}
+      >
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-4)'
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{
+              color: 'var(--text-primary)',
+              fontWeight: 'var(--font-weight-semibold)',
+              marginBottom: 'var(--space-1)'
+            }}>
               {loading ? 'Analyzing your data patterns...' : `Generated ${suggestions.length} personalized suggestions`}
+            </div>
+            <div style={{
+              color: 'var(--text-secondary)',
+              fontSize: 'var(--text-sm)'
+            }}>
+              {loading ? 'Please wait while AI processes your query history' : 'Ready to explore intelligent recommendations'}
             </div>
           </div>
           {loading && <Spin />}
-        </Space>
-      </Card>
+        </div>
+      </PageSection>
 
       {/* Suggestions Grid */}
       {loading ? (
-        <Card>
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
+        <PageSection background="card" padding="lg">
+          <div style={{ textAlign: 'center', padding: 'var(--space-16) 0' }}>
             <Spin size="large" />
-            <div style={{ marginTop: '16px' }}>
-              <Text type="secondary">AI is analyzing your data patterns...</Text>
+            <div style={{ marginTop: 'var(--space-4)' }}>
+              <Text type="secondary" style={{ color: 'var(--text-secondary)' }}>
+                AI is analyzing your data patterns...
+              </Text>
             </div>
           </div>
-        </Card>
+        </PageSection>
       ) : suggestions.length > 0 ? (
-        <Row gutter={[24, 24]}>
-          {suggestions.map((suggestion, index) => (
-            <Col xs={24} lg={12} key={suggestion.id}>
+        <PageSection
+          title="Personalized Suggestions"
+          subtitle="AI-generated recommendations tailored to your needs"
+          background="transparent"
+          padding="none"
+        >
+          <PageGrid columns={2} gap="lg">
+            {suggestions.map((suggestion, index) => (
               <Card
-                hoverable
+                key={suggestion.id}
+                variant="outlined"
+                hover
                 style={{ cursor: 'pointer', height: '100%' }}
                 onClick={() => handleSuggestionSelect(suggestion)}
               >
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  {/* Header */}
-                  <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                    <Space>
-                      <div style={{
-                        fontSize: '20px',
-                        color: suggestion.color,
-                        padding: '8px',
-                        background: `${suggestion.color}15`,
-                        borderRadius: '8px'
-                      }}>
-                        {suggestion.icon}
-                      </div>
-                      <div>
-                        <Text strong style={{ fontSize: '16px' }}>{suggestion.title}</Text>
-                        <br />
-                        <Tag color={suggestion.color} style={{ marginTop: '4px' }}>
-                          {getTypeLabel(suggestion.type)}
-                        </Tag>
-                      </div>
-                    </Space>
-                    <Tooltip title={`AI Confidence: ${(suggestion.confidence * 100).toFixed(0)}%`}>
-                      <Badge
-                        count={`${(suggestion.confidence * 100).toFixed(0)}%`}
-                        style={{
-                          backgroundColor: suggestion.confidence > 0.9 ? '#52c41a' :
-                                          suggestion.confidence > 0.8 ? '#faad14' : '#ff4d4f'
-                        }}
-                      />
-                    </Tooltip>
-                  </Space>
-
-                  {/* Description */}
-                  <Text type="secondary" style={{ fontSize: '14px' }}>
-                    {suggestion.description}
-                  </Text>
-
-                  {/* Query Preview */}
+                <CardContent padding="large">
                   <div style={{
-                    background: '#f6f8fa',
-                    padding: '12px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontFamily: 'monospace',
-                    color: '#586069',
-                    border: '1px solid #e1e4e8'
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'var(--space-4)',
+                    height: '100%'
                   }}>
-                    {suggestion.query}
-                  </div>
+                    {/* Header */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                        <div style={{
+                          fontSize: '20px',
+                          color: suggestion.color,
+                          padding: 'var(--space-2)',
+                          background: `${suggestion.color}15`,
+                          borderRadius: 'var(--radius-md)'
+                        }}>
+                          {suggestion.icon}
+                        </div>
+                        <div>
+                          <Text strong style={{
+                            fontSize: 'var(--text-lg)',
+                            color: 'var(--text-primary)'
+                          }}>
+                            {suggestion.title}
+                          </Text>
+                          <br />
+                          <Tag color={suggestion.color} style={{ marginTop: 'var(--space-1)' }}>
+                            {getTypeLabel(suggestion.type)}
+                          </Tag>
+                        </div>
+                      </div>
+                      <Tooltip title={`AI Confidence: ${(suggestion.confidence * 100).toFixed(0)}%`}>
+                        <Badge
+                          count={`${(suggestion.confidence * 100).toFixed(0)}%`}
+                          style={{
+                            backgroundColor: suggestion.confidence > 0.9 ? 'var(--color-success)' :
+                                            suggestion.confidence > 0.8 ? 'var(--color-warning)' : 'var(--color-error)'
+                          }}
+                        />
+                      </Tooltip>
+                    </div>
 
-                  {/* AI Reasoning */}
-                  <div style={{
-                    background: `${suggestion.color}08`,
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    border: `1px solid ${suggestion.color}20`
-                  }}>
-                    <Space>
-                      <RobotOutlined style={{ color: suggestion.color, fontSize: '12px' }} />
-                      <Text style={{ fontSize: '12px', color: '#595959' }}>
-                        <strong>AI Insight:</strong> {suggestion.reasoning}
-                      </Text>
-                    </Space>
-                  </div>
-
-                  {/* Category */}
-                  <Space>
-                    <Tag color="blue">{suggestion.category}</Tag>
-                    <Text type="secondary" style={{ fontSize: '11px' }}>
-                      Click to run this query
+                    {/* Description */}
+                    <Text type="secondary" style={{
+                      fontSize: 'var(--text-base)',
+                      color: 'var(--text-secondary)'
+                    }}>
+                      {suggestion.description}
                     </Text>
-                  </Space>
-                </Space>
+
+                    {/* Query Preview */}
+                    <div style={{
+                      background: 'var(--bg-tertiary)',
+                      padding: 'var(--space-3)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: 'var(--text-sm)',
+                      fontFamily: 'var(--font-family-mono)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border-primary)'
+                    }}>
+                      {suggestion.query}
+                    </div>
+
+                    {/* AI Reasoning */}
+                    <div style={{
+                      background: `${suggestion.color}08`,
+                      padding: 'var(--space-3)',
+                      borderRadius: 'var(--radius-md)',
+                      border: `1px solid ${suggestion.color}20`
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)' }}>
+                        <RobotOutlined style={{ color: suggestion.color, fontSize: 'var(--text-sm)' }} />
+                        <Text style={{
+                          fontSize: 'var(--text-sm)',
+                          color: 'var(--text-secondary)',
+                          lineHeight: 'var(--line-height-relaxed)'
+                        }}>
+                          <strong>AI Insight:</strong> {suggestion.reasoning}
+                        </Text>
+                      </div>
+                    </div>
+
+                    {/* Category */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginTop: 'auto'
+                    }}>
+                      <Tag color="blue">{suggestion.category}</Tag>
+                      <Text type="secondary" style={{
+                        fontSize: 'var(--text-xs)',
+                        color: 'var(--text-tertiary)'
+                      }}>
+                        Click to run this query
+                      </Text>
+                    </div>
+                  </div>
+                </CardContent>
               </Card>
-            </Col>
-          ))}
-        </Row>
+            ))}
+          </PageGrid>
+        </PageSection>
       ) : (
-        <Card>
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <Space direction="vertical">
-                <Text type="secondary" style={{ fontSize: '16px' }}>
-                  No suggestions available
-                </Text>
-                <Text type="secondary" style={{ fontSize: '14px' }}>
-                  Run some queries first to get personalized AI suggestions
-                </Text>
-              </Space>
-            }
-            style={{ padding: '60px 0' }}
-          >
-            <Button
-              type="primary"
-              onClick={() => navigate('/')}
-              style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                border: 'none',
-                borderRadius: '8px'
-              }}
+        <PageSection background="card" padding="lg">
+          <div style={{ textAlign: 'center', padding: 'var(--space-16) 0' }}>
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <div style={{ marginBottom: 'var(--space-6)' }}>
+                  <div style={{
+                    fontSize: 'var(--text-lg)',
+                    color: 'var(--text-secondary)',
+                    marginBottom: 'var(--space-2)'
+                  }}>
+                    No suggestions available
+                  </div>
+                  <div style={{
+                    fontSize: 'var(--text-base)',
+                    color: 'var(--text-tertiary)'
+                  }}>
+                    Run some queries first to get personalized AI suggestions
+                  </div>
+                </div>
+              }
             >
-              Start Querying
-            </Button>
-          </Empty>
-        </Card>
+              <Button
+                variant="primary"
+                onClick={() => navigate('/')}
+              >
+                Start Querying
+              </Button>
+            </Empty>
+          </div>
+        </PageSection>
       )}
 
       {/* Quick Actions */}
-      <Card
-        style={{ marginTop: '24px' }}
+      <PageSection
         title="Quick Actions"
+        subtitle="Navigate to related tools and features"
+        background="card"
+        padding="lg"
       >
-        <Space wrap>
+        <div style={{
+          display: 'flex',
+          gap: 'var(--space-4)',
+          flexWrap: 'wrap'
+        }}>
           <Button
-            type="primary"
+            variant="primary"
             onClick={() => navigate('/')}
-            style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none',
-              borderRadius: '8px'
-            }}
           >
             New Query
           </Button>
           <Button
+            variant="secondary"
             onClick={() => navigate('/templates')}
-            style={{
-              borderRadius: '8px',
-              border: '1px solid #52c41a',
-              color: '#52c41a'
-            }}
           >
             Browse Templates
           </Button>
           <Button
+            variant="outline"
             onClick={() => navigate('/history')}
-            style={{
-              borderRadius: '8px',
-              border: '1px solid #722ed1',
-              color: '#722ed1'
-            }}
           >
             View History
           </Button>
           <Button
+            variant="ghost"
             onClick={() => {
               setLoading(true);
               setTimeout(() => {
@@ -330,17 +366,12 @@ const SuggestionsPageContent: React.FC = () => {
                 setLoading(false);
               }, 1500);
             }}
-            style={{
-              borderRadius: '8px',
-              border: '1px solid #fa8c16',
-              color: '#fa8c16'
-            }}
           >
             Refresh Suggestions
           </Button>
-        </Space>
-      </Card>
-    </div>
+        </div>
+      </PageSection>
+    </PageLayout>
   );
 };
 

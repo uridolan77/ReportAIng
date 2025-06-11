@@ -139,7 +139,7 @@ public class QueryDbContext : DbContext
             entity.Property(e => e.TargetTables).HasMaxLength(500);
             entity.Property(e => e.RequiredPermissions).HasMaxLength(200);
             entity.Property(e => e.Tags).HasMaxLength(300);
-            entity.Property(e => e.Relevance).HasDefaultValue(0.8);
+            entity.Property(e => e.Relevance).HasDefaultValue(0.8).HasPrecision(3, 2);
             entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(256);
             entity.Property(e => e.UpdatedBy).HasMaxLength(256);
 

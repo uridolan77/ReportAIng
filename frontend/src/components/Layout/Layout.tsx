@@ -118,12 +118,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             style={{
               width: '40px',
               height: '40px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              borderRadius: 'var(--radius-lg)',
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
             <RobotOutlined style={{
@@ -139,22 +139,22 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             overflow: 'visible'
           }}>
             <Text strong style={{
-              fontSize: '18px',
-              color: '#1e293b',
-              fontWeight: 700,
-              fontFamily: "'Poppins', sans-serif",
-              lineHeight: 1.2,
+              fontSize: 'var(--text-lg)',
+              color: 'var(--text-primary)',
+              fontWeight: 'var(--font-weight-bold)',
+              fontFamily: 'var(--font-family-primary)',
+              lineHeight: 'var(--line-height-tight)',
               display: 'block',
               whiteSpace: 'nowrap'
             }}>
               BI Reporting Copilot
             </Text>
             <Text style={{
-              fontSize: '12px',
-              color: '#64748b',
-              fontWeight: 500,
-              fontFamily: "'Inter', sans-serif",
-              lineHeight: 1.2,
+              fontSize: 'var(--text-xs)',
+              color: 'var(--text-secondary)',
+              fontWeight: 'var(--font-weight-medium)',
+              fontFamily: 'var(--font-family-primary)',
+              lineHeight: 'var(--line-height-tight)',
               whiteSpace: 'nowrap'
             }}>
               AI-Powered Analytics
@@ -228,17 +228,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                color: '#1e293b',
-                border: '1px solid #e2e8f0',
-                borderRadius: '10px',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-primary)',
+                borderRadius: 'var(--radius-lg)',
                 background: 'rgba(255, 255, 255, 0.8)',
                 backdropFilter: 'blur(8px)',
-                padding: '6px 12px',
+                padding: 'var(--space-2) var(--space-3)',
                 height: '36px',
-                fontWeight: 500,
-                fontSize: '14px',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                fontWeight: 'var(--font-weight-medium)',
+                fontSize: 'var(--text-sm)',
+                transition: 'all var(--transition-normal)',
+                boxShadow: 'var(--shadow-sm)',
                 cursor: 'pointer'
               }}
               onClick={(e) => {
@@ -262,30 +262,30 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 size={24}
                 icon={<UserOutlined />}
                 style={{
-                  marginRight: '8px',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  marginRight: 'var(--space-2)',
+                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
                   border: 'none',
                   color: 'white',
-                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
-                  fontSize: '12px'
+                  boxShadow: 'var(--shadow-md)',
+                  fontSize: 'var(--text-xs)'
                 }}
               />
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                 <Text style={{
-                  color: '#1e293b',
-                  fontWeight: 600,
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '13px',
-                  lineHeight: 1.2
+                  color: 'var(--text-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontFamily: 'var(--font-family-primary)',
+                  fontSize: 'var(--text-sm)',
+                  lineHeight: 'var(--line-height-tight)'
                 }}>
                   {user?.displayName || 'System Administrator'}
                 </Text>
                 <Text style={{
-                  color: '#64748b',
-                  fontWeight: 400,
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: '11px',
-                  lineHeight: 1
+                  color: 'var(--text-secondary)',
+                  fontWeight: 'var(--font-weight-normal)',
+                  fontFamily: 'var(--font-family-primary)',
+                  fontSize: 'var(--text-xs)',
+                  lineHeight: 'var(--line-height-tight)'
                 }}>
                   {isAdmin ? 'Admin' : 'User'}
                 </Text>
@@ -304,7 +304,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           className="main-content-area"
           style={{
             padding: '0',
-            background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)',
+            background: 'linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%)',
             minHeight: 'calc(100vh - 64px)',
             overflow: 'auto',
             position: 'relative'

@@ -1,74 +1,49 @@
-/* Import enhanced styles */
+/**
+ * Main Stylesheet
+ * Imports all design system components in the correct order
+ */
+
+/* ===== DESIGN SYSTEM FOUNDATION ===== */
+/* Variables must be imported first */
 @import './components/styles/variables.css';
+
+/* Theme files */
+@import './styles/themes/light-theme.css';
+@import './styles/themes/dark-theme.css';
+
+/* Foundation styles */
+@import './styles/foundation/reset.css';
+@import './styles/foundation/typography.css';
+@import './styles/foundation/layout.css';
+
+/* ===== COMPONENT STYLES ===== */
+/* Antd component overrides */
+@import './styles/components/antd-overrides.css';
+
+/* Custom UI components */
+@import './styles/components/ui-components.css';
+
+/* Existing component styles */
+@import './components/styles/utilities.css';
+@import './components/styles/enhanced-navigation.css';
+@import './components/styles/query-interface.css';
+@import './components/styles/data-table.css';
+@import './components/styles/visualization.css';
+@import './components/styles/schema-management.css';
+@import './components/styles/animations.css';
+
+/* ===== ENHANCED ANIMATION SYSTEM ===== */
+@import './styles/animations/micro-interactions.css';
+@import './styles/animations/page-transitions.css';
+@import './styles/animations/chart-animations.css';
+
+/* ===== UTILITY STYLES ===== */
+/* Utility classes and helpers */
+@import './styles/utilities/focus.css';
+@import './styles/utilities/scrollbars.css';
+@import './styles/utilities/loading.css';
+@import './styles/utilities/responsive.css';
+
+/* Legacy styles (to be refactored) */
 @import './styles/accessibility.css';
 @import './styles/enhanced-ui.css';
-@import './components/styles/enhanced-navigation.css';
-
-body {
-  margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #f9fafb;
-  color: #374151;
-  line-height: 1.6;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-/* Enhanced Global focus styles */
-*:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-/* Remove outline for mouse users */
-.js-focus-visible *:focus:not(.focus-visible) {
-  outline: none;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html, body, #root {
-  height: 100%;
-}
-
-.ant-layout {
-  min-height: 100vh;
-}
-
-.ant-layout-content {
-  padding: 0;
-}
-
-/* Enhanced Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
-  transition: background 0.3s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
-
-::-webkit-scrollbar-thumb:active {
-  background: #6b7280;
-}

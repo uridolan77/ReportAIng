@@ -4,7 +4,6 @@
 
 import React, { useState } from 'react';
 import {
-  Space,
   Input,
   Select,
   Tag,
@@ -12,9 +11,7 @@ import {
   Badge,
   Row,
   Col,
-  Typography,
-  Card,
-  Button
+  Typography
 } from 'antd';
 import {
   HomeOutlined,
@@ -27,6 +24,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
+import { PageLayout, PageSection, PageGrid } from '../components/ui/PageLayout';
+import { Card, CardContent } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -113,33 +113,22 @@ const TemplatesPageContent: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px', background: '#f5f5f5', minHeight: '100vh' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <Space>
-          <HomeOutlined />
-          <span
-            onClick={() => navigate('/')}
-            style={{ cursor: 'pointer', color: '#1890ff' }}
-          >
-            Home
-          </span>
-          <span>/</span>
-          <BookOutlined />
-          <span>Query Templates</span>
-        </Space>
-      </div>
-
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ margin: 0, color: '#667eea', fontSize: '2rem', fontWeight: 600 }}>
-          Query Templates
-        </h2>
-        <p style={{ color: '#8c8c8c', fontSize: '16px', margin: 0 }}>
-          Pre-built queries to help you get started quickly ({templates.length} available)
-        </p>
-      </div>
-
+    <PageLayout
+      title="Query Templates"
+      subtitle={`Pre-built queries to help you get started quickly (${templates.length} available)`}
+      breadcrumbs={[
+        { title: 'Home', href: '/', icon: <HomeOutlined /> },
+        { title: 'Query Templates', icon: <BookOutlined /> }
+      ]}
+      maxWidth="xl"
+    >
       {/* Search and Filters */}
-      <Card style={{ marginBottom: '24px' }}>
+      <PageSection
+        title="Search & Filter"
+        subtitle="Find the perfect template for your needs"
+        background="card"
+        padding="lg"
+      >
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} md={12}>
             <Input
@@ -148,6 +137,10 @@ const TemplatesPageContent: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               allowClear
+              style={{
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-primary)'
+              }}
             />
           </Col>
           <Col xs={24} md={8}>
@@ -159,10 +152,10 @@ const TemplatesPageContent: React.FC = () => {
             >
               <Option value="all">All Categories</Option>
               <Option value="favorites">
-                <Space>
-                  <StarFilled style={{ color: '#faad14' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <StarFilled style={{ color: 'var(--color-warning)' }} />
                   Favorites
-                </Space>
+                </div>
               </Option>
               {categories.map(category => (
                 <Option key={category} value={category}>
@@ -172,168 +165,204 @@ const TemplatesPageContent: React.FC = () => {
             </Select>
           </Col>
           <Col xs={24} md={4}>
-            <Text type="secondary">
+            <Text type="secondary" style={{ color: 'var(--text-secondary)' }}>
               {filteredTemplates.length} templates
             </Text>
           </Col>
         </Row>
-      </Card>
+      </PageSection>
 
       {/* Popular Templates */}
       {popularTemplates.length > 0 && selectedCategory === 'all' && !searchTerm && (
-        <Card
-          title={
-            <Space>
-              <FireOutlined style={{ color: '#ff4d4f' }} />
-              <span style={{ color: '#667eea' }}>Popular Templates</span>
-            </Space>
-          }
-          style={{ marginBottom: '24px' }}
+        <PageSection
+          title="Popular Templates"
+          subtitle="Most frequently used templates"
+          background="card"
+          padding="lg"
+          actions={<FireOutlined style={{ color: 'var(--color-error)' }} />}
         >
-          <Row gutter={[16, 16]}>
+          <PageGrid columns={3} gap="md">
             {popularTemplates.slice(0, 3).map((template, index) => (
-              <Col xs={24} md={8} key={template.id}>
-                <Card
-                  size="small"
-                  hoverable
-                  onClick={() => handleTemplateSelect(template)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <Space>
-                      <Text strong>{template.name}</Text>
+              <Card
+                key={template.id}
+                variant="outlined"
+                hover
+                style={{ cursor: 'pointer' }}
+                onClick={() => handleTemplateSelect(template)}
+              >
+                <CardContent padding="medium">
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'var(--space-3)'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 'var(--space-2)'
+                    }}>
+                      <Text strong style={{ color: 'var(--text-primary)' }}>
+                        {template.name}
+                      </Text>
                       <Badge count={template.usageCount} />
-                    </Space>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                    </div>
+                    <Text
+                      type="secondary"
+                      style={{
+                        fontSize: 'var(--text-sm)',
+                        color: 'var(--text-secondary)'
+                      }}
+                    >
                       {template.description}
                     </Text>
-                  </Space>
-                </Card>
-              </Col>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
-          </Row>
-        </Card>
+          </PageGrid>
+        </PageSection>
       )}
 
       {/* Templates Grid */}
-      <Row gutter={[24, 24]}>
+      <PageSection
+        title="All Templates"
+        subtitle="Browse all available query templates"
+        background="transparent"
+        padding="none"
+      >
         {filteredTemplates.length > 0 ? (
-          filteredTemplates.map((template, index) => (
-            <Col xs={24} lg={12} key={template.id}>
+          <PageGrid columns={2} gap="lg">
+            {filteredTemplates.map((template, index) => (
               <Card
-                hoverable
+                key={template.id}
+                variant="outlined"
+                hover
                 style={{ cursor: 'pointer', height: '100%' }}
                 onClick={() => handleTemplateSelect(template)}
-                actions={[
-                  <Space key="stats">
-                    <Badge count={template.usageCount} />
-                    <Text type="secondary">uses</Text>
-                  </Space>,
-                  template.isFavorite ? (
-                    <StarFilled key="favorite" style={{ color: '#faad14' }} />
-                  ) : (
-                    <StarOutlined key="favorite" />
-                  )
-                ]}
               >
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Space>
-                    <Text strong style={{ fontSize: '16px' }}>{template.name}</Text>
-                    <Tag color={getDifficultyColor(template.difficulty)}>
-                      {template.difficulty}
-                    </Tag>
-                  </Space>
-
-                  <Text type="secondary" style={{ fontSize: '14px' }}>
-                    {template.description}
-                  </Text>
-
-                  <Space wrap>
-                    <Tag color="blue">{template.category}</Tag>
-                    <Tag>{template.estimatedRows}</Tag>
-                  </Space>
-
+                <CardContent padding="large">
                   <div style={{
-                    background: '#f6f8fa',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    fontFamily: 'monospace',
-                    color: '#586069'
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'var(--space-4)',
+                    height: '100%'
                   }}>
-                    {template.template}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 'var(--space-2)',
+                      justifyContent: 'space-between'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <Text strong style={{ fontSize: 'var(--text-lg)', color: 'var(--text-primary)' }}>
+                          {template.name}
+                        </Text>
+                        <Tag color={getDifficultyColor(template.difficulty)}>
+                          {template.difficulty}
+                        </Tag>
+                      </div>
+                      {template.isFavorite ? (
+                        <StarFilled style={{ color: 'var(--color-warning)' }} />
+                      ) : (
+                        <StarOutlined style={{ color: 'var(--text-tertiary)' }} />
+                      )}
+                    </div>
+
+                    <Text
+                      type="secondary"
+                      style={{
+                        fontSize: 'var(--text-base)',
+                        color: 'var(--text-secondary)'
+                      }}
+                    >
+                      {template.description}
+                    </Text>
+
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                      <Tag color="blue">{template.category}</Tag>
+                      <Tag>{template.estimatedRows}</Tag>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--space-1)',
+                        marginLeft: 'auto'
+                      }}>
+                        <Badge count={template.usageCount} />
+                        <Text type="secondary" style={{ fontSize: 'var(--text-sm)' }}>uses</Text>
+                      </div>
+                    </div>
+
+                    <div style={{
+                      background: 'var(--bg-tertiary)',
+                      padding: 'var(--space-3)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: 'var(--text-sm)',
+                      fontFamily: 'var(--font-family-mono)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border-primary)',
+                      marginTop: 'auto'
+                    }}>
+                      {template.template}
+                    </div>
                   </div>
-                </Space>
+                </CardContent>
               </Card>
-            </Col>
-          ))
+            ))}
+          </PageGrid>
         ) : (
-          <Col span={24}>
-            <Card>
+          <PageSection background="card" padding="lg">
+            <div style={{ textAlign: 'center', padding: 'var(--space-16) 0' }}>
               <Empty
                 description="No templates found"
-                style={{ padding: '40px 0' }}
               >
                 <Button
-                  type="primary"
+                  variant="primary"
                   onClick={() => {
                     setSearchTerm('');
                     setSelectedCategory('all');
-                  }}
-                  style={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    border: 'none',
-                    borderRadius: '8px'
                   }}
                 >
                   Clear Filters
                 </Button>
               </Empty>
-            </Card>
-          </Col>
+            </div>
+          </PageSection>
         )}
-      </Row>
+      </PageSection>
 
       {/* Quick Actions */}
-      <Card
-        style={{ marginTop: '24px' }}
+      <PageSection
         title="Quick Actions"
+        subtitle="Navigate to related tools and features"
+        background="card"
+        padding="lg"
       >
-        <Space wrap>
+        <div style={{
+          display: 'flex',
+          gap: 'var(--space-4)',
+          flexWrap: 'wrap'
+        }}>
           <Button
-            type="primary"
+            variant="primary"
             onClick={() => navigate('/')}
-            style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none',
-              borderRadius: '8px'
-            }}
           >
             New Query
           </Button>
           <Button
+            variant="secondary"
             onClick={() => navigate('/history')}
-            style={{
-              borderRadius: '8px',
-              border: '1px solid #52c41a',
-              color: '#52c41a'
-            }}
           >
             View History
           </Button>
           <Button
+            variant="outline"
             onClick={() => navigate('/suggestions')}
-            style={{
-              borderRadius: '8px',
-              border: '1px solid #722ed1',
-              color: '#722ed1'
-            }}
           >
             Smart Suggestions
           </Button>
-        </Space>
-      </Card>
-    </div>
+        </div>
+      </PageSection>
+    </PageLayout>
   );
 };
 

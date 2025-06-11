@@ -6,6 +6,7 @@ export type ThemeMode = 'light' | 'dark' | 'auto';
 interface ThemeContextType {
   themeMode: ThemeMode;
   isDarkMode: boolean;
+  actualTheme: 'light' | 'dark'; // Added missing actualTheme property
   toggleTheme: () => void;
   setThemeMode: (mode: ThemeMode) => void;
   antdTheme: any;
@@ -45,62 +46,44 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   useEffect(() => {
     console.log('Theme changing to:', themeMode, 'isDarkMode:', isDarkMode);
 
-    document.documentElement.classList.toggle('dark-theme', isDarkMode);
-    document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-    document.body.classList.toggle('dark-theme', isDarkMode);
-    document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+    // Clean approach using CSS custom properties
+    const root = document.documentElement;
+    const body = document.body;
 
-    // Force style recalculation
-    if (isDarkMode) {
-      document.body.style.backgroundColor = '#1f2937';
-      document.body.style.color = '#f9fafb';
+    // Remove existing theme classes and attributes
+    root.classList.remove('light-theme', 'dark-theme');
+    body.classList.remove('light-theme', 'dark-theme');
 
-      // Force all major containers to dark theme
-      const containers = document.querySelectorAll('.ant-layout-content, .main-content-area, .query-tabs, .ant-card, .ant-tabs-content');
-      containers.forEach(container => {
-        if (container instanceof HTMLElement) {
-          container.style.backgroundColor = '#111827';
-          container.style.color = '#f9fafb';
-        }
-      });
+    // Set data-theme attribute for CSS targeting
+    const actualTheme = isDarkMode ? 'dark' : 'light';
+    root.setAttribute('data-theme', actualTheme);
+    body.setAttribute('data-theme', actualTheme);
 
-      // Force all text elements to light color
-      const textElements = document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, div, .ant-typography');
-      textElements.forEach(element => {
-        if (element instanceof HTMLElement) {
-          element.style.color = '#f9fafb';
-        }
-      });
+    // Add theme class for compatibility
+    root.classList.add(`${actualTheme}-theme`);
+    body.classList.add(`${actualTheme}-theme`);
 
-    } else {
-      document.body.style.backgroundColor = '';
-      document.body.style.color = '';
+    // Set color-scheme for better browser integration
+    body.style.colorScheme = actualTheme;
 
-      // Reset containers
-      const containers = document.querySelectorAll('.ant-layout-content, .main-content-area, .query-tabs, .ant-card, .ant-tabs-content');
-      containers.forEach(container => {
-        if (container instanceof HTMLElement) {
-          container.style.backgroundColor = '';
-          container.style.color = '';
-        }
-      });
-
-      // Reset text elements
-      const textElements = document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, div, .ant-typography');
-      textElements.forEach(element => {
-        if (element instanceof HTMLElement) {
-          element.style.color = '';
-        }
-      });
+    // Update meta theme-color for mobile browsers
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute(
+        'content',
+        isDarkMode ? '#111827' : '#ffffff'
+      );
     }
 
+    // Persist theme preference
     localStorage.setItem('bi-reporting-theme-mode', themeMode);
 
-    console.log('Applied classes:', {
-      htmlClasses: document.documentElement.className,
-      bodyClasses: document.body.className,
-      htmlDataTheme: document.documentElement.getAttribute('data-theme'),
-      bodyDataTheme: document.body.getAttribute('data-theme')
+    console.log('Applied theme:', {
+      themeMode,
+      actualTheme,
+      htmlDataTheme: root.getAttribute('data-theme'),
+      bodyDataTheme: body.getAttribute('data-theme'),
+      colorScheme: body.style.colorScheme
     });
   }, [isDarkMode, themeMode]);
 
@@ -257,6 +240,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const contextValue: ThemeContextType = {
     themeMode,
     isDarkMode,
+    actualTheme: isDarkMode ? 'dark' : 'light', // Added actualTheme calculation
     toggleTheme,
     setThemeMode,
     antdTheme,

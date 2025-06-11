@@ -1,0 +1,23 @@
+{
+  "name": "bi-reporting-copilot",
+  "version": "1.0.0",
+  "description": "AI-Powered BI Reporting Copilot",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "start": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "test": "cd frontend && npm test",
+    "frontend": "cd frontend && npm start",
+    "frontend:build": "cd frontend && npm run build",
+    "frontend:test": "cd frontend && npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uridolan77/ReportAIng.git"
+  },
+  "author": "uridolan77",
+  "license": "MIT"
+}

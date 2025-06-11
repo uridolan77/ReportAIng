@@ -1,0 +1,364 @@
+/**
+ * Page Transition Animations
+ * Smooth transitions between pages and route changes
+ */
+
+/* ===== PAGE TRANSITION CONTAINER ===== */
+.page-transition-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ===== FADE TRANSITIONS ===== */
+.page-fade-enter {
+  opacity: 0;
+}
+
+.page-fade-enter-active {
+  opacity: 1;
+  transition: opacity 300ms ease-in-out;
+}
+
+.page-fade-exit {
+  opacity: 1;
+}
+
+.page-fade-exit-active {
+  opacity: 0;
+  transition: opacity 300ms ease-in-out;
+}
+
+/* ===== SLIDE TRANSITIONS ===== */
+.page-slide-enter {
+  transform: translateX(100%);
+}
+
+.page-slide-enter-active {
+  transform: translateX(0);
+  transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-slide-exit {
+  transform: translateX(0);
+}
+
+.page-slide-exit-active {
+  transform: translateX(-100%);
+  transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== SLIDE UP TRANSITIONS ===== */
+.page-slide-up-enter {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.page-slide-up-enter-active {
+  transform: translateY(0);
+  opacity: 1;
+  transition: all 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-slide-up-exit {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.page-slide-up-exit-active {
+  transform: translateY(-20%);
+  opacity: 0;
+  transition: all 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== SCALE TRANSITIONS ===== */
+.page-scale-enter {
+  transform: scale(0.9);
+  opacity: 0;
+}
+
+.page-scale-enter-active {
+  transform: scale(1);
+  opacity: 1;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-scale-exit {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.page-scale-exit-active {
+  transform: scale(1.1);
+  opacity: 0;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== ROTATION TRANSITIONS ===== */
+.page-rotate-enter {
+  transform: rotateY(-90deg);
+  opacity: 0;
+}
+
+.page-rotate-enter-active {
+  transform: rotateY(0deg);
+  opacity: 1;
+  transition: all 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-rotate-exit {
+  transform: rotateY(0deg);
+  opacity: 1;
+}
+
+.page-rotate-exit-active {
+  transform: rotateY(90deg);
+  opacity: 0;
+  transition: all 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== BLUR TRANSITIONS ===== */
+.page-blur-enter {
+  filter: blur(10px);
+  opacity: 0;
+  transform: scale(1.05);
+}
+
+.page-blur-enter-active {
+  filter: blur(0px);
+  opacity: 1;
+  transform: scale(1);
+  transition: all 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-blur-exit {
+  filter: blur(0px);
+  opacity: 1;
+  transform: scale(1);
+}
+
+.page-blur-exit-active {
+  filter: blur(10px);
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== ELASTIC TRANSITIONS ===== */
+.page-elastic-enter {
+  transform: scale(0.8);
+  opacity: 0;
+}
+
+.page-elastic-enter-active {
+  transform: scale(1);
+  opacity: 1;
+  transition: all 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.page-elastic-exit {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.page-elastic-exit-active {
+  transform: scale(0.8);
+  opacity: 0;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== FLIP TRANSITIONS ===== */
+.page-flip-enter {
+  transform: perspective(1000px) rotateX(-90deg);
+  opacity: 0;
+}
+
+.page-flip-enter-active {
+  transform: perspective(1000px) rotateX(0deg);
+  opacity: 1;
+  transition: all 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-flip-exit {
+  transform: perspective(1000px) rotateX(0deg);
+  opacity: 1;
+}
+
+.page-flip-exit-active {
+  transform: perspective(1000px) rotateX(90deg);
+  opacity: 0;
+  transition: all 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== LOADING TRANSITIONS ===== */
+.page-loading {
+  position: relative;
+}
+
+.page-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  animation: loadingBar 2s infinite;
+  z-index: 1000;
+}
+
+@keyframes loadingBar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ===== SECTION TRANSITIONS ===== */
+.section-enter {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.section-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.section-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.section-exit-active {
+  opacity: 0;
+  transform: translateY(-30px);
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== STAGGERED CONTENT TRANSITIONS ===== */
+.staggered-content > * {
+  animation: staggeredFadeIn 0.6s ease both;
+}
+
+.staggered-content > *:nth-child(1) { animation-delay: 0.1s; }
+.staggered-content > *:nth-child(2) { animation-delay: 0.2s; }
+.staggered-content > *:nth-child(3) { animation-delay: 0.3s; }
+.staggered-content > *:nth-child(4) { animation-delay: 0.4s; }
+.staggered-content > *:nth-child(5) { animation-delay: 0.5s; }
+.staggered-content > *:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes staggeredFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== ROUTE TRANSITION WRAPPER ===== */
+.route-transition-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.route-transition-wrapper > * {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== BREADCRUMB TRANSITIONS ===== */
+.breadcrumb-enter {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.breadcrumb-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== MODAL TRANSITIONS ===== */
+.modal-overlay-enter {
+  opacity: 0;
+}
+
+.modal-overlay-enter-active {
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.modal-overlay-exit {
+  opacity: 1;
+}
+
+.modal-overlay-exit-active {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.modal-content-enter {
+  opacity: 0;
+  transform: scale(0.9) translateY(-20px);
+}
+
+.modal-content-enter-active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-content-exit {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.modal-content-exit-active {
+  opacity: 0;
+  transform: scale(0.9) translateY(-20px);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== REDUCED MOTION SUPPORT ===== */
+@media (prefers-reduced-motion: reduce) {
+  .page-fade-enter-active,
+  .page-fade-exit-active,
+  .page-slide-enter-active,
+  .page-slide-exit-active,
+  .page-slide-up-enter-active,
+  .page-slide-up-exit-active,
+  .page-scale-enter-active,
+  .page-scale-exit-active,
+  .page-rotate-enter-active,
+  .page-rotate-exit-active,
+  .page-blur-enter-active,
+  .page-blur-exit-active,
+  .page-elastic-enter-active,
+  .page-elastic-exit-active,
+  .page-flip-enter-active,
+  .page-flip-exit-active,
+  .section-enter-active,
+  .section-exit-active,
+  .breadcrumb-enter-active,
+  .modal-overlay-enter-active,
+  .modal-overlay-exit-active,
+  .modal-content-enter-active,
+  .modal-content-exit-active {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .staggered-content > *,
+  .page-loading::before {
+    animation: none !important;
+  }
+}

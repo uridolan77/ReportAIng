@@ -24,12 +24,12 @@ const mockDataMap: Record<string, FrontendQueryResponse> = {
       ],
       metadata: {
         columns: [
-          { name: 'player_id', type: 'string', displayName: 'Player ID' },
-          { name: 'player_name', type: 'string', displayName: 'Player Name' },
-          { name: 'total_deposits', type: 'number', displayName: 'Total Deposits (€)' },
-          { name: 'deposit_count', type: 'number', displayName: 'Deposit Count' },
-          { name: 'country', type: 'string', displayName: 'Country' },
-          { name: 'status', type: 'string', displayName: 'Status' }
+          { name: 'player_id', dataType: 'string', displayName: 'Player ID', isNullable: false, semanticTags: [] },
+          { name: 'player_name', dataType: 'string', displayName: 'Player Name', isNullable: false, semanticTags: [] },
+          { name: 'total_deposits', dataType: 'number', displayName: 'Total Deposits (€)', isNullable: false, semanticTags: [] },
+          { name: 'deposit_count', dataType: 'number', displayName: 'Deposit Count', isNullable: false, semanticTags: [] },
+          { name: 'country', dataType: 'string', displayName: 'Country', isNullable: false, semanticTags: [] },
+          { name: 'status', dataType: 'string', displayName: 'Status', isNullable: false, semanticTags: [] }
         ],
         totalRows: 10,
         executionTimeMs: 245
@@ -77,11 +77,11 @@ const mockDataMap: Record<string, FrontendQueryResponse> = {
       ],
       metadata: {
         columns: [
-          { name: 'date', type: 'date', displayName: 'Date' },
-          { name: 'total_deposits', type: 'number', displayName: 'Total Deposits (€)' },
-          { name: 'deposit_count', type: 'number', displayName: 'Number of Deposits' },
-          { name: 'unique_players', type: 'number', displayName: 'Unique Players' },
-          { name: 'average_deposit', type: 'number', displayName: 'Average Deposit (€)' }
+          { name: 'date', dataType: 'date', displayName: 'Date', isNullable: false, semanticTags: [] },
+          { name: 'total_deposits', dataType: 'number', displayName: 'Total Deposits (€)', isNullable: false, semanticTags: [] },
+          { name: 'deposit_count', dataType: 'number', displayName: 'Number of Deposits', isNullable: false, semanticTags: [] },
+          { name: 'unique_players', dataType: 'number', displayName: 'Unique Players', isNullable: false, semanticTags: [] },
+          { name: 'average_deposit', dataType: 'number', displayName: 'Average Deposit (€)', isNullable: false, semanticTags: [] }
         ],
         totalRows: 1,
         executionTimeMs: 156
@@ -127,11 +127,11 @@ const mockDataMap: Record<string, FrontendQueryResponse> = {
       ],
       metadata: {
         columns: [
-          { name: 'game_name', type: 'string', displayName: 'Game Name' },
-          { name: 'net_gaming_revenue', type: 'number', displayName: 'Net Gaming Revenue (€)' },
-          { name: 'sessions', type: 'number', displayName: 'Game Sessions' },
-          { name: 'unique_players', type: 'number', displayName: 'Unique Players' },
-          { name: 'avg_bet', type: 'number', displayName: 'Average Bet (€)' }
+          { name: 'game_name', dataType: 'string', displayName: 'Game Name', isNullable: false, semanticTags: [] },
+          { name: 'net_gaming_revenue', dataType: 'number', displayName: 'Net Gaming Revenue (€)', isNullable: false, semanticTags: [] },
+          { name: 'sessions', dataType: 'number', displayName: 'Game Sessions', isNullable: false, semanticTags: [] },
+          { name: 'unique_players', dataType: 'number', displayName: 'Unique Players', isNullable: false, semanticTags: [] },
+          { name: 'avg_bet', dataType: 'number', displayName: 'Average Bet (€)', isNullable: false, semanticTags: [] }
         ],
         totalRows: 10,
         executionTimeMs: 312
@@ -179,10 +179,10 @@ const mockDataMap: Record<string, FrontendQueryResponse> = {
       ],
       metadata: {
         columns: [
-          { name: 'date', type: 'date', displayName: 'Date' },
-          { name: 'new_registrations', type: 'number', displayName: 'New Registrations' },
-          { name: 'country', type: 'string', displayName: 'Country' },
-          { name: 'conversion_rate', type: 'number', displayName: 'Conversion Rate' }
+          { name: 'date', dataType: 'date', displayName: 'Date', isNullable: false, semanticTags: [] },
+          { name: 'new_registrations', dataType: 'number', displayName: 'New Registrations', isNullable: false, semanticTags: [] },
+          { name: 'country', dataType: 'string', displayName: 'Country', isNullable: false, semanticTags: [] },
+          { name: 'conversion_rate', dataType: 'number', displayName: 'Conversion Rate', isNullable: false, semanticTags: [] }
         ],
         totalRows: 10,
         executionTimeMs: 189
@@ -293,10 +293,10 @@ export class MockDataService {
         ],
         metadata: {
           columns: [
-            { name: 'id', type: 'number', displayName: 'ID' },
-            { name: 'name', type: 'string', displayName: 'Name' },
-            { name: 'value', type: 'number', displayName: 'Value' },
-            { name: 'category', type: 'string', displayName: 'Category' }
+            { name: 'id', dataType: 'number', displayName: 'ID', isNullable: false, semanticTags: [] },
+            { name: 'name', dataType: 'string', displayName: 'Name', isNullable: false, semanticTags: [] },
+            { name: 'value', dataType: 'number', displayName: 'Value', isNullable: false, semanticTags: [] },
+            { name: 'category', dataType: 'string', displayName: 'Category', isNullable: false, semanticTags: [] }
           ],
           totalRows: 5,
           executionTimeMs: 50

@@ -15,13 +15,12 @@ import {
   Flex,
 } from 'antd';
 import {
-  SwapOutlined as CompareIcon,
-  BulbOutlined as PsychologyIcon,
-  RiseOutlined as TrendingUpIcon,
-  CheckCircleOutlined as CheckCircleIcon,
-  WarningOutlined as WarningIcon,
-  CloseCircleOutlined as ErrorIcon,
-  BulbOutlined as LightbulbIcon,
+  SwapOutlined,
+  BulbOutlined,
+  RiseOutlined,
+  CheckCircleOutlined,
+  WarningOutlined,
+  CloseCircleOutlined,
 } from '@ant-design/icons';
 import { ApiService, SimilarityRequest, SimilarityResponse, SimilarQueryResponse } from '../../services/api';
 
@@ -85,9 +84,9 @@ const QuerySimilarityAnalyzer: React.FC = () => {
   };
 
   const getSimilarityIcon = (score: number) => {
-    if (score >= 0.8) return <CheckCircleIcon style={{ color: '#52c41a' }} />;
-    if (score >= 0.6) return <WarningIcon style={{ color: '#faad14' }} />;
-    return <ErrorIcon style={{ color: '#ff4d4f' }} />;
+    if (score >= 0.8) return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
+    if (score >= 0.6) return <WarningOutlined style={{ color: '#faad14' }} />;
+    return <CloseCircleOutlined style={{ color: '#ff4d4f' }} />;
   };
 
   const getSimilarityDescription = (score: number) => {
@@ -111,7 +110,7 @@ const QuerySimilarityAnalyzer: React.FC = () => {
   return (
     <div>
       <Typography.Title level={3}>
-        <CompareIcon style={{ marginRight: 8 }} />
+        <SwapOutlined style={{ marginRight: 8 }} />
         Query Similarity Analyzer
       </Typography.Title>
       <Typography.Text type="secondary">
@@ -146,7 +145,7 @@ const QuerySimilarityAnalyzer: React.FC = () => {
         <Space style={{ marginTop: 16 }}>
           <Button
             type="primary"
-            icon={loading ? <Spin size="small" /> : <CompareIcon />}
+            icon={loading ? <Spin size="small" /> : <SwapOutlined />}
             onClick={handleCompareSimilarity}
             disabled={loading || !query1.trim() || !query2.trim()}
             loading={loading}
@@ -155,7 +154,7 @@ const QuerySimilarityAnalyzer: React.FC = () => {
           </Button>
 
           <Button
-            icon={loadingSimilar ? <Spin size="small" /> : <PsychologyIcon />}
+            icon={loadingSimilar ? <Spin size="small" /> : <BulbOutlined />}
             onClick={handleFindSimilar}
             disabled={loadingSimilar || !query1.trim()}
             loading={loadingSimilar}
@@ -168,7 +167,7 @@ const QuerySimilarityAnalyzer: React.FC = () => {
       {/* Sample Queries */}
       <Card style={{ marginBottom: 24 }}>
         <Typography.Title level={4}>
-          <LightbulbIcon style={{ marginRight: 8 }} />
+          <BulbOutlined style={{ marginRight: 8 }} />
           Sample Queries to Try
         </Typography.Title>
         <Space wrap>
@@ -275,7 +274,7 @@ const QuerySimilarityAnalyzer: React.FC = () => {
       {similarQueries.length > 0 && (
         <Card>
           <Typography.Title level={4}>
-            <TrendingUpIcon style={{ marginRight: 8 }} />
+            <RiseOutlined style={{ marginRight: 8 }} />
             Similar Queries Found
           </Typography.Title>
 
@@ -284,7 +283,7 @@ const QuerySimilarityAnalyzer: React.FC = () => {
             renderItem={(similar, index) => (
               <List.Item>
                 <List.Item.Meta
-                  avatar={<PsychologyIcon style={{ color: '#1890ff' }} />}
+                  avatar={<BulbOutlined style={{ color: '#1890ff' }} />}
                   title={
                     <Flex justify="space-between" align="center">
                       <Typography.Text style={{ flex: 1 }}>
@@ -323,7 +322,7 @@ const QuerySimilarityAnalyzer: React.FC = () => {
       {!similarityResult && similarQueries.length === 0 && !loading && !loadingSimilar && (
         <Card>
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <CompareIcon style={{ fontSize: 64, color: '#bfbfbf', marginBottom: 16 }} />
+            <SwapOutlined style={{ fontSize: 64, color: '#bfbfbf', marginBottom: 16 }} />
             <Typography.Title level={4}>
               Analyze Query Similarity
             </Typography.Title>
