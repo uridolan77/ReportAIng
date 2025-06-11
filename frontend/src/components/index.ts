@@ -1,109 +1,41 @@
 /**
- * Unified Components Index
- * Consolidated exports after deep cleanup and consolidation
+ * Components Index - Phase 4 Enterprise Edition
+ *
+ * Advanced component system with enterprise-grade features,
+ * performance optimization, and comprehensive organization.
  */
 
-// Cache Management
-export * from './Cache';
+// Core Components (15 modern, reusable components)
+export * from './core';
 
-// Dashboard Components
-export * from './Dashboard';
+// Advanced Features (Dark mode, animations, performance monitoring)
+export * from './advanced';
 
-// Developer Tools
-export * from './DevTools/DevTools';
+// Feature Modules (Organized domain components)
+export * from './features';
 
-// Query Interface
-export {
-  QueryInterface,
-  QueryBuilder,
-  MinimalQueryInterface,
-  QueryEditor,
-  SqlEditor,
-  QueryResult,
-  QueryProvider,
-  useQueryContext,
-  QueryTabs,
-  QueryModals,
-  LoadingStates,
-  QueryHistory,
-  QuerySuggestions,
-  ProactiveSuggestions,
-  QueryWizard,
-  GuidedQueryWizard,
-  AIProcessingFeedback,
-  QueryProcessingViewer,
-  PromptDetailsPanel,
-  AdvancedStreamingQuery,
-  InteractiveResultsDisplay,
-  AccessibilityFeatures,
-  QueryShortcuts
-} from './QueryInterface';
-export { ExportModal as QueryExportModal } from './QueryInterface';
+// Layout Components (Modern layout system)
+export * from './layout';
 
-// Visualization Components
-export * from './Visualization';
+// UI Components (Advanced UI features only)
+export * from './ui';
 
-// Data Components
-export { default as DataTable } from './DataTable';
-export type { DataTableProps, DataTableColumn, DataTableFeatures, DataTableConfig } from './DataTable';
-export { ExportModal as DataTableExportModal } from './DataTable';
-export * from './DBExplorer';
+// Legacy Support (Backward compatibility - marked for deprecation)
+export { QueryInterface } from './QueryInterface/QueryInterface';
+export { DashboardBuilder } from './Dashboard/DashboardBuilder';
+export { InteractiveVisualization } from './Visualization/InteractiveVisualization';
+export { DBExplorer } from './DBExplorer/DBExplorer';
+export { default as DataTable } from './DataTable/DataTable';
 
-// Layout Components
-export * from './Layout/Layout';
-export * from './Layout/DatabaseConnectionBanner';
-export * from './Layout/DatabaseStatusIndicator';
+// Utility Components
+export * from './ErrorBoundary';
+export * from './ThemeToggle';
 
-// Navigation
-export * from './Navigation';
-
-// Common Components (consolidated single-file components)
-export * from './Common';
-
-// Admin Components
-export * from './Admin/QuerySuggestionsManager';
-
-// Performance Components
-export * from './Performance';
-
-// Tuning Components
-export * from './Tuning';
-
-// Schema Management
-export {
-  SchemaManagementDashboard,
-  DatabaseSchemaViewer,
-  SchemaEditor,
-  SchemaList,
-  SchemaVersions,
-  SchemaComparison,
-  ColumnContextEditor,
-  TableContextEditor,
-  GlossaryTermEditor,
-  RelationshipEditor,
-  CreateSchemaDialog,
-  ImportSchemaDialog
-} from './SchemaManagement';
-export type {
-  SchemaManagementProps as SchemaManagementComponentProps,
-  SchemaEditorProps as SchemaEditorComponentProps,
-  SchemaDialogProps
-} from './SchemaManagement';
-
-// Providers
-export * from './Providers/ReactQueryProvider';
-export * from './Providers/StateSyncProvider';
-
-// Demo Components
+// Development Tools (for development environment only)
+export * from './DevTools';
 export * from './Demo';
 
-// Debug Components (moved to DevTools)
-export * from './DevTools/ConnectionStatus';
-export * from './DevTools/DatabaseStatus';
-export * from './DevTools/KeyVaultStatus';
-
-// Onboarding
-export * from './Onboarding';
-
-// Styles (centralized design system)
-export * from './styles';
+// Types
+export type * from './types';
+export type * from './core/types';
+export type * from './features/types';

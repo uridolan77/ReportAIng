@@ -276,7 +276,7 @@ public class SmartFeature
     public string Description { get; set; } = string.Empty;
     public bool Enabled { get; set; }
     public Dictionary<string, object> Configuration { get; set; } = new();
-    public double Relevance { get; set; }
+    public decimal Relevance { get; set; }
 }
 
 // =============================================================================

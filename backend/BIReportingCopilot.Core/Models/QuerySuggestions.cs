@@ -95,7 +95,7 @@ public class QuerySuggestion
 
     public DateTime? LastUsed { get; set; }
 
-    public double Relevance { get; set; } = 0.8; // Added missing property for NLU service compatibility
+    public decimal Relevance { get; set; } = 0.8m; // Added missing property for NLU service compatibility
 
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 

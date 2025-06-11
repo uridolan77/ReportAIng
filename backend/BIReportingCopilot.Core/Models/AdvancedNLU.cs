@@ -180,7 +180,7 @@ public class ContextualAnalysis
     public TimeSpan ProcessingTime { get; set; }
 
     // Additional properties for NLUService compatibility
-    public double Relevance { get; set; }
+    public decimal Relevance { get; set; }
 }
 
 /// <summary>
@@ -491,7 +491,7 @@ public class ContextualClue
 {
     public string Type { get; set; } = string.Empty;
     public string Value { get; set; } = string.Empty;
-    public double Relevance { get; set; }
+    public decimal Relevance { get; set; }
     public string Source { get; set; } = string.Empty;
 
     // Additional properties for NLUService compatibility
@@ -594,7 +594,7 @@ public class DomainConcept
 {
     public string Name { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
-    public double Relevance { get; set; }
+    public decimal Relevance { get; set; }
     public List<string> RelatedConcepts { get; set; } = new();
 }
 
@@ -838,7 +838,7 @@ public class IntelligentQuerySuggestion
     public string Text { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
-    public double Relevance { get; set; }
+    public decimal Relevance { get; set; }
     public double PerformanceScore { get; set; }
     public List<string> Benefits { get; set; } = new();
     public Dictionary<string, object> Metadata { get; set; } = new();

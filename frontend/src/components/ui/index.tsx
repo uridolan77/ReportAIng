@@ -1,287 +1,61 @@
 /**
- * UI Components Library
- * Comprehensive, type-safe UI component system
+ * UI Components Library - Advanced Features
+ *
+ * This module provides advanced UI components and re-exports core components.
+ * Core components have been moved to /components/core/ for better organization.
  */
 
-// Core Components
-export * from './Button';
-export * from './Card';
-export * from './Layout';
-export * from './PageLayout';
-export * from './Form';
-export * from './Feedback';
-export * from './Navigation';
-export * from './Modal';
-export * from './Data';
-export * from './Performance';
+// Re-export all core components for backward compatibility
+export * from '../core';
 
-// Type Definitions - Import specific types to avoid conflicts
-export type {
-  Size,
-  Variant,
-  ColorScheme,
-  SpacingSize,
-  BorderRadius,
-  BoxShadow,
-  AccentColor
-} from './types';
+// Advanced UI Components (unique to this module)
+export { ThemeToggle } from './ThemeToggle';
+export { ThemeCustomization } from './ThemeCustomization';
+export { AnimatedChart } from './AnimatedChart';
+export { AnimationPresets } from './AnimationPresets';
+export { AnimationPerformanceAnalytics } from './AnimationPerformanceAnalytics';
 
-// Re-export for backward compatibility
-import React from 'react';
-import {
-  Input as AntInput,
-  InputProps as AntInputProps,
-  Button as AntButton,
-  ButtonProps as AntButtonProps,
-  Card as AntCard,
-  CardProps as AntCardProps,
-  Badge as AntBadge,
-  BadgeProps as AntBadgeProps,
-  Tabs as AntTabs,
-  TabsProps as AntTabsProps,
-  Switch as AntSwitch,
-  SwitchProps as AntSwitchProps,
-  Modal,
-  Collapse
-} from 'antd';
+// Re-export types for backward compatibility
+export type * from './types';
+export type * from '../core/types';
 
-const { TextArea } = AntInput;
+// Legacy compatibility utilities (will be deprecated)
+// All core components are now available from '../core'
 
-// Unified Button component
-export interface ButtonProps extends Omit<AntButtonProps, 'variant'> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'default';
-}
-
-export const Button: React.FC<ButtonProps> = ({ variant, style, ...props }) => {
-  const getVariantStyle = () => {
-    switch (variant) {
-      case 'secondary':
-        return {
-          background: '#f0f0f0',
-          borderColor: '#d9d9d9',
-          color: '#262626',
-        };
-      case 'ghost':
-        return {
-          background: 'transparent',
-          borderColor: 'transparent',
-        };
-      case 'danger':
-        return {
-          background: '#ff4d4f',
-          borderColor: '#ff4d4f',
-          color: 'white',
-        };
-      case 'outline':
-        return {
-          background: 'transparent',
-          borderColor: '#d9d9d9',
-          color: '#262626',
-        };
-      case 'default':
-        return {
-          background: '#1890ff',
-          borderColor: '#1890ff',
-          color: 'white',
-        };
-      default:
-        return {};
+// Performance monitoring for advanced features
+export const PerformanceMonitor: React.FC<{
+  children: React.ReactNode;
+  onMetrics?: (metrics: any) => void;
+}> = ({ children, onMetrics }) => {
+  React.useEffect(() => {
+    if (onMetrics && process.env.NODE_ENV === 'development') {
+      const metrics = {
+        timestamp: Date.now(),
+        renderTime: performance.now(),
+      };
+      onMetrics(metrics);
     }
-  };
+  }, [onMetrics]);
 
-  return (
-    <AntButton
-      {...props}
-      style={{
-        ...getVariantStyle(),
-        ...style,
-      }}
-    />
-  );
+  return <>{children}</>;
 };
 
-// Card components
-export interface CardProps extends AntCardProps {
-  children: React.ReactNode;
-}
-
-export const Card: React.FC<CardProps> = ({ children, style, ...props }) => (
-  <AntCard
-    {...props}
-    style={{
-      background: 'white',
-      borderRadius: 8,
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-      marginBottom: 16,
-      ...style,
-    }}
-  >
-    {children}
-  </AntCard>
-);
-
-export const CardContent: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
-  children,
-  className,
-  style
-}) => (
-  <div className={className} style={{ padding: '16px', ...style }}>
-    {children}
-  </div>
-);
-
-export const CardHeader: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
-  children,
-  className,
-  style
-}) => (
-  <div className={className} style={{ padding: '16px 16px 0 16px', borderBottom: '1px solid #f0f0f0', marginBottom: '16px', ...style }}>
-    {children}
-  </div>
-);
-
-export const CardTitle: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
-  children,
-  className,
-  style
-}) => (
-  <h3 className={className} style={{ margin: 0, fontSize: '16px', fontWeight: 600, ...style }}>
-    {children}
-  </h3>
-);
-
-// Input components
-export interface InputProps extends AntInputProps {}
-
-export const Input: React.FC<InputProps> = (props) => (
-  <AntInput {...props} />
-);
-
-export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
-
-export const Textarea: React.FC<TextareaProps> = (props) => (
-  <TextArea {...props} />
-);
-
-// Badge component
-export interface BadgeProps extends AntBadgeProps {
-  variant?: 'default' | 'secondary' | 'outline';
-}
-
-export const Badge: React.FC<BadgeProps> = ({ variant, style, children, ...props }) => {
-  const getVariantStyle = () => {
-    switch (variant) {
-      case 'secondary':
-        return {
-          background: '#f0f0f0',
-          color: '#262626',
-          border: 'none',
-        };
-      case 'outline':
-        return {
-          background: 'transparent',
-          color: '#262626',
-          border: '1px solid #d9d9d9',
-        };
-      default:
-        return {
-          background: '#1890ff',
-          color: 'white',
-        };
+// Bundle analyzer for development
+export const BundleAnalyzer: React.FC<{
+  onAnalysis?: (analysis: any) => void;
+}> = ({ onAnalysis }) => {
+  React.useEffect(() => {
+    if (onAnalysis && process.env.NODE_ENV === 'development') {
+      const analysis = {
+        timestamp: Date.now(),
+        bundleSize: 'N/A', // Would be calculated in real implementation
+      };
+      onAnalysis(analysis);
     }
-  };
+  }, [onAnalysis]);
 
-  if (children) {
-    return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '2px 8px',
-        borderRadius: 4,
-        fontSize: '12px',
-        fontWeight: 500,
-        ...getVariantStyle(),
-        ...style,
-      }}>
-        {children}
-      </span>
-    );
-  }
-
-  return <AntBadge {...props} style={style} />;
+  return null;
 };
-
-// Tabs components
-export interface TabsProps extends AntTabsProps {}
-
-export const Tabs: React.FC<TabsProps> = (props) => (
-  <AntTabs {...props} />
-);
-
-export const TabsContent: React.FC<{
-  children: React.ReactNode;
-  value: string;
-  className?: string;
-  style?: React.CSSProperties
-}> = ({ children, value, className, style }) => (
-  <div className={className} style={style}>
-    {children}
-  </div>
-);
-
-export const TabsList: React.FC<{
-  children: React.ReactNode;
-  className?: string;
-  style?: React.CSSProperties
-}> = ({ children, className, style }) => (
-  <div className={className} style={{ display: 'flex', borderBottom: '1px solid #f0f0f0', marginBottom: '16px', ...style }}>
-    {children}
-  </div>
-);
-
-export const TabsTrigger: React.FC<{
-  children: React.ReactNode;
-  value: string;
-  className?: string;
-  style?: React.CSSProperties
-}> = ({ children, value, className, style }) => (
-  <button className={className} style={{
-    padding: '8px 16px',
-    border: 'none',
-    background: 'transparent',
-    cursor: 'pointer',
-    borderBottom: '2px solid transparent',
-    ...style
-  }}>
-    {children}
-  </button>
-);
-
-// Switch component
-export interface SwitchProps extends AntSwitchProps {}
-
-export const Switch: React.FC<SwitchProps> = (props) => (
-  <AntSwitch {...props} />
-);
-
-// Label component
-export const Label: React.FC<{
-  children: React.ReactNode;
-  htmlFor?: string;
-  className?: string;
-  style?: React.CSSProperties
-}> = ({ children, htmlFor, className, style }) => (
-  <label htmlFor={htmlFor} className={className} style={{
-    display: 'block',
-    marginBottom: '4px',
-    fontSize: '14px',
-    fontWeight: 500,
-    color: '#262626',
-    ...style
-  }}>
-    {children}
-  </label>
-);
 
 // Dialog components (using Ant Design Modal)
 

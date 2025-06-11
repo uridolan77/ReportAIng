@@ -103,7 +103,7 @@ public class NLUService : IAdvancedNLUService
                     MentionedEntities = ExtractMentionedEntities(conversationHistory)
                 },
                 ContextualClues = contextualClues,
-                Relevance = CalculateContextualRelevance(normalizedQuery, conversationHistory, contextualClues)
+                Relevance = (decimal)CalculateContextualRelevance(normalizedQuery, conversationHistory, contextualClues)
             };
 
             // Domain analysis
@@ -460,7 +460,7 @@ public class NLUService : IAdvancedNLUService
             {
                 Name = c,
                 Category = "business",
-                Relevance = 0.8
+                Relevance = 0.8m
             }).ToList(),
             BusinessContext = new BusinessContext
             {
@@ -476,7 +476,7 @@ public class NLUService : IAdvancedNLUService
         ContextualAnalysis contextualAnalysis)
     {
         var weights = new[] { 0.4, 0.3, 0.3 }; // Intent, Entity, Context weights
-        var scores = new[] { intentAnalysis.Confidence, entityAnalysis.OverallConfidence, contextualAnalysis.Relevance };
+        var scores = new[] { intentAnalysis.Confidence, entityAnalysis.OverallConfidence, (double)contextualAnalysis.Relevance };
 
         return weights.Zip(scores, (w, s) => w * s).Sum();
     }
@@ -521,14 +521,14 @@ public class NLUService : IAdvancedNLUService
         {
             QueryText = "Show me total revenue for last week",
             CategoryId = 1, // Financial category
-            Relevance = 0.9
+            Relevance = 0.9m
         });
 
         suggestions.Add(new QuerySuggestion
         {
             QueryText = "Count active players yesterday",
             CategoryId = 2, // Players category
-            Relevance = 0.8
+            Relevance = 0.8m
         });
 
         return suggestions;
@@ -542,7 +542,7 @@ public class NLUService : IAdvancedNLUService
         {
             QueryText = "Show me top 10 players by deposits",
             CategoryId = 2, // Players category
-            Relevance = 0.8
+            Relevance = 0.8m
         });
 
         return suggestions;
@@ -560,7 +560,7 @@ public class NLUService : IAdvancedNLUService
             {
                 QueryText = "Show me player activity trends",
                 CategoryId = 2, // Players category
-                Relevance = 0.9
+                Relevance = 0.9m
             });
         }
 
@@ -588,7 +588,7 @@ public class NLUService : IAdvancedNLUService
                     MentionedEntities = ExtractMentionedEntities(history)
                 },
                 ContextualClues = contextualClues,
-                Relevance = CalculateContextualRelevance(query, history, contextualClues)
+                Relevance = (decimal)CalculateContextualRelevance(query, history, contextualClues)
             };
         }
         catch (Exception ex)
@@ -600,7 +600,7 @@ public class NLUService : IAdvancedNLUService
                 UserContext = null,
                 ConversationContext = new ConversationContext(),
                 ContextualClues = new List<ContextualClue>(),
-                Relevance = 0.0
+                Relevance = 0.0m
             };
         }
     }

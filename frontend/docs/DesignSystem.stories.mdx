@@ -1,0 +1,234 @@
+import { Meta, ColorPalette, ColorItem, Typeset, Source } from '@storybook/blocks';
+import { designTokens } from '../src/components/core/design-system';
+
+<Meta title="Design System/Overview" />
+
+# Design System
+
+The BI Reporting Copilot design system provides a comprehensive set of design tokens, components, and patterns for building consistent, accessible, and beautiful user interfaces.
+
+## Philosophy
+
+Our design system is built on the following principles:
+
+- **Consistency**: Unified visual language across all components
+- **Accessibility**: WCAG 2.1 AA compliant by default
+- **Flexibility**: Customizable tokens and variants
+- **Performance**: Optimized for modern web applications
+- **Developer Experience**: TypeScript-first with excellent tooling
+
+## Design Tokens
+
+Design tokens are the visual design atoms of the design system. They store visual design attributes such as colors, typography, spacing, and more.
+
+### Colors
+
+Our color system is built around semantic color names that convey meaning and purpose.
+
+<ColorPalette>
+  <ColorItem
+    title="Primary Colors"
+    subtitle="Main brand colors"
+    colors={{
+      Primary: designTokens.colors.primary,
+      'Primary Hover': designTokens.colors.primaryHover,
+      'Primary Active': designTokens.colors.primaryActive,
+      'Primary Light': designTokens.colors.primaryLight,
+    }}
+  />
+  <ColorItem
+    title="Semantic Colors"
+    subtitle="Status and feedback colors"
+    colors={{
+      Success: designTokens.colors.success,
+      Warning: designTokens.colors.warning,
+      Danger: designTokens.colors.danger,
+      Info: designTokens.colors.info,
+    }}
+  />
+  <ColorItem
+    title="Neutral Colors"
+    subtitle="Text and background colors"
+    colors={{
+      White: designTokens.colors.white,
+      'Gray 100': designTokens.colors.gray100,
+      'Gray 300': designTokens.colors.gray300,
+      'Gray 500': designTokens.colors.gray500,
+      'Gray 700': designTokens.colors.gray700,
+      'Gray 900': designTokens.colors.gray900,
+      Black: designTokens.colors.black,
+    }}
+  />
+  <ColorItem
+    title="Text Colors"
+    subtitle="Typography colors"
+    colors={{
+      'Text Primary': designTokens.colors.text,
+      'Text Secondary': designTokens.colors.textSecondary,
+      'Text Muted': designTokens.colors.textMuted,
+      'Text Inverse': designTokens.colors.textInverse,
+    }}
+  />
+</ColorPalette>
+
+### Typography
+
+Our typography system uses a modular scale to create hierarchy and improve readability.
+
+<Typeset
+  fontFamily={designTokens.typography.fontFamily.sans}
+  fontSizes={[
+    Number(designTokens.typography.fontSize.xs.replace('px', '')),
+    Number(designTokens.typography.fontSize.sm.replace('px', '')),
+    Number(designTokens.typography.fontSize.base.replace('px', '')),
+    Number(designTokens.typography.fontSize.lg.replace('px', '')),
+    Number(designTokens.typography.fontSize.xl.replace('px', '')),
+    Number(designTokens.typography.fontSize['2xl'].replace('px', '')),
+    Number(designTokens.typography.fontSize['3xl'].replace('px', '')),
+    Number(designTokens.typography.fontSize['4xl'].replace('px', '')),
+  ]}
+  fontWeight={designTokens.typography.fontWeight.normal}
+  sampleText="The quick brown fox jumps over the lazy dog"
+/>
+
+#### Font Families
+
+- **Sans Serif**: {designTokens.typography.fontFamily.sans}
+- **Monospace**: {designTokens.typography.fontFamily.mono}
+
+#### Font Weights
+
+- **Normal**: {designTokens.typography.fontWeight.normal}
+- **Medium**: {designTokens.typography.fontWeight.medium}
+- **Semibold**: {designTokens.typography.fontWeight.semibold}
+- **Bold**: {designTokens.typography.fontWeight.bold}
+
+### Spacing
+
+Our spacing system uses a consistent scale to create rhythm and hierarchy.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginTop: '24px' }}>
+  {Object.entries(designTokens.spacing).map(([key, value]) => (
+    <div key={key} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+      <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{key}</div>
+      <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>{value}</div>
+      <div style={{ height: value, backgroundColor: '#667eea', borderRadius: '4px' }}></div>
+    </div>
+  ))}
+</div>
+
+### Border Radius
+
+Consistent border radius values for different component types.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginTop: '24px' }}>
+  {Object.entries(designTokens.borderRadius).map(([key, value]) => (
+    <div key={key} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', textAlign: 'center' }}>
+      <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{key}</div>
+      <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>{value}</div>
+      <div style={{ 
+        width: '60px', 
+        height: '60px', 
+        backgroundColor: '#667eea', 
+        borderRadius: value,
+        margin: '0 auto'
+      }}></div>
+    </div>
+  ))}
+</div>
+
+### Shadows
+
+Elevation system using box shadows to create depth and hierarchy.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginTop: '24px' }}>
+  {Object.entries(designTokens.shadows).map(([key, value]) => (
+    <div key={key} style={{ padding: '24px', textAlign: 'center' }}>
+      <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{key}</div>
+      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px', fontFamily: 'monospace' }}>{value}</div>
+      <div style={{ 
+        width: '80px', 
+        height: '80px', 
+        backgroundColor: 'white', 
+        borderRadius: '8px',
+        boxShadow: value,
+        margin: '0 auto'
+      }}></div>
+    </div>
+  ))}
+</div>
+
+## Usage
+
+### Importing Design Tokens
+
+<Source
+  language="typescript"
+  code={`
+import { designTokens } from '@/components/core/design-system';
+
+// Use individual tokens
+const primaryColor = designTokens.colors.primary;
+const mediumSpacing = designTokens.spacing.md;
+
+// Use in styled components
+const StyledButton = styled.button\`
+  background-color: \${designTokens.colors.primary};
+  padding: \${designTokens.spacing.md};
+  border-radius: \${designTokens.borderRadius.medium};
+  box-shadow: \${designTokens.shadows.small};
+\`;
+`}
+/>
+
+### CSS Custom Properties
+
+The design system automatically generates CSS custom properties for use in stylesheets:
+
+<Source
+  language="css"
+  code={`
+.my-component {
+  background-color: var(--color-primary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--shadow-small);
+}
+`}
+/>
+
+### TypeScript Support
+
+All design tokens are fully typed for excellent developer experience:
+
+<Source
+  language="typescript"
+  code={`
+import type { ColorKey, SpacingKey, BorderRadiusKey } from '@/components/core/types';
+
+interface MyComponentProps {
+  color?: ColorKey;
+  spacing?: SpacingKey;
+  borderRadius?: BorderRadiusKey;
+}
+`}
+/>
+
+## Component Architecture
+
+Our components follow these patterns:
+
+1. **Compound Components**: Complex components use the compound pattern for flexibility
+2. **Forward Refs**: All components support ref forwarding
+3. **TypeScript First**: Complete type safety with excellent IntelliSense
+4. **Accessibility**: ARIA attributes and keyboard navigation built-in
+5. **Performance**: Optimized with React.memo and proper prop drilling
+
+## Getting Started
+
+1. Import the component you need
+2. Use design tokens for custom styling
+3. Follow accessibility guidelines
+4. Test with different themes and screen sizes
+
+For detailed component documentation, see the individual component stories in the sidebar.

@@ -43,6 +43,10 @@ interface VisualizationState {
   preferences: VisualizationPreferences;
   performanceMetrics: ChartPerformanceMetrics | null;
 
+  // New chart management
+  charts: AdvancedVisualizationConfig[];
+  selectedChart: string | null;
+
   // Actions
   setVisualization: (config: any | null) => void; // Allow null to clear
   addDashboard: (dashboard: AdvancedDashboardConfig) => void;
@@ -50,6 +54,12 @@ interface VisualizationState {
   deleteDashboard: (id: string) => void;
   updatePreferences: (preferences: Partial<VisualizationPreferences>) => void;
   setPerformanceMetrics: (metrics: ChartPerformanceMetrics) => void;
+
+  // New chart actions
+  addChart: (chart: Omit<AdvancedVisualizationConfig, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateChart: (id: string, updates: Partial<AdvancedVisualizationConfig>) => void;
+  removeChart: (id: string) => void;
+  selectChart: (id: string | null) => void;
 
   // Selectors
   getDashboardById: (id: string) => AdvancedDashboardConfig | undefined;
@@ -63,6 +73,8 @@ export const useVisualizationStore = create<VisualizationState>()(
       (set, get) => ({
         currentVisualization: null,
         dashboards: [],
+        charts: [],
+        selectedChart: null,
         preferences: {
           enableAnimations: true,
           enableInteractivity: true,
@@ -93,6 +105,42 @@ export const useVisualizationStore = create<VisualizationState>()(
         })),
 
         setPerformanceMetrics: (metrics) => set({ performanceMetrics: metrics }),
+
+        // New chart actions
+        addChart: (chartData) => {
+          const chart: AdvancedVisualizationConfig = {
+            ...chartData,
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+
+          set((state) => ({
+            charts: [...state.charts, chart],
+            selectedChart: chart.id,
+          }));
+        },
+
+        updateChart: (id, updates) => {
+          set((state) => ({
+            charts: state.charts.map((chart) =>
+              chart.id === id
+                ? { ...chart, ...updates, updatedAt: Date.now() }
+                : chart
+            ),
+          }));
+        },
+
+        removeChart: (id) => {
+          set((state) => ({
+            charts: state.charts.filter((chart) => chart.id !== id),
+            selectedChart: state.selectedChart === id ? null : state.selectedChart,
+          }));
+        },
+
+        selectChart: (id) => {
+          set({ selectedChart: id });
+        },
 
         getDashboardById: (id) => {
           return get().dashboards.find(d => d.id === id);
@@ -125,6 +173,7 @@ export const useVisualizationStore = create<VisualizationState>()(
         partialize: (state) => ({
           currentVisualization: state.currentVisualization, // Include current visualization in persistence
           dashboards: state.dashboards,
+          charts: state.charts,
           preferences: state.preferences
         })
       }
