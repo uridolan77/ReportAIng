@@ -19,7 +19,7 @@ export { Menu, Breadcrumb, Tabs, Steps, Pagination } from './Navigation';
 export { Table, List, Tree, Tag, Badge, Avatar, Statistic } from './Data';
 
 // Feedback Components
-export { Alert, Notification, Progress, Skeleton, Spinner, LoadingFallback } from './Feedback';
+export { Alert, Notification, Progress, Skeleton, Spinner } from './Feedback';
 
 // Modal & Overlay Components
 export { Modal, Drawer, Popover, Tooltip, Dialog, ConfirmDialog } from './Modal';

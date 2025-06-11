@@ -92,35 +92,16 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
   const generateRecommendations = async () => {
     setLoading(true);
     try {
-      // Mock recommendations - in real implementation, this would call an AI service
-      const mockRecommendations = [
-        {
-          type: 'bar',
-          title: 'Revenue by Month',
-          confidence: 0.95,
-          reason: 'Categorical data with numeric values works well with bar charts',
-          xAxis: columns.find(col => col.toLowerCase().includes('month') || col.toLowerCase().includes('date')) || columns[0],
-          yAxis: columns.find(col => col.toLowerCase().includes('revenue') || col.toLowerCase().includes('amount')) || columns[1]
-        },
-        {
-          type: 'line',
-          title: 'Trend Analysis',
-          confidence: 0.87,
-          reason: 'Time-series data is best visualized with line charts',
-          xAxis: columns.find(col => col.toLowerCase().includes('date') || col.toLowerCase().includes('time')) || columns[0],
-          yAxis: columns.find(col => typeof data[0]?.[col] === 'number') || columns[1]
-        },
-        {
-          type: 'pie',
-          title: 'Distribution Overview',
-          confidence: 0.73,
-          reason: 'Good for showing proportions of categorical data',
-          xAxis: columns.find(col => typeof data[0]?.[col] === 'string') || columns[0],
-          yAxis: columns.find(col => typeof data[0]?.[col] === 'number') || columns[1]
-        }
-      ];
+      // Real AI recommendations - call actual AI service
+      // TODO: Replace with actual AI service API calls
+      // const response = await aiVisualizationApi.getRecommendations(data, columns);
+      // setRecommendations(response.recommendations);
 
-      setRecommendations(mockRecommendations);
+      console.log('Loading real AI visualization recommendations...');
+
+      // For now, show empty state until real AI service is connected
+      setRecommendations([]);
+
     } catch (error) {
       console.error('Failed to generate recommendations:', error);
     } finally {

@@ -12,7 +12,7 @@ import {
   useAddToFavorites,
   usePrefetchRelatedData
 } from '../../hooks/useQueryApi';
-import { MockDataService } from '../../services/mockDataService';
+// MockDataService removed - database connection always required
 import type { QueryRequest } from '../../types/query';
 
 interface QueryContextType {
@@ -415,61 +415,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const handleSubmitQuery = useCallback(async () => {
     if (!query.trim() || executeQueryMutation.isPending) return;
 
-    // Check if mock data is enabled
-    const mockResult = MockDataService.getMockData(query);
-    if (mockResult) {
-      console.log('🎭 Using mock data for query:', query);
-
-      // Initialize processing state with immediate feedback
-      setProgress(0);
-      setShowProcessingDetails(true);
-      setProcessingStages([]);
-      setCurrentProcessingStage('initializing');
-      clearActiveResult(); // Clear previous result
-
-      // Simulate processing stages for mock data
-      const mockStages = [
-        {
-          stage: 'initializing',
-          message: 'Preparing your query...',
-          progress: 20,
-          timestamp: new Date().toISOString(),
-          details: { mockData: true, query },
-          status: 'active'
-        },
-        {
-          stage: 'mock_processing',
-          message: 'Loading mock data...',
-          progress: 60,
-          timestamp: new Date().toISOString(),
-          details: { mockData: true, dataSource: 'Mock Data Service' },
-          status: 'active'
-        },
-        {
-          stage: 'completed',
-          message: 'Mock data loaded successfully',
-          progress: 100,
-          timestamp: new Date().toISOString(),
-          details: { mockData: true, recordCount: mockResult.result?.data?.length || 0 },
-          status: 'completed'
-        }
-      ];
-
-      // Simulate processing with delays
-      for (let i = 0; i < mockStages.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 200 + i * 100));
-        setProcessingStages(prev => [...prev, mockStages[i]]);
-        setCurrentProcessingStage(mockStages[i].stage);
-        setProgress(mockStages[i].progress);
-      }
-
-      // Set the mock result
-      setUnifiedResult(mockResult, query, 'query', 'main');
-      setActiveTab('result');
-      setProgress(0);
-      setProcessingViewMode('hidden');
-      return;
-    }
+    // Always use real database connection - no mock data
 
     // Create query request first
     const queryRequest = createQueryRequest(query);
@@ -660,15 +606,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     setProgress(10);
     clearActiveResult(); // Clear previous result
 
-    // Check if mock data is enabled
-    const mockResult = MockDataService.getMockData(suggestion);
-    if (mockResult) {
-      console.log('🎭 Using mock data for follow-up suggestion:', suggestion);
-      setActiveResult(mockResult, suggestion);
-      setActiveTab('result');
-      setProgress(0);
-      return;
-    }
+    // Always use real database connection - no mock data
 
     const queryRequest = createQueryRequest(suggestion);
 
@@ -701,15 +639,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     setProgress(10);
     clearActiveResult(); // Clear previous result
 
-    // Check if mock data is enabled
-    const mockResult = MockDataService.getMockData(generatedQuery);
-    if (mockResult) {
-      console.log('🎭 Using mock data for wizard query:', generatedQuery);
-      setUnifiedResult(mockResult, generatedQuery, 'query', 'wizard');
-      setActiveTab('result');
-      setProgress(0);
-      return;
-    }
+    // Always use real database connection - no mock data
 
     const queryRequest = createQueryRequest(generatedQuery);
 
@@ -731,15 +661,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     setProgress(10);
     clearActiveResult(); // Clear previous result
 
-    // Check if mock data is enabled
-    const mockResult = MockDataService.getMockData(generatedQuery);
-    if (mockResult) {
-      console.log('🎭 Using mock data for template query:', generatedQuery);
-      setUnifiedResult(mockResult, generatedQuery, 'query', 'template');
-      setActiveTab('result');
-      setProgress(0);
-      return;
-    }
+    // Always use real database connection - no mock data
 
     const queryRequest = createQueryRequest(generatedQuery);
 

@@ -24,9 +24,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
-import { PageLayout, PageSection, PageGrid } from '../components/ui/PageLayout';
-import { Card, CardContent } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { PageLayout, PageSection, PageGrid } from '../components/core/Layouts';
+import { Card, CardContent } from '../components/core/Card';
+import { Button } from '../components/core/Button';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -120,7 +120,7 @@ const TemplatesPageContent: React.FC = () => {
         { title: 'Home', href: '/', icon: <HomeOutlined /> },
         { title: 'Query Templates', icon: <BookOutlined /> }
       ]}
-      maxWidth="xl"
+      style={{ width: '80%', margin: '0 auto' }}
     >
       {/* Search and Filters */}
       <PageSection

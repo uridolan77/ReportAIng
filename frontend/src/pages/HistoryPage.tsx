@@ -11,9 +11,9 @@ import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
 import { QueryHistory } from '../components/QueryInterface/QueryHistory';
-import { PageLayout, PageSection } from '../components/ui/PageLayout';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { PageLayout, PageSection } from '../components/core/Layouts';
+import { Card } from '../components/core/Card';
+import { Button } from '../components/core/Button';
 
 const HistoryPageContent: React.FC = () => {
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ const HistoryPageContent: React.FC = () => {
         { title: 'Home', href: '/', icon: <HomeOutlined /> },
         { title: 'Query History', icon: <HistoryOutlined /> }
       ]}
-      maxWidth="lg"
+      style={{ width: '80%', margin: '0 auto' }}
     >
       <PageSection
         title="Recent Queries"

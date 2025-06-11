@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent } from '../ui';
+import { Card, CardContent } from '../core';
 import { Badge } from '../ui';
 import { Columns } from 'lucide-react';
 import { SchemaColumnContextDto, SchemaTableContextDto } from '../../types/schemaManagement';

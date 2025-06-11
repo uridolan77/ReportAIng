@@ -84,46 +84,37 @@ export const DashboardManager: React.FC = () => {
   const [aiGenerateModalVisible, setAiGenerateModalVisible] = useState(false);
   const [form] = Form.useForm();
 
-  // Mock data for demonstration
-  const mockDashboards: Dashboard[] = [
-    {
-      id: '1',
-      name: 'Player Analytics Dashboard',
-      description: 'Comprehensive view of player behavior and engagement metrics',
-      category: 'Analytics',
-      widgets: [],
-      layout: { type: 'grid', columns: 12, rowHeight: 30, margin: [10, 10], padding: [10, 10] },
-      isPublic: false,
-      tags: ['players', 'analytics', 'engagement'],
-      createdAt: '2024-01-15T10:00:00Z',
-      updatedAt: '2024-01-15T14:30:00Z',
-      lastViewedAt: '2024-01-15T14:30:00Z'
-    },
-    {
-      id: '2',
-      name: 'Revenue Performance',
-      description: 'Financial metrics and revenue tracking across all channels',
-      category: 'Finance',
-      widgets: [],
-      layout: { type: 'grid', columns: 12, rowHeight: 30, margin: [10, 10], padding: [10, 10] },
-      isPublic: true,
-      tags: ['revenue', 'finance', 'performance'],
-      createdAt: '2024-01-14T09:00:00Z',
-      updatedAt: '2024-01-15T12:00:00Z'
-    },
-    {
-      id: '3',
-      name: 'Operational Metrics',
-      description: 'System performance and operational health indicators',
-      category: 'Operations',
-      widgets: [],
-      layout: { type: 'grid', columns: 12, rowHeight: 30, margin: [10, 10], padding: [10, 10] },
-      isPublic: false,
-      tags: ['operations', 'system', 'health'],
-      createdAt: '2024-01-13T15:00:00Z',
-      updatedAt: '2024-01-15T11:00:00Z'
-    }
-  ];
+  // Real dashboards - loaded from API
+  const [realDashboards, setRealDashboards] = useState<Dashboard[]>([]);
+  const [loadingReal, setLoadingReal] = useState(true);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+
+  // Load real dashboards on component mount
+  React.useEffect(() => {
+    const loadRealDashboards = async () => {
+      try {
+        setLoadingReal(true);
+        setDashboardError(null);
+
+        // TODO: Replace with actual dashboard API calls
+        // const response = await dashboardApi.getUserDashboards();
+        // setRealDashboards(response.dashboards);
+
+        console.log('Loading real dashboards...');
+
+        // For now, show empty state until real API is connected
+        setRealDashboards([]);
+
+      } catch (err) {
+        console.error('Failed to load dashboards:', err);
+        setDashboardError('Failed to load dashboards. Please check your connection.');
+      } finally {
+        setLoadingReal(false);
+      }
+    };
+
+    loadRealDashboards();
+  }, []);
 
   useEffect(() => {
     loadDashboards();
@@ -132,9 +123,8 @@ export const DashboardManager: React.FC = () => {
   const loadDashboards = async () => {
     setLoading(true);
     try {
-      // In real implementation, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setDashboards(mockDashboards);
+      // Use real dashboards instead of mock data
+      setDashboards(realDashboards);
     } catch (error) {
       console.error('Failed to load dashboards:', error);
     } finally {

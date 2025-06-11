@@ -25,7 +25,7 @@ export { InteractiveResultsDisplay } from '../../QueryInterface/InteractiveResul
 export { ExportModal } from '../../QueryInterface/ExportModal';
 
 // Query Support Components
-export { MockDataToggle } from '../../QueryInterface/MockDataToggle';
+// MockDataToggle removed - database connection always required
 export { QueryShortcuts } from '../../QueryInterface/QueryShortcuts';
 export { QueryModals } from '../../QueryInterface/QueryModals';
 export { QueryTabs } from '../../QueryInterface/QueryTabs';

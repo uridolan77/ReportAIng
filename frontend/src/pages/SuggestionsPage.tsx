@@ -25,9 +25,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
-import { PageLayout, PageSection, PageGrid } from '../components/ui/PageLayout';
-import { Card, CardContent } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { PageLayout, PageSection, PageGrid } from '../components/core/Layouts';
+import { Card, CardContent } from '../components/core/Card';
+import { Button } from '../components/core/Button';
 
 const { Text } = Typography;
 
@@ -37,67 +37,43 @@ const SuggestionsPageContent: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
-  // Mock AI suggestions - replace with real AI service
-  const mockSuggestions = [
-    {
-      id: '1',
-      type: 'trending',
-      title: 'Revenue Trend Analysis',
-      description: 'Analyze revenue trends for the current quarter',
-      query: 'Show me daily revenue trends for the last 7 days with moving average',
-      confidence: 0.95,
-      category: 'Financial',
-      icon: <RiseOutlined />,
-      color: '#52c41a',
-      reasoning: 'Based on your recent financial queries, this analysis could provide valuable insights into revenue patterns.'
-    },
-    {
-      id: '2',
-      type: 'personalized',
-      title: 'Player Retention Analysis',
-      description: 'Understand player behavior and retention patterns',
-      query: 'Show me player retention rates for the last 7 days',
-      confidence: 0.88,
-      category: 'Players',
-      icon: <UserOutlined />,
-      color: '#1890ff',
-      reasoning: 'You frequently analyze player data. This query can help identify retention trends.'
-    },
-    {
-      id: '3',
-      type: 'optimization',
-      title: 'High-Value Customer Segments',
-      description: 'Identify your most valuable customer segments',
-      query: 'Show me top 10 players by deposits in the last 7 days',
-      confidence: 0.92,
-      category: 'Business Intelligence',
-      icon: <DollarOutlined />,
-      color: '#faad14',
-      reasoning: 'Identifying high-value segments can help optimize marketing and retention strategies.'
-    },
-    {
-      id: '4',
-      type: 'seasonal',
-      title: 'Seasonal Performance Patterns',
-      description: 'Discover seasonal trends in your business',
-      query: 'Compare daily performance metrics for the last week vs previous week',
-      confidence: 0.85,
-      category: 'Analytics',
-      icon: <ClockCircleOutlined />,
-      color: '#722ed1',
-      reasoning: 'Understanding seasonal patterns can help with planning and forecasting.'
-    }
-  ];
+  // Real AI suggestions - loaded from API
+  const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
+  const [loadingAI, setLoadingAI] = useState(true);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  // Load real AI suggestions on component mount
+  React.useEffect(() => {
+    const loadAISuggestions = async () => {
+      try {
+        setLoadingAI(true);
+        setAiError(null);
+
+        // TODO: Replace with actual AI service API calls
+        // const response = await aiSuggestionsApi.getPersonalizedSuggestions();
+        // setAiSuggestions(response.suggestions);
+
+        console.log('Loading real AI suggestions...');
+
+        // For now, show empty state until real AI service is connected
+        setAiSuggestions([]);
+
+      } catch (err) {
+        console.error('Failed to load AI suggestions:', err);
+        setAiError('Failed to load AI suggestions. Please check your connection.');
+      } finally {
+        setLoadingAI(false);
+      }
+    };
+
+    loadAISuggestions();
+  }, []);
 
   useEffect(() => {
-    // Simulate AI processing
-    const timer = setTimeout(() => {
-      setSuggestions(mockSuggestions);
-      setLoading(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
+    // Use real AI suggestions instead of mock data
+    setSuggestions(aiSuggestions);
+    setLoading(loadingAI);
+  }, [aiSuggestions, loadingAI]);
 
   const handleSuggestionSelect = (suggestion: any) => {
     setQuery(suggestion.query);
@@ -124,7 +100,7 @@ const SuggestionsPageContent: React.FC = () => {
         { title: 'Home', href: '/', icon: <HomeOutlined /> },
         { title: 'Smart Suggestions', icon: <BulbOutlined /> }
       ]}
-      maxWidth="xl"
+      style={{ width: '80%', margin: '0 auto' }}
     >
       {/* AI Status Card */}
       <PageSection

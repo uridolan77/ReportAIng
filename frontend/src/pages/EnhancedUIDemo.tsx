@@ -9,8 +9,8 @@ import {
   HeartOutlined
 } from '@ant-design/icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { EnhancedQueryInterface } from '../components/QueryInterface/EnhancedQueryInterface';
-import { EnhancedNavigation } from '../components/Navigation/EnhancedNavigation';
+import { QueryInterface } from '../components/QueryInterface/QueryInterface';
+import { ModernSidebar } from '../components/Layout';
 
 const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -57,7 +57,7 @@ export const EnhancedUIDemo: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <EnhancedNavigation isAdmin={true} />
+      <ModernSidebar />
       
       <Content style={{ 
         background: isDarkMode 
@@ -183,17 +183,14 @@ export const EnhancedUIDemo: React.FC = () => {
               Enhanced Query Interface
             </Title>
             
-            <EnhancedQueryInterface
-              onSubmit={handleQuerySubmit}
-              loading={loading}
-              showExamples={true}
-              suggestions={[
-                "Show me revenue trends",
-                "Top performing games",
-                "Player demographics analysis",
-                "Monthly active users"
-              ]}
-            />
+            <div style={{
+              background: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.8)',
+              padding: '24px',
+              borderRadius: '16px',
+              border: `1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}`
+            }}>
+              <QueryInterface />
+            </div>
           </div>
 
           {/* Design System Showcase */}

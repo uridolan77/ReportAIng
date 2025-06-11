@@ -15,14 +15,14 @@ export * from './advanced';
 export * from './features';
 
 // Layout Components (Modern layout system)
-export * from './layout';
+export * from './Layout';
 
 // UI Components (Advanced UI features only)
 export * from './ui';
 
 // Legacy Support (Backward compatibility - marked for deprecation)
 export { QueryInterface } from './QueryInterface/QueryInterface';
-export { DashboardBuilder } from './Dashboard/DashboardBuilder';
+export { default as DashboardBuilder } from './Dashboard/DashboardBuilder';
 export { InteractiveVisualization } from './Visualization/InteractiveVisualization';
 export { DBExplorer } from './DBExplorer/DBExplorer';
 export { default as DataTable } from './DataTable/DataTable';

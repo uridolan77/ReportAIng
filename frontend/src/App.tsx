@@ -16,7 +16,7 @@ import {
   LoadingFallback
 } from './components/core';
 import { PerformanceMonitor, BundleAnalyzer } from './components/ui';
-import { ModernSidebar } from './components/layout/ModernSidebar';
+import EnhancedSidebar from './components/Layout/EnhancedSidebar';
 import './App.css';
 
 // Lazy load pages and features - Modern page components
@@ -99,7 +99,7 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
           {isAuthenticated ? (
             <Suspense fallback={<LoadingFallback />}>
               <AppLayout
-                sidebar={<ModernSidebar isAdmin={isAdmin} />}
+                sidebar={<EnhancedSidebar />}
                 sidebarCollapsible={true}
                 sidebarDefaultCollapsed={false}
               >

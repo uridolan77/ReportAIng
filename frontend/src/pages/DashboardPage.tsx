@@ -17,7 +17,7 @@ import {
   Badge,
   Alert
 } from '../components/core';
-import { DashboardBuilder } from '../components/Dashboard/DashboardBuilder';
+import DashboardBuilder from '../components/Dashboard/DashboardBuilder';
 import { DashboardView } from '../components/Dashboard/DashboardView';
 import { useCurrentResult } from '../hooks/useCurrentResult';
 import { useAuthStore } from '../stores/authStore';
@@ -32,11 +32,37 @@ const DashboardPage: React.FC = () => {
     setViewMode(mode);
   }, []);
 
-  const mockDashboards = [
-    { id: '1', name: 'Sales Overview', description: 'Key sales metrics and trends', widgets: 6, lastUpdated: '2 hours ago' },
-    { id: '2', name: 'Player Analytics', description: 'Player behavior and engagement', widgets: 8, lastUpdated: '1 day ago' },
-    { id: '3', name: 'Financial Summary', description: 'Revenue and financial KPIs', widgets: 4, lastUpdated: '3 hours ago' },
-  ];
+  // Real dashboards - loaded from API
+  const [dashboards, setDashboards] = useState<any[]>([]);
+  const [loadingDashboards, setLoadingDashboards] = useState(true);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+
+  // Load real dashboards on component mount
+  React.useEffect(() => {
+    const loadDashboards = async () => {
+      try {
+        setLoadingDashboards(true);
+        setDashboardError(null);
+
+        // TODO: Replace with actual dashboard API calls
+        // const response = await dashboardApi.getUserDashboards();
+        // setDashboards(response.dashboards);
+
+        console.log('Loading real dashboards...');
+
+        // For now, show empty state until real API is connected
+        setDashboards([]);
+
+      } catch (err) {
+        console.error('Failed to load dashboards:', err);
+        setDashboardError('Failed to load dashboards. Please check your connection.');
+      } finally {
+        setLoadingDashboards(false);
+      }
+    };
+
+    loadDashboards();
+  }, []);
 
   return (
     <PageLayout
@@ -64,7 +90,7 @@ const DashboardPage: React.FC = () => {
         </Flex>
       }
     >
-      <Container maxWidth="2xl" padding={false}>
+      <div style={{ width: '80%', margin: '0 auto' }}>
         {viewMode === 'view' ? (
           <Stack spacing="lg">
             {/* Quick Stats */}
@@ -73,7 +99,7 @@ const DashboardPage: React.FC = () => {
                 <Card.Content>
                   <Flex direction="column" align="center">
                     <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#667eea' }}>
-                      {mockDashboards.length}
+                      {loadingDashboards ? '...' : dashboards.length}
                     </div>
                     <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>
                       Total Dashboards
@@ -81,12 +107,12 @@ const DashboardPage: React.FC = () => {
                   </Flex>
                 </Card.Content>
               </Card>
-              
+
               <Card variant="filled" size="medium">
                 <Card.Content>
                   <Flex direction="column" align="center">
                     <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981' }}>
-                      18
+                      {loadingDashboards ? '...' : dashboards.reduce((sum, d) => sum + (d.widgets || 0), 0)}
                     </div>
                     <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>
                       Total Widgets

@@ -5,6 +5,10 @@
  * Core components have been moved to /components/core/ for better organization.
  */
 
+import React from 'react';
+import { Modal, Collapse, Button as AntButton } from 'antd';
+import type { ButtonProps } from '../core/Button';
+
 // Re-export all core components for backward compatibility
 export * from '../core';
 
@@ -321,17 +325,207 @@ export const DropdownMenuSeparator: React.FC<{
   <div className={className} style={{ height: '1px', background: '#f0f0f0', margin: '4px 0', ...style }} />
 );
 
-// Loading Fallback Component
-export const LoadingFallback: React.FC = () => (
-  <div style={{
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '200px'
-  }}>
-    <div>Loading...</div>
-  </div>
-);
+// Note: LoadingFallback is available from '../core/Performance'
+// Removed duplicate implementation to avoid export conflicts
+
+// CardTitle Component (for backward compatibility)
+export const CardTitle: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ children, className, style }) => {
+  return (
+    <h3
+      className={className}
+      style={{
+        margin: 0,
+        fontSize: '18px',
+        fontWeight: 600,
+        color: '#262626',
+        lineHeight: '1.4',
+        ...style,
+      }}
+    >
+      {children}
+    </h3>
+  );
+};
+
+// Tabs Components (for backward compatibility)
+export const Tabs: React.FC<{
+  children: React.ReactNode;
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ children, defaultValue, value, onValueChange, className, style }) => {
+  const [activeTab, setActiveTab] = React.useState(defaultValue || '');
+
+  const handleTabChange = (newValue: string) => {
+    setActiveTab(newValue);
+    onValueChange?.(newValue);
+  };
+
+  return (
+    <div className={className} style={style}>
+      {React.Children.map(children, child => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child, {
+            activeTab: value || activeTab,
+            onTabChange: handleTabChange
+          } as any);
+        }
+        return child;
+      })}
+    </div>
+  );
+};
+
+export const TabsList: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+  activeTab?: string;
+  onTabChange?: (value: string) => void;
+}> = ({ children, className, style, activeTab, onTabChange }) => {
+  return (
+    <div
+      className={className}
+      style={{
+        display: 'flex',
+        borderBottom: '1px solid #e0e0e0',
+        marginBottom: '16px',
+        ...style,
+      }}
+    >
+      {React.Children.map(children, child => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child, {
+            activeTab,
+            onTabChange
+          } as any);
+        }
+        return child;
+      })}
+    </div>
+  );
+};
+
+export const TabsTrigger: React.FC<{
+  children: React.ReactNode;
+  value: string;
+  className?: string;
+  style?: React.CSSProperties;
+  activeTab?: string;
+  onTabChange?: (value: string) => void;
+}> = ({ children, value, className, style, activeTab, onTabChange }) => {
+  const isActive = activeTab === value;
+
+  return (
+    <button
+      className={className}
+      style={{
+        padding: '12px 16px',
+        border: 'none',
+        background: 'none',
+        cursor: 'pointer',
+        borderBottom: isActive ? '2px solid #1890ff' : '2px solid transparent',
+        color: isActive ? '#1890ff' : '#666',
+        fontWeight: isActive ? 600 : 400,
+        transition: 'all 0.2s ease',
+        ...style,
+      }}
+      onClick={() => onTabChange?.(value)}
+    >
+      {children}
+    </button>
+  );
+};
+
+export const TabsContent: React.FC<{
+  children: React.ReactNode;
+  value: string;
+  className?: string;
+  style?: React.CSSProperties;
+  activeTab?: string;
+}> = ({ children, value, className, style, activeTab }) => {
+  if (activeTab !== value) return null;
+
+  return (
+    <div className={className} style={style}>
+      {children}
+    </div>
+  );
+};
+
+// Virtual List Component for performance
+export interface VirtualListProps {
+  items: any[];
+  itemHeight: number;
+  height: number;
+  renderItem: (item: any, index: number) => React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+export const VirtualList: React.FC<VirtualListProps> = ({
+  items,
+  itemHeight,
+  height,
+  renderItem,
+  className,
+  style
+}) => {
+  const [scrollTop, setScrollTop] = React.useState(0);
+
+  const containerHeight = height;
+  const totalHeight = items.length * itemHeight;
+  const startIndex = Math.floor(scrollTop / itemHeight);
+  const endIndex = Math.min(
+    startIndex + Math.ceil(containerHeight / itemHeight) + 1,
+    items.length
+  );
+
+  const visibleItems = items.slice(startIndex, endIndex);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
+  };
+
+  return (
+    <div
+      className={className}
+      style={{
+        height: containerHeight,
+        overflow: 'auto',
+        ...style
+      }}
+      onScroll={handleScroll}
+    >
+      <div style={{ height: totalHeight, position: 'relative' }}>
+        <div
+          style={{
+            transform: `translateY(${startIndex * itemHeight}px)`,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+          }}
+        >
+          {visibleItems.map((item, index) => (
+            <div
+              key={startIndex + index}
+              style={{ height: itemHeight }}
+            >
+              {renderItem(item, startIndex + index)}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 
 
@@ -587,5 +781,188 @@ export const AnimatedContainer: React.FC<AnimatedContainerProps> = ({
     }}>
       {children}
     </div>
+  );
+};
+
+// Badge Component (alias for StatusBadge)
+export const Badge: React.FC<{
+  variant?: 'success' | 'warning' | 'error' | 'info' | 'default';
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ variant = 'default', children, className, style }) => {
+  return (
+    <StatusBadge status={variant} style={style}>
+      {children}
+    </StatusBadge>
+  );
+};
+
+// Label Component
+export const Label: React.FC<{
+  children: React.ReactNode;
+  htmlFor?: string;
+  required?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ children, htmlFor, required, className, style }) => {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className={className}
+      style={{
+        display: 'block',
+        marginBottom: '4px',
+        fontSize: '14px',
+        fontWeight: 500,
+        color: '#262626',
+        ...style,
+      }}
+    >
+      {children}
+      {required && (
+        <span style={{ color: '#ff4d4f', marginLeft: '4px' }}>*</span>
+      )}
+    </label>
+  );
+};
+
+// Input Component
+export const Input: React.FC<{
+  value?: string;
+  defaultValue?: string;
+  placeholder?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
+  required?: boolean;
+  type?: string;
+  className?: string;
+  style?: React.CSSProperties;
+  id?: string;
+  name?: string;
+}> = ({
+  value,
+  defaultValue,
+  placeholder,
+  onChange,
+  onBlur,
+  onFocus,
+  disabled,
+  required,
+  type = 'text',
+  className,
+  style,
+  id,
+  name
+}) => {
+  return (
+    <input
+      id={id}
+      name={name}
+      type={type}
+      value={value}
+      defaultValue={defaultValue}
+      placeholder={placeholder}
+      onChange={onChange}
+      onBlur={onBlur}
+      onFocus={onFocus}
+      disabled={disabled}
+      required={required}
+      className={className}
+      style={{
+        width: '100%',
+        padding: '8px 12px',
+        border: '1px solid #d9d9d9',
+        borderRadius: '6px',
+        fontSize: '14px',
+        lineHeight: '1.5',
+        color: '#262626',
+        backgroundColor: disabled ? '#f5f5f5' : '#ffffff',
+        transition: 'border-color 0.3s, box-shadow 0.3s',
+        outline: 'none',
+        ...style,
+      }}
+      onFocusCapture={(e) => {
+        e.currentTarget.style.borderColor = '#1890ff';
+        e.currentTarget.style.boxShadow = '0 0 0 2px rgba(24, 144, 255, 0.2)';
+      }}
+      onBlurCapture={(e) => {
+        e.currentTarget.style.borderColor = '#d9d9d9';
+        e.currentTarget.style.boxShadow = 'none';
+      }}
+    />
+  );
+};
+
+// Textarea Component
+export const Textarea: React.FC<{
+  value?: string;
+  defaultValue?: string;
+  placeholder?: string;
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
+  onFocus?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
+  disabled?: boolean;
+  required?: boolean;
+  rows?: number;
+  className?: string;
+  style?: React.CSSProperties;
+  id?: string;
+  name?: string;
+}> = ({
+  value,
+  defaultValue,
+  placeholder,
+  onChange,
+  onBlur,
+  onFocus,
+  disabled,
+  required,
+  rows = 3,
+  className,
+  style,
+  id,
+  name
+}) => {
+  return (
+    <textarea
+      id={id}
+      name={name}
+      value={value}
+      defaultValue={defaultValue}
+      placeholder={placeholder}
+      onChange={onChange}
+      onBlur={onBlur}
+      onFocus={onFocus}
+      disabled={disabled}
+      required={required}
+      rows={rows}
+      className={className}
+      style={{
+        width: '100%',
+        padding: '8px 12px',
+        border: '1px solid #d9d9d9',
+        borderRadius: '6px',
+        fontSize: '14px',
+        lineHeight: '1.5',
+        color: '#262626',
+        backgroundColor: disabled ? '#f5f5f5' : '#ffffff',
+        transition: 'border-color 0.3s, box-shadow 0.3s',
+        outline: 'none',
+        resize: 'vertical',
+        fontFamily: 'inherit',
+        ...style,
+      }}
+      onFocusCapture={(e) => {
+        e.currentTarget.style.borderColor = '#1890ff';
+        e.currentTarget.style.boxShadow = '0 0 0 2px rgba(24, 144, 255, 0.2)';
+      }}
+      onBlurCapture={(e) => {
+        e.currentTarget.style.borderColor = '#d9d9d9';
+        e.currentTarget.style.boxShadow = 'none';
+      }}
+    />
   );
 };

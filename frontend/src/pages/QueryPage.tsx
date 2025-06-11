@@ -21,7 +21,7 @@ import {
 import { QueryInterface } from '../components/QueryInterface/QueryInterface';
 import { QueryHistory } from '../components/QueryInterface/QueryHistory';
 import { QuerySuggestions } from '../components/QueryInterface/QuerySuggestions';
-import { MockDataToggle } from '../components/QueryInterface/MockDataToggle';
+// MockDataToggle removed - database connection always required
 import { useCurrentResult } from '../hooks/useCurrentResult';
 import { useAuthStore } from '../stores/authStore';
 
@@ -39,7 +39,7 @@ const QueryPage: React.FC = () => {
       key: 'query',
       label: 'Query Interface',
       children: (
-        <Container maxWidth="xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Stack spacing="lg">
             {/* Welcome Section */}
             <Card variant="filled" size="medium">
@@ -53,7 +53,7 @@ const QueryPage: React.FC = () => {
                       Ask questions about your data using natural language
                     </p>
                   </div>
-                  <MockDataToggle />
+                  {/* Database connection always required - no toggle needed */}
                 </Flex>
               </Card.Content>
             </Card>
@@ -100,14 +100,14 @@ const QueryPage: React.FC = () => {
               />
             )}
           </Stack>
-        </Container>
+        </div>
       ),
     },
     {
       key: 'history',
       label: 'Query History',
       children: (
-        <Container maxWidth="xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Card variant="default" size="large">
             <Card.Header>
               <h3 style={{ margin: 0 }}>Recent Queries</h3>
@@ -116,14 +116,14 @@ const QueryPage: React.FC = () => {
               <QueryHistory />
             </Card.Content>
           </Card>
-        </Container>
+        </div>
       ),
     },
     {
       key: 'suggestions',
       label: 'AI Suggestions',
       children: (
-        <Container maxWidth="xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Card variant="default" size="large">
             <Card.Header>
               <h3 style={{ margin: 0 }}>Smart Query Suggestions</h3>
@@ -132,7 +132,7 @@ const QueryPage: React.FC = () => {
               <QuerySuggestions />
             </Card.Content>
           </Card>
-        </Container>
+        </div>
       ),
     },
   ];

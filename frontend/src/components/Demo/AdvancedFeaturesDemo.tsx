@@ -87,35 +87,23 @@ const generateLargeDataset = (size: number) => {
   }));
 };
 
-const generateMockWidgets = () => [
-  {
-    id: 'widget-1',
-    type: 'heatmap',
-    title: 'Sales Heatmap',
-    span: 2,
-    data: Array.from({ length: 20 }, (_, i) => ({
-      x: `Q${(i % 4) + 1}`,
-      y: `Region ${Math.floor(i / 4) + 1}`,
-      value: Math.random() * 100 + 10
-    })),
-    config: { colorScheme: 'RdYlBu', showValues: true }
-  },
-  {
-    id: 'widget-2',
-    type: 'treemap',
-    title: 'Product Categories',
-    span: 2,
-    data: {
-      name: 'Products',
-      children: [
-        { name: 'Electronics', value: 1000, category: 'tech' },
-        { name: 'Clothing', value: 800, category: 'fashion' },
-        { name: 'Books', value: 600, category: 'media' }
-      ]
-    },
-    config: { showLabels: true }
+// Real widgets - loaded from API
+const generateRealWidgets = async () => {
+  try {
+    // TODO: Replace with actual widget API calls
+    // const response = await widgetApi.getUserWidgets();
+    // return response.widgets;
+
+    console.log('Loading real widgets...');
+
+    // For now, return empty array until real API is connected
+    return [];
+
+  } catch (error) {
+    console.error('Failed to load widgets:', error);
+    return [];
   }
-];
+};
 
 // Enhanced filtering test data
 const generateFilteringTestData = () => [

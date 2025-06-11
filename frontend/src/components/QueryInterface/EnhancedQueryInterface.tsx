@@ -144,8 +144,13 @@ export const EnhancedQueryInterface: React.FC<EnhancedQueryInterfaceProps> = ({
         </Text>
       </div>
 
-      {/* Main Query Input */}
-      <div className="enhanced-query-input-container fade-in-up" style={{ marginBottom: '32px' }}>
+      {/* Main Query Input - Chat Box (60% width) */}
+      <div className="enhanced-query-input-container fade-in-up" style={{
+        marginBottom: '32px',
+        maxWidth: '800px', // Reduced for chat box
+        width: '60%', // Chat box should be 60% width
+        margin: '0 auto 32px auto'
+      }}>
         <div className="query-input-passepartout">
           <TextArea
             ref={inputRef}

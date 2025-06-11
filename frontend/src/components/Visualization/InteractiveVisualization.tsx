@@ -34,8 +34,8 @@ import {
   HomeOutlined,
   DotChartOutlined
 } from '@ant-design/icons';
-import { PageLayout, PageSection, PageGrid } from '../ui/PageLayout';
-import { Card } from '../ui/Card';
+import { PageLayout, PageSection, PageGrid } from '../core/Layouts';
+import { Card } from '../core/Card';
 import {
   ResponsiveContainer,
   BarChart,

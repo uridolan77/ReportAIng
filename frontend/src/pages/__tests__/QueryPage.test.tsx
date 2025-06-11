@@ -40,11 +40,12 @@ jest.mock('../../components/QueryInterface/QuerySuggestions', () => {
   };
 });
 
-jest.mock('../../components/QueryInterface/MockDataToggle', () => {
-  return function MockDataToggle() {
-    return <button data-testid="mock-data-toggle">Mock Data Toggle</button>;
-  };
-});
+// MockDataToggle removed - database connection always required
+// jest.mock('../../components/QueryInterface/MockDataToggle', () => {
+//   return function MockDataToggle() {
+//     return <button data-testid="mock-data-toggle">Mock Data Toggle</button>;
+//   };
+// });
 
 const mockUseCurrentResultHook = mockUseCurrentResult as jest.MockedFunction<typeof mockUseCurrentResult>;
 const mockUseAuthStoreHook = mockUseAuthStore as jest.MockedFunction<typeof mockUseAuthStore>;

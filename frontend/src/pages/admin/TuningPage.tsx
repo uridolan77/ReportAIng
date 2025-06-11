@@ -36,7 +36,7 @@ const TuningPage: React.FC = () => {
       key: 'dashboard',
       label: '📊 Dashboard',
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Card variant="default" size="large">
             <Card.Header>
               <h3 style={{ margin: 0 }}>AI Tuning Dashboard</h3>
@@ -45,14 +45,14 @@ const TuningPage: React.FC = () => {
               <TuningDashboard />
             </Card.Content>
           </Card>
-        </Container>
+        </div>
       ),
     },
     {
       key: 'ai-settings',
       label: '🤖 AI Settings',
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Stack spacing="lg">
             <Alert
               variant="warning"
@@ -68,14 +68,14 @@ const TuningPage: React.FC = () => {
               </Card.Content>
             </Card>
           </Stack>
-        </Container>
+        </div>
       ),
     },
     {
       key: 'prompts',
       label: '📝 Prompt Templates',
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
@@ -89,14 +89,14 @@ const TuningPage: React.FC = () => {
               <PromptTemplateManager />
             </Card.Content>
           </Card>
-        </Container>
+        </div>
       ),
     },
     {
       key: 'glossary',
       label: '📚 Business Glossary',
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
@@ -110,14 +110,14 @@ const TuningPage: React.FC = () => {
               <BusinessGlossaryManager />
             </Card.Content>
           </Card>
-        </Container>
+        </div>
       ),
     },
     {
       key: 'patterns',
       label: '🔍 Query Patterns',
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
@@ -129,14 +129,14 @@ const TuningPage: React.FC = () => {
               <QueryPatternManager />
             </Card.Content>
           </Card>
-        </Container>
+        </div>
       ),
     },
     {
       key: 'logs',
       label: '📋 Prompt Logs',
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
@@ -155,7 +155,7 @@ const TuningPage: React.FC = () => {
               <PromptLogsViewer />
             </Card.Content>
           </Card>
-        </Container>
+        </div>
       ),
     },
   ];

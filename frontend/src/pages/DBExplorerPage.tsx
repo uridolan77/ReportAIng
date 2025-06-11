@@ -23,6 +23,7 @@ import { DBExplorer } from '../components/DBExplorer/DBExplorer';
 import { SchemaTree } from '../components/DBExplorer/SchemaTree';
 import { TableDataPreview } from '../components/DBExplorer/TableDataPreview';
 import { TableExplorer } from '../components/DBExplorer/TableExplorer';
+import { DatabaseTable } from '../types/dbExplorer';
 
 const DBExplorerPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('explorer');
@@ -33,19 +34,71 @@ const DBExplorerPage: React.FC = () => {
     setActiveTab(key);
   }, []);
 
-  const handleTableSelect = useCallback((tableName: string) => {
-    setSelectedTable(tableName);
+  const handleTableSelect = useCallback((table: DatabaseTable | string) => {
+    if (typeof table === 'string') {
+      setSelectedTable(table);
+    } else {
+      setSelectedTable(table.name);
+    }
   }, []);
 
-  const mockTables = [
-    { name: 'tbl_Daily_actions', rows: 1250000, columns: 109, size: '2.3 GB', lastUpdated: '2 hours ago' },
-    { name: 'tbl_Daily_actions_players', rows: 45000, columns: 15, size: '120 MB', lastUpdated: '1 hour ago' },
-    { name: 'tbl_Countries', rows: 195, columns: 8, size: '2 MB', lastUpdated: '1 week ago' },
-    { name: 'tbl_Currencies', rows: 168, columns: 6, size: '1 MB', lastUpdated: '1 week ago' },
-    { name: 'tbl_White_labels', rows: 25, columns: 12, size: '500 KB', lastUpdated: '3 days ago' },
-  ];
+  // Real database data - loaded from API
+  const [tables, setTables] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredTables = mockTables.filter(table => 
+  // Load real database schema on component mount
+  React.useEffect(() => {
+    const loadDatabaseSchema = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // TODO: Replace with actual API calls to get real database schema
+        // const response = await dbExplorerApi.getTableSchema();
+        // setTables(response.tables);
+
+        console.log('Loading real database schema...');
+
+        // For now, show loading state until real API is connected
+        setTables([]);
+
+      } catch (err) {
+        console.error('Failed to load database schema:', err);
+        setError('Failed to connect to database. Please check your connection.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDatabaseSchema();
+  }, []);
+
+  // Real schema data - loaded from API
+  const [schemaData, setSchemaData] = useState<DatabaseTable[]>([]);
+
+  // Load schema data along with tables
+  React.useEffect(() => {
+    const loadSchemaData = async () => {
+      try {
+        // TODO: Replace with actual API calls to get real database schema
+        // const response = await dbExplorerApi.getSchemaData();
+        // setSchemaData(response.schema);
+
+        console.log('Loading real schema data...');
+
+        // For now, show empty state until real API is connected
+        setSchemaData([]);
+
+      } catch (err) {
+        console.error('Failed to load schema data:', err);
+      }
+    };
+
+    loadSchemaData();
+  }, []);
+
+  const filteredTables = tables.filter(table =>
     table.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -54,7 +107,7 @@ const DBExplorerPage: React.FC = () => {
       key: 'explorer',
       label: '🗂️ Schema Explorer',
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Grid columns={3} gap="lg">
             {/* Schema Tree */}
             <Card variant="default" size="large">
@@ -62,7 +115,21 @@ const DBExplorerPage: React.FC = () => {
                 <h3 style={{ margin: 0 }}>Database Schema</h3>
               </Card.Header>
               <Card.Content>
-                <SchemaTree onTableSelect={handleTableSelect} />
+                {loading ? (
+                  <div style={{ padding: '2rem', textAlign: 'center' }}>
+                    <div>Loading database schema...</div>
+                  </div>
+                ) : error ? (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>
+                    <div>{error}</div>
+                  </div>
+                ) : (
+                  <SchemaTree
+                    tables={schemaData}
+                    onTableSelect={handleTableSelect}
+                    selectedTableName={selectedTable}
+                  />
+                )}
               </Card.Content>
             </Card>
 
@@ -125,13 +192,34 @@ const DBExplorerPage: React.FC = () => {
                 </h3>
               </Card.Header>
               <Card.Content>
-                {selectedTable ? (
-                  <TableDataPreview tableName={selectedTable} />
+                {loading ? (
+                  <div style={{ padding: '2rem', textAlign: 'center' }}>
+                    <div>Loading table details...</div>
+                  </div>
+                ) : selectedTable ? (
+                  (() => {
+                    const selectedTableData = schemaData.find(table => table.name === selectedTable);
+                    return selectedTableData ? (
+                      <TableDataPreview table={selectedTableData} />
+                    ) : (
+                      <div style={{
+                        padding: '2rem',
+                        textAlign: 'center',
+                        color: '#6b7280'
+                      }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+                        <p>Table data not found: {selectedTable}</p>
+                        <p style={{ fontSize: '0.875rem', marginTop: '1rem' }}>
+                          Please ensure database connection is available.
+                        </p>
+                      </div>
+                    );
+                  })()
                 ) : (
-                  <div style={{ 
-                    padding: '2rem', 
-                    textAlign: 'center', 
-                    color: '#6b7280' 
+                  <div style={{
+                    padding: '2rem',
+                    textAlign: 'center',
+                    color: '#6b7280'
                   }}>
                     <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
                     <p>Select a table to view its structure and preview data</p>
@@ -147,14 +235,23 @@ const DBExplorerPage: React.FC = () => {
       key: 'data-preview',
       label: '👁️ Data Preview',
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Stack spacing="lg">
             {/* Connection Status */}
-            <Alert
-              variant="success"
-              message="Database Connected"
-              description="Successfully connected to DailyActionsDB at 185.64.56.157"
-            />
+            {!loading && !error && (
+              <Alert
+                variant="success"
+                message="Database Connected"
+                description="Successfully connected to DailyActionsDB at 185.64.56.157"
+              />
+            )}
+            {error && (
+              <Alert
+                variant="error"
+                message="Database Connection Failed"
+                description={error}
+              />
+            )}
 
             {/* Table Explorer */}
             <Card variant="default" size="large">
@@ -172,7 +269,47 @@ const DBExplorerPage: React.FC = () => {
                 </Flex>
               </Card.Header>
               <Card.Content>
-                <TableExplorer />
+                {loading ? (
+                  <div style={{ padding: '2rem', textAlign: 'center' }}>
+                    <div>Loading table explorer...</div>
+                  </div>
+                ) : selectedTable ? (
+                  (() => {
+                    const selectedTableData = schemaData.find(table => table.name === selectedTable);
+                    return selectedTableData ? (
+                      <TableExplorer
+                        table={selectedTableData}
+                        onPreviewData={() => {
+                          console.log('Preview data for:', selectedTableData.name);
+                        }}
+                        onGenerateQuery={(query) => {
+                          console.log('Generated query:', query);
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        padding: '2rem',
+                        textAlign: 'center',
+                        color: '#6b7280'
+                      }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+                        <p>Table data not found: {selectedTable}</p>
+                        <p style={{ fontSize: '0.875rem', marginTop: '1rem' }}>
+                          Please ensure database connection is available.
+                        </p>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div style={{
+                    padding: '2rem',
+                    textAlign: 'center',
+                    color: '#6b7280'
+                  }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+                    <p>Select a table from the Schema Explorer tab to view its details and explore data</p>
+                  </div>
+                )}
               </Card.Content>
             </Card>
           </Stack>
@@ -183,7 +320,7 @@ const DBExplorerPage: React.FC = () => {
       key: 'full-explorer',
       label: '🔍 Full Explorer',
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
@@ -202,7 +339,7 @@ const DBExplorerPage: React.FC = () => {
               <DBExplorer />
             </Card.Content>
           </Card>
-        </Container>
+        </div>
       ),
     },
   ];

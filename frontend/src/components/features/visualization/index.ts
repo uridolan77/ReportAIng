@@ -12,8 +12,8 @@ export { Chart } from '../../Visualization/Chart';
 export { InlineChart } from '../../Visualization/InlineChart';
 
 // Chart Configuration & Tools
-export { ChartConfigurationPanel } from '../../Visualization/ChartConfigurationPanel';
-export { VisualizationRecommendations } from '../../Visualization/VisualizationRecommendations';
+export { default as ChartConfigurationPanel } from '../../Visualization/ChartConfigurationPanel';
+export { default as VisualizationRecommendations } from '../../Visualization/VisualizationRecommendations';
 export { VisualizationPanel } from '../../Visualization/VisualizationPanel';
 
 // Advanced Chart Features

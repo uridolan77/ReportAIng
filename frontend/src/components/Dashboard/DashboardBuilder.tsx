@@ -33,8 +33,8 @@ import {
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { useDashboardResult } from '../../hooks/useCurrentResult';
-import { PageLayout, PageSection, PageGrid } from '../ui/PageLayout';
-import { Card } from '../ui/Card';
+import { PageLayout, PageSection, PageGrid } from '../core/Layouts';
+import { Card } from '../core/Card';
 
 const { Title, Text } = Typography;
 const { Option } = Select;

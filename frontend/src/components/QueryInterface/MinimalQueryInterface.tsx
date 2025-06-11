@@ -21,8 +21,8 @@ import { useAIProcessingFeedback } from './AIProcessingFeedback';
 import { QueryProcessingViewer } from './QueryProcessingViewer';
 // import { AccessibilityFeatures } from './AccessibilityFeatures';
 import { useActiveResultActions } from '../../stores/activeResultStore';
-import { MockDataToggle } from './MockDataToggle';
-import { PageLayout, PageSection } from '../ui/PageLayout';
+// MockDataToggle removed - database connection always required
+import { PageLayout, PageSection } from '../core/Layouts';
 import './animations.css';
 import './professional-polish.css';
 import './MinimalQueryInterface.css';
@@ -205,10 +205,11 @@ export const MinimalQueryInterface: React.FC = () => {
         </Text>
       </div>
 
-      {/* Enhanced Query Input Container */}
+      {/* Enhanced Query Input Container - Chat Box (60% width) */}
       <div className="enhanced-query-input-container" style={{
         marginBottom: '32px',
-        maxWidth: '1200px',
+        maxWidth: '800px', // Reduced from 1200px to make chat box smaller
+        width: '60%', // Chat box should be 60% width
         margin: '0 auto 32px auto',
         background: 'white',
         borderRadius: '16px',
@@ -257,8 +258,7 @@ export const MinimalQueryInterface: React.FC = () => {
           marginTop: '20px',
           flexWrap: 'wrap'
         }}>
-          {/* Mock Data Quick Toggle */}
-          <MockDataToggle size="small" showDetails={false} />
+          {/* Database connection always required - no toggle needed */}
 
           {/* Enhanced Submit Button */}
           <Button

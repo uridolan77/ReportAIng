@@ -20,8 +20,8 @@ import {
 } from '../components/core';
 import { InteractiveVisualization } from '../components/Visualization/InteractiveVisualization';
 import { AdvancedChart } from '../components/Visualization/AdvancedChart';
-import { ChartConfigurationPanel } from '../components/Visualization/ChartConfigurationPanel';
-import { VisualizationRecommendations } from '../components/Visualization/VisualizationRecommendations';
+import ChartConfigurationPanel from '../components/Visualization/ChartConfigurationPanel';
+import VisualizationRecommendations from '../components/Visualization/VisualizationRecommendations';
 import { useCurrentResult } from '../hooks/useCurrentResult';
 import { useVisualizationStore } from '../stores/visualizationStore';
 
@@ -64,7 +64,7 @@ const VisualizationPage: React.FC = () => {
         </Flex>
       ),
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Stack spacing="lg">
             {/* Chart Creation Panel */}
             {hasResult ? (
@@ -192,14 +192,14 @@ const VisualizationPage: React.FC = () => {
               </Card>
             )}
           </Stack>
-        </Container>
+        </div>
       ),
     },
     {
       key: 'ai-powered',
       label: '🤖 AI-Powered Charts',
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Stack spacing="lg">
             {/* AI Recommendations */}
             <Card variant="filled" size="medium">
@@ -247,14 +247,14 @@ const VisualizationPage: React.FC = () => {
               </Card.Content>
             </Card>
           </Stack>
-        </Container>
+        </div>
       ),
     },
     {
       key: 'gallery',
       label: '🖼️ Chart Gallery',
       children: (
-        <Container maxWidth="2xl" padding={false}>
+        <div style={{ width: '80%', margin: '0 auto' }}>
           <Card variant="default" size="large">
             <Card.Header>
               <h3 style={{ margin: 0 }}>Chart Gallery</h3>
@@ -273,7 +273,7 @@ const VisualizationPage: React.FC = () => {
               </div>
             </Card.Content>
           </Card>
-        </Container>
+        </div>
       ),
     },
   ];

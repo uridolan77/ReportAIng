@@ -3,11 +3,11 @@
  * Modern, sophisticated styling for premium user experience
  */
 
-/* ===== ENHANCED QUERY INPUT BOX ===== */
+/* ===== ENHANCED QUERY INPUT BOX - Chat Box (60% width) ===== */
 .enhanced-query-input-container {
   position: relative;
-  width: 100%;
-  max-width: 1400px;
+  width: 60%; /* Chat box should be 60% width */
+  max-width: 800px; /* Reduced from 1400px for chat box */
   margin: 0 auto;
 }
 

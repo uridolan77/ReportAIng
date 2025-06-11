@@ -74,8 +74,26 @@ export interface SidebarLayoutProps {
   style?: React.CSSProperties;
 }
 
+export interface PageSectionProps {
+  children: React.ReactNode;
+  title?: React.ReactNode;
+  subtitle?: React.ReactNode;
+  background?: 'transparent' | 'card' | 'primary' | 'secondary';
+  padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+export interface PageGridProps {
+  children: React.ReactNode;
+  columns?: number;
+  gap?: 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
+  style?: React.CSSProperties;
+}
+
 // App Layout Component
-export const AppLayout = forwardRef<HTMLDivElement, AppLayoutProps>(
+const AppLayout = forwardRef<HTMLDivElement, AppLayoutProps>(
   ({ 
     children, 
     header, 
@@ -165,7 +183,7 @@ export const AppLayout = forwardRef<HTMLDivElement, AppLayoutProps>(
 AppLayout.displayName = 'AppLayout';
 
 // Page Layout Component
-export const PageLayout = forwardRef<HTMLDivElement, PageLayoutProps>(
+const PageLayout = forwardRef<HTMLDivElement, PageLayoutProps>(
   ({ 
     children, 
     title, 
@@ -267,7 +285,7 @@ export const PageLayout = forwardRef<HTMLDivElement, PageLayoutProps>(
 PageLayout.displayName = 'PageLayout';
 
 // Content Layout Component
-export const ContentLayout = forwardRef<HTMLDivElement, ContentLayoutProps>(
+const ContentLayout = forwardRef<HTMLDivElement, ContentLayoutProps>(
   ({ 
     children, 
     sidebar, 
@@ -315,7 +333,7 @@ export const ContentLayout = forwardRef<HTMLDivElement, ContentLayoutProps>(
 ContentLayout.displayName = 'ContentLayout';
 
 // Sidebar Layout Component
-export const SidebarLayout = forwardRef<HTMLDivElement, SidebarLayoutProps>(
+const SidebarLayout = forwardRef<HTMLDivElement, SidebarLayoutProps>(
   ({ 
     children, 
     menuItems, 
@@ -382,3 +400,144 @@ export const SidebarLayout = forwardRef<HTMLDivElement, SidebarLayoutProps>(
 );
 
 SidebarLayout.displayName = 'SidebarLayout';
+
+// Page Section Component
+const PageSection = forwardRef<HTMLDivElement, PageSectionProps>(
+  ({
+    children,
+    title,
+    subtitle,
+    background = 'transparent',
+    padding = 'lg',
+    className,
+    style
+  }, ref) => {
+    const getBackgroundStyle = () => {
+      switch (background) {
+        case 'card':
+          return {
+            backgroundColor: designTokens.colors.white,
+            borderRadius: designTokens.borderRadius.large,
+            boxShadow: designTokens.shadows.small,
+            border: `1px solid ${designTokens.colors.border}`,
+          };
+        case 'primary':
+          return {
+            backgroundColor: designTokens.colors.primary,
+            color: designTokens.colors.white,
+          };
+        case 'secondary':
+          return {
+            backgroundColor: designTokens.colors.backgroundSecondary,
+          };
+        default:
+          return {};
+      }
+    };
+
+    const getPaddingStyle = () => {
+      switch (padding) {
+        case 'none':
+          return { padding: 0 };
+        case 'sm':
+          return { padding: designTokens.spacing.sm };
+        case 'md':
+          return { padding: designTokens.spacing.md };
+        case 'lg':
+          return { padding: designTokens.spacing.lg };
+        case 'xl':
+          return { padding: designTokens.spacing.xl };
+        default:
+          return { padding: designTokens.spacing.lg };
+      }
+    };
+
+    const sectionStyle = {
+      ...getBackgroundStyle(),
+      ...getPaddingStyle(),
+      marginBottom: designTokens.spacing.lg,
+      ...style,
+    };
+
+    return (
+      <div ref={ref} className={className} style={sectionStyle}>
+        {(title || subtitle) && (
+          <div style={{ marginBottom: designTokens.spacing.md }}>
+            {title && (
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: designTokens.typography.fontSize['2xl'],
+                  fontWeight: designTokens.typography.fontWeight.semibold,
+                  color: background === 'primary' ? designTokens.colors.white : designTokens.colors.text,
+                  lineHeight: designTokens.typography.lineHeight.tight,
+                }}
+              >
+                {title}
+              </h2>
+            )}
+            {subtitle && (
+              <p
+                style={{
+                  margin: title ? `${designTokens.spacing.xs} 0 0 0` : '0',
+                  fontSize: designTokens.typography.fontSize.md,
+                  color: background === 'primary' ? designTokens.colors.white : designTokens.colors.textSecondary,
+                  lineHeight: designTokens.typography.lineHeight.normal,
+                }}
+              >
+                {subtitle}
+              </p>
+            )}
+          </div>
+        )}
+        {children}
+      </div>
+    );
+  }
+);
+
+PageSection.displayName = 'PageSection';
+
+// Page Grid Component
+const PageGrid = forwardRef<HTMLDivElement, PageGridProps>(
+  ({
+    children,
+    columns = 1,
+    gap = 'lg',
+    className,
+    style
+  }, ref) => {
+    const getGapValue = () => {
+      switch (gap) {
+        case 'sm':
+          return designTokens.spacing.sm;
+        case 'md':
+          return designTokens.spacing.md;
+        case 'lg':
+          return designTokens.spacing.lg;
+        case 'xl':
+          return designTokens.spacing.xl;
+        default:
+          return designTokens.spacing.lg;
+      }
+    };
+
+    const gridStyle = {
+      display: 'grid',
+      gridTemplateColumns: `repeat(${columns}, 1fr)`,
+      gap: getGapValue(),
+      ...style,
+    };
+
+    return (
+      <div ref={ref} className={className} style={gridStyle}>
+        {children}
+      </div>
+    );
+  }
+);
+
+PageGrid.displayName = 'PageGrid';
+
+// Export all layout components
+export { AppLayout, PageLayout, ContentLayout, SidebarLayout, PageSection, PageGrid };

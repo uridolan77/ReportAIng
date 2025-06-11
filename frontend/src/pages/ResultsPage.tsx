@@ -18,9 +18,9 @@ import { useActiveResult } from '../stores/activeResultStore';
 import { useCurrentResult } from '../hooks/useCurrentResult';
 import { QueryResult } from '../components/QueryInterface/QueryResult';
 import { DataInsightsPanel } from '../components/Insights/DataInsightsPanel';
-import { PageLayout, PageSection, PageGrid } from '../components/ui/PageLayout';
-import { Card, CardContent } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { PageLayout, PageSection, PageGrid } from '../components/core/Layouts';
+import { Card, CardContent } from '../components/core/Card';
+import { Button } from '../components/core/Button';
 
 const ResultsPageContent: React.FC = () => {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ const ResultsPageContent: React.FC = () => {
           { title: 'Home', href: '/', icon: <HomeOutlined /> },
           { title: 'Results', icon: <BarChartOutlined /> }
         ]}
-        maxWidth="lg"
+        style={{ width: '80%', margin: '0 auto' }}
       >
         <PageSection background="card" padding="lg">
           <div style={{
@@ -100,7 +100,7 @@ const ResultsPageContent: React.FC = () => {
         { title: 'Home', href: '/', icon: <HomeOutlined /> },
         { title: 'Results', icon: <BarChartOutlined /> }
       ]}
-      maxWidth="xl"
+      style={{ width: '80%', margin: '0 auto' }}
     >
       <PageGrid columns={3} gap="lg">
         <div style={{ gridColumn: 'span 2' }}>

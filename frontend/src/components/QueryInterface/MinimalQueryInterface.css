@@ -339,9 +339,10 @@
   }
 }
 
-/* Enhanced Query Interface Styles */
+/* Enhanced Query Interface Styles - Chat Box (60% width) */
 .enhanced-query-input-container {
-  max-width: 1200px;
+  max-width: 800px; /* Reduced from 1200px for chat box */
+  width: 60%; /* Chat box should be 60% width */
   margin: 0 auto;
   background: white;
   border-radius: 16px;
