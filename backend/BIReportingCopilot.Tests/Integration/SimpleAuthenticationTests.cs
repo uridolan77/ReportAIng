@@ -1,9 +1,9 @@
-using BIReportingCopilot.Core.Constants;
+using BIReportingCopilot.Core;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Infrastructure.Data;
-using BIReportingCopilot.Infrastructure.Services;
+using BIReportingCopilot.Infrastructure.Authentication;
 using BIReportingCopilot.Infrastructure.Repositories;
 using BIReportingCopilot.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;

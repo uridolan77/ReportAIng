@@ -24,12 +24,12 @@ import {
 import {
   BarChartOutlined,
   DownloadOutlined,
-  EyeOutlined,
   FilterOutlined,
-  ApiOutlined,
   RobotOutlined,
   DollarOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  EyeOutlined,
+  ApiOutlined
 } from '@ant-design/icons';
 import { llmManagementService, LLMUsageLog, LLMUsageAnalytics, LLMProviderConfig } from '../../services/llmManagementService';
 import { designTokens } from '../core/design-system';
@@ -54,10 +54,10 @@ export const UsageAnalytics: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedLog, setSelectedLog] = useState<LLMUsageLog | null>(null);
 
-  // Filters - Match dashboard date range (30 days)
+  // Filters
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
-    dayjs().subtract(30, 'days'),
-    dayjs()
+    dayjs().subtract(7, 'days'),
+    dayjs().add(1, 'day')
   ]);
   const [selectedProvider, setSelectedProvider] = useState<string | undefined>();
   const [selectedRequestType, setSelectedRequestType] = useState<string | undefined>();
@@ -87,7 +87,7 @@ export const UsageAnalytics: React.FC = () => {
       const startDate = dateRange[0].format('YYYY-MM-DD');
       const endDate = dateRange[1].format('YYYY-MM-DD');
 
-      console.log('Loading usage data for date range:', startDate, 'to', endDate);
+
 
       const [historyData, analyticsData] = await Promise.all([
         llmManagementService.getUsageHistory({
@@ -105,14 +105,11 @@ export const UsageAnalytics: React.FC = () => {
         )
       ]);
 
-      console.log('Usage history data:', historyData.length, 'records');
-      console.log('Analytics data:', analyticsData);
-
       setUsageHistory(historyData);
       setAnalytics(analyticsData);
     } catch (error) {
-      message.error('Failed to load usage analytics');
-      console.error('Error loading usage analytics:', error);
+      console.error('Error loading usage data:', error);
+      message.error('Failed to load usage data');
     } finally {
       setLoading(false);
     }
@@ -140,28 +137,7 @@ export const UsageAnalytics: React.FC = () => {
     }
   };
 
-  const handleAddSampleData = async () => {
-    try {
-      const response = await fetch('http://localhost:55243/api/LLMManagement/debug/add-sample-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to add sample data');
-      }
-
-      const result = await response.json();
-      message.success(`Sample data added successfully: ${result.count} records`);
-      await loadData(); // Refresh the data
-    } catch (error) {
-      message.error('Failed to add sample data');
-      console.error('Error adding sample data:', error);
-    }
-  };
 
   const showLogDetail = (log: LLMUsageLog) => {
     setSelectedLog(log);
@@ -335,13 +311,6 @@ export const UsageAnalytics: React.FC = () => {
         onRefresh={loadData}
         refreshLoading={loading}
         actions={[
-          {
-            key: 'add-sample',
-            label: 'Add Sample Data',
-            icon: <ApiOutlined />,
-            onClick: handleAddSampleData,
-            type: 'default',
-          },
           {
             key: 'export',
             label: 'Export Data',

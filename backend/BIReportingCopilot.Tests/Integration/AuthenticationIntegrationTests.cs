@@ -1,8 +1,8 @@
-using BIReportingCopilot.Core.Constants;
+using BIReportingCopilot.Core;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
-using BIReportingCopilot.Infrastructure.Services;
+using BIReportingCopilot.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;

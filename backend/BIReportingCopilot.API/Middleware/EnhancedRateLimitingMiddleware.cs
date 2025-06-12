@@ -99,6 +99,13 @@ public class EnhancedRateLimitingMiddleware
     private bool ShouldSkipRateLimiting(HttpContext context)
     {
         var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
+        var method = context.Request.Method.ToUpperInvariant();
+
+        // Skip CORS preflight requests (OPTIONS)
+        if (method == "OPTIONS")
+        {
+            return true;
+        }
 
         // Skip health checks and monitoring endpoints
         var skipPaths = new[]

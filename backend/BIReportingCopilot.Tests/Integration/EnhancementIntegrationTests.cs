@@ -3,7 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Logging;
 using Xunit;
-using BIReportingCopilot.Infrastructure.Services;
+using BIReportingCopilot.Infrastructure.Authentication;
 using BIReportingCopilot.Infrastructure.Security;
 using BIReportingCopilot.Infrastructure.Performance;
 using BIReportingCopilot.Core.Interfaces;
