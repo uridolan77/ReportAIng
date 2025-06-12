@@ -305,8 +305,6 @@ describe('Performance Benchmark Tests', () => {
         value: Math.random() * 100,
       }));
 
-      const startTime = Date.now();
-
       // In a real test, this would render a VirtualList component
       // For now, we'll simulate the performance characteristics
       const simulatedRenderTime = 50; // Virtual scrolling should be very fast

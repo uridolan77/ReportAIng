@@ -6,7 +6,7 @@
 
 import React, { forwardRef } from 'react';
 import { Input } from 'antd';
-import { designTokens } from './design-system';
+// Removed unused import
 
 const { Search } = Input;
 
@@ -16,7 +16,7 @@ export const SearchBox = forwardRef<any, any>((props, ref) => (
 ));
 
 export const FilterPanel = forwardRef<any, any>((props, ref) => (
-  <div ref={ref} style={{ padding: designTokens.spacing.md, backgroundColor: designTokens.colors.backgroundSecondary, borderRadius: designTokens.borderRadius.medium }}>
+  <div ref={ref} style={{ padding: '16px', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
     Filter Panel (To be implemented)
   </div>
 ));

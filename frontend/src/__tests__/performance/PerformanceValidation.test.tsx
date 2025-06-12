@@ -96,7 +96,7 @@ describe('Performance Validation Tests', () => {
 
     it('should implement code splitting correctly', async () => {
       // Verify that lazy-loaded components are properly split
-      const { container } = render(
+      render(
         <TestWrapper>
           <App />
         </TestWrapper>
@@ -104,12 +104,12 @@ describe('Performance Validation Tests', () => {
 
       // Wait for initial render
       await waitFor(() => {
-        expect(container.firstChild).toBeInTheDocument();
+        expect(screen.getByText(/BI Reporting/i)).toBeInTheDocument();
       });
 
       // Verify that not all components are loaded immediately
       // This is a simplified test - in reality, we'd check network requests
-      expect(container.querySelector('[data-testid="lazy-component"]')).toBeNull();
+      expect(screen.queryByTestId('lazy-component')).toBeNull();
     });
   });
 
@@ -199,19 +199,12 @@ describe('Performance Validation Tests', () => {
 
   describe('Virtual Scrolling', () => {
     it('should handle large datasets efficiently', async () => {
-      // Mock a large dataset
-      const largeDataset = Array.from({ length: 10000 }, (_, i) => ({
-        id: i,
-        name: `Item ${i}`,
-        value: Math.random() * 100,
-      }));
-
       const startTime = Date.now();
 
       // This would test virtual scrolling performance
-      // In a real test, we'd render a VirtualList component with the large dataset
+      // In a real test, we'd render a VirtualList component with a large dataset
       const renderTime = Date.now() - startTime;
-      
+
       // Virtual scrolling should handle large datasets quickly
       expect(renderTime).toBeLessThan(500); // Should render in under 500ms
     });

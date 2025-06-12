@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
-using BIReportingCopilot.Core.Constants;
+using static BIReportingCopilot.Core.ApplicationConstants;
+using ErrorAnalysis = BIReportingCopilot.Core.Interfaces.ErrorAnalysis;
 
 namespace BIReportingCopilot.API.Controllers;
 

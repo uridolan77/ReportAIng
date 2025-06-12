@@ -27,7 +27,7 @@ import {
 } from '@ant-design/icons';
 import { QuerySuggestion, SuggestionCategory } from '../../../services/querySuggestionService';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface SuggestionAnalyticsProps {
   suggestions: QuerySuggestion[];

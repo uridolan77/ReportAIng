@@ -160,7 +160,6 @@ describe('Dashboard Workflow Integration Tests', () => {
             
             // Test drag and drop functionality
             const chartWidget = screen.getByTestId('widget-sales-trend');
-            const metricWidget = screen.getByTestId('widget-total-users');
             
             // Simulate drag and drop (simplified)
             await user.pointer([
@@ -236,6 +235,8 @@ describe('Dashboard Workflow Integration Tests', () => {
             
             await waitFor(() => {
               expect(screen.getByText('Dashboard Viewer')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.queryByText('Add Widget')).not.toBeInTheDocument();
             });
           });
@@ -261,6 +262,8 @@ describe('Dashboard Workflow Integration Tests', () => {
             
             await waitFor(() => {
               expect(screen.getByText('15,420')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('+5.2%')).toBeInTheDocument();
             });
           });
@@ -339,6 +342,8 @@ describe('Dashboard Workflow Integration Tests', () => {
             
             await waitFor(() => {
               expect(screen.getByText('Monthly Sales')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Total Revenue')).toBeInTheDocument();
             });
           });

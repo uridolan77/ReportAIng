@@ -18,7 +18,6 @@ import {
   Input,
   Select,
   Tag,
-  List,
   Tooltip
 } from 'antd';
 import {
@@ -32,7 +31,7 @@ import {
   EyeOutlined
 } from '@ant-design/icons';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
 interface Dashboard {
@@ -86,15 +85,13 @@ export const DashboardManager: React.FC = () => {
 
   // Real dashboards - loaded from API
   const [realDashboards, setRealDashboards] = useState<Dashboard[]>([]);
-  const [loadingReal, setLoadingReal] = useState(true);
-  const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [, setLoadingReal] = useState(true);
 
   // Load real dashboards on component mount
   React.useEffect(() => {
     const loadRealDashboards = async () => {
       try {
         setLoadingReal(true);
-        setDashboardError(null);
 
         // TODO: Replace with actual dashboard API calls
         // const response = await dashboardApi.getUserDashboards();
@@ -107,7 +104,6 @@ export const DashboardManager: React.FC = () => {
 
       } catch (err) {
         console.error('Failed to load dashboards:', err);
-        setDashboardError('Failed to load dashboards. Please check your connection.');
       } finally {
         setLoadingReal(false);
       }

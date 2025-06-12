@@ -1,89 +1,37 @@
+import type { StorybookConfig } from '@storybook/react-webpack5';
+
+import { join, dirname } from "path"
+
 /**
- * Storybook Main Configuration
- * 
- * Comprehensive Storybook setup for component library documentation
- * with TypeScript, CSS support, and modern React features.
- */
-
-import type { StorybookConfig } from '@storybook/react-vite';
-import { mergeConfig } from 'vite';
-
+* This function is used to resolve the absolute path of a package.
+* It is needed in projects that use Yarn PnP or are set up within a monorepo.
+*/
+function getAbsolutePath(value: string): any {
+  return dirname(require.resolve(join(value, 'package.json')))
+}
 const config: StorybookConfig = {
-  stories: [
-    '../src/**/*.stories.@(js|jsx|ts|tsx|mdx)',
-    '../src/**/*.story.@(js|jsx|ts|tsx)',
-    '../docs/**/*.stories.@(js|jsx|ts|tsx|mdx)',
+  "stories": [
+    "../src/**/*.mdx",
+    "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"
   ],
-  
-  addons: [
-    '@storybook/addon-essentials',
-    '@storybook/addon-interactions',
-    '@storybook/addon-links',
-    '@storybook/addon-docs',
-    '@storybook/addon-controls',
-    '@storybook/addon-viewport',
-    '@storybook/addon-backgrounds',
-    '@storybook/addon-measure',
-    '@storybook/addon-outline',
-    '@storybook/addon-a11y',
-    '@storybook/addon-design-tokens',
+  "addons": [
+    getAbsolutePath('@storybook/preset-create-react-app'),
+    getAbsolutePath('@storybook/addon-docs'),
+    getAbsolutePath('@storybook/addon-onboarding'),
+    getAbsolutePath('@storybook/addon-essentials'),
+    getAbsolutePath('@storybook/addon-interactions'),
+    getAbsolutePath('@storybook/addon-controls'),
+    getAbsolutePath('@storybook/addon-actions'),
+    getAbsolutePath('@storybook/addon-viewport'),
+    getAbsolutePath('@storybook/addon-backgrounds'),
+    getAbsolutePath('@storybook/addon-a11y')
   ],
-  
-  framework: {
-    name: '@storybook/react-vite',
-    options: {},
+  "framework": {
+    "name": getAbsolutePath('@storybook/react-webpack5'),
+    "options": {}
   },
-  
-  typescript: {
-    check: false,
-    reactDocgen: 'react-docgen-typescript',
-    reactDocgenTypescriptOptions: {
-      shouldExtractLiteralValuesFromEnum: true,
-      propFilter: (prop) => (prop.parent ? !/node_modules/.test(prop.parent.fileName) : true),
-    },
-  },
-  
-  features: {
-    buildStoriesJson: true,
-    storyStoreV7: true,
-  },
-  
-  docs: {
-    autodocs: 'tag',
-    defaultName: 'Documentation',
-  },
-  
-  async viteFinal(config) {
-    return mergeConfig(config, {
-      define: {
-        global: 'globalThis',
-      },
-      resolve: {
-        alias: {
-          '@': '/src',
-          '@components': '/src/components',
-          '@pages': '/src/pages',
-          '@hooks': '/src/hooks',
-          '@stores': '/src/stores',
-          '@utils': '/src/utils',
-          '@test-utils': '/src/test-utils',
-        },
-      },
-      css: {
-        preprocessorOptions: {
-          scss: {
-            additionalData: `@import "/src/styles/variables.scss";`,
-          },
-        },
-      },
-    });
-  },
-  
-  staticDirs: ['../public'],
-  
-  core: {
-    disableTelemetry: true,
-  },
+  "staticDirs": [
+    "..\\public"
+  ]
 };
-
 export default config;

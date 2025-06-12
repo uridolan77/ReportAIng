@@ -7,15 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { Space, Button } from 'antd';
-import {
-  ExpandAltOutlined,
-  CompressOutlined,
-  DownOutlined,
-  UpOutlined
-} from '@ant-design/icons';
-import { DatabaseStatusIndicator } from './DatabaseStatusIndicator';
-import { CompactLLMIndicator } from '../AI/CompactLLMIndicator';
+// Removed unused imports - functionality simplified
 import { CompactUserPanel } from '../AI/CompactUserPanel';
 
 interface CornerStatusPanelProps {

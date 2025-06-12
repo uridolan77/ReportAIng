@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, Input, Typography, Space, Card, Tooltip, Spin } from 'antd';
+import { Button, Input, Typography, Card, Spin } from 'antd';
 import {
   SendOutlined,
   StarOutlined,
-  HistoryOutlined,
   BulbOutlined,
   LoadingOutlined
 } from '@ant-design/icons';

@@ -82,7 +82,11 @@ describe('Cross-Component Interactions Integration Tests', () => {
             
             await waitFor(() => {
               expect(screen.getByText('Query Results')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Product A')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Product B')).toBeInTheDocument();
             });
           });
@@ -96,6 +100,8 @@ describe('Cross-Component Interactions Integration Tests', () => {
             
             await waitFor(() => {
               expect(screen.getByText('Data Visualization')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Current Query Data Available')).toBeInTheDocument();
             });
             
@@ -170,7 +176,11 @@ describe('Cross-Component Interactions Integration Tests', () => {
             
             await waitFor(() => {
               expect(screen.getByTestId('chart-container')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Product A')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Product B')).toBeInTheDocument();
             });
           });
@@ -335,6 +345,8 @@ describe('Cross-Component Interactions Integration Tests', () => {
             
             await waitFor(() => {
               expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Error Boundary')).toBeInTheDocument();
             });
             
@@ -375,6 +387,8 @@ describe('Cross-Component Interactions Integration Tests', () => {
             
             await waitFor(() => {
               expect(screen.queryByTestId('advanced-settings-modal')).not.toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByTestId('settings-modal')).toBeInTheDocument();
             });
           });
@@ -385,13 +399,16 @@ describe('Cross-Component Interactions Integration Tests', () => {
             
             // Test tab navigation
             await user.tab();
-            expect(document.activeElement).toHaveAttribute('data-testid', 'sidebar-toggle');
-            
+            const sidebarToggle = screen.getByTestId('sidebar-toggle');
+            expect(sidebarToggle).toHaveFocus();
+
             await user.tab();
-            expect(document.activeElement).toHaveAttribute('data-testid', 'theme-toggle');
-            
+            const themeToggle = screen.getByTestId('theme-toggle');
+            expect(themeToggle).toHaveFocus();
+
             await user.tab();
-            expect(document.activeElement).toHaveAttribute('role', 'link');
+            const linkElement = screen.getByRole('link');
+            expect(linkElement).toHaveFocus();
             
             // Test keyboard shortcuts
             await user.keyboard('{Control>}k{/Control}');
@@ -474,8 +491,14 @@ describe('Cross-Component Interactions Integration Tests', () => {
             // Verify AI recommendations based on data structure
             await waitFor(() => {
               expect(screen.getByText('Recommended Charts')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Grouped Bar Chart')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Line Chart')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Heatmap')).toBeInTheDocument();
             });
             

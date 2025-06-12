@@ -15,20 +15,17 @@ public class LLMAwareAIService : ILLMAwareAIService
 {
     private readonly IAIService _baseAIService;
     private readonly ILLMManagementService _llmManagementService;
-    private readonly IAIProviderFactory _providerFactory;
     private readonly ILogger<LLMAwareAIService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public LLMAwareAIService(
         IAIService baseAIService,
         ILLMManagementService llmManagementService,
-        IAIProviderFactory providerFactory,
         ILogger<LLMAwareAIService> logger,
         IHttpContextAccessor httpContextAccessor)
     {
         _baseAIService = baseAIService;
         _llmManagementService = llmManagementService;
-        _providerFactory = providerFactory;
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
     }
@@ -57,17 +54,17 @@ public class LLMAwareAIService : ILLMAwareAIService
             if (model == null)
             {
                 _logger.LogWarning("No suitable model found for use case {UseCase}. Falling back to base AI service.", useCase);
-                return await _baseAIService.GenerateCompletionAsync(prompt, new AIOptions(), cancellationToken);
+                // Fallback to base AI service for SQL generation
+                return await _baseAIService.GenerateSQLAsync(prompt, cancellationToken);
             }
 
-            // Get the provider
-            var provider = _providerFactory.GetProvider(model.ProviderId);
-            
-            // Create AI options from model configuration
-            var options = CreateAIOptionsFromModel(model);
-            
-            // Generate completion
-            var response = await provider.GenerateCompletionAsync(prompt, options);
+            // For now, delegate to base service since we don't have direct provider access
+            // TODO: Implement provider-specific logic when provider factory circular dependency is resolved
+            _logger.LogInformation("Using model {ModelId} from provider {ProviderId} for {UseCase}",
+                model.ModelId, model.ProviderId, useCase);
+
+            // Generate completion using base service
+            var response = await _baseAIService.GenerateSQLAsync(prompt, cancellationToken);
             
             stopwatch.Stop();
 
@@ -124,14 +121,14 @@ public class LLMAwareAIService : ILLMAwareAIService
                 Timestamp = DateTime.UtcNow
             });
 
-            // Fallback to base service
-            return await _baseAIService.GenerateCompletionAsync(prompt, new AIOptions(), cancellationToken);
+            // Fallback to base AI service
+            return await _baseAIService.GenerateSQLAsync(prompt, cancellationToken);
         }
     }
 
     public async IAsyncEnumerable<StreamingResponse> GenerateSQLStreamWithManagedModelAsync(
-        string prompt, 
-        SchemaMetadata? schema = null, 
+        string prompt,
+        SchemaMetadata? schema = null,
         QueryContext? context = null,
         string? providerId = null,
         string? modelId = null,
@@ -139,33 +136,47 @@ public class LLMAwareAIService : ILLMAwareAIService
     {
         var requestId = Guid.NewGuid().ToString();
         var stopwatch = Stopwatch.StartNew();
-        
-        try
-        {
-            // Get the best model for SQL generation
-            var model = await GetModelForRequestAsync("SQL", providerId, modelId);
-            if (model == null)
-            {
-                _logger.LogWarning("No suitable model found for SQL generation. Falling back to base AI service.");
-                await foreach (var response in _baseAIService.GenerateSQLStreamAsync(prompt, schema, context, cancellationToken))
-                {
-                    yield return response;
-                }
-                yield break;
-            }
 
-            // For now, use the base service streaming but log the usage
-            // TODO: Implement provider-specific streaming
-            var fullResponse = "";
+        // Get the best model for SQL generation
+        var model = await GetModelForRequestAsync("SQL", providerId, modelId);
+        if (model == null)
+        {
+            _logger.LogWarning("No suitable model found for SQL generation. Falling back to base AI service.");
             await foreach (var response in _baseAIService.GenerateSQLStreamAsync(prompt, schema, context, cancellationToken))
             {
-                fullResponse += response.Content;
                 yield return response;
             }
+            yield break;
+        }
 
-            stopwatch.Stop();
+        IAsyncEnumerable<StreamingResponse> streamingSource;
 
-            // Log usage after streaming completes
+        try
+        {
+            // For now, use the base service streaming but log the usage
+            // TODO: Implement provider-specific streaming
+            streamingSource = _baseAIService.GenerateSQLStreamAsync(prompt, schema, context, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in managed streaming SQL generation");
+
+            // Fallback to base service
+            streamingSource = _baseAIService.GenerateSQLStreamAsync(prompt, schema, context, cancellationToken);
+        }
+
+        var fullResponse = "";
+        await foreach (var response in streamingSource)
+        {
+            fullResponse += response.Content;
+            yield return response;
+        }
+
+        stopwatch.Stop();
+
+        // Log usage after streaming completes
+        try
+        {
             await LogUsageAsync(new LLMUsageLog
             {
                 RequestId = requestId,
@@ -192,13 +203,7 @@ public class LLMAwareAIService : ILLMAwareAIService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in managed streaming SQL generation");
-            
-            // Fallback to base service
-            await foreach (var response in _baseAIService.GenerateSQLStreamAsync(prompt, schema, context, cancellationToken))
-            {
-                yield return response;
-            }
+            _logger.LogError(ex, "Error logging usage for streaming SQL generation");
         }
     }
 
@@ -236,9 +241,12 @@ public class LLMAwareAIService : ILLMAwareAIService
         {
             Temperature = model.Temperature,
             MaxTokens = model.MaxTokens,
-            TopP = model.TopP,
             FrequencyPenalty = model.FrequencyPenalty,
-            PresencePenalty = model.PresencePenalty
+            PresencePenalty = model.PresencePenalty,
+            AdditionalParameters = new Dictionary<string, object>
+            {
+                { "top_p", model.TopP }
+            }
         };
     }
 
@@ -299,9 +307,11 @@ public class LLMAwareAIService : ILLMAwareAIService
 
     #region Delegate to Base Service (IAIService implementation)
 
-    public Task<string> GenerateCompletionAsync(string prompt, AIOptions options, CancellationToken cancellationToken = default)
+    // Note: GenerateCompletionAsync is not part of IAIService interface, so we don't implement it here
+
+    public Task<string> GenerateSQLAsync(string prompt)
     {
-        return _baseAIService.GenerateCompletionAsync(prompt, options, cancellationToken);
+        return GenerateSQLWithManagedModelAsync(prompt);
     }
 
     public Task<string> GenerateSQLAsync(string prompt, CancellationToken cancellationToken = default)
@@ -309,14 +319,29 @@ public class LLMAwareAIService : ILLMAwareAIService
         return GenerateSQLWithManagedModelAsync(prompt, cancellationToken: cancellationToken);
     }
 
-    public Task<string> GenerateInsightsAsync(string data, CancellationToken cancellationToken = default)
+    public Task<string> GenerateInsightAsync(string query, object[] data)
     {
-        return GenerateInsightsWithManagedModelAsync(data, cancellationToken: cancellationToken);
+        return _baseAIService.GenerateInsightAsync(query, data);
     }
 
-    public Task<double> CalculateConfidenceScoreAsync(string query, string sql, CancellationToken cancellationToken = default)
+    public Task<string> GenerateVisualizationConfigAsync(string query, ColumnMetadata[] columns, object[] data)
     {
-        return _baseAIService.CalculateConfidenceScoreAsync(query, sql, cancellationToken);
+        return _baseAIService.GenerateVisualizationConfigAsync(query, columns, data);
+    }
+
+    public Task<double> CalculateConfidenceScoreAsync(string naturalLanguageQuery, string generatedSQL)
+    {
+        return _baseAIService.CalculateConfidenceScoreAsync(naturalLanguageQuery, generatedSQL);
+    }
+
+    public Task<string[]> GenerateQuerySuggestionsAsync(string context, SchemaMetadata schema)
+    {
+        return _baseAIService.GenerateQuerySuggestionsAsync(context, schema);
+    }
+
+    public Task<bool> ValidateQueryIntentAsync(string naturalLanguageQuery)
+    {
+        return _baseAIService.ValidateQueryIntentAsync(naturalLanguageQuery);
     }
 
     public IAsyncEnumerable<StreamingResponse> GenerateSQLStreamAsync(string prompt, SchemaMetadata? schema = null, QueryContext? context = null, CancellationToken cancellationToken = default)
@@ -324,9 +349,22 @@ public class LLMAwareAIService : ILLMAwareAIService
         return GenerateSQLStreamWithManagedModelAsync(prompt, schema, context, cancellationToken: cancellationToken);
     }
 
-    public Task<string> GenerateCompletionAsync(string prompt, AIOptions options)
+    public IAsyncEnumerable<StreamingResponse> GenerateInsightStreamAsync(string query, object[] data, AnalysisContext? context = null, CancellationToken cancellationToken = default)
     {
-        return GenerateCompletionAsync(prompt, options, CancellationToken.None);
+        return _baseAIService.GenerateInsightStreamAsync(query, data, context, cancellationToken);
+    }
+
+    public IAsyncEnumerable<StreamingResponse> GenerateExplanationStreamAsync(string sql, StreamingQueryComplexity complexity = StreamingQueryComplexity.Medium, CancellationToken cancellationToken = default)
+    {
+        return _baseAIService.GenerateExplanationStreamAsync(sql, complexity, cancellationToken);
+    }
+
+    // Note: GenerateCompletionAsync is not part of IAIService interface
+    // This method is provided for compatibility - delegates to base service
+    public async Task<string> GenerateCompletionAsync(string prompt, AIOptions options)
+    {
+        // Delegate to base service SQL generation as a fallback
+        return await _baseAIService.GenerateSQLAsync(prompt);
     }
 
     #endregion

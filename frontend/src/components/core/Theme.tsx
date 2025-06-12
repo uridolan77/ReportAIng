@@ -6,7 +6,7 @@
 
 import React, { forwardRef } from 'react';
 import { Switch } from 'antd';
-import { designTokens } from './design-system';
+// Removed unused import
 
 // Re-export existing theme provider
 export { ThemeProvider } from '../../contexts/ThemeContext';

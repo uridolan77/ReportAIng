@@ -72,9 +72,9 @@ public class ConfigurableProviderWrapper : IConfigurableAIProvider
         return _baseProvider.GenerateCompletionAsync(prompt, options, cancellationToken);
     }
 
-    public async IAsyncEnumerable<StreamingResponse> GenerateStreamingCompletionAsync(
-        string prompt, 
-        AIOptions options, 
+    public async IAsyncEnumerable<StreamingResponse> GenerateCompletionStreamAsync(
+        string prompt,
+        AIOptions options,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (!IsConfigured)
@@ -95,6 +95,17 @@ public class ConfigurableProviderWrapper : IConfigurableAIProvider
             // Fallback to non-streaming
             var result = await _baseProvider.GenerateCompletionAsync(prompt, options, cancellationToken);
             yield return new StreamingResponse { Content = result, IsComplete = true };
+        }
+    }
+
+    public async IAsyncEnumerable<StreamingResponse> GenerateStreamingCompletionAsync(
+        string prompt,
+        AIOptions options,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await foreach (var response in GenerateCompletionStreamAsync(prompt, options, cancellationToken))
+        {
+            yield return response;
         }
     }
 

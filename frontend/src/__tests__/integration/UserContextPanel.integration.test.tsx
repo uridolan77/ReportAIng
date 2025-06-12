@@ -358,16 +358,17 @@ describe('UserContextPanel Integration Tests', () => {
 
       // Test keyboard navigation on collapse panels
       const buttons = screen.getAllByRole('button');
-      if (buttons.length > 0) {
-        buttons[0].focus();
-        expect(document.activeElement).toBe(buttons[0]);
+      expect(buttons.length).toBeGreaterThan(0);
 
-        // Simulate Enter key press
-        fireEvent.keyDown(buttons[0], { key: 'Enter', code: 'Enter' });
-        
-        // Should handle keyboard interaction
-        expect(buttons[0]).toBeInTheDocument();
-      }
+      const firstButton = buttons[0];
+      firstButton.focus();
+      expect(firstButton).toHaveFocus();
+
+      // Simulate Enter key press
+      fireEvent.keyDown(firstButton, { key: 'Enter', code: 'Enter' });
+
+      // Should handle keyboard interaction
+      expect(firstButton).toBeInTheDocument();
     });
   });
 });

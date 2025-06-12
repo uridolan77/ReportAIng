@@ -48,6 +48,8 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import dayjs, { type Dayjs } from 'dayjs';
+import { useMemoryOptimization } from '../../hooks/useMemoryOptimization';
+import { IntelligentCodeSplitter, RuntimeBundleAnalyzer } from '../../utils/bundleOptimization';
 import './PerformanceMonitoringDashboard.css';
 
 const { Title, Text } = Typography;
@@ -111,6 +113,27 @@ export const PerformanceMonitoringDashboard: React.FC = () => {
     dayjs()
   ]);
 
+  // Advanced performance optimization hooks
+  const {
+    memoryMetrics,
+    performCleanup,
+    detectMemoryLeaks,
+    getMemoryMetrics
+  } = useMemoryOptimization({
+    enableAutoCleanup: true,
+    enableLeakDetection: true,
+    onMemoryWarning: (metrics) => {
+      console.warn('Memory warning:', metrics);
+    },
+    onMemoryLeak: (leakInfo) => {
+      console.error('Memory leak detected:', leakInfo);
+    }
+  });
+
+  // Bundle optimization instances
+  const [bundleStats, setBundleStats] = useState<any>(null);
+  const [optimizationRecommendations, setOptimizationRecommendations] = useState<any[]>([]);
+
   const loadPerformanceData = useCallback(async () => {
     setLoading(true);
     try {
@@ -150,12 +173,24 @@ export const PerformanceMonitoringDashboard: React.FC = () => {
         setQueryPerformance(queryData.performance || []);
       }
 
+      // Load advanced performance data
+      loadAdvancedPerformanceData();
+
     } catch (error) {
       console.error('❌ Error loading performance data:', error);
     } finally {
       setLoading(false);
     }
   }, [timeRange]);
+
+  const loadAdvancedPerformanceData = useCallback(() => {
+    // Get bundle optimization stats
+    const splitter = IntelligentCodeSplitter.getInstance();
+    const analyzer = RuntimeBundleAnalyzer.getInstance();
+
+    setBundleStats(splitter.getStats());
+    setOptimizationRecommendations(analyzer.getOptimizationRecommendations());
+  }, []);
 
   useEffect(() => {
     loadPerformanceData();
@@ -525,10 +560,114 @@ export const PerformanceMonitoringDashboard: React.FC = () => {
               </Col>
             </Row>
           </TabPane>
+
+          <TabPane tab={<span><CloudOutlined />Memory & Bundle</span>} key="advanced">
+            {renderAdvancedPerformanceTab()}
+          </TabPane>
         </Tabs>
       </Spin>
     </div>
   );
+
+  // Render advanced performance tab
+  function renderAdvancedPerformanceTab() {
+    return (
+      <Space direction="vertical" style={{ width: '100%' }} size="large">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={12}>
+            <Card title="Memory Metrics" size="small">
+              {memoryMetrics ? (
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Statistic
+                    title="Used JS Heap Size"
+                    value={(memoryMetrics.usedJSHeapSize / 1024 / 1024).toFixed(2)}
+                    suffix="MB"
+                    prefix={<CloudOutlined />}
+                  />
+                  <Statistic
+                    title="Total JS Heap Size"
+                    value={(memoryMetrics.totalJSHeapSize / 1024 / 1024).toFixed(2)}
+                    suffix="MB"
+                  />
+                  <Statistic
+                    title="Component Count"
+                    value={memoryMetrics.componentCount}
+                    prefix={<ThunderboltOutlined />}
+                  />
+                  <Statistic
+                    title="Event Listeners"
+                    value={memoryMetrics.listenerCount}
+                  />
+                </Space>
+              ) : (
+                <Text type="secondary">Memory metrics not available</Text>
+              )}
+            </Card>
+          </Col>
+
+          <Col xs={24} lg={12}>
+            <Card title="Bundle Statistics" size="small">
+              {bundleStats ? (
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Statistic
+                    title="Loaded Chunks"
+                    value={bundleStats.loadedChunks.length}
+                    prefix={<DatabaseOutlined />}
+                  />
+                  <Statistic
+                    title="Preload Queue"
+                    value={bundleStats.preloadQueueSize}
+                  />
+                  <Statistic
+                    title="Visited Routes"
+                    value={bundleStats.userBehavior.visitedRoutes.length}
+                  />
+                  <Statistic
+                    title="Avg Time Spent"
+                    value={bundleStats.userBehavior.averageTimeSpent.toFixed(0)}
+                    suffix="ms"
+                  />
+                </Space>
+              ) : (
+                <Text type="secondary">Bundle statistics not available</Text>
+              )}
+            </Card>
+          </Col>
+        </Row>
+
+        <Row gutter={[16, 16]}>
+          <Col xs={24}>
+            <Card title="Performance Actions" size="small">
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<ReloadOutlined />}
+                  onClick={performCleanup}
+                >
+                  Force Memory Cleanup
+                </Button>
+                <Button
+                  icon={<WarningOutlined />}
+                  onClick={detectMemoryLeaks}
+                >
+                  Detect Memory Leaks
+                </Button>
+                <Button
+                  icon={<CloudOutlined />}
+                  onClick={() => {
+                    const metrics = getMemoryMetrics();
+                    console.log('Current memory metrics:', metrics);
+                  }}
+                >
+                  Log Memory Metrics
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+        </Row>
+      </Space>
+    );
+  }
 };
 
 export default PerformanceMonitoringDashboard;

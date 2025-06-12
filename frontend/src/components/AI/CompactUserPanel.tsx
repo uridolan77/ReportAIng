@@ -5,14 +5,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Tooltip, 
-  Space, 
-  Typography, 
-  Button, 
-  Modal, 
-  Avatar, 
-  Tag, 
+import {
+  Space,
+  Typography,
+  Button,
+  Modal,
+  Avatar,
+  Tag,
   Dropdown,
   Badge
 } from 'antd';

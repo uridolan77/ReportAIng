@@ -113,6 +113,8 @@ describe('Query Workflow Integration Tests', () => {
           await fw.executeStep('Verify Query Results', async () => {
             await waitFor(() => {
               expect(screen.getByText('Query executed successfully')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('3 rows returned')).toBeInTheDocument();
             });
 
@@ -295,6 +297,8 @@ describe('Query Workflow Integration Tests', () => {
           await fw.executeStep('Verify Error Display', async () => {
             await waitFor(() => {
               expect(screen.getByText(/query execution failed/i)).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText(/sql syntax error/i)).toBeInTheDocument();
             });
 
@@ -397,6 +401,8 @@ describe('Query Workflow Integration Tests', () => {
           await fw.executeStep('Verify History Display', async () => {
             await waitFor(() => {
               expect(screen.getByText('Active Users')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('SELECT * FROM users WHERE active = 1')).toBeInTheDocument();
             });
           });
@@ -427,6 +433,8 @@ describe('Query Workflow Integration Tests', () => {
 
             await waitFor(() => {
               expect(screen.getByText('Show inactive users')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Count users by registration date')).toBeInTheDocument();
             });
           });
@@ -501,10 +509,12 @@ describe('Query Workflow Integration Tests', () => {
             
             // Tab through interactive elements
             await user.tab();
-            expect(document.activeElement).toHaveAttribute('role', 'button');
-            
+            const firstButton = screen.getByRole('button');
+            expect(firstButton).toHaveFocus();
+
             await user.tab();
-            expect(document.activeElement).toHaveAttribute('type', 'text');
+            const textInput = screen.getByRole('textbox');
+            expect(textInput).toHaveFocus();
           });
 
           // Step 3: Test screen reader compatibility

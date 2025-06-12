@@ -17,18 +17,15 @@ public class AIProviderFactory : IAIProviderFactory
     private readonly AIServiceConfiguration _config;
     private readonly ILogger<AIProviderFactory> _logger;
     private readonly Dictionary<string, Func<IAIProvider>> _providerFactories;
-    private readonly ILLMManagementService _llmManagementService;
 
     public AIProviderFactory(
         IServiceProvider serviceProvider,
         IOptions<AIServiceConfiguration> config,
-        ILogger<AIProviderFactory> logger,
-        ILLMManagementService llmManagementService)
+        ILogger<AIProviderFactory> logger)
     {
         _serviceProvider = serviceProvider;
         _config = config.Value;
         _logger = logger;
-        _llmManagementService = llmManagementService;
 
         _providerFactories = new Dictionary<string, Func<IAIProvider>>(StringComparer.OrdinalIgnoreCase)
         {
@@ -41,24 +38,30 @@ public class AIProviderFactory : IAIProviderFactory
     {
         try
         {
-            // Get the default provider from LLM Management system
-            var providers = _llmManagementService.GetProvidersAsync().GetAwaiter().GetResult();
-            var defaultProvider = providers.FirstOrDefault(p => p.IsDefault && p.IsEnabled);
+            // Try to get LLM Management service (lazy loading to avoid circular dependency)
+            var llmManagementService = _serviceProvider.GetService<ILLMManagementService>();
 
-            if (defaultProvider != null)
+            if (llmManagementService != null)
             {
-                _logger.LogInformation("Using LLM managed provider: {ProviderName} ({ProviderId})",
-                    defaultProvider.Name, defaultProvider.ProviderId);
-                return GetManagedProvider(defaultProvider);
-            }
+                // Get the default provider from LLM Management system
+                var providers = llmManagementService.GetProvidersAsync().GetAwaiter().GetResult();
+                var defaultProvider = providers.FirstOrDefault(p => p.IsDefault && p.IsEnabled);
 
-            // Fallback to first enabled provider
-            var enabledProvider = providers.FirstOrDefault(p => p.IsEnabled);
-            if (enabledProvider != null)
-            {
-                _logger.LogInformation("Using first enabled LLM provider: {ProviderName} ({ProviderId})",
-                    enabledProvider.Name, enabledProvider.ProviderId);
-                return GetManagedProvider(enabledProvider);
+                if (defaultProvider != null)
+                {
+                    _logger.LogInformation("Using LLM managed provider: {ProviderName} ({ProviderId})",
+                        defaultProvider.Name, defaultProvider.ProviderId);
+                    return GetManagedProvider(defaultProvider);
+                }
+
+                // Fallback to first enabled provider
+                var enabledProvider = providers.FirstOrDefault(p => p.IsEnabled);
+                if (enabledProvider != null)
+                {
+                    _logger.LogInformation("Using first enabled LLM provider: {ProviderName} ({ProviderId})",
+                        enabledProvider.Name, enabledProvider.ProviderId);
+                    return GetManagedProvider(enabledProvider);
+                }
             }
 
             _logger.LogWarning("No enabled providers found in LLM Management system. Falling back to configuration-based provider.");
@@ -102,17 +105,23 @@ public class AIProviderFactory : IAIProviderFactory
 
         try
         {
-            // First try to get from LLM Management system
-            var providers = _llmManagementService.GetProvidersAsync().GetAwaiter().GetResult();
-            var managedProvider = providers.FirstOrDefault(p =>
-                p.ProviderId.Equals(providerName, StringComparison.OrdinalIgnoreCase) ||
-                p.Name.Equals(providerName, StringComparison.OrdinalIgnoreCase));
+            // Try to get LLM Management service (lazy loading to avoid circular dependency)
+            var llmManagementService = _serviceProvider.GetService<ILLMManagementService>();
 
-            if (managedProvider != null && managedProvider.IsEnabled)
+            if (llmManagementService != null)
             {
-                _logger.LogInformation("Using LLM managed provider: {ProviderName} ({ProviderId})",
-                    managedProvider.Name, managedProvider.ProviderId);
-                return GetManagedProvider(managedProvider);
+                // First try to get from LLM Management system
+                var providers = llmManagementService.GetProvidersAsync().GetAwaiter().GetResult();
+                var managedProvider = providers.FirstOrDefault(p =>
+                    p.ProviderId.Equals(providerName, StringComparison.OrdinalIgnoreCase) ||
+                    p.Name.Equals(providerName, StringComparison.OrdinalIgnoreCase));
+
+                if (managedProvider != null && managedProvider.IsEnabled)
+                {
+                    _logger.LogInformation("Using LLM managed provider: {ProviderName} ({ProviderId})",
+                        managedProvider.Name, managedProvider.ProviderId);
+                    return GetManagedProvider(managedProvider);
+                }
             }
         }
         catch (Exception ex)

@@ -741,6 +741,7 @@ if (!string.IsNullOrEmpty(builder.Configuration.GetConnectionString("Application
     });
 }
 
+// Build the application
 var app = builder.Build();
 
 // Configure the HTTP request pipeline

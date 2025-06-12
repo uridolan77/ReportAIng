@@ -39,3 +39,5 @@ Thumbs.db
 # E2E testing
 /e2e/test-results/
 /e2e/playwright-report/
+*storybook.log
+storybook-static

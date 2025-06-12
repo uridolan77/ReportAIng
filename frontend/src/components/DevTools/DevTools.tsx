@@ -17,35 +17,23 @@ import {
   Row,
   Col,
   Badge,
-  Tooltip,
-  Switch,
-  Input,
-  Select,
   Alert,
-  Progress,
-  Timeline,
   Collapse
 } from 'antd';
 import {
   BugOutlined,
   PlayCircleOutlined,
   PauseCircleOutlined,
-  SettingOutlined,
-  DatabaseOutlined,
-  ThunderboltOutlined,
   ClockCircleOutlined,
-  ApiOutlined,
-  ConsoleSqlOutlined,
-  BarChartOutlined,
-  GlobalOutlined
+  DatabaseOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { useAuthStore } from '../../stores/authStore';
 import { useVisualizationStore } from '../../stores/visualizationStore';
 import { useQueryClient } from '@tanstack/react-query';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { Panel } = Collapse;
-const { Option } = Select;
 
 interface DevToolsProps {
   position?: 'left' | 'right' | 'top' | 'bottom';
@@ -107,12 +95,11 @@ export const DevTools: React.FC<DevToolsProps> = ({
   const [visible, setVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [isMonitoring, setIsMonitoring] = useState(false);
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs] = useState<any[]>([]);
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetric[]>([]);
   const [networkRequests, setNetworkRequests] = useState<NetworkRequest[]>([]);
   const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
-  const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([]);
-  const [debugSettings, setDebugSettings] = useState<DebugSettings>({
+  const [debugSettings] = useState<DebugSettings>({
     enableLogging: true,
     enablePerformanceMonitoring: true,
     enableNetworkMonitoring: true,

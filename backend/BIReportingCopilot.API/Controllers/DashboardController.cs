@@ -606,7 +606,7 @@ public class DashboardController : ControllerBase
     private async Task<QueryTrends> GetQueryTrendsAsync(string userId, int days) => new();
     private async Task<List<PopularTable>> GetPopularTablesAsync(string userId, int days) => new();
     private async Task<PerformanceMetrics> GetPerformanceMetricsAsync(string userId, int days) => new();
-    private async Task<ErrorAnalysis> GetErrorAnalysisAsync(string userId, int days) => new();
+    private async Task<Core.Models.ErrorAnalysis> GetErrorAnalysisAsync(string userId, int days) => new();
     private async Task<int> GetTotalUsersAsync() => 0;
     private async Task<int> GetTotalQueriesAsync(int days) => 0;
     private async Task<double> GetAverageResponseTimeAsync(int days) => 0;

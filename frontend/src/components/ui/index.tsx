@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { Modal, Collapse, Button as AntButton } from 'antd';
+import { Button } from '../core/Button';
 import type { ButtonProps } from '../core/Button';
 
 // Re-export all core components for backward compatibility

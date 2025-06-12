@@ -87,23 +87,7 @@ const generateLargeDataset = (size: number) => {
   }));
 };
 
-// Real widgets - loaded from API
-const generateRealWidgets = async () => {
-  try {
-    // TODO: Replace with actual widget API calls
-    // const response = await widgetApi.getUserWidgets();
-    // return response.widgets;
-
-    console.log('Loading real widgets...');
-
-    // For now, return empty array until real API is connected
-    return [];
-
-  } catch (error) {
-    console.error('Failed to load widgets:', error);
-    return [];
-  }
-};
+// Real widgets functionality removed - not currently used
 
 // Enhanced filtering test data
 const generateFilteringTestData = () => [
@@ -220,8 +204,7 @@ export const FeaturesDemo: React.FC = () => {
   const memoryInfo = useMemoryMonitor();
 
   // Store usage
-  const { preferences, updatePreferences } = useVisualizationStore();
-  const { settings: querySettings, updateSettings } = useAdvancedQueryStore();
+  const { preferences } = useVisualizationStore();
 
   // WebSocket connection
   const { connectionState } = useWebSocket();

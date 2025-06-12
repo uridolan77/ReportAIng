@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { lazy, useEffect, startTransition } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
@@ -15,6 +15,9 @@ import {
   LoadingFallback
 } from './components/core';
 import { PerformanceMonitor, BundleAnalyzer } from './components/ui';
+import { ConcurrentSuspense } from './components/Performance/ConcurrentSuspense';
+import { ConcurrentRouter } from './components/Performance/ConcurrentRouter';
+import { initializeBundleOptimization } from './utils/bundleOptimization';
 import Sidebar from './components/Layout/Sidebar';
 import { CornerStatusPanel } from './components/Layout/AppHeader';
 import './App.css';
@@ -79,20 +82,24 @@ const PerformancePage = lazy(() =>
   import(/* webpackChunkName: "performance-page" */ './components/Performance/PerformanceMonitoringDashboard').then(module => ({ default: module.default }))
 );
 
-// Preload critical components for better performance
+// Preload critical components for better performance using concurrent features
 const preloadCriticalComponents = () => {
-  // Preload most commonly used pages
-  import('./pages/QueryPage');
-  import('./pages/DashboardPage');
-  import('./pages/ResultsPage');
+  startTransition(() => {
+    // Preload most commonly used pages with low priority
+    import('./pages/QueryPage');
+    import('./pages/DashboardPage');
+    import('./pages/ResultsPage');
+  });
 };
 
 // Preload on user interaction (hover, focus)
 const preloadOnInteraction = () => {
-  // Preload remaining pages on first user interaction
-  import('./pages/VisualizationPage');
-  import('./pages/HistoryPage');
-  import('./pages/SuggestionsPage');
+  startTransition(() => {
+    // Preload remaining pages on first user interaction with low priority
+    import('./pages/VisualizationPage');
+    import('./pages/HistoryPage');
+    import('./pages/SuggestionsPage');
+  });
 };
 
 const App: React.FC = () => {
@@ -110,6 +117,9 @@ const App: React.FC = () => {
         windowMs: 60000,
       },
     });
+
+    // Initialize bundle optimization
+    initializeBundleOptimization();
 
     // Preload critical components after initial render
     const timer = setTimeout(() => {
@@ -174,7 +184,11 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
       <Router>
         <div className="App">
           {isAuthenticated ? (
-            <Suspense fallback={<LoadingFallback />}>
+            <ConcurrentSuspense
+              fallback={<LoadingFallback />}
+              enableProgressiveLoading={true}
+              priority="high"
+            >
               <CornerStatusPanel />
               <div style={{ display: 'flex', minHeight: '100vh' }}>
                 <Sidebar
@@ -235,7 +249,7 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
                 </Routes>
                 </div>
               </div>
-            </Suspense>
+            </ConcurrentSuspense>
           ) : (
             <Routes>
               <Route path="/login" element={<Login />} />

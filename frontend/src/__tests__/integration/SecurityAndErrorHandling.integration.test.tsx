@@ -43,7 +43,7 @@ describe('Security and Error Handling Integration Tests', () => {
             
             const maliciousInputs = [
               '<script>alert("XSS")</script>',
-              'javascript:alert("XSS")',
+              'data:text/html,<script>alert("XSS")</script>', // XSS test case
               '<img src="x" onerror="alert(\'XSS\')">',
               '<svg onload="alert(\'XSS\')">',
               '"><script>alert("XSS")</script>',
@@ -163,6 +163,8 @@ describe('Security and Error Handling Integration Tests', () => {
 
             await waitFor(() => {
               expect(screen.getByText(/security error/i)).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText(/csrf token/i)).toBeInTheDocument();
             });
           });
@@ -214,6 +216,8 @@ describe('Security and Error Handling Integration Tests', () => {
 
             await waitFor(() => {
               expect(screen.getByText('Session Expired')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Please log in again')).toBeInTheDocument();
             });
           });
@@ -227,7 +231,11 @@ describe('Security and Error Handling Integration Tests', () => {
 
             await waitFor(() => {
               expect(screen.getByText('Login')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByLabelText('Username')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByLabelText('Password')).toBeInTheDocument();
             });
           });
@@ -287,6 +295,8 @@ describe('Security and Error Handling Integration Tests', () => {
 
             await waitFor(() => {
               expect(screen.getByText('Access Denied')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Insufficient permissions')).toBeInTheDocument();
             });
           });
@@ -346,6 +356,8 @@ describe('Security and Error Handling Integration Tests', () => {
 
             await waitFor(() => {
               expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Error Boundary')).toBeInTheDocument();
             });
 
@@ -361,6 +373,8 @@ describe('Security and Error Handling Integration Tests', () => {
 
             await waitFor(() => {
               expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('BI Reporting Copilot')).toBeInTheDocument();
             });
           });
@@ -434,6 +448,8 @@ describe('Security and Error Handling Integration Tests', () => {
 
             await waitFor(() => {
               expect(screen.getByText('Network Error')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Please check your connection')).toBeInTheDocument();
             });
           });
@@ -450,6 +466,8 @@ describe('Security and Error Handling Integration Tests', () => {
 
             await waitFor(() => {
               expect(screen.getByText('You are offline')).toBeInTheDocument();
+            });
+            await waitFor(() => {
               expect(screen.getByText('Some features may be limited')).toBeInTheDocument();
             });
           });
@@ -635,12 +653,16 @@ describe('Security and Error Handling Integration Tests', () => {
             const scriptElement = document.createElement('script');
             scriptElement.innerHTML = 'alert("CSP bypass attempt")';
             
+            let cspError: Error | null = null;
             try {
               document.head.appendChild(scriptElement);
             } catch (error) {
-              // CSP should block this
-              expect(error.message).toContain('Content Security Policy');
+              cspError = error as Error;
             }
+
+            // CSP should block this
+            expect(cspError).toBeTruthy();
+            expect(cspError?.message).toContain('Content Security Policy');
 
             // Verify alert was not executed
             expect(window.alert).not.toHaveBeenCalled();

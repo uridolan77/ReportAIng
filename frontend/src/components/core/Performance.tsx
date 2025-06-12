@@ -255,7 +255,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
   onMetrics,
   sampleRate = 1.0,
 }) => {
-  const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
+  const [, setMetrics] = useState<PerformanceMetrics | null>(null);
 
   useEffect(() => {
     if (!enabled || Math.random() > sampleRate) {

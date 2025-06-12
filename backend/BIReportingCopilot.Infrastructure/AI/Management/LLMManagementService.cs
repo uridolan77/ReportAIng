@@ -1,10 +1,12 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
+using BIReportingCopilot.Infrastructure.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
+using ErrorAnalysis = BIReportingCopilot.Core.Interfaces.ErrorAnalysis;
 
 namespace BIReportingCopilot.Infrastructure.AI.Management;
 
@@ -16,18 +18,15 @@ public class LLMManagementService : ILLMManagementService
 {
     private readonly IDbContextFactory _contextFactory;
     private readonly ILogger<LLMManagementService> _logger;
-    private readonly IAIProviderFactory _providerFactory;
     private readonly ICacheService _cacheService;
 
     public LLMManagementService(
         IDbContextFactory contextFactory,
         ILogger<LLMManagementService> logger,
-        IAIProviderFactory providerFactory,
         ICacheService cacheService)
     {
         _contextFactory = contextFactory;
         _logger = logger;
-        _providerFactory = providerFactory;
         _cacheService = cacheService;
     }
 
@@ -37,14 +36,14 @@ public class LLMManagementService : ILLMManagementService
     {
         try
         {
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                if (context is BICopilotContext dbContext)
+                if (context is BICopilotContext legacyContext)
                 {
-                    var providers = await dbContext.LLMProviderConfigs
+                    var providers = await legacyContext.LLMProviderConfigs
                         .OrderBy(p => p.Name)
                         .ToListAsync();
-                    
+
                     // Mask sensitive information
                     foreach (var provider in providers)
                     {
@@ -53,10 +52,10 @@ public class LLMManagementService : ILLMManagementService
                             provider.ApiKey = "***CONFIGURED***";
                         }
                     }
-                    
+
                     return providers;
                 }
-                
+
                 return new List<LLMProviderConfig>();
             });
         }
@@ -71,21 +70,21 @@ public class LLMManagementService : ILLMManagementService
     {
         try
         {
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                if (context is BICopilotContext dbContext)
+                if (context is BICopilotContext legacyContext)
                 {
-                    var provider = await dbContext.LLMProviderConfigs
+                    var provider = await legacyContext.LLMProviderConfigs
                         .FirstOrDefaultAsync(p => p.ProviderId == providerId);
-                    
+
                     if (provider != null && !string.IsNullOrEmpty(provider.ApiKey))
                     {
                         provider.ApiKey = "***CONFIGURED***";
                     }
-                    
+
                     return provider;
                 }
-                
+
                 return null;
             });
         }
@@ -100,11 +99,11 @@ public class LLMManagementService : ILLMManagementService
     {
         try
         {
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Command, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                if (context is BICopilotContext dbContext)
+                if (context is BICopilotContext legacyContext)
                 {
-                    var existing = await dbContext.LLMProviderConfigs
+                    var existing = await legacyContext.LLMProviderConfigs
                         .FirstOrDefaultAsync(p => p.ProviderId == provider.ProviderId);
 
                     if (existing != null)
@@ -118,32 +117,32 @@ public class LLMManagementService : ILLMManagementService
                         existing.IsDefault = provider.IsDefault;
                         existing.Settings = provider.Settings;
                         existing.UpdatedAt = DateTime.UtcNow;
-                        
+
                         // Only update API key if provided (not masked)
                         if (!string.IsNullOrEmpty(provider.ApiKey) && provider.ApiKey != "***CONFIGURED***")
                         {
                             existing.ApiKey = provider.ApiKey;
                         }
-                        
-                        dbContext.LLMProviderConfigs.Update(existing);
+
+                        legacyContext.LLMProviderConfigs.Update(existing);
                     }
                     else
                     {
                         // Create new
                         provider.CreatedAt = DateTime.UtcNow;
                         provider.UpdatedAt = DateTime.UtcNow;
-                        dbContext.LLMProviderConfigs.Add(provider);
+                        legacyContext.LLMProviderConfigs.Add(provider);
                     }
 
-                    await dbContext.SaveChangesAsync();
-                    
+                    await legacyContext.SaveChangesAsync();
+
                     // Clear cache
                     await _cacheService.RemoveAsync($"llm_provider_{provider.ProviderId}");
-                    
+
                     return provider;
                 }
-                
-                throw new InvalidOperationException("Database context not available");
+
+                throw new InvalidOperationException("BICopilotContext not available");
             });
         }
         catch (Exception ex)
@@ -157,25 +156,25 @@ public class LLMManagementService : ILLMManagementService
     {
         try
         {
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Command, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                if (context is BICopilotContext dbContext)
+                if (context is BICopilotContext legacyContext)
                 {
-                    var provider = await dbContext.LLMProviderConfigs
+                    var provider = await legacyContext.LLMProviderConfigs
                         .FirstOrDefaultAsync(p => p.ProviderId == providerId);
 
                     if (provider != null)
                     {
-                        dbContext.LLMProviderConfigs.Remove(provider);
-                        await dbContext.SaveChangesAsync();
-                        
+                        legacyContext.LLMProviderConfigs.Remove(provider);
+                        await legacyContext.SaveChangesAsync();
+
                         // Clear cache
                         await _cacheService.RemoveAsync($"llm_provider_{providerId}");
-                        
+
                         return true;
                     }
                 }
-                
+
                 return false;
             });
         }
@@ -208,31 +207,41 @@ public class LLMManagementService : ILLMManagementService
             
             try
             {
-                // Test connection using the provider factory
-                var aiProvider = _providerFactory.GetProvider(providerId);
-                
-                // Simple test request
-                var testOptions = new AIOptions
+                // For now, we'll do a basic configuration check instead of actual API testing
+                // This avoids the circular dependency while still providing useful health information
+
+                if (provider == null)
                 {
-                    Temperature = 0.1f,
-                    MaxTokens = 10
-                };
-                
-                var response = await aiProvider.GenerateCompletionAsync("Test", testOptions);
+                    return new LLMProviderStatus
+                    {
+                        ProviderId = providerId,
+                        Name = "Unknown",
+                        IsConnected = false,
+                        IsHealthy = false,
+                        LastChecked = DateTime.UtcNow,
+                        LastError = "Provider not found"
+                    };
+                }
+
                 var responseTime = (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
-                
+
+                // Basic health check based on configuration completeness
+                bool isHealthy = provider.IsEnabled &&
+                               !string.IsNullOrEmpty(provider.ApiKey) &&
+                               !string.IsNullOrEmpty(provider.Endpoint);
+
                 return new LLMProviderStatus
                 {
                     ProviderId = providerId,
                     Name = provider.Name,
-                    IsConnected = true,
-                    IsHealthy = !string.IsNullOrEmpty(response),
+                    IsConnected = isHealthy,
+                    IsHealthy = isHealthy,
                     LastChecked = DateTime.UtcNow,
                     LastResponseTime = responseTime,
                     HealthDetails = new Dictionary<string, object>
                     {
-                        { "response_length", response?.Length ?? 0 },
-                        { "test_successful", true }
+                        { "configuration_complete", isHealthy },
+                        { "test_type", "configuration_check" }
                     }
                 };
             }
@@ -302,20 +311,20 @@ public class LLMManagementService : ILLMManagementService
     {
         try
         {
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                if (context is BICopilotContext dbContext)
+                if (context is BICopilotContext legacyContext)
                 {
-                    var query = dbContext.LLMModelConfigs.AsQueryable();
-                    
+                    var query = legacyContext.LLMModelConfigs.AsQueryable();
+
                     if (!string.IsNullOrEmpty(providerId))
                     {
                         query = query.Where(m => m.ProviderId == providerId);
                     }
-                    
+
                     return await query.OrderBy(m => m.Name).ToListAsync();
                 }
-                
+
                 return new List<LLMModelConfig>();
             });
         }
@@ -330,14 +339,14 @@ public class LLMManagementService : ILLMManagementService
     {
         try
         {
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                if (context is BICopilotContext dbContext)
+                if (context is BICopilotContext legacyContext)
                 {
-                    return await dbContext.LLMModelConfigs
+                    return await legacyContext.LLMModelConfigs
                         .FirstOrDefaultAsync(m => m.ModelId == modelId);
                 }
-                
+
                 return null;
             });
         }
@@ -352,11 +361,11 @@ public class LLMManagementService : ILLMManagementService
     {
         try
         {
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Command, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                if (context is BICopilotContext dbContext)
+                if (context is BICopilotContext legacyContext)
                 {
-                    var existing = await dbContext.LLMModelConfigs
+                    var existing = await legacyContext.LLMModelConfigs
                         .FirstOrDefaultAsync(m => m.ModelId == model.ModelId);
 
                     if (existing != null)
@@ -373,24 +382,24 @@ public class LLMManagementService : ILLMManagementService
                         existing.UseCase = model.UseCase;
                         existing.CostPerToken = model.CostPerToken;
                         existing.Capabilities = model.Capabilities;
-                        
-                        dbContext.LLMModelConfigs.Update(existing);
+
+                        legacyContext.LLMModelConfigs.Update(existing);
                     }
                     else
                     {
                         // Create new
-                        dbContext.LLMModelConfigs.Add(model);
+                        legacyContext.LLMModelConfigs.Add(model);
                     }
 
-                    await dbContext.SaveChangesAsync();
-                    
+                    await legacyContext.SaveChangesAsync();
+
                     // Clear cache
                     await _cacheService.RemoveAsync($"llm_model_{model.ModelId}");
-                    
+
                     return model;
                 }
-                
-                throw new InvalidOperationException("Database context not available");
+
+                throw new InvalidOperationException("BICopilotContext not available");
             });
         }
         catch (Exception ex)
@@ -404,25 +413,25 @@ public class LLMManagementService : ILLMManagementService
     {
         try
         {
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Command, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                if (context is BICopilotContext dbContext)
+                if (context is BICopilotContext legacyContext)
                 {
-                    var model = await dbContext.LLMModelConfigs
+                    var model = await legacyContext.LLMModelConfigs
                         .FirstOrDefaultAsync(m => m.ModelId == modelId);
 
                     if (model != null)
                     {
-                        dbContext.LLMModelConfigs.Remove(model);
-                        await dbContext.SaveChangesAsync();
-                        
+                        legacyContext.LLMModelConfigs.Remove(model);
+                        await legacyContext.SaveChangesAsync();
+
                         // Clear cache
                         await _cacheService.RemoveAsync($"llm_model_{modelId}");
-                        
+
                         return true;
                     }
                 }
-                
+
                 return false;
             });
         }
@@ -441,23 +450,23 @@ public class LLMManagementService : ILLMManagementService
             var cached = await _cacheService.GetAsync<LLMModelConfig>(cacheKey);
             if (cached != null) return cached;
 
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                if (context is BICopilotContext dbContext)
+                if (context is BICopilotContext legacyContext)
                 {
-                    var model = await dbContext.LLMModelConfigs
+                    var model = await legacyContext.LLMModelConfigs
                         .Where(m => m.UseCase == useCase && m.IsEnabled)
                         .OrderBy(m => m.Name)
                         .FirstOrDefaultAsync();
-                    
+
                     if (model != null)
                     {
                         await _cacheService.SetAsync(cacheKey, model, TimeSpan.FromMinutes(30));
                     }
-                    
+
                     return model;
                 }
-                
+
                 return null;
             });
         }
@@ -497,12 +506,12 @@ public class LLMManagementService : ILLMManagementService
     {
         try
         {
-            await _contextFactory.ExecuteWithContextAsync(ContextType.Command, async context =>
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                if (context is BICopilotContext dbContext)
+                if (context is BICopilotContext legacyContext)
                 {
-                    dbContext.LLMUsageLogs.Add(usageLog);
-                    await dbContext.SaveChangesAsync();
+                    legacyContext.LLMUsageLogs.Add(usageLog);
+                    await legacyContext.SaveChangesAsync();
                 }
             });
         }

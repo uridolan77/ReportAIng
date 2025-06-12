@@ -11,7 +11,6 @@ import {
   Space,
   Typography,
   Divider,
-  Alert,
   Statistic,
   Row,
   Col,
@@ -36,7 +35,6 @@ import {
   ClearOutlined
 } from '@ant-design/icons';
 import { tuningApi } from '../../services/tuningApi';
-import { useQueryStore } from '../../stores/queryStore';
 import { queryCacheService } from '../../services/queryCacheService';
 
 const { Title, Text, Paragraph } = Typography;
@@ -73,7 +71,6 @@ export const CacheManager: React.FC = () => {
   const [cacheEnabled, setCacheEnabled] = useState(true);
   const [promptCacheEnabled, setPromptCacheEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [aiSettings, setAiSettings] = useState<any[]>([]);
   const [cacheEnabledSetting, setCacheEnabledSetting] = useState<any>(null);
   const [promptCacheEnabledSetting, setPromptCacheEnabledSetting] = useState<any>(null);
   const [stats, setStats] = useState<CacheStats>({
@@ -95,12 +92,11 @@ export const CacheManager: React.FC = () => {
     loadCacheStats();
     loadCacheEntries();
     loadCacheMetrics();
-  }, []);
+  }, [loadAISettings, loadCacheStats, loadCacheEntries, loadCacheMetrics]);
 
   const loadAISettings = useCallback(async () => {
     try {
       const settings = await tuningApi.getAISettings();
-      setAiSettings(settings);
       
       // Find cache-related settings
       const cacheEnabledSetting = settings.find((s: any) => s.key === 'cache-enabled');

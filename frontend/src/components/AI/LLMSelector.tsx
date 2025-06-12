@@ -5,7 +5,7 @@
  * Integrates with the LLM Management system to show available options.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Select, Space, Tooltip, Badge, Button, Card, Flex } from 'antd';
 import { 
   ApiOutlined, 
@@ -49,27 +49,27 @@ export const LLMSelector: React.FC<LLMSelectorProps> = ({
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   useEffect(() => {
     if (selectedProviderId) {
       loadModelsForProvider(selectedProviderId);
     }
-  }, [selectedProviderId, useCase]);
+  }, [selectedProviderId, useCase, loadModelsForProvider]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [providersData, healthData] = await Promise.all([
         llmManagementService.getProviders(),
         llmManagementService.getProviderHealth()
       ]);
-      
+
       // Only show enabled providers
       const enabledProviders = providersData.filter(p => p.isEnabled);
       setProviders(enabledProviders);
       setProviderHealth(healthData);
-      
+
       // Auto-select default provider if none selected
       if (!selectedProviderId && enabledProviders.length > 0) {
         const defaultProvider = enabledProviders.find(p => p.isDefault) || enabledProviders[0];
@@ -80,19 +80,19 @@ export const LLMSelector: React.FC<LLMSelectorProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedProviderId, onProviderChange]);
 
-  const loadModelsForProvider = async (providerId: string) => {
+  const loadModelsForProvider = useCallback(async (providerId: string) => {
     try {
       const modelsData = await llmManagementService.getModels(providerId);
-      
+
       // Filter by use case and enabled status
-      const filteredModels = modelsData.filter(m => 
+      const filteredModels = modelsData.filter(m =>
         m.isEnabled && (m.useCase === useCase || m.useCase === '')
       );
-      
+
       setModels(filteredModels);
-      
+
       // Auto-select first model if none selected
       if (!selectedModelId && filteredModels.length > 0) {
         onModelChange?.(filteredModels[0].modelId);
@@ -100,7 +100,7 @@ export const LLMSelector: React.FC<LLMSelectorProps> = ({
     } catch (error) {
       console.error('Failed to load models:', error);
     }
-  };
+  }, [useCase, selectedModelId, onModelChange]);
 
   const getProviderStatus = (providerId: string) => {
     const health = providerHealth.find(h => h.providerId === providerId);

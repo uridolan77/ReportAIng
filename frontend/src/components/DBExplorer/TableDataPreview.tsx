@@ -64,7 +64,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
   // Load data when component mounts or table changes
   useEffect(() => {
     loadPreviewData();
-  }, [table.name, maxRows]);
+  }, [table.name, maxRows, loadPreviewData]);
 
   // Convert database columns to DataTable columns
   const getDataTableColumns = (): DataTableColumn[] => {

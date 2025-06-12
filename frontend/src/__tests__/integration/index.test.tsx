@@ -6,14 +6,11 @@
  */
 
 import React from 'react';
-import { IntegrationTestRunner, TestSuite } from '../../test-utils/integration/IntegrationTestRunner';
-import { IntegrationTestFramework } from '../../test-utils/integration/IntegrationTestFramework';
+import { IntegrationTestRunner } from '../../test-utils/integration/IntegrationTestRunner';
 
 // Import test suites
 import QueryPage from '../../pages/QueryPage';
 import DashboardPage from '../../pages/DashboardPage';
-import VisualizationPage from '../../pages/VisualizationPage';
-import ResultsPage from '../../pages/ResultsPage';
 import App from '../../App';
 
 describe('Integration Test Suite', () => {
@@ -188,6 +185,8 @@ describe('Integration Test Suite', () => {
               
               await waitFor(() => {
                 expect(screen.getByText('15,420')).toBeInTheDocument();
+              });
+              await waitFor(() => {
                 expect(screen.getByText('+5.2%')).toBeInTheDocument();
               });
             });
@@ -462,7 +461,7 @@ describe('Integration Test Suite', () => {
     expect(result.summary.successRate).toBeGreaterThan(90);
   }, 120000);
 
-  it('should run security tests', async () => {
+  it('should run security-tagged tests', async () => {
     const result = await testRunner.runAllSuites({
       tags: ['security'],
     });
