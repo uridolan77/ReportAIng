@@ -1,9 +1,11 @@
 /**
  * Advanced Debugging Utilities
- * 
+ *
  * Comprehensive debugging tools for React applications including
  * component profiling, state tracking, performance monitoring, and error analysis
  */
+
+import React from 'react';
 
 // Debug configuration
 interface DebugConfig {
@@ -21,7 +23,7 @@ interface PerformanceTracker {
   startTime: number;
   endTime?: number;
   duration?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, any> | undefined;
 }
 
 // Component profiling
@@ -38,12 +40,12 @@ interface ComponentProfile {
 // Error tracking
 interface ErrorInfo {
   message: string;
-  stack?: string;
-  componentStack?: string;
+  stack?: string | undefined;
+  componentStack?: string | undefined;
   timestamp: number;
   userAgent: string;
   url: string;
-  userId?: string;
+  userId?: string | undefined;
 }
 
 class DebugManager {
@@ -52,7 +54,7 @@ class DebugManager {
   private performanceTrackers = new Map<string, PerformanceTracker>();
   private componentProfiles = new Map<string, ComponentProfile>();
   private errorLog: ErrorInfo[] = [];
-  private stateHistory: Array<{ timestamp: number; state: any; action?: string }> = [];
+  private stateHistory: Array<{ timestamp: number; state: any; action?: string | undefined }> = [];
 
   private constructor() {
     this.config = {
@@ -82,13 +84,13 @@ class DebugManager {
   }
 
   // Performance tracking
-  startPerformanceTracking(name: string, metadata?: Record<string, any>): void {
+  startPerformanceTracking(name: string, metadata?: Record<string, any> | undefined): void {
     if (!this.config.enabled || !this.config.enablePerformanceTracking) return;
 
     this.performanceTrackers.set(name, {
       name,
       startTime: performance.now(),
-      metadata
+      metadata: metadata || undefined
     });
   }
 
@@ -149,33 +151,33 @@ class DebugManager {
   }
 
   // State tracking
-  trackStateChange(state: any, action?: string): void {
+  trackStateChange(state: any, action?: string | undefined): void {
     if (!this.config.enabled || !this.config.enableStateTracking) return;
 
     this.stateHistory.push({
       timestamp: Date.now(),
       state: JSON.parse(JSON.stringify(state)), // Deep clone
-      action
+      action: action || undefined
     });
 
     // Keep only recent entries
     this.stateHistory = this.stateHistory.slice(-this.config.maxLogEntries);
   }
 
-  getStateHistory(): Array<{ timestamp: number; state: any; action?: string }> {
+  getStateHistory(): Array<{ timestamp: number; state: any; action?: string | undefined }> {
     return [...this.stateHistory];
   }
 
   // Error tracking
-  trackError(error: Error, componentStack?: string, userId?: string): void {
+  trackError(error: Error, componentStack?: string | undefined, userId?: string | undefined): void {
     const errorInfo: ErrorInfo = {
       message: error.message,
-      stack: error.stack,
-      componentStack,
+      stack: error.stack || undefined,
+      componentStack: componentStack || undefined,
       timestamp: Date.now(),
       userAgent: navigator.userAgent,
       url: window.location.href,
-      userId
+      userId: userId || undefined
     };
 
     this.errorLog.push(errorInfo);
@@ -305,9 +307,9 @@ export const useDebugRender = (componentName: string, props?: any, state?: any) 
   return renderCount.current;
 };
 
-export const useDebugState = <T>(initialState: T, stateName?: string): [T, (newState: T) => void] => {
-  const [state, setState] = React.useState(initialState);
-  
+export const useDebugState = <T,>(initialState: T, stateName?: string): [T, (newState: T) => void] => {
+  const [state, setState] = React.useState<T>(initialState);
+
   const setDebugState = React.useCallback((newState: T) => {
     debugManager.trackStateChange(newState, stateName);
     setState(newState);
@@ -317,16 +319,22 @@ export const useDebugState = <T>(initialState: T, stateName?: string): [T, (newS
 };
 
 // Error boundary with debugging
-export class DebugErrorBoundary extends React.Component<
-  { children: React.ReactNode; componentName?: string },
-  { hasError: boolean }
-> {
-  constructor(props: { children: React.ReactNode; componentName?: string }) {
+interface DebugErrorBoundaryProps {
+  children: React.ReactNode;
+  componentName?: string;
+}
+
+interface DebugErrorBoundaryState {
+  hasError: boolean;
+}
+
+export class DebugErrorBoundary extends React.Component<DebugErrorBoundaryProps, DebugErrorBoundaryState> {
+  constructor(props: DebugErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(): { hasError: boolean } {
+  static getDerivedStateFromError(): DebugErrorBoundaryState {
     return { hasError: true };
   }
 
@@ -351,12 +359,6 @@ export class DebugErrorBoundary extends React.Component<
 
     return this.props.children;
   }
-}
-
-// Development-only imports
-let React: any;
-if (typeof window !== 'undefined') {
-  React = require('react');
 }
 
 export default debug;

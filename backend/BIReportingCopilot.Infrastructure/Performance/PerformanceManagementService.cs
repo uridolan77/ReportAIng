@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.DTOs;
+using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Configuration;
 using BIReportingCopilot.Core.Configuration;
@@ -415,20 +416,7 @@ public class PerformanceManagementService
     #endregion
 }
 
-/// <summary>
-/// Performance metrics for tracking operations
-/// </summary>
-public class PerformanceMetrics
-{
-    public string OperationType { get; set; } = string.Empty;
-    public int TotalOperations { get; set; }
-    public int SuccessCount { get; set; }
-    public int ErrorCount { get; set; }
-    public TimeSpan TotalExecutionTime { get; set; }
-    public TimeSpan AverageExecutionTime { get; set; }
-    public int TotalResultCount { get; set; }
-    public DateTime LastUpdated { get; set; }
-}
+// PerformanceMetrics moved to Core.Models.PerformanceModels.cs to consolidate duplications
 
 /// <summary>
 /// Performance metrics summary

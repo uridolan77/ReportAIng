@@ -6,10 +6,10 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { 
-  PageLayout, 
-  Card, 
-  Button, 
+import {
+  PageLayout,
+  Card,
+  Button,
   Tabs,
   Container,
   Stack,
@@ -23,13 +23,54 @@ import { ModelConfiguration } from '../../components/LLMManagement/ModelConfigur
 import { UsageAnalytics } from '../../components/LLMManagement/UsageAnalytics';
 import { CostMonitoring } from '../../components/LLMManagement/CostMonitoring';
 import { PerformanceMonitoring } from '../../components/LLMManagement/PerformanceMonitoring';
+import { useAuthStore } from '../../stores/authStore';
 
 const LLMManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { user, isAdmin } = useAuthStore();
 
   const handleTabChange = useCallback((key: string) => {
     setActiveTab(key);
   }, []);
+
+  // Check if user has required role
+  const hasRequiredRole = user?.roles?.some(role =>
+    ['Admin', 'Analyst'].includes(role)
+  ) || isAdmin;
+
+  // Show access denied message if user doesn't have required role
+  if (!hasRequiredRole) {
+    return (
+      <PageLayout
+        title="LLM Management"
+        subtitle="Access Denied"
+      >
+        <div style={{ padding: '24px' }}>
+          <Alert
+            message="Access Denied"
+            description={
+              <div>
+                <p>LLM Management requires Admin or Analyst role access.</p>
+                <p><strong>Current user:</strong> {user?.username || 'Unknown'}</p>
+                <p><strong>Current roles:</strong> {user?.roles?.join(', ') || 'None'}</p>
+                <p><strong>Required roles:</strong> Admin or Analyst</p>
+                <br />
+                <p>To access LLM Management:</p>
+                <ul>
+                  <li>Log in as an Admin user (username: <code>admin</code>, password: <code>Admin123!</code>)</li>
+                  <li>Log in as an Analyst user (username: <code>analyst</code>, password: <code>Analyst123!</code>)</li>
+                  <li>Or contact your system administrator to assign you the appropriate role</li>
+                </ul>
+              </div>
+            }
+            type="error"
+            showIcon
+            style={{ maxWidth: '800px' }}
+          />
+        </div>
+      </PageLayout>
+    );
+  }
 
   const tabItems = [
     {

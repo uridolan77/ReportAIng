@@ -164,6 +164,18 @@ public class SecurityDbContext : DbContext
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow,
                 CreatedBy = "System"
+            },
+            new UserEntity
+            {
+                Id = "analyst-user-001",
+                Username = "analyst",
+                Email = "analyst@bireporting.local",
+                DisplayName = "Data Analyst",
+                PasswordHash = "", // Will be set during application startup
+                Roles = "Analyst",
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow,
+                CreatedBy = "System"
             }
         );
     }

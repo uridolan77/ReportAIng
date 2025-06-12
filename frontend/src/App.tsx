@@ -16,15 +16,14 @@ import {
 } from './components/core';
 import { PerformanceMonitor, BundleAnalyzer } from './components/ui';
 import { ConcurrentSuspense } from './components/Performance/ConcurrentSuspense';
-import { ConcurrentRouter } from './components/Performance/ConcurrentRouter';
 import { initializeBundleOptimization } from './utils/bundleOptimization';
 import Sidebar from './components/Layout/Sidebar';
 import { CornerStatusPanel } from './components/Layout/AppHeader';
 import './App.css';
 
 // Enhanced lazy loading with webpack chunk names for better caching
-const QueryInterface = lazy(() =>
-  import(/* webpackChunkName: "query-page" */ './pages/QueryPage')
+const SimpleQueryInterface = lazy(() =>
+  import(/* webpackChunkName: "query-interface" */ './components/QueryInterface/SimpleQueryInterface')
 );
 const ResultsPage = lazy(() =>
   import(/* webpackChunkName: "results-page" */ './pages/ResultsPage')
@@ -207,7 +206,7 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
                 >
                   <Routes>
                   {/* Main Interface */}
-                  <Route path="/" element={<QueryInterface />} />
+                  <Route path="/" element={<SimpleQueryInterface />} />
 
                   {/* Analytics & Visualization */}
                   <Route path="/results" element={<ResultsPage />} />

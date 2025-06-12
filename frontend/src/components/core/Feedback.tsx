@@ -8,7 +8,7 @@
 import React, { forwardRef } from 'react';
 import { Alert as AntAlert, Progress as AntProgress, Skeleton as AntSkeleton, Spin } from 'antd';
 import type { AlertProps as AntAlertProps, ProgressProps as AntProgressProps } from 'antd';
-// Removed unused import
+import { designTokens } from './design-system';
 
 // Types
 export interface AlertProps extends Omit<AntAlertProps, 'type'> {

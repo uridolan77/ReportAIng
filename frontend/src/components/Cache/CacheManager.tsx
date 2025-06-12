@@ -86,14 +86,6 @@ export const CacheManager: React.FC = () => {
   const [metrics, setMetrics] = useState<CacheMetrics | null>(null);
   const [clearPattern, setClearPattern] = useState('');
 
-  // Load AI settings and cache settings
-  useEffect(() => {
-    loadAISettings();
-    loadCacheStats();
-    loadCacheEntries();
-    loadCacheMetrics();
-  }, [loadAISettings, loadCacheStats, loadCacheEntries, loadCacheMetrics]);
-
   const loadAISettings = useCallback(async () => {
     try {
       const settings = await tuningApi.getAISettings();
@@ -289,6 +281,14 @@ export const CacheManager: React.FC = () => {
       default: return 'default';
     }
   };
+
+  // Load AI settings and cache settings
+  useEffect(() => {
+    loadAISettings();
+    loadCacheStats();
+    loadCacheEntries();
+    loadCacheMetrics();
+  }, [loadAISettings, loadCacheStats, loadCacheEntries, loadCacheMetrics]);
 
   const renderAdminTab = () => (
     <div>

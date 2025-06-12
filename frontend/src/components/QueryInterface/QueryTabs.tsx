@@ -26,7 +26,7 @@ import { QueryLoadingState } from './LoadingStates';
 import { DataInsightsPanel } from '../Insights/DataInsightsPanel';
 // import { PromptDetailsPanel } from './PromptDetailsPanel';
 import VisualizationRecommendations from '../Visualization/VisualizationRecommendations';
-import AdvancedChart from '../Visualization/AdvancedChart';
+import { Chart } from '../Visualization/Chart';
 import ChartConfigurationPanel from '../Visualization/ChartConfigurationPanel';
 import { VisualizationRecommendation } from '../../types/visualization';
 import { useVisualizationStore } from '../../stores/visualizationStore';
@@ -594,10 +594,10 @@ export const QueryTabs: React.FC = () => {
                       </div>
                     </div>
 
-                    <AdvancedChart
+                    <Chart
                       data={(() => {
                         const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }));
-                        console.log('🎯 QueryTabs - Passing data to AdvancedChart:', {
+                        console.log('🎯 QueryTabs - Passing data to Chart:', {
                           dataLength: dataToUse.length,
                           sampleRow: dataToUse[0],
                           xAxisKey: currentVisualization?.xAxis,
@@ -606,18 +606,33 @@ export const QueryTabs: React.FC = () => {
                         });
                         return dataToUse;
                       })()}
-                      type={currentVisualization?.chartType?.toLowerCase() as any || 'bar'}
-                      title={currentVisualization?.title}
-                      xAxisKey={currentVisualization?.xAxis || Object.keys(currentResult.result.data[0] || {})[0] || 'name'}
-                      yAxisKey={currentVisualization?.yAxis || Object.keys(currentResult.result.data[0] || {}).find(key => typeof currentResult.result.data[0][key] === 'number') || 'value'}
-                      onTypeChange={(type) => {
+                      columns={currentResult.result.columns}
+                      config={{
+                        type: currentVisualization?.chartType?.toLowerCase() as any || 'bar',
+                        title: currentVisualization?.title || 'Data Visualization',
+                        xAxis: currentVisualization?.xAxis || Object.keys(currentResult.result.data[0] || {})[0] || 'name',
+                        yAxis: currentVisualization?.yAxis || Object.keys(currentResult.result.data[0] || {}).find(key => typeof currentResult.result.data[0][key] === 'number') || 'value',
+                        colorScheme: currentVisualization?.colorScheme || 'default',
+                        showGrid: true,
+                        showLegend: true,
+                        showAnimation: true,
+                        interactive: true,
+                        responsive: true
+                      }}
+                      onConfigChange={(config) => {
                         if (currentVisualization) {
-                          setVisualization({ ...currentVisualization, chartType: type.charAt(0).toUpperCase() + type.slice(1) as any });
+                          setVisualization({
+                            ...currentVisualization,
+                            chartType: config.type.charAt(0).toUpperCase() + config.type.slice(1) as any,
+                            xAxis: config.xAxis,
+                            yAxis: config.yAxis,
+                            title: config.title,
+                            colorScheme: config.colorScheme
+                          });
                         }
                       }}
-                      onExport={() => {
-                        console.log('Export requested');
-                      }}
+                      height={400}
+                      width="100%"
                     />
                   </Card>
                 ) : (
@@ -681,7 +696,7 @@ export const QueryTabs: React.FC = () => {
                         </Button>
                       </div>
 
-                      <AdvancedChart
+                      <Chart
                         data={(() => {
                           const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }));
                           const dataKeys = Object.keys(dataToUse[0] || {});
@@ -697,19 +712,30 @@ export const QueryTabs: React.FC = () => {
 
                           return dataToUse;
                         })()}
-                        type="bar"
-                        title="Data Preview"
-                        xAxisKey={(() => {
-                          const dataKeys = Object.keys(currentResult.result.data[0] || {});
-                          return dataKeys.find(key => typeof currentResult.result.data[0][key] === 'string') || dataKeys[0] || 'name';
-                        })()}
-                        yAxisKey={(() => {
-                          const dataKeys = Object.keys(currentResult.result.data[0] || {});
-                          return dataKeys.find(key => typeof currentResult.result.data[0][key] === 'number') || dataKeys[1] || 'value';
-                        })()}
-                        onTypeChange={(type) => {
-                          console.log('Chart type changed to:', type);
+                        columns={currentResult.result.columns}
+                        config={{
+                          type: 'bar',
+                          title: 'Data Preview',
+                          xAxis: (() => {
+                            const dataKeys = Object.keys(currentResult.result.data[0] || {});
+                            return dataKeys.find(key => typeof currentResult.result.data[0][key] === 'string') || dataKeys[0] || 'name';
+                          })(),
+                          yAxis: (() => {
+                            const dataKeys = Object.keys(currentResult.result.data[0] || {});
+                            return dataKeys.find(key => typeof currentResult.result.data[0][key] === 'number') || dataKeys[1] || 'value';
+                          })(),
+                          colorScheme: 'default',
+                          showGrid: true,
+                          showLegend: true,
+                          showAnimation: true,
+                          interactive: true,
+                          responsive: true
                         }}
+                        onConfigChange={(config) => {
+                          console.log('Chart config changed:', config);
+                        }}
+                        height={400}
+                        width="100%"
                       />
                     </Card>
                   ) : (

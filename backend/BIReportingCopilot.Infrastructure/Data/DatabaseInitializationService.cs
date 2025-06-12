@@ -70,40 +70,46 @@ public class DatabaseInitializationService : IDatabaseInitializationService
     {
         try
         {
+            _logger.LogInformation("Initializing default user passwords...");
+
+            // Initialize admin user
             var adminUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Username == ApplicationConstants.Roles.Admin.ToLower());
 
-            if (adminUser == null)
+            if (adminUser != null && string.IsNullOrEmpty(adminUser.PasswordHash))
             {
-                _logger.LogWarning("Admin user not found in database");
-                return;
+                var defaultAdminPassword = _configuration["DefaultAdminPassword"] ?? "Admin123!";
+                adminUser.PasswordHash = _passwordHasher.HashPassword(defaultAdminPassword);
+                adminUser.UpdatedDate = DateTime.UtcNow;
+                adminUser.UpdatedBy = ApplicationConstants.EntityTypes.System;
+
+                _logger.LogInformation("Admin user password initialized successfully");
+                _logger.LogWarning("Default admin credentials - Username: {Username}, Password: {Password}",
+                    ApplicationConstants.Roles.Admin.ToLower(), defaultAdminPassword);
             }
 
-            // Check if admin user already has a password hash
-            if (!string.IsNullOrEmpty(adminUser.PasswordHash))
+            // Initialize analyst user
+            var analystUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Username == ApplicationConstants.Roles.Analyst.ToLower());
+
+            if (analystUser != null && string.IsNullOrEmpty(analystUser.PasswordHash))
             {
-                _logger.LogInformation("Admin user already has password set");
-                return;
+                var defaultAnalystPassword = _configuration["DefaultAnalystPassword"] ?? "Analyst123!";
+                analystUser.PasswordHash = _passwordHasher.HashPassword(defaultAnalystPassword);
+                analystUser.UpdatedDate = DateTime.UtcNow;
+                analystUser.UpdatedBy = ApplicationConstants.EntityTypes.System;
+
+                _logger.LogInformation("Analyst user password initialized successfully");
+                _logger.LogWarning("Default analyst credentials - Username: {Username}, Password: {Password}",
+                    ApplicationConstants.Roles.Analyst.ToLower(), defaultAnalystPassword);
             }
-
-            // Get default admin password from configuration or use default
-            var defaultPassword = _configuration["DefaultAdminPassword"] ?? "Admin123!";
-
-            // Hash the password and update the user
-            adminUser.PasswordHash = _passwordHasher.HashPassword(defaultPassword);
-            adminUser.UpdatedDate = DateTime.UtcNow;
-            adminUser.UpdatedBy = ApplicationConstants.EntityTypes.System;
 
             await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Admin user password initialized successfully");
-            _logger.LogWarning("Default admin credentials - Username: {Username}, Password: {Password}",
-                ApplicationConstants.Roles.Admin.ToLower(), defaultPassword);
-            _logger.LogWarning("Please change the default admin password after first login");
+            _logger.LogWarning("Please change the default passwords after first login");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error initializing admin user password");
+            _logger.LogError(ex, "Error initializing default user passwords");
             throw;
         }
     }

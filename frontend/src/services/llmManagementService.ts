@@ -148,52 +148,21 @@ class LLMManagementService {
 
   // Provider Management
   async getProviders(): Promise<LLMProviderConfig[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.PROVIDERS}`, {
-        headers: this.getHeaders(),
-      });
-      if (!response.ok) throw new Error('Failed to fetch providers');
-      return response.json();
-    } catch (error) {
-      console.warn('LLM Management backend not available, using mock providers:', error);
-      return this.getMockProviders();
-    }
-  }
+    const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.PROVIDERS}`, {
+      headers: await this.getHeaders(),
+    });
 
-  private getMockProviders(): LLMProviderConfig[] {
-    return [
-      {
-        providerId: 'openai-1',
-        name: 'OpenAI',
-        type: 'OpenAI',
-        apiKey: '***CONFIGURED***',
-        endpoint: 'https://api.openai.com/v1',
-        organization: '',
-        isEnabled: true,
-        isDefault: true,
-        settings: {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        providerId: 'azure-openai-1',
-        name: 'Azure OpenAI',
-        type: 'AzureOpenAI',
-        apiKey: '***CONFIGURED***',
-        endpoint: 'https://your-resource.openai.azure.com',
-        organization: '',
-        isEnabled: false,
-        isDefault: false,
-        settings: {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
+    if (response.status === 401) {
+      throw new Error('Access denied. LLM Management requires Admin or Analyst role. Please log in with appropriate credentials.');
+    }
+
+    if (!response.ok) throw new Error('Failed to fetch providers');
+    return response.json();
   }
 
   async getProvider(providerId: string): Promise<LLMProviderConfig> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.PROVIDER_BY_ID}/${providerId}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch provider');
     return response.json();
@@ -202,7 +171,7 @@ class LLMManagementService {
   async saveProvider(provider: LLMProviderConfig): Promise<LLMProviderConfig> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.PROVIDERS}`, {
       method: 'POST',
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
       body: JSON.stringify(provider),
     });
     if (!response.ok) throw new Error('Failed to save provider');
@@ -212,7 +181,7 @@ class LLMManagementService {
   async deleteProvider(providerId: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.PROVIDER_BY_ID}/${providerId}`, {
       method: 'DELETE',
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to delete provider');
   }
@@ -220,107 +189,36 @@ class LLMManagementService {
   async testProvider(providerId: string): Promise<LLMProviderStatus> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.PROVIDER_TEST}/${providerId}/test`, {
       method: 'POST',
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to test provider');
     return response.json();
   }
 
   async getProviderHealth(): Promise<LLMProviderStatus[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.PROVIDER_HEALTH}`, {
-        headers: this.getHeaders(),
-      });
-      if (!response.ok) throw new Error('Failed to fetch provider health');
-      return response.json();
-    } catch (error) {
-      console.warn('LLM Management backend not available, using mock provider health:', error);
-      return this.getMockProviderHealth();
-    }
-  }
-
-  private getMockProviderHealth(): LLMProviderStatus[] {
-    return [
-      {
-        providerId: 'openai-1',
-        name: 'OpenAI',
-        isConnected: true,
-        isHealthy: true,
-        lastChecked: new Date().toISOString(),
-        lastResponseTime: 650,
-        healthDetails: { status: 'operational' },
-      },
-      {
-        providerId: 'azure-openai-1',
-        name: 'Azure OpenAI',
-        isConnected: false,
-        isHealthy: false,
-        lastError: 'Provider not configured',
-        lastChecked: new Date().toISOString(),
-        lastResponseTime: 0,
-        healthDetails: { status: 'not_configured' },
-      },
-    ];
+    const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.PROVIDER_HEALTH}`, {
+      headers: await this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch provider health');
+    return response.json();
   }
 
   // Model Management
   async getModels(providerId?: string): Promise<LLMModelConfig[]> {
-    try {
-      const url = providerId
-        ? `${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.MODELS}?providerId=${providerId}`
-        : `${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.MODELS}`;
+    const url = providerId
+      ? `${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.MODELS}?providerId=${providerId}`
+      : `${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.MODELS}`;
 
-      const response = await fetch(url, {
-        headers: this.getHeaders(),
-      });
-      if (!response.ok) throw new Error('Failed to fetch models');
-      return response.json();
-    } catch (error) {
-      console.warn('LLM Management backend not available, using mock models:', error);
-      return this.getMockModels(providerId);
-    }
-  }
-
-  private getMockModels(providerId?: string): LLMModelConfig[] {
-    const allModels = [
-      {
-        modelId: 'gpt-4-turbo',
-        providerId: 'openai-1',
-        name: 'gpt-4-turbo',
-        displayName: 'GPT-4 Turbo',
-        temperature: 0.1,
-        maxTokens: 2000,
-        topP: 1.0,
-        frequencyPenalty: 0.0,
-        presencePenalty: 0.0,
-        isEnabled: true,
-        useCase: 'SQL',
-        costPerToken: 0.00003,
-        capabilities: { reasoning: 'high', speed: 'medium' },
-      },
-      {
-        modelId: 'gpt-3.5-turbo',
-        providerId: 'openai-1',
-        name: 'gpt-3.5-turbo',
-        displayName: 'GPT-3.5 Turbo',
-        temperature: 0.1,
-        maxTokens: 1500,
-        topP: 1.0,
-        frequencyPenalty: 0.0,
-        presencePenalty: 0.0,
-        isEnabled: true,
-        useCase: 'Insights',
-        costPerToken: 0.000002,
-        capabilities: { reasoning: 'medium', speed: 'high' },
-      },
-    ];
-
-    return providerId ? allModels.filter(m => m.providerId === providerId) : allModels;
+    const response = await fetch(url, {
+      headers: await this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch models');
+    return response.json();
   }
 
   async getModel(modelId: string): Promise<LLMModelConfig> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.MODEL_BY_ID}/${modelId}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch model');
     return response.json();
@@ -329,7 +227,7 @@ class LLMManagementService {
   async saveModel(model: LLMModelConfig): Promise<LLMModelConfig> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.MODELS}`, {
       method: 'POST',
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
       body: JSON.stringify(model),
     });
     if (!response.ok) throw new Error('Failed to save model');
@@ -339,14 +237,14 @@ class LLMManagementService {
   async deleteModel(modelId: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.MODEL_BY_ID}/${modelId}`, {
       method: 'DELETE',
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to delete model');
   }
 
   async getDefaultModel(useCase: string): Promise<LLMModelConfig> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.DEFAULT_MODEL}/${useCase}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch default model');
     return response.json();
@@ -355,7 +253,7 @@ class LLMManagementService {
   async setDefaultModel(modelId: string, useCase: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.SET_DEFAULT_MODEL}/${modelId}/set-default/${useCase}`, {
       method: 'POST',
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to set default model');
   }
@@ -377,7 +275,7 @@ class LLMManagementService {
     });
 
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.USAGE_HISTORY}?${queryParams}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch usage history');
     return response.json();
@@ -397,7 +295,7 @@ class LLMManagementService {
     });
 
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.USAGE_ANALYTICS}?${queryParams}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch usage analytics');
     return response.json();
@@ -407,7 +305,7 @@ class LLMManagementService {
     const queryParams = new URLSearchParams({ startDate, endDate, format });
 
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.USAGE_EXPORT}?${queryParams}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to export usage data');
     return response.blob();
@@ -422,7 +320,7 @@ class LLMManagementService {
     });
 
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.COST_SUMMARY}?${queryParams}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch cost summary');
     return response.json();
@@ -432,7 +330,7 @@ class LLMManagementService {
     const queryParams = providerId ? new URLSearchParams({ providerId }) : '';
 
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.CURRENT_MONTH_COST}?${queryParams}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch current month cost');
     return response.json();
@@ -440,7 +338,7 @@ class LLMManagementService {
 
   async getCostProjections(): Promise<Record<string, number>> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.COST_PROJECTIONS}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch cost projections');
     return response.json();
@@ -449,7 +347,7 @@ class LLMManagementService {
   async setCostLimit(providerId: string, monthlyLimit: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.COST_LIMITS}/${providerId}`, {
       method: 'POST',
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
       body: JSON.stringify(monthlyLimit),
     });
     if (!response.ok) throw new Error('Failed to set cost limit');
@@ -457,7 +355,7 @@ class LLMManagementService {
 
   async getCostAlerts(): Promise<CostAlert[]> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.COST_ALERTS}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch cost alerts');
     return response.json();
@@ -468,7 +366,7 @@ class LLMManagementService {
     const queryParams = new URLSearchParams({ startDate, endDate });
 
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.PERFORMANCE_METRICS}?${queryParams}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch performance metrics');
     return response.json();
@@ -476,7 +374,7 @@ class LLMManagementService {
 
   async getCacheHitRates(): Promise<Record<string, number>> {
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.CACHE_HIT_RATES}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch cache hit rates');
     return response.json();
@@ -486,7 +384,7 @@ class LLMManagementService {
     const queryParams = new URLSearchParams({ startDate, endDate });
 
     const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.ERROR_ANALYSIS}?${queryParams}`, {
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch error analysis');
     return response.json();
@@ -494,52 +392,58 @@ class LLMManagementService {
 
   // Dashboard
   async getDashboardSummary(): Promise<DashboardSummary> {
-    try {
-      const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.DASHBOARD_SUMMARY}`, {
-        headers: this.getHeaders(),
-      });
-      if (!response.ok) throw new Error('Failed to fetch dashboard summary');
-      return response.json();
-    } catch (error) {
-      // Return mock data if backend is not available
-      console.warn('LLM Management backend not available, using mock data:', error);
-      return this.getMockDashboardSummary();
-    }
+    const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.LLM_MANAGEMENT.DASHBOARD_SUMMARY}`, {
+      headers: await this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch dashboard summary');
+    return response.json();
   }
 
-  private getMockDashboardSummary(): DashboardSummary {
-    return {
-      providers: {
-        total: 2,
-        enabled: 1,
-        healthy: 1,
-      },
-      usage: {
-        totalRequests: 1250,
-        totalTokens: 45000,
-        averageResponseTime: 850,
-        successRate: 0.96,
-      },
-      costs: {
-        currentMonth: 12.45,
-        total30Days: 38.90,
-        activeAlerts: 0,
-      },
-      performance: {
-        averageResponseTime: 850,
-        overallSuccessRate: 0.96,
-        totalErrors: 12,
-      },
-      lastUpdated: new Date().toISOString(),
-    };
-  }
-
-  private getHeaders(): HeadersInit {
-    const token = localStorage.getItem('token');
+  private async getHeaders(): Promise<HeadersInit> {
+    const token = await this.getAuthToken();
     return {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
     };
+  }
+
+  private async getAuthToken(): Promise<string | null> {
+    try {
+      // Import SecurityUtils for token decryption
+      const { SecurityUtils } = await import('../utils/security');
+
+      // Get token from Zustand persist storage
+      const authStorage = localStorage.getItem('auth-storage');
+
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        const encryptedToken = parsed?.state?.token || null;
+
+        if (encryptedToken) {
+          // Decrypt the token before using it
+          try {
+            const decryptedToken = await SecurityUtils.decryptToken(encryptedToken);
+            return decryptedToken;
+          } catch (decryptError) {
+            console.warn('❌ Failed to decrypt token:', decryptError);
+            // Token might be corrupted, clear it
+            localStorage.removeItem('auth-storage');
+            return null;
+          }
+        }
+      }
+
+      // Fallback to legacy authToken storage (unencrypted)
+      const legacyToken = localStorage.getItem('authToken');
+      if (legacyToken) {
+        return legacyToken;
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('❌ Error getting auth token:', error);
+      return localStorage.getItem('authToken');
+    }
   }
 }
 

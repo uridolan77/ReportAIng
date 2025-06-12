@@ -35,24 +35,36 @@ public class PerformanceGoal
 }
 
 /// <summary>
-/// Performance metrics for system monitoring
+/// Comprehensive performance metrics for system monitoring (consolidated from multiple duplicates)
 /// </summary>
 public class PerformanceMetrics
 {
+    // Core response time metrics
     public double AverageResponseTime { get; set; }
+    public double MedianResponseTime { get; set; }
+    public double P95ResponseTime { get; set; }
+
+    // System resource metrics
     public double ThroughputPerSecond { get; set; }
     public double ErrorRate { get; set; }
+    public double SuccessRate { get; set; } = 1.0;
     public double CpuUsagePercent { get; set; }
     public double MemoryUsagePercent { get; set; }
     public double DiskUsagePercent { get; set; }
     public int ActiveConnections { get; set; }
+
+    // Operation tracking (from PerformanceManagementService)
+    public string OperationType { get; set; } = string.Empty;
+    public int TotalOperations { get; set; }
+    public int SuccessCount { get; set; }
+    public int ErrorCount { get; set; }
+    public TimeSpan TotalExecutionTime { get; set; }
+    public TimeSpan AverageExecutionTime { get; set; }
+    public int TotalResultCount { get; set; }
+
+    // Metadata
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
     public Dictionary<string, double> CustomMetrics { get; set; } = new();
-
-    // Additional properties for compatibility with API controllers
-    public double MedianResponseTime { get; set; }
-    public double P95ResponseTime { get; set; }
-    public double SuccessRate { get; set; } = 1.0;
 }
 
 /// <summary>
@@ -670,6 +682,27 @@ public class PlanOptimization
     public string OptimizedPlan { get; set; } = string.Empty;
     public double ImprovementScore { get; set; }
     public List<string> Changes { get; set; } = new();
+}
+
+/// <summary>
+/// Comprehensive error analysis data (consolidated from multiple duplicates)
+/// </summary>
+public class ErrorAnalysis
+{
+    // Basic error metrics (from MultiModalDashboards)
+    public int TotalErrors { get; set; }
+    public Dictionary<string, int> ErrorsByType { get; set; } = new();
+    public List<string> CommonErrorMessages { get; set; } = new();
+
+    // LLM-specific properties (from ILLMManagementService)
+    public string ProviderId { get; set; } = string.Empty;
+    public double ErrorRate { get; set; }
+    public Dictionary<string, int> ErrorsByModel { get; set; } = new();
+
+    // Analysis metadata
+    public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
+    public TimeSpan AnalysisWindow { get; set; }
+    public string AnalysisType { get; set; } = "General"; // General, LLM, Query, etc.
 }
 
 

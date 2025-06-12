@@ -91,15 +91,4 @@ public class GetQueryMetricsQuery : IRequest<QueryMetrics>
     public DateTime? ToDate { get; set; }
 }
 
-/// <summary>
-/// Query metrics response
-/// </summary>
-public class QueryMetrics
-{
-    public int TotalQueries { get; set; }
-    public int SuccessfulQueries { get; set; }
-    public double AverageExecutionTime { get; set; }
-    public double SuccessRate { get; set; }
-    public List<string> MostCommonErrors { get; set; } = new();
-    public List<string> PopularQuestions { get; set; } = new();
-}
+// QueryMetrics moved to MLModels.cs to consolidate duplications

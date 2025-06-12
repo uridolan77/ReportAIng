@@ -245,87 +245,88 @@ export const MinimalQueryInterface: React.FC = () => {
             }}
           />
         </div>
+      </div>
 
-        {/* Enhanced Action Buttons */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: '12px',
-          marginTop: '20px',
-          flexWrap: 'wrap'
-        }}>
-          {/* Database connection always required - no toggle needed */}
+      {/* Enhanced Action Buttons - Outside the chat box */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '12px',
+        marginTop: '20px',
+        marginBottom: '32px',
+        flexWrap: 'wrap'
+      }}>
+        {/* Database connection always required - no toggle needed */}
 
-          {/* Enhanced Submit Button */}
+        {/* Enhanced Submit Button */}
+        <Button
+          type="primary"
+          size="large"
+          loading={isLoading || aiProcessing.isProcessing}
+          onClick={handleCustomSubmitQuery}
+          disabled={!query?.trim()}
+          className="enhanced-submit-button"
+          icon={isLoading || aiProcessing.isProcessing ? undefined : <span className="button-icon">→</span>}
+          style={{
+            borderRadius: '10px',
+            height: '44px',
+            padding: '0 28px',
+            fontSize: '15px',
+            fontWeight: 600,
+            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            border: 'none',
+            boxShadow: '0 3px 10px rgba(59, 130, 246, 0.3)',
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+          }}
+        >
+          {isLoading || aiProcessing.isProcessing ? 'Analyzing...' : 'Ask Question'}
+        </Button>
+
+        {/* Show Results Button - Enhanced styling */}
+        {currentResult && forceInitialState && (
           <Button
             type="primary"
             size="large"
-            loading={isLoading || aiProcessing.isProcessing}
-            onClick={handleCustomSubmitQuery}
-            disabled={!query?.trim()}
-            className="enhanced-submit-button"
-            icon={isLoading || aiProcessing.isProcessing ? undefined : <span className="button-icon">→</span>}
+            onClick={() => {
+              setForceInitialState(false);
+              setHasSubmittedQuery(true);
+            }}
             style={{
+              minWidth: '160px',
               borderRadius: '10px',
               height: '44px',
-              padding: '0 28px',
               fontSize: '15px',
-              fontWeight: 600,
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              border: 'none',
-              boxShadow: '0 3px 10px rgba(59, 130, 246, 0.3)',
-              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+              fontWeight: 600
             }}
           >
-            {isLoading || aiProcessing.isProcessing ? 'Analyzing...' : 'Ask Question'}
+            View Previous Results
           </Button>
+        )}
 
-          {/* Show Results Button - Enhanced styling */}
-          {currentResult && forceInitialState && (
-            <Button
-              type="primary"
-              size="large"
-              onClick={() => {
-                setForceInitialState(false);
-                setHasSubmittedQuery(true);
-              }}
-              style={{
-                minWidth: '160px',
-                borderRadius: '10px',
-                height: '44px',
-                fontSize: '15px',
-                fontWeight: 600
-              }}
-            >
-              View Previous Results
-            </Button>
-          )}
-
-          {/* Clear Results Button - Enhanced styling */}
-          {!forceInitialState && currentResult && (
-            <Button
-              type="default"
-              size="large"
-              onClick={() => {
-                handleClearResults();
-                setForceInitialState(true);
-              }}
-              style={{
-                borderRadius: '10px',
-                border: '1px solid #d1d5db',
-                background: 'white',
-                color: '#6b7280',
-                fontWeight: 500,
-                height: '44px',
-                padding: '0 20px',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              Clear & Start Fresh
-            </Button>
-          )}
-        </div>
+        {/* Clear Results Button - Enhanced styling */}
+        {!forceInitialState && currentResult && (
+          <Button
+            type="default"
+            size="large"
+            onClick={() => {
+              handleClearResults();
+              setForceInitialState(true);
+            }}
+            style={{
+              borderRadius: '10px',
+              border: '1px solid #d1d5db',
+              background: 'white',
+              color: '#6b7280',
+              fontWeight: 500,
+              height: '44px',
+              padding: '0 20px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Clear & Start Fresh
+          </Button>
+        )}
       </div>
 
       {/* Query Processing Viewer - Show only after query submission - Full width like dashboard */}

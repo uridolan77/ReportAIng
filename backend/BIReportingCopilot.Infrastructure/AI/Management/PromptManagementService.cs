@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
-using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
 using System.Text;
@@ -553,8 +552,82 @@ public class PromptManagementService : IContextManager
 
     private async Task<UserContext> BuildUserContextAsync(string userId)
     {
-        // Simplified implementation - full implementation available in original ContextManager
-        return CreateDefaultUserContext(userId);
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
+            {
+                if (context is BICopilotContext legacyContext)
+                {
+                    var userContext = CreateDefaultUserContext(userId);
+
+                    // Get user's query history from the last 30 days
+                    var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+                    var queryHistory = await legacyContext.QueryHistory
+                        .Where(q => q.UserId == userId && q.ExecutedAt >= thirtyDaysAgo && q.IsSuccessful)
+                        .OrderByDescending(q => q.ExecutedAt)
+                        .Take(100)
+                        .ToListAsync();
+
+                    if (queryHistory.Any())
+                    {
+                        // Extract preferred tables from successful queries
+                        var tableUsage = new Dictionary<string, int>();
+                        var filterPatterns = new Dictionary<string, int>();
+                        var queryPatterns = new List<QueryPattern>();
+
+                        foreach (var query in queryHistory)
+                        {
+                            if (!string.IsNullOrEmpty(query.GeneratedSql))
+                            {
+                                // Extract tables from SQL
+                                var tables = ExtractTablesFromSql(query.GeneratedSql);
+                                foreach (var table in tables)
+                                {
+                                    tableUsage[table] = tableUsage.GetValueOrDefault(table, 0) + 1;
+                                }
+
+                                // Extract common filter patterns
+                                var filters = ExtractFiltersFromQuery(query.Query);
+                                foreach (var filter in filters)
+                                {
+                                    filterPatterns[filter] = filterPatterns.GetValueOrDefault(filter, 0) + 1;
+                                }
+                            }
+                        }
+
+                        // Set preferred tables (top 10 most used)
+                        userContext.PreferredTables = tableUsage
+                            .OrderByDescending(kvp => kvp.Value)
+                            .Take(10)
+                            .Select(kvp => kvp.Key)
+                            .ToList();
+
+                        // Set common filters (top 10 most used)
+                        userContext.CommonFilters = filterPatterns
+                            .Where(kvp => kvp.Value >= 2) // Used at least twice
+                            .OrderByDescending(kvp => kvp.Value)
+                            .Take(10)
+                            .Select(kvp => kvp.Key)
+                            .ToList();
+
+                        // Infer domain from query patterns
+                        userContext.Domain = InferUserDomain(queryHistory);
+
+                        // Build query patterns
+                        userContext.RecentPatterns = BuildQueryPatterns(queryHistory);
+                    }
+
+                    return userContext;
+                }
+
+                return CreateDefaultUserContext(userId);
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error building user context for user {UserId}", userId);
+            return CreateDefaultUserContext(userId);
+        }
     }
 
     private UserContext CreateDefaultUserContext(string userId)
@@ -839,5 +912,143 @@ public class PromptManagementService : IContextManager
     private void UpdateUserDomain(UserContext context, QueryResponse response)
     {
         // Update user domain based on query patterns
+    }
+
+    private List<string> ExtractFiltersFromQuery(string naturalLanguageQuery)
+    {
+        var filters = new List<string>();
+        var lowerQuery = naturalLanguageQuery.ToLowerInvariant();
+
+        // Common filter patterns
+        var filterPatterns = new Dictionary<string, string[]>
+        {
+            ["time_filters"] = new[] { "today", "yesterday", "last week", "last month", "this month", "this year" },
+            ["player_filters"] = new[] { "active players", "new players", "vip players", "blocked players" },
+            ["game_filters"] = new[] { "slots", "table games", "live casino", "sports betting" },
+            ["country_filters"] = new[] { "country", "region", "geography" },
+            ["currency_filters"] = new[] { "currency", "eur", "usd", "gbp" },
+            ["amount_filters"] = new[] { "deposit", "withdrawal", "bet", "win", "revenue" }
+        };
+
+        foreach (var category in filterPatterns)
+        {
+            foreach (var pattern in category.Value)
+            {
+                if (lowerQuery.Contains(pattern))
+                {
+                    filters.Add(pattern);
+                }
+            }
+        }
+
+        return filters.Distinct().ToList();
+    }
+
+    private string InferUserDomain(List<UnifiedQueryHistoryEntity> queryHistory)
+    {
+        var domainKeywords = new Dictionary<string, string[]>
+        {
+            ["Gaming"] = new[] { "game", "slot", "casino", "bet", "win", "provider", "rtp" },
+            ["Finance"] = new[] { "deposit", "withdrawal", "revenue", "cost", "profit", "payment" },
+            ["Marketing"] = new[] { "campaign", "bonus", "promotion", "acquisition", "retention" },
+            ["Analytics"] = new[] { "trend", "analysis", "performance", "metric", "kpi" },
+            ["Operations"] = new[] { "player", "user", "session", "activity", "behavior" }
+        };
+
+        var domainScores = new Dictionary<string, int>();
+
+        foreach (var query in queryHistory)
+        {
+            var lowerQuery = query.Query.ToLowerInvariant();
+
+            foreach (var domain in domainKeywords)
+            {
+                var score = domain.Value.Count(keyword => lowerQuery.Contains(keyword));
+                domainScores[domain.Key] = domainScores.GetValueOrDefault(domain.Key, 0) + score;
+            }
+        }
+
+        return domainScores.Any()
+            ? domainScores.OrderByDescending(kvp => kvp.Value).First().Key
+            : "General";
+    }
+
+    private List<QueryPattern> BuildQueryPatterns(List<UnifiedQueryHistoryEntity> queryHistory)
+    {
+        var patterns = new List<QueryPattern>();
+        var patternGroups = new Dictionary<string, List<UnifiedQueryHistoryEntity>>();
+
+        // Group similar queries
+        foreach (var query in queryHistory)
+        {
+            var pattern = ExtractQueryPattern(query.Query);
+            if (!patternGroups.ContainsKey(pattern))
+            {
+                patternGroups[pattern] = new List<UnifiedQueryHistoryEntity>();
+            }
+            patternGroups[pattern].Add(query);
+        }
+
+        // Build pattern objects
+        foreach (var group in patternGroups.Where(g => g.Value.Count >= 2)) // At least 2 occurrences
+        {
+            var lastUsed = group.Value.Max(q => q.ExecutedAt);
+            var associatedTables = group.Value
+                .SelectMany(q => ExtractTablesFromSql(q.GeneratedSql ?? ""))
+                .Distinct()
+                .ToList();
+
+            patterns.Add(new QueryPattern
+            {
+                Pattern = group.Key,
+                Frequency = group.Value.Count,
+                LastUsed = lastUsed,
+                Intent = InferQueryIntent(group.Key),
+                AssociatedTables = associatedTables
+            });
+        }
+
+        return patterns.OrderByDescending(p => p.Frequency).Take(10).ToList();
+    }
+
+    private string ExtractQueryPattern(string naturalLanguageQuery)
+    {
+        var lowerQuery = naturalLanguageQuery.ToLowerInvariant();
+
+        // Normalize common patterns
+        if (lowerQuery.Contains("top") && lowerQuery.Contains("player"))
+            return "top_players_analysis";
+        if (lowerQuery.Contains("deposit") && lowerQuery.Contains("trend"))
+            return "deposit_trend_analysis";
+        if (lowerQuery.Contains("game") && lowerQuery.Contains("performance"))
+            return "game_performance_analysis";
+        if (lowerQuery.Contains("revenue") && lowerQuery.Contains("country"))
+            return "revenue_by_geography";
+        if (lowerQuery.Contains("player") && lowerQuery.Contains("behavior"))
+            return "player_behavior_analysis";
+
+        // Default pattern based on main keywords
+        var keywords = new[] { "player", "game", "deposit", "revenue", "country", "bonus" };
+        var foundKeywords = keywords.Where(k => lowerQuery.Contains(k)).ToList();
+
+        return foundKeywords.Any()
+            ? string.Join("_", foundKeywords) + "_query"
+            : "general_query";
+    }
+
+    private QueryIntent InferQueryIntent(string pattern)
+    {
+        if (pattern.Contains("top") || pattern.Contains("best"))
+            return QueryIntent.Comparison;
+        if (pattern.Contains("trend") || pattern.Contains("over_time"))
+            return QueryIntent.Trend;
+        if (pattern.Contains("performance") || pattern.Contains("metric"))
+            return QueryIntent.Aggregation;
+        if (pattern.Contains("behavior") || pattern.Contains("activity"))
+            return QueryIntent.Filtering;
+        if (pattern.Contains("revenue") || pattern.Contains("financial"))
+            return QueryIntent.Aggregation;
+
+        return QueryIntent.General;
     }
 }

@@ -39,6 +39,11 @@ public interface ILLMManagementService
     /// Get health status for all providers
     /// </summary>
     Task<List<LLMProviderStatus>> GetProviderHealthStatusAsync();
+
+    /// <summary>
+    /// Get cached health status for all providers (for dashboard summary)
+    /// </summary>
+    Task<List<LLMProviderStatus>> GetCachedProviderHealthStatusAsync();
     
     #endregion
     
@@ -199,15 +204,4 @@ public class ProviderPerformanceMetrics
     public Dictionary<string, int> ErrorsByType { get; set; } = new();
 }
 
-/// <summary>
-/// Error analysis data
-/// </summary>
-public class ErrorAnalysis
-{
-    public string ProviderId { get; set; } = string.Empty;
-    public int TotalErrors { get; set; }
-    public double ErrorRate { get; set; }
-    public Dictionary<string, int> ErrorsByType { get; set; } = new();
-    public Dictionary<string, int> ErrorsByModel { get; set; } = new();
-    public List<string> CommonErrorMessages { get; set; } = new();
-}
+// ErrorAnalysis class moved to PerformanceModels.cs to consolidate duplications

@@ -56,12 +56,7 @@ public class PopularTable
     public DateTime LastAccessed { get; set; }
 }
 
-public class ErrorAnalysis
-{
-    public int TotalErrors { get; set; }
-    public Dictionary<string, int> ErrorsByType { get; set; } = new();
-    public List<string> CommonErrorMessages { get; set; } = new();
-}
+// ErrorAnalysis moved to PerformanceModels.cs to consolidate duplications
 
 public class SystemStatistics
 {

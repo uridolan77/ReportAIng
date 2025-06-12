@@ -3,10 +3,11 @@ using System.ComponentModel.DataAnnotations;
 namespace BIReportingCopilot.Core.Models;
 
 /// <summary>
-/// Query execution metrics for ML analysis
+/// Comprehensive query execution metrics for ML analysis (consolidated from multiple duplicates)
 /// </summary>
 public class QueryMetrics
 {
+    // Individual query properties
     public string QueryId { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
     public string NaturalLanguageQuery { get; set; } = string.Empty;
@@ -18,6 +19,14 @@ public class QueryMetrics
     public double? ConfidenceScore { get; set; }
     public string? ErrorMessage { get; set; }
     public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
+
+    // Aggregate metrics (from GetQueryHistoryQuery)
+    public int TotalQueries { get; set; }
+    public int SuccessfulQueries { get; set; }
+    public double AverageExecutionTime { get; set; }
+    public double SuccessRate { get; set; }
+    public List<string> MostCommonErrors { get; set; } = new();
+    public List<string> PopularQuestions { get; set; } = new();
 
     // Additional properties expected by Infrastructure services
     public bool CacheHit { get; set; }

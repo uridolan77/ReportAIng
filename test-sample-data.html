@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test LLM Sample Data</title>
+</head>
+<body>
+    <h1>Test LLM Sample Data</h1>
+    <button onclick="addSampleData()">Add Sample Data</button>
+    <button onclick="checkDashboard()">Check Dashboard</button>
+    <button onclick="checkUsageHistory()">Check Usage History</button>
+    <div id="result"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:55243/api';
+        
+        async function addSampleData() {
+            try {
+                const response = await fetch(`${API_BASE}/LLMManagement/debug/add-sample-data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                const result = await response.json();
+                document.getElementById('result').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<pre>Error: ${error.message}</pre>`;
+            }
+        }
+        
+        async function checkDashboard() {
+            try {
+                const response = await fetch(`${API_BASE}/LLMManagement/dashboard/summary`);
+                const result = await response.json();
+                document.getElementById('result').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<pre>Error: ${error.message}</pre>`;
+            }
+        }
+        
+        async function checkUsageHistory() {
+            try {
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - 30);
+                const endDate = new Date();
+                
+                const params = new URLSearchParams({
+                    startDate: startDate.toISOString().split('T')[0],
+                    endDate: endDate.toISOString().split('T')[0],
+                    take: '10'
+                });
+                
+                const response = await fetch(`${API_BASE}/LLMManagement/usage/history?${params}`);
+                const result = await response.json();
+                document.getElementById('result').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<pre>Error: ${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

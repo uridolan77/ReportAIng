@@ -1,41 +1,44 @@
 /**
  * Provider Settings Component
- * 
+ *
  * Manages LLM provider configurations including API keys, endpoints,
  * connection testing, and provider health monitoring.
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Table, 
-  Button, 
-  Modal, 
-  Form, 
-  Input, 
-  Switch, 
-  Select, 
-  Badge, 
-  Space, 
-  Popconfirm,
+import {
+  Button,
+  Modal,
+  Form,
+  Input,
+  Switch,
+  Select,
+  Badge,
+  Space,
   Alert,
-  Spin,
-  Card,
-  Flex
+  Spin
 } from 'antd';
-import { 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
+import {
+  EditOutlined,
+  DeleteOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
-  ApiOutlined,
-  ReloadOutlined
+  ApiOutlined
 } from '@ant-design/icons';
-import { 
-  llmManagementService, 
-  LLMProviderConfig, 
-  LLMProviderStatus 
+import {
+  llmManagementService,
+  LLMProviderConfig,
+  LLMProviderStatus
 } from '../../services/llmManagementService';
+import { designTokens } from '../core/design-system';
+import {
+  LLMTable,
+  LLMFormModal,
+  LLMPageHeader,
+  providerActions,
+  createProviderHeaderActions,
+  type LLMTableColumn
+} from './components';
 
 const { Option } = Select;
 
@@ -164,17 +167,27 @@ export const ProviderSettings: React.FC = () => {
     }
   };
 
-  const columns = [
+  const columns: LLMTableColumn[] = [
     {
       title: 'Provider',
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: LLMProviderConfig) => (
         <Space>
-          <ApiOutlined />
+          <ApiOutlined style={{ color: designTokens.colors.primary }} />
           <div>
-            <div style={{ fontWeight: 'bold' }}>{text}</div>
-            <div style={{ fontSize: '12px', color: '#666' }}>{record.type}</div>
+            <div style={{
+              fontWeight: designTokens.typography.fontWeight.semibold,
+              color: designTokens.colors.text,
+            }}>
+              {text}
+            </div>
+            <div style={{
+              fontSize: designTokens.typography.fontSize.xs,
+              color: designTokens.colors.textSecondary
+            }}>
+              {record.type}
+            </div>
           </div>
         </Space>
       ),
@@ -187,9 +200,9 @@ export const ProviderSettings: React.FC = () => {
         return (
           <Space direction="vertical" size="small">
             <Badge status={health.status as any} text={health.text} />
-            <Badge 
-              status={record.isEnabled ? 'success' : 'default'} 
-              text={record.isEnabled ? 'Enabled' : 'Disabled'} 
+            <Badge
+              status={record.isEnabled ? 'success' : 'default'}
+              text={record.isEnabled ? 'Enabled' : 'Disabled'}
             />
             {record.isDefault && <Badge status="processing" text="Default" />}
           </Space>
@@ -201,183 +214,165 @@ export const ProviderSettings: React.FC = () => {
       key: 'config',
       render: (_: any, record: LLMProviderConfig) => (
         <Space direction="vertical" size="small">
-          <div style={{ fontSize: '12px' }}>
+          <div style={{ fontSize: designTokens.typography.fontSize.xs }}>
             <strong>API Key:</strong> {record.apiKey ? '✅ Configured' : '❌ Missing'}
           </div>
           {record.endpoint && (
-            <div style={{ fontSize: '12px' }}>
+            <div style={{ fontSize: designTokens.typography.fontSize.xs }}>
               <strong>Endpoint:</strong> {record.endpoint}
             </div>
           )}
           {record.organization && (
-            <div style={{ fontSize: '12px' }}>
+            <div style={{ fontSize: designTokens.typography.fontSize.xs }}>
               <strong>Org:</strong> {record.organization}
             </div>
           )}
         </Space>
       ),
     },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_: any, record: LLMProviderConfig) => (
-        <Space>
-          <Button
-            size="small"
-            icon={<CheckCircleOutlined />}
-            loading={testingProvider === record.providerId}
-            onClick={() => handleTestProvider(record.providerId)}
-          >
-            Test
-          </Button>
-          <Button
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEditProvider(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Are you sure you want to delete this provider?"
-            onConfirm={() => handleDeleteProvider(record.providerId)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-            >
-              Delete
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
   ];
 
+  const handleRefresh = () => {
+    loadProviders();
+    loadProviderHealth();
+  };
+
+  const tableActions = providerActions(
+    handleTestProvider,
+    handleEditProvider,
+    handleDeleteProvider,
+    testingProvider
+  );
+
   return (
-    <div style={{ padding: '24px' }}>
-      {/* Header Actions */}
-      <Card size="small" style={{ marginBottom: '16px' }}>
-        <Flex justify="between" align="center">
-          <div>
-            <h4 style={{ margin: 0 }}>LLM Provider Configuration</h4>
-            <p style={{ margin: 0, color: '#666' }}>
-              Configure and manage AI providers for your application
-            </p>
-          </div>
-          <Space>
-            <Button 
-              icon={<ReloadOutlined />} 
-              onClick={() => {
-                loadProviders();
-                loadProviderHealth();
-              }}
-            >
-              Refresh
-            </Button>
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />}
-              onClick={handleAddProvider}
-            >
-              Add Provider
-            </Button>
-          </Space>
-        </Flex>
-      </Card>
+    <div style={{ padding: designTokens.spacing.lg }}>
+      {/* Header */}
+      <LLMPageHeader
+        title="LLM Provider Configuration"
+        description="Configure and manage AI providers for your application"
+        actions={createProviderHeaderActions(handleAddProvider)}
+        onRefresh={handleRefresh}
+        refreshLoading={loading}
+      />
 
       {/* Providers Table */}
-      <Table
+      <LLMTable
         columns={columns}
         dataSource={providers}
         rowKey="providerId"
         loading={loading}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showQuickJumper: true,
-        }}
+        actions={tableActions}
+        actionColumnWidth={120}
       />
 
       {/* Provider Configuration Modal */}
-      <Modal
+      <LLMFormModal
         title={editingProvider ? 'Edit Provider' : 'Add Provider'}
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
-        onOk={() => form.submit()}
-        width={600}
+        form={form}
+        onFinish={handleSaveProvider}
+        width={700}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSaveProvider}
+        <Form.Item
+          name="name"
+          label="Provider Name"
+          rules={[{ required: true, message: 'Please enter provider name' }]}
         >
-          <Form.Item
-            name="name"
-            label="Provider Name"
-            rules={[{ required: true, message: 'Please enter provider name' }]}
-          >
-            <Input placeholder="e.g., OpenAI Production" />
-          </Form.Item>
+          <Input
+            placeholder="e.g., OpenAI Production"
+            style={{ borderRadius: designTokens.borderRadius.medium }}
+          />
+        </Form.Item>
 
-          <Form.Item
-            name="type"
-            label="Provider Type"
-            rules={[{ required: true, message: 'Please select provider type' }]}
+        <Form.Item
+          name="type"
+          label="Provider Type"
+          rules={[{ required: true, message: 'Please select provider type' }]}
+        >
+          <Select
+            placeholder="Select provider type"
+            style={{ borderRadius: designTokens.borderRadius.medium }}
           >
-            <Select placeholder="Select provider type">
-              <Option value="OpenAI">OpenAI</Option>
-              <Option value="AzureOpenAI">Azure OpenAI</Option>
-              <Option value="Anthropic">Anthropic</Option>
-              <Option value="Google">Google AI</Option>
-            </Select>
-          </Form.Item>
+            <Option value="OpenAI">OpenAI</Option>
+            <Option value="AzureOpenAI">Azure OpenAI</Option>
+            <Option value="Anthropic">Anthropic</Option>
+            <Option value="Google">Google AI</Option>
+          </Select>
+        </Form.Item>
 
+        <Form.Item
+          name="apiKey"
+          label="API Key"
+          rules={[{ required: !editingProvider, message: 'Please enter API key' }]}
+        >
+          <Input.Password
+            placeholder={editingProvider ? "Leave empty to keep current key" : "Enter API key"}
+            style={{ borderRadius: designTokens.borderRadius.medium }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="endpoint"
+          label="Endpoint URL (Optional)"
+        >
+          <Input
+            placeholder="https://api.openai.com/v1"
+            style={{ borderRadius: designTokens.borderRadius.medium }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="organization"
+          label="Organization ID (Optional)"
+        >
+          <Input
+            placeholder="org-xxxxxxxxxx"
+            style={{ borderRadius: designTokens.borderRadius.medium }}
+          />
+        </Form.Item>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: designTokens.spacing.lg,
+          marginTop: designTokens.spacing.md
+        }}>
           <Form.Item
-            name="apiKey"
-            label="API Key"
-            rules={[{ required: !editingProvider, message: 'Please enter API key' }]}
+            name="isEnabled"
+            valuePropName="checked"
+            style={{ margin: 0 }}
           >
-            <Input.Password 
-              placeholder={editingProvider ? "Leave empty to keep current key" : "Enter API key"}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="endpoint"
-            label="Endpoint URL (Optional)"
-          >
-            <Input placeholder="https://api.openai.com/v1" />
-          </Form.Item>
-
-          <Form.Item
-            name="organization"
-            label="Organization ID (Optional)"
-          >
-            <Input placeholder="org-xxxxxxxxxx" />
-          </Form.Item>
-
-          <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-            <Form.Item
-              name="isEnabled"
-              valuePropName="checked"
-              style={{ margin: 0 }}
-            >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: designTokens.spacing.sm
+            }}>
               <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
-            </Form.Item>
+              <span style={{ fontSize: designTokens.typography.fontSize.sm }}>
+                Enable Provider
+              </span>
+            </div>
+          </Form.Item>
 
-            <Form.Item
-              name="isDefault"
-              valuePropName="checked"
-              style={{ margin: 0 }}
-            >
+          <Form.Item
+            name="isDefault"
+            valuePropName="checked"
+            style={{ margin: 0 }}
+          >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: designTokens.spacing.sm
+            }}>
               <Switch checkedChildren="Default" unCheckedChildren="Not Default" />
-            </Form.Item>
-          </Space>
-        </Form>
-      </Modal>
+              <span style={{ fontSize: designTokens.typography.fontSize.sm }}>
+                Set as Default
+              </span>
+            </div>
+          </Form.Item>
+        </div>
+      </LLMFormModal>
     </div>
   );
 };

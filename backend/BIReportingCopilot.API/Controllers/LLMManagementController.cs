@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
 using static BIReportingCopilot.Core.ApplicationConstants;
-using ErrorAnalysis = BIReportingCopilot.Core.Interfaces.ErrorAnalysis;
 
 namespace BIReportingCopilot.API.Controllers;
 
@@ -13,18 +12,21 @@ namespace BIReportingCopilot.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,Analyst")]
 public class LLMManagementController : ControllerBase
 {
     private readonly ILLMManagementService _llmManagementService;
     private readonly ILogger<LLMManagementController> _logger;
+    private readonly IWebHostEnvironment _environment;
 
     public LLMManagementController(
         ILLMManagementService llmManagementService,
-        ILogger<LLMManagementController> logger)
+        ILogger<LLMManagementController> logger,
+        IWebHostEnvironment environment)
     {
         _llmManagementService = llmManagementService;
         _logger = logger;
+        _environment = environment;
     }
 
     #region Provider Management
@@ -69,9 +71,10 @@ public class LLMManagementController : ControllerBase
     }
 
     /// <summary>
-    /// Create or update a provider configuration
+    /// Create or update a provider configuration (Admin only)
     /// </summary>
     [HttpPost("providers")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<LLMProviderConfig>> SaveProvider([FromBody] LLMProviderConfig provider)
     {
         try
@@ -87,9 +90,10 @@ public class LLMManagementController : ControllerBase
     }
 
     /// <summary>
-    /// Delete a provider configuration
+    /// Delete a provider configuration (Admin only)
     /// </summary>
     [HttpDelete("providers/{providerId}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> DeleteProvider(string providerId)
     {
         try
@@ -407,9 +411,10 @@ public class LLMManagementController : ControllerBase
     }
 
     /// <summary>
-    /// Set cost limit for a provider
+    /// Set cost limit for a provider (Admin only)
     /// </summary>
     [HttpPost("costs/limits/{providerId}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> SetCostLimit(string providerId, [FromBody] decimal monthlyLimit)
     {
         try
@@ -523,11 +528,16 @@ public class LLMManagementController : ControllerBase
             var startDate = endDate.AddDays(-30);
 
             var providers = await _llmManagementService.GetProvidersAsync();
-            var healthStatuses = await _llmManagementService.GetProviderHealthStatusAsync();
+            var healthStatuses = await _llmManagementService.GetCachedProviderHealthStatusAsync();
             var currentMonthCost = await _llmManagementService.GetCurrentMonthCostAsync();
             var usageAnalytics = await _llmManagementService.GetUsageAnalyticsAsync(startDate, endDate);
             var performanceMetrics = await _llmManagementService.GetPerformanceMetricsAsync(startDate, endDate);
             var costAlerts = await _llmManagementService.GetCostAlertsAsync();
+
+            // Debug logging
+            _logger.LogInformation("Dashboard Summary Debug - Start: {StartDate}, End: {EndDate}", startDate, endDate);
+            _logger.LogInformation("Dashboard Summary Debug - Total Requests: {TotalRequests}, Total Cost: {TotalCost}",
+                usageAnalytics.TotalRequests, usageAnalytics.TotalCost);
 
             var summary = new
             {
@@ -569,6 +579,93 @@ public class LLMManagementController : ControllerBase
         {
             _logger.LogError(ex, "Error retrieving dashboard summary");
             return StatusCode(500, "Error retrieving dashboard summary");
+        }
+    }
+
+    /// <summary>
+    /// Add sample usage data for testing (Development only)
+    /// </summary>
+    [HttpPost("debug/add-sample-data")]
+    [AllowAnonymous]
+    public async Task<ActionResult> AddSampleUsageData()
+    {
+        try
+        {
+            // Only allow in development
+            if (!_environment.IsDevelopment())
+            {
+                return BadRequest("This endpoint is only available in development environment");
+            }
+
+            var sampleLogs = new List<LLMUsageLog>
+            {
+                new LLMUsageLog
+                {
+                    RequestId = Guid.NewGuid().ToString(),
+                    UserId = "test-user",
+                    ProviderId = "openai",
+                    ModelId = "gpt-4",
+                    RequestType = "SQL",
+                    RequestText = "Generate SQL for sales report",
+                    ResponseText = "SELECT * FROM sales WHERE date >= '2024-01-01'",
+                    InputTokens = 50,
+                    OutputTokens = 30,
+                    TotalTokens = 80,
+                    Cost = 0.002m,
+                    DurationMs = 1500,
+                    Success = true,
+                    Timestamp = DateTime.UtcNow.AddHours(-2),
+                    Metadata = new Dictionary<string, object> { { "useCase", "SQL" } }
+                },
+                new LLMUsageLog
+                {
+                    RequestId = Guid.NewGuid().ToString(),
+                    UserId = "test-user",
+                    ProviderId = "openai",
+                    ModelId = "gpt-4",
+                    RequestType = "Insights",
+                    RequestText = "Analyze customer trends",
+                    ResponseText = "Customer acquisition has increased by 15% this quarter",
+                    InputTokens = 75,
+                    OutputTokens = 45,
+                    TotalTokens = 120,
+                    Cost = 0.003m,
+                    DurationMs = 2200,
+                    Success = true,
+                    Timestamp = DateTime.UtcNow.AddHours(-1),
+                    Metadata = new Dictionary<string, object> { { "useCase", "Insights" } }
+                },
+                new LLMUsageLog
+                {
+                    RequestId = Guid.NewGuid().ToString(),
+                    UserId = "test-user",
+                    ProviderId = "azure-openai",
+                    ModelId = "gpt-35-turbo",
+                    RequestType = "SQL",
+                    RequestText = "Create query for revenue analysis",
+                    ResponseText = "SELECT SUM(revenue) FROM transactions GROUP BY month",
+                    InputTokens = 40,
+                    OutputTokens = 25,
+                    TotalTokens = 65,
+                    Cost = 0.001m,
+                    DurationMs = 1200,
+                    Success = true,
+                    Timestamp = DateTime.UtcNow.AddMinutes(-30),
+                    Metadata = new Dictionary<string, object> { { "useCase", "SQL" } }
+                }
+            };
+
+            foreach (var log in sampleLogs)
+            {
+                await _llmManagementService.LogUsageAsync(log);
+            }
+
+            return Ok(new { message = "Sample data added successfully", count = sampleLogs.Count });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding sample usage data");
+            return StatusCode(500, "Error adding sample usage data");
         }
     }
 
