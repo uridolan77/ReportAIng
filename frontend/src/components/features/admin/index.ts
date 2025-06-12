@@ -5,7 +5,14 @@
  * Includes AI tuning, schema management, cache, security, and suggestions.
  */
 
-// AI Tuning & Configuration
+// AI Tuning & Configuration - New Consolidated Components
+export { TuningOverview } from '../../Tuning/TuningOverview';
+export { AIConfigurationManager } from '../../Tuning/AIConfigurationManager';
+export { PromptManagementHub } from '../../Tuning/PromptManagementHub';
+export { KnowledgeBaseManager } from '../../Tuning/KnowledgeBaseManager';
+export { MonitoringDashboard } from '../../Tuning/MonitoringDashboard';
+
+// Legacy AI Tuning Components (still used internally)
 export { TuningDashboard } from '../../Tuning/TuningDashboard';
 export { AISettingsManager } from '../../Tuning/AISettingsManager';
 export { PromptTemplateManager } from '../../Tuning/PromptTemplateManager';

@@ -27,6 +27,7 @@ import { useQueryContext } from '../components/QueryInterface/QueryProvider';
 import { ModernPageLayout, PageSection, PageGrid } from '../components/core/Layouts';
 import { Card, CardContent } from '../components/core/Card';
 import { Button } from '../components/core/Button';
+import { Breadcrumb } from '../components/core/Navigation';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -117,9 +118,12 @@ const TemplatesPageContent: React.FC = () => {
       title="Query Templates"
       subtitle={`Pre-built queries to help you get started quickly (${templates.length} available)`}
       breadcrumb={
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
-          <HomeOutlined /> Home / <BookOutlined /> Query Templates
-        </div>
+        <Breadcrumb
+          items={[
+            { title: 'Home', path: '/', icon: <HomeOutlined /> },
+            { title: 'Query Templates', icon: <BookOutlined /> }
+          ]}
+        />
       }
       className="full-width-content"
     >

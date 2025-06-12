@@ -10,6 +10,8 @@ import { Layout as AntLayout } from 'antd';
 import { designTokens } from './design-system';
 import { Menu } from './Navigation';
 import type { MenuItem } from './Navigation';
+import { PageHeader } from './PageHeader';
+import type { BreadcrumbItem } from './Navigation';
 
 const { Header, Sider, Content, Footer } = AntLayout;
 
@@ -46,6 +48,7 @@ export interface PageLayoutProps {
   title?: React.ReactNode;
   subtitle?: React.ReactNode;
   breadcrumb?: React.ReactNode;
+  breadcrumbItems?: BreadcrumbItem[];
   actions?: React.ReactNode;
   tabs?: React.ReactNode;
   className?: string;
@@ -182,104 +185,71 @@ const AppLayout = forwardRef<HTMLDivElement, AppLayoutProps>(
 
 AppLayout.displayName = 'AppLayout';
 
-// Page Layout Component
+// Page Layout Component - Header on background
 const PageLayout = forwardRef<HTMLDivElement, PageLayoutProps>(
-  ({ 
-    children, 
-    title, 
-    subtitle, 
-    breadcrumb, 
-    actions, 
+  ({
+    children,
+    title,
+    subtitle,
+    breadcrumb,
+    breadcrumbItems,
+    actions,
     tabs,
-    className, 
-    style 
+    className,
+    style
   }, ref) => {
-    const pageStyle = {
+    const containerStyle = {
       width: '100%',
       maxWidth: '100%',
       margin: 0,
-      backgroundColor: designTokens.colors.white,
-      borderRadius: designTokens.borderRadius.large,
-      boxShadow: designTokens.shadows.small,
-      overflow: 'hidden',
       fontFamily: 'var(--font-family-primary)',
       fontSize: 'var(--text-base)',
       lineHeight: 'var(--line-height-normal)',
       ...style,
     };
 
+    // Use breadcrumbItems if provided, otherwise fall back to breadcrumb prop
+    const shouldShowHeader = title || subtitle || breadcrumb || breadcrumbItems || actions;
+
     return (
-      <div ref={ref} className={className} style={pageStyle}>
-        {(title || subtitle || breadcrumb || actions) && (
-          <div
-            style={{
-              padding: `${designTokens.spacing.lg} ${designTokens.spacing.xl}`,
-              borderBottom: `1px solid ${designTokens.colors.border}`,
-              backgroundColor: designTokens.colors.white,
-            }}
-          >
-            {breadcrumb && (
-              <div style={{ marginBottom: designTokens.spacing.md }}>
-                {breadcrumb}
-              </div>
-            )}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: designTokens.spacing.lg,
-              }}
-            >
-              <div>
-                {title && (
-                  <h1
-                    style={{
-                      margin: 0,
-                      fontSize: designTokens.typography.fontSize['3xl'],
-                      fontWeight: designTokens.typography.fontWeight.bold,
-                      color: designTokens.colors.text,
-                      lineHeight: designTokens.typography.lineHeight.tight,
-                    }}
-                  >
-                    {title}
-                  </h1>
-                )}
-                {subtitle && (
-                  <p
-                    style={{
-                      margin: title ? `${designTokens.spacing.sm} 0 0 0` : '0',
-                      fontSize: designTokens.typography.fontSize.lg,
-                      color: designTokens.colors.textSecondary,
-                      lineHeight: designTokens.typography.lineHeight.normal,
-                    }}
-                  >
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-              {actions && (
-                <div style={{ flexShrink: 0 }}>
-                  {actions}
-                </div>
-              )}
-            </div>
+      <div ref={ref} className={className} style={containerStyle}>
+        {/* Header on background using PageHeader component */}
+        {shouldShowHeader && (
+          <PageHeader
+            title={title}
+            subtitle={subtitle}
+            breadcrumbItems={breadcrumbItems}
+            actions={actions}
+          />
+        )}
+
+        {/* Legacy breadcrumb support (for backward compatibility) */}
+        {breadcrumb && !breadcrumbItems && (
+          <div style={{
+            marginBottom: designTokens.spacing.lg,
+            fontSize: designTokens.typography.fontSize.sm,
+            color: designTokens.colors.textSecondary,
+          }}>
+            {breadcrumb}
           </div>
         )}
+
+        {/* Tabs on background */}
         {tabs && (
-          <div
-            style={{
-              borderBottom: `1px solid ${designTokens.colors.border}`,
-              backgroundColor: designTokens.colors.white,
-            }}
-          >
+          <div style={{ marginBottom: designTokens.spacing.lg }}>
             {tabs}
           </div>
         )}
+
+        {/* Content in white card */}
         <div
           style={{
             width: '100%',
             maxWidth: '100%',
+            backgroundColor: designTokens.colors.white,
+            borderRadius: designTokens.borderRadius.large,
+            boxShadow: designTokens.shadows.small,
+            overflow: 'hidden',
             padding: designTokens.spacing.xl,
           }}
         >

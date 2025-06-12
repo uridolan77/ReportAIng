@@ -47,16 +47,7 @@ export const LLMSelector: React.FC<LLMSelectorProps> = ({
   const [providerHealth, setProviderHealth] = useState<LLMProviderStatus[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  useEffect(() => {
-    if (selectedProviderId) {
-      loadModelsForProvider(selectedProviderId);
-    }
-  }, [selectedProviderId, useCase, loadModelsForProvider]);
-
+  // Define callback functions first
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -101,6 +92,17 @@ export const LLMSelector: React.FC<LLMSelectorProps> = ({
       console.error('Failed to load models:', error);
     }
   }, [useCase, selectedModelId, onModelChange]);
+
+  // Use effects after callback definitions
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    if (selectedProviderId) {
+      loadModelsForProvider(selectedProviderId);
+    }
+  }, [selectedProviderId, useCase, loadModelsForProvider]);
 
   const getProviderStatus = (providerId: string) => {
     const health = providerHealth.find(h => h.providerId === providerId);

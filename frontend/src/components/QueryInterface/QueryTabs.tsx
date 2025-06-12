@@ -606,7 +606,15 @@ export const QueryTabs: React.FC = () => {
                         });
                         return dataToUse;
                       })()}
-                      columns={currentResult.result.columns}
+                      columns={(() => {
+                        const cols = currentResult.result?.metadata?.columns || [];
+                        console.log('🎯 QueryTabs - Passing columns to Chart (main):', {
+                          columnsLength: cols.length,
+                          columns: cols,
+                          columnNames: cols.map(col => col.name || col)
+                        });
+                        return cols.map(col => col.name || col);
+                      })()}
                       config={{
                         type: currentVisualization?.chartType?.toLowerCase() as any || 'bar',
                         title: currentVisualization?.title || 'Data Visualization',
@@ -712,7 +720,15 @@ export const QueryTabs: React.FC = () => {
 
                           return dataToUse;
                         })()}
-                        columns={currentResult.result.columns}
+                        columns={(() => {
+                          const cols = currentResult.result?.metadata?.columns || [];
+                          console.log('🎯 QueryTabs - Passing columns to Chart (preview):', {
+                            columnsLength: cols.length,
+                            columns: cols,
+                            columnNames: cols.map(col => col.name || col)
+                          });
+                          return cols.map(col => col.name || col);
+                        })()}
                         config={{
                           type: 'bar',
                           title: 'Data Preview',

@@ -17,6 +17,8 @@ import {
   Alert,
   Badge
 } from '../../components/core';
+import { Breadcrumb } from '../../components/core/Navigation';
+import { HomeOutlined, SettingOutlined, RobotOutlined } from '@ant-design/icons';
 import { LLMDashboard } from '../../components/LLMManagement/LLMDashboard';
 import { ProviderSettings } from '../../components/LLMManagement/ProviderSettings';
 import { ModelConfiguration } from '../../components/LLMManagement/ModelConfiguration';
@@ -44,6 +46,15 @@ const LLMManagementPage: React.FC = () => {
       <PageLayout
         title="LLM Management"
         subtitle="Access Denied"
+        breadcrumb={
+          <Breadcrumb
+            items={[
+              { title: 'Home', path: '/', icon: <HomeOutlined /> },
+              { title: 'Admin', path: '/admin', icon: <SettingOutlined /> },
+              { title: 'LLM Management', icon: <RobotOutlined /> }
+            ]}
+          />
+        }
       >
         <div style={{ padding: '24px' }}>
           <Alert
@@ -234,6 +245,15 @@ const LLMManagementPage: React.FC = () => {
     <PageLayout
       title="LLM Management"
       subtitle="Configure AI providers, monitor usage, track costs, and optimize performance"
+      breadcrumb={
+        <Breadcrumb
+          items={[
+            { title: 'Home', path: '/', icon: <HomeOutlined /> },
+            { title: 'Admin', path: '/admin', icon: <SettingOutlined /> },
+            { title: 'LLM Management', icon: <RobotOutlined /> }
+          ]}
+        />
+      }
       tabs={
         <Tabs
           variant="line"

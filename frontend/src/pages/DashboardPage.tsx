@@ -17,6 +17,8 @@ import {
   Alert
 } from '../components/core';
 import { ModernPageLayout } from '../components/core/Layouts';
+import { Breadcrumb } from '../components/core/Navigation';
+import { HomeOutlined, DashboardOutlined } from '@ant-design/icons';
 import DashboardBuilder from '../components/Dashboard/DashboardBuilder';
 import { DashboardView } from '../components/Dashboard/DashboardView';
 import { useCurrentResult } from '../hooks/useCurrentResult';
@@ -68,6 +70,14 @@ const DashboardPage: React.FC = () => {
     <ModernPageLayout
       title="Dashboard"
       subtitle="Create and manage interactive dashboards"
+      breadcrumb={
+        <Breadcrumb
+          items={[
+            { title: 'Home', path: '/', icon: <HomeOutlined /> },
+            { title: 'Dashboard', icon: <DashboardOutlined /> }
+          ]}
+        />
+      }
       actions={
         <Flex gap="md">
           <Button

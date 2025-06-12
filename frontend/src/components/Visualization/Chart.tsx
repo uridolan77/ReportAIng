@@ -12,8 +12,6 @@ import {
   Typography,
   Tooltip,
   Switch,
-  Slider,
-  ColorPicker,
   Row,
   Col,
   Spin
@@ -22,7 +20,6 @@ import {
   FullscreenOutlined,
   SettingOutlined,
   DownloadOutlined,
-  ReloadOutlined,
   BugOutlined
 } from '@ant-design/icons';
 import {
@@ -52,8 +49,8 @@ const { Option } = Select;
 interface ChartConfig {
   type: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'heatmap' | 'network' | 'treemap';
   title: string;
-  xAxis?: string;
-  yAxis?: string;
+  xAxis: string;
+  yAxis: string;
   colorScheme: string;
   showGrid: boolean;
   showLegend: boolean;
@@ -84,11 +81,69 @@ export const Chart: React.FC<ChartProps> = ({
   loading = false,
   debug = false
 }) => {
+  // Debug logging for columns
+  console.log('🎯 Chart component - Received props:', {
+    dataLength: data?.length || 0,
+    columns,
+    columnsType: typeof columns,
+    columnsIsArray: Array.isArray(columns),
+    columnsLength: columns?.length || 0,
+    initialConfig,
+    sampleData: data?.[0]
+  });
+
+  // Early return if columns is not provided
+  if (!columns || !Array.isArray(columns) || columns.length === 0) {
+    console.error('❌ Chart component - No columns available:', {
+      columns,
+      columnsType: typeof columns,
+      columnsIsArray: Array.isArray(columns),
+      columnsLength: columns?.length || 0,
+      dataAvailable: !!data && data.length > 0,
+      dataKeys: data && data.length > 0 ? Object.keys(data[0]) : []
+    });
+
+    // If we have data but no columns, try to extract columns from data
+    if (data && data.length > 0) {
+      const dataKeys = Object.keys(data[0]);
+      if (dataKeys.length > 0) {
+        console.log('🔄 Chart component - Attempting to extract columns from data:', dataKeys);
+        // Don't return early, let the component use the data keys as columns
+      } else {
+        return (
+          <Card title="Chart" style={{ width }}>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+              <Typography.Text type="secondary">No columns available for chart</Typography.Text>
+            </div>
+          </Card>
+        );
+      }
+    } else {
+      return (
+        <Card title="Chart" style={{ width }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+            <Typography.Text type="secondary">No columns available for chart</Typography.Text>
+          </div>
+        </Card>
+      );
+    }
+  }
+  // Use columns or extract from data if columns not available
+  const effectiveColumns = useMemo(() => {
+    if (columns && Array.isArray(columns) && columns.length > 0) {
+      return columns;
+    }
+    if (data && data.length > 0) {
+      return Object.keys(data[0]);
+    }
+    return [];
+  }, [columns, data]);
+
   const [config, setConfig] = useState<ChartConfig>({
     type: 'bar',
     title: 'Chart',
-    xAxis: columns[0] || 'name',
-    yAxis: columns[1] || 'value',
+    xAxis: (effectiveColumns && effectiveColumns.length > 0 && effectiveColumns[0]) ? effectiveColumns[0] : 'name',
+    yAxis: (effectiveColumns && effectiveColumns.length > 1 && effectiveColumns[1]) ? effectiveColumns[1] : 'value',
     colorScheme: 'default',
     showGrid: true,
     showLegend: true,
@@ -101,6 +156,16 @@ export const Chart: React.FC<ChartProps> = ({
 
   const [fullscreen, setFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  // Track columns changes
+  useEffect(() => {
+    console.log('🔄 Chart component - Columns changed:', {
+      columns,
+      columnsLength: columns?.length || 0,
+      columnsType: typeof columns,
+      isArray: Array.isArray(columns)
+    });
+  }, [columns]);
 
   useEffect(() => {
     if (initialConfig) {
@@ -307,7 +372,7 @@ export const Chart: React.FC<ChartProps> = ({
             onChange={(value) => handleConfigChange({ xAxis: value })}
             style={{ width: '100%', marginTop: 4 }}
           >
-            {columns.map(col => (
+            {(effectiveColumns || []).map(col => (
               <Option key={col} value={col}>{col}</Option>
             ))}
           </Select>
@@ -319,7 +384,7 @@ export const Chart: React.FC<ChartProps> = ({
             onChange={(value) => handleConfigChange({ yAxis: value })}
             style={{ width: '100%', marginTop: 4 }}
           >
-            {columns.map(col => (
+            {(effectiveColumns || []).map(col => (
               <Option key={col} value={col}>{col}</Option>
             ))}
           </Select>

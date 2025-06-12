@@ -6,10 +6,10 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { 
-  PageLayout, 
-  Card, 
-  Button, 
+import {
+  PageLayout,
+  Card,
+  Button,
   Tabs,
   Container,
   Stack,
@@ -17,15 +17,17 @@ import {
   Alert,
   Badge
 } from '../../components/core';
-import { TuningDashboard } from '../../components/Tuning/TuningDashboard';
-import { AISettingsManager } from '../../components/Tuning/AISettingsManager';
-import { PromptTemplateManager } from '../../components/Tuning/PromptTemplateManager';
-import { BusinessGlossaryManager } from '../../components/Tuning/BusinessGlossaryManager';
-import { QueryPatternManager } from '../../components/Tuning/QueryPatternManager';
-import { PromptLogsViewer } from '../../components/Tuning/PromptLogsViewer';
+import { Breadcrumb } from '../../components/core/Navigation';
+import { HomeOutlined, SettingOutlined } from '@ant-design/icons';
+import { TuningOverview } from '../../components/Tuning/TuningOverview';
+import { AIConfigurationManager } from '../../components/Tuning/AIConfigurationManager';
+import { PromptManagementHub } from '../../components/Tuning/PromptManagementHub';
+import { KnowledgeBaseManager } from '../../components/Tuning/KnowledgeBaseManager';
+import { AutoGenerationManager } from '../../components/Tuning/AutoGenerationManager';
+import { MonitoringDashboard } from '../../components/Tuning/MonitoringDashboard';
 
 const TuningPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('overview');
 
   const handleTabChange = useCallback((key: string) => {
     setActiveTab(key);
@@ -33,24 +35,24 @@ const TuningPage: React.FC = () => {
 
   const tabItems = [
     {
-      key: 'dashboard',
-      label: '📊 Dashboard',
+      key: 'overview',
+      label: '📊 Overview',
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
-              <h3 style={{ margin: 0 }}>AI Tuning Dashboard</h3>
+              <h3 style={{ margin: 0 }}>AI Tuning Overview</h3>
             </Card.Header>
             <Card.Content>
-              <TuningDashboard />
+              <TuningOverview onNavigateToTab={setActiveTab} />
             </Card.Content>
           </Card>
         </div>
       ),
     },
     {
-      key: 'ai-settings',
-      label: '🤖 AI Settings',
+      key: 'ai-configuration',
+      label: '🤖 AI Configuration',
       children: (
         <div className="full-width-content">
           <Stack spacing="lg">
@@ -61,10 +63,10 @@ const TuningPage: React.FC = () => {
             />
             <Card variant="default" size="large">
               <Card.Header>
-                <h3 style={{ margin: 0 }}>AI Model Configuration</h3>
+                <h3 style={{ margin: 0 }}>AI Model & Behavior Configuration</h3>
               </Card.Header>
               <Card.Content>
-                <AISettingsManager />
+                <AIConfigurationManager />
               </Card.Content>
             </Card>
           </Stack>
@@ -72,78 +74,81 @@ const TuningPage: React.FC = () => {
       ),
     },
     {
-      key: 'prompts',
-      label: '📝 Prompt Templates',
+      key: 'prompt-management',
+      label: '📝 Prompt Management',
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
-                <h3 style={{ margin: 0 }}>Prompt Template Management</h3>
+                <h3 style={{ margin: 0 }}>Prompt Templates & Testing</h3>
                 <Button variant="primary">
                   ➕ New Template
                 </Button>
               </Flex>
             </Card.Header>
             <Card.Content>
-              <PromptTemplateManager />
+              <PromptManagementHub />
             </Card.Content>
           </Card>
         </div>
       ),
     },
     {
-      key: 'glossary',
-      label: '📚 Business Glossary',
+      key: 'knowledge-base',
+      label: '📚 Knowledge Base',
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
-                <h3 style={{ margin: 0 }}>Business Terms & Definitions</h3>
+                <h3 style={{ margin: 0 }}>Business Knowledge & Data Management</h3>
                 <Button variant="primary">
-                  ➕ Add Term
+                  ➕ Add Knowledge
                 </Button>
               </Flex>
             </Card.Header>
             <Card.Content>
-              <BusinessGlossaryManager />
+              <KnowledgeBaseManager />
             </Card.Content>
           </Card>
         </div>
       ),
     },
     {
-      key: 'patterns',
-      label: '🔍 Query Patterns',
+      key: 'auto-generate',
+      label: '🔧 Auto-Generate',
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
-                <h3 style={{ margin: 0 }}>Query Pattern Analysis</h3>
-                <Badge variant="secondary">Auto-learning enabled</Badge>
+                <h3 style={{ margin: 0 }}>AI Content Auto-Generation</h3>
+                <Button variant="primary">
+                  ▶️ Start Generation
+                </Button>
               </Flex>
             </Card.Header>
             <Card.Content>
-              <QueryPatternManager />
+              <AutoGenerationManager />
             </Card.Content>
           </Card>
         </div>
       ),
     },
     {
-      key: 'logs',
-      label: '📋 Prompt Logs',
+      key: 'monitoring',
+      label: '📋 Monitoring',
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
-                <h3 style={{ margin: 0 }}>AI Prompt Logs & Analytics</h3>
+                <h3 style={{ margin: 0 }}>AI Performance & Usage Analytics</h3>
                 <Flex gap="sm">
+                  <Badge variant="info">Real-time</Badge>
                   <Button variant="outline" size="small">
-                    📤 Export Logs
+                    📤 Export Report
                   </Button>
                   <Button variant="outline" size="small">
                     🔄 Refresh
@@ -152,7 +157,7 @@ const TuningPage: React.FC = () => {
               </Flex>
             </Card.Header>
             <Card.Content>
-              <PromptLogsViewer />
+              <MonitoringDashboard />
             </Card.Content>
           </Card>
         </div>
@@ -164,6 +169,15 @@ const TuningPage: React.FC = () => {
     <PageLayout
       title="AI Tuning"
       subtitle="Configure AI models, prompts, and system behavior"
+      breadcrumb={
+        <Breadcrumb
+          items={[
+            { title: 'Home', path: '/', icon: <HomeOutlined /> },
+            { title: 'Admin', path: '/admin', icon: <SettingOutlined /> },
+            { title: 'AI Tuning', icon: <SettingOutlined /> }
+          ]}
+        />
+      }
       tabs={
         <Tabs
           variant="line"

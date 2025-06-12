@@ -14,6 +14,7 @@ import { QueryHistory } from '../components/QueryInterface/QueryHistory';
 import { ModernPageLayout, PageSection } from '../components/core/Layouts';
 import { Card } from '../components/core/Card';
 import { Button } from '../components/core/Button';
+import { Breadcrumb } from '../components/core/Navigation';
 
 const HistoryPageContent: React.FC = () => {
   const navigate = useNavigate();
@@ -29,9 +30,12 @@ const HistoryPageContent: React.FC = () => {
       title="Query History"
       subtitle={`Browse and reuse your previous queries (${queryHistory.length} saved)`}
       breadcrumb={
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
-          <HomeOutlined /> Home / <HistoryOutlined /> Query History
-        </div>
+        <Breadcrumb
+          items={[
+            { title: 'Home', path: '/', icon: <HomeOutlined /> },
+            { title: 'Query History', icon: <HistoryOutlined /> }
+          ]}
+        />
       }
       className="full-width-content"
     >

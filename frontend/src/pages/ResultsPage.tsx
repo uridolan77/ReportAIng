@@ -18,7 +18,7 @@ import { useActiveResult } from '../stores/activeResultStore';
 import { useCurrentResult } from '../hooks/useCurrentResult';
 import { QueryResult } from '../components/QueryInterface/QueryResult';
 import { DataInsightsPanel } from '../components/Insights/DataInsightsPanel';
-import { ModernPageLayout, PageSection, PageGrid } from '../components/core/Layouts';
+import { ModernPageLayout, PageSection, PageGrid, useBreadcrumbs } from '../components/core/Layouts';
 import { Card, CardContent } from '../components/core/Card';
 import { Button } from '../components/core/Button';
 
@@ -38,9 +38,12 @@ const ResultsPageContent: React.FC = () => {
         title="Query Results & Analysis"
         subtitle="Detailed view of your query results with insights and analysis"
         breadcrumb={
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
-            <HomeOutlined /> Home / <BarChartOutlined /> Results
-          </div>
+          <Breadcrumb
+            items={[
+              { title: 'Home', path: '/', icon: <HomeOutlined /> },
+              { title: 'Results', icon: <BarChartOutlined /> }
+            ]}
+          />
         }
         className="full-width-content"
       >
@@ -98,9 +101,12 @@ const ResultsPageContent: React.FC = () => {
       title="Query Results & Analysis"
       subtitle="Detailed view of your query results with insights and analysis"
       breadcrumb={
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
-          <HomeOutlined /> Home / <BarChartOutlined /> Results
-        </div>
+        <Breadcrumb
+          items={[
+            { title: 'Home', path: '/', icon: <HomeOutlined /> },
+            { title: 'Results', icon: <BarChartOutlined /> }
+          ]}
+        />
       }
       className="full-width-content"
     >

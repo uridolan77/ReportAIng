@@ -19,6 +19,8 @@ import {
   Input,
   Alert
 } from '../components/core';
+import { Breadcrumb } from '../components/core/Navigation';
+import { HomeOutlined, DatabaseOutlined } from '@ant-design/icons';
 import { DBExplorer } from '../components/DBExplorer/DBExplorer';
 import { SchemaTree } from '../components/DBExplorer/SchemaTree';
 import { TableDataPreview } from '../components/DBExplorer/TableDataPreview';
@@ -348,6 +350,14 @@ const DBExplorerPage: React.FC = () => {
     <PageLayout
       title="Database Explorer"
       subtitle="Explore database schema, preview table data, and understand your data structure"
+      breadcrumb={
+        <Breadcrumb
+          items={[
+            { title: 'Home', path: '/', icon: <HomeOutlined /> },
+            { title: 'Database Explorer', icon: <DatabaseOutlined /> }
+          ]}
+        />
+      }
       tabs={
         <Tabs
           variant="line"

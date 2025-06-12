@@ -18,6 +18,8 @@ import {
   Grid
 } from '../components/core';
 import { ModernPageLayout } from '../components/core/Layouts';
+import { Breadcrumb } from '../components/core/Navigation';
+import { HomeOutlined, BarChartOutlined } from '@ant-design/icons';
 import { InteractiveVisualization } from '../components/Visualization/InteractiveVisualization';
 import { Chart } from '../components/Visualization/Chart';
 import ChartConfigurationPanel from '../components/Visualization/ChartConfigurationPanel';
@@ -282,6 +284,14 @@ const VisualizationPage: React.FC = () => {
     <ModernPageLayout
       title="Visualizations"
       subtitle="Create interactive charts and AI-powered visualizations"
+      breadcrumb={
+        <Breadcrumb
+          items={[
+            { title: 'Home', path: '/', icon: <HomeOutlined /> },
+            { title: 'Visualizations', icon: <BarChartOutlined /> }
+          ]}
+        />
+      }
       tabs={
         <Tabs
           variant="line"

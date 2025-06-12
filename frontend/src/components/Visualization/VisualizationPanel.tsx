@@ -66,11 +66,21 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
   autoGenerate = true,
   showRecommendations = true
 }) => {
+  // Debug logging
+  useEffect(() => {
+    console.log('🎯 VisualizationPanel props:', {
+      dataLength: data?.length || 0,
+      columns: columns,
+      columnsLength: columns?.length || 0,
+      hasData: !!data && data.length > 0,
+      hasColumns: !!columns && columns.length > 0
+    });
+  }, [data, columns]);
   const [config, setConfig] = useState<VisualizationConfig>({
     type: 'bar',
     title: 'Data Visualization',
-    xAxis: columns[0] || 'name',
-    yAxis: columns[1] || 'value',
+    xAxis: (columns && columns.length > 0) ? columns[0] : 'name',
+    yAxis: (columns && columns.length > 1) ? columns[1] : 'value',
     colorScheme: 'default',
     showGrid: true,
     showLegend: true,
@@ -88,6 +98,17 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
       generateRecommendations();
     }
   }, [data, columns, autoGenerate]);
+
+  // Update config when columns change
+  useEffect(() => {
+    if (columns && columns.length > 0) {
+      setConfig(prev => ({
+        ...prev,
+        xAxis: prev.xAxis === 'name' ? columns[0] : prev.xAxis,
+        yAxis: prev.yAxis === 'value' ? (columns.length > 1 ? columns[1] : columns[0]) : prev.yAxis
+      }));
+    }
+  }, [columns]);
 
   const generateRecommendations = async () => {
     setLoading(true);

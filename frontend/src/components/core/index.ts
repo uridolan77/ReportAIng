@@ -38,6 +38,7 @@ export { ThemeProvider, ThemeToggle, DarkModeToggle } from './Theme';
 
 // Layout Components
 export { AppLayout, PageLayout, ModernPageLayout, ContentLayout, SidebarLayout } from './Layouts';
+export { PageHeader, useBreadcrumbs } from './PageHeader';
 
 // Performance Components
 export { LazyComponent, VirtualList, Memoized, InView, PerformanceMonitor, BundleAnalyzer, LoadingFallback } from './Performance';
