@@ -1,5 +1,16 @@
 /**
- * Core UI Components - Modern Reusable System
+ * Core UI Components - Modern Reu// Layout Components
+export { AppLayout, PageLayout, ModernPageLayout, ContentLayout, SidebarLayout } from './Layouts';
+export { 
+  PageHeader, 
+  useBreadcrumbs, 
+  PageHeaderPresets, 
+  createHeaderActions, 
+  createEnhancedBreadcrumbs,
+  usePageHeaderResponsive,
+  usePageHeaderTheme 
+} from './PageHeader';
+export type { PageHeaderProps, PageHeaderAction } from './PageHeader';le System
  * 
  * This is the new consolidated component system that replaces all scattered UI components.
  * All components follow modern React patterns with compound components, proper TypeScript,

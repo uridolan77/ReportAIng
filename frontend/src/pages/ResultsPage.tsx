@@ -4,9 +4,7 @@
 
 import React from 'react';
 import {
-  Empty,
-  Space,
-  Button as AntButton
+  Empty
 } from 'antd';
 import {
   HomeOutlined,
@@ -14,12 +12,11 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useActiveResult } from '../stores/activeResultStore';
 import { useCurrentResult } from '../hooks/useCurrentResult';
 import { QueryResult } from '../components/QueryInterface/QueryResult';
 import { DataInsightsPanel } from '../components/Insights/DataInsightsPanel';
-import { ModernPageLayout, PageSection, PageGrid, useBreadcrumbs } from '../components/core/Layouts';
-import { Card, CardContent } from '../components/core/Card';
+import { ModernPageLayout, PageSection, PageGrid } from '../components/core/Layouts';
+import { Breadcrumb } from '../components/core/Navigation';
 import { Button } from '../components/core/Button';
 
 const ResultsPageContent: React.FC = () => {
@@ -135,7 +132,6 @@ const ResultsPageContent: React.FC = () => {
             subtitle="AI-generated insights and analysis"
             background="card"
             padding="lg"
-            actions={<BarChartOutlined style={{ color: 'var(--color-primary)' }} />}
           >
             <DataInsightsPanel
               queryResult={currentResult}
