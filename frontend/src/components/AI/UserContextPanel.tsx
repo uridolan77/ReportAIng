@@ -238,7 +238,7 @@ const UserContextPanel: React.FC = () => {
           >
             <List
               dataSource={userContext.recentPatterns}
-              renderItem={(pattern, index) => (
+              renderItem={(pattern) => (
                 <List.Item>
                   <List.Item.Meta
                     avatar={getIntentIcon(pattern.intent)}

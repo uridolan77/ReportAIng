@@ -478,9 +478,9 @@ public class LLMProviderConfig
     public string ProviderId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty; // OpenAI, AzureOpenAI, etc.
-    public string ApiKey { get; set; } = string.Empty;
-    public string Endpoint { get; set; } = string.Empty;
-    public string Organization { get; set; } = string.Empty;
+    public string? ApiKey { get; set; }
+    public string? Endpoint { get; set; }
+    public string? Organization { get; set; }
     public bool IsEnabled { get; set; } = true;
     public bool IsDefault { get; set; } = false;
     public Dictionary<string, object> Settings { get; set; } = new();
@@ -503,7 +503,7 @@ public class LLMModelConfig
     public float FrequencyPenalty { get; set; } = 0.0f;
     public float PresencePenalty { get; set; } = 0.0f;
     public bool IsEnabled { get; set; } = true;
-    public string UseCase { get; set; } = string.Empty; // SQL, Insights, etc.
+    public string? UseCase { get; set; } // SQL, Insights, etc.
     public decimal CostPerToken { get; set; } = 0.0m;
     public Dictionary<string, object> Capabilities { get; set; } = new();
 }

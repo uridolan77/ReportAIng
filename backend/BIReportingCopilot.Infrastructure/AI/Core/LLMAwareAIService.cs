@@ -13,13 +13,13 @@ namespace BIReportingCopilot.Infrastructure.AI.Core;
 /// </summary>
 public class LLMAwareAIService : ILLMAwareAIService
 {
-    private readonly IAIService _baseAIService;
+    private readonly BIReportingCopilot.Infrastructure.AI.Core.AIService _baseAIService;
     private readonly ILLMManagementService _llmManagementService;
     private readonly ILogger<LLMAwareAIService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public LLMAwareAIService(
-        IAIService baseAIService,
+        BIReportingCopilot.Infrastructure.AI.Core.AIService baseAIService,
         ILLMManagementService llmManagementService,
         ILogger<LLMAwareAIService> logger,
         IHttpContextAccessor httpContextAccessor)

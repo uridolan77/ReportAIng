@@ -388,6 +388,10 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Repositories.IUserE
 builder.Services.AddScoped<ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
 builder.Services.AddScoped<IMfaChallengeRepository, BIReportingCopilot.Infrastructure.Repositories.MfaChallengeRepository>();
 
+// ===== HTTP CONTEXT ACCESSOR =====
+// Required for services that need access to HTTP context (like LLMAwareAIService)
+builder.Services.AddHttpContextAccessor();
+
 // ===== AI PROVIDERS & FACTORY =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Providers.OpenAIProvider>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Providers.AzureOpenAIProvider>();
@@ -397,18 +401,13 @@ builder.Services.AddScoped<IAIProviderFactory, BIReportingCopilot.Infrastructure
 builder.Services.AddScoped<ILLMManagementService, BIReportingCopilot.Infrastructure.AI.Management.LLMManagementService>();
 
 // ===== LLM-AWARE AI SERVICE =====
-// Register the base AI service first
-builder.Services.AddScoped<IAIService>(provider =>
-{
-    // Get the original AI service
-    var baseService = ActivatorUtilities.CreateInstance<BIReportingCopilot.Infrastructure.AI.Core.AIService>(provider);
-    return baseService;
-});
+// Register the base AI service directly (without circular dependency)
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Core.AIService>();
 
 // Register the LLM-aware service as a decorator
 builder.Services.AddScoped<ILLMAwareAIService, BIReportingCopilot.Infrastructure.AI.Core.LLMAwareAIService>();
 
-// Replace the IAIService registration to use the LLM-aware service
+// Register IAIService to use the LLM-aware service
 builder.Services.AddScoped<IAIService>(provider => provider.GetRequiredService<ILLMAwareAIService>());
 
 // ===== UNIFIED SERVICES (ROUND 4, 5 & 6 CLEANUP) =====

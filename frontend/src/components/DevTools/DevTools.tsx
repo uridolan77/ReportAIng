@@ -18,7 +18,8 @@ import {
   Col,
   Badge,
   Alert,
-  Collapse
+  Collapse,
+  Tooltip
 } from 'antd';
 import {
   BugOutlined,

@@ -129,8 +129,22 @@ export class PerformanceOptimizer {
 
   private getComponentCount(): number {
     // Estimate component count from DOM elements with React attributes
-    const reactElements = document.querySelectorAll('[data-reactroot], [data-react-*]');
-    return reactElements.length;
+    try {
+      const reactRootElements = document.querySelectorAll('[data-reactroot]');
+      const reactElements = document.querySelectorAll('[data-react-component]');
+      return reactRootElements.length + reactElements.length;
+    } catch (error) {
+      // Fallback: count elements with React-like attributes
+      const allElements = document.querySelectorAll('*');
+      let reactCount = 0;
+      allElements.forEach(el => {
+        if (el.hasAttribute('data-reactroot') ||
+            Array.from(el.attributes).some(attr => attr.name.startsWith('data-react'))) {
+          reactCount++;
+        }
+      });
+      return reactCount;
+    }
   }
 
   private updateCacheMetrics(isHit: boolean): void {
