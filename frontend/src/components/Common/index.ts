@@ -25,14 +25,14 @@ export { DataInsightsPanel } from '../Insights/DataInsightsPanel';
 // Query Templates
 export { QueryTemplateLibrary } from '../QueryTemplates/QueryTemplateLibrary';
 
-// Security Components
-export { SecurityDashboard } from '../Security/SecurityDashboard';
+// ===== SECURITY COMPONENTS =====
 export { RequestSigningDemo } from '../Security/RequestSigningDemo';
+export { SecurityDashboard } from '../Security/SecurityDashboard';
 
-// State Sync Components
+// ===== STATE SYNC COMPONENTS =====
 export { StateSyncDemo } from '../StateSync/StateSyncDemo';
 
-// Type Safety Components
+// ===== TYPE SAFETY COMPONENTS =====
 export { TypeSafetyDemo } from '../TypeSafety/TypeSafetyDemo';
 
 // Type definitions for common component props

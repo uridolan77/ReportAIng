@@ -8,6 +8,8 @@ import '../styles/query-interface.css';
 
 // Main Components (most commonly used)
 export { QueryInterface } from './QueryInterface';
+export { SimpleQueryInterface } from './SimpleQueryInterface';
+export { QueryInput } from './QueryInput';
 export { QueryBuilder } from './QueryBuilder';
 export { MinimalQueryInterface } from './MinimalQueryInterface';
 export { QueryEditor } from './QueryEditor';

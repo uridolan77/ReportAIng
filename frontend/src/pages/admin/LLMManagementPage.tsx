@@ -36,10 +36,10 @@ const LLMManagementPage: React.FC = () => {
       key: 'dashboard',
       label: '📊 Dashboard',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
-              <h3 style={{ margin: 0 }}>LLM Management Dashboard</h3>
+              <h3 className="text-xl font-semibold" style={{ margin: 0 }}>LLM Management Dashboard</h3>
             </Card.Header>
             <Card.Content>
               <LLMDashboard />
@@ -52,11 +52,11 @@ const LLMManagementPage: React.FC = () => {
       key: 'providers',
       label: '🔌 Provider Settings',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
-                <h3 style={{ margin: 0 }}>LLM Provider Configuration</h3>
+                <h3 className="text-xl font-semibold" style={{ margin: 0 }}>LLM Provider Configuration</h3>
                 <Flex gap="sm">
                   <Button variant="outline" size="small">
                     🔄 Test All Connections
@@ -78,11 +78,11 @@ const LLMManagementPage: React.FC = () => {
       key: 'models',
       label: '🤖 Model Configuration',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
-                <h3 style={{ margin: 0 }}>Model Configuration & Selection</h3>
+                <h3 className="text-xl font-semibold" style={{ margin: 0 }}>Model Configuration & Selection</h3>
                 <Flex gap="sm">
                   <Button variant="outline" size="small">
                     📋 Model Capabilities
@@ -104,11 +104,11 @@ const LLMManagementPage: React.FC = () => {
       key: 'usage',
       label: '📈 Usage Analytics',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
-                <h3 style={{ margin: 0 }}>Usage History & Analytics</h3>
+                <h3 className="text-xl font-semibold" style={{ margin: 0 }}>Usage History & Analytics</h3>
                 <Flex gap="sm">
                   <Button variant="outline" size="small">
                     📤 Export Data
@@ -133,11 +133,11 @@ const LLMManagementPage: React.FC = () => {
       key: 'costs',
       label: '💰 Cost Management',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
-                <h3 style={{ margin: 0 }}>Cost Monitoring & Management</h3>
+                <h3 className="text-xl font-semibold" style={{ margin: 0 }}>Cost Monitoring & Management</h3>
                 <Flex gap="sm">
                   <Button variant="outline" size="small">
                     🚨 Set Alerts
@@ -162,11 +162,11 @@ const LLMManagementPage: React.FC = () => {
       key: 'performance',
       label: '⚡ Performance',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
-                <h3 style={{ margin: 0 }}>Performance Monitoring & Optimization</h3>
+                <h3 className="text-xl font-semibold" style={{ margin: 0 }}>Performance Monitoring & Optimization</h3>
                 <Flex gap="sm">
                   <Button variant="outline" size="small">
                     🔧 Optimize Settings

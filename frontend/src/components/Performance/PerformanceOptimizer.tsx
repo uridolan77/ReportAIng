@@ -373,7 +373,7 @@ export const PerformanceOptimizer: React.FC = () => {
   );
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div className="page-container full-width">
       <div style={{ marginBottom: '24px' }}>
         <Title level={2}>
           <ThunderboltOutlined style={{ color: '#1890ff', marginRight: '8px' }} />

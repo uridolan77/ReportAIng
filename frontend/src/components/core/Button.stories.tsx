@@ -5,12 +5,24 @@
  * all variants, states, and use cases with interactive controls.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
-import { action } from '@storybook/addon-actions';
+// Optional Storybook imports - only available in development
 import { Button, IconButton, ButtonGroup } from './Button';
 import { Stack, Flex } from './Layout';
+let Meta: any, StoryObj: any, action: any;
+try {
+  const storybook = require('@storybook/react');
+  const addonActions = require('@storybook/addon-actions');
+  Meta = storybook.Meta;
+  StoryObj = storybook.StoryObj;
+  action = addonActions.action;
+} catch (e) {
+  // Storybook not available - provide fallbacks
+  Meta = {} as any;
+  StoryObj = {} as any;
+  action = () => () => {};
+}
 
-const meta: Meta<typeof Button> = {
+const meta: typeof Meta<typeof Button> = {
   title: 'Core Components/Button',
   component: Button,
   parameters: {
@@ -73,7 +85,7 @@ It supports icons, loading states, and follows modern design patterns.
 };
 
 export default meta;
-type Story = StoryObj<typeof Button>;
+type Story = typeof StoryObj<typeof Button>;
 
 // Basic Stories
 export const Default: Story = {

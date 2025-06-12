@@ -24,7 +24,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
-import { PageLayout, PageSection, PageGrid } from '../components/core/Layouts';
+import { ModernPageLayout, PageSection, PageGrid } from '../components/core/Layouts';
 import { Card, CardContent } from '../components/core/Card';
 import { Button } from '../components/core/Button';
 
@@ -113,14 +113,15 @@ const TemplatesPageContent: React.FC = () => {
   };
 
   return (
-    <PageLayout
+    <ModernPageLayout
       title="Query Templates"
       subtitle={`Pre-built queries to help you get started quickly (${templates.length} available)`}
-      breadcrumbs={[
-        { title: 'Home', href: '/', icon: <HomeOutlined /> },
-        { title: 'Query Templates', icon: <BookOutlined /> }
-      ]}
-      style={{ width: '80%', margin: '0 auto' }}
+      breadcrumb={
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
+          <HomeOutlined /> Home / <BookOutlined /> Query Templates
+        </div>
+      }
+      className="full-width-content"
     >
       {/* Search and Filters */}
       <PageSection
@@ -362,7 +363,7 @@ const TemplatesPageContent: React.FC = () => {
           </Button>
         </div>
       </PageSection>
-    </PageLayout>
+    </ModernPageLayout>
   );
 };
 

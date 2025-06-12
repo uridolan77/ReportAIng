@@ -616,6 +616,10 @@ describe('Security and Error Handling Integration Tests', () => {
               violatedDirective: 'script-src',
               blockedURI: 'https://malicious-site.com/script.js',
               documentURI: window.location.href,
+              disposition: 'enforce',
+              effectiveDirective: 'script-src',
+              originalPolicy: "default-src 'self'; script-src 'self'",
+              statusCode: 0,
             });
 
             window.dispatchEvent(cspViolationEvent);

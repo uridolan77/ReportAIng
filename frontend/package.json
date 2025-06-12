@@ -74,6 +74,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "msw": "^2.8.5",
     "prettier": "^3.1.0",
+    "source-map-explorer": "^2.5.3",
     "webpack-bundle-analyzer": "^4.10.2"
   },
   "scripts": {
@@ -84,7 +85,28 @@
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "format": "prettier --write src/**/*.{ts,tsx,css,md}",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "analyze": "npm run build && npx webpack-bundle-analyzer build/static/js/*.js",
+    "analyze:source-map": "npm run build && npx source-map-explorer 'build/static/js/*.js'",
+    "build:analyze": "npm run build && npm run analyze",
+    "performance:test": "npm run build && npm run analyze:source-map",
+
+    "// ===== ULTIMATE OPTIMIZATION SCRIPTS =====": "",
+    "clean": "rm -rf build node_modules/.cache .tsbuildinfo",
+    "clean:install": "npm run clean && npm install",
+    "build:production": "NODE_ENV=production npm run build",
+    "build:staging": "NODE_ENV=staging npm run build",
+    "build:development": "NODE_ENV=development npm run build",
+    "optimize": "npm run lint:fix && npm run format && npm run type-check",
+    "quality:check": "npm run lint && npm run type-check && npm test -- --coverage --watchAll=false",
+    "security:audit": "npm audit --audit-level moderate",
+    "security:fix": "npm audit fix",
+    "deps:check": "npm outdated",
+    "deps:update": "npm update",
+    "size:check": "npm run build && du -sh build/",
+    "performance:lighthouse": "npm run build && npx lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-report.json",
+    "ci:test": "npm run optimize && npm run quality:check && npm run build:production",
+    "dev:reset": "npm run clean:install && npm start"
   },
   "eslintConfig": {
     "extends": [

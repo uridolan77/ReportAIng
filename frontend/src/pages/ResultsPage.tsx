@@ -18,7 +18,7 @@ import { useActiveResult } from '../stores/activeResultStore';
 import { useCurrentResult } from '../hooks/useCurrentResult';
 import { QueryResult } from '../components/QueryInterface/QueryResult';
 import { DataInsightsPanel } from '../components/Insights/DataInsightsPanel';
-import { PageLayout, PageSection, PageGrid } from '../components/core/Layouts';
+import { ModernPageLayout, PageSection, PageGrid } from '../components/core/Layouts';
 import { Card, CardContent } from '../components/core/Card';
 import { Button } from '../components/core/Button';
 
@@ -34,14 +34,15 @@ const ResultsPageContent: React.FC = () => {
 
   if (!hasResult || !currentResult) {
     return (
-      <PageLayout
+      <ModernPageLayout
         title="Query Results & Analysis"
         subtitle="Detailed view of your query results with insights and analysis"
-        breadcrumbs={[
-          { title: 'Home', href: '/', icon: <HomeOutlined /> },
-          { title: 'Results', icon: <BarChartOutlined /> }
-        ]}
-        style={{ width: '80%', margin: '0 auto' }}
+        breadcrumb={
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
+            <HomeOutlined /> Home / <BarChartOutlined /> Results
+          </div>
+        }
+        className="full-width-content"
       >
         <PageSection background="card" padding="lg">
           <div style={{
@@ -88,19 +89,20 @@ const ResultsPageContent: React.FC = () => {
             </Empty>
           </div>
         </PageSection>
-      </PageLayout>
+      </ModernPageLayout>
     );
   }
 
   return (
-    <PageLayout
+    <ModernPageLayout
       title="Query Results & Analysis"
       subtitle="Detailed view of your query results with insights and analysis"
-      breadcrumbs={[
-        { title: 'Home', href: '/', icon: <HomeOutlined /> },
-        { title: 'Results', icon: <BarChartOutlined /> }
-      ]}
-      style={{ width: '80%', margin: '0 auto' }}
+      breadcrumb={
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
+          <HomeOutlined /> Home / <BarChartOutlined /> Results
+        </div>
+      }
+      className="full-width-content"
     >
       <PageGrid columns={3} gap="lg">
         <div style={{ gridColumn: 'span 2' }}>
@@ -182,7 +184,7 @@ const ResultsPageContent: React.FC = () => {
           </Button>
         </div>
       </PageSection>
-    </PageLayout>
+    </ModernPageLayout>
   );
 };
 

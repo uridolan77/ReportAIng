@@ -12,7 +12,9 @@ export { LazyLoader } from './LazyLoader';
 
 // Performance Monitoring
 export { PerformanceMonitor } from './PerformanceMonitor';
-export { MetricsCollector } from './MetricsCollector';
+export { PerformanceOptimizer, performanceOptimizer } from './PerformanceOptimizer';
+// Note: This module is a stub for now - implement as needed
+// export { MetricsCollector } from './MetricsCollector';
 export { PerformanceProfiler } from './PerformanceProfiler';
 
 // Memory Management
@@ -25,15 +27,15 @@ export { VirtualizationManager } from './VirtualizationManager';
 export { RenderOptimizer } from './RenderOptimizer';
 export { ComponentProfiler } from './ComponentProfiler';
 
-// Network Optimization
-export { RequestOptimizer } from './RequestOptimizer';
-export { PreloadManager } from './PreloadManager';
-export { ServiceWorkerManager } from './ServiceWorkerManager';
+// Network Optimization - commented out until implemented
+// export { RequestOptimizer } from './RequestOptimizer';
+// export { PreloadManager } from './PreloadManager';
+// export { ServiceWorkerManager } from './ServiceWorkerManager';
 
-// Utilities
-export { performanceUtils } from './utils';
-export { benchmarkUtils } from './benchmark';
-export { optimizationUtils } from './optimization';
+// Utilities - commented out until implemented
+// export { performanceUtils } from './utils';
+// export { benchmarkUtils } from './benchmark';
+// export { optimizationUtils } from './optimization';
 
-// Types
-export type * from './types';
+// Types - commented out until implemented
+// export type * from './types';

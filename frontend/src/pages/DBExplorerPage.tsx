@@ -107,7 +107,7 @@ const DBExplorerPage: React.FC = () => {
       key: 'explorer',
       label: '🗂️ Schema Explorer',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Grid columns={3} gap="lg">
             {/* Schema Tree */}
             <Card variant="default" size="large">
@@ -235,7 +235,7 @@ const DBExplorerPage: React.FC = () => {
       key: 'data-preview',
       label: '👁️ Data Preview',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Stack spacing="lg">
             {/* Connection Status */}
             {!loading && !error && (
@@ -320,7 +320,7 @@ const DBExplorerPage: React.FC = () => {
       key: 'full-explorer',
       label: '🔍 Full Explorer',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">

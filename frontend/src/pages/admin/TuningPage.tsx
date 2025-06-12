@@ -36,7 +36,7 @@ const TuningPage: React.FC = () => {
       key: 'dashboard',
       label: '📊 Dashboard',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <h3 style={{ margin: 0 }}>AI Tuning Dashboard</h3>
@@ -52,7 +52,7 @@ const TuningPage: React.FC = () => {
       key: 'ai-settings',
       label: '🤖 AI Settings',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Stack spacing="lg">
             <Alert
               variant="warning"
@@ -75,7 +75,7 @@ const TuningPage: React.FC = () => {
       key: 'prompts',
       label: '📝 Prompt Templates',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
@@ -96,7 +96,7 @@ const TuningPage: React.FC = () => {
       key: 'glossary',
       label: '📚 Business Glossary',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
@@ -117,7 +117,7 @@ const TuningPage: React.FC = () => {
       key: 'patterns',
       label: '🔍 Query Patterns',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">
@@ -136,7 +136,7 @@ const TuningPage: React.FC = () => {
       key: 'logs',
       label: '📋 Prompt Logs',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <Flex justify="between" align="center">

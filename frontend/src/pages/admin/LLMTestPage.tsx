@@ -17,7 +17,7 @@ import {
 } from '@ant-design/icons';
 import { LLMSelector } from '../../components/AI/LLMSelector';
 import { LLMStatusWidget } from '../../components/AI/LLMStatusWidget';
-import { EnhancedQueryInput } from '../../components/QueryInterface/EnhancedQueryInput';
+import { QueryInput } from '../../components/QueryInterface/QueryInput';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -85,7 +85,7 @@ const LLMTestPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="page-container full-width">
       <div style={{ marginBottom: '24px' }}>
         <Title level={2}>
           <SettingOutlined /> LLM Management System Test
@@ -169,7 +169,7 @@ const LLMTestPage: React.FC = () => {
               style={{ marginBottom: '16px' }}
             />
             
-            <EnhancedQueryInput
+            <QueryInput
               placeholder="Enter a test query to see how LLM selection works..."
               onSubmit={handleTestQuery}
               loading={testing}

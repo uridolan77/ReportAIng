@@ -195,10 +195,16 @@ const PageLayout = forwardRef<HTMLDivElement, PageLayoutProps>(
     style 
   }, ref) => {
     const pageStyle = {
+      width: '100%',
+      maxWidth: '100%',
+      margin: 0,
       backgroundColor: designTokens.colors.white,
       borderRadius: designTokens.borderRadius.large,
       boxShadow: designTokens.shadows.small,
       overflow: 'hidden',
+      fontFamily: 'var(--font-family-primary)',
+      fontSize: 'var(--text-base)',
+      lineHeight: 'var(--line-height-normal)',
       ...style,
     };
 
@@ -272,6 +278,8 @@ const PageLayout = forwardRef<HTMLDivElement, PageLayoutProps>(
         )}
         <div
           style={{
+            width: '100%',
+            maxWidth: '100%',
             padding: designTokens.spacing.xl,
           }}
         >
@@ -539,5 +547,120 @@ const PageGrid = forwardRef<HTMLDivElement, PageGridProps>(
 
 PageGrid.displayName = 'PageGrid';
 
+// Modern Page Layout Component - OFFICIAL STANDARD
+// Titles and subtitles on background (cleaner approach)
+const ModernPageLayout = forwardRef<HTMLDivElement, PageLayoutProps>(
+  ({
+    children,
+    title,
+    subtitle,
+    breadcrumb,
+    actions,
+    tabs,
+    className,
+    style
+  }, ref) => {
+    return (
+      <div ref={ref} className={`modern-page-layout ${className || ''}`} style={style}>
+        {/* Header Section - On Background (OFFICIAL STANDARD) */}
+        {(title || subtitle || breadcrumb || actions) && (
+          <div
+            className="modern-page-header"
+            style={{
+              marginBottom: '32px',
+              paddingBottom: '24px',
+              borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
+            }}
+          >
+            {breadcrumb && (
+              <div style={{
+                marginBottom: '16px',
+                fontSize: '14px',
+                color: '#6b7280',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                {breadcrumb}
+              </div>
+            )}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: '24px',
+              }}
+            >
+              <div>
+                {title && (
+                  <h1
+                    className="modern-page-title"
+                    style={{
+                      margin: 0,
+                      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+                      fontSize: '2.25rem',
+                      fontWeight: '700',
+                      lineHeight: '1.2',
+                      color: '#111827',
+                      letterSpacing: '-0.025em',
+                    }}
+                  >
+                    {title}
+                  </h1>
+                )}
+                {subtitle && (
+                  <p
+                    className="modern-page-subtitle"
+                    style={{
+                      margin: title ? '8px 0 0 0' : '0',
+                      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+                      fontSize: '1.125rem',
+                      fontWeight: '400',
+                      lineHeight: '1.6',
+                      color: '#6b7280',
+                    }}
+                  >
+                    {subtitle}
+                  </p>
+                )}
+              </div>
+              {actions && (
+                <div style={{ flexShrink: 0 }}>
+                  {actions}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tabs Section */}
+        {tabs && (
+          <div
+            style={{
+              marginBottom: '24px',
+            }}
+          >
+            {tabs}
+          </div>
+        )}
+
+        {/* Content Section */}
+        <div
+          className="modern-page-content"
+          style={{
+            width: '100%',
+            maxWidth: '100%',
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    );
+  }
+);
+
+ModernPageLayout.displayName = 'ModernPageLayout';
+
 // Export all layout components
-export { AppLayout, PageLayout, ContentLayout, SidebarLayout, PageSection, PageGrid };
+export { AppLayout, PageLayout, ModernPageLayout, ContentLayout, SidebarLayout, PageSection, PageGrid };

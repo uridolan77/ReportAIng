@@ -7,7 +7,7 @@ import {
   LineChartOutlined,
   PieChartOutlined
 } from '@ant-design/icons';
-import AdvancedChart from './AdvancedChart';
+import Chart from './Chart';
 import ChartConfigurationPanel from './ChartConfigurationPanel';
 import { useGamingChartProcessor, processGamingChartData } from './GamingChartProcessor';
 import { AdvancedVisualizationConfig } from '../../types/visualization';
@@ -266,7 +266,7 @@ export const AutoUpdatingChart: React.FC<AutoUpdatingChartProps> = ({
           }}
           bodyStyle={{ padding: '20px' }}
         >
-          <AdvancedChart
+          <Chart
             data={data}
             type={currentConfig?.chartType as any || 'bar'}
             title={currentConfig?.title}

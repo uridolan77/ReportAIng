@@ -250,17 +250,17 @@ export interface VisualizationOption {
 
 export interface VisualizationOptionsResponse {
   options: VisualizationOption[];
-  dataSummary: DataSummary;
+  dataSummary: {
+    rowCount: number;
+    columnCount: number;
+    executionTime: string;
+    dataTypes: Record<string, string>;
+  };
   recommendedOption?: VisualizationConfig;
 }
 
-export interface DataSummary {
-  rowCount: number;
-  columnCount: number;
-  hasNumericData: boolean;
-  hasCategoricalData: boolean;
-  hasTimeData: boolean;
-}
+// DataSummary moved to visualization.ts to avoid duplication
+// Import from: import { DataSummary } from './visualization';
 
 export interface ChartTypeInfo {
   type: string;

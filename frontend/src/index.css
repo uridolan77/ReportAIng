@@ -1,49 +1,23 @@
 /**
- * Main Stylesheet
- * Imports all design system components in the correct order
+ * Main Stylesheet - ReportAIng Design System
+ * Unified design system for consistent UI/UX across the application
  */
 
-/* ===== DESIGN SYSTEM FOUNDATION ===== */
-/* Variables must be imported first */
-@import './components/styles/variables.css';
-
-/* Theme files */
-@import './styles/themes/light-theme.css';
-@import './styles/themes/dark-theme.css';
-
-/* Foundation styles */
-@import './styles/foundation/reset.css';
-@import './styles/foundation/typography.css';
-@import './styles/foundation/layout.css';
+/* ===== UNIFIED DESIGN SYSTEM ===== */
+/* Import the complete design system - includes all tokens, typography, layout, components, and animations */
+@import './styles/design-system/index.css';
 
 /* ===== COMPONENT STYLES ===== */
-/* Antd component overrides */
-@import './styles/components/antd-overrides.css';
-
-/* Custom UI components */
-@import './styles/components/ui-components.css';
-
-/* Existing component styles */
+/* Component-specific styles that extend the design system */
 @import './components/styles/utilities.css';
-@import './components/styles/enhanced-navigation.css';
+@import './components/styles/navigation.css';
 @import './components/styles/query-interface.css';
 @import './components/styles/data-table.css';
 @import './components/styles/visualization.css';
 @import './components/styles/schema-management.css';
-@import './components/styles/animations.css';
+@import './components/styles/ui.css';
 
-/* ===== ENHANCED ANIMATION SYSTEM ===== */
-@import './styles/animations/micro-interactions.css';
-@import './styles/animations/page-transitions.css';
-@import './styles/animations/chart-animations.css';
-
-/* ===== UTILITY STYLES ===== */
-/* Utility classes and helpers */
-@import './styles/utilities/focus.css';
-@import './styles/utilities/scrollbars.css';
-@import './styles/utilities/loading.css';
-@import './styles/utilities/responsive.css';
-
-/* Legacy styles (to be refactored) */
+/* ===== ENHANCED FEATURES ===== */
+/* Additional utility styles */
 @import './styles/accessibility.css';
 @import './styles/enhanced-ui.css';

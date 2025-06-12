@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
 import { QueryHistory } from '../components/QueryInterface/QueryHistory';
-import { PageLayout, PageSection } from '../components/core/Layouts';
+import { ModernPageLayout, PageSection } from '../components/core/Layouts';
 import { Card } from '../components/core/Card';
 import { Button } from '../components/core/Button';
 
@@ -25,14 +25,15 @@ const HistoryPageContent: React.FC = () => {
   };
 
   return (
-    <PageLayout
+    <ModernPageLayout
       title="Query History"
       subtitle={`Browse and reuse your previous queries (${queryHistory.length} saved)`}
-      breadcrumbs={[
-        { title: 'Home', href: '/', icon: <HomeOutlined /> },
-        { title: 'Query History', icon: <HistoryOutlined /> }
-      ]}
-      style={{ width: '80%', margin: '0 auto' }}
+      breadcrumb={
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
+          <HomeOutlined /> Home / <HistoryOutlined /> Query History
+        </div>
+      }
+      className="full-width-content"
     >
       <PageSection
         title="Recent Queries"
@@ -116,7 +117,7 @@ const HistoryPageContent: React.FC = () => {
           </Button>
         </div>
       </PageSection>
-    </PageLayout>
+    </ModernPageLayout>
   );
 };
 

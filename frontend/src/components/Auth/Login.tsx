@@ -36,7 +36,7 @@ export const Login: React.FC = () => {
       {showAuthDebugger && <AuthDebugger />}
 
       {showSystemStatus && (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+        <div className="page-container full-width" style={{ padding: '20px' }}>
           <Collapse
             items={[
               {

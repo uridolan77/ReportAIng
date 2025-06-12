@@ -8,9 +8,6 @@ import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 // Import new UI components
 import { PerformanceMonitor, VirtualList } from '../ui';
 
-// Large dataset threshold for virtual scrolling
-const VIRTUAL_SCROLL_THRESHOLD = 1000;
-
 import { DataTableProps } from './types';
 import { useDataTableState } from './hooks/useDataTableState';
 import { useDataProcessing } from './hooks/useDataProcessing';
@@ -28,6 +25,9 @@ import { AggregationRow } from './components/AggregationRow';
 import { VirtualizedTable, StandardTable } from './components/DataTableRenderer';
 import { ContextMenuProvider } from './services/ContextMenuService';
 import { VirtualizationService } from './services/VirtualizationService';
+
+// Large dataset threshold for virtual scrolling
+const VIRTUAL_SCROLL_THRESHOLD = 1000;
 
 const { useToken } = theme;
 

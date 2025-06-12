@@ -5,57 +5,45 @@
  * Provides unified API for all application hooks.
  */
 
-// Core Hooks
+// ===== CORE HOOKS =====
+// Only export hooks that actually exist
 export { useApi } from './core/useApi';
-export { useAuth } from './core/useAuth';
-export { useCache } from './core/useCache';
-export { useConfig } from './core/useConfig';
-export { useError } from './core/useError';
-export { useLoading } from './core/useLoading';
-export { useLocalStorage } from './core/useLocalStorage';
-export { useSessionStorage } from './core/useSessionStorage';
 
-// Feature Hooks
-export { useQuery } from './features/useQuery';
-export { useVisualization } from './features/useVisualization';
-export { useDashboard } from './features/useDashboard';
-export { useDatabase } from './features/useDatabase';
-export { useAI } from './features/useAI';
-export { useAdmin } from './features/useAdmin';
+// ===== FEATURE HOOKS =====
+// API and data management hooks
+export { useQueryApi } from './useQueryApi';
+export { useVisualizationApi } from './useVisualizationApi';
+export { useTuningApi } from './useTuningApi';
+export { useValidatedQuery } from './useValidatedQuery';
 
-// UI Hooks
-export { useTheme } from './ui/useTheme';
-export { useDarkMode } from './ui/useDarkMode';
-export { useAnimation } from './ui/useAnimation';
-export { useResponsive } from './ui/useResponsive';
-export { useKeyboard } from './ui/useKeyboard';
-export { useFocus } from './ui/useFocus';
-export { useClickOutside } from './ui/useClickOutside';
-export { useIntersection } from './ui/useIntersection';
+// ===== UTILITY HOOKS =====
+// State and utility hooks
+export { useEnhancedState } from './useEnhancedState';
+export { useOptimization } from './useOptimization';
+export { useAnimations } from './useAnimations';
+export { useChartAnimations } from './useChartAnimations';
+export { useAccessibility } from './useAccessibility';
+export { useKeyboardNavigation } from './useKeyboardNavigation';
 
-// Performance Hooks
-export { useDebounce } from './performance/useDebounce';
-export { useThrottle } from './performance/useThrottle';
-export { useMemoized } from './performance/useMemoized';
-export { useVirtualization } from './performance/useVirtualization';
-export { useLazyLoading } from './performance/useLazyLoading';
+// ===== NETWORK HOOKS =====
+export { useWebSocket } from './useWebSocket';
 
-// Advanced Hooks
-export { useWebSocket } from './advanced/useWebSocket';
-export { useNotifications } from './advanced/useNotifications';
-export { useAnalytics } from './advanced/useAnalytics';
-export { useSecurity } from './advanced/useSecurity';
-export { usePerformanceMonitor } from './advanced/usePerformanceMonitor';
+// ===== TEMPLATE HOOKS =====
+export { useQueryTemplates } from './useQueryTemplates';
 
-// Legacy Hooks (for backward compatibility)
+// Performance Hooks (consolidated from usePerformance.ts)
+export {
+  useDebounce,
+  useThrottle,
+  useIntersectionObserver,
+  useVirtualScrolling,
+  useMemoryMonitor,
+  usePerformanceMeasure,
+  useRenderOptimization,
+  useLazyImage,
+  useComponentSize
+} from './usePerformance';
+
+// ===== LEGACY HOOKS =====
+// Backward compatibility hooks (only export if they exist)
 export { useCurrentResult } from './useCurrentResult';
-export { useQueryHistory } from './useQueryHistory';
-export { useQuerySuggestions } from './useQuerySuggestions';
-
-// Hook Utilities
-export { createAsyncHook } from './utils/createAsyncHook';
-export { createStateHook } from './utils/createStateHook';
-export { createEffectHook } from './utils/createEffectHook';
-
-// Types
-export type * from './types';

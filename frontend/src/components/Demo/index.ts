@@ -3,7 +3,7 @@
  * All demo and showcase components in one place
  */
 
-export { AdvancedFeaturesDemo } from './AdvancedFeaturesDemo';
+export { FeaturesDemo } from './FeaturesDemo';
 
 // Re-export demo components from other folders for convenience
 export { RequestSigningDemo } from '../Security/RequestSigningDemo';

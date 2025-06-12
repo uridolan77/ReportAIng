@@ -6,17 +6,17 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { 
-  PageLayout, 
-  Card, 
-  Button, 
-  Grid, 
+import {
+  Card,
+  Button,
+  Grid,
   Container,
   Stack,
   Flex,
   Badge,
   Alert
 } from '../components/core';
+import { ModernPageLayout } from '../components/core/Layouts';
 import DashboardBuilder from '../components/Dashboard/DashboardBuilder';
 import { DashboardView } from '../components/Dashboard/DashboardView';
 import { useCurrentResult } from '../hooks/useCurrentResult';
@@ -65,7 +65,7 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   return (
-    <PageLayout
+    <ModernPageLayout
       title="Dashboard"
       subtitle="Create and manage interactive dashboards"
       actions={
@@ -90,7 +90,7 @@ const DashboardPage: React.FC = () => {
         </Flex>
       }
     >
-      <div style={{ width: '80%', margin: '0 auto' }}>
+      <div className="full-width-content">
         {viewMode === 'view' ? (
           <Stack spacing="lg">
             {/* Quick Stats */}
@@ -98,10 +98,10 @@ const DashboardPage: React.FC = () => {
               <Card variant="filled" size="medium">
                 <Card.Content>
                   <Flex direction="column" align="center">
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#667eea' }}>
+                    <div className="text-4xl font-bold" style={{ color: '#667eea' }}>
                       {loadingDashboards ? '...' : dashboards.length}
                     </div>
-                    <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+                    <div className="text-sm" style={{ color: '#6b7280' }}>
                       Total Dashboards
                     </div>
                   </Flex>
@@ -111,10 +111,10 @@ const DashboardPage: React.FC = () => {
               <Card variant="filled" size="medium">
                 <Card.Content>
                   <Flex direction="column" align="center">
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981' }}>
+                    <div className="text-4xl font-bold" style={{ color: '#10b981' }}>
                       {loadingDashboards ? '...' : dashboards.reduce((sum, d) => sum + (d.widgets || 0), 0)}
                     </div>
-                    <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+                    <div className="text-sm" style={{ color: '#6b7280' }}>
                       Total Widgets
                     </div>
                   </Flex>
@@ -124,10 +124,10 @@ const DashboardPage: React.FC = () => {
               <Card variant="filled" size="medium">
                 <Card.Content>
                   <Flex direction="column" align="center">
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#f59e0b' }}>
+                    <div className="text-4xl font-bold" style={{ color: '#f59e0b' }}>
                       2.3k
                     </div>
-                    <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+                    <div className="text-sm" style={{ color: '#6b7280' }}>
                       Total Views
                     </div>
                   </Flex>
@@ -137,10 +137,10 @@ const DashboardPage: React.FC = () => {
               <Card variant="filled" size="medium">
                 <Card.Content>
                   <Flex direction="column" align="center">
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ef4444' }}>
+                    <div className="text-4xl font-bold" style={{ color: '#ef4444' }}>
                       95%
                     </div>
-                    <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+                    <div className="text-sm" style={{ color: '#6b7280' }}>
                       Uptime
                     </div>
                   </Flex>
@@ -245,7 +245,7 @@ const DashboardPage: React.FC = () => {
           </Card>
         )}
       </div>
-    </PageLayout>
+    </ModernPageLayout>
   );
 };
 

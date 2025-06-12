@@ -23,9 +23,7 @@ import { QueryProcessingViewer } from './QueryProcessingViewer';
 import { useActiveResultActions } from '../../stores/activeResultStore';
 // MockDataToggle removed - database connection always required
 import { PageLayout, PageSection } from '../core/Layouts';
-import './animations.css';
-import './professional-polish.css';
-import './MinimalQueryInterface.css';
+import '../styles/query-interface.css';
 
 const { Title, Text } = Typography;
 

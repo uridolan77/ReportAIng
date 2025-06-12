@@ -11,7 +11,7 @@ import {
   CodeOutlined,
   BarChartOutlined
 } from '@ant-design/icons';
-import './QueryProcessingViewer.css';
+import '../styles/query-interface.css';
 
 const { Text } = Typography;
 

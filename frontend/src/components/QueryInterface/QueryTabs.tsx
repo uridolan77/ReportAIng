@@ -10,7 +10,7 @@ import {
   Card,
   Tag
 } from 'antd';
-import './QueryTabs.css';
+import '../styles/query-interface.css';
 import {
   BarChartOutlined,
   StarOutlined,

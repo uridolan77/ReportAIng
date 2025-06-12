@@ -4,6 +4,9 @@
  */
 
 // Main Dashboard
+// Import CSS
+import './SchemaManagement.css';
+
 export { SchemaManagementDashboard } from './SchemaManagementDashboard';
 
 // Core Schema Components
@@ -22,9 +25,6 @@ export { RelationshipEditor } from './RelationshipEditor';
 // Dialogs
 export { CreateSchemaDialog } from './CreateSchemaDialog';
 export { ImportSchemaDialog } from './ImportSchemaDialog';
-
-// Import CSS
-import './SchemaManagement.css';
 
 // Type definitions for schema management
 export interface SchemaManagementProps {

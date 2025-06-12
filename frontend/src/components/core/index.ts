@@ -37,13 +37,13 @@ export { ErrorBoundary, ErrorFallback } from './Error';
 export { ThemeProvider, ThemeToggle, DarkModeToggle } from './Theme';
 
 // Layout Components
-export { AppLayout, PageLayout, ContentLayout, SidebarLayout } from './Layouts';
+export { AppLayout, PageLayout, ModernPageLayout, ContentLayout, SidebarLayout } from './Layouts';
 
 // Performance Components
 export { LazyComponent, VirtualList, Memoized, InView, PerformanceMonitor, BundleAnalyzer, LoadingFallback } from './Performance';
 
-// Types
-export type * from './types';
+// Types - commented out until implemented
+// export type * from './types';
 
 // Design System Tokens
 export { designTokens, spacing, colors, typography, shadows, animations } from './design-system';

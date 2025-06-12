@@ -14,8 +14,8 @@ export { QueryEditor } from '../../QueryInterface/QueryEditor';
 export { SqlEditor } from '../../QueryInterface/SqlEditor';
 
 // Advanced Query Components
-export { EnhancedQueryInterface } from '../../QueryInterface/EnhancedQueryInterface';
-export { EnhancedQueryInput } from '../../QueryInterface/EnhancedQueryInput';
+export { QueryInterface } from '../../QueryInterface/QueryInterface';
+export { QueryInput } from '../../QueryInterface/QueryInput';
 export { AdvancedStreamingQuery } from '../../QueryInterface/AdvancedStreamingQuery';
 export { GuidedQueryWizard } from '../../QueryInterface/GuidedQueryWizard';
 

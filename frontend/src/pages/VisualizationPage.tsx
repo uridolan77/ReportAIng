@@ -6,10 +6,9 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { 
-  PageLayout, 
-  Card, 
-  Button, 
+import {
+  Card,
+  Button,
   Tabs,
   Container,
   Stack,
@@ -18,8 +17,9 @@ import {
   Badge,
   Grid
 } from '../components/core';
+import { ModernPageLayout } from '../components/core/Layouts';
 import { InteractiveVisualization } from '../components/Visualization/InteractiveVisualization';
-import { AdvancedChart } from '../components/Visualization/AdvancedChart';
+import { Chart } from '../components/Visualization/Chart';
 import ChartConfigurationPanel from '../components/Visualization/ChartConfigurationPanel';
 import VisualizationRecommendations from '../components/Visualization/VisualizationRecommendations';
 import { useCurrentResult } from '../hooks/useCurrentResult';
@@ -64,7 +64,7 @@ const VisualizationPage: React.FC = () => {
         </Flex>
       ),
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Stack spacing="lg">
             {/* Chart Creation Panel */}
             {hasResult ? (
@@ -179,7 +179,7 @@ const VisualizationPage: React.FC = () => {
                           </Flex>
                         </Card.Header>
                         <Card.Content>
-                          <AdvancedChart
+                          <Chart
                             type={chart.type}
                             data={chart.data}
                             config={chart.config}
@@ -199,7 +199,7 @@ const VisualizationPage: React.FC = () => {
       key: 'ai-powered',
       label: '🤖 AI-Powered Charts',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Stack spacing="lg">
             {/* AI Recommendations */}
             <Card variant="filled" size="medium">
@@ -254,7 +254,7 @@ const VisualizationPage: React.FC = () => {
       key: 'gallery',
       label: '🖼️ Chart Gallery',
       children: (
-        <div style={{ width: '80%', margin: '0 auto' }}>
+        <div className="full-width-content">
           <Card variant="default" size="large">
             <Card.Header>
               <h3 style={{ margin: 0 }}>Chart Gallery</h3>
@@ -279,7 +279,7 @@ const VisualizationPage: React.FC = () => {
   ];
 
   return (
-    <PageLayout
+    <ModernPageLayout
       title="Visualizations"
       subtitle="Create interactive charts and AI-powered visualizations"
       tabs={
@@ -293,7 +293,7 @@ const VisualizationPage: React.FC = () => {
       }
     >
       {/* Tab content is handled by the Tabs component */}
-    </PageLayout>
+    </ModernPageLayout>
   );
 };
 

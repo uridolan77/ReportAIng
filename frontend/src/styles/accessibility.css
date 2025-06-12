@@ -1,4 +1,42 @@
-/* Accessibility Styles */
+/**
+ * Comprehensive Accessibility Styles
+ * Consolidated from utilities/focus.css and accessibility.css
+ * Includes focus management, screen reader support, and accessibility features
+ */
+
+/* ===== FOCUS STYLES ===== */
+*:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Remove outline for mouse users */
+.js-focus-visible *:focus:not(.focus-visible) {
+  outline: none;
+}
+
+/* Custom focus styles for interactive elements */
+button:focus,
+[role="button"]:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+a:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+  text-decoration: underline;
+}
 
 /* High contrast mode */
 .high-contrast {

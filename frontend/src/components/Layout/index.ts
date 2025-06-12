@@ -17,3 +17,4 @@ export { CornerStatusPanel } from './AppHeader';
 
 // Modern Sidebar Component
 export { default as ModernSidebar } from './ModernSidebar';
+export { default as Sidebar } from './Sidebar';

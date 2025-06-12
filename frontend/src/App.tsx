@@ -15,38 +15,90 @@ import {
   LoadingFallback
 } from './components/core';
 import { PerformanceMonitor, BundleAnalyzer } from './components/ui';
-import EnhancedSidebar from './components/Layout/EnhancedSidebar';
+import Sidebar from './components/Layout/Sidebar';
 import { CornerStatusPanel } from './components/Layout/AppHeader';
 import './App.css';
 
-// Lazy load pages and features - Modern page components
-const QueryInterface = lazy(() => import('./pages/QueryPage'));
-const ResultsPage = lazy(() => import('./pages/ResultsPage'));
-const HistoryPage = lazy(() => import('./pages/HistoryPage'));
-const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
-const SuggestionsPage = lazy(() => import('./pages/SuggestionsPage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const VisualizationPage = lazy(() => import('./pages/VisualizationPage'));
-const DBExplorerPage = lazy(() => import('./pages/DBExplorerPage'));
+// Enhanced lazy loading with webpack chunk names for better caching
+const QueryInterface = lazy(() =>
+  import(/* webpackChunkName: "query-page" */ './pages/QueryPage')
+);
+const ResultsPage = lazy(() =>
+  import(/* webpackChunkName: "results-page" */ './pages/ResultsPage')
+);
+const HistoryPage = lazy(() =>
+  import(/* webpackChunkName: "history-page" */ './pages/HistoryPage')
+);
+const TemplatesPage = lazy(() =>
+  import(/* webpackChunkName: "templates-page" */ './pages/TemplatesPage')
+);
+const SuggestionsPage = lazy(() =>
+  import(/* webpackChunkName: "suggestions-page" */ './pages/SuggestionsPage')
+);
+const DashboardPage = lazy(() =>
+  import(/* webpackChunkName: "dashboard-page" */ './pages/DashboardPage')
+);
+const VisualizationPage = lazy(() =>
+  import(/* webpackChunkName: "visualization-page" */ './pages/VisualizationPage')
+);
+const DBExplorerPage = lazy(() =>
+  import(/* webpackChunkName: "db-explorer-page" */ './pages/DBExplorerPage')
+);
 
-// Admin pages
-const TuningPage = lazy(() => import('./pages/admin/TuningPage'));
-const LLMManagementPage = lazy(() => import('./pages/admin/LLMManagementPage'));
-const LLMTestPage = lazy(() => import('./pages/admin/LLMTestPage'));
-const LLMDebugPage = lazy(() => import('./pages/admin/LLMDebugPage'));
-const SchemaManagementPage = lazy(() => import('./components/SchemaManagement/SchemaManagementDashboard').then(module => ({ default: module.SchemaManagementDashboard })));
-const CacheManagementPage = lazy(() => import('./components/Cache/CacheManager').then(module => ({ default: module.CacheManager })));
-const SecurityPage = lazy(() => import('./components/Security/SecurityDashboard').then(module => ({ default: module.SecurityDashboard })));
-const SuggestionsManagementPage = lazy(() => import('./components/Admin/QuerySuggestionsManager').then(module => ({ default: module.QuerySuggestionsManager })));
+// Admin pages with chunk names
+const TuningPage = lazy(() =>
+  import(/* webpackChunkName: "admin-tuning" */ './pages/admin/TuningPage')
+);
+const LLMManagementPage = lazy(() =>
+  import(/* webpackChunkName: "admin-llm" */ './pages/admin/LLMManagementPage')
+);
+const LLMTestPage = lazy(() =>
+  import(/* webpackChunkName: "admin-llm-test" */ './pages/admin/LLMTestPage')
+);
+const LLMDebugPage = lazy(() =>
+  import(/* webpackChunkName: "admin-llm-debug" */ './pages/admin/LLMDebugPage')
+);
+const SchemaManagementPage = lazy(() =>
+  import(/* webpackChunkName: "admin-schema" */ './components/SchemaManagement/SchemaManagementDashboard').then(module => ({ default: module.SchemaManagementDashboard }))
+);
+const CacheManagementPage = lazy(() =>
+  import(/* webpackChunkName: "admin-cache" */ './components/Cache/CacheManager').then(module => ({ default: module.CacheManager }))
+);
+const SecurityPage = lazy(() =>
+  import(/* webpackChunkName: "admin-security" */ './components/Security/SecurityDashboard').then(module => ({ default: module.SecurityDashboard }))
+);
+const SuggestionsManagementPage = lazy(() =>
+  import(/* webpackChunkName: "admin-suggestions" */ './components/Admin/QuerySuggestionsManager').then(module => ({ default: module.QuerySuggestionsManager }))
+);
 
 // Demo and development pages
-const UIDemo = lazy(() => import('./pages/EnhancedUIDemo'));
-const PerformancePage = lazy(() => import('./components/Performance/PerformanceMonitoringDashboard').then(module => ({ default: module.default })));
+const UIDemo = lazy(() =>
+  import(/* webpackChunkName: "ui-demo" */ './pages/DesignSystemShowcase')
+);
+const PerformancePage = lazy(() =>
+  import(/* webpackChunkName: "performance-page" */ './components/Performance/PerformanceMonitoringDashboard').then(module => ({ default: module.default }))
+);
+
+// Preload critical components for better performance
+const preloadCriticalComponents = () => {
+  // Preload most commonly used pages
+  import('./pages/QueryPage');
+  import('./pages/DashboardPage');
+  import('./pages/ResultsPage');
+};
+
+// Preload on user interaction (hover, focus)
+const preloadOnInteraction = () => {
+  // Preload remaining pages on first user interaction
+  import('./pages/VisualizationPage');
+  import('./pages/HistoryPage');
+  import('./pages/SuggestionsPage');
+};
 
 const App: React.FC = () => {
   const { isAuthenticated, isAdmin } = useAuthStore();
 
-  // Initialize services
+  // Initialize services and preload components
   useEffect(() => {
     ErrorService.initialize();
     secureApiClient.updateConfig({
@@ -58,6 +110,27 @@ const App: React.FC = () => {
         windowMs: 60000,
       },
     });
+
+    // Preload critical components after initial render
+    const timer = setTimeout(() => {
+      preloadCriticalComponents();
+    }, 1000);
+
+    // Preload on first user interaction
+    const handleFirstInteraction = () => {
+      preloadOnInteraction();
+      document.removeEventListener('mouseenter', handleFirstInteraction);
+      document.removeEventListener('click', handleFirstInteraction);
+    };
+
+    document.addEventListener('mouseenter', handleFirstInteraction, { once: true });
+    document.addEventListener('click', handleFirstInteraction, { once: true });
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mouseenter', handleFirstInteraction);
+      document.removeEventListener('click', handleFirstInteraction);
+    };
   }, []);
 
   return (
@@ -104,16 +177,20 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
             <Suspense fallback={<LoadingFallback />}>
               <CornerStatusPanel />
               <div style={{ display: 'flex', minHeight: '100vh' }}>
-                <EnhancedSidebar
+                <Sidebar
                   collapsed={sidebarCollapsed}
                   onCollapse={setSidebarCollapsed}
                 />
-                <div style={{
-                  flex: 1,
-                  backgroundColor: '#f5f5f5',
-                  padding: '24px',
-                  paddingTop: '80px' // Space for corner panel
-                }}>
+                <div
+                  className="main-content-area"
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#f8fafc',
+                    padding: '24px',
+                    paddingTop: '80px', // Space for corner panel
+                    minHeight: '100vh'
+                  }}
+                >
                   <Routes>
                   {/* Main Interface */}
                   <Route path="/" element={<QueryInterface />} />

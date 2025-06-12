@@ -20,29 +20,7 @@ global.TextDecoder = TextDecoder as any;
 
 
 
-// Mock ResizeObserver
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
-
-// Establish API mocking before all tests
-// beforeAll(() => {
-//   server.listen();
-// });
-
-// Reset any request handlers that we may add during the tests,
-// so they don't affect other tests
-// afterEach(() => {
-//   server.resetHandlers();
-// });
-
-// Clean up after the tests are finished
-// afterAll(() => {
-//   server.close();
-// });
-
+// ===== GLOBAL MOCKS =====
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -58,7 +36,7 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-// Mock ResizeObserver
+// Mock ResizeObserver (consolidated - removed duplicate)
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),

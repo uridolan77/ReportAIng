@@ -1,0 +1,270 @@
+/**
+ * Design System Tokens - Unified & Standardized
+ * 
+ * Consolidated design tokens for consistent UI/UX across the entire application.
+ * This file serves as the single source of truth for all design decisions.
+ */
+
+:root {
+  /* ===== BRAND COLORS ===== */
+  --brand-primary: #3b82f6;
+  --brand-primary-hover: #2563eb;
+  --brand-primary-active: #1d4ed8;
+  --brand-primary-light: rgba(59, 130, 246, 0.1);
+  --brand-primary-dark: #1e40af;
+
+  --brand-secondary: #8b5cf6;
+  --brand-secondary-hover: #7c3aed;
+  --brand-secondary-active: #6d28d9;
+
+  /* ===== SEMANTIC COLORS ===== */
+  --color-success: #10b981;
+  --color-success-hover: #059669;
+  --color-success-light: rgba(16, 185, 129, 0.1);
+  --color-success-dark: #047857;
+
+  --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
+  --color-warning-light: rgba(245, 158, 11, 0.1);
+  --color-warning-dark: #b45309;
+
+  --color-error: #ef4444;
+  --color-error-hover: #dc2626;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-error-dark: #b91c1c;
+
+  --color-info: #3b82f6;
+  --color-info-hover: #2563eb;
+  --color-info-light: rgba(59, 130, 246, 0.1);
+  --color-info-dark: #1d4ed8;
+
+  /* ===== NEUTRAL COLORS - LIGHT MODE ===== */
+  --neutral-0: #ffffff;
+  --neutral-50: #f9fafb;
+  --neutral-100: #f3f4f6;
+  --neutral-200: #e5e7eb;
+  --neutral-300: #d1d5db;
+  --neutral-400: #9ca3af;
+  --neutral-500: #6b7280;
+  --neutral-600: #4b5563;
+  --neutral-700: #374151;
+  --neutral-800: #1f2937;
+  --neutral-900: #111827;
+
+  /* ===== SURFACE COLORS ===== */
+  --surface-primary: var(--neutral-0);
+  --surface-secondary: var(--neutral-50);
+  --surface-tertiary: var(--neutral-100);
+  --surface-elevated: var(--neutral-0);
+  --surface-overlay: rgba(0, 0, 0, 0.5);
+
+  /* ===== TEXT COLORS ===== */
+  --text-primary: var(--neutral-900);
+  --text-secondary: var(--neutral-600);
+  --text-tertiary: var(--neutral-400);
+  --text-disabled: var(--neutral-300);
+  --text-inverse: var(--neutral-0);
+  --text-brand: var(--brand-primary);
+
+  /* ===== BORDER COLORS ===== */
+  --border-primary: var(--neutral-200);
+  --border-secondary: var(--neutral-100);
+  --border-focus: var(--brand-primary);
+  --border-error: var(--color-error);
+  --border-success: var(--color-success);
+
+  /* ===== SPACING SYSTEM (8pt Grid) ===== */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;
+
+  /* ===== TYPOGRAPHY SYSTEM ===== */
+  --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-secondary: 'Poppins', 'Inter', sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+
+  /* Font Sizes */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  --font-size-4xl: 36px;
+  --font-size-5xl: 48px;
+
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ===== BORDER RADIUS ===== */
+  --radius-none: 0;
+  --radius-sm: 6px;
+  --radius-base: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ===== SHADOWS ===== */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-base: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+
+  /* ===== TRANSITIONS ===== */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== Z-INDEX SCALE ===== */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+
+  /* ===== LAYOUT CONSTANTS ===== */
+  --layout-max-width: 1440px;
+  --layout-content-width: 100%;
+  --layout-sidebar-width: 280px;
+  --layout-sidebar-collapsed-width: 80px;
+  --layout-header-height: 64px;
+  --layout-footer-height: 60px;
+
+  /* ===== COMPONENT SIZES ===== */
+  --button-height-sm: 32px;
+  --button-height-base: 40px;
+  --button-height-lg: 48px;
+  --input-height-sm: 32px;
+  --input-height-base: 40px;
+  --input-height-lg: 48px;
+
+  /* ===== BREAKPOINTS ===== */
+  --breakpoint-xs: 480px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
+
+/* ===== DARK MODE OVERRIDES ===== */
+[data-theme="dark"] {
+  /* Surface Colors - Dark Mode */
+  --surface-primary: #1a1a1a;
+  --surface-secondary: #262626;
+  --surface-tertiary: #404040;
+  --surface-elevated: #2d2d2d;
+  --surface-overlay: rgba(0, 0, 0, 0.8);
+
+  /* Text Colors - Dark Mode */
+  --text-primary: #ffffff;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #737373;
+  --text-disabled: #525252;
+  --text-inverse: #000000;
+
+  /* Border Colors - Dark Mode */
+  --border-primary: #404040;
+  --border-secondary: #525252;
+
+  /* Neutral Colors - Dark Mode */
+  --neutral-0: #000000;
+  --neutral-50: #0a0a0a;
+  --neutral-100: #171717;
+  --neutral-200: #262626;
+  --neutral-300: #404040;
+  --neutral-400: #525252;
+  --neutral-500: #737373;
+  --neutral-600: #a3a3a3;
+  --neutral-700: #d4d4d4;
+  --neutral-800: #e5e5e5;
+  --neutral-900: #f5f5f5;
+
+  /* Enhanced shadows for dark mode */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-base: 0 4px 6px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 20px 25px rgba(0, 0, 0, 0.4), 0 10px 10px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.6);
+}
+
+/* ===== UTILITY CLASSES ===== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transition-all {
+  transition: all var(--transition-normal);
+}
+
+.transition-colors {
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.transition-transform {
+  transition: transform var(--transition-normal);
+}
+
+/* ===== RESPONSIVE UTILITIES ===== */
+@media (max-width: 640px) {
+  :root {
+    --layout-sidebar-width: 100%;
+    --space-6: 16px;
+    --space-8: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --font-size-3xl: 24px;
+    --font-size-4xl: 30px;
+    --font-size-5xl: 36px;
+  }
+}

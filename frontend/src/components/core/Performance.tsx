@@ -118,30 +118,82 @@ export const LazyComponent: React.FC<LazyComponentProps> = ({
   return <Component />;
 };
 
-// Virtual List Component
+// Enhanced Virtual List Component with performance optimizations
 export const VirtualList = forwardRef<HTMLDivElement, VirtualListProps>(
-  ({ 
-    items, 
-    itemHeight, 
-    containerHeight, 
-    renderItem, 
+  ({
+    items,
+    itemHeight,
+    containerHeight,
+    renderItem,
     overscan = 5,
-    className, 
-    style 
+    className,
+    style
   }, ref) => {
-    const Row = useCallback(({ index, style: rowStyle }: { index: number; style: React.CSSProperties }) => (
-      <div style={rowStyle}>
-        {renderItem(items[index], index)}
-      </div>
-    ), [items, renderItem]);
+    // Memoize the row renderer for better performance
+    const Row = useCallback(({ index, style: rowStyle }: { index: number; style: React.CSSProperties }) => {
+      const item = items[index];
+      if (!item) return null;
+
+      return (
+        <div style={rowStyle}>
+          {renderItem(item, index)}
+        </div>
+      );
+    }, [items, renderItem]);
+
+    // Use intersection observer to only render when visible
+    const { ref: inViewRef, inView } = useInView({
+      threshold: 0,
+      triggerOnce: false,
+    });
+
+    // For very large datasets, show placeholder when not in view
+    if (!inView && items.length > 1000) {
+      return (
+        <div
+          ref={(node) => {
+            inViewRef(node);
+            if (ref) {
+              if (typeof ref === 'function') ref(node);
+              else ref.current = node;
+            }
+          }}
+          className={className}
+          style={{
+            ...style,
+            height: containerHeight,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#f8f9fa',
+            border: '1px dashed #dee2e6'
+          }}
+        >
+          <div style={{ color: '#6c757d', fontSize: '14px' }}>
+            Large dataset - scroll to load content
+          </div>
+        </div>
+      );
+    }
 
     return (
-      <div ref={ref} className={className} style={style}>
+      <div
+        ref={(node) => {
+          inViewRef(node);
+          if (ref) {
+            if (typeof ref === 'function') ref(node);
+            else ref.current = node;
+          }
+        }}
+        className={className}
+        style={style}
+      >
         <List
           height={containerHeight}
           itemCount={items.length}
           itemSize={itemHeight}
           overscanCount={overscan}
+          width="100%"
         >
           {Row}
         </List>

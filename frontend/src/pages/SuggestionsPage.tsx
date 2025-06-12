@@ -25,7 +25,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
-import { PageLayout, PageSection, PageGrid } from '../components/core/Layouts';
+import { ModernPageLayout, PageSection, PageGrid } from '../components/core/Layouts';
 import { Card, CardContent } from '../components/core/Card';
 import { Button } from '../components/core/Button';
 
@@ -93,14 +93,15 @@ const SuggestionsPageContent: React.FC = () => {
   };
 
   return (
-    <PageLayout
+    <ModernPageLayout
       title="AI-Powered Query Suggestions"
       subtitle="Intelligent recommendations based on your data patterns and query history"
-      breadcrumbs={[
-        { title: 'Home', href: '/', icon: <HomeOutlined /> },
-        { title: 'Smart Suggestions', icon: <BulbOutlined /> }
-      ]}
-      style={{ width: '80%', margin: '0 auto' }}
+      breadcrumb={
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
+          <HomeOutlined /> Home / <BulbOutlined /> Smart Suggestions
+        </div>
+      }
+      className="full-width-content"
     >
       {/* AI Status Card */}
       <PageSection
@@ -348,7 +349,7 @@ const SuggestionsPageContent: React.FC = () => {
           </Button>
         </div>
       </PageSection>
-    </PageLayout>
+    </ModernPageLayout>
   );
 };
 

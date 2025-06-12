@@ -14,7 +14,7 @@ import {
   ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useQueryContext } from './QueryProvider';
-import { EnhancedQueryInput } from './EnhancedQueryInput';
+import { QueryInput } from './QueryInput';
 import { QueryShortcuts } from './QueryShortcuts';
 import { QueryTemplate } from '../../services/queryTemplateService';
 
@@ -65,7 +65,7 @@ export const QueryEditor: React.FC = () => {
         {/* Main Query Input Section */}
         <Col xs={24} lg={showShortcuts ? 16 : 24}>
           <div className="query-input-section">
-            <EnhancedQueryInput
+            <QueryInput
               value={query}
               onChange={setQuery}
               onSubmit={handleSubmitQuery}
