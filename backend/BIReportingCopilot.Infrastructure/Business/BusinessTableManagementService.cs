@@ -3,10 +3,11 @@ using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Business;
-using BIReportingCopilot.Core.Models.Statistics;
+// Using fully qualified names to avoid ambiguous references
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BusinessTableStatistics = BIReportingCopilot.Core.Models.BusinessTableStatistics;
 
 namespace BIReportingCopilot.Infrastructure.Business;
 
@@ -275,9 +276,9 @@ public class BusinessTableManagementService : IBusinessTableManagementService
             return new BusinessTableStatistics
             {
                 TotalTables = stats.Count,
-                TotalColumns = totalColumns,
-                RecentlyUpdatedTables = recentlyUpdatedTables,
-                AverageColumnsPerTable = stats.Count > 0 ? stats.Average(s => s.ColumnCount) : 0
+                ActiveTables = stats.Count, // All queried tables are active
+                InactiveTables = 0,
+                LastUpdated = DateTime.UtcNow
             };
         }
         catch (Exception ex)
@@ -490,5 +491,53 @@ public class BusinessTableManagementService : IBusinessTableManagementService
             _logger.LogError(ex, "Error searching business tables with term: {SearchTerm}", searchTerm);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Get optimized business tables with cancellation token support
+    /// </summary>
+    public async Task<List<BusinessTableInfoOptimizedDto>> GetBusinessTablesOptimizedAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetBusinessTablesOptimizedAsync();
+    }
+
+    /// <summary>
+    /// Get business table by long ID with cancellation token support
+    /// </summary>
+    public async Task<BusinessTableInfoDto?> GetBusinessTableAsync(long id, CancellationToken cancellationToken = default)
+    {
+        return await GetBusinessTableAsync(id);
+    }
+
+    /// <summary>
+    /// Create business table with request object and user ID
+    /// </summary>
+    public async Task<BusinessTableInfoDto> CreateBusinessTableAsync(CreateTableInfoRequest request, string userId, CancellationToken cancellationToken = default)
+    {
+        return await CreateBusinessTableAsync(request, userId);
+    }
+
+    /// <summary>
+    /// Update business table with request object and user ID
+    /// </summary>
+    public async Task<BusinessTableInfoDto?> UpdateBusinessTableAsync(long id, CreateTableInfoRequest request, string userId, CancellationToken cancellationToken = default)
+    {
+        return await UpdateBusinessTableAsync(id, request, userId);
+    }
+
+    /// <summary>
+    /// Delete business table by long ID with cancellation token support
+    /// </summary>
+    public async Task<bool> DeleteBusinessTableAsync(long id, CancellationToken cancellationToken = default)
+    {
+        return await DeleteBusinessTableAsync(id);
+    }
+
+    /// <summary>
+    /// Get table statistics with cancellation token support
+    /// </summary>
+    public async Task<BusinessTableStatistics> GetTableStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetTableStatisticsAsync();
     }
 }

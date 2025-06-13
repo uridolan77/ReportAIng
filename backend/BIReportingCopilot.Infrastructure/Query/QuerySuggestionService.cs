@@ -556,4 +556,217 @@ public class QuerySuggestionService : IQuerySuggestionService
         // Return empty byte array for now - can be implemented when export is needed
         return Task.FromResult(Array.Empty<byte>());
     }
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Get suggestions async (IQuerySuggestionService interface)
+    /// </summary>
+    public async Task<List<QuerySuggestion>> GetSuggestionsAsync(string query, string? userId = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("🔍 Getting suggestions for query: {Query}", query);
+
+            var queryLower = query.ToLowerInvariant();
+            var suggestions = await _context.QuerySuggestions
+                .Include(s => s.Category)
+                .Where(s => s.IsActive &&
+                           (s.QueryText.ToLower().Contains(queryLower) ||
+                            s.Description.ToLower().Contains(queryLower) ||
+                            s.Tags.Contains(queryLower)))
+                .OrderByDescending(s => s.UsageCount)
+                .ThenBy(s => s.SortOrder)
+                .Take(10)
+                .ToListAsync(cancellationToken);
+
+            return suggestions.Select(MapToQuerySuggestion).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting suggestions for query: {Query}", query);
+            return new List<QuerySuggestion>();
+        }
+    }
+
+    /// <summary>
+    /// Get popular queries async (IQuerySuggestionService interface)
+    /// </summary>
+    public async Task<List<QuerySuggestion>> GetPopularQueriesAsync(int count = 10, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("📊 Getting {Count} popular queries", count);
+
+            var suggestions = await _context.QuerySuggestions
+                .Include(s => s.Category)
+                .Where(s => s.IsActive && s.UsageCount > 0)
+                .OrderByDescending(s => s.UsageCount)
+                .ThenByDescending(s => s.LastUsed)
+                .Take(count)
+                .ToListAsync(cancellationToken);
+
+            return suggestions.Select(MapToQuerySuggestion).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting popular queries");
+            return new List<QuerySuggestion>();
+        }
+    }
+
+    /// <summary>
+    /// Get recent queries async (IQuerySuggestionService interface)
+    /// </summary>
+    public async Task<List<QuerySuggestion>> GetRecentQueriesAsync(string userId, int count = 10, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("📅 Getting {Count} recent queries for user: {UserId}", count, userId);
+
+            var recentUsage = await _context.SuggestionUsageAnalytics
+                .Where(u => u.UserId == userId)
+                .OrderByDescending(u => u.UsedAt)
+                .Take(count)
+                .Select(u => u.SuggestionId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            var suggestions = await _context.QuerySuggestions
+                .Include(s => s.Category)
+                .Where(s => recentUsage.Contains(s.Id) && s.IsActive)
+                .ToListAsync(cancellationToken);
+
+            // Maintain the order from recent usage
+            var orderedSuggestions = recentUsage
+                .Select(id => suggestions.FirstOrDefault(s => s.Id == id))
+                .Where(s => s != null)
+                .Select(s => MapToQuerySuggestion(s!))
+                .ToList();
+
+            return orderedSuggestions;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting recent queries for user: {UserId}", userId);
+            return new List<QuerySuggestion>();
+        }
+    }
+
+    /// <summary>
+    /// Save query suggestion async (IQuerySuggestionService interface)
+    /// </summary>
+    public async Task SaveQuerySuggestionAsync(QuerySuggestion suggestion, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("💾 Saving query suggestion: {Query}", suggestion.Query);
+
+            var entity = new QuerySuggestion
+            {
+                QueryText = suggestion.Query,
+                Description = suggestion.Description ?? "",
+                CategoryId = 1, // Default category
+                DefaultTimeFrame = "last_30_days",
+                SortOrder = 999,
+                IsActive = true,
+                TargetTables = JsonSerializer.Serialize(suggestion.RequiredTables ?? new List<string>()),
+                Complexity = suggestion.Complexity,
+                RequiredPermissions = JsonSerializer.Serialize(new List<string>()),
+                Tags = JsonSerializer.Serialize(suggestion.Keywords ?? new List<string>()),
+                UsageCount = 0,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _context.QuerySuggestions.Add(entity);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("✅ Query suggestion saved with ID: {Id}", entity.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error saving query suggestion");
+        }
+    }
+
+    /// <summary>
+    /// Update suggestion rating async (IQuerySuggestionService interface)
+    /// </summary>
+    public async Task<bool> UpdateSuggestionRatingAsync(string suggestionId, int rating, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("⭐ Updating suggestion rating: {SuggestionId} -> {Rating}", suggestionId, rating);
+
+            if (long.TryParse(suggestionId, out var id))
+            {
+                var suggestion = await _context.QuerySuggestions.FindAsync(new object[] { id }, cancellationToken);
+                if (suggestion != null)
+                {
+                    // Record usage with feedback
+                    var usage = new SuggestionUsageAnalytics
+                    {
+                        SuggestionId = id,
+                        UserId = "system",
+                        SessionId = Guid.NewGuid().ToString(),
+                        UsedAt = DateTime.UtcNow,
+                        WasSuccessful = rating >= 3,
+                        UserFeedback = rating.ToString()
+                    };
+
+                    _context.SuggestionUsageAnalytics.Add(usage);
+                    await _context.SaveChangesAsync(cancellationToken);
+
+                    _logger.LogDebug("✅ Suggestion rating updated");
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error updating suggestion rating: {SuggestionId}", suggestionId);
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods for Interface Implementations
+
+    private static QuerySuggestion MapToQuerySuggestion(QuerySuggestion entity)
+    {
+        var keywords = ParseJsonArray(entity.Tags);
+        var requiredTables = ParseJsonArray(entity.TargetTables);
+
+        return new Core.Models.QuerySuggestions.QuerySuggestion
+        {
+            Id = entity.Id.ToString(),
+            Query = entity.QueryText,
+            Description = entity.Description,
+            Category = entity.Category?.Title ?? "General",
+            Keywords = keywords,
+            RequiredTables = requiredTables,
+            Complexity = entity.Complexity,
+            UsageCount = entity.UsageCount,
+            LastUsed = entity.LastUsed,
+            CreatedAt = entity.CreatedDate,
+            Confidence = CalculateConfidence(entity),
+            Source = "Database"
+        };
+    }
+
+    private static double CalculateConfidence(QuerySuggestion entity)
+    {
+        // Base confidence on usage count and recency
+        var baseConfidence = 0.5;
+        var usageBonus = Math.Min(entity.UsageCount * 0.1, 0.3);
+        var recencyBonus = entity.LastUsed.HasValue && entity.LastUsed.Value > DateTime.UtcNow.AddDays(-30) ? 0.2 : 0.0;
+
+        return Math.Min(baseConfidence + usageBonus + recencyBonus, 1.0);
+    }
+
+    #endregion
 }

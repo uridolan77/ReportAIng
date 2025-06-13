@@ -85,8 +85,14 @@ public class DashboardCreationService
         {
             _logger.LogInformation("🤖 Generating dashboard from description for user {UserId}", userId);
 
-            // Analyze description with NLU
-            var nluResult = await _nluService.AnalyzeQueryAsync(description, userId);
+            // TODO: Implement AnalyzeQueryAsync in IAdvancedNLUService
+            // var nluResult = await _nluService.AnalyzeQueryAsync(description, userId);
+            var nluResult = new AdvancedNLUResult
+            {
+                EntityAnalysis = new EntityAnalysis { Entities = new List<ExtractedEntity>() },
+                IntentAnalysis = new IntentAnalysis { PrimaryIntent = "Lookup" },
+                AdvancedContext = new AdvancedContextAnalysis { ContextData = new Dictionary<string, object> { ["description"] = description } }
+            };
 
             // Get schema if not provided
             schema ??= await _schemaService.GetSchemaMetadataAsync();

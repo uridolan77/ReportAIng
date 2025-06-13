@@ -17,6 +17,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using BIReportingCopilot.Infrastructure.Monitoring;
 using CoreModels = BIReportingCopilot.Core.Models;
+using IContextManager = BIReportingCopilot.Core.Interfaces.IContextManager;
 
 namespace BIReportingCopilot.Infrastructure.AI.Core;
 
@@ -32,7 +33,7 @@ public class AIService : IAIService
     private readonly IPromptService _promptService;
     private readonly IContextManager _contextManager;
     private readonly List<QueryExample> _examples;
-    private readonly IAIProvider _provider = null!;
+    private IAIProvider? _provider;
 
     // Resilience policies
     private IAsyncPolicy<string> _retryPolicy = null!;
@@ -64,13 +65,13 @@ public class AIService : IAIService
         _learningService = learningService;
         _examples = InitializeExamples();
 
-        // Get the appropriate provider
-        _provider = _providerFactory.GetProvider();
+        // Get the appropriate provider (will be initialized lazily)
+        // _provider will be set when first needed
 
         // Initialize resilience policies
         InitializeResiliencePolicies();
 
-        _logger.LogInformation("AI service with adaptive learning initialized with provider: {ProviderName}", _provider?.ProviderName ?? "None");
+        _logger.LogInformation("AI service with adaptive learning initialized");
     }
 
     #region Standard AI Operations
@@ -133,7 +134,17 @@ public class AIService : IAIService
                 _logger.LogInformation("AI SQL Generation Request - Options: Temperature={Temperature}, MaxTokens={MaxTokens}, TimeoutSeconds={TimeoutSeconds}",
                     options.Temperature, options.MaxTokens, options.TimeoutSeconds);
 
-                var generatedSQL = await _provider.GenerateCompletionAsync(enhancedPrompt, options, combinedCts.Token);
+                var provider = await GetProviderAsync();
+                var request = new AIRequest
+                {
+                    Prompt = enhancedPrompt,
+                    Temperature = options.Temperature,
+                    MaxTokens = options.MaxTokens,
+                    SystemMessage = options.SystemMessage,
+                    TimeoutSeconds = options.TimeoutSeconds
+                };
+                var response = await provider.GenerateResponseAsync(request, combinedCts.Token);
+                var generatedSQL = response.Content;
 
                 if (string.IsNullOrEmpty(generatedSQL))
                 {
@@ -159,7 +170,10 @@ public class AIService : IAIService
                 activity?.SetTag("response.length", generatedSQL.Length);
 
                 // Record metrics
-                _metricsCollector?.RecordQueryExecution("sql_generation", stopwatch.ElapsedMilliseconds, true, 0);
+                if (_metricsCollector != null)
+                {
+                    _ = Task.Run(async () => await _metricsCollector.RecordQueryExecutionAsync("sql_generation", stopwatch.Elapsed, true));
+                }
 
                 _logger.LogInformation("Generated SQL successfully in {Duration}ms", stopwatch.ElapsedMilliseconds);
                 return generatedSQL;
@@ -173,7 +187,10 @@ public class AIService : IAIService
             activity?.SetTag("error.message", ex.Message);
 
             // Record error metrics
-            _metricsCollector?.RecordError("sql_generation", "AIService", ex);
+            if (_metricsCollector != null)
+            {
+                _ = Task.Run(async () => await _metricsCollector.RecordErrorAsync("sql_generation", "AIService", ex.Message, ex.StackTrace));
+            }
 
             _logger.LogError(ex, "Failed to generate SQL after all retry attempts for prompt: {Prompt}", prompt);
             throw;
@@ -206,7 +223,17 @@ Keep insights concise and actionable.";
                 TimeoutSeconds = 30
             };
 
-            return await _provider.GenerateCompletionAsync(insightPrompt, options);
+            var provider = await GetProviderAsync();
+            var request = new AIRequest
+            {
+                Prompt = insightPrompt,
+                Temperature = options.Temperature,
+                MaxTokens = options.MaxTokens,
+                SystemMessage = options.SystemMessage,
+                TimeoutSeconds = options.TimeoutSeconds
+            };
+            var response = await provider.GenerateResponseAsync(request);
+            return response.Content;
         }
         catch (Exception ex)
         {
@@ -246,7 +273,17 @@ Return only valid JSON.";
                 TimeoutSeconds = 30
             };
 
-            return await _provider.GenerateCompletionAsync(vizPrompt, options);
+            var provider = await GetProviderAsync();
+            var request = new AIRequest
+            {
+                Prompt = vizPrompt,
+                Temperature = options.Temperature,
+                MaxTokens = options.MaxTokens,
+                SystemMessage = options.SystemMessage,
+                TimeoutSeconds = options.TimeoutSeconds
+            };
+            var response = await provider.GenerateResponseAsync(request);
+            return response.Content;
         }
         catch (Exception ex)
         {
@@ -358,7 +395,8 @@ Return only valid JSON.";
         CoreModels.QueryContext? context = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (_provider == null)
+        var provider = await GetProviderAsync();
+        if (provider == null)
         {
             yield return new StreamingResponse { Content = "AI service not configured", IsComplete = true };
             yield break;
@@ -389,7 +427,7 @@ Return only valid JSON.";
             TimeoutSeconds = 30
         };
 
-        await foreach (var response in _provider.GenerateCompletionStreamAsync(enhancedPrompt, options, cancellationToken))
+        await foreach (var response in provider.GenerateCompletionStreamAsync(enhancedPrompt, options, cancellationToken))
         {
             yield return response;
         }
@@ -401,7 +439,8 @@ Return only valid JSON.";
         CoreModels.AnalysisContext? context = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (_provider == null)
+        var provider = await GetProviderAsync();
+        if (provider == null)
         {
             yield return new StreamingResponse { Content = "AI service not configured", IsComplete = true };
             yield break;
@@ -432,7 +471,7 @@ Return only valid JSON.";
             TimeoutSeconds = 30
         };
 
-        await foreach (var response in _provider.GenerateCompletionStreamAsync(insightPrompt, options, cancellationToken))
+        await foreach (var response in provider.GenerateCompletionStreamAsync(insightPrompt, options, cancellationToken))
         {
             yield return response;
         }
@@ -443,7 +482,8 @@ Return only valid JSON.";
         CoreModels.StreamingQueryComplexity complexity = CoreModels.StreamingQueryComplexity.Medium,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (_provider == null)
+        var provider = await GetProviderAsync();
+        if (provider == null)
         {
             yield return new StreamingResponse { Content = "AI service not configured", IsComplete = true };
             yield break;
@@ -474,7 +514,7 @@ Return only valid JSON.";
             TimeoutSeconds = 30
         };
 
-        await foreach (var response in _provider.GenerateCompletionStreamAsync(explanationPrompt, options, cancellationToken))
+        await foreach (var response in provider.GenerateCompletionStreamAsync(explanationPrompt, options, cancellationToken))
         {
             yield return response;
         }
@@ -483,6 +523,15 @@ Return only valid JSON.";
     #endregion
 
     #region Private Helper Methods
+
+    private async Task<IAIProvider> GetProviderAsync()
+    {
+        if (_provider == null)
+        {
+            _provider = await _providerFactory.CreateProviderAsync("openai", new Dictionary<string, object>());
+        }
+        return _provider;
+    }
 
     private string BuildPrompt(string originalPrompt)
     {
@@ -735,6 +784,70 @@ EXAMPLES:
                 ErrorMessage = ex.Message
             };
         }
+    }
+
+    /// <summary>
+    /// Generate visualization configuration
+    /// </summary>
+    public async Task<string> GenerateVisualizationConfigAsync(string query, object[] data, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Basic visualization config generation
+            var prompt = $"Generate a visualization configuration for the query: {query}";
+            var result = await GenerateSQLAsync(prompt, cancellationToken);
+            return result ?? "{}";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating visualization config");
+            return "{}";
+        }
+    }
+
+    /// <summary>
+    /// Generate SQL stream
+    /// </summary>
+    public async Task<IAsyncEnumerable<string>> GenerateSQLStreamAsync(string prompt, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // For now, return a simple async enumerable with the SQL result
+            var sql = await GenerateSQLAsync(prompt, cancellationToken);
+            return CreateAsyncEnumerable(sql ?? "SELECT 1");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating SQL stream");
+            return CreateAsyncEnumerable("SELECT 1");
+        }
+    }
+
+    /// <summary>
+    /// Generate insight stream
+    /// </summary>
+    public async Task<IAsyncEnumerable<string>> GenerateInsightStreamAsync(string query, object[] data, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // For now, return a simple async enumerable with the insight result
+            var insight = await GenerateInsightAsync(query, data);
+            return CreateAsyncEnumerable(insight ?? "No insights available");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating insight stream");
+            return CreateAsyncEnumerable("No insights available");
+        }
+    }
+
+    /// <summary>
+    /// Helper method to create async enumerable
+    /// </summary>
+    private async IAsyncEnumerable<string> CreateAsyncEnumerable(string content)
+    {
+        await Task.Yield();
+        yield return content;
     }
 }
 

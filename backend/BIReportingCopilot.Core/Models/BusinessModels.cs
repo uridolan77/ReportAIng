@@ -259,3 +259,53 @@ public enum QualityRuleSeverity
     Error,
     Critical
 }
+
+/// <summary>
+/// Business table statistics
+/// </summary>
+public class BusinessTableStatistics
+{
+    public int TotalTables { get; set; }
+    public int ActiveTables { get; set; }
+    public int InactiveTables { get; set; }
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Glossary statistics
+/// </summary>
+public class GlossaryStatistics
+{
+    public int TotalTerms { get; set; }
+    public int ActiveTerms { get; set; }
+    public int InactiveTerms { get; set; }
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Query pattern statistics
+/// </summary>
+public class QueryPatternStatistics
+{
+    public int TotalPatterns { get; set; }
+    public int ActivePatterns { get; set; }
+    public int InactivePatterns { get; set; }
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// AI tuning settings DTO
+/// </summary>
+public class AITuningSettingsDto
+{
+    public long Id { get; set; }
+    public string SettingName { get; set; } = string.Empty;
+    public string SettingValue { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public string? UpdatedBy { get; set; }
+}

@@ -40,7 +40,7 @@ public class AITuningSettingsService : IAITuningSettingsService
             // Try to parse as long ID for database lookup
             if (long.TryParse(settingsId, out var id))
             {
-                var settings = await _tuningService.GetAISettingsAsync();
+                var settings = await GetAllSettingsAsync();
                 return settings.FirstOrDefault(s => s.Id == id);
             }
 
@@ -73,7 +73,22 @@ public class AITuningSettingsService : IAITuningSettingsService
     {
         try
         {
-            return await _tuningService.GetAISettingsAsync();
+            var settings = await _context.AITuningSettings
+                .Where(s => s.IsActive)
+                .OrderBy(s => s.Category)
+                .ThenBy(s => s.SettingKey)
+                .ToListAsync();
+
+            return settings.Select(s => new AITuningSettingsDto
+            {
+                Id = s.Id,
+                SettingKey = s.SettingKey,
+                SettingValue = s.SettingValue,
+                Description = s.Description,
+                Category = s.Category,
+                DataType = s.DataType,
+                IsActive = s.IsActive
+            }).ToList();
         }
         catch (Exception ex)
         {
@@ -123,7 +138,9 @@ public class AITuningSettingsService : IAITuningSettingsService
             {
                 // Use tuning service for database updates
                 var userId = "system"; // Default user
-                return await _tuningService.UpdateAISettingAsync(id, settings, userId);
+                // Cast to the business interface to access the correct method
+                var businessTuningService = _tuningService as BIReportingCopilot.Infrastructure.Business.TuningService;
+                return await businessTuningService.UpdateAISettingAsync(id, settings, userId);
             }
             else
             {
@@ -210,7 +227,9 @@ public class AITuningSettingsService : IAITuningSettingsService
     {
         try
         {
-            return await _tuningService.GetDashboardDataAsync();
+            // Cast to the business interface to access the correct method
+            var businessTuningService = _tuningService as BIReportingCopilot.Infrastructure.Business.TuningService;
+            return await businessTuningService.GetDashboardDataAsync();
         }
         catch (Exception ex)
         {
@@ -653,6 +672,37 @@ public class AITuningSettingsService : IAITuningSettingsService
         };
 
         return System.Text.Json.JsonSerializer.Serialize(defaultSettings, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+    }
+
+    public async Task<List<AITuningSettingsDto>> GetAISettingsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await GetAllSettingsAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting AI settings");
+            return new List<AITuningSettingsDto>();
+        }
+    }
+
+    public async Task<AITuningSettingsDto?> UpdateAISettingAsync(long id, AITuningSettingsDto request, string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var updated = await UpdateSettingsAsync(id.ToString(), request);
+            if (updated != null)
+            {
+                _logger.LogInformation("Updated AI setting {Id} by user {UserId}", id, userId);
+            }
+            return updated;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating AI setting {Id} by user {UserId}", id, userId);
+            return null;
+        }
     }
 
     #endregion

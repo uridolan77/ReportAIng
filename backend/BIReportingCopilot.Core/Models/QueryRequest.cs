@@ -12,6 +12,9 @@ public class QueryRequest
     public string SessionId { get; set; } = string.Empty;
 
     public QueryOptions Options { get; set; } = new();
+
+    // Property expected by Infrastructure services
+    public string UserId { get; set; } = string.Empty;
 }
 
 public class QueryOptions
@@ -57,13 +60,33 @@ public class QueryResponse
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public int ExecutionTimeMs { get; set; }
     public PromptDetails? PromptDetails { get; set; }
+
+    // Properties expected by Infrastructure services
+    public object[]? Data { get; set; }
+    public ColumnMetadata[]? Columns { get; set; }
+    public TimeSpan? ExecutionTime { get; set; }
+    public bool IsSuccessful { get; set; } = true;
+
+    /// <summary>
+    /// Error message (alias for Error property)
+    /// </summary>
+    public string? ErrorMessage
+    {
+        get => Error;
+        set => Error = value;
+    }
 }
 
 public class QueryResult
 {
     public object[]? Data { get; set; }
+    public List<Dictionary<string, object>> DataList { get; set; } = new();
+    public List<ColumnMetadata> Columns { get; set; } = new();
+    public int TotalRows { get; set; }
+    public long ExecutionTimeMs { get; set; }
     public QueryMetadata Metadata { get; set; } = new();
     public bool IsSuccessful { get; set; } = true;
+    public string? ErrorMessage { get; set; }
 }
 
 public class QueryMetadata

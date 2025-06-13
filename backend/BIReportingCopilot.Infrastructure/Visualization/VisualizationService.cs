@@ -1,10 +1,12 @@
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.Visualization;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Visualization;
 using VisualizationRecommendation = BIReportingCopilot.Core.Models.VisualizationRecommendation;
+using VisualizationMetadata = BIReportingCopilot.Core.Models.VisualizationMetadata;
 
 namespace BIReportingCopilot.Infrastructure.Visualization;
 
@@ -65,7 +67,7 @@ public class VisualizationService : IVisualizationService
             var recommendedType = DetermineOptimalVisualizationType(dataAnalysis);
 
             // Use AI to generate enhanced configuration
-            var aiConfig = await _aiService.GenerateVisualizationConfigAsync(query, columns, data);
+            var aiConfig = await _aiService.GenerateVisualizationConfigAsync(query, columns, CancellationToken.None);
             var parsedConfig = ParseAIVisualizationConfig(aiConfig);
 
             var config = new VisualizationConfig
@@ -74,10 +76,22 @@ public class VisualizationService : IVisualizationService
                 Title = GenerateTitle(query, dataAnalysis),
                 XAxis = DetermineXAxis(columns, dataAnalysis),
                 YAxis = DetermineYAxis(columns, dataAnalysis),
-                Series = DetermineSeries(columns, dataAnalysis),
+                Series = DetermineSeries(columns, dataAnalysis).ToList(),
                 Config = MergeConfigurations(GetDefaultConfig(recommendedType), parsedConfig),
-                Theme = ChartTheme.Modern,
-                ColorScheme = ColorScheme.Business,
+                Theme = new ThemeConfig
+                {
+                    Name = "Modern",
+                    Colors = new ColorPalette
+                    {
+                        Primary = new List<string> { "#007acc", "#28a745", "#ffc107", "#dc3545", "#6f42c1" },
+                        Secondary = new List<string> { "#6c757d", "#5a6268", "#495057" },
+                        Background = "#ffffff",
+                        Text = "#333333",
+                        Grid = "#e0e0e0",
+                        Axis = "#666666"
+                    }
+                },
+                ColorScheme = "Business",
                 EnableInteractivity = true,
                 EnableAnimation = data.Length <= 1000,
                 Metadata = new VisualizationMetadata
@@ -231,10 +245,16 @@ public class VisualizationService : IVisualizationService
             {
                 Title = $"Dashboard: {ExtractQuerySubject(query)}",
                 Description = $"Multi-chart analysis for: {query}",
-                Charts = charts,
+                Charts = charts.ToList(),
                 Layout = GenerateDashboardLayout(charts.Length),
-                GlobalFilters = GenerateGlobalFilters(dataAnalysis),
-                RefreshInterval = null
+                GlobalFilters = GenerateGlobalFilters(dataAnalysis).Select(f => new GlobalFilter
+                {
+                    Name = f.ColumnName,
+                    Type = f.FilterType,
+                    Label = f.Label,
+                    Values = new List<object>()
+                }).ToList(),
+                RefreshInterval = 0
             };
 
             return dashboardConfig;
@@ -276,7 +296,13 @@ public class VisualizationService : IVisualizationService
                 Performance = GeneratePerformanceConfig(data.Length)
             };
 
-            return config;
+            return new AdvancedVisualizationConfig
+            {
+                BaseConfig = config,
+                AdvancedFeatures = new Dictionary<string, object>(),
+                PerformanceOptimizations = new Dictionary<string, object>(),
+                InteractivityLevel = "Standard"
+            };
         }
         catch (Exception ex)
         {
@@ -298,7 +324,7 @@ public class VisualizationService : IVisualizationService
 
             foreach (var chart in charts)
             {
-                var chartConfig = await GenerateVisualizationAsync(query, columns, data, null);
+                var chartConfig = await GenerateVisualizationConfigAsync(query, columns, data);
                 chartConfigs.Add(chartConfig);
             }
 
@@ -306,10 +332,10 @@ public class VisualizationService : IVisualizationService
             {
                 Title = preferences?.Title ?? $"Analysis: {ExtractQuerySubject(query)}",
                 Description = $"Comprehensive dashboard generated from: {query}",
-                Charts = chartConfigs.ToArray(),
-                Layout = GenerateDashboardLayout(chartConfigs.Count, preferences),
-                GlobalFilters = Array.Empty<FilterConfig>(),
-                RefreshInterval = preferences?.RefreshInterval
+                Charts = chartConfigs,
+                Layout = GenerateDashboardLayout(chartConfigs.Count),
+                GlobalFilters = new List<FilterConfig>(),
+                RefreshInterval = preferences?.RefreshInterval ?? 0
             };
 
             return dashboardConfig;
@@ -335,11 +361,11 @@ public class VisualizationService : IVisualizationService
             {
                 recommendations.Add(new VisualizationRecommendation
                 {
-                    ChartType = ChartType.Scatter,
+                    ChartType = "scatter",
                     Confidence = 0.85,
                     Reasoning = "Multiple numeric columns detected",
                     BestFor = "Correlation analysis",
-                    Limitations = new string[] { "May be cluttered with large datasets" },
+                    Limitations = new List<string> { "May be cluttered with large datasets" },
                     EstimatedPerformance = new PerformanceEstimate { EstimatedRenderTime = TimeSpan.FromMilliseconds(500) },
                     SuggestedConfig = new Dictionary<string, object> { ["enableRegression"] = true }
                 });
@@ -534,7 +560,7 @@ public class VisualizationService : IVisualizationService
             Title = "Data View",
             XAxis = columns.FirstOrDefault()?.Name ?? "Index",
             YAxis = columns.LastOrDefault()?.Name ?? "Value",
-            Series = columns.Take(3).Select(c => c.Name).ToArray(),
+            Series = columns.Take(3).Select(c => c.Name).ToList(),
             Config = GetDefaultConfig("table")
         };
     }
@@ -547,7 +573,7 @@ public class VisualizationService : IVisualizationService
             Title = title,
             XAxis = DetermineXAxis(columns, analysis),
             YAxis = DetermineYAxis(columns, analysis),
-            Series = DetermineSeries(columns, analysis),
+            Series = DetermineSeries(columns, analysis).ToList(),
             Config = GetDefaultConfig(type)
         };
     }
@@ -599,7 +625,7 @@ public class VisualizationService : IVisualizationService
             options.Add(new DrillDownOption
             {
                 Name = column.Name,
-                Levels = new string[] { column.Name },
+                Levels = new List<string> { column.Name },
                 TargetColumn = column.Name
             });
         }
@@ -671,7 +697,7 @@ public class VisualizationService : IVisualizationService
             DelayByCategory = false,
             DelayIncrement = 0,
             AnimateOnDataChange = dataSize <= 5000,
-            AnimatedProperties = new string[] { "opacity", "transform" }
+            AnimatedProperties = new List<string> { "opacity", "transform" }
         };
     }
 
@@ -838,6 +864,133 @@ public class VisualizationService : IVisualizationService
             EnableAuditLog = true
         };
     }
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Generate advanced dashboard async (IVisualizationService interface)
+    /// </summary>
+    public async Task<AdvancedDashboardConfig> GenerateAdvancedDashboardAsync(
+        string query,
+        ColumnMetadata[] columns,
+        object[] data,
+        DashboardPreferences? preferences = null)
+    {
+        try
+        {
+            _logger.LogInformation("🎨 Generating advanced dashboard for query: {Query}", query);
+
+            var charts = await GenerateMultipleVisualizationOptionsAsync(query, columns, data);
+            var dataAnalysis = AnalyzeDataCharacteristics(columns, data);
+
+            var advancedConfig = new AdvancedDashboardConfig
+            {
+                Title = preferences?.Title ?? $"Advanced Dashboard: {ExtractQuerySubject(query)}",
+                Description = $"AI-powered dashboard analysis for: {query}",
+                Charts = charts.Select(c => new AdvancedVisualizationConfig
+                {
+                    Type = c.Type,
+                    Title = c.Title,
+                    XAxis = c.XAxis,
+                    YAxis = c.YAxis,
+                    Series = c.Series,
+                    Config = c.Config,
+                    ChartType = DetermineChartType(c.Type),
+                    Animation = GenerateAnimationConfig(data.Length),
+                    Interaction = GenerateInteractionConfig(dataAnalysis),
+                    Theme = GenerateThemeConfig(preferences?.Theme),
+                    DataProcessing = GenerateDataProcessingConfig(data.Length),
+                    Export = GenerateExportConfig(),
+                    Accessibility = GenerateAccessibilityConfig(),
+                    Performance = GeneratePerformanceConfig(data.Length)
+                }).ToArray(),
+                Layout = GenerateAdvancedDashboardLayout(charts.Length, preferences),
+                GlobalFilters = GenerateAdvancedGlobalFilters(dataAnalysis),
+                RefreshInterval = preferences?.RefreshInterval,
+                InteractiveFeatures = GenerateAdvancedInteractiveFeatures(dataAnalysis),
+                RealTimeCapabilities = GenerateRealTimeCapabilities(),
+                ExportOptions = GenerateAdvancedExportOptions(),
+                SecuritySettings = GenerateSecuritySettings(),
+                PerformanceSettings = GeneratePerformanceSettings(data.Length)
+            };
+
+            _logger.LogInformation("✅ Advanced dashboard generated successfully");
+            return advancedConfig;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error generating advanced dashboard");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Optimize visualization for performance async (IVisualizationService interface)
+    /// </summary>
+    public async Task<AdvancedVisualizationConfig> OptimizeVisualizationForPerformanceAsync(
+        AdvancedVisualizationConfig config,
+        int dataSize)
+    {
+        try
+        {
+            _logger.LogDebug("⚡ Optimizing visualization for performance with {DataSize} data points", dataSize);
+
+            var optimizedConfig = new AdvancedVisualizationConfig
+            {
+                Type = config.Type,
+                Title = config.Title,
+                XAxis = config.XAxis,
+                YAxis = config.YAxis,
+                Series = config.Series,
+                Config = new Dictionary<string, object>(config.Config),
+                ChartType = config.ChartType,
+                Animation = config.Animation,
+                Interaction = config.Interaction,
+                Theme = config.Theme,
+                DataProcessing = config.DataProcessing,
+                Export = config.Export,
+                Accessibility = config.Accessibility,
+                Performance = config.Performance
+            };
+
+            // Apply performance optimizations based on data size
+            if (dataSize > 10000)
+            {
+                optimizedConfig.Performance!.EnableWebGL = true;
+                optimizedConfig.DataProcessing!.EnableSampling = true;
+                optimizedConfig.DataProcessing.SampleSize = Math.Min(5000, dataSize / 2);
+                optimizedConfig.Animation!.EnableAnimations = false;
+                optimizedConfig.Config["enableVirtualization"] = true;
+            }
+
+            if (dataSize > 50000)
+            {
+                optimizedConfig.Performance!.EnableWorkerThreads = true;
+                optimizedConfig.DataProcessing!.EnableAggregation = true;
+                optimizedConfig.DataProcessing.AggregationLevel = "high";
+                optimizedConfig.Config["enableLazyLoading"] = true;
+            }
+
+            if (dataSize > 100000)
+            {
+                // For very large datasets, switch to simplified visualization
+                optimizedConfig.Type = "table";
+                optimizedConfig.Config["enablePagination"] = true;
+                optimizedConfig.Config["pageSize"] = 100;
+                optimizedConfig.Config["enableVirtualScrolling"] = true;
+            }
+
+            _logger.LogDebug("✅ Visualization optimized for {DataSize} data points", dataSize);
+            return await Task.FromResult(optimizedConfig);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error optimizing visualization for performance");
+            return config;
+        }
+    }
+
+    #endregion
 }
 
 public class DataCharacteristics

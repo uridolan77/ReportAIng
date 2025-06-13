@@ -41,6 +41,19 @@ public enum ChartType
 /// </summary>
 public class VisualizationConfig
 {
+    // Properties expected by the services
+    public string Type { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string XAxis { get; set; } = string.Empty;
+    public string YAxis { get; set; } = string.Empty;
+    public List<string> Series { get; set; } = new();
+    public Dictionary<string, object> Config { get; set; } = new();
+    public string ColorScheme { get; set; } = string.Empty;
+    public bool EnableInteractivity { get; set; } = true;
+    public bool EnableAnimation { get; set; } = true;
+    public VisualizationMetadata Metadata { get; set; } = new();
+
+    // Original properties
     public ChartType ChartType { get; set; }
     public AnimationConfig? Animation { get; set; }
     public InteractionConfig? Interaction { get; set; }
@@ -56,6 +69,46 @@ public class VisualizationConfig
 /// </summary>
 public class VisualizationConfiguration : VisualizationConfig
 {
+}
+
+/// <summary>
+/// Visualization metadata
+/// </summary>
+public class VisualizationMetadata
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string CreatedBy { get; set; } = string.Empty;
+    public Dictionary<string, object> Properties { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Number of data points in the visualization
+    /// </summary>
+    public int DataPointCount { get; set; }
+
+    /// <summary>
+    /// Confidence score for the visualization recommendation
+    /// </summary>
+    public double ConfidenceScore { get; set; }
+
+    /// <summary>
+    /// When this visualization was generated
+    /// </summary>
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Optimization level for the visualization
+    /// </summary>
+    public string OptimizationLevel { get; set; } = "Standard";
+
+    /// <summary>
+    /// Data source for the visualization
+    /// </summary>
+    public string DataSource { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -271,6 +324,15 @@ public class PerformanceConfig
 /// </summary>
 public class DashboardConfig
 {
+    // Properties expected by Infrastructure services
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public List<VisualizationConfig> Charts { get; set; } = new();
+    public DashboardLayout Layout { get; set; } = new();
+    public List<GlobalFilter> GlobalFilters { get; set; } = new();
+    public int RefreshInterval { get; set; } = 30; // seconds
+
+    // Original properties
     public DashboardTheme? Theme { get; set; }
     public ResponsiveConfig? Responsive { get; set; }
     public RealTimeConfig? RealTime { get; set; }
@@ -711,8 +773,8 @@ public class AnalyticsConfig
 /// </summary>
 public class AdvancedVisualizationConfig : VisualizationConfig
 {
-    public bool EnableInteractivity { get; set; } = true;
-    public bool EnableAnimation { get; set; } = true;
+    public new bool EnableInteractivity { get; set; } = true;
+    public new bool EnableAnimation { get; set; } = true;
     public List<string> SupportedInteractions { get; set; } = new();
     public Dictionary<string, object> AdvancedSettings { get; set; } = new();
 }
@@ -747,6 +809,7 @@ public class VisualizationPreferences
 public class DashboardPreferences
 {
     public string UserId { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty; // Added for service compatibility
     public string PreferredLayout { get; set; } = "grid";
     public int DefaultColumns { get; set; } = 12;
     public int DefaultRows { get; set; } = 6;
@@ -754,3 +817,5 @@ public class DashboardPreferences
     public int RefreshInterval { get; set; } = 30;
     public Dictionary<string, object> CustomSettings { get; set; } = new();
 }
+
+

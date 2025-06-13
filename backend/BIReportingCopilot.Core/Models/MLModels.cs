@@ -246,21 +246,7 @@ public class SemanticSimilarityResult
     public DateTime CalculatedAt { get; set; }
 }
 
-/// <summary>
-/// Semantic cache statistics
-/// </summary>
-public class SemanticCacheStatistics
-{
-    public int TotalEntries { get; set; }
-    public int HitCount { get; set; }
-    public int MissCount { get; set; }
-    public double HitRatio => TotalEntries > 0 ? (double)HitCount / (HitCount + MissCount) : 0;
-    public long TotalMemoryUsage { get; set; }
-    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
-
-    // Additional properties expected by Infrastructure services
-    public long TotalSizeBytes { get; set; }
-}
+// SemanticCacheStatistics moved to SemanticCaching.cs to avoid duplicates
 
 /// <summary>
 /// Federated learning session

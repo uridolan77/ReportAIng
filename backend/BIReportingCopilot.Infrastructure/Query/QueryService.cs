@@ -269,4 +269,373 @@ public class QueryService : IQueryService
     }
 
     #endregion
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Execute query (IQueryService interface)
+    /// </summary>
+    public async Task<QueryResult> ExecuteQueryAsync(QueryRequest request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Executing query request for user: {UserId}", request.UserId);
+
+            var response = await ProcessQueryAsync(request, request.UserId ?? "system", cancellationToken);
+
+            return new QueryResult
+            {
+                Data = response.Data,
+                Metadata = new QueryMetadata
+                {
+                    ColumnCount = response.Columns?.Length ?? 0,
+                    RowCount = response.Data?.Length ?? 0,
+                    ExecutionTimeMs = (int)(response.ExecutionTime?.TotalMilliseconds ?? 0),
+                    Columns = response.Columns ?? Array.Empty<ColumnMetadata>(),
+                    DataSource = "DailyActionsDB",
+                    QueryTimestamp = DateTime.UtcNow
+                },
+                IsSuccessful = response.IsSuccessful
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing query request");
+            return new QueryResult
+            {
+                IsSuccessful = false,
+                Metadata = new QueryMetadata
+                {
+                    Error = ex.Message,
+                    QueryTimestamp = DateTime.UtcNow
+                }
+            };
+        }
+    }
+
+    /// <summary>
+    /// Execute select query (IQueryService interface)
+    /// </summary>
+    public async Task<QueryResult> ExecuteSelectQueryAsync(string sqlQuery, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new QueryRequest
+            {
+                Question = sqlQuery,
+                UserId = "system"
+            };
+
+            return await ExecuteQueryAsync(request, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing select query");
+            return new QueryResult
+            {
+                IsSuccessful = false,
+                Metadata = new QueryMetadata
+                {
+                    Error = ex.Message,
+                    QueryTimestamp = DateTime.UtcNow
+                }
+            };
+        }
+    }
+
+    /// <summary>
+    /// Validate query (IQueryService interface)
+    /// </summary>
+    public async Task<bool> ValidateQueryAsync(string sqlQuery, CancellationToken cancellationToken = default)
+    {
+        return await ValidateQueryAsync(sqlQuery);
+    }
+
+    /// <summary>
+    /// Get query history (IQueryService interface)
+    /// </summary>
+    public async Task<List<QueryHistoryEntity>> GetQueryHistoryAsync(string userId, int pageSize = 50, int pageNumber = 1, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Application, async context =>
+            {
+                var appContext = (ApplicationDbContext)context;
+                return await appContext.QueryHistory
+                    .Where(q => q.UserId == userId)
+                    .OrderByDescending(q => q.ExecutedAt)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync(cancellationToken);
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting query history for user: {UserId}", userId);
+            return new List<QueryHistoryEntity>();
+        }
+    }
+
+    /// <summary>
+    /// Get cached query result (IQueryService interface)
+    /// </summary>
+    public async Task<QueryResult> GetCachedQueryResultAsync(string cacheKey, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var cachedResponse = await GetCachedQueryAsync(cacheKey);
+            if (cachedResponse != null)
+            {
+                return new QueryResult
+                {
+                    Data = cachedResponse.Data,
+                    Metadata = new QueryMetadata
+                    {
+                        ColumnCount = cachedResponse.Columns?.Length ?? 0,
+                        RowCount = cachedResponse.Data?.Length ?? 0,
+                        ExecutionTimeMs = (int)(cachedResponse.ExecutionTime?.TotalMilliseconds ?? 0),
+                        Columns = cachedResponse.Columns ?? Array.Empty<ColumnMetadata>(),
+                        DataSource = "Cache",
+                        QueryTimestamp = DateTime.UtcNow
+                    },
+                    IsSuccessful = cachedResponse.IsSuccessful
+                };
+            }
+
+            return new QueryResult
+            {
+                IsSuccessful = false,
+                Metadata = new QueryMetadata
+                {
+                    Error = "No cached result found",
+                    QueryTimestamp = DateTime.UtcNow
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cached query result for key: {CacheKey}", cacheKey);
+            return new QueryResult
+            {
+                IsSuccessful = false,
+                Metadata = new QueryMetadata
+                {
+                    Error = ex.Message,
+                    QueryTimestamp = DateTime.UtcNow
+                }
+            };
+        }
+    }
+
+    /// <summary>
+    /// Save query result (IQueryService interface)
+    /// </summary>
+    public async Task SaveQueryResultAsync(string cacheKey, QueryResult result, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = new QueryResponse
+            {
+                Data = result.Data,
+                Columns = result.Metadata.Columns,
+                ExecutionTime = TimeSpan.FromMilliseconds(result.Metadata.ExecutionTimeMs),
+                IsSuccessful = result.IsSuccessful,
+                Sql = cacheKey // Using cache key as SQL for now
+            };
+
+            await CacheQueryAsync(cacheKey, response, expiry);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving query result for key: {CacheKey}", cacheKey);
+        }
+    }
+
+    /// <summary>
+    /// Get performance metrics (IQueryService interface)
+    /// </summary>
+    public async Task<BIReportingCopilot.Core.Interfaces.Query.QueryPerformanceMetrics> GetPerformanceMetricsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Application, async context =>
+            {
+                var appContext = (ApplicationDbContext)context;
+                var recentQueries = await appContext.QueryHistory
+                    .Where(q => q.ExecutedAt >= DateTime.UtcNow.AddDays(-7))
+                    .ToListAsync(cancellationToken);
+
+                return new BIReportingCopilot.Core.Interfaces.Query.QueryPerformanceMetrics
+                {
+                    TotalQueries = recentQueries.Count,
+                    AverageExecutionTime = recentQueries.Any() ?
+                        TimeSpan.FromMilliseconds(recentQueries.Average(q => q.ExecutionTimeMs)) :
+                        TimeSpan.Zero,
+                    SuccessRate = recentQueries.Any() ?
+                        (double)recentQueries.Count(q => q.IsSuccessful) / recentQueries.Count :
+                        0.0,
+                    CacheHitRate = 0.0, // Not available in current implementation
+                    LastUpdated = DateTime.UtcNow
+                };
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting performance metrics");
+            return new BIReportingCopilot.Core.Interfaces.Query.QueryPerformanceMetrics
+            {
+                LastUpdated = DateTime.UtcNow
+            };
+        }
+    }
+
+    // Additional IQueryService interface methods expected by Infrastructure services
+    /// <summary>
+    /// Process query async (IQueryService interface)
+    /// </summary>
+    public async Task<QueryResponse> ProcessQueryAsync(QueryRequest request, CancellationToken cancellationToken = default)
+    {
+        return await ProcessQueryAsync(request, request.UserId ?? "system", cancellationToken);
+    }
+
+    /// <summary>
+    /// Submit feedback async (IQueryService interface)
+    /// </summary>
+    public async Task<bool> SubmitFeedbackAsync(string queryId, string feedback, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var feedbackObj = new QueryFeedback
+            {
+                QueryId = queryId,
+                FeedbackText = feedback,
+                Rating = 3, // Default rating
+                SubmittedAt = DateTime.UtcNow
+            };
+            return await SubmitFeedbackAsync(feedbackObj, "system");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error submitting feedback for query {QueryId}", queryId);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Get query suggestions async (IQueryService interface)
+    /// </summary>
+    public async Task<List<QuerySuggestion>> GetQuerySuggestionsAsync(string partialQuery, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var suggestions = await GetQuerySuggestionsAsync("system", partialQuery);
+            return suggestions.Select(s => new QuerySuggestion { QueryText = s }).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting query suggestions");
+            return new List<QuerySuggestion>();
+        }
+    }
+
+    /// <summary>
+    /// Get cached query async (IQueryService interface)
+    /// </summary>
+    public async Task<QueryResult?> GetCachedQueryAsync(string cacheKey, CancellationToken cancellationToken = default)
+    {
+        var result = await GetCachedQueryResultAsync(cacheKey, cancellationToken);
+        return result.IsSuccessful ? result : null;
+    }
+
+    /// <summary>
+    /// Cache query async (IQueryService interface)
+    /// </summary>
+    public async Task CacheQueryAsync(string cacheKey, QueryResult result, CancellationToken cancellationToken = default)
+    {
+        await SaveQueryResultAsync(cacheKey, result, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Get query performance async (IQueryService interface)
+    /// </summary>
+    public async Task<BIReportingCopilot.Core.Interfaces.Query.QueryPerformanceMetrics> GetQueryPerformanceAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetPerformanceMetricsAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Get smart suggestions async (IQueryService interface)
+    /// </summary>
+    public async Task<List<QuerySuggestion>> GetSmartSuggestionsAsync(string query, CancellationToken cancellationToken = default)
+    {
+        return await GetSmartSuggestionsAsync("system", query);
+    }
+
+    /// <summary>
+    /// Optimize query async (IQueryService interface)
+    /// </summary>
+    public async Task<QueryResult> OptimizeQueryAsync(string query, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // For now, just execute the query as-is
+            return await ExecuteSelectQueryAsync(query, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error optimizing query");
+            return new QueryResult
+            {
+                IsSuccessful = false,
+                Metadata = new QueryMetadata
+                {
+                    Error = ex.Message,
+                    QueryTimestamp = DateTime.UtcNow
+                }
+            };
+        }
+    }
+
+    /// <summary>
+    /// Invalidate query cache async (IQueryService interface)
+    /// </summary>
+    public async Task InvalidateQueryCacheAsync(string pattern, CancellationToken cancellationToken = default)
+    {
+        await InvalidateQueryCacheAsync(pattern);
+    }
+
+    /// <summary>
+    /// Process advanced query async (IQueryService interface)
+    /// </summary>
+    public async Task<QueryResult> ProcessAdvancedQueryAsync(QueryRequest request, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteQueryAsync(request, cancellationToken);
+    }
+
+    /// <summary>
+    /// Calculate semantic similarity async (IQueryService interface)
+    /// </summary>
+    public async Task<double> CalculateSemanticSimilarityAsync(string query1, string query2, CancellationToken cancellationToken = default)
+    {
+        return await CalculateSemanticSimilarityAsync(query1, query2);
+    }
+
+    /// <summary>
+    /// Find similar queries async (IQueryService interface)
+    /// </summary>
+    public async Task<List<QueryHistoryEntity>> FindSimilarQueriesAsync(string query, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Stub implementation - return empty list for now
+            return new List<QueryHistoryEntity>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error finding similar queries");
+            return new List<QueryHistoryEntity>();
+        }
+    }
+
+    #endregion
 }

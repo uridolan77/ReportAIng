@@ -513,10 +513,57 @@ public class ContextualClue
 public class QueryIntelligenceResult
 {
     public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
+    public string Query { get; set; } = string.Empty;
     public AdvancedNLUResult NLUResult { get; set; } = new();
     public QueryOptimizationResult OptimizationResult { get; set; } = new();
     public List<IntelligentQuerySuggestion> Suggestions { get; set; } = new();
     public double OverallScore { get; set; }
+    public double IntelligenceScore { get; set; }
+    public List<QueryInsight> Insights { get; set; } = new();
+    public List<IntelligenceRecommendation> Recommendations { get; set; } = new();
+    public QueryPerformanceAnalysis PerformanceAnalysis { get; set; } = new();
+    public QuerySemanticAnalysis SemanticAnalysis { get; set; } = new();
+    public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Query insight for intelligence analysis
+/// </summary>
+public class QueryInsight
+{
+    public string InsightId { get; set; } = Guid.NewGuid().ToString();
+    public string Type { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public double Confidence { get; set; } = 0.8;
+    public string Recommendation { get; set; } = string.Empty;
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+}
+
+
+
+/// <summary>
+/// Query performance analysis
+/// </summary>
+public class QueryPerformanceAnalysis
+{
+    public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
+    public double Confidence { get; set; } = 0.8;
+    public TimeSpan EstimatedExecutionTime { get; set; }
+    public List<string> PerformanceIssues { get; set; } = new();
+    public List<string> OptimizationSuggestions { get; set; } = new();
+    public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Query semantic analysis
+/// </summary>
+public class QuerySemanticAnalysis
+{
+    public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
+    public List<string> ExtractedEntities { get; set; } = new();
+    public List<string> Keywords { get; set; } = new();
+    public string Intent { get; set; } = string.Empty;
+    public double Confidence { get; set; } = 0.8;
     public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
 }
 
@@ -639,7 +686,7 @@ public enum ComplexityLevel
 /// <summary>
 /// Conversation state enumeration
 /// </summary>
-public enum ConversationState
+public enum ConversationStateEnum
 {
     Initial,
     InProgress,
@@ -647,6 +694,18 @@ public enum ConversationState
     Executing,
     Completed,
     Error
+}
+
+/// <summary>
+/// Conversation state class for tracking conversation context
+/// </summary>
+public class ConversationState
+{
+    public string SessionId { get; set; } = Guid.NewGuid().ToString();
+    public string CurrentTopic { get; set; } = string.Empty;
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public ConversationStateEnum State { get; set; } = ConversationStateEnum.Initial;
+    public Dictionary<string, object> Context { get; set; } = new();
 }
 
 /// <summary>
@@ -693,6 +752,22 @@ public class TemporalContext
     public TimeSpan TimeWindow { get; set; }
     public string TimeZone { get; set; } = "UTC";
     public List<string> TemporalExpressions { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// References to related temporal entities
+    /// </summary>
+    public List<string> References { get; set; } = new();
+
+    /// <summary>
+    /// Time frame description
+    /// </summary>
+    public string TimeFrame { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether this is a relative time reference
+    /// </summary>
+    public bool IsRelative { get; set; }
 }
 
 /// <summary>
@@ -700,11 +775,20 @@ public class TemporalContext
 /// </summary>
 public class UserContext
 {
+    // Original properties
     public string UserId { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public List<string> Permissions { get; set; } = new();
     public Dictionary<string, object> Preferences { get; set; } = new();
     public List<string> RecentQueries { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    public List<string> PreferredTables { get; set; } = new();
+    public List<string> CommonFilters { get; set; } = new();
+    public string Domain { get; set; } = string.Empty;
+    public List<QueryPattern> RecentPatterns { get; set; } = new();
+    public Dictionary<string, object> SessionData { get; set; } = new();
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
@@ -752,6 +836,17 @@ public class DomainConcept
     public string Domain { get; set; } = string.Empty;
     public List<string> Synonyms { get; set; } = new();
     public Dictionary<string, object> Properties { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Category of the domain concept
+    /// </summary>
+    public string Category { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Relevance score for the concept
+    /// </summary>
+    public double Relevance { get; set; }
 }
 
 /// <summary>
@@ -764,6 +859,32 @@ public class BusinessContext
     public List<DomainConcept> Concepts { get; set; } = new();
     public Dictionary<string, object> BusinessRules { get; set; } = new();
     public List<string> KPIs { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Business context description
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Business tables in this context
+    /// </summary>
+    public List<Business.BusinessTable> Tables { get; set; } = new();
+
+    /// <summary>
+    /// Business terms in this context
+    /// </summary>
+    public List<Business.BusinessTerm> Terms { get; set; } = new();
+
+    /// <summary>
+    /// Business relationships in this context
+    /// </summary>
+    public List<Business.BusinessRelationship> Relationships { get; set; } = new();
+
+    /// <summary>
+    /// When this context was generated
+    /// </summary>
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
@@ -817,6 +938,37 @@ public class VectorSearchMetrics
     public double AverageQueryTime { get; set; }
     public double AverageSimilarity { get; set; }
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Total number of embeddings in the index
+    /// </summary>
+    public int TotalEmbeddings { get; set; }
+
+    /// <summary>
+    /// Total number of searches performed
+    /// </summary>
+    public int TotalSearches { get; set; }
+
+    /// <summary>
+    /// Average search time in milliseconds
+    /// </summary>
+    public double AverageSearchTime { get; set; }
+
+    /// <summary>
+    /// Index size in bytes
+    /// </summary>
+    public long IndexSizeBytes { get; set; }
+
+    /// <summary>
+    /// Last optimization timestamp
+    /// </summary>
+    public DateTime LastOptimized { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Additional performance metrics
+    /// </summary>
+    public Dictionary<string, object> PerformanceMetrics { get; set; } = new();
 }
 
 /// <summary>
@@ -857,6 +1009,10 @@ public class SemanticAnalysisResult
     public List<SemanticRelation> Relations { get; set; } = new();
     public double Confidence { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    public double ConfidenceScore { get; set; }
+    public List<string> Keywords { get; set; } = new();
 }
 
 // SemanticEntity already defined in AIModels.cs - removed duplicate
@@ -911,6 +1067,17 @@ public class AIRequest
     public Dictionary<string, object> Parameters { get; set; } = new();
     public string UserId { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Maximum number of tokens to generate
+    /// </summary>
+    public int MaxTokens { get; set; } = 1000;
+
+    /// <summary>
+    /// Temperature for response generation
+    /// </summary>
+    public double Temperature { get; set; } = 0.7;
 }
 
 /// <summary>
@@ -925,6 +1092,21 @@ public class AIResponse
     public string? ErrorMessage { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Error information (alias for ErrorMessage)
+    /// </summary>
+    public string? Error
+    {
+        get => ErrorMessage;
+        set => ErrorMessage = value;
+    }
+
+    /// <summary>
+    /// Provider that generated this response
+    /// </summary>
+    public string Provider { get; set; } = string.Empty;
 }
 
 /// <summary>

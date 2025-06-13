@@ -105,7 +105,7 @@ public class SemanticCacheService : ISemanticCacheService
                 try
                 {
                     var embedding = await _vectorSearchService.GenerateEmbeddingAsync(query);
-                    await _vectorSearchService.StoreQueryEmbeddingAsync(query, response.Sql, response, embedding);
+                    await _vectorSearchService.StoreQueryEmbeddingAsync(GenerateQueryHash(query), query, embedding);
                 }
                 catch (Exception ex)
                 {
@@ -133,17 +133,16 @@ public class SemanticCacheService : ISemanticCacheService
             // Use vector search if available
             if (_vectorSearchService != null && _config.EnableVectorSearch)
             {
-                var embedding = await _vectorSearchService.GenerateEmbeddingAsync(query);
-                var similarQueries = await _vectorSearchService.FindSimilarQueriesAsync(
-                    embedding, _config.SimilarityThreshold, limit);
+                var similarQueries = await _vectorSearchService.SearchAsync(
+                    query, limit, _config.SimilarityThreshold);
 
                 similarEntries.AddRange(similarQueries.Select(sq => new EnhancedSemanticCacheEntry
                 {
-                    Id = sq.EmbeddingId,
-                    OriginalQuery = sq.OriginalQuery,
-                    SqlQuery = sq.SqlQuery,
-                    SerializedResponse = JsonSerializer.Serialize(sq.CachedResponse),
-                    ConfidenceScore = sq.SimilarityScore,
+                    Id = sq.DocumentId,
+                    OriginalQuery = sq.Content,
+                    SqlQuery = sq.Metadata.ContainsKey("sql_query") ? sq.Metadata["sql_query"].ToString() ?? string.Empty : string.Empty,
+                    SerializedResponse = sq.Metadata.ContainsKey("cached_response") ? sq.Metadata["cached_response"].ToString() ?? string.Empty : string.Empty,
+                    ConfidenceScore = sq.Score,
                     CreatedAt = DateTime.UtcNow,
                     LastAccessedAt = DateTime.UtcNow
                 }));
@@ -176,7 +175,7 @@ public class SemanticCacheService : ISemanticCacheService
                     TotalEntries = 0,
                     HitCount = 0,
                     MissCount = 0,
-                    TotalSizeBytes = 0,
+                    // TotalSizeBytes = 0, // Property doesn't exist in SemanticCacheStatistics
                     LastUpdated = DateTime.UtcNow
                 };
 
@@ -186,10 +185,10 @@ public class SemanticCacheService : ISemanticCacheService
                     stats.TotalEntries = await dbContext.SemanticCacheEntries.CountAsync();
 
                     // Calculate approximate size (simplified)
-                    var entries = await dbContext.SemanticCacheEntries
-                        .Select(e => e.SerializedResponse.Length)
-                        .ToListAsync();
-                    stats.TotalSizeBytes = entries.Sum();
+                    // var entries = await dbContext.SemanticCacheEntries
+                    //     .Select(e => e.SerializedResponse.Length)
+                    //     .ToListAsync();
+                    // stats.TotalSizeBytes = entries.Sum(); // Property doesn't exist in SemanticCacheStatistics
                 }
 
                 // Add memory cache statistics (simplified)
@@ -506,4 +505,236 @@ public class SemanticCacheService : ISemanticCacheService
     {
         return Task.FromResult(new List<EnhancedSemanticCacheEntry>());
     }
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Get cached value (ISemanticCacheService interface)
+    /// </summary>
+    public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default) where T : class
+    {
+        try
+        {
+            var memoryCacheKey = GenerateMemoryCacheKey(key);
+            if (_memoryCache.TryGetValue(memoryCacheKey, out T? value))
+            {
+                return value;
+            }
+
+            // Try database lookup for complex objects
+            if (typeof(T) == typeof(QueryResponse))
+            {
+                var response = await GetSemanticCacheAsync(key);
+                return response as T;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cached value for key: {Key}", key);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Get semantic cached value (ISemanticCacheService interface)
+    /// </summary>
+    public async Task<T?> GetSemanticAsync<T>(string query, double similarityThreshold = 0.8, CancellationToken cancellationToken = default) where T : class
+    {
+        try
+        {
+            if (typeof(T) == typeof(QueryResponse))
+            {
+                var response = await GetSemanticCacheAsync(query, similarityThreshold);
+                return response as T;
+            }
+
+            // For other types, try exact match first
+            return await GetAsync<T>(query, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting semantic cached value for query: {Query}", query);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Set cached value (ISemanticCacheService interface)
+    /// </summary>
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken cancellationToken = default) where T : class
+    {
+        try
+        {
+            var cacheExpiry = expiry ?? _config.DefaultExpiration;
+            var memoryCacheKey = GenerateMemoryCacheKey(key);
+            _memoryCache.Set(memoryCacheKey, value, cacheExpiry);
+
+            // If it's a QueryResponse, also store semantically
+            if (value is QueryResponse response)
+            {
+                await SetSemanticCacheAsync(key, response, expiry);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting cached value for key: {Key}", key);
+        }
+    }
+
+    /// <summary>
+    /// Set semantic cached value (ISemanticCacheService interface)
+    /// </summary>
+    public async Task SetSemanticAsync<T>(string query, T value, TimeSpan? expiry = null, CancellationToken cancellationToken = default) where T : class
+    {
+        try
+        {
+            if (value is QueryResponse response)
+            {
+                await SetSemanticCacheAsync(query, response, expiry);
+            }
+            else
+            {
+                await SetAsync(query, value, expiry, cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting semantic cached value for query: {Query}", query);
+        }
+    }
+
+    /// <summary>
+    /// Remove cached value (ISemanticCacheService interface)
+    /// </summary>
+    public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var memoryCacheKey = GenerateMemoryCacheKey(key);
+            _memoryCache.Remove(memoryCacheKey);
+
+            // Also remove from database
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            {
+                if (context is BICopilotContext dbContext)
+                {
+                    var entry = await dbContext.SemanticCacheEntries
+                        .FirstOrDefaultAsync(e => e.OriginalQuery == key, cancellationToken);
+
+                    if (entry != null)
+                    {
+                        dbContext.SemanticCacheEntries.Remove(entry);
+                        await dbContext.SaveChangesAsync(cancellationToken);
+                    }
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing cached value for key: {Key}", key);
+        }
+    }
+
+    /// <summary>
+    /// Remove semantic cached value (ISemanticCacheService interface)
+    /// </summary>
+    public async Task RemoveSemanticAsync(string query, CancellationToken cancellationToken = default)
+    {
+        await RemoveAsync(query, cancellationToken);
+    }
+
+    /// <summary>
+    /// Check if key exists (ISemanticCacheService interface)
+    /// </summary>
+    public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var memoryCacheKey = GenerateMemoryCacheKey(key);
+            if (_memoryCache.TryGetValue(memoryCacheKey, out _))
+            {
+                return true;
+            }
+
+            // Check database
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            {
+                if (context is BICopilotContext dbContext)
+                {
+                    return await dbContext.SemanticCacheEntries
+                        .AnyAsync(e => e.OriginalQuery == key, cancellationToken);
+                }
+                return false;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking if key exists: {Key}", key);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Find similar cached entries (ISemanticCacheService interface)
+    /// </summary>
+    public async Task<List<BIReportingCopilot.Core.Interfaces.AI.SemanticCacheEntry>> FindSimilarAsync(string query, double threshold = 0.8, int maxResults = 10, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var enhancedEntries = await FindSimilarQueriesAsync(query, maxResults);
+
+            return enhancedEntries.Select(e => new BIReportingCopilot.Core.Interfaces.AI.SemanticCacheEntry
+            {
+                Key = e.Id,
+                Query = e.OriginalQuery,
+                Value = e.SerializedResponse,
+                SimilarityScore = e.ConfidenceScore,
+                CreatedAt = e.CreatedAt,
+                ExpiresAt = e.CreatedAt.Add(_config.DefaultExpiration),
+                Metadata = new Dictionary<string, object>
+                {
+                    ["sql"] = e.SqlQuery ?? string.Empty,
+                    ["confidence"] = e.ConfidenceScore
+                }
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error finding similar cached entries for query: {Query}", query);
+            return new List<SemanticCacheEntry>();
+        }
+    }
+
+    /// <summary>
+    /// Get cache statistics (ISemanticCacheService interface)
+    /// </summary>
+    public async Task<BIReportingCopilot.Core.Interfaces.AI.SemanticCacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var stats = await GetSemanticCacheStatisticsAsync();
+
+            return new BIReportingCopilot.Core.Interfaces.AI.SemanticCacheStatistics
+            {
+                TotalEntries = stats.TotalEntries,
+                HitCount = stats.HitCount,
+                MissCount = stats.MissCount,
+                SemanticHitCount = stats.SemanticCacheHits,
+                MemoryUsage = stats.TotalSizeBytes,
+                LastUpdated = stats.LastUpdated
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cache statistics");
+            return new BIReportingCopilot.Core.Interfaces.AI.SemanticCacheStatistics
+            {
+                LastUpdated = DateTime.UtcNow
+            };
+        }
+    }
+
+    #endregion
 }

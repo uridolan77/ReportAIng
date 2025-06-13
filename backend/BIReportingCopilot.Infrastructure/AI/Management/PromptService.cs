@@ -1550,4 +1550,70 @@ Provide a clear, structured explanation that matches the requested complexity le
             CreatedBy = "System"
         };
     }
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Get prompt async (IPromptService interface)
+    /// </summary>
+    public async Task<string> GetPromptAsync(string promptKey, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("📋 Getting prompt for key: {PromptKey}", promptKey);
+
+            var template = await GetPromptTemplateAsync(promptKey);
+            return template.Content ?? GetDefaultPromptContent(promptKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting prompt for key: {PromptKey}", promptKey);
+            return GetDefaultPromptContent(promptKey);
+        }
+    }
+
+    /// <summary>
+    /// Format prompt async (IPromptService interface)
+    /// </summary>
+    public async Task<string> FormatPromptAsync(string template, Dictionary<string, object> variables, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("🎨 Formatting prompt template with {VariableCount} variables", variables.Count);
+
+            var formattedPrompt = template;
+
+            foreach (var variable in variables)
+            {
+                var placeholder = $"{{{variable.Key}}}";
+                var value = variable.Value?.ToString() ?? "";
+                formattedPrompt = formattedPrompt.Replace(placeholder, value);
+            }
+
+            _logger.LogDebug("✅ Prompt formatted successfully");
+            return formattedPrompt;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error formatting prompt template");
+            return template; // Return original template on error
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods for Interface Implementations
+
+    private string GetDefaultPromptContent(string promptKey)
+    {
+        return promptKey switch
+        {
+            "sql_generation" => "Generate a SQL query for: {question}\nSchema: {schema}\nContext: {context}",
+            "insight_generation" => "Analyze the following data and provide insights: {data}\nQuery: {query}",
+            "visualization_generation" => "Suggest appropriate visualizations for: {data}\nColumns: {columns}",
+            _ => "Process the following request: {input}"
+        };
+    }
+
+    #endregion
 }

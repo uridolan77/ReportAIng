@@ -49,4 +49,15 @@ public class QueryPatternStatistics
     /// Last update timestamp
     /// </summary>
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Pattern usage statistics by category
+    /// </summary>
+    public Dictionary<string, int> PatternUsageStats { get; set; } = new();
+
+    /// <summary>
+    /// Average usage count across all patterns
+    /// </summary>
+    public double AverageUsageCount { get; set; }
 }

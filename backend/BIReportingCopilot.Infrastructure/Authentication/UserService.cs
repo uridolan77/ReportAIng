@@ -481,4 +481,246 @@ public class UserService : IUserService
             }
         };
     }
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Get user by ID (IUserService interface)
+    /// </summary>
+    public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async context =>
+            {
+                var securityContext = (SecurityDbContext)context;
+                var userEntity = await securityContext.Users
+                    .FirstOrDefaultAsync(u => u.Id == id && u.IsActive, cancellationToken);
+
+                return userEntity != null ? MapToUser(userEntity) : null;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user by ID: {UserId}", id);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Get user by email (IUserService interface)
+    /// </summary>
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async context =>
+            {
+                var securityContext = (SecurityDbContext)context;
+                var userEntity = await securityContext.Users
+                    .FirstOrDefaultAsync(u => u.Email == email && u.IsActive, cancellationToken);
+
+                return userEntity != null ? MapToUser(userEntity) : null;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user by email: {Email}", email);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Get user by username (IUserService interface)
+    /// </summary>
+    public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async context =>
+            {
+                var securityContext = (SecurityDbContext)context;
+                var userEntity = await securityContext.Users
+                    .FirstOrDefaultAsync(u => u.Username == username && u.IsActive, cancellationToken);
+
+                return userEntity != null ? MapToUser(userEntity) : null;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user by username: {Username}", username);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Validate user credentials (IUserService interface)
+    /// </summary>
+    public async Task<User?> ValidateCredentialsAsync(string username, string password)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async context =>
+            {
+                var securityContext = (SecurityDbContext)context;
+                var userEntity = await securityContext.Users
+                    .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
+
+                if (userEntity != null && VerifyPassword(password, userEntity.PasswordHash))
+                {
+                    // Update last login
+                    userEntity.LastLoginDate = DateTime.UtcNow;
+                    await securityContext.SaveChangesAsync();
+
+                    return MapToUser(userEntity);
+                }
+
+                return null;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating credentials for username: {Username}", username);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Create user (IUserService interface)
+    /// </summary>
+    public async Task<User> CreateAsync(User user, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userEntity = new UserEntity
+            {
+                Id = user.Id ?? Guid.NewGuid().ToString(),
+                Username = user.Username,
+                Email = user.Email,
+                DisplayName = user.DisplayName,
+                PasswordHash = user.PasswordHash, // Should be hashed before calling this method
+                Roles = string.Join(",", user.Roles),
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async context =>
+            {
+                var securityContext = (SecurityDbContext)context;
+                securityContext.Users.Add(userEntity);
+                await securityContext.SaveChangesAsync(cancellationToken);
+
+                await _auditService.LogAsync("USER_CREATED", userEntity.Id, "User", userEntity.Id);
+
+                return MapToUser(userEntity);
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user: {Username}", user.Username);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Update user (IUserService interface)
+    /// </summary>
+    public async Task<User> UpdateAsync(User user, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async context =>
+            {
+                var securityContext = (SecurityDbContext)context;
+                var userEntity = await securityContext.Users
+                    .FirstOrDefaultAsync(u => u.Id == user.Id, cancellationToken);
+
+                if (userEntity == null)
+                    throw new InvalidOperationException($"User not found: {user.Id}");
+
+                userEntity.Username = user.Username;
+                userEntity.Email = user.Email;
+                userEntity.DisplayName = user.DisplayName;
+                userEntity.Roles = string.Join(",", user.Roles);
+                userEntity.UpdatedDate = DateTime.UtcNow;
+
+                await securityContext.SaveChangesAsync(cancellationToken);
+
+                await _auditService.LogAsync("USER_UPDATED", userEntity.Id, "User", userEntity.Id);
+
+                return MapToUser(userEntity);
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user: {UserId}", user.Id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Delete user (IUserService interface)
+    /// </summary>
+    public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async context =>
+            {
+                var securityContext = (SecurityDbContext)context;
+                var userEntity = await securityContext.Users
+                    .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+
+                if (userEntity != null)
+                {
+                    userEntity.IsActive = false;
+                    userEntity.UpdatedDate = DateTime.UtcNow;
+                    await securityContext.SaveChangesAsync(cancellationToken);
+
+                    await _auditService.LogAsync("USER_DELETED", id, "User", id);
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting user: {UserId}", id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Update user (IUserService interface - alternative signature)
+    /// </summary>
+    public async Task<User> UpdateUserAsync(User user)
+    {
+        return await UpdateAsync(user);
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    private User MapToUser(BIReportingCopilot.Infrastructure.Data.Entities.UserEntity entity)
+    {
+        return new User
+        {
+            Id = entity.Id,
+            Username = entity.Username,
+            Email = entity.Email,
+            DisplayName = entity.DisplayName,
+            PasswordHash = entity.PasswordHash,
+            Roles = entity.Roles?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>(),
+            IsActive = entity.IsActive,
+            CreatedDate = entity.CreatedDate,
+            LastLoginDate = entity.LastLoginDate
+        };
+    }
+
+    private bool VerifyPassword(string password, string hash)
+    {
+        // Simple implementation - in production, use proper password hashing
+        return BCrypt.Net.BCrypt.Verify(password, hash);
+    }
+
+    #endregion
 }

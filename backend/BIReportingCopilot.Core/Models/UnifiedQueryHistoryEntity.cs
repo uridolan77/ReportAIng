@@ -69,4 +69,71 @@ public class UnifiedQueryHistoryEntity
     /// Updated timestamp
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Session ID for the query
+    /// </summary>
+    public string SessionId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Natural language query (settable property)
+    /// </summary>
+    public string Query { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether the query was successful (settable property)
+    /// </summary>
+    public bool IsSuccessful { get; set; }
+
+    /// <summary>
+    /// User who created the record
+    /// </summary>
+    public string? CreatedBy { get; set; }
+
+    /// <summary>
+    /// User who last updated the record
+    /// </summary>
+    public string? UpdatedBy { get; set; }
+
+    /// <summary>
+    /// Created date (settable property)
+    /// </summary>
+    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Last updated date (settable property)
+    /// </summary>
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    // Additional properties expected by Infrastructure services
+    /// <summary>
+    /// Confidence score of the query result
+    /// </summary>
+    public double ConfidenceScore { get; set; }
+
+    /// <summary>
+    /// User feedback on the query
+    /// </summary>
+    public string? UserFeedback { get; set; }
+
+    /// <summary>
+    /// Query complexity rating
+    /// </summary>
+    public string? QueryComplexity { get; set; }
+
+    /// <summary>
+    /// Database name where query was executed
+    /// </summary>
+    public string? DatabaseName { get; set; }
+
+    /// <summary>
+    /// Schema name where query was executed
+    /// </summary>
+    public string? SchemaName { get; set; }
+
+    /// <summary>
+    /// Whether the record is active
+    /// </summary>
+    public bool IsActive { get; set; } = true;
 }

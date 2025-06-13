@@ -1294,4 +1294,67 @@ Respond in JSON format:
             SourceColumns = new List<string>()
         };
     }
+
+    #region Missing Interface Method Implementation
+
+    /// <summary>
+    /// Generate context (IBusinessContextAutoGenerator interface)
+    /// </summary>
+    public async Task<BusinessContext> GenerateContextAsync(string domain, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🤖 Generating business context for domain: {Domain}", domain);
+
+            // Use the existing auto-generation logic
+            var request = new AutoGenerationRequest
+            {
+                GenerateTableContexts = true,
+                GenerateGlossaryTerms = true,
+                GenerateRelationships = true,
+                SpecificTables = null // Generate for all tables
+            };
+
+            var response = await GenerateBusinessContextAsync(request, "system");
+
+            return new BusinessContext
+            {
+                Domain = domain,
+                Description = $"Auto-generated business context for {domain}",
+                Tables = response.GeneratedTableContexts.Select(t => new BusinessTable
+                {
+                    Name = t.TableName,
+                    Schema = t.SchemaName,
+                    Purpose = t.BusinessPurpose,
+                    Context = t.BusinessContext
+                }).ToList(),
+                Terms = response.GeneratedGlossaryTerms.Select(g => new BusinessTerm
+                {
+                    Term = g.Term,
+                    Definition = g.Definition,
+                    Context = g.BusinessContext
+                }).ToList(),
+                Relationships = response.RelationshipAnalysis?.Relationships.Select(r => new BusinessRelationship
+                {
+                    FromTable = r.FromTable,
+                    ToTable = r.ToTable,
+                    Type = r.RelationshipType,
+                    Description = r.Description
+                }).ToList() ?? new List<BusinessRelationship>(),
+                GeneratedAt = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error generating business context for domain: {Domain}", domain);
+            return new BusinessContext
+            {
+                Domain = domain,
+                Description = "Error generating context",
+                GeneratedAt = DateTime.UtcNow
+            };
+        }
+    }
+
+    #endregion
 }

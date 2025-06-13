@@ -117,3 +117,14 @@ public class ComplexityAnalysis
 // AIOptions class already exists in AIModels.cs
 
 // StreamingResponse class already exists in AIModels.cs
+
+/// <summary>
+/// Query validation result
+/// </summary>
+public class QueryValidationResult
+{
+    public bool IsValid { get; set; }
+    public List<string> Errors { get; set; } = new();
+    public List<string> Warnings { get; set; } = new();
+    public List<string> Suggestions { get; set; } = new();
+}

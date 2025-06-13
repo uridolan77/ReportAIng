@@ -78,6 +78,23 @@ public class QueryHistoryEntity
     public double? Confidence => ConfidenceScore;
     public string? Feedback => UserFeedback;
     public int? Rating => UserRating;
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Executed at timestamp
+    /// </summary>
+    public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Result count (settable property)
+    /// </summary>
+    public int ResultCount { get; set; }
+
+    // Additional properties expected by Infrastructure services
+    /// <summary>
+    /// Query timestamp (alias for ExecutedAt)
+    /// </summary>
+    public DateTime QueryTimestamp => ExecutedAt;
 }
 
 /// <summary>
@@ -186,56 +203,6 @@ public class AIFeedbackEntry
     public string? ProcessingNotes { get; set; }
 
     // Metadata
-    public string? Metadata { get; set; } // JSON for additional metadata
-
-    // Base Entity Properties
-    public string? CreatedBy { get; set; }
-    public string? UpdatedBy { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-}
-
-/// <summary>
-/// Semantic Cache Entry Entity - Enhanced version from Core models
-/// </summary>
-public class SemanticCacheEntry
-{
-    public int Id { get; set; }
-
-    // Query Identification
-    [Required]
-    public string QueryHash { get; set; } = string.Empty; // Hash of normalized query
-
-    [Required]
-    public string OriginalQuery { get; set; } = string.Empty;
-
-    [Required]
-    public string NormalizedQuery { get; set; } = string.Empty;
-
-    public string? GeneratedSql { get; set; }
-
-    // Cache Data
-    public string? ResultData { get; set; } // JSON of cached result
-    public string? ResultMetadata { get; set; } // JSON of result metadata
-
-    // Cache Lifecycle
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime LastAccessedAt { get; set; } = DateTime.UtcNow;
-    public DateTime ExpiresAt { get; set; }
-    public int AccessCount { get; set; } = 1;
-
-    // Semantic Analysis
-    public double SemanticSimilarityThreshold { get; set; } = 0.85;
-    public string? SemanticVector { get; set; } // JSON array of embedding vector
-
-    // Context and Classification
-    public string? DatabaseContext { get; set; } // JSON of database/schema context
-    public string? Tags { get; set; } // JSON array of tags
-
-    // Storage Optimization
-    public long SizeBytes { get; set; }
-    public string? CompressionType { get; set; }
-
-    // Metadata and Extensions
     public string? Metadata { get; set; } // JSON for additional metadata
 
     // Base Entity Properties

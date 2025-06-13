@@ -517,4 +517,238 @@ public class InMemoryVectorSearchService : IVectorSearchService
         public int AccessCount { get; set; }
         public Dictionary<string, object> Metadata { get; set; } = new();
     }
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Index document (IVectorSearchService interface)
+    /// </summary>
+    public async Task<string> IndexDocumentAsync(string documentId, string content, Dictionary<string, object>? metadata = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("📄 Indexing document: {DocumentId}", documentId);
+
+            var embedding = await GenerateEmbeddingAsync(content, cancellationToken);
+
+            var vectorEntry = new VectorEntry
+            {
+                Id = documentId,
+                QueryText = content,
+                SqlQuery = string.Empty, // Not applicable for documents
+                Response = null, // Not applicable for documents
+                Embedding = embedding,
+                CreatedAt = DateTime.UtcNow,
+                LastAccessed = DateTime.UtcNow,
+                AccessCount = 0,
+                Metadata = metadata ?? new Dictionary<string, object>()
+            };
+
+            _vectorIndex.AddOrUpdate(documentId, vectorEntry, (key, oldValue) => vectorEntry);
+
+            lock (_indexLock)
+            {
+                _metrics.TotalEmbeddings++;
+            }
+
+            _logger.LogDebug("✅ Document indexed: {DocumentId}", documentId);
+            return documentId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error indexing document: {DocumentId}", documentId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Search documents (IVectorSearchService interface)
+    /// </summary>
+    public async Task<List<BIReportingCopilot.Core.Interfaces.AI.VectorSearchResult>> SearchAsync(string query, int maxResults = 10, double threshold = 0.7, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("🔍 Searching documents for query: {Query}", query);
+
+            var queryEmbedding = await GenerateEmbeddingAsync(query, cancellationToken);
+            var similarities = new List<(string Id, double Similarity, VectorEntry Entry)>();
+
+            foreach (var kvp in _vectorIndex)
+            {
+                var similarity = CalculateCosineSimilarity(queryEmbedding, kvp.Value.Embedding);
+                if (similarity >= threshold)
+                {
+                    similarities.Add((kvp.Key, similarity, kvp.Value));
+                }
+            }
+
+            var results = similarities
+                .OrderByDescending(s => s.Similarity)
+                .Take(maxResults)
+                .Select(s => new BIReportingCopilot.Core.Interfaces.AI.VectorSearchResult
+                {
+                    DocumentId = s.Id,
+                    Content = s.Entry.QueryText,
+                    Score = s.Similarity,
+                    Metadata = s.Entry.Metadata
+                })
+                .ToList();
+
+            lock (_indexLock)
+            {
+                _metrics.TotalSearches++;
+            }
+
+            _logger.LogDebug("✅ Found {Count} documents", results.Count);
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error searching documents");
+            return new List<BIReportingCopilot.Core.Interfaces.AI.VectorSearchResult>();
+        }
+    }
+
+    /// <summary>
+    /// Search similar documents (IVectorSearchService interface)
+    /// </summary>
+    public async Task<List<BIReportingCopilot.Core.Interfaces.AI.VectorSearchResult>> SearchSimilarAsync(string documentId, int maxResults = 10, double threshold = 0.7, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("🔍 Searching similar documents to: {DocumentId}", documentId);
+
+            if (!_vectorIndex.TryGetValue(documentId, out var sourceEntry))
+            {
+                _logger.LogWarning("⚠️ Document not found: {DocumentId}", documentId);
+                return new List<BIReportingCopilot.Core.Interfaces.AI.VectorSearchResult>();
+            }
+
+            var similarities = new List<(string Id, double Similarity, VectorEntry Entry)>();
+
+            foreach (var kvp in _vectorIndex)
+            {
+                if (kvp.Key == documentId) continue; // Skip self
+
+                var similarity = CalculateCosineSimilarity(sourceEntry.Embedding, kvp.Value.Embedding);
+                if (similarity >= threshold)
+                {
+                    similarities.Add((kvp.Key, similarity, kvp.Value));
+                }
+            }
+
+            var results = similarities
+                .OrderByDescending(s => s.Similarity)
+                .Take(maxResults)
+                .Select(s => new BIReportingCopilot.Core.Interfaces.AI.VectorSearchResult
+                {
+                    DocumentId = s.Id,
+                    Content = s.Entry.QueryText,
+                    Score = s.Similarity,
+                    Metadata = s.Entry.Metadata
+                })
+                .ToList();
+
+            _logger.LogDebug("✅ Found {Count} similar documents", results.Count);
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error searching similar documents");
+            return new List<BIReportingCopilot.Core.Interfaces.AI.VectorSearchResult>();
+        }
+    }
+
+    /// <summary>
+    /// Delete document (IVectorSearchService interface)
+    /// </summary>
+    public async Task<bool> DeleteDocumentAsync(string documentId, CancellationToken cancellationToken = default)
+    {
+        return await DeleteQueryEmbeddingAsync(documentId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Update document (IVectorSearchService interface)
+    /// </summary>
+    public async Task<bool> UpdateDocumentAsync(string documentId, string content, Dictionary<string, object>? metadata = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("🔄 Updating document: {DocumentId}", documentId);
+
+            var newEmbedding = await GenerateEmbeddingAsync(content, cancellationToken);
+
+            if (_vectorIndex.TryGetValue(documentId, out var existingEntry))
+            {
+                existingEntry.QueryText = content;
+                existingEntry.Embedding = newEmbedding;
+                existingEntry.LastAccessed = DateTime.UtcNow;
+                existingEntry.Metadata = metadata ?? existingEntry.Metadata;
+
+                _logger.LogDebug("✅ Document updated: {DocumentId}", documentId);
+                return true;
+            }
+
+            _logger.LogWarning("⚠️ Document not found for update: {DocumentId}", documentId);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error updating document: {DocumentId}", documentId);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Get statistics (IVectorSearchService interface)
+    /// </summary>
+    public async Task<BIReportingCopilot.Core.Interfaces.AI.VectorSearchStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var metrics = await GetMetricsAsync(cancellationToken);
+
+            return new BIReportingCopilot.Core.Interfaces.AI.VectorSearchStatistics
+            {
+                TotalDocuments = metrics.TotalEmbeddings,
+                TotalSearches = metrics.TotalSearches,
+                AverageSearchTime = metrics.AverageSearchTime,
+                IndexSize = metrics.IndexSizeBytes,
+                LastIndexUpdate = metrics.LastOptimized
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting statistics");
+            return new BIReportingCopilot.Core.Interfaces.AI.VectorSearchStatistics
+            {
+                LastIndexUpdate = DateTime.UtcNow
+            };
+        }
+    }
+
+    /// <summary>
+    /// Store query embedding with simple signature (IVectorSearchService interface)
+    /// </summary>
+    public async Task<string> StoreQueryEmbeddingAsync(string queryId, string query, float[] embedding, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var metadata = new Dictionary<string, object>
+            {
+                ["type"] = "query",
+                ["queryId"] = queryId,
+                ["timestamp"] = DateTime.UtcNow
+            };
+
+            return await IndexDocumentAsync(queryId, query, metadata, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error storing query embedding: {QueryId}", queryId);
+            throw;
+        }
+    }
+
+    #endregion
 }

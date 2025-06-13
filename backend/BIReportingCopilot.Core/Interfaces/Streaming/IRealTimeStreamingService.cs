@@ -16,6 +16,7 @@ public interface IRealTimeStreamingService
     Task<StreamingMetrics> GetStreamingMetricsAsync(string streamId, CancellationToken cancellationToken = default);
     Task<List<StreamingAlert>> GetStreamingAlertsAsync(string streamId, CancellationToken cancellationToken = default);
     Task<bool> CreateStreamingAlertAsync(string streamId, StreamingAlertRule rule, CancellationToken cancellationToken = default);
+    Task<string> CreateRealTimeAlertAsync(RealTimeAlert alert, string userId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -129,3 +130,5 @@ public class StreamingAlert
     public bool IsAcknowledged { get; set; } = false;
     public Dictionary<string, object> Context { get; set; } = new();
 }
+
+// RealTimeAlert class is defined in BIReportingCopilot.Core.Models.RealTimeStreaming

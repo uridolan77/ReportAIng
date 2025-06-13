@@ -42,6 +42,10 @@ public class LLMModel
     public int MaxTokens { get; set; }
     public decimal CostPerToken { get; set; }
     public List<string> Capabilities { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    public string Description { get; set; } = string.Empty;
+    public Dictionary<string, object> Configuration { get; set; } = new();
 }
 
 /// <summary>
@@ -57,6 +61,42 @@ public class LLMUsageStatistics
     public Dictionary<string, int> RequestsByProvider { get; set; } = new();
     public DateTime PeriodStart { get; set; }
     public DateTime PeriodEnd { get; set; }
+
+    // Properties expected by Infrastructure services
+    public int SuccessfulRequests { get; set; }
+    public int FailedRequests { get; set; }
+    public DateRange Period { get; set; } = new();
+    public Dictionary<string, ProviderUsageStats> ProviderBreakdown { get; set; } = new();
+    public Dictionary<string, ModelUsageStats> ModelBreakdown { get; set; } = new();
+}
+
+/// <summary>
+/// Date range for statistics
+/// </summary>
+public class DateRange
+{
+    public DateTime From { get; set; }
+    public DateTime To { get; set; }
+}
+
+/// <summary>
+/// Provider usage statistics
+/// </summary>
+public class ProviderUsageStats
+{
+    public int Requests { get; set; }
+    public decimal Cost { get; set; }
+    public int Tokens { get; set; }
+}
+
+/// <summary>
+/// Model usage statistics
+/// </summary>
+public class ModelUsageStats
+{
+    public int Requests { get; set; }
+    public decimal Cost { get; set; }
+    public int Tokens { get; set; }
 }
 
 /// <summary>

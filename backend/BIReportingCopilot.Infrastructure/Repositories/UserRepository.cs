@@ -921,4 +921,176 @@ public class UserRepository : IUserRepository, IUserEntityRepository
     }
 
     #endregion
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Get by ID async (IUserRepository interface)
+    /// </summary>
+    public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("👤 Getting user by ID: {UserId}", id);
+
+            var userEntity = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == id && u.IsActive, cancellationToken);
+
+            return userEntity != null ? MapToModel(userEntity) : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting user by ID: {UserId}", id);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Get by email async (IUserRepository interface)
+    /// </summary>
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("📧 Getting user by email: {Email}", email);
+
+            var userEntity = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email == email && u.IsActive, cancellationToken);
+
+            return userEntity != null ? MapToModel(userEntity) : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting user by email: {Email}", email);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Get by username async (IUserRepository interface)
+    /// </summary>
+    public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("👤 Getting user by username: {Username}", username);
+
+            var userEntity = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive, cancellationToken);
+
+            return userEntity != null ? MapToModel(userEntity) : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting user by username: {Username}", username);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Create async (IUserRepository interface)
+    /// </summary>
+    public async Task<User> CreateAsync(User user, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🆕 Creating user: {Username}", user.Username);
+
+            user.Id = string.IsNullOrEmpty(user.Id) ? Guid.NewGuid().ToString() : user.Id;
+            user.CreatedDate = DateTime.UtcNow;
+
+            var userEntity = MapToEntity(user);
+            userEntity.PasswordHash = string.Empty; // Password should be set separately
+
+            _context.Users.Add(userEntity);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("✅ User created successfully: {Username} with ID: {UserId}", user.Username, user.Id);
+            return user;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error creating user: {Username}", user.Username);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Update async (IUserRepository interface)
+    /// </summary>
+    public async Task<User> UpdateAsync(User user, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🔄 Updating user: {UserId}", user.Id);
+
+            var existingEntity = await _context.Users.FindAsync(new object[] { user.Id }, cancellationToken);
+            if (existingEntity == null)
+            {
+                throw new InvalidOperationException($"User with ID {user.Id} not found");
+            }
+
+            // Update properties
+            existingEntity.Username = user.Username;
+            existingEntity.Email = user.Email;
+            existingEntity.DisplayName = user.DisplayName;
+            existingEntity.Roles = string.Join(",", user.Roles);
+            existingEntity.IsActive = user.IsActive;
+            existingEntity.LastLoginDate = user.LastLoginDate;
+            existingEntity.IsMfaEnabled = user.IsMfaEnabled;
+            existingEntity.MfaSecret = user.MfaSecret;
+            existingEntity.MfaMethod = user.MfaMethod.ToString();
+            existingEntity.PhoneNumber = user.PhoneNumber;
+            existingEntity.IsPhoneNumberVerified = user.IsPhoneNumberVerified;
+            existingEntity.LastMfaValidationDate = user.LastMfaValidationDate;
+            existingEntity.BackupCodes = user.BackupCodes.Length > 0 ? string.Join(",", user.BackupCodes) : null;
+            existingEntity.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("✅ User updated successfully: {UserId}", user.Id);
+            return user;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error updating user: {UserId}", user.Id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Delete async (IUserRepository interface)
+    /// </summary>
+    public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🗑️ Deleting user: {UserId}", id);
+
+            var userEntity = await _context.Users.FindAsync(new object[] { id }, cancellationToken);
+            if (userEntity == null)
+            {
+                _logger.LogWarning("User not found for deletion: {UserId}", id);
+                return;
+            }
+
+            // Soft delete
+            userEntity.IsActive = false;
+            userEntity.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("✅ User deleted successfully: {UserId}", id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error deleting user: {UserId}", id);
+            throw;
+        }
+    }
+
+    #endregion
 }

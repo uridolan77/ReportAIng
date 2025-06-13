@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Infrastructure.AI.Management;
 using static BIReportingCopilot.Core.ApplicationConstants;
 
 namespace BIReportingCopilot.API.Controllers;
@@ -15,12 +16,12 @@ namespace BIReportingCopilot.API.Controllers;
 [Authorize(Roles = "Admin,Analyst")]
 public class LLMManagementController : ControllerBase
 {
-    private readonly ILLMManagementService _llmManagementService;
+    private readonly LLMManagementService _llmManagementService;
     private readonly ILogger<LLMManagementController> _logger;
     private readonly IWebHostEnvironment _environment;
 
     public LLMManagementController(
-        ILLMManagementService llmManagementService,
+        LLMManagementService llmManagementService,
         ILogger<LLMManagementController> logger,
         IWebHostEnvironment environment)
     {
@@ -458,7 +459,7 @@ public class LLMManagementController : ControllerBase
     /// Get performance metrics for providers
     /// </summary>
     [HttpGet("performance/metrics")]
-    public async Task<ActionResult<Dictionary<string, ProviderPerformanceMetrics>>> GetPerformanceMetrics(
+    public async Task<ActionResult<Dictionary<string, BIReportingCopilot.Core.Models.Statistics.ProviderPerformanceMetrics>>> GetPerformanceMetrics(
         [FromQuery] DateTime startDate,
         [FromQuery] DateTime endDate)
     {
@@ -568,7 +569,7 @@ public class LLMManagementController : ControllerBase
                     overallSuccessRate = performanceMetrics.Values.Any()
                         ? performanceMetrics.Values.Average(m => m.SuccessRate)
                         : 0,
-                    totalErrors = performanceMetrics.Values.Sum(m => m.ErrorsByType.Values.Sum())
+                    totalErrors = performanceMetrics.Values.Sum(m => m.ErrorDistribution.Values.Sum())
                 },
                 lastUpdated = DateTime.UtcNow
             };

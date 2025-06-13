@@ -7,6 +7,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
+using IContextManager = BIReportingCopilot.Core.Interfaces.IContextManager;
 
 namespace BIReportingCopilot.Infrastructure.Handlers;
 

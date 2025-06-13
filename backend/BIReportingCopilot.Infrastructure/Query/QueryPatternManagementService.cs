@@ -5,6 +5,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models.Statistics;
 using BIReportingCopilot.Core.DTOs;
+using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 
@@ -180,7 +181,7 @@ public class QueryPatternManagementService : IQueryPatternManagementService
         }
     }
 
-    public async Task<QueryPatternStatistics> GetPatternStatisticsAsync()
+    public async Task<BIReportingCopilot.Core.Models.Statistics.QueryPatternStatistics> GetPatternStatisticsAsync()
     {
         try
         {
@@ -199,7 +200,7 @@ public class QueryPatternManagementService : IQueryPatternManagementService
                 .GroupBy(p => p.Priority)
                 .ToDictionary(g => $"Priority {g.Key}", g => g.Count());
 
-            return new QueryPatternStatistics
+            return new BIReportingCopilot.Core.Models.Statistics.QueryPatternStatistics
             {
                 TotalPatterns = patterns.Count,
                 MostUsedPatterns = mostUsedPatterns,
@@ -259,6 +260,250 @@ public class QueryPatternManagementService : IQueryPatternManagementService
             IsActive = entity.IsActive,
             UsageCount = entity.UsageCount,
             LastUsedDate = entity.LastUsedDate
+        };
+    }
+
+    #endregion
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Get patterns async (IQueryPatternManagementService interface)
+    /// </summary>
+    public async Task<List<QueryPattern>> GetPatternsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("📋 Getting query patterns");
+
+            var patterns = await _context.QueryPatterns
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.Priority)
+                .ThenBy(p => p.PatternName)
+                .ToListAsync(cancellationToken);
+
+            return patterns.Select(MapEntityToPattern).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting query patterns");
+            return new List<QueryPattern>();
+        }
+    }
+
+    /// <summary>
+    /// Get pattern by ID async (IQueryPatternManagementService interface)
+    /// </summary>
+    public async Task<QueryPattern?> GetPatternByIdAsync(string patternId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("📋 Getting query pattern by ID: {PatternId}", patternId);
+
+            if (!long.TryParse(patternId, out var id))
+            {
+                _logger.LogWarning("Invalid pattern ID format: {PatternId}", patternId);
+                return null;
+            }
+
+            var pattern = await _context.QueryPatterns
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive, cancellationToken);
+
+            return pattern != null ? MapEntityToPattern(pattern) : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting query pattern by ID: {PatternId}", patternId);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Create pattern async (IQueryPatternManagementService interface)
+    /// </summary>
+    public async Task<string> CreatePatternAsync(QueryPattern pattern, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🆕 Creating query pattern: {PatternName}", pattern.Name);
+
+            var entity = new QueryPatternEntity
+            {
+                PatternName = pattern.Name,
+                NaturalLanguagePattern = pattern.Pattern,
+                SqlTemplate = pattern.SqlTemplate,
+                Description = pattern.Description,
+                BusinessContext = pattern.BusinessContext ?? "",
+                Keywords = JsonSerializer.Serialize(pattern.Keywords ?? new List<string>()),
+                RequiredTables = JsonSerializer.Serialize(pattern.RequiredTables ?? new List<string>()),
+                Priority = pattern.Priority,
+                IsActive = true,
+                UsageCount = 0,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _context.QueryPatterns.Add(entity);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("✅ Created query pattern: {PatternName} with ID: {PatternId}", pattern.Name, entity.Id);
+            return entity.Id.ToString();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error creating query pattern: {PatternName}", pattern.Name);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Update pattern async (IQueryPatternManagementService interface)
+    /// </summary>
+    public async Task<bool> UpdatePatternAsync(QueryPattern pattern, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🔄 Updating query pattern: {PatternName}", pattern.Name);
+
+            if (!long.TryParse(pattern.Id, out var id))
+            {
+                throw new ArgumentException($"Invalid pattern ID format: {pattern.Id}");
+            }
+
+            var entity = await _context.QueryPatterns
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive, cancellationToken);
+
+            if (entity == null)
+            {
+                throw new InvalidOperationException($"Query pattern with ID {pattern.Id} not found");
+            }
+
+            entity.PatternName = pattern.Name;
+            entity.NaturalLanguagePattern = pattern.Pattern;
+            entity.SqlTemplate = pattern.SqlTemplate;
+            entity.Description = pattern.Description;
+            entity.BusinessContext = pattern.BusinessContext ?? "";
+            entity.Keywords = JsonSerializer.Serialize(pattern.Keywords ?? new List<string>());
+            entity.RequiredTables = JsonSerializer.Serialize(pattern.RequiredTables ?? new List<string>());
+            entity.Priority = pattern.Priority;
+            entity.UpdatedBy = "system";
+            entity.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("✅ Updated query pattern: {PatternName}", pattern.Name);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error updating query pattern: {PatternName}", pattern.Name);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Delete pattern async (IQueryPatternManagementService interface)
+    /// </summary>
+    public async Task<bool> DeletePatternAsync(string patternId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🗑️ Deleting query pattern: {PatternId}", patternId);
+
+            if (!long.TryParse(patternId, out var id))
+            {
+                _logger.LogWarning("Invalid pattern ID format: {PatternId}", patternId);
+                return false;
+            }
+
+            var entity = await _context.QueryPatterns.FindAsync(new object[] { id }, cancellationToken);
+            if (entity == null || !entity.IsActive)
+            {
+                _logger.LogWarning("Query pattern not found or already deleted: {PatternId}", patternId);
+                return false;
+            }
+
+            entity.IsActive = false;
+            entity.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("✅ Deleted query pattern: {PatternId}", patternId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error deleting query pattern: {PatternId}", patternId);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Find similar patterns async (IQueryPatternManagementService interface)
+    /// </summary>
+    public async Task<List<QueryPattern>> FindSimilarPatternsAsync(string query, double threshold = 0.7, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("🔍 Finding similar patterns for query: {Query} with threshold: {Threshold}", query, threshold);
+
+            var patterns = await _context.QueryPatterns
+                .Where(p => p.IsActive)
+                .ToListAsync(cancellationToken);
+
+            var similarPatterns = new List<QueryPattern>();
+            var queryLower = query.ToLowerInvariant();
+
+            foreach (var pattern in patterns)
+            {
+                var keywords = JsonSerializer.Deserialize<List<string>>(pattern.Keywords) ?? new List<string>();
+                var matchedKeywords = keywords.Count(k => queryLower.Contains(k.ToLowerInvariant()));
+                var similarity = keywords.Count > 0 ? (double)matchedKeywords / keywords.Count : 0;
+
+                if (similarity >= threshold)
+                {
+                    var queryPattern = MapEntityToPattern(pattern);
+                    queryPattern.Similarity = similarity;
+                    similarPatterns.Add(queryPattern);
+                }
+            }
+
+            var result = similarPatterns.OrderByDescending(p => p.Similarity).ToList();
+            _logger.LogDebug("✅ Found {Count} similar patterns", result.Count);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error finding similar patterns");
+            return new List<QueryPattern>();
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods for Interface Implementations
+
+    private static QueryPattern MapEntityToPattern(QueryPatternEntity entity)
+    {
+        var keywords = JsonSerializer.Deserialize<List<string>>(entity.Keywords) ?? new List<string>();
+        var requiredTables = JsonSerializer.Deserialize<List<string>>(entity.RequiredTables) ?? new List<string>();
+
+        return new QueryPattern
+        {
+            Id = entity.Id.ToString(),
+            Name = entity.PatternName,
+            Pattern = entity.NaturalLanguagePattern,
+            SqlTemplate = entity.SqlTemplate,
+            Description = entity.Description,
+            BusinessContext = entity.BusinessContext,
+            Keywords = keywords,
+            RequiredTables = requiredTables,
+            Priority = entity.Priority,
+            UsageCount = entity.UsageCount,
+            CreatedAt = entity.CreatedDate,
+            UpdatedAt = entity.UpdatedDate,
+            LastUsedAt = entity.LastUsedDate,
+            Similarity = 0.0 // Default value, will be set during similarity calculations
         };
     }
 

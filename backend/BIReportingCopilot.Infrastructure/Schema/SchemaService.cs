@@ -731,4 +731,70 @@ public class SchemaService : ISchemaService
     }
 
     #endregion
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Get schema async (ISchemaService interface)
+    /// </summary>
+    public async Task<SchemaMetadata> GetSchemaAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetSchemaMetadataAsync();
+    }
+
+    /// <summary>
+    /// Refresh schema async (ISchemaService interface)
+    /// </summary>
+    public async Task RefreshSchemaAsync(CancellationToken cancellationToken = default)
+    {
+        await RefreshSchemaMetadataAsync();
+    }
+
+    /// <summary>
+    /// Get table names async (ISchemaService interface)
+    /// </summary>
+    public async Task<List<string>> GetTableNamesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var schema = await GetSchemaMetadataAsync();
+            return schema.Tables.Select(t => $"{t.Schema}.{t.Name}").ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting table names");
+            return new List<string>();
+        }
+    }
+
+    /// <summary>
+    /// Get column names async (ISchemaService interface)
+    /// </summary>
+    public async Task<List<string>> GetColumnNamesAsync(string tableName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var schema = await GetSchemaMetadataAsync();
+            var table = schema.Tables.FirstOrDefault(t =>
+                t.Name.Equals(tableName, StringComparison.OrdinalIgnoreCase) ||
+                $"{t.Schema}.{t.Name}".Equals(tableName, StringComparison.OrdinalIgnoreCase));
+
+            return table?.Columns.Select(c => c.Name).ToList() ?? new List<string>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting column names for table: {TableName}", tableName);
+            return new List<string>();
+        }
+    }
+
+    /// <summary>
+    /// Get schema metadata async (ISchemaService interface)
+    /// </summary>
+    public async Task<SchemaMetadata> GetSchemaMetadataAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetSchemaMetadataAsync();
+    }
+
+    #endregion
 }

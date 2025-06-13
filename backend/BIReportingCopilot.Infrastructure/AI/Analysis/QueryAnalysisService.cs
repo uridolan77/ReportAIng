@@ -7,6 +7,7 @@ using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using IQueryClassifier = BIReportingCopilot.Core.Interfaces.IQueryClassifier;
 
 namespace BIReportingCopilot.Infrastructure.AI.Analysis;
 
@@ -61,7 +62,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
 
     #region ISemanticAnalyzer Implementation
 
-    public async Task<SemanticAnalysis> AnalyzeAsync(string naturalLanguageQuery)
+    public async Task<SemanticAnalysisResult> AnalyzeAsync(string naturalLanguageQuery, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -69,44 +70,35 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
 
             // Check cache first
             var cacheKey = $"semantic_analysis:{naturalLanguageQuery.GetHashCode()}";
-            var cachedResult = await _cacheService.GetAsync<SemanticAnalysis>(cacheKey);
+            var cachedResult = await _cacheService.GetAsync<SemanticAnalysisResult>(cacheKey);
             if (cachedResult != null)
             {
                 _logger.LogDebug("Returning cached semantic analysis");
                 return cachedResult;
             }
 
-            var analysis = new SemanticAnalysis
+            var entities = await ExtractEntitiesAsync(naturalLanguageQuery);
+            var keywords = ExtractKeywords(naturalLanguageQuery);
+            var intent = await ClassifyIntentAsync(naturalLanguageQuery);
+
+            var analysis = new SemanticAnalysisResult
             {
-                OriginalQuery = naturalLanguageQuery,
-                ProcessedQuery = naturalLanguageQuery.Trim()
+                Text = naturalLanguageQuery,
+                Entities = entities,
+                Confidence = CalculateConfidenceScore(entities, keywords, intent),
+                Metadata = ExtractMetadata(naturalLanguageQuery, entities, keywords)
             };
-
-            // Extract entities using pattern matching
-            analysis.Entities = await ExtractEntitiesAsync(naturalLanguageQuery);
-
-            // Extract keywords
-            analysis.Keywords = ExtractKeywords(naturalLanguageQuery);
-
-            // Classify intent
-            analysis.Intent = await ClassifyIntentAsync(naturalLanguageQuery);
-
-            // Calculate confidence based on entity recognition and pattern matching
-            analysis.ConfidenceScore = CalculateConfidenceScore(analysis);
-
-            // Add metadata
-            analysis.Metadata = ExtractMetadata(naturalLanguageQuery, analysis);
 
             // Cache the result
             await _cacheService.SetAsync(cacheKey, analysis, TimeSpan.FromHours(1));
 
-            _logger.LogDebug("Semantic analysis completed with confidence: {Confidence}", analysis.ConfidenceScore);
+            _logger.LogDebug("Semantic analysis completed with confidence: {Confidence}", analysis.Confidence);
             return analysis;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during semantic analysis");
-            return CreateFallbackAnalysis(naturalLanguageQuery);
+            return CreateFallbackSemanticAnalysisResult(naturalLanguageQuery);
         }
     }
 
@@ -451,6 +443,80 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         return Task.FromResult(tableCount > 1);
     }
 
+    public Task<QueryComplexityScore> GetComplexityScoreAsync(string query)
+    {
+        return AnalyzeComplexityAsync(query);
+    }
+
+    public Task<BIReportingCopilot.Core.Models.QueryIntent> DetermineIntentAsync(string query)
+    {
+        return ClassifyIntentAsync(query);
+    }
+
+    public Task<List<string>> IdentifyRequiredTablesAsync(string query, SchemaMetadata schema)
+    {
+        try
+        {
+            var requiredTables = new List<string>();
+            var lowerQuery = query.ToLowerInvariant();
+
+            // Find table references in the query
+            foreach (var table in schema.Tables)
+            {
+                if (lowerQuery.Contains(table.Name.ToLowerInvariant()))
+                {
+                    requiredTables.Add(table.Name);
+                }
+            }
+
+            return Task.FromResult(requiredTables);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error identifying required tables");
+            return Task.FromResult(new List<string>());
+        }
+    }
+
+    public Task<VisualizationType> SuggestVisualizationAsync(string query)
+    {
+        try
+        {
+            var lowerQuery = query.ToLowerInvariant();
+
+            // Aggregation queries -> Bar/Pie charts
+            if (lowerQuery.Contains("sum") || lowerQuery.Contains("count") || lowerQuery.Contains("total"))
+            {
+                if (lowerQuery.Contains("group by") || lowerQuery.Contains("category"))
+                    return Task.FromResult(VisualizationType.Bar);
+                else
+                    return Task.FromResult(VisualizationType.Pie);
+            }
+
+            // Trend queries -> Line charts
+            if (lowerQuery.Contains("trend") || lowerQuery.Contains("over time") ||
+                lowerQuery.Contains("monthly") || lowerQuery.Contains("yearly"))
+            {
+                return Task.FromResult(VisualizationType.Line);
+            }
+
+            // Comparison queries -> Bar charts
+            if (lowerQuery.Contains("compare") || lowerQuery.Contains("vs") ||
+                lowerQuery.Contains("top") || lowerQuery.Contains("best"))
+            {
+                return Task.FromResult(VisualizationType.Bar);
+            }
+
+            // Default to table for simple queries
+            return Task.FromResult(VisualizationType.Table);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error suggesting visualization");
+            return Task.FromResult(VisualizationType.Table);
+        }
+    }
+
     #endregion
 
     #region Private Helper Methods
@@ -472,33 +538,33 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         return stopWords.Contains(word);
     }
 
-    private double CalculateConfidenceScore(SemanticAnalysis analysis)
+    private double CalculateConfidenceScore(List<SemanticEntity> entities, List<string> keywords, QueryIntent intent)
     {
         var score = 0.5; // Base score
 
         // Boost for recognized entities
-        score += Math.Min(0.3, analysis.Entities.Count * 0.05);
+        score += Math.Min(0.3, entities.Count * 0.05);
 
         // Boost for clear intent
-        if (analysis.Intent != QueryIntent.General)
+        if (intent != QueryIntent.General)
             score += 0.2;
 
         // Boost for meaningful keywords
-        score += Math.Min(0.2, analysis.Keywords.Count * 0.02);
+        score += Math.Min(0.2, keywords.Count * 0.02);
 
         return Math.Min(1.0, score);
     }
 
-    private Dictionary<string, object> ExtractMetadata(string query, SemanticAnalysis analysis)
+    private Dictionary<string, object> ExtractMetadata(string query, List<SemanticEntity> entities, List<string> keywords)
     {
         return new Dictionary<string, object>
         {
             ["word_count"] = query.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
-            ["entity_count"] = analysis.Entities.Count,
-            ["keyword_count"] = analysis.Keywords.Count,
-            ["has_aggregation"] = analysis.Entities.Any(e => e.Type == EntityType.Aggregation),
-            ["has_date_filter"] = analysis.Entities.Any(e => e.Type == EntityType.DateRange),
-            ["complexity_level"] = DetermineComplexity(analysis)
+            ["entity_count"] = entities.Count,
+            ["keyword_count"] = keywords.Count,
+            ["has_aggregation"] = entities.Any(e => e.Type == EntityType.Aggregation),
+            ["has_date_filter"] = entities.Any(e => e.Type == EntityType.DateRange),
+            ["complexity_level"] = "medium"
         };
     }
 
@@ -594,6 +660,21 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
             return 0.0;
 
         return dotProduct / (magnitude1 * magnitude2);
+    }
+
+    private SemanticAnalysisResult CreateFallbackSemanticAnalysisResult(string query)
+    {
+        return new SemanticAnalysisResult
+        {
+            Text = query,
+            Entities = new List<SemanticEntity>(),
+            Confidence = 0.3,
+            Metadata = new Dictionary<string, object>
+            {
+                ["fallback"] = true,
+                ["error"] = "Analysis failed"
+            }
+        };
     }
 
     private SemanticAnalysis CreateFallbackAnalysis(string query)
@@ -871,19 +952,38 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
     #region Missing Interface Method Implementations
 
     /// <summary>
-    /// Analyze async (ISemanticAnalyzer interface)
-    /// </summary>
-    public async Task<SemanticAnalysis> AnalyzeAsync(string query, CancellationToken cancellationToken = default)
-    {
-        return await AnalyzeAsync(query);
-    }
-
-    /// <summary>
     /// Classify async (IQueryClassifier interface)
     /// </summary>
-    public async Task<QueryClassification> ClassifyAsync(string query, CancellationToken cancellationToken = default)
+    public async Task<QueryClassificationResult> ClassifyAsync(string query, CancellationToken cancellationToken = default)
     {
-        return await ClassifyQueryAsync(query);
+        try
+        {
+            var classification = await ClassifyQueryAsync(query);
+
+            return new QueryClassificationResult
+            {
+                QueryType = classification.Category.ToString(),
+                Intent = classification.Category.ToString(),
+                Confidence = classification.ConfidenceScore,
+                Categories = new List<string> { classification.Category.ToString() },
+                Scores = new Dictionary<string, double>
+                {
+                    [classification.Category.ToString()] = classification.ConfidenceScore
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error classifying query");
+            return new QueryClassificationResult
+            {
+                QueryType = "Unknown",
+                Intent = "General",
+                Confidence = 0.5,
+                Categories = new List<string> { "Unknown" },
+                Scores = new Dictionary<string, double> { ["Unknown"] = 0.5 }
+            };
+        }
     }
 
     #endregion

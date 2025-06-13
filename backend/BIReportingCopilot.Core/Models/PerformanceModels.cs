@@ -793,14 +793,17 @@ public class QueryPatternStatistics
 /// </summary>
 public class CostAlert
 {
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     public string AlertId { get; set; } = Guid.NewGuid().ToString();
     public string ProviderId { get; set; } = string.Empty;
     public string AlertType { get; set; } = string.Empty;
     public double Threshold { get; set; }
+    public double ThresholdAmount { get; set; }
     public double CurrentValue { get; set; }
     public string Message { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsResolved { get; set; } = false;
+    public bool IsEnabled { get; set; } = true;
 }
 
 // =============================================================================
@@ -817,6 +820,13 @@ public class TuningResult
     public string Message { get; set; } = string.Empty;
     public Dictionary<string, object> Results { get; set; } = new();
     public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    public string Status { get; set; } = "Pending";
+    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+    public List<TuningImprovement> Improvements { get; set; } = new();
+    public TuningMetrics Metrics { get; set; } = new();
+    public string? ErrorMessage { get; set; }
 }
 
 /// <summary>
@@ -841,6 +851,42 @@ public class TuningStatus
     public double Progress { get; set; }
     public string Message { get; set; } = string.Empty;
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Current step in the tuning process
+    /// </summary>
+    public string CurrentStep { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Estimated time remaining for completion
+    /// </summary>
+    public TimeSpan EstimatedTimeRemaining { get; set; }
+
+    /// <summary>
+    /// Error message if status is error
+    /// </summary>
+    public string? ErrorMessage { get; set; }
+}
+
+/// <summary>
+/// Tuning improvement
+/// </summary>
+public class TuningImprovement
+{
+    public string Type { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public double Impact { get; set; }
+}
+
+/// <summary>
+/// Tuning metrics
+/// </summary>
+public class TuningMetrics
+{
+    public double PerformanceGain { get; set; }
+    public double AccuracyImprovement { get; set; }
+    public TimeSpan ProcessingTime { get; set; }
 }
 
 // =============================================================================
@@ -867,6 +913,9 @@ public class UserSession
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime LastActivity { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;
+
+    // Property expected by Infrastructure services
+    public DateTime StartTime { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
@@ -878,6 +927,17 @@ public class MfaChallenge
     public string Method { get; set; } = string.Empty;
     public string Challenge { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; } = DateTime.UtcNow.AddMinutes(5);
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// User ID for the challenge
+    /// </summary>
+    public string UserId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether the challenge has been used
+    /// </summary>
+    public bool IsUsed { get; set; } = false;
 }
 
 /// <summary>

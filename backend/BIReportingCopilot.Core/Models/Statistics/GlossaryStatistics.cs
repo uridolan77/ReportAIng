@@ -44,4 +44,20 @@ public class GlossaryStatistics
     /// Last update timestamp
     /// </summary>
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Category statistics breakdown
+    /// </summary>
+    public Dictionary<string, int> CategoryStats { get; set; } = new();
+
+    /// <summary>
+    /// Average usage count across all terms
+    /// </summary>
+    public double AverageUsageCount { get; set; }
+
+    /// <summary>
+    /// Total number of categories
+    /// </summary>
+    public int TotalCategories { get; set; }
 }

@@ -1304,4 +1304,385 @@ public class LLMManagementService : ILLMManagementService
     }
 
     #endregion
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Get available providers (ILLMManagementService interface)
+    /// </summary>
+    public async Task<List<LLMProvider>> GetAvailableProvidersAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var providerConfigs = await GetProvidersAsync();
+            var providers = new List<LLMProvider>();
+
+            foreach (var config in providerConfigs)
+            {
+                var models = await GetModelsAsync(config.ProviderId);
+                var healthStatus = await TestProviderConnectionAsync(config.ProviderId);
+
+                providers.Add(new LLMProvider
+                {
+                    Id = config.ProviderId,
+                    Name = config.Name,
+                    Description = $"{config.Type} provider - {config.Endpoint}",
+                    IsActive = config.IsEnabled,
+                    IsHealthy = healthStatus.IsHealthy,
+                    SupportedModels = models.Select(m => new LLMModel
+                    {
+                        Id = m.ModelId,
+                        Name = m.Name,
+                        Description = m.DisplayName ?? m.Name,
+                        MaxTokens = m.MaxTokens,
+                        CostPerToken = (double)m.CostPerToken,
+                        Capabilities = m.Capabilities?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>()
+                    }).ToList(),
+                    Configuration = new Dictionary<string, object>
+                    {
+                        ["type"] = config.Type,
+                        ["endpoint"] = config.Endpoint,
+                        ["organization"] = config.Organization ?? string.Empty,
+                        ["isDefault"] = config.IsDefault
+                    }
+                });
+            }
+
+            return providers;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting available providers");
+            return new List<LLMProvider>();
+        }
+    }
+
+    /// <summary>
+    /// Get current provider (ILLMManagementService interface)
+    /// </summary>
+    public async Task<LLMProvider> GetCurrentProviderAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var providers = await GetProvidersAsync();
+            var defaultProvider = providers.FirstOrDefault(p => p.IsDefault) ?? providers.FirstOrDefault();
+
+            if (defaultProvider != null)
+            {
+                var models = await GetModelsAsync(defaultProvider.ProviderId);
+                var healthStatus = await TestProviderConnectionAsync(defaultProvider.ProviderId);
+
+                return new LLMProvider
+                {
+                    Id = defaultProvider.ProviderId,
+                    Name = defaultProvider.Name,
+                    Description = $"{defaultProvider.Type} provider - {defaultProvider.Endpoint}",
+                    IsActive = defaultProvider.IsEnabled,
+                    IsHealthy = healthStatus.IsHealthy,
+                    SupportedModels = models.Select(m => new LLMModel
+                    {
+                        Id = m.ModelId,
+                        Name = m.Name,
+                        Description = m.DisplayName ?? m.Name,
+                        MaxTokens = m.MaxTokens,
+                        CostPerToken = (double)m.CostPerToken,
+                        Capabilities = m.Capabilities?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>()
+                    }).ToList(),
+                    Configuration = new Dictionary<string, object>
+                    {
+                        ["type"] = defaultProvider.Type,
+                        ["endpoint"] = defaultProvider.Endpoint,
+                        ["organization"] = defaultProvider.Organization ?? string.Empty,
+                        ["isDefault"] = defaultProvider.IsDefault
+                    }
+                };
+            }
+
+            return new LLMProvider
+            {
+                Id = "none",
+                Name = "No Provider",
+                Description = "No provider configured",
+                IsActive = false,
+                IsHealthy = false
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting current provider");
+            return new LLMProvider
+            {
+                Id = "error",
+                Name = "Error",
+                Description = "Error retrieving provider",
+                IsActive = false,
+                IsHealthy = false
+            };
+        }
+    }
+
+    /// <summary>
+    /// Set provider (ILLMManagementService interface)
+    /// </summary>
+    public async Task<bool> SetProviderAsync(string providerId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
+            {
+                if (context is BICopilotContext legacyContext)
+                {
+                    // First, unset all providers as default
+                    var allProviders = await legacyContext.LLMProviderConfigs.ToListAsync(cancellationToken);
+                    foreach (var provider in allProviders)
+                    {
+                        provider.IsDefault = false;
+                    }
+
+                    // Set the specified provider as default
+                    var targetProvider = await legacyContext.LLMProviderConfigs
+                        .FirstOrDefaultAsync(p => p.ProviderId == providerId, cancellationToken);
+
+                    if (targetProvider != null)
+                    {
+                        targetProvider.IsDefault = true;
+                        targetProvider.UpdatedAt = DateTime.UtcNow;
+                        await legacyContext.SaveChangesAsync(cancellationToken);
+
+                        // Clear cache
+                        await _cacheService.RemoveAsync("current_provider");
+
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting provider: {ProviderId}", providerId);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Get usage statistics (ILLMManagementService interface)
+    /// </summary>
+    public async Task<LLMUsageStatistics> GetUsageStatisticsAsync(DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var fromDate = from ?? DateTime.UtcNow.AddDays(-30);
+            var toDate = to ?? DateTime.UtcNow;
+
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
+            {
+                if (context is BICopilotContext legacyContext)
+                {
+                    var logs = await legacyContext.LLMUsageLogs
+                        .Where(l => l.Timestamp >= fromDate && l.Timestamp <= toDate)
+                        .ToListAsync(cancellationToken);
+
+                    var totalRequests = logs.Count;
+                    var successfulRequests = logs.Count(l => l.Success);
+                    var failedRequests = totalRequests - successfulRequests;
+                    var totalCost = logs.Sum(l => l.Cost);
+                    var totalTokens = logs.Sum(l => l.TotalTokens);
+                    var averageResponseTime = logs.Any() ? TimeSpan.FromMilliseconds(logs.Average(l => l.DurationMs)) : TimeSpan.Zero;
+
+                    return new LLMUsageStatistics
+                    {
+                        TotalRequests = totalRequests,
+                        SuccessfulRequests = successfulRequests,
+                        FailedRequests = failedRequests,
+                        TotalCost = totalCost,
+                        TotalTokens = totalTokens,
+                        AverageResponseTime = averageResponseTime,
+                        Period = new DateRange
+                        {
+                            From = fromDate,
+                            To = toDate
+                        },
+                        ProviderBreakdown = logs.GroupBy(l => l.ProviderId)
+                            .ToDictionary(g => g.Key, g => new ProviderUsageStats
+                            {
+                                Requests = g.Count(),
+                                Cost = g.Sum(l => l.Cost),
+                                Tokens = g.Sum(l => l.TotalTokens)
+                            }),
+                        ModelBreakdown = logs.GroupBy(l => l.ModelId)
+                            .ToDictionary(g => g.Key, g => new ModelUsageStats
+                            {
+                                Requests = g.Count(),
+                                Cost = g.Sum(l => l.Cost),
+                                Tokens = g.Sum(l => l.TotalTokens)
+                            })
+                    };
+                }
+
+                return new LLMUsageStatistics
+                {
+                    Period = new DateRange { From = fromDate, To = toDate }
+                };
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting usage statistics");
+            return new LLMUsageStatistics
+            {
+                Period = new DateRange
+                {
+                    From = from ?? DateTime.UtcNow.AddDays(-30),
+                    To = to ?? DateTime.UtcNow
+                }
+            };
+        }
+    }
+
+    /// <summary>
+    /// Get available models (ILLMManagementService interface)
+    /// </summary>
+    public async Task<List<LLMModel>> GetAvailableModelsAsync(string? providerId = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var modelConfigs = await GetModelsAsync(providerId);
+
+            return modelConfigs.Select(m => new LLMModel
+            {
+                Id = m.ModelId,
+                Name = m.Name,
+                Description = m.DisplayName ?? m.Name,
+                MaxTokens = m.MaxTokens,
+                CostPerToken = (double)m.CostPerToken,
+                Capabilities = m.Capabilities?.Split(',').ToList() ?? new List<string>(),
+                Configuration = new Dictionary<string, object>
+                {
+                    ["temperature"] = m.Temperature,
+                    ["topP"] = m.TopP,
+                    ["frequencyPenalty"] = m.FrequencyPenalty,
+                    ["presencePenalty"] = m.PresencePenalty,
+                    ["useCase"] = m.UseCase ?? string.Empty,
+                    ["isEnabled"] = m.IsEnabled
+                }
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting available models");
+            return new List<LLMModel>();
+        }
+    }
+
+    /// <summary>
+    /// Test provider connection (ILLMManagementService interface)
+    /// </summary>
+    public async Task<bool> TestProviderConnectionAsync(string providerId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var status = await TestProviderConnectionAsync(providerId);
+            return status.IsHealthy;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error testing provider connection: {ProviderId}", providerId);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Get configuration (ILLMManagementService interface)
+    /// </summary>
+    public async Task<LLMConfiguration> GetConfigurationAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var currentProvider = await GetCurrentProviderAsync(cancellationToken);
+            var models = await GetAvailableModelsAsync(currentProvider.Id, cancellationToken);
+            var defaultModel = models.FirstOrDefault();
+
+            return new LLMConfiguration
+            {
+                DefaultProvider = currentProvider.Id,
+                DefaultModel = defaultModel?.Id ?? string.Empty,
+                MaxTokens = defaultModel?.MaxTokens ?? 1500,
+                Temperature = 0.1,
+                MaxRetries = 3,
+                Timeout = TimeSpan.FromSeconds(30),
+                EnableCaching = true,
+                ProviderSettings = currentProvider.Configuration
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting configuration");
+            return new LLMConfiguration
+            {
+                DefaultProvider = "none",
+                DefaultModel = "none",
+                MaxTokens = 1500,
+                Temperature = 0.1,
+                MaxRetries = 3,
+                Timeout = TimeSpan.FromSeconds(30),
+                EnableCaching = true
+            };
+        }
+    }
+
+    /// <summary>
+    /// Update configuration (ILLMManagementService interface)
+    /// </summary>
+    public async Task<bool> UpdateConfigurationAsync(LLMConfiguration configuration, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Set the default provider
+            var providerSet = await SetProviderAsync(configuration.DefaultProvider, cancellationToken);
+
+            if (!providerSet)
+            {
+                _logger.LogWarning("Failed to set default provider: {ProviderId}", configuration.DefaultProvider);
+                return false;
+            }
+
+            // Update provider settings if provided
+            if (configuration.ProviderSettings.Any())
+            {
+                var provider = await GetProviderAsync(configuration.DefaultProvider);
+                if (provider != null)
+                {
+                    // Merge settings
+                    foreach (var setting in configuration.ProviderSettings)
+                    {
+                        provider.Settings ??= new Dictionary<string, object>();
+                        provider.Settings[setting.Key] = setting.Value;
+                    }
+
+                    // Add configuration settings
+                    provider.Settings["maxTokens"] = configuration.MaxTokens;
+                    provider.Settings["temperature"] = configuration.Temperature;
+                    provider.Settings["maxRetries"] = configuration.MaxRetries;
+                    provider.Settings["timeout"] = configuration.Timeout.TotalSeconds;
+                    provider.Settings["enableCaching"] = configuration.EnableCaching;
+
+                    await SaveProviderAsync(provider);
+                }
+            }
+
+            // Clear configuration cache
+            await _cacheService.RemoveAsync("llm_configuration");
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating configuration");
+            return false;
+        }
+    }
+
+    #endregion
 }

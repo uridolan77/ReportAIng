@@ -52,6 +52,10 @@ public interface IAuditService
     Task LogActionAsync(string userId, string action, string entityType, string entityId, Dictionary<string, object>? metadata = null);
     Task LogErrorAsync(string userId, string error, string? stackTrace = null, Dictionary<string, object>? metadata = null);
     Task<IEnumerable<object>> GetAuditLogsAsync(string? userId = null, DateTime? fromDate = null, DateTime? toDate = null);
+
+    // Method expected by Infrastructure services
+    Task LogAsync(string action, string userId, string? entityType = null, string? entityId = null,
+                  object? details = null, string? ipAddress = null, string? userAgent = null);
 }
 
 /// <summary>

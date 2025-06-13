@@ -153,6 +153,10 @@ public interface IAuditService
     Task LogActionAsync(string userId, string action, string entityType, string entityId, Dictionary<string, object>? metadata = null);
     Task LogErrorAsync(string userId, string error, string? stackTrace = null, Dictionary<string, object>? metadata = null);
     Task<IEnumerable<object>> GetAuditLogsAsync(string? userId = null, DateTime? fromDate = null, DateTime? toDate = null);
+
+    // Method expected by Infrastructure services
+    Task LogAsync(string action, string userId, string? entityType = null, string? entityId = null,
+                  object? details = null, string? ipAddress = null, string? userAgent = null);
 }
 
 // =============================================================================
@@ -168,6 +172,9 @@ public interface ISchemaService
     Task RefreshSchemaAsync(CancellationToken cancellationToken = default);
     Task<List<string>> GetTableNamesAsync(CancellationToken cancellationToken = default);
     Task<List<string>> GetColumnNamesAsync(string tableName, CancellationToken cancellationToken = default);
+
+    // Method expected by Infrastructure services
+    Task<SchemaMetadata> GetSchemaMetadataAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -211,6 +218,11 @@ public interface ITuningService
     Task<TuningResult> TuneQueryAsync(TuningRequest request, CancellationToken cancellationToken = default);
     Task<List<TuningResult>> GetTuningHistoryAsync(string? userId = null, CancellationToken cancellationToken = default);
     Task<TuningStatus> GetTuningStatusAsync(string tuningId, CancellationToken cancellationToken = default);
+
+    // Methods expected by Infrastructure services
+    Task<object> GetAISettingsAsync(CancellationToken cancellationToken = default);
+    Task<bool> UpdateAISettingAsync(string key, object value, CancellationToken cancellationToken = default);
+    Task<object> GetDashboardDataAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -296,6 +308,13 @@ public interface IMfaService
 {
     Task<MfaChallengeResult> CreateChallengeAsync(string userId, CancellationToken cancellationToken = default);
     Task<bool> ValidateChallengeAsync(string challengeId, string code, CancellationToken cancellationToken = default);
+
+    // Methods expected by Infrastructure services
+    Task<bool> ValidateTotpAsync(string userId, string code, CancellationToken cancellationToken = default);
+    Task<string> GenerateSmsCodeAsync();
+    Task<bool> SendSmsAsync(string phoneNumber, string code);
+    Task<string> GenerateEmailCodeAsync();
+    Task<bool> SendEmailCodeAsync(string email, string code);
 }
 
 // Duplicate IUserService removed - using the one defined above

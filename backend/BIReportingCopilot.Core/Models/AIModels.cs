@@ -8,6 +8,7 @@ public class SemanticAnalysis
     public List<SemanticEntity> Entities { get; set; } = new();
     public List<string> Keywords { get; set; } = new();
     public double ConfidenceScore { get; set; }
+    public double Confidence { get; set; } // Alias for ConfidenceScore for compatibility
     public string ProcessedQuery { get; set; } = string.Empty;
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
@@ -69,7 +70,23 @@ public class ComplexityFactor
 
 public class QueryPattern
 {
+    // Core properties
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Name { get; set; } = string.Empty;
     public string Pattern { get; set; } = string.Empty;
+    public string SqlTemplate { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string BusinessContext { get; set; } = string.Empty;
+    public List<string> Keywords { get; set; } = new();
+    public List<string> RequiredTables { get; set; } = new();
+    public int Priority { get; set; } = 1;
+    public int UsageCount { get; set; } = 0;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
+    public DateTime? LastUsedAt { get; set; }
+    public double Similarity { get; set; } = 0.0;
+
+    // Original properties
     public int Frequency { get; set; }
     public DateTime LastUsed { get; set; }
     public List<string> AssociatedTables { get; set; } = new();
@@ -109,10 +126,17 @@ public class SqlCandidate
 {
     public string Sql { get; set; } = string.Empty;
     public double Score { get; set; }
+    public double ConfidenceScore { get; set; } // Added for QueryOptimizer compatibility
     public string Reasoning { get; set; } = string.Empty;
+    public string Explanation { get; set; } = string.Empty; // Added for QueryOptimizer compatibility
     public List<string> Strengths { get; set; } = new();
     public List<string> Weaknesses { get; set; } = new();
+    public List<string> RequiredTables { get; set; } = new(); // Added for QueryOptimizer compatibility
     public QueryPerformancePrediction Performance { get; set; } = new();
+
+    // Additional properties expected by QueryOptimizer
+    public QueryComplexity EstimatedComplexity { get; set; } = QueryComplexity.Medium;
+    public TimeSpan EstimatedExecutionTime { get; set; } = TimeSpan.FromMilliseconds(500);
 }
 
 public class QueryPerformancePrediction

@@ -4,6 +4,14 @@ using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using System.Text.RegularExpressions;
+using IQueryOptimizer = BIReportingCopilot.Core.Interfaces.IQueryOptimizer;
+using SqlCandidate = BIReportingCopilot.Core.Models.SqlCandidate;
+using OptimizedQuery = BIReportingCopilot.Core.Models.OptimizedQuery;
+using UserContext = BIReportingCopilot.Core.Models.UserContext;
+using SchemaContext = BIReportingCopilot.Core.Models.SchemaContext;
+using QueryPerformanceAnalysis = BIReportingCopilot.Core.Models.QueryPerformanceAnalysis;
+using QueryImprovement = BIReportingCopilot.Core.Models.QueryImprovement;
+using QueryValidationResult = BIReportingCopilot.Core.Models.QueryValidationResult;
 
 namespace BIReportingCopilot.Infrastructure.AI.Analysis;
 
@@ -59,7 +67,7 @@ public class QueryOptimizer : IQueryOptimizer
             {
                 Sql = optimizedSql,
                 Explanation = GenerateExplanation(bestCandidate, optimizedSql),
-                ConfidenceScore = bestCandidate.Score,
+                ConfidenceScore = bestCandidate.ConfidenceScore,
                 Alternatives = scoredCandidates.Where(c => c != bestCandidate).Take(3).ToList(),
                 OptimizationApplied = GetAppliedOptimizations(bestCandidate.Sql, optimizedSql),
                 PerformancePrediction = performancePrediction
@@ -88,10 +96,11 @@ public class QueryOptimizer : IQueryOptimizer
             candidates.Add(new SqlCandidate
             {
                 Sql = primarySql,
-                Score = 0.8, // High initial score for primary candidate
-                Reasoning = "Primary candidate generated with full context",
-                Strengths = new List<string> { "Uses semantic analysis", "Schema-aware" },
-                Weaknesses = new List<string>()
+                ConfidenceScore = 0.8, // High initial score for primary candidate
+                Explanation = "Primary candidate generated with full context",
+                RequiredTables = schema.RelevantTables.Select(t => t.Name).ToList(),
+                EstimatedComplexity = QueryComplexity.Medium,
+                EstimatedExecutionTime = TimeSpan.FromMilliseconds(500)
             });
 
             // Generate alternative candidates with different approaches
@@ -103,10 +112,11 @@ public class QueryOptimizer : IQueryOptimizer
                     candidates.Add(new SqlCandidate
                     {
                         Sql = aggregationSql,
-                        Score = 0.7,
-                        Reasoning = "Optimized for aggregation operations",
-                        Strengths = new List<string> { "Efficient aggregation", "Proper grouping" },
-                        Weaknesses = new List<string> { "May be less flexible" }
+                        ConfidenceScore = 0.7,
+                        Explanation = "Optimized for aggregation operations",
+                        RequiredTables = schema.RelevantTables.Select(t => t.Name).ToList(),
+                        EstimatedComplexity = QueryComplexity.Medium,
+                        EstimatedExecutionTime = TimeSpan.FromMilliseconds(400)
                     });
                 }
             }
@@ -119,10 +129,11 @@ public class QueryOptimizer : IQueryOptimizer
                     candidates.Add(new SqlCandidate
                     {
                         Sql = trendSql,
-                        Score = 0.7,
-                        Reasoning = "Optimized for time-series analysis",
-                        Strengths = new List<string> { "Time-based ordering", "Trend analysis" },
-                        Weaknesses = new List<string> { "May require date filtering" }
+                        ConfidenceScore = 0.7,
+                        Explanation = "Optimized for time-series analysis",
+                        RequiredTables = schema.RelevantTables.Select(t => t.Name).ToList(),
+                        EstimatedComplexity = QueryComplexity.Medium,
+                        EstimatedExecutionTime = TimeSpan.FromMilliseconds(600)
                     });
                 }
             }
@@ -136,10 +147,11 @@ public class QueryOptimizer : IQueryOptimizer
                     candidates.Add(new SqlCandidate
                     {
                         Sql = simplifiedSql,
-                        Score = 0.6,
-                        Reasoning = "Simplified version for better performance",
-                        Strengths = new List<string> { "Better performance", "Simpler structure" },
-                        Weaknesses = new List<string> { "May be less comprehensive" }
+                        ConfidenceScore = 0.6,
+                        Explanation = "Simplified version for better performance",
+                        RequiredTables = schema.RelevantTables.Take(3).Select(t => t.Name).ToList(),
+                        EstimatedComplexity = QueryComplexity.Low,
+                        EstimatedExecutionTime = TimeSpan.FromMilliseconds(300)
                     });
                 }
             }
@@ -158,12 +170,180 @@ public class QueryOptimizer : IQueryOptimizer
                 new SqlCandidate
                 {
                     Sql = fallbackSql,
-                    Score = 0.5,
-                    Reasoning = "Fallback candidate due to error",
-                    Strengths = new List<string> { "Basic functionality" },
-                    Weaknesses = new List<string> { "Limited optimization" }
+                    ConfidenceScore = 0.5,
+                    Explanation = "Fallback candidate due to error",
+                    RequiredTables = new List<string>(),
+                    EstimatedComplexity = QueryComplexity.Medium,
+                    EstimatedExecutionTime = TimeSpan.FromMilliseconds(1000)
                 }
             };
+        }
+    }
+
+    public Task<QueryPerformanceAnalysis> AnalyzePerformanceAsync(string sql)
+    {
+        try
+        {
+            var analysis = new QueryPerformanceAnalysis
+            {
+                EstimatedExecutionTime = EstimateExecutionTime(AnalyzeQueryComplexity(sql), sql),
+                PerformanceIssues = GeneratePerformanceWarnings(sql),
+                OptimizationSuggestions = GenerateIndexRecommendations(sql, null),
+                Confidence = 0.8
+            };
+
+            return Task.FromResult(analysis);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error analyzing query performance");
+            return Task.FromResult(new QueryPerformanceAnalysis
+            {
+                EstimatedExecutionTime = TimeSpan.FromSeconds(1),
+                PerformanceIssues = new List<string> { "Unable to analyze performance" },
+                OptimizationSuggestions = new List<string>(),
+                Confidence = 0.5
+            });
+        }
+    }
+
+    public Task<List<QueryImprovement>> SuggestImprovementsAsync(string sql)
+    {
+        try
+        {
+            var improvements = new List<QueryImprovement>();
+
+            // Check for SELECT *
+            if (sql.Contains("SELECT *", StringComparison.OrdinalIgnoreCase))
+            {
+                improvements.Add(new QueryImprovement
+                {
+                    OriginalQuery = sql,
+                    ImprovedQuery = sql.Replace("SELECT *", "SELECT [specific columns]"),
+                    Suggestions = new List<ImprovementSuggestion>
+                    {
+                        new ImprovementSuggestion
+                        {
+                            Type = "Column Selection",
+                            Description = "Using SELECT * can impact performance",
+                            Example = "Select only the columns you need",
+                            Impact = 0.7
+                        }
+                    },
+                    ImprovementScore = 0.7,
+                    Reasoning = "Using SELECT * can impact performance"
+                });
+            }
+
+            // Check for missing WHERE clause
+            if (!sql.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
+            {
+                improvements.Add(new QueryImprovement
+                {
+                    OriginalQuery = sql,
+                    ImprovedQuery = sql + " WHERE [add filter conditions]",
+                    Suggestions = new List<ImprovementSuggestion>
+                    {
+                        new ImprovementSuggestion
+                        {
+                            Type = "Filtering",
+                            Description = "Query may return large result set",
+                            Example = "Add WHERE clause to filter results",
+                            Impact = 0.8
+                        }
+                    },
+                    ImprovementScore = 0.8,
+                    Reasoning = "Query may return large result set without filtering"
+                });
+            }
+
+            // Check for ORDER BY without LIMIT
+            if (sql.Contains("ORDER BY", StringComparison.OrdinalIgnoreCase) &&
+                !sql.Contains("LIMIT", StringComparison.OrdinalIgnoreCase))
+            {
+                improvements.Add(new QueryImprovement
+                {
+                    OriginalQuery = sql,
+                    ImprovedQuery = sql + " LIMIT 1000",
+                    Suggestions = new List<ImprovementSuggestion>
+                    {
+                        new ImprovementSuggestion
+                        {
+                            Type = "Result Limiting",
+                            Description = "ORDER BY without LIMIT can be inefficient",
+                            Example = "Add LIMIT clause to restrict result size",
+                            Impact = 0.6
+                        }
+                    },
+                    ImprovementScore = 0.6,
+                    Reasoning = "ORDER BY without LIMIT can be inefficient for large datasets"
+                });
+            }
+
+            return Task.FromResult(improvements);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error suggesting improvements");
+            return Task.FromResult(new List<QueryImprovement>());
+        }
+    }
+
+    public Task<QueryValidationResult> ValidateQueryAsync(string sql, SchemaMetadata schema)
+    {
+        try
+        {
+            var result = new QueryValidationResult
+            {
+                IsValid = true,
+                Errors = new List<string>(),
+                Warnings = new List<string>(),
+                Suggestions = new List<string>()
+            };
+
+            // Basic SQL validation
+            if (string.IsNullOrWhiteSpace(sql))
+            {
+                result.IsValid = false;
+                result.Errors.Add("SQL query cannot be empty");
+                return Task.FromResult(result);
+            }
+
+            // Check for basic SQL structure
+            if (!sql.Contains("SELECT", StringComparison.OrdinalIgnoreCase))
+            {
+                result.IsValid = false;
+                result.Errors.Add("Query must contain SELECT statement");
+            }
+
+            // Check for potential SQL injection patterns
+            var dangerousPatterns = new[] { "DROP", "DELETE", "TRUNCATE", "ALTER", "CREATE", "INSERT", "UPDATE" };
+            foreach (var pattern in dangerousPatterns)
+            {
+                if (sql.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                {
+                    result.Warnings.Add($"Potentially dangerous SQL keyword detected: {pattern}");
+                }
+            }
+
+            // Performance suggestions
+            if (sql.Contains("SELECT *", StringComparison.OrdinalIgnoreCase))
+            {
+                result.Suggestions.Add("Consider selecting specific columns instead of *");
+            }
+
+            return Task.FromResult(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating query");
+            return Task.FromResult(new QueryValidationResult
+            {
+                IsValid = false,
+                Errors = new List<string> { $"Validation error: {ex.Message}" },
+                Warnings = new List<string>(),
+                Suggestions = new List<string>()
+            });
         }
     }
 
@@ -263,9 +443,9 @@ public class QueryOptimizer : IQueryOptimizer
             var qualityScore = AnalyzeSqlQuality(candidate.Sql);
             confidence = (confidence + qualityScore) / 2;
 
-            candidate.Score = confidence;
+            candidate.ConfidenceScore = confidence;
 
-            // Update strengths and weaknesses based on analysis
+            // Update candidate analysis
             UpdateCandidateAnalysis(candidate);
 
             return candidate;
@@ -570,30 +750,30 @@ public class QueryOptimizer : IQueryOptimizer
 
     private void UpdateCandidateAnalysis(SqlCandidate candidate)
     {
+        // Analysis is now handled through the ConfidenceScore and Explanation properties
+        // Additional analysis can be added to the Explanation if needed
         var sql = candidate.Sql;
+        var analysisNotes = new List<string>();
 
-        // Update strengths
         if (sql.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
-            candidate.Strengths.Add("Includes filtering");
+            analysisNotes.Add("includes filtering");
         if (sql.Contains("ORDER BY", StringComparison.OrdinalIgnoreCase))
-            candidate.Strengths.Add("Results are ordered");
+            analysisNotes.Add("results are ordered");
         if (!sql.Contains("SELECT *", StringComparison.OrdinalIgnoreCase))
-            candidate.Strengths.Add("Specific column selection");
+            analysisNotes.Add("specific column selection");
 
-        // Update weaknesses
-        if (CountJoins(sql) > 3)
-            candidate.Weaknesses.Add("Complex joins may impact performance");
-        if (!sql.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
-            candidate.Weaknesses.Add("No filtering - may return large dataset");
+        if (analysisNotes.Any())
+        {
+            candidate.Explanation += $" ({string.Join(", ", analysisNotes)})";
+        }
     }
 
     private string GenerateExplanation(SqlCandidate bestCandidate, string optimizedSql)
     {
-        var explanation = $"Selected query based on: {bestCandidate.Reasoning}\n";
-        explanation += $"Confidence Score: {bestCandidate.Score:F2}\n";
+        var explanation = $"Selected query based on: {bestCandidate.Explanation}\n";
+        explanation += $"Confidence Score: {bestCandidate.ConfidenceScore:F2}\n";
 
-        if (bestCandidate.Strengths.Any())
-            explanation += $"Strengths: {string.Join(", ", bestCandidate.Strengths)}\n";
+        explanation += $"Required Tables: {string.Join(", ", bestCandidate.RequiredTables)}\n";
 
         if (optimizedSql != bestCandidate.Sql)
             explanation += "Additional optimizations were applied for better performance.";

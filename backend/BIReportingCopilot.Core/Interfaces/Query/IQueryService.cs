@@ -15,6 +15,20 @@ public interface IQueryService
     Task<QueryResult> GetCachedQueryResultAsync(string cacheKey, CancellationToken cancellationToken = default);
     Task SaveQueryResultAsync(string cacheKey, QueryResult result, TimeSpan? expiry = null, CancellationToken cancellationToken = default);
     Task<QueryPerformanceMetrics> GetPerformanceMetricsAsync(CancellationToken cancellationToken = default);
+
+    // Methods expected by Infrastructure services
+    Task<QueryResponse> ProcessQueryAsync(QueryRequest request, CancellationToken cancellationToken = default);
+    Task<bool> SubmitFeedbackAsync(string queryId, string feedback, CancellationToken cancellationToken = default);
+    Task<List<QuerySuggestion>> GetQuerySuggestionsAsync(string partialQuery, CancellationToken cancellationToken = default);
+    Task<QueryResult?> GetCachedQueryAsync(string cacheKey, CancellationToken cancellationToken = default);
+    Task CacheQueryAsync(string cacheKey, QueryResult result, CancellationToken cancellationToken = default);
+    Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(CancellationToken cancellationToken = default);
+    Task<List<QuerySuggestion>> GetSmartSuggestionsAsync(string query, CancellationToken cancellationToken = default);
+    Task<QueryResult> OptimizeQueryAsync(string query, CancellationToken cancellationToken = default);
+    Task InvalidateQueryCacheAsync(string pattern, CancellationToken cancellationToken = default);
+    Task<QueryResult> ProcessAdvancedQueryAsync(QueryRequest request, CancellationToken cancellationToken = default);
+    Task<double> CalculateSemanticSimilarityAsync(string query1, string query2, CancellationToken cancellationToken = default);
+    Task<List<QueryHistoryEntity>> FindSimilarQueriesAsync(string query, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -117,8 +131,12 @@ public class QueryPerformanceMetrics
     public double P99ExecutionTime { get; set; }
     public int SuccessfulQueries { get; set; }
     public int FailedQueries { get; set; }
-    public double SuccessRate => TotalQueries > 0 ? (double)SuccessfulQueries / TotalQueries : 0;
+    public double SuccessRate { get; set; }
     public DateTime LastUpdated { get; set; }
+
+    // Properties expected by Infrastructure services
+    public double CacheHitRate { get; set; }
+    public double ErrorRate { get; set; }
 }
 
 // =============================================================================
@@ -188,6 +206,9 @@ public interface ISchemaService
     Task RefreshSchemaAsync(CancellationToken cancellationToken = default);
     Task<List<string>> GetTableNamesAsync(CancellationToken cancellationToken = default);
     Task<List<string>> GetColumnNamesAsync(string tableName, CancellationToken cancellationToken = default);
+
+    // Method expected by Infrastructure services
+    Task<SchemaMetadata> GetSchemaMetadataAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

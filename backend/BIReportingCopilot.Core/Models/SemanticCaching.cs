@@ -250,3 +250,60 @@ public class SemanticCacheResult
     public string CacheStrategy { get; set; } = "vector";
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
+
+/// <summary>
+/// Semantic cache entry (alias for compatibility)
+/// </summary>
+public class SemanticCacheEntry : EnhancedSemanticCacheEntry
+{
+    /// <summary>
+    /// Serialized response data
+    /// </summary>
+    public string SerializedResponse { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Semantic cache statistics
+/// </summary>
+public class SemanticCacheStatistics
+{
+    /// <summary>
+    /// Total number of cache entries
+    /// </summary>
+    public long TotalEntries { get; set; }
+
+    /// <summary>
+    /// Cache hit count
+    /// </summary>
+    public long HitCount { get; set; }
+
+    /// <summary>
+    /// Cache miss count
+    /// </summary>
+    public long MissCount { get; set; }
+
+    /// <summary>
+    /// Cache hit rate (0.0 to 1.0)
+    /// </summary>
+    public double HitRate => (HitCount + MissCount) > 0 ? (double)HitCount / (HitCount + MissCount) : 0.0;
+
+    /// <summary>
+    /// Total size in bytes
+    /// </summary>
+    public long TotalSizeBytes { get; set; }
+
+    /// <summary>
+    /// Average similarity score
+    /// </summary>
+    public double AverageSimilarityScore { get; set; }
+
+    /// <summary>
+    /// Last updated timestamp
+    /// </summary>
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Performance metrics
+    /// </summary>
+    public Dictionary<string, object> PerformanceMetrics { get; set; } = new();
+}

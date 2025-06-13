@@ -139,7 +139,7 @@ public class NotificationManagementService : IEmailService, ISmsService
     /// <summary>
     /// Send SMS asynchronously (ISmsService interface)
     /// </summary>
-    async Task<bool> ISmsService.SendAsync(string phoneNumber, string message)
+    public async Task<bool> SendAsync(string phoneNumber, string message)
     {
         return await SendSmsAsync(phoneNumber, message);
     }

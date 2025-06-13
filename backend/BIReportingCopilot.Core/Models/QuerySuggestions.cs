@@ -97,6 +97,14 @@ public class QuerySuggestion
 
     public decimal Relevance { get; set; } = 0.8m; // Added missing property for NLU service compatibility
 
+    // Properties expected by Infrastructure services
+    public string Query { get; set; } = string.Empty;
+    public List<string> Keywords { get; set; } = new();
+    public List<string> RequiredTables { get; set; } = new();
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public double Confidence { get; set; } = 0.8;
+    public string Source { get; set; } = "manual";
+
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
     [Required]

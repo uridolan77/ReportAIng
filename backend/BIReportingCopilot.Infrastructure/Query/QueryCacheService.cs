@@ -241,6 +241,129 @@ public class QueryCacheService : IQueryCacheService
     }
 
     #endregion
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Get cached value (IQueryCacheService interface)
+    /// </summary>
+    public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default) where T : class
+    {
+        try
+        {
+            return await _cacheService.GetAsync<T>(key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cached value for key: {Key}", key);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Set cached value (IQueryCacheService interface)
+    /// </summary>
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken cancellationToken = default) where T : class
+    {
+        try
+        {
+            await _cacheService.SetAsync(key, value, expiry);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting cached value for key: {Key}", key);
+        }
+    }
+
+    /// <summary>
+    /// Remove cached value (IQueryCacheService interface)
+    /// </summary>
+    public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _cacheService.RemoveAsync(key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing cached value for key: {Key}", key);
+        }
+    }
+
+    /// <summary>
+    /// Remove cached values by pattern (IQueryCacheService interface)
+    /// </summary>
+    public async Task RemovePatternAsync(string pattern, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await InvalidateByPatternAsync(pattern);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing cached values by pattern: {Pattern}", pattern);
+        }
+    }
+
+    /// <summary>
+    /// Check if key exists (IQueryCacheService interface)
+    /// </summary>
+    public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _cacheService.ExistsAsync(key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking if key exists: {Key}", key);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Clear all cached values (IQueryCacheService interface)
+    /// </summary>
+    public async Task ClearAllAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _cacheService.ClearAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error clearing all cached values");
+        }
+    }
+
+    /// <summary>
+    /// Get cache statistics (IQueryCacheService interface)
+    /// </summary>
+    public async Task<BIReportingCopilot.Core.Interfaces.Query.CacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var stats = await GetCacheStatisticsAsync();
+            return new BIReportingCopilot.Core.Interfaces.Query.CacheStatistics
+            {
+                TotalKeys = stats.TotalSemanticEntries,
+                HitCount = stats.SemanticCacheHits,
+                MissCount = stats.SemanticCacheMisses,
+                MemoryUsage = 0, // Not available in current implementation
+                LastUpdated = stats.LastUpdated
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cache statistics");
+            return new BIReportingCopilot.Core.Interfaces.Query.CacheStatistics
+            {
+                LastUpdated = DateTime.UtcNow
+            };
+        }
+    }
+
+    #endregion
 }
 
 /// <summary>

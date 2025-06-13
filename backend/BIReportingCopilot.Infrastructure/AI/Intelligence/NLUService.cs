@@ -6,6 +6,7 @@ using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.QuerySuggestions;
 using System.Text.RegularExpressions;
+using QueryImprovement = BIReportingCopilot.Core.Models.QueryImprovement;
 
 namespace BIReportingCopilot.Infrastructure.AI.Intelligence;
 
@@ -824,4 +825,115 @@ public class NLUService : IAdvancedNLUService
             throw;
         }
     }
+
+    #region Missing Interface Method Implementation
+
+    /// <summary>
+    /// Process advanced NLU (IAdvancedNLUService interface)
+    /// </summary>
+    public async Task<AdvancedNLUResult> ProcessAdvancedAsync(string text, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🧠 Processing advanced NLU for text: {Text}", text);
+
+            // Use the existing comprehensive analysis method
+            var result = await AnalyzeQueryAsync(text, "system", null);
+
+            _logger.LogInformation("✅ Advanced NLU processing completed with confidence: {Confidence}", result.ConfidenceScore);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error processing advanced NLU");
+            return new AdvancedNLUResult
+            {
+                OriginalQuery = text,
+                NormalizedQuery = text,
+                Language = "en",
+                ConfidenceScore = 0.1,
+                ProcessingMetrics = new NLUProcessingMetrics
+                {
+                    ProcessingTime = TimeSpan.FromMilliseconds(50),
+                    ComponentsUsed = new List<string> { "ErrorHandler" },
+                    CacheHits = 0
+                },
+                Timestamp = DateTime.UtcNow,
+                SemanticStructure = new SemanticStructure
+                {
+                    Tokens = new List<SemanticToken>(),
+                    Phrases = new List<SemanticPhrase>(),
+                    Relations = new List<SemanticRelation>(),
+                    KeyConcepts = new List<string>(),
+                    ComplexityAnalysis = new QueryComplexityAnalysis
+                    {
+                        Score = 0.1,
+                        Level = ComplexityLevel.Simple,
+                        Factors = new List<ComplexityFactor>()
+                    }
+                },
+                IntentAnalysis = new IntentAnalysis
+                {
+                    PrimaryIntent = "Unknown",
+                    Confidence = 0.1,
+                    Category = IntentCategory.Other,
+                    SubIntents = new List<string>(),
+                    AlternativeIntents = new List<IntentCandidate>()
+                },
+                EntityAnalysis = new EntityAnalysis
+                {
+                    Entities = new List<ExtractedEntity>(),
+                    OverallConfidence = 0.1,
+                    MissingEntities = new List<string>()
+                },
+                ContextualAnalysis = new ContextualAnalysis
+                {
+                    TemporalContext = new TemporalContext
+                    {
+                        References = new List<string>(),
+                        TimeFrame = "unspecified",
+                        IsRelative = false
+                    },
+                    UserContext = new UserContext
+                    {
+                        UserId = "system",
+                        Preferences = new Dictionary<string, object>(),
+                        SessionData = new Dictionary<string, object>()
+                    },
+                    ConversationContext = new ConversationContext
+                    {
+                        RecentQueries = new List<string>(),
+                        CurrentTopic = "error",
+                        MentionedEntities = new List<string>()
+                    },
+                    ContextualClues = new List<ContextualClue>(),
+                    Relevance = 0.1m
+                },
+                DomainAnalysis = new DomainAnalysis
+                {
+                    PrimaryDomain = "error",
+                    SecondaryDomains = new List<string>(),
+                    DomainConfidence = 0.1,
+                    DomainConcepts = new List<DomainConcept>(),
+                    BusinessContext = new BusinessContext
+                    {
+                        Industry = "unknown",
+                        BusinessProcesses = new List<string>()
+                    }
+                },
+                Recommendations = new List<NLURecommendation>
+                {
+                    new NLURecommendation
+                    {
+                        Type = RecommendationType.Error,
+                        Message = "Error processing query",
+                        Priority = RecommendationPriority.High,
+                        ActionSuggestion = "Please try rephrasing your query"
+                    }
+                }
+            };
+        }
+    }
+
+    #endregion
 }

@@ -10,6 +10,7 @@ using BIReportingCopilot.Infrastructure.Data.Contexts;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using IContextManager = BIReportingCopilot.Core.Interfaces.IContextManager;
 
 namespace BIReportingCopilot.Infrastructure.AI.Management;
 
@@ -230,6 +231,48 @@ public class PromptManagementService : IContextManager
             {
                 RelevantTables = fullSchema.Tables.Take(3).ToList()
             };
+        }
+    }
+
+    public async Task UpdateUserContextAsync(string userId, UserContext context)
+    {
+        try
+        {
+            var cacheKey = $"user_context:{userId}";
+            await _cacheService.SetAsync(cacheKey, context, TimeSpan.FromHours(6));
+            _logger.LogDebug("Updated user context for {UserId}", userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user context for user {UserId}", userId);
+        }
+    }
+
+    public async Task CacheSchemaContextAsync(string query, SchemaContext context)
+    {
+        try
+        {
+            var cacheKey = $"schema_context:{query.GetHashCode()}";
+            await _cacheService.SetAsync(cacheKey, context, TimeSpan.FromHours(2));
+            _logger.LogDebug("Cached schema context for query");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error caching schema context");
+        }
+    }
+
+    public async Task<SchemaContext?> GetCachedSchemaContextAsync(string query)
+    {
+        try
+        {
+            var cacheKey = $"schema_context:{query.GetHashCode()}";
+            return await _cacheService.GetAsync<SchemaContext>(cacheKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cached schema context");
+            return null;
         }
     }
 
@@ -1054,4 +1097,189 @@ public class PromptManagementService : IContextManager
 
         return QueryIntent.General;
     }
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Create prompt template (IPromptManagementService interface)
+    /// </summary>
+    public async Task<PromptTemplate> CreatePromptTemplateAsync(PromptTemplate request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🎯 Creating prompt template: {Name}", request.Name);
+
+            var template = new PromptTemplate
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = request.Name,
+                Description = request.Description,
+                Content = request.Content,
+                Category = "General",
+                Tags = new List<string>(),
+                Variables = ExtractVariablesFromContent(request.Content ?? ""),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = "system",
+                IsActive = true,
+                Version = 1,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["source"] = "user_created",
+                    ["optimization_level"] = "basic"
+                }
+            };
+
+            // Store in cache for quick access
+            var cacheKey = $"prompt_template:{template.Id}";
+            await _cacheService.SetAsync(cacheKey, template, TimeSpan.FromHours(24));
+
+            _logger.LogInformation("✅ Prompt template created: {TemplateId}", template.Id);
+            return template;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error creating prompt template");
+            return new PromptTemplate
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = request.Name,
+                Description = "Error creating template",
+                Content = request.Content,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = false
+            };
+        }
+    }
+
+    /// <summary>
+    /// Get prompt templates (IPromptManagementService interface)
+    /// </summary>
+    public async Task<List<PromptTemplate>> GetPromptTemplatesAsync(string? category = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("📚 Getting prompt templates for category: {Category}", category ?? "all");
+
+            // In a real implementation, this would query from database
+            var templates = new List<PromptTemplate>
+            {
+                new PromptTemplate
+                {
+                    Id = "default_sql",
+                    Name = "SQL Generation",
+                    Description = "Generate SQL queries from natural language",
+                    Content = "Generate a SQL query for: {query}\nSchema context: {schema}\nUser preferences: {preferences}",
+                    Category = "SQL",
+                    Tags = new List<string> { "sql", "generation", "query" },
+                    Variables = new List<string> { "query", "schema", "preferences" },
+                    CreatedAt = DateTime.UtcNow.AddDays(-30),
+                    IsActive = true,
+                    Version = 1
+                },
+                new PromptTemplate
+                {
+                    Id = "insight_generation",
+                    Name = "Insight Generation",
+                    Description = "Generate insights from query results",
+                    Content = "Analyze the following data and provide insights: {data}\nQuery context: {query}\nBusiness context: {business_context}",
+                    Category = "Insights",
+                    Tags = new List<string> { "insights", "analysis", "business" },
+                    Variables = new List<string> { "data", "query", "business_context" },
+                    CreatedAt = DateTime.UtcNow.AddDays(-20),
+                    IsActive = true,
+                    Version = 1
+                }
+            };
+
+            if (!string.IsNullOrEmpty(category))
+            {
+                templates = templates.Where(t => t.Category.Equals(category, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            return templates;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting prompt templates");
+            return new List<PromptTemplate>();
+        }
+    }
+
+    /// <summary>
+    /// Get context async (IContextManager interface)
+    /// </summary>
+    public async Task<Dictionary<string, object>> GetContextAsync(string contextKey, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("📋 Getting context for key: {ContextKey}", contextKey);
+
+            var cacheKey = $"context:{contextKey}";
+            var cachedContext = await _cacheService.GetAsync<Dictionary<string, object>>(cacheKey);
+
+            if (cachedContext != null)
+            {
+                return cachedContext;
+            }
+
+            // Return default context if not found
+            return new Dictionary<string, object>
+            {
+                ["contextKey"] = contextKey,
+                ["timestamp"] = DateTime.UtcNow,
+                ["source"] = "default"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting context for key: {ContextKey}", contextKey);
+            return new Dictionary<string, object>();
+        }
+    }
+
+    /// <summary>
+    /// Set context async (IContextManager interface)
+    /// </summary>
+    public async Task SetContextAsync(string contextKey, Dictionary<string, object> context, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("💾 Setting context for key: {ContextKey}", contextKey);
+
+            var cacheKey = $"context:{contextKey}";
+            context["lastUpdated"] = DateTime.UtcNow;
+
+            await _cacheService.SetAsync(cacheKey, context, TimeSpan.FromHours(6));
+
+            _logger.LogDebug("✅ Context set successfully for key: {ContextKey}", contextKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error setting context for key: {ContextKey}", contextKey);
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods for Interface Implementations
+
+    private List<string> ExtractVariablesFromContent(string content)
+    {
+        var variables = new List<string>();
+        var regex = new Regex(@"\{(\w+)\}", RegexOptions.IgnoreCase);
+        var matches = regex.Matches(content);
+
+        foreach (Match match in matches)
+        {
+            if (match.Groups.Count > 1)
+            {
+                variables.Add(match.Groups[1].Value);
+            }
+        }
+
+        return variables.Distinct().ToList();
+    }
+
+    #endregion
 }

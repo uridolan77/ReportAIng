@@ -147,7 +147,7 @@ public class StreamingQueryResult : IAsyncEnumerable<Dictionary<string, object>>
     }
 }
 
-public class StreamingSqlQueryService : IStreamingSqlQueryService
+public class StreamingSqlQueryService : IStreamingSqlQueryService, ISqlQueryService
 {
     private readonly ISqlQueryService _innerService;
     private readonly string _connectionString;
@@ -332,6 +332,93 @@ public class StreamingSqlQueryService : IStreamingSqlQueryService
 
     public Task<List<string>> GetAvailableDataSourcesAsync()
         => _innerService.GetAvailableDataSourcesAsync();
+
+    #region Missing ISqlQueryService Interface Methods
+
+    /// <summary>
+    /// Execute query async (ISqlQueryService interface)
+    /// </summary>
+    public async Task<QueryResult> ExecuteQueryAsync(string sql, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteSelectQueryAsync(sql, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Validate query async (ISqlQueryService interface)
+    /// </summary>
+    public async Task<bool> ValidateQueryAsync(string sql, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await ValidateSqlAsync(sql);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error validating SQL: {Sql}", sql);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Get query metadata async (ISqlQueryService interface)
+    /// </summary>
+    public async Task<QueryMetadata> GetQueryMetadataAsync(string sql, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var streamingMetadata = await GetStreamingQueryMetadataAsync(sql, null, cancellationToken);
+
+            return new QueryMetadata
+            {
+                Columns = streamingMetadata.Columns,
+                EstimatedRowCount = (int)Math.Min(streamingMetadata.EstimatedRowCount, int.MaxValue),
+                QueryComplexity = streamingMetadata.QueryComplexity,
+                SupportsStreaming = streamingMetadata.SupportsStreaming,
+                RequiredTables = ExtractTableNames(sql),
+                EstimatedExecutionTime = TimeSpan.FromSeconds(1) // Default estimate
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting query metadata for SQL: {Sql}", sql);
+            return new QueryMetadata
+            {
+                Columns = new List<ColumnMetadata>(),
+                EstimatedRowCount = 0,
+                QueryComplexity = "Error",
+                SupportsStreaming = false,
+                RequiredTables = new List<string>(),
+                EstimatedExecutionTime = TimeSpan.Zero
+            };
+        }
+    }
+
+    private List<string> ExtractTableNames(string sql)
+    {
+        var tables = new List<string>();
+        try
+        {
+            // Simple table name extraction - in production, use a proper SQL parser
+            var lowerSql = sql.ToLowerInvariant();
+            var fromIndex = lowerSql.IndexOf("from ");
+            if (fromIndex >= 0)
+            {
+                var afterFrom = sql.Substring(fromIndex + 5).Trim();
+                var words = afterFrom.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                if (words.Length > 0)
+                {
+                    tables.Add(words[0].Trim('[', ']', '`', '"'));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not extract table names from SQL");
+        }
+        return tables;
+    }
+
+    #endregion
 
     public async IAsyncEnumerable<StreamingQueryChunk> ExecuteSelectQueryWithBackpressureAsync(
         string sql,

@@ -136,6 +136,16 @@ public class AutoGenerationRequest
     public bool OverwriteExisting { get; set; } = false;
     public double MinimumConfidenceThreshold { get; set; } = 0.6;
     public bool MockMode { get; set; } = false;
+
+    // Property expected by Infrastructure services (alias for AnalyzeRelationships)
+    /// <summary>
+    /// Whether to generate relationships (alias for AnalyzeRelationships)
+    /// </summary>
+    public bool GenerateRelationships
+    {
+        get => AnalyzeRelationships;
+        set => AnalyzeRelationships = value;
+    }
 }
 
 /// <summary>

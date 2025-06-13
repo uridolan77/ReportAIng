@@ -543,4 +543,152 @@ public class MultiModalDashboardService : IMultiModalDashboardService
     {
         return Task.FromResult(Array.Empty<byte>());
     }
+
+    #region Missing Interface Method Implementation
+
+    /// <summary>
+    /// Create dashboard (IMultiModalDashboardService interface)
+    /// </summary>
+    public async Task<DashboardResult> CreateDashboardAsync(DashboardRequest request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🎨 Creating dashboard from request: {Title}", request.Title);
+
+            // Convert DashboardRequest to CreateDashboardRequest
+            var createRequest = new CreateDashboardRequest
+            {
+                Name = request.Title,
+                Description = request.Description,
+                Category = request.Category ?? "General",
+                Layout = CreateDefaultLayout(),
+                Configuration = new DashboardConfiguration
+                {
+                    Theme = "default",
+                    RefreshInterval = TimeSpan.FromMinutes(5),
+                    EnableAutoRefresh = true,
+                    EnableExport = true,
+                    EnableSharing = true
+                },
+                Tags = request.Tags ?? new List<string>(),
+                IsPublic = request.IsPublic ?? false
+            };
+
+            // Create dashboard using existing method
+            var dashboard = await CreateDashboardAsync(createRequest, request.UserId);
+
+            return new DashboardResult
+            {
+                DashboardId = dashboard.DashboardId,
+                Title = dashboard.Name,
+                Description = dashboard.Description,
+                Status = "Success",
+                CreatedAt = dashboard.CreatedAt,
+                Widgets = dashboard.Widgets.Select(w => new WidgetResult
+                {
+                    WidgetId = w.WidgetId,
+                    Title = w.Title,
+                    Type = w.Type,
+                    Status = "Success"
+                }).ToList(),
+                Metadata = new Dictionary<string, object>
+                {
+                    ["widget_count"] = dashboard.Widgets.Count,
+                    ["category"] = dashboard.Category,
+                    ["is_public"] = dashboard.IsPublic
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error creating dashboard from request");
+            return new DashboardResult
+            {
+                DashboardId = Guid.NewGuid().ToString(),
+                Title = request.Title,
+                Status = "Error",
+                CreatedAt = DateTime.UtcNow,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["error"] = ex.Message
+                }
+            };
+        }
+    }
+
+    #endregion
+
+    #region Missing Interface Method Implementation
+
+    /// <summary>
+    /// Create dashboard (IMultiModalDashboardService interface)
+    /// </summary>
+    Task<DashboardResult> IMultiModalDashboardService.CreateDashboardAsync(DashboardRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogInformation("🎨 Creating dashboard from request: {Title}", request.Title);
+
+            // Convert DashboardRequest to CreateDashboardRequest
+            var createRequest = new CreateDashboardRequest
+            {
+                Name = request.Title,
+                Description = request.Description,
+                Category = request.Category ?? "General",
+                Layout = CreateDefaultLayout(),
+                Configuration = new DashboardConfiguration
+                {
+                    Theme = "default",
+                    RefreshInterval = TimeSpan.FromMinutes(5),
+                    EnableAutoRefresh = true,
+                    EnableExport = true,
+                    EnableSharing = true
+                },
+                Tags = request.Tags ?? new List<string>(),
+                IsPublic = request.IsPublic ?? false
+            };
+
+            // Create dashboard using existing method
+            var dashboard = await CreateDashboardAsync(createRequest, request.UserId);
+
+            return new DashboardResult
+            {
+                DashboardId = dashboard.DashboardId,
+                Title = dashboard.Name,
+                Description = dashboard.Description,
+                Status = "Success",
+                CreatedAt = dashboard.CreatedAt,
+                Widgets = dashboard.Widgets.Select(w => new WidgetResult
+                {
+                    WidgetId = w.WidgetId,
+                    Title = w.Title,
+                    Type = w.Type,
+                    Status = "Success"
+                }).ToList(),
+                Metadata = new Dictionary<string, object>
+                {
+                    ["widget_count"] = dashboard.Widgets.Count,
+                    ["category"] = dashboard.Category,
+                    ["is_public"] = dashboard.IsPublic
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error creating dashboard from request");
+            return new DashboardResult
+            {
+                DashboardId = Guid.NewGuid().ToString(),
+                Title = request.Title,
+                Status = "Error",
+                CreatedAt = DateTime.UtcNow,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["error"] = ex.Message
+                }
+            };
+        }
+    }
+
+    #endregion
 }

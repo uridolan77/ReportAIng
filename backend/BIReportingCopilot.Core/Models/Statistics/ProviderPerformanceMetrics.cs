@@ -89,4 +89,20 @@ public class ProviderPerformanceMetrics
     /// Last update timestamp
     /// </summary>
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Median response time in milliseconds
+    /// </summary>
+    public double MedianResponseTime { get; set; }
+
+    /// <summary>
+    /// 95th percentile response time in milliseconds
+    /// </summary>
+    public double P95ResponseTime { get; set; }
+
+    /// <summary>
+    /// Error distribution by error type
+    /// </summary>
+    public Dictionary<string, int> ErrorsByType { get; set; } = new();
 }

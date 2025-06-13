@@ -61,6 +61,8 @@ public interface IVectorSearchService
     Task<bool> UpdateDocumentAsync(string documentId, string content, Dictionary<string, object>? metadata = null, CancellationToken cancellationToken = default);
     Task<VectorSearchStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default);
     Task<bool> ClearIndexAsync(CancellationToken cancellationToken = default);
+    Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default);
+    Task<string> StoreQueryEmbeddingAsync(string queryId, string query, float[] embedding, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -91,6 +93,11 @@ public interface IAIService
     Task<string> GenerateInsightAsync(string query, object[] data);
     Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
     Task<AIServiceMetrics> GetServiceMetricsAsync(CancellationToken cancellationToken = default);
+
+    // Methods expected by Infrastructure services
+    Task<string> GenerateVisualizationConfigAsync(string query, object[] data, CancellationToken cancellationToken = default);
+    Task<IAsyncEnumerable<string>> GenerateSQLStreamAsync(string prompt, CancellationToken cancellationToken = default);
+    Task<IAsyncEnumerable<string>> GenerateInsightStreamAsync(string query, object[] data, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

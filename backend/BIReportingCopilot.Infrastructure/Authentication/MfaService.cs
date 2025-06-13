@@ -767,4 +767,33 @@ public class MfaService : IMfaService
             return false;
         }
     }
+
+    /// <summary>
+    /// Validate TOTP code
+    /// </summary>
+    public async Task<bool> ValidateTotpAsync(string userId, string code, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null || string.IsNullOrEmpty(user.MfaSecret))
+                return false;
+
+            // Basic TOTP validation (in a real implementation, use a proper TOTP library)
+            var isValid = await ValidateTotpCodeAsync(user.MfaSecret, code);
+
+            if (isValid && user != null)
+            {
+                user.LastMfaValidationDate = DateTime.UtcNow;
+                await _userRepository.UpdateUserAsync(user);
+            }
+
+            return isValid;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating TOTP for user {UserId}", userId);
+            return false;
+        }
+    }
 }

@@ -47,4 +47,18 @@ public interface IMfaChallengeRepository
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     Task CleanupExpiredChallengesAsync(CancellationToken cancellationToken = default);
+
+    // Methods expected by Infrastructure services
+    /// <summary>
+    /// Get active challenge for a user with specific method
+    /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="method">MFA method</param>
+    Task<MfaChallenge?> GetActiveChallengeAsync(string userId, MfaMethod method);
+
+    /// <summary>
+    /// Mark challenge as used
+    /// </summary>
+    /// <param name="challengeId">Challenge ID</param>
+    Task<bool> MarkChallengeAsUsedAsync(string challengeId);
 }
