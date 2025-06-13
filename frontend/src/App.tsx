@@ -54,12 +54,7 @@ const TuningPage = lazy(() =>
 const LLMManagementPage = lazy(() =>
   import(/* webpackChunkName: "admin-llm" */ './pages/admin/LLMManagementPage')
 );
-const LLMTestPage = lazy(() =>
-  import(/* webpackChunkName: "admin-llm-test" */ './pages/admin/LLMTestPage')
-);
-const LLMDebugPage = lazy(() =>
-  import(/* webpackChunkName: "admin-llm-debug" */ './pages/admin/LLMDebugPage')
-);
+
 const SchemaManagementPage = lazy(() =>
   import(/* webpackChunkName: "admin-schema" */ './components/SchemaManagement/SchemaManagementDashboard').then(module => ({ default: module.SchemaManagementDashboard }))
 );
@@ -227,8 +222,6 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
                     <>
                       <Route path="/admin/tuning" element={<TuningPage />} />
                       <Route path="/admin/llm" element={<LLMManagementPage />} />
-                      <Route path="/admin/llm-test" element={<LLMTestPage />} />
-                      <Route path="/admin/llm-debug" element={<LLMDebugPage />} />
                       <Route path="/admin/schemas" element={<SchemaManagementPage />} />
                       <Route path="/admin/cache" element={<CacheManagementPage />} />
                       <Route path="/admin/security" element={<SecurityPage />} />
@@ -242,6 +235,8 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
                   <Route path="/advanced-viz" element={<Navigate to="/visualization" replace />} />
                   <Route path="/query" element={<Navigate to="/" replace />} />
                   <Route path="/security" element={<Navigate to="/admin/security" replace />} />
+                  <Route path="/admin/llm-test" element={<Navigate to="/admin/llm" replace />} />
+                  <Route path="/admin/llm-debug" element={<Navigate to="/admin/llm" replace />} />
 
                   {/* Catch all */}
                   <Route path="*" element={<Navigate to="/" replace />} />
