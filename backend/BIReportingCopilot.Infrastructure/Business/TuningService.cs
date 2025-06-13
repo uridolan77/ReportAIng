@@ -2,6 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Business;
+using BIReportingCopilot.Core.Interfaces.Messaging;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
@@ -9,6 +13,7 @@ using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Performance;
 using BIReportingCopilot.Infrastructure.Configuration;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
+using BIReportingCopilot.Infrastructure.Interfaces;
 
 namespace BIReportingCopilot.Infrastructure.Business;
 
@@ -22,7 +27,7 @@ public class TuningService : ITuningService
     private readonly ILogger<TuningService> _logger;
     private readonly IBusinessContextAutoGenerator _autoGenerator;
     private readonly PerformanceManagementService _performanceService;
-    private readonly ISchemaService _schemaService;
+    private readonly Core.Interfaces.Query.ISchemaService _schemaService;
     private readonly ConfigurationService _configurationService;
     private readonly IProgressReporter _progressReporter;
     private readonly ISchemaManagementService _schemaManagementService;
@@ -37,7 +42,7 @@ public class TuningService : ITuningService
         ILogger<TuningService> logger,
         IBusinessContextAutoGenerator autoGenerator,
         PerformanceManagementService performanceService,
-        ISchemaService schemaService,
+        Core.Interfaces.Query.ISchemaService schemaService,
         ConfigurationService configurationService,
         IProgressReporter progressReporter,
         ISchemaManagementService schemaManagementService,

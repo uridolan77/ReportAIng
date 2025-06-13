@@ -404,13 +404,7 @@ public enum IndicatorStatus
     Unknown
 }
 
-public enum TrendDirection
-{
-    Improving,
-    Stable,
-    Degrading,
-    Volatile
-}
+// TrendDirection enum moved to PerformanceModels.cs to avoid duplicates
 
 public enum ComparisonOperator
 {
@@ -430,16 +424,7 @@ public enum LineStyle
     DashDot
 }
 
-public enum ChartType
-{
-    Line,
-    Bar,
-    Pie,
-    Area,
-    Scatter,
-    Gauge,
-    Heatmap
-}
+// ChartType enum moved to Visualization.cs
 
 /// <summary>
 /// Streaming query response

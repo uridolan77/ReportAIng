@@ -3,6 +3,7 @@ using Polly;
 using Polly.CircuitBreaker;
 using BIReportingCopilot.Core.Exceptions;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Models.DTOs;
@@ -206,7 +207,7 @@ public class ResilientQueryService : IQueryService
         }
     }
 
-    public async Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(string queryHash)
+    public async Task<BIReportingCopilot.Core.DTOs.QueryPerformanceMetrics> GetQueryPerformanceAsync(string queryHash)
     {
         try
         {
@@ -215,7 +216,7 @@ public class ResilientQueryService : IQueryService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to get query performance for hash {QueryHash}", queryHash);
-            return new QueryPerformanceMetrics
+            return new BIReportingCopilot.Core.DTOs.QueryPerformanceMetrics
             {
                 QueryHash = queryHash,
                 ExecutionTime = TimeSpan.Zero,

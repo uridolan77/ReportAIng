@@ -2,6 +2,8 @@ using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Text;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.Query;
@@ -11,14 +13,14 @@ namespace BIReportingCopilot.Infrastructure.Query;
 /// </summary>
 public class QueryCacheService : IQueryCacheService
 {
-    private readonly ICacheService _cacheService;
-    private readonly ISemanticCacheService _semanticCacheService;
+    private readonly BIReportingCopilot.Infrastructure.Interfaces.ICacheService _cacheService;
+    private readonly BIReportingCopilot.Core.Interfaces.AI.ISemanticCacheService _semanticCacheService;
     private readonly ILogger<QueryCacheService> _logger;
     private readonly QueryCacheConfiguration _config;
 
     public QueryCacheService(
-        ICacheService cacheService,
-        ISemanticCacheService semanticCacheService,
+        BIReportingCopilot.Infrastructure.Interfaces.ICacheService cacheService,
+        BIReportingCopilot.Core.Interfaces.AI.ISemanticCacheService semanticCacheService,
         ILogger<QueryCacheService> logger)
     {
         _cacheService = cacheService;

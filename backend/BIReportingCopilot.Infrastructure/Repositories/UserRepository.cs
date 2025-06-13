@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
@@ -18,9 +19,9 @@ public class UserRepository : IUserRepository, IUserEntityRepository
 {
     private readonly BICopilotContext _context;
     private readonly ILogger<UserRepository> _logger;
-    private readonly IPasswordHasher _passwordHasher;
+    private readonly Core.Interfaces.Security.IPasswordHasher _passwordHasher;
 
-    public UserRepository(BICopilotContext context, ILogger<UserRepository> logger, IPasswordHasher passwordHasher)
+    public UserRepository(BICopilotContext context, ILogger<UserRepository> logger, Core.Interfaces.Security.IPasswordHasher passwordHasher)
     {
         _context = context;
         _logger = logger;
@@ -340,7 +341,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
     // Password hashing methods moved to IPasswordHasher service
     // Use _passwordHasher.HashPassword() and _passwordHasher.VerifyPassword() instead
 
-    private User MapToModel(UserEntity entity)
+    private User MapToModel(Infrastructure.Data.Entities.UserEntity entity)
     {
         return new User
         {
@@ -366,9 +367,9 @@ public class UserRepository : IUserRepository, IUserEntityRepository
         };
     }
 
-    private UserEntity MapToEntity(User model)
+    private Infrastructure.Data.Entities.UserEntity MapToEntity(User model)
     {
-        return new UserEntity
+        return new Infrastructure.Data.Entities.UserEntity
         {
             Id = model.Id,
             Username = model.Username,
@@ -431,7 +432,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
     /// <summary>
     /// Get user entity by ID (IUserEntityRepository interface)
     /// </summary>
-    public async Task<UserEntity?> GetByIdAsync(Guid userId)
+    public async Task<Infrastructure.Data.Entities.UserEntity?> GetByIdAsync(Guid userId)
     {
         return await GetEntityByIdAsync(userId);
     }
@@ -439,7 +440,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
     /// <summary>
     /// Update user entity (IUserEntityRepository interface)
     /// </summary>
-    public async Task UpdateAsync(UserEntity user)
+    public async Task UpdateAsync(Infrastructure.Data.Entities.UserEntity user)
     {
         try
         {
@@ -459,7 +460,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
     /// <summary>
     /// Get user entity by email (IUserEntityRepository interface)
     /// </summary>
-    async Task<UserEntity?> IUserEntityRepository.GetByEmailAsync(string email)
+    async Task<Infrastructure.Data.Entities.UserEntity?> IUserEntityRepository.GetByEmailAsync(string email)
     {
         return await GetEntityByEmailAsync(email);
     }
@@ -467,7 +468,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
     /// <summary>
     /// Get user entity by username (IUserEntityRepository interface)
     /// </summary>
-    async Task<UserEntity?> IUserEntityRepository.GetByUsernameAsync(string username)
+    async Task<Infrastructure.Data.Entities.UserEntity?> IUserEntityRepository.GetByUsernameAsync(string username)
     {
         return await GetEntityByUsernameAsync(username);
     }
@@ -475,7 +476,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
     /// <summary>
     /// Create user entity (IUserEntityRepository interface)
     /// </summary>
-    public async Task<UserEntity> CreateAsync(UserEntity user)
+    public async Task<Infrastructure.Data.Entities.UserEntity> CreateAsync(Infrastructure.Data.Entities.UserEntity user)
     {
         return await CreateEntityAsync(user);
     }
@@ -553,7 +554,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
         }
     }
 
-    public async Task<UserEntity?> GetEntityByIdAsync(Guid userId)
+    public async Task<Infrastructure.Data.Entities.UserEntity?> GetEntityByIdAsync(Guid userId)
     {
         try
         {
@@ -567,7 +568,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
         }
     }
 
-    public async Task<UserEntity?> GetEntityByUsernameAsync(string username)
+    public async Task<Infrastructure.Data.Entities.UserEntity?> GetEntityByUsernameAsync(string username)
     {
         try
         {
@@ -581,7 +582,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
         }
     }
 
-    public async Task<UserEntity?> GetEntityByEmailAsync(string email)
+    public async Task<Infrastructure.Data.Entities.UserEntity?> GetEntityByEmailAsync(string email)
     {
         try
         {
@@ -595,7 +596,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
         }
     }
 
-    public async Task<UserEntity> CreateEntityAsync(UserEntity entity)
+    public async Task<Infrastructure.Data.Entities.UserEntity> CreateEntityAsync(Infrastructure.Data.Entities.UserEntity entity)
     {
         try
         {
@@ -615,7 +616,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
         }
     }
 
-    public async Task UpdateEntityAsync(UserEntity entity)
+    public async Task UpdateEntityAsync(Infrastructure.Data.Entities.UserEntity entity)
     {
         try
         {

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Monitoring;
 using System.Diagnostics;

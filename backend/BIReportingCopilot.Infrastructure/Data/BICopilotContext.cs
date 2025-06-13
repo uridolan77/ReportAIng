@@ -14,14 +14,14 @@ public class BICopilotContext : DbContext
 
     // Core entities
     public DbSet<SchemaMetadataEntity> SchemaMetadata { get; set; }
-    public DbSet<Core.Models.UnifiedQueryHistoryEntity> QueryHistory { get; set; } // Unified query history
+    public DbSet<Core.Models.QueryHistoryEntity> QueryHistory { get; set; } // Query history
     public DbSet<PromptTemplateEntity> PromptTemplates { get; set; }
     public DbSet<PromptLogEntity> PromptLogs { get; set; }
     public DbSet<AITuningSettingsEntity> AITuningSettings { get; set; }
     public DbSet<QueryCacheEntity> QueryCache { get; set; }
-    public DbSet<UserPreferencesEntity> UserPreferences { get; set; }
+    public DbSet<Infrastructure.Data.Entities.UserPreferencesEntity> UserPreferences { get; set; }
     public DbSet<SystemConfigurationEntity> SystemConfiguration { get; set; }
-    public DbSet<AuditLogEntity> AuditLog { get; set; }
+    public DbSet<Infrastructure.Data.Entities.AuditLogEntity> AuditLog { get; set; }
 
     // AI Tuning entities
     public DbSet<BusinessTableInfoEntity> BusinessTableInfo { get; set; }
@@ -30,19 +30,19 @@ public class BICopilotContext : DbContext
     public DbSet<BusinessGlossaryEntity> BusinessGlossary { get; set; }
 
     // User and session management
-    public DbSet<UserEntity> Users { get; set; }
-    public DbSet<UserSessionEntity> UserSessions { get; set; }
-    public DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
-    public DbSet<MfaChallengeEntity> MfaChallenges { get; set; }
+    public DbSet<Infrastructure.Data.Entities.UserEntity> Users { get; set; }
+    public DbSet<Infrastructure.Data.Entities.UserSessionEntity> UserSessions { get; set; }
+    public DbSet<Infrastructure.Data.Entities.RefreshTokenEntity> RefreshTokens { get; set; }
+    public DbSet<Infrastructure.Data.Entities.MfaChallengeEntity> MfaChallenges { get; set; }
 
     // Analytics and monitoring
     public DbSet<QueryPerformanceEntity> QueryPerformance { get; set; }
     public DbSet<SystemMetricsEntity> SystemMetrics { get; set; }
 
-    // AI Learning and Semantic Cache (Unified Models)
-    public DbSet<Core.Models.UnifiedAIGenerationAttempt> AIGenerationAttempts { get; set; }
-    public DbSet<Core.Models.UnifiedAIFeedbackEntry> AIFeedbackEntries { get; set; }
-    public DbSet<Core.Models.UnifiedSemanticCacheEntry> SemanticCacheEntries { get; set; }
+    // AI Learning and Semantic Cache
+    public DbSet<Core.Models.AIGenerationAttempt> AIGenerationAttempts { get; set; }
+    public DbSet<Core.Models.AIFeedbackEntry> AIFeedbackEntries { get; set; }
+    public DbSet<Core.Models.SemanticCacheEntry> SemanticCacheEntries { get; set; }
 
     // Additional missing DbSets
     public DbSet<SystemMetricsEntity> PerformanceMetrics { get; set; }

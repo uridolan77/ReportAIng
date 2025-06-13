@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Models.DTOs;
@@ -205,7 +206,7 @@ public class SqlQueryService : ISqlQueryService
         }
     }
 
-    public async Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(string sql)
+    public async Task<BIReportingCopilot.Core.DTOs.QueryPerformanceMetrics> GetQueryPerformanceAsync(string sql)
     {
         try
         {
@@ -459,5 +460,58 @@ public class SqlQueryService : ISqlQueryService
         }
 
         return recommendations;
+    }
+
+    // =============================================================================
+    // MISSING INTERFACE METHOD IMPLEMENTATIONS
+    // =============================================================================
+
+    /// <summary>
+    /// Execute query with proper interface signature
+    /// </summary>
+    public async Task<QueryResult> ExecuteQueryAsync(string sql, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteSelectQueryAsync(sql, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Validate query with proper interface signature
+    /// </summary>
+    public async Task<bool> ValidateQueryAsync(string sql, CancellationToken cancellationToken = default)
+    {
+        return await ValidateSqlAsync(sql);
+    }
+
+    /// <summary>
+    /// Get query metadata
+    /// </summary>
+    public async Task<QueryMetadata> GetQueryMetadataAsync(string sql, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // For metadata, we can do a quick validation and structure analysis
+            var isValid = await ValidateQueryAsync(sql, cancellationToken);
+
+            return new QueryMetadata
+            {
+                ColumnCount = 0, // Would need to analyze SQL to determine
+                RowCount = 0,    // Unknown until execution
+                Columns = Array.Empty<ColumnMetadata>(),
+                DataSource = "BIDatabase",
+                QueryTimestamp = DateTime.UtcNow,
+                Error = isValid ? null : "Query validation failed"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting query metadata for SQL: {Sql}", sql);
+            return new QueryMetadata
+            {
+                ColumnCount = 0,
+                RowCount = 0,
+                Columns = Array.Empty<ColumnMetadata>(),
+                Error = ex.Message
+            };
+        }
     }
 }

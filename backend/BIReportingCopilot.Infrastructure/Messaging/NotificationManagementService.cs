@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Messaging;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Infrastructure.Configuration;
 using BIReportingCopilot.Core.Configuration;
 
@@ -153,9 +155,9 @@ public class NotificationManagementService : IEmailService, ISmsService
     /// <summary>
     /// Send SMS asynchronously (ISmsService interface)
     /// </summary>
-    async Task<bool> ISmsService.SendSmsAsync(string phoneNumber, string message)
+    async Task ISmsService.SendSmsAsync(string phoneNumber, string message)
     {
-        return await SendSmsAsync(phoneNumber, message);
+        await SendSmsAsync(phoneNumber, message);
     }
 
     /// <summary>
@@ -415,6 +417,58 @@ public class NotificationManagementService : IEmailService, ISmsService
             result.ErrorMessage = ex.Message;
             return result;
         }
+    }
+
+    #endregion
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Send email with HTML support (IEmailService interface)
+    /// </summary>
+    public async Task SendEmailAsync(string to, string subject, string body, bool isHtml = false)
+    {
+        await SendEmailAsync(to, subject, body);
+    }
+
+    /// <summary>
+    /// Send email to multiple recipients (IEmailService interface)
+    /// </summary>
+    public async Task SendEmailAsync(List<string> recipients, string subject, string body, bool isHtml = false)
+    {
+        foreach (var recipient in recipients)
+        {
+            await SendEmailAsync(recipient, subject, body);
+        }
+    }
+
+    /// <summary>
+    /// Send template email (IEmailService interface)
+    /// </summary>
+    public async Task SendTemplateEmailAsync(string to, string templateName, Dictionary<string, object> templateData)
+    {
+        var subject = templateData.ContainsKey("subject") ? templateData["subject"].ToString() : "Notification";
+        var body = templateData.ContainsKey("body") ? templateData["body"].ToString() : "Template notification";
+        await SendEmailAsync(to, subject!, body!);
+    }
+
+    /// <summary>
+    /// Send bulk SMS (ISmsService interface)
+    /// </summary>
+    public async Task SendBulkSmsAsync(List<string> phoneNumbers, string message)
+    {
+        foreach (var phoneNumber in phoneNumbers)
+        {
+            await SendSmsAsync(phoneNumber, message);
+        }
+    }
+
+    /// <summary>
+    /// Validate phone number (ISmsService interface)
+    /// </summary>
+    public async Task<bool> ValidatePhoneNumberAsync(string phoneNumber)
+    {
+        return await Task.FromResult(IsValidPhoneNumber(phoneNumber));
     }
 
     #endregion

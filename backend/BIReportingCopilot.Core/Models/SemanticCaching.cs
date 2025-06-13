@@ -160,9 +160,9 @@ public class CacheQueryClassification
 }
 
 /// <summary>
-/// Performance metrics for cache entries
+/// Performance metrics for semantic cache entries (specific to semantic caching)
 /// </summary>
-public class CachePerformanceMetrics
+public class SemanticCachePerformanceMetrics
 {
     public TimeSpan OriginalExecutionTime { get; set; }
     public TimeSpan AverageCacheRetrievalTime { get; set; }

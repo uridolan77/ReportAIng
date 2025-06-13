@@ -28,7 +28,7 @@ public class AIConfiguration
     /// <summary>
     /// Dashboard services configuration
     /// </summary>
-    public DashboardConfig Dashboard { get; set; } = new();
+    public AIDashboardConfig Dashboard { get; set; } = new();
 
     /// <summary>
     /// Learning and ML configuration
@@ -128,9 +128,9 @@ public class StreamingConfig
 }
 
 /// <summary>
-/// Dashboard configuration
+/// AI Dashboard configuration (renamed to avoid conflicts)
 /// </summary>
-public class DashboardConfig
+public class AIDashboardConfig
 {
     public bool EnableMultiModalDashboards { get; set; } = true;
     public bool EnableAutoGeneration { get; set; } = true;

@@ -166,8 +166,8 @@ public class TuningDbContext : DbContext
             entity.Property(e => e.UpdatedBy).HasMaxLength(256);
         });
 
-        // Configure Unified AI Learning entities
-        modelBuilder.Entity<UnifiedAIGenerationAttempt>(entity =>
+        // Configure AI Learning entities
+        modelBuilder.Entity<AIGenerationAttempt>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.UserId);

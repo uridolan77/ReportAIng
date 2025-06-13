@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Infrastructure.Interfaces;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Business;
 using BIReportingCopilot.Core.DTOs;
 
 namespace BIReportingCopilot.Infrastructure.Business;
@@ -514,6 +516,143 @@ public class AITuningSettingsService : IAITuningSettingsService
         {
             _logger.LogError(ex, "Error refreshing AI tuning settings cache");
         }
+    }
+
+    #endregion
+
+    #region Missing Interface Methods
+
+    public async Task<AITuningSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var activeSettings = await GetActiveSettingsAsync();
+            return activeSettings ?? new AITuningSettingsDto
+            {
+                Id = 0,
+                SettingKey = "default",
+                SettingValue = "{}",
+                Description = "Default AI tuning settings",
+                Category = "General",
+                DataType = "json",
+                IsActive = true
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting settings");
+            return new AITuningSettingsDto
+            {
+                Id = 0,
+                SettingKey = "error",
+                SettingValue = "{}",
+                Description = "Error retrieving settings",
+                Category = "Error",
+                DataType = "json",
+                IsActive = false
+            };
+        }
+    }
+
+    public async Task<bool> UpdateSettingsAsync(AITuningSettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var updated = await UpdateSettingsAsync(settings.Id.ToString(), settings);
+            return updated != null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating settings");
+            return false;
+        }
+    }
+
+    public async Task<bool> ResetToDefaultsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Get all settings and reset to defaults
+            var allSettings = await GetAllSettingsAsync();
+            foreach (var setting in allSettings)
+            {
+                setting.IsActive = false;
+            }
+
+            // Create default settings
+            var defaultSettings = new AITuningSettingsDto
+            {
+                SettingKey = "default_ai_settings",
+                SettingValue = GetDefaultSettingsJson(),
+                Description = "Default AI tuning settings",
+                Category = "General",
+                DataType = "json",
+                IsActive = true
+            };
+
+            await CreateSettingsAsync(defaultSettings);
+            _logger.LogInformation("Reset AI tuning settings to defaults");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting settings to defaults");
+            return false;
+        }
+    }
+
+    public async Task<AITuningSettingsDto> GetDefaultSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return new AITuningSettingsDto
+            {
+                Id = 0,
+                SettingKey = "default_ai_settings",
+                SettingValue = GetDefaultSettingsJson(),
+                Description = "Default AI tuning settings",
+                Category = "General",
+                DataType = "json",
+                IsActive = true
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting default settings");
+            throw;
+        }
+    }
+
+    public async Task<bool> ValidateSettingsAsync(AITuningSettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await ValidateSettingsAsync(settings);
+            return result.IsValid;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating settings");
+            return false;
+        }
+    }
+
+    private string GetDefaultSettingsJson()
+    {
+        var defaultSettings = new
+        {
+            temperature = 0.7,
+            max_tokens = 2000,
+            top_p = 0.9,
+            frequency_penalty = 0.0,
+            presence_penalty = 0.0,
+            model = "gpt-4",
+            prompt_optimization = true,
+            cache_enabled = true,
+            timeout_seconds = 30
+        };
+
+        return System.Text.Json.JsonSerializer.Serialize(defaultSettings, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
     }
 
     #endregion

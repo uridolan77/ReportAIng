@@ -4,6 +4,7 @@ using QRCoder;
 using System.Security.Cryptography;
 using System.Text;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Interfaces;
@@ -18,17 +19,17 @@ namespace BIReportingCopilot.Infrastructure.Authentication;
 public class MfaService : IMfaService
 {
     private readonly IUserRepository _userRepository;
-    private readonly IMfaChallengeRepository _mfaChallengeRepository;
-    private readonly IEmailService _emailService;
-    private readonly ISmsService _smsService;
+    private readonly BIReportingCopilot.Core.Interfaces.Security.IMfaChallengeRepository _mfaChallengeRepository;
+    private readonly Core.Interfaces.Security.IEmailService _emailService;
+    private readonly Core.Interfaces.Security.ISmsService _smsService;
     private readonly ILogger<MfaService> _logger;
     private readonly SecurityConfiguration _securitySettings;
 
     public MfaService(
         IUserRepository userRepository,
-        IMfaChallengeRepository mfaChallengeRepository,
-        IEmailService emailService,
-        ISmsService smsService,
+        BIReportingCopilot.Core.Interfaces.Security.IMfaChallengeRepository mfaChallengeRepository,
+        Core.Interfaces.Security.IEmailService emailService,
+        Core.Interfaces.Security.ISmsService smsService,
         ILogger<MfaService> logger,
         IOptions<SecurityConfiguration> securitySettings)
     {
@@ -669,5 +670,101 @@ public class MfaService : IMfaService
             : username.Substring(0, 1) + "***";
 
         return $"{maskedUsername}@{domain}";
+    }
+
+    // Interface implementations
+    public async Task<MfaChallengeResult> CreateChallengeAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                return new MfaChallengeResult
+                {
+                    Success = false,
+                    ErrorMessage = "User not found"
+                };
+            }
+
+            // Determine the best MFA method for the user
+            var method = !string.IsNullOrEmpty(user.PhoneNumber) ? MfaMethod.SMS : MfaMethod.Email;
+
+            var challengeCode = method switch
+            {
+                MfaMethod.SMS => await GenerateSmsCodeAsync(),
+                MfaMethod.Email => await GenerateEmailCodeAsync(),
+                _ => throw new NotSupportedException($"Challenge method {method} not supported")
+            };
+
+            var challenge = new MfaChallenge
+            {
+                ChallengeId = Guid.NewGuid().ToString(),
+                UserId = userId,
+                Method = method,
+                Challenge = challengeCode,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_securitySettings.MfaCodeExpirationMinutes)
+            };
+
+            await _mfaChallengeRepository.CreateChallengeAsync(challenge, cancellationToken);
+
+            var success = method switch
+            {
+                MfaMethod.SMS => await SendSmsAsync(user.PhoneNumber ?? "", challengeCode),
+                MfaMethod.Email => await SendEmailCodeAsync(user.Email, challengeCode),
+                _ => false
+            };
+
+            return new MfaChallengeResult
+            {
+                ChallengeId = challenge.ChallengeId,
+                Method = method,
+                Success = success,
+                ExpiresAt = challenge.ExpiresAt,
+                MaskedDeliveryAddress = method == MfaMethod.SMS ? MaskPhoneNumber(user.PhoneNumber) : MaskEmail(user.Email),
+                ErrorMessage = success ? null : "Failed to send challenge"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating MFA challenge for user {UserId}", userId);
+            return new MfaChallengeResult
+            {
+                Success = false,
+                ErrorMessage = "Failed to create MFA challenge"
+            };
+        }
+    }
+
+    public async Task<bool> ValidateChallengeAsync(string challengeId, string code, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(challengeId) || string.IsNullOrEmpty(code))
+                return false;
+
+            var challenge = await _mfaChallengeRepository.GetChallengeAsync(challengeId, cancellationToken);
+            if (challenge == null || challenge.IsUsed || challenge.ExpiresAt <= DateTime.UtcNow)
+                return false;
+
+            if (challenge.Challenge != code)
+                return false;
+
+            await _mfaChallengeRepository.MarkChallengeAsUsedAsync(challenge.ChallengeId);
+
+            var user = await _userRepository.GetByIdAsync(challenge.UserId);
+            if (user != null)
+            {
+                user.LastMfaValidationDate = DateTime.UtcNow;
+                await _userRepository.UpdateUserAsync(user);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating MFA challenge {ChallengeId}", challengeId);
+            return false;
+        }
     }
 }

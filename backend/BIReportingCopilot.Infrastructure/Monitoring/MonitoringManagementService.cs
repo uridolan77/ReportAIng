@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using BIReportingCopilot.Infrastructure.Configuration;
+using BIReportingCopilot.Infrastructure.Interfaces;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Core.Interfaces;
 
@@ -520,6 +521,117 @@ public class MonitoringManagementService : IMetricsCollector, IDisposable
             >= 500 => "5xx",
             _ => "other"
         };
+    }
+
+    #endregion
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Get system health async (IHealthCheckService interface)
+    /// </summary>
+    public async Task<SystemHealthStatus> GetSystemHealthAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var snapshot = GetSnapshot();
+
+            return await Task.FromResult(new SystemHealthStatus
+            {
+                IsHealthy = snapshot.IsHealthy,
+                Status = snapshot.IsHealthy ? "Healthy" : "Unhealthy",
+                LastChecked = DateTime.UtcNow,
+                Components = new Dictionary<string, ComponentHealthStatus>
+                {
+                    ["memory"] = new ComponentHealthStatus
+                    {
+                        IsHealthy = snapshot.MemoryUsageMB < 1000, // Less than 1GB
+                        Status = snapshot.MemoryUsageMB < 1000 ? "Healthy" : "Warning",
+                        Details = $"Memory usage: {snapshot.MemoryUsageMB:F1} MB"
+                    },
+                    ["errors"] = new ComponentHealthStatus
+                    {
+                        IsHealthy = snapshot.TotalErrors < 10,
+                        Status = snapshot.TotalErrors < 10 ? "Healthy" : "Warning",
+                        Details = $"Total errors: {snapshot.TotalErrors}"
+                    },
+                    ["operations"] = new ComponentHealthStatus
+                    {
+                        IsHealthy = true,
+                        Status = "Healthy",
+                        Details = $"Queries: {snapshot.TotalQueries}, AI: {snapshot.TotalAIOperations}"
+                    }
+                },
+                Metrics = new Dictionary<string, object>
+                {
+                    ["memory_usage_mb"] = snapshot.MemoryUsageMB,
+                    ["total_queries"] = snapshot.TotalQueries,
+                    ["total_ai_operations"] = snapshot.TotalAIOperations,
+                    ["total_errors"] = snapshot.TotalErrors
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting system health");
+            return new SystemHealthStatus
+            {
+                IsHealthy = false,
+                Status = "Error",
+                LastChecked = DateTime.UtcNow,
+                Components = new Dictionary<string, ComponentHealthStatus>(),
+                Metrics = new Dictionary<string, object>()
+            };
+        }
+    }
+
+    /// <summary>
+    /// Check component health async (IHealthCheckService interface)
+    /// </summary>
+    public async Task<ComponentHealthStatus> CheckComponentHealthAsync(string componentName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var snapshot = GetSnapshot();
+
+            return componentName.ToLower() switch
+            {
+                "memory" => await Task.FromResult(new ComponentHealthStatus
+                {
+                    IsHealthy = snapshot.MemoryUsageMB < 1000,
+                    Status = snapshot.MemoryUsageMB < 1000 ? "Healthy" : "Warning",
+                    Details = $"Memory usage: {snapshot.MemoryUsageMB:F1} MB"
+                }),
+                "errors" => await Task.FromResult(new ComponentHealthStatus
+                {
+                    IsHealthy = snapshot.TotalErrors < 10,
+                    Status = snapshot.TotalErrors < 10 ? "Healthy" : "Warning",
+                    Details = $"Total errors: {snapshot.TotalErrors}"
+                }),
+                "operations" => await Task.FromResult(new ComponentHealthStatus
+                {
+                    IsHealthy = true,
+                    Status = "Healthy",
+                    Details = $"Queries: {snapshot.TotalQueries}, AI: {snapshot.TotalAIOperations}"
+                }),
+                _ => await Task.FromResult(new ComponentHealthStatus
+                {
+                    IsHealthy = false,
+                    Status = "Unknown",
+                    Details = $"Unknown component: {componentName}"
+                })
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking component health for {ComponentName}", componentName);
+            return new ComponentHealthStatus
+            {
+                IsHealthy = false,
+                Status = "Error",
+                Details = ex.Message
+            };
+        }
     }
 
     #endregion

@@ -101,11 +101,7 @@ public class AuthenticationResult
     public MfaChallenge? MfaChallenge { get; set; }
 }
 
-public class RefreshTokenRequest
-{
-    [Required(ErrorMessage = "Refresh token is required")]
-    public string RefreshToken { get; set; } = string.Empty;
-}
+// RefreshTokenRequest moved to PerformanceModels.cs - removed duplicate
 
 public class TokenInfo
 {
@@ -118,17 +114,7 @@ public class TokenInfo
     public string? IpAddress { get; set; }
 }
 
-public class UserSession
-{
-    public string SessionId { get; set; } = string.Empty;
-    public string UserId { get; set; } = string.Empty;
-    public DateTime StartTime { get; set; } = DateTime.UtcNow;
-    public DateTime LastActivity { get; set; } = DateTime.UtcNow;
-    public string? IpAddress { get; set; }
-    public string? UserAgent { get; set; }
-    public bool IsActive { get; set; } = true;
-    public Dictionary<string, object> SessionData { get; set; } = new();
-}
+// UserSession moved to PerformanceModels.cs - removed duplicate
 
 public class UserActivity
 {
@@ -152,16 +138,7 @@ public enum MfaMethod
     Email
 }
 
-// MFA-related models
-public class MfaChallenge
-{
-    public string ChallengeId { get; set; } = string.Empty;
-    public string UserId { get; set; } = string.Empty;
-    public MfaMethod Method { get; set; }
-    public DateTime ExpiresAt { get; set; }
-    public bool IsUsed { get; set; } = false;
-    public string? Challenge { get; set; } // For SMS/Email, this contains the code
-}
+// MfaChallenge moved to PerformanceModels.cs - removed duplicate
 
 public class MfaSetupRequest
 {
@@ -180,26 +157,31 @@ public class MfaSetupResult
     public string? ErrorMessage { get; set; }
 }
 
-public class MfaValidationRequest
-{
-    [Required(ErrorMessage = "User ID is required")]
-    public string UserId { get; set; } = string.Empty;
+// MfaValidationRequest moved to PerformanceModels.cs - removed duplicate
 
-    [Required(ErrorMessage = "MFA code is required")]
-    public string Code { get; set; } = string.Empty;
-
-    public bool TrustDevice { get; set; } = false;
-}
-
-public class MfaValidationResult
-{
-    public bool Success { get; set; }
-    public bool IsBackupCode { get; set; } = false;
-    public string? ErrorMessage { get; set; }
-}
+// MfaValidationResult moved to PerformanceModels.cs - removed duplicate
 
 public class LoginWithMfaRequest : LoginRequest
 {
     public string? MfaCode { get; set; }
     public string? ChallengeId { get; set; }
+}
+
+// Additional models from UserModels.cs
+public class DailyActivity
+{
+    public DateTime Date { get; set; }
+    public int QueryCount { get; set; }
+    public double AverageResponseTime { get; set; }
+}
+
+/// <summary>
+/// User permissions and access control
+/// </summary>
+public class UserPermissions
+{
+    public List<string> Roles { get; set; } = new();
+    public List<string> Permissions { get; set; } = new();
+    public Dictionary<string, bool> FeatureAccess { get; set; } = new();
+    public List<string> AllowedDatabases { get; set; } = new();
 }

@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Infrastructure.Performance;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Infrastructure.AI.Components;

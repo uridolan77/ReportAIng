@@ -1,5 +1,8 @@
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Streaming;
 using BIReportingCopilot.Core.Models;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -351,12 +354,12 @@ public class StreamingService : IRealTimeStreamingService
         };
     }
 
-    private async Task<List<StreamingAlert>> GenerateCurrentAlertsAsync(string userId)
+    private async Task<List<BIReportingCopilot.Core.Models.StreamingAlert>> GenerateCurrentAlertsAsync(string userId)
     {
         // Generate current alerts
-        return new List<StreamingAlert>
+        return new List<BIReportingCopilot.Core.Models.StreamingAlert>
         {
-            new StreamingAlert
+            new BIReportingCopilot.Core.Models.StreamingAlert
             {
                 Type = "Performance",
                 Message = "Query response time above average",
@@ -369,7 +372,7 @@ public class StreamingService : IRealTimeStreamingService
     #endregion
 
     // Missing interface methods - stub implementations
-    public Task<StreamingSession> StartStreamingSessionAsync(string userId, StreamingConfiguration config)
+    public Task<StreamingSession> StartStreamingSessionAsync(string userId, BIReportingCopilot.Core.Interfaces.Streaming.StreamingConfiguration config)
     {
         return Task.FromResult(new StreamingSession
         {

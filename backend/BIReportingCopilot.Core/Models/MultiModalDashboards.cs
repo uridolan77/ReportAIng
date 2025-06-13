@@ -4,7 +4,7 @@ namespace BIReportingCopilot.Core.Models;
 
 // ===== CONSOLIDATED DASHBOARD MODELS =====
 // This file now contains all dashboard-related models from both:
-// - MultiModalDashboards.cs (advanced dashboard functionality)
+// - MultiModalDashboards.cs (dashboard functionality)
 // - DashboardModels.cs (basic dashboard analytics and overview)
 
 #region Basic Dashboard Analytics Models (from DashboardModels.cs)
@@ -107,7 +107,7 @@ public class Recommendation
 
 #endregion
 
-#region Advanced Multi-Modal Dashboard Models
+#region Multi-Modal Dashboard Models
 
 /// <summary>
 /// Multi-modal dashboard
@@ -450,6 +450,20 @@ public class FilterConfiguration
     public List<string> Options { get; set; } = new();
     public object? DefaultValue { get; set; }
     public bool IsMultiSelect { get; set; } = false;
+}
+
+/// <summary>
+/// Global filter for dashboards
+/// </summary>
+public class GlobalFilter
+{
+    public string Name { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string Column { get; set; } = string.Empty;
+    public object? DefaultValue { get; set; }
+    public List<object> Options { get; set; } = new();
+    public bool Required { get; set; } = false;
+    public bool Visible { get; set; } = true;
 }
 
 public class DataTransformation

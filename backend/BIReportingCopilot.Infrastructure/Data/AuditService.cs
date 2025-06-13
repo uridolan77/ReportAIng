@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
@@ -33,7 +34,7 @@ public class AuditService : IAuditService
             {
                 var securityContext = (SecurityDbContext)context;
 
-                var auditEntry = new AuditLogEntity
+                var auditEntry = new Infrastructure.Data.Entities.AuditLogEntity
                 {
                     Action = action,
                     UserId = userId,
@@ -81,7 +82,7 @@ public class AuditService : IAuditService
                         Error = error
                     };
 
-                    var auditEntry = new AuditLogEntity
+                    var auditEntry = new Infrastructure.Data.Entities.AuditLogEntity
                     {
                         Action = "QUERY_EXECUTED",
                         UserId = userId,
@@ -135,7 +136,7 @@ public class AuditService : IAuditService
     {
         try
         {
-            var auditEntry = new AuditLogEntity
+            var auditEntry = new Infrastructure.Data.Entities.AuditLogEntity
             {
                 Action = $"SECURITY_{eventType}",
                 UserId = userId,
@@ -314,7 +315,7 @@ public class AuditService : IAuditService
         }
     }
 
-    private AuditLogEntry MapToAuditLogEntry(AuditLogEntity entity)
+    private AuditLogEntry MapToAuditLogEntry(Infrastructure.Data.Entities.AuditLogEntity entity)
     {
         object? details = null;
         if (!string.IsNullOrEmpty(entity.Details))
@@ -356,5 +357,34 @@ public class AuditService : IAuditService
         // Score decreases with higher failure and suspicious activity rates
         var score = 1.0 - (failureRate * 0.5) - (suspiciousRate * 0.3);
         return Math.Max(0.0, Math.Min(1.0, score));
+    }
+
+    // =============================================================================
+    // MISSING INTERFACE METHOD IMPLEMENTATIONS
+    // =============================================================================
+
+    /// <summary>
+    /// Log action with proper interface signature
+    /// </summary>
+    public async Task LogActionAsync(string action, string userId, string entityType, string entityId, Dictionary<string, object>? metadata = null)
+    {
+        await LogActionAsync(action, userId, entityType, entityId, metadata != null ? JsonSerializer.Serialize(metadata) : null);
+    }
+
+    /// <summary>
+    /// Log error with proper interface signature
+    /// </summary>
+    public async Task LogErrorAsync(string error, string userId, string? details = null, Dictionary<string, object>? metadata = null)
+    {
+        await LogSecurityEventAsync("ERROR", userId, details ?? error, null, "Error");
+    }
+
+    /// <summary>
+    /// Get audit logs with proper interface signature
+    /// </summary>
+    public async Task<IEnumerable<object>> GetAuditLogsAsync(string? userId = null, DateTime? from = null, DateTime? to = null)
+    {
+        var auditLogs = await GetAuditLogsAsync(userId, from, to, null); // Call the existing method
+        return auditLogs.Cast<object>();
     }
 }

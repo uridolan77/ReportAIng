@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Streaming;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Infrastructure.Interfaces;
 using System.Security.Claims;
 
 namespace BIReportingCopilot.Infrastructure.AI.Streaming;
@@ -65,7 +67,7 @@ public class StreamingHub : Hub
     /// <summary>
     /// Start a streaming session for real-time updates
     /// </summary>
-    public async Task StartStreamingSession(StreamingConfiguration config)
+    public async Task StartStreamingSession(BIReportingCopilot.Core.Models.StreamingConfiguration config)
     {
         try
         {

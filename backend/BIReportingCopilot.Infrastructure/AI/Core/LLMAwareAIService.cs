@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
@@ -9,7 +10,7 @@ using System.Security.Claims;
 namespace BIReportingCopilot.Infrastructure.AI.Core;
 
 /// <summary>
-/// Enhanced AI service that uses LLM Management system for intelligent provider and model selection
+/// AI service that uses LLM Management system for intelligent provider and model selection
 /// </summary>
 public class LLMAwareAIService : ILLMAwareAIService
 {

@@ -2,6 +2,7 @@ using MediatR;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
 
 namespace BIReportingCopilot.Infrastructure.Behaviors;
 

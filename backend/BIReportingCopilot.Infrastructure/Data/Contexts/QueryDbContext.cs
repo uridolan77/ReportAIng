@@ -67,8 +67,8 @@ public class QueryDbContext : DbContext
             entity.Property(e => e.ResultMetadata).HasMaxLength(2000);
         });
 
-        // Configure Unified SemanticCacheEntry
-        modelBuilder.Entity<Core.Models.UnifiedSemanticCacheEntry>(entity =>
+        // Configure SemanticCacheEntry
+        modelBuilder.Entity<Core.Models.SemanticCacheEntry>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.QueryHash).IsUnique();

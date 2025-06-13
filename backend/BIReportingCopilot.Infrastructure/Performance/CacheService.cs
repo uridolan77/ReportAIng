@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Configuration;
 using ModelsCacheStatistics = BIReportingCopilot.Core.Models.CacheStatistics;
@@ -51,7 +52,7 @@ public class CacheService : ICacheService
 
     #region Basic Cache Operations
 
-    public async Task<T?> GetAsync<T>(string key) where T : class
+    public async Task<T?> GetAsync<T>(string key)
     {
         try
         {
@@ -93,7 +94,7 @@ public class CacheService : ICacheService
         }
     }
 
-    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null) where T : class
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null)
     {
         try
         {
@@ -512,6 +513,106 @@ public class CacheService : ICacheService
         {
             _logger.LogWarning(ex, "Cache operation failed, using fallback for key: {Key}", key);
             return await fallback();
+        }
+    }
+
+    #endregion
+
+    #region Missing Interface Methods
+
+    public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default) where T : class
+    {
+        return await GetAsync<T>(key);
+    }
+
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken cancellationToken = default) where T : class
+    {
+        await SetAsync(key, value, expiry);
+    }
+
+    public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
+    {
+        await RemoveAsync(key);
+    }
+
+    public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
+    {
+        return await ExistsAsync(key);
+    }
+
+    public async Task ClearAllAsync(CancellationToken cancellationToken = default)
+    {
+        await ClearAllAsync();
+    }
+
+    public async Task ClearAsync()
+    {
+        await ClearAllAsync();
+    }
+
+    public async Task<ModelsCacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetStatisticsAsync();
+    }
+
+    public async Task<CacheHealthStatus> GetHealthStatusAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var stats = await GetStatisticsAsync();
+            var isHealthy = true;
+            var issues = new List<string>();
+
+            // Check if cache is responding
+            var testKey = $"health_check_{Guid.NewGuid()}";
+            var testValue = "test";
+
+            try
+            {
+                await SetAsync(testKey, testValue, TimeSpan.FromSeconds(10));
+                var retrieved = await GetAsync<string>(testKey);
+                if (retrieved != testValue)
+                {
+                    isHealthy = false;
+                    issues.Add("Cache read/write test failed");
+                }
+                await RemoveAsync(testKey);
+            }
+            catch (Exception ex)
+            {
+                isHealthy = false;
+                issues.Add($"Cache operation failed: {ex.Message}");
+            }
+
+            // Check hit rate
+            var totalRequests = stats.HitCount + stats.MissCount;
+            var hitRate = totalRequests > 0 ? (double)stats.HitCount / totalRequests : 0;
+
+            if (hitRate < 0.5 && totalRequests > 100) // Less than 50% hit rate with significant traffic
+            {
+                issues.Add($"Low cache hit rate: {hitRate:P2}");
+            }
+
+            return new CacheHealthStatus
+            {
+                IsHealthy = isHealthy,
+                Issues = issues,
+                HitRate = hitRate,
+                TotalEntries = stats.TotalEntries,
+                LastChecked = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking cache health");
+            return new CacheHealthStatus
+            {
+                IsHealthy = false,
+                Issues = new List<string> { $"Health check failed: {ex.Message}" },
+                HitRate = 0,
+                TotalEntries = 0,
+                LastChecked = DateTime.UtcNow
+            };
         }
     }
 

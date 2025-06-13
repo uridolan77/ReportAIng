@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
@@ -21,7 +22,9 @@ public class MfaChallengeRepository : IMfaChallengeRepository
     {
         _context = context;
         _logger = logger;
-    }    public async Task<MfaChallenge> CreateChallengeAsync(MfaChallenge challenge)
+    }
+
+    public async Task<MfaChallenge> CreateChallengeAsync(MfaChallenge challenge, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -55,19 +58,21 @@ public class MfaChallengeRepository : IMfaChallengeRepository
         }
     }
 
-    public async Task<MfaChallenge?> GetChallengeAsync(string challengeId)
+    public async Task<MfaChallenge?> GetChallengeAsync(string challengeId, CancellationToken cancellationToken = default)
     {
         try
         {
             var entity = await _context.MfaChallenges
                 .Where(c => c.Id == challengeId && !c.IsUsed && c.ExpiresAt > DateTime.UtcNow)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             if (entity == null)
             {
                 _logger.LogWarning("MFA challenge {ChallengeId} not found or expired", challengeId);
                 return null;
-            }            return new MfaChallenge
+            }
+
+            return new MfaChallenge
             {
                 ChallengeId = entity.Id,
                 UserId = entity.UserId,
@@ -113,18 +118,18 @@ public class MfaChallengeRepository : IMfaChallengeRepository
         }
     }
 
-    public async Task CleanupExpiredChallengesAsync()
+    public async Task CleanupExpiredChallengesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             var expiredChallenges = await _context.MfaChallenges
                 .Where(c => c.ExpiresAt < DateTime.UtcNow || c.IsUsed)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             if (expiredChallenges.Any())
             {
                 _context.MfaChallenges.RemoveRange(expiredChallenges);
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(cancellationToken);
 
                 _logger.LogInformation("Cleaned up {Count} expired MFA challenges", expiredChallenges.Count);
             }
@@ -132,7 +137,91 @@ public class MfaChallengeRepository : IMfaChallengeRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cleaning up expired MFA challenges");
-        }    }
+        }
+    }
+
+    public async Task<List<MfaChallenge>> GetActiveChallengesAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var entities = await _context.MfaChallenges
+                .Where(c => c.UserId == userId && !c.IsUsed && c.ExpiresAt > DateTime.UtcNow)
+                .OrderByDescending(c => c.CreatedDate)
+                .ToListAsync(cancellationToken);
+
+            return entities.Select(entity => new MfaChallenge
+            {
+                ChallengeId = entity.Id,
+                UserId = entity.UserId,
+                Method = Enum.Parse<MfaMethod>(entity.MfaMethod),
+                Challenge = entity.ChallengeCode,
+                ExpiresAt = entity.ExpiresAt,
+                IsUsed = entity.IsUsed
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting active MFA challenges for user: {UserId}", userId);
+            return new List<MfaChallenge>();
+        }
+    }
+
+    public async Task UpdateChallengeAsync(MfaChallenge challenge, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var entity = await _context.MfaChallenges
+                .Where(c => c.Id == challenge.ChallengeId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (entity == null)
+            {
+                _logger.LogWarning("MFA challenge {ChallengeId} not found for update", challenge.ChallengeId);
+                return;
+            }
+
+            entity.MfaMethod = challenge.Method.ToString();
+            entity.ChallengeCode = challenge.Challenge ?? string.Empty;
+            entity.ExpiresAt = challenge.ExpiresAt;
+            entity.IsUsed = challenge.IsUsed;
+            entity.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Updated MFA challenge {ChallengeId}", challenge.ChallengeId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating MFA challenge {ChallengeId}", challenge.ChallengeId);
+            throw;
+        }
+    }
+
+    public async Task DeleteChallengeAsync(string challengeId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var entity = await _context.MfaChallenges
+                .Where(c => c.Id == challengeId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (entity == null)
+            {
+                _logger.LogWarning("MFA challenge {ChallengeId} not found for deletion", challengeId);
+                return;
+            }
+
+            _context.MfaChallenges.Remove(entity);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Deleted MFA challenge {ChallengeId}", challengeId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting MFA challenge {ChallengeId}", challengeId);
+            throw;
+        }
+    }
 
     public async Task<MfaChallenge?> GetActiveChallengeAsync(string userId, MfaMethod method)
     {

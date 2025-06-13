@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Business;
+using BIReportingCopilot.Core.Models.Statistics;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
@@ -365,4 +367,128 @@ public class BusinessTableManagementService : IBusinessTableManagementService
     }
 
     #endregion
+
+    // =============================================================================
+    // MISSING INTERFACE METHOD IMPLEMENTATIONS
+    // =============================================================================
+
+    /// <summary>
+    /// Get all business tables with cancellation token support
+    /// </summary>
+    public async Task<List<BusinessTableInfoDto>> GetBusinessTablesAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetBusinessTablesAsync();
+    }
+
+    /// <summary>
+    /// Get business table by ID with cancellation token support
+    /// </summary>
+    public async Task<BusinessTableInfoDto?> GetBusinessTableAsync(string tableId, CancellationToken cancellationToken = default)
+    {
+        return await GetBusinessTableAsync(tableId);
+    }
+
+    /// <summary>
+    /// Create business table with cancellation token support
+    /// </summary>
+    public async Task<string> CreateBusinessTableAsync(BusinessTableInfoDto tableInfo, CancellationToken cancellationToken = default)
+    {
+        // Convert DTO to CreateTableInfoRequest
+        var request = new CreateTableInfoRequest
+        {
+            TableName = tableInfo.TableName,
+            SchemaName = tableInfo.SchemaName,
+            BusinessPurpose = tableInfo.BusinessPurpose,
+            BusinessContext = tableInfo.BusinessContext,
+            PrimaryUseCase = tableInfo.PrimaryUseCase,
+            CommonQueryPatterns = tableInfo.CommonQueryPatterns,
+            BusinessRules = tableInfo.BusinessRules,
+            Columns = tableInfo.Columns?.Select(c => new CreateColumnInfoRequest
+            {
+                ColumnName = c.ColumnName,
+                BusinessMeaning = c.BusinessMeaning,
+                BusinessContext = c.BusinessContext,
+                DataExamples = c.DataExamples,
+                ValidationRules = c.ValidationRules,
+                IsKeyColumn = c.IsKeyColumn
+            }).ToList() ?? new List<CreateColumnInfoRequest>()
+        };
+
+        var created = await CreateBusinessTableAsync(request, "system");
+        return created.Id.ToString();
+    }
+
+    /// <summary>
+    /// Update business table with cancellation token support
+    /// </summary>
+    public async Task<bool> UpdateBusinessTableAsync(BusinessTableInfoDto tableInfo, CancellationToken cancellationToken = default)
+    {
+        // Convert DTO to CreateTableInfoRequest
+        var request = new CreateTableInfoRequest
+        {
+            TableName = tableInfo.TableName,
+            SchemaName = tableInfo.SchemaName,
+            BusinessPurpose = tableInfo.BusinessPurpose,
+            BusinessContext = tableInfo.BusinessContext,
+            PrimaryUseCase = tableInfo.PrimaryUseCase,
+            CommonQueryPatterns = tableInfo.CommonQueryPatterns,
+            BusinessRules = tableInfo.BusinessRules,
+            Columns = tableInfo.Columns?.Select(c => new CreateColumnInfoRequest
+            {
+                ColumnName = c.ColumnName,
+                BusinessMeaning = c.BusinessMeaning,
+                BusinessContext = c.BusinessContext,
+                DataExamples = c.DataExamples,
+                ValidationRules = c.ValidationRules,
+                IsKeyColumn = c.IsKeyColumn
+            }).ToList() ?? new List<CreateColumnInfoRequest>()
+        };
+
+        var updated = await UpdateBusinessTableAsync(tableInfo.Id, request, "system");
+        return updated != null;
+    }
+
+    /// <summary>
+    /// Delete business table with cancellation token support
+    /// </summary>
+    public async Task<bool> DeleteBusinessTableAsync(string tableId, CancellationToken cancellationToken = default)
+    {
+        return await DeleteBusinessTableAsync(tableId);
+    }
+
+    /// <summary>
+    /// Search business tables
+    /// </summary>
+    public async Task<List<BusinessTableInfoDto>> SearchBusinessTablesAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                return await GetBusinessTablesAsync(cancellationToken);
+            }
+
+            var searchTermLower = searchTerm.ToLowerInvariant();
+
+            var tables = await _context.BusinessTableInfo
+                .Include(t => t.Columns)
+                .Where(t => t.IsActive && (
+                    t.TableName.ToLower().Contains(searchTermLower) ||
+                    t.SchemaName.ToLower().Contains(searchTermLower) ||
+                    t.BusinessPurpose.ToLower().Contains(searchTermLower) ||
+                    t.BusinessContext.ToLower().Contains(searchTermLower) ||
+                    t.PrimaryUseCase.ToLower().Contains(searchTermLower)
+                ))
+                .OrderBy(t => t.SchemaName)
+                .ThenBy(t => t.TableName)
+                .ToListAsync(cancellationToken);
+
+            return tables.Select(MapToDto).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching business tables with term: {SearchTerm}", searchTerm);
+            throw;
+        }
+    }
 }

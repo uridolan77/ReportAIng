@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Commands;
@@ -212,11 +213,11 @@ public class QueryService : IQueryService
         return Task.FromResult(new List<ProcessedQuery>());
     }
 
-    public Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(string queryHash)
+    public Task<BIReportingCopilot.Core.DTOs.QueryPerformanceMetrics> GetQueryPerformanceAsync(string queryHash)
     {
         // This could be implemented as a separate CQRS query if needed
         _logger.LogInformation("🎯 Query performance metrics not yet implemented in CQRS pattern");
-        return Task.FromResult(new QueryPerformanceMetrics
+        return Task.FromResult(new BIReportingCopilot.Core.DTOs.QueryPerformanceMetrics
         {
             QueryHash = queryHash,
             ExecutionTime = TimeSpan.FromMilliseconds(100),

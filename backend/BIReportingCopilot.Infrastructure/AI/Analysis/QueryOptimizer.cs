@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using System.Text.RegularExpressions;
 
@@ -459,6 +461,95 @@ public class QueryOptimizer : IQueryOptimizer
             recommendations.Add($"Consider adding index on {column} for sorting performance");
 
         return recommendations.Distinct().ToList();
+    }
+
+    // Interface implementation
+    public async Task<QueryOptimizationResult> OptimizeAsync(string query, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("Optimizing query: {Query}", query);
+
+            // Create a basic semantic analysis for the query
+            var analysis = new SemanticAnalysis
+            {
+                OriginalQuery = query,
+                Intent = QueryIntent.Unknown,
+                Entities = new List<Entity>(),
+                Keywords = ExtractKeywords(query)
+            };
+
+            // Create a basic schema context
+            var schema = new SchemaContext
+            {
+                RelevantTables = new List<TableMetadata>(),
+                SuggestedJoins = new List<string>()
+            };
+
+            // Create a basic user context
+            var context = new UserContext
+            {
+                PreferredTables = new List<string>(),
+                CommonFilters = new List<string>()
+            };
+
+            // Generate candidates
+            var candidates = await GenerateCandidatesAsync(analysis, schema);
+
+            // Optimize using existing method
+            var optimizedQuery = await OptimizeAsync(candidates, context);
+
+            // Convert to QueryOptimizationResult
+            return new QueryOptimizationResult
+            {
+                OptimizedSql = optimizedQuery.Sql,
+                OriginalSql = query,
+                Explanation = optimizedQuery.Explanation,
+                ConfidenceScore = optimizedQuery.ConfidenceScore,
+                PerformanceImprovementEstimate = optimizedQuery.PerformancePrediction?.EstimatedExecutionTime.TotalMilliseconds ?? 0,
+                OptimizationSteps = optimizedQuery.OptimizationApplied,
+                Warnings = optimizedQuery.PerformancePrediction?.PerformanceWarnings ?? new List<string>(),
+                IndexRecommendations = optimizedQuery.PerformancePrediction?.IndexRecommendations ?? new List<string>()
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error optimizing query: {Query}", query);
+            return new QueryOptimizationResult
+            {
+                OptimizedSql = query,
+                OriginalSql = query,
+                Explanation = "Unable to optimize query due to error",
+                ConfidenceScore = 0.5,
+                PerformanceImprovementEstimate = 0,
+                OptimizationSteps = new List<string> { "No optimization applied" },
+                Warnings = new List<string> { "Unable to analyze performance" },
+                IndexRecommendations = new List<string>()
+            };
+        }
+    }
+
+    private List<string> ExtractKeywords(string query)
+    {
+        var keywords = new List<string>();
+        var words = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var word in words)
+        {
+            var cleanWord = word.Trim().ToLowerInvariant();
+            if (cleanWord.Length > 3 && !IsCommonWord(cleanWord))
+            {
+                keywords.Add(cleanWord);
+            }
+        }
+
+        return keywords;
+    }
+
+    private bool IsCommonWord(string word)
+    {
+        var commonWords = new[] { "the", "and", "for", "are", "but", "not", "you", "all", "can", "had", "her", "was", "one", "our", "out", "day", "get", "has", "him", "his", "how", "man", "new", "now", "old", "see", "two", "way", "who", "boy", "did", "its", "let", "put", "say", "she", "too", "use" };
+        return commonWords.Contains(word);
     }
 
     private double AnalyzeSqlQuality(string sql)

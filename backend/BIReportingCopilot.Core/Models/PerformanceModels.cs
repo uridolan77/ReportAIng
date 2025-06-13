@@ -114,7 +114,7 @@ public class SqlQueryResult
 }
 
 /// <summary>
-/// SQL query metadata for enhanced tracking
+/// SQL query metadata for tracking
 /// </summary>
 public class SqlQueryMetadata
 {
@@ -514,6 +514,43 @@ public enum MaintenancePriority
 }
 
 /// <summary>
+/// Recommendation priority enumeration
+/// </summary>
+public enum RecommendationPriority
+{
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+/// <summary>
+/// Recommendation type enumeration
+/// </summary>
+public enum RecommendationType
+{
+    Performance,
+    Security,
+    Maintainability,
+    Scalability,
+    Reliability,
+    Index,
+    Query,
+    Schema
+}
+
+/// <summary>
+/// Trend direction enumeration
+/// </summary>
+public enum TrendDirection
+{
+    Improving,
+    Stable,
+    Degrading,
+    Unknown
+}
+
+/// <summary>
 /// Performance prediction for optimization
 /// </summary>
 public class PerformancePrediction
@@ -703,6 +740,309 @@ public class ErrorAnalysis
     public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
     public TimeSpan AnalysisWindow { get; set; }
     public string AnalysisType { get; set; } = "General"; // General, LLM, Query, etc.
+}
+
+// TrendDataPoint class already defined above - duplicate removed
+
+// =============================================================================
+// MISSING STATISTICS AND BUSINESS MODELS
+// =============================================================================
+
+/// <summary>
+/// Business table statistics
+/// </summary>
+public class BusinessTableStatistics
+{
+    public string TableId { get; set; } = string.Empty;
+    public string TableName { get; set; } = string.Empty;
+    public int TotalRecords { get; set; }
+    public int TotalColumns { get; set; }
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public double AverageQueryTime { get; set; }
+    public int QueryCount { get; set; }
+    public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
+}
+
+/// <summary>
+/// Glossary statistics
+/// </summary>
+public class GlossaryStatistics
+{
+    public int TotalTerms { get; set; }
+    public int TotalCategories { get; set; }
+    public int RecentlyAdded { get; set; }
+    public int RecentlyUpdated { get; set; }
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public Dictionary<string, int> TermsByCategory { get; set; } = new();
+}
+
+/// <summary>
+/// Query pattern statistics
+/// </summary>
+public class QueryPatternStatistics
+{
+    public int TotalPatterns { get; set; }
+    public int ActivePatterns { get; set; }
+    public double AverageConfidence { get; set; }
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public Dictionary<string, int> PatternsByType { get; set; } = new();
+}
+
+/// <summary>
+/// Cost alert for LLM management
+/// </summary>
+public class CostAlert
+{
+    public string AlertId { get; set; } = Guid.NewGuid().ToString();
+    public string ProviderId { get; set; } = string.Empty;
+    public string AlertType { get; set; } = string.Empty;
+    public double Threshold { get; set; }
+    public double CurrentValue { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsResolved { get; set; } = false;
+}
+
+// =============================================================================
+// MISSING MODELS FOR INFRASTRUCTURE SERVICES
+// =============================================================================
+
+/// <summary>
+/// Tuning result
+/// </summary>
+public class TuningResult
+{
+    public string TuningId { get; set; } = Guid.NewGuid().ToString();
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public Dictionary<string, object> Results { get; set; } = new();
+    public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Tuning request
+/// </summary>
+public class TuningRequest
+{
+    public string RequestId { get; set; } = Guid.NewGuid().ToString();
+    public string Type { get; set; } = string.Empty;
+    public Dictionary<string, object> Parameters { get; set; } = new();
+    public string UserId { get; set; } = string.Empty;
+    public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Tuning status
+/// </summary>
+public class TuningStatus
+{
+    public string TuningId { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public double Progress { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+}
+
+// =============================================================================
+// MISSING AUTHENTICATION MODELS
+// =============================================================================
+
+/// <summary>
+/// Refresh token request
+/// </summary>
+public class RefreshTokenRequest
+{
+    public string RefreshToken { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// User session information
+/// </summary>
+public class UserSession
+{
+    public string SessionId { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = string.Empty;
+    public string IpAddress { get; set; } = string.Empty;
+    public string UserAgent { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime LastActivity { get; set; } = DateTime.UtcNow;
+    public bool IsActive { get; set; } = true;
+}
+
+/// <summary>
+/// MFA challenge
+/// </summary>
+public class MfaChallenge
+{
+    public string ChallengeId { get; set; } = Guid.NewGuid().ToString();
+    public string Method { get; set; } = string.Empty;
+    public string Challenge { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; } = DateTime.UtcNow.AddMinutes(5);
+}
+
+/// <summary>
+/// MFA validation request
+/// </summary>
+public class MfaValidationRequest
+{
+    public string ChallengeId { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// MFA validation result
+/// </summary>
+public class MfaValidationResult
+{
+    public bool Success { get; set; }
+    public string? ErrorMessage { get; set; }
+}
+
+// =============================================================================
+// MISSING INTERFACE SUPPORT MODELS
+// =============================================================================
+
+/// <summary>
+/// Refresh token information
+/// </summary>
+public class RefreshTokenInfo
+{
+    public string Token { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsRevoked { get; set; } = false;
+}
+
+// TableMetadata, SemanticAnalysisResult, QueryClassificationResult, and QueryOptimizationResult
+// are already defined in other model files - removed duplicates
+
+/// <summary>
+/// AI service metrics
+/// </summary>
+public class AIServiceMetrics
+{
+    public bool IsAvailable { get; set; }
+    public int TotalRequests { get; set; }
+    public int SuccessfulRequests { get; set; }
+    public int FailedRequests { get; set; }
+    public double AverageResponseTime { get; set; }
+    public DateTime LastHealthCheck { get; set; } = DateTime.UtcNow;
+    public string ProviderName { get; set; } = string.Empty;
+    public string Version { get; set; } = string.Empty;
+    public string? ErrorMessage { get; set; }
+}
+
+/// <summary>
+/// MFA challenge result
+/// </summary>
+public class MfaChallengeResult
+{
+    public string ChallengeId { get; set; } = Guid.NewGuid().ToString();
+    public string Type { get; set; } = string.Empty;
+    public string Challenge { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; } = DateTime.UtcNow.AddMinutes(5);
+    public bool Success { get; set; }
+}
+
+/// <summary>
+/// Create user request
+/// </summary>
+public class CreateUserRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public List<string> Roles { get; set; } = new();
+}
+
+// =============================================================================
+// MISSING ENTITY MODELS
+// =============================================================================
+
+/// <summary>
+/// User entity for database operations
+/// </summary>
+public class UserEntity
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Email { get; set; } = string.Empty;
+    public string PasswordHash { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public List<string> Roles { get; set; } = new();
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? LastLoginAt { get; set; }
+}
+
+/// <summary>
+/// Refresh token entity
+/// </summary>
+public class RefreshTokenEntity
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Token { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsRevoked { get; set; } = false;
+}
+
+/// <summary>
+/// MFA challenge entity
+/// </summary>
+public class MfaChallengeEntity
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = string.Empty;
+    public string ChallengeType { get; set; } = string.Empty;
+    public string Challenge { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsUsed { get; set; } = false;
+}
+
+/// <summary>
+/// User session entity
+/// </summary>
+public class UserSessionEntity
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = string.Empty;
+    public string SessionToken { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime ExpiresAt { get; set; }
+    public string IpAddress { get; set; } = string.Empty;
+    public string UserAgent { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+}
+
+/// <summary>
+/// User preferences entity
+/// </summary>
+public class UserPreferencesEntity
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = string.Empty;
+    public Dictionary<string, object> Preferences { get; set; } = new();
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Audit log entity
+/// </summary>
+public class AuditLogEntity
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public string EntityType { get; set; } = string.Empty;
+    public string EntityId { get; set; } = string.Empty;
+    public Dictionary<string, object> Metadata { get; set; } = new();
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 

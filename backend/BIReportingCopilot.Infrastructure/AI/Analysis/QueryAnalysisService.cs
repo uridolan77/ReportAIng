@@ -2,6 +2,8 @@ using Azure.AI.OpenAI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -862,6 +864,26 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
             ConfidenceScore = 0.3,
             OptimizationSuggestions = new List<string> { "Unable to analyze query due to error" }
         };
+    }
+
+    #endregion
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Analyze async (ISemanticAnalyzer interface)
+    /// </summary>
+    public async Task<SemanticAnalysis> AnalyzeAsync(string query, CancellationToken cancellationToken = default)
+    {
+        return await AnalyzeAsync(query);
+    }
+
+    /// <summary>
+    /// Classify async (IQueryClassifier interface)
+    /// </summary>
+    public async Task<QueryClassification> ClassifyAsync(string query, CancellationToken cancellationToken = default)
+    {
+        return await ClassifyQueryAsync(query);
     }
 
     #endregion

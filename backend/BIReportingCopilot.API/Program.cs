@@ -191,7 +191,7 @@ builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.SecretsCon
 builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.SqlValidationConfiguration>(
     builder.Configuration.GetSection("SqlValidation"));
 
-// Configure Entity Framework - Enhanced with bounded contexts (Enhancement #4: Database Context Optimization)
+// Configure Entity Framework with bounded contexts (Enhancement #4: Database Context Optimization)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 // Configure SQL Server options for all contexts
@@ -346,9 +346,9 @@ builder.Services.AddSignalR(options =>
     options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
 });
 
-// Redis Cache configuration is handled below in the unified caching section
+// Redis Cache configuration is handled below in the caching section
 
-// Add OpenAI client for enhanced AI service
+// Add OpenAI client for AI service
 builder.Services.AddSingleton(provider =>
 {
     var configuration = provider.GetRequiredService<IConfiguration>();
@@ -410,7 +410,7 @@ builder.Services.AddScoped<ILLMAwareAIService, BIReportingCopilot.Infrastructure
 // Register IAIService to use the LLM-aware service
 builder.Services.AddScoped<IAIService>(provider => provider.GetRequiredService<ILLMAwareAIService>());
 
-// ===== UNIFIED SERVICES (ROUND 4, 5 & 6 CLEANUP) =====
+// ===== CONSOLIDATED SERVICES (ROUND 4, 5 & 6 CLEANUP) =====
 
 // Configuration service - consolidates all configuration management
 builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Configuration.ConfigurationService>();
@@ -439,25 +439,25 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.SecurityMa
 // ===== AI/ML ENHANCEMENT SERVICES =====
 // Removed old Infrastructure ISemanticCacheService registration - using unified service instead
 
-// ===== ENHANCED AI SERVICES =====
-// Note: Advanced AI services are available but disabled for Phase 3A infrastructure setup
+// ===== AI SERVICES =====
+// Note: AI services are available but disabled for Phase 3A infrastructure setup
 
-// Enhanced AI configuration (now part of unified AIConfiguration)
-// Note: Enhanced AI features are now configured through the unified AIConfiguration
-// in UnifiedApplicationSettings section
+// AI configuration (now part of AIConfiguration)
+// Note: AI features are now configured through the AIConfiguration
+// in ApplicationSettings section
 
-// Feature flags and migration settings are now part of UnifiedApplicationSettings
-// These configurations have been consolidated into the unified configuration model
+// Feature flags and migration settings are now part of ApplicationSettings
+// These configurations have been consolidated into the configuration model
 
-// Phase 2 Enhanced Services - Available but disabled for Phase 3A infrastructure setup
+// Phase 2 Services - Available but disabled for Phase 3A infrastructure setup
 
-// Phase 3 Enhanced Services - Phase 3A: Infrastructure Ready
+// Phase 3 Services - Phase 3A: Infrastructure Ready
 // Phase 3 Status and Management Service
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Management.Phase3StatusService>();
 
 // TODO: Enable individual Phase 3 services after fixing compilation errors
 // Phase 3B: Streaming Analytics (Next)
-// Phase 3C: Advanced NLU (After fixing duplicates)
+// Phase 3C: NLU (After fixing duplicates)
 // Phase 3D: Federated Learning & Quantum Security (Final)
 
 // Phase 3 Configuration
@@ -586,8 +586,8 @@ builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Sch
 builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Query.SqlQueryService>();
 builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.AI.Management.PromptService>();
 
-// ===== ENHANCED AI SERVICES (Strategic Enhancements #2 & #3) =====
-builder.Services.AddScoped<IAdvancedNLUService, BIReportingCopilot.Infrastructure.AI.Intelligence.NLUService>();
+// ===== AI SERVICES (Strategic Enhancements #2 & #3) =====
+builder.Services.AddScoped<INLUService, BIReportingCopilot.Infrastructure.AI.Intelligence.NLUService>();
 builder.Services.AddScoped<ISchemaOptimizationService, BIReportingCopilot.Infrastructure.AI.Intelligence.OptimizationService>();
 builder.Services.AddScoped<IVectorSearchService, BIReportingCopilot.Infrastructure.AI.Intelligence.InMemoryVectorSearchService>();
 builder.Services.AddScoped<IQueryIntelligenceService, BIReportingCopilot.Infrastructure.AI.Intelligence.IntelligenceService>();
@@ -635,19 +635,19 @@ builder.Services.AddScoped<ISmsService>(provider =>
     provider.GetRequiredService<BIReportingCopilot.Infrastructure.Messaging.NotificationManagementService>());
 
 // ===== SECURITY SERVICES =====
-// Consolidated SQL validator - EnhancedSqlQueryValidator implements both interfaces
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.EnhancedSqlQueryValidator>();
+// Consolidated SQL validator - SqlQueryValidator implements both interfaces
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.SqlQueryValidator>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISqlQueryValidator>(provider =>
-    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Security.EnhancedSqlQueryValidator>());
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Security.SqlQueryValidator>());
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.IEnhancedSqlQueryValidator>(provider =>
-    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Security.EnhancedSqlQueryValidator>());
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Security.SqlQueryValidator>());
 
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.IRateLimitingService>(provider =>
     provider.GetRequiredService<BIReportingCopilot.Infrastructure.Security.SecurityManagementService>());
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISecretsManagementService, BIReportingCopilot.Infrastructure.Security.SecretsManagementService>();
 
 // ===== SERVICE ENHANCEMENTS =====
-// Simplified service registration - enhanced functionality built into base services
+// Simplified service registration - functionality built into base services
 // Removed complex decorator patterns for better maintainability and performance
 
 // ===== INFRASTRUCTURE SERVICES =====
@@ -714,7 +714,7 @@ builder.Services.AddEndpointsApiExplorer();
 var healthChecks = builder.Services.AddHealthChecks();
 
 // Add fast health checks that return cached status
-healthChecks.AddCheck<BIReportingCopilot.API.BIDatabaseHealthCheck>("bidatabase");
+healthChecks.AddCheck<BIReportingCopilot.API.HealthChecks.BIDatabaseHealthCheck>("bidatabase");
 
 // Add configuration health checks (Enhancement #3: Configuration Management)
 healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.ConfigurationHealthCheck>("configuration");
@@ -767,7 +767,7 @@ app.UseResponseCompression();
 app.UseGlobalExceptionHandler(); // Global exception handling
 app.UseCorrelationId();
 app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<EnhancedRateLimitingMiddleware>(); // Enhanced distributed rate limiting
+app.UseMiddleware<RateLimitingMiddleware>(); // Distributed rate limiting
 
 app.UseCors("AllowFrontend");
 
@@ -779,7 +779,7 @@ app.MapControllers();
 // Configure SignalR hubs
 app.MapHub<QueryStatusHub>("/hubs/query-status");
 app.MapHub<QueryHub>("/hubs/query");
-// Real-time streaming hub for enhanced features
+// Real-time streaming hub for streaming features
 app.MapHub<BIReportingCopilot.Infrastructure.AI.Streaming.StreamingHub>("/hubs/streaming");
 
 // Configure health checks

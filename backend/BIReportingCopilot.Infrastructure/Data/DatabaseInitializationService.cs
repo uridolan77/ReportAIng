@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core;
 using BIReportingCopilot.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;

@@ -2,6 +2,9 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Commands;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 using SqlQueryResult = BIReportingCopilot.Core.Models.SqlQueryResult;
 

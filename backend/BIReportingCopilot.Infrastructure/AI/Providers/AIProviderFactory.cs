@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Core.Models;
 using Microsoft.Extensions.Logging;
@@ -183,6 +184,34 @@ public class AIProviderFactory : IAIProviderFactory
             }
         });
     }
+
+    // =============================================================================
+    // MISSING INTERFACE METHOD IMPLEMENTATIONS
+    // =============================================================================
+
+    /// <summary>
+    /// Create provider synchronously
+    /// </summary>
+    public IAIProvider CreateProvider(string providerType)
+    {
+        return CreateProviderAsync(providerType).GetAwaiter().GetResult();
+    }
+
+    /// <summary>
+    /// Create provider asynchronously
+    /// </summary>
+    public async Task<IAIProvider> CreateProviderAsync(string providerType, CancellationToken cancellationToken = default)
+    {
+        return await CreateProviderAsync(providerType);
+    }
+
+    /// <summary>
+    /// Get list of supported providers
+    /// </summary>
+    public List<string> GetSupportedProviders()
+    {
+        return new List<string> { "OpenAI", "AzureOpenAI", "Fallback" };
+    }
 }
 
 /// <summary>
@@ -192,6 +221,7 @@ internal class FallbackAIProvider : IAIProvider
 {
     private readonly ILogger _logger;
 
+    public string ProviderId => "fallback";
     public string ProviderName => "Fallback";
     public bool IsConfigured => true; // Always available as fallback
 
@@ -245,6 +275,53 @@ internal class FallbackAIProvider : IAIProvider
             Content = string.Empty,
             IsComplete = true,
             ChunkIndex = 2
+        };
+    }
+
+    // =============================================================================
+    // MISSING INTERFACE METHOD IMPLEMENTATIONS
+    // =============================================================================
+
+    /// <summary>
+    /// Generate response for AI request
+    /// </summary>
+    public async Task<AIResponse> GenerateResponseAsync(AIRequest request, CancellationToken cancellationToken = default)
+    {
+        _logger.LogWarning("Using fallback AI provider - returning mock response");
+
+        return new AIResponse
+        {
+            RequestId = request.RequestId,
+            Content = "-- Fallback response: AI service not configured\nSELECT * FROM [Table] WHERE 1=1",
+            Success = true,
+            Metadata = new Dictionary<string, object>
+            {
+                ["provider"] = "fallback",
+                ["warning"] = "AI service not properly configured"
+            }
+        };
+    }
+
+    /// <summary>
+    /// Check if provider is available
+    /// </summary>
+    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        return true; // Fallback is always available
+    }
+
+    /// <summary>
+    /// Get provider metrics
+    /// </summary>
+    public async Task<AIProviderMetrics> GetMetricsAsync(CancellationToken cancellationToken = default)
+    {
+        return new AIProviderMetrics
+        {
+            ProviderId = ProviderId,
+            TotalRequests = 0,
+            SuccessfulRequests = 0,
+            FailedRequests = 0,
+            AverageResponseTime = 0
         };
     }
 }

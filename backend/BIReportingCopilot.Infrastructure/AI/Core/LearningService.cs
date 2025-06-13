@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using MLQueryMetrics = BIReportingCopilot.Core.Models.QueryMetrics;
 using MLUserFeedback = BIReportingCopilot.Core.Models.UserFeedback;

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Models;
 using System.Collections.Concurrent;
 using System.Text.Json;
@@ -392,7 +393,7 @@ public class InMemoryVectorSearchService : IVectorSearchService
     /// <summary>
     /// Clear the entire vector index
     /// </summary>
-    public Task ClearIndexAsync(CancellationToken cancellationToken = default)
+    public Task<bool> ClearIndexAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -408,12 +409,12 @@ public class InMemoryVectorSearchService : IVectorSearchService
             }
 
             _logger.LogInformation("🗑️ Cleared vector index - Removed {Count} entries", count);
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error clearing vector index");
-            return Task.CompletedTask;
+            return Task.FromResult(false);
         }
     }
 

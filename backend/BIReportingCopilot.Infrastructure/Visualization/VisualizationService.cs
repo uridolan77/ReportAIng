@@ -2,6 +2,8 @@ using BIReportingCopilot.Core.Models;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Visualization;
 using VisualizationRecommendation = BIReportingCopilot.Core.Models.VisualizationRecommendation;
 
 namespace BIReportingCopilot.Infrastructure.Visualization;
@@ -43,12 +45,12 @@ public class VisualizationService : IVisualizationService
 {
     private readonly IAIService _aiService;
     private readonly ILogger<VisualizationService> _logger;
-    private readonly ICacheService _cacheService;
+    private readonly BIReportingCopilot.Infrastructure.Interfaces.ICacheService _cacheService;
 
     public VisualizationService(
         IAIService aiService,
         ILogger<VisualizationService> logger,
-        ICacheService cacheService)
+        BIReportingCopilot.Infrastructure.Interfaces.ICacheService cacheService)
     {
         _aiService = aiService;
         _logger = logger;
@@ -256,7 +258,7 @@ public class VisualizationService : IVisualizationService
             var baseConfig = await GenerateVisualizationConfigAsync(query, columns, data);
             var dataAnalysis = AnalyzeDataCharacteristics(columns, data);
 
-            var advancedConfig = new AdvancedVisualizationConfig
+            var config = new VisualizationConfig
             {
                 Type = baseConfig.Type,
                 Title = baseConfig.Title,
@@ -264,26 +266,26 @@ public class VisualizationService : IVisualizationService
                 YAxis = baseConfig.YAxis,
                 Series = baseConfig.Series,
                 Config = baseConfig.Config,
-                ChartType = DetermineAdvancedChartType(baseConfig.Type),
+                ChartType = DetermineChartType(baseConfig.Type),
                 Animation = GenerateAnimationConfig(data.Length),
                 Interaction = GenerateInteractionConfig(dataAnalysis),
-                Theme = GenerateAdvancedThemeConfig(preferences?.Theme),
+                Theme = GenerateThemeConfig(preferences?.Theme),
                 DataProcessing = GenerateDataProcessingConfig(data.Length),
                 Export = GenerateExportConfig(),
                 Accessibility = GenerateAccessibilityConfig(),
                 Performance = GeneratePerformanceConfig(data.Length)
             };
 
-            return advancedConfig;
+            return config;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating advanced visualization");
+            _logger.LogError(ex, "Error generating visualization");
             throw;
         }
     }
 
-    public async Task<AdvancedDashboardConfig> GenerateAdvancedDashboardAsync(
+    public async Task<DashboardConfig> GenerateDashboardAsync(
         string query,
         ColumnMetadata[] columns,
         object[] data,
@@ -292,20 +294,20 @@ public class VisualizationService : IVisualizationService
         try
         {
             var charts = await GenerateMultipleVisualizationOptionsAsync(query, columns, data);
-            var advancedCharts = new List<AdvancedVisualizationConfig>();
+            var chartConfigs = new List<VisualizationConfig>();
 
             foreach (var chart in charts)
             {
-                var advancedChart = await GenerateAdvancedVisualizationAsync(query, columns, data, null);
-                advancedCharts.Add(advancedChart);
+                var chartConfig = await GenerateVisualizationAsync(query, columns, data, null);
+                chartConfigs.Add(chartConfig);
             }
 
-            var dashboardConfig = new AdvancedDashboardConfig
+            var dashboardConfig = new DashboardConfig
             {
-                Title = preferences?.Title ?? $"Advanced Analysis: {ExtractQuerySubject(query)}",
+                Title = preferences?.Title ?? $"Analysis: {ExtractQuerySubject(query)}",
                 Description = $"Comprehensive dashboard generated from: {query}",
-                Charts = advancedCharts.ToArray(),
-                Layout = GenerateAdvancedDashboardLayout(advancedCharts.Count, preferences),
+                Charts = chartConfigs.ToArray(),
+                Layout = GenerateDashboardLayout(chartConfigs.Count, preferences),
                 GlobalFilters = Array.Empty<FilterConfig>(),
                 RefreshInterval = preferences?.RefreshInterval
             };
@@ -314,7 +316,7 @@ public class VisualizationService : IVisualizationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating advanced dashboard");
+            _logger.LogError(ex, "Error generating dashboard");
             throw;
         }
     }
@@ -333,12 +335,12 @@ public class VisualizationService : IVisualizationService
             {
                 recommendations.Add(new VisualizationRecommendation
                 {
-                    ChartType = AdvancedChartType.Scatter.ToString(),
+                    ChartType = ChartType.Scatter,
                     Confidence = 0.85,
                     Reasoning = "Multiple numeric columns detected",
                     BestFor = "Correlation analysis",
-                    Limitations = new List<string> { "May be cluttered with large datasets" },
-                    EstimatedPerformance = "Good",
+                    Limitations = new string[] { "May be cluttered with large datasets" },
+                    EstimatedPerformance = new PerformanceEstimate { EstimatedRenderTime = TimeSpan.FromMilliseconds(500) },
                     SuggestedConfig = new Dictionary<string, object> { ["enableRegression"] = true }
                 });
             }
@@ -352,13 +354,13 @@ public class VisualizationService : IVisualizationService
         }
     }
 
-    public Task<AdvancedVisualizationConfig> OptimizeVisualizationForPerformanceAsync(
-        AdvancedVisualizationConfig config,
+    public Task<VisualizationConfig> OptimizeVisualizationForPerformanceAsync(
+        VisualizationConfig config,
         int dataSize)
     {
         try
         {
-            var optimizedConfig = new AdvancedVisualizationConfig
+            var optimizedConfig = new VisualizationConfig
             {
                 Type = config.Type,
                 Title = config.Title,
@@ -644,18 +646,18 @@ public class VisualizationService : IVisualizationService
         return words.Length > 2 ? string.Join(" ", words.Take(3)) : query;
     }
 
-    // Advanced helper methods
-    private AdvancedChartType DetermineAdvancedChartType(string basicType)
+    // Helper methods
+    private ChartType DetermineChartType(string basicType)
     {
         return basicType.ToLowerInvariant() switch
         {
-            "bar" => AdvancedChartType.Bar,
-            "line" => AdvancedChartType.Line,
-            "pie" => AdvancedChartType.Pie,
-            "scatter" => AdvancedChartType.Scatter,
-            "area" => AdvancedChartType.Area,
-            "heatmap" => AdvancedChartType.Heatmap,
-            _ => AdvancedChartType.Bar
+            "bar" => ChartType.Bar,
+            "line" => ChartType.Line,
+            "pie" => ChartType.Pie,
+            "scatter" => ChartType.Scatter,
+            "area" => ChartType.Area,
+            "heatmap" => ChartType.Heatmap,
+            _ => ChartType.Bar
         };
     }
 
@@ -688,7 +690,7 @@ public class VisualizationService : IVisualizationService
         };
     }
 
-    private ThemeConfig GenerateAdvancedThemeConfig(string? themeName)
+    private ThemeConfig GenerateThemeConfig(string? themeName)
     {
         return new ThemeConfig
         {

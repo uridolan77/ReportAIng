@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Business;
+using BIReportingCopilot.Core.Models.Statistics;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
@@ -291,6 +293,66 @@ public class GlossaryManagementService : IGlossaryManagementService
             UsageCount = entity.UsageCount,
             LastUsedDate = entity.LastUsedDate
         };
+    }
+
+    #endregion
+
+    #region Missing Interface Method Implementations
+
+    /// <summary>
+    /// Get glossary terms async (IGlossaryManagementService interface)
+    /// </summary>
+    public async Task<List<BusinessGlossaryDto>> GetGlossaryTermsAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetGlossaryTermsAsync();
+    }
+
+    /// <summary>
+    /// Get glossary term async (IGlossaryManagementService interface)
+    /// </summary>
+    public async Task<BusinessGlossaryDto?> GetGlossaryTermAsync(string termId, CancellationToken cancellationToken = default)
+    {
+        if (long.TryParse(termId, out var id))
+        {
+            return await GetGlossaryTermAsync(id);
+        }
+        return await FindGlossaryTermByNameAsync(termId);
+    }
+
+    /// <summary>
+    /// Create glossary term async (IGlossaryManagementService interface)
+    /// </summary>
+    public async Task<BusinessGlossaryDto> CreateGlossaryTermAsync(BusinessGlossaryDto term, CancellationToken cancellationToken = default)
+    {
+        return await CreateGlossaryTermAsync(term, "system");
+    }
+
+    /// <summary>
+    /// Update glossary term async (IGlossaryManagementService interface)
+    /// </summary>
+    public async Task<BusinessGlossaryDto?> UpdateGlossaryTermAsync(BusinessGlossaryDto term, CancellationToken cancellationToken = default)
+    {
+        return await UpdateGlossaryTermAsync(term.Id, term, "system");
+    }
+
+    /// <summary>
+    /// Delete glossary term async (IGlossaryManagementService interface)
+    /// </summary>
+    public async Task<bool> DeleteGlossaryTermAsync(string termId, CancellationToken cancellationToken = default)
+    {
+        if (long.TryParse(termId, out var id))
+        {
+            return await DeleteGlossaryTermAsync(id);
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Search glossary terms async (IGlossaryManagementService interface)
+    /// </summary>
+    public async Task<List<BusinessGlossaryDto>> SearchGlossaryTermsAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        return await SearchGlossaryTermsAsync(searchTerm);
     }
 
     #endregion

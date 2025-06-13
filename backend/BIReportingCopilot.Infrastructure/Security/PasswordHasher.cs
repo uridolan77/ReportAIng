@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
+using BIReportingCopilot.Infrastructure.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace BIReportingCopilot.Infrastructure.Security;
@@ -8,7 +10,7 @@ namespace BIReportingCopilot.Infrastructure.Security;
 /// <summary>
 /// Secure password hasher using PBKDF2 with SHA-256
 /// </summary>
-public class PasswordHasher : IPasswordHasher
+public class PasswordHasher : BIReportingCopilot.Core.Interfaces.Security.IPasswordHasher
 {
     private readonly ILogger<PasswordHasher> _logger;
     private const int SaltSize = 32; // 256 bits

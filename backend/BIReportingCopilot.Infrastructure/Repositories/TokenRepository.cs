@@ -1,7 +1,9 @@
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Infrastructure.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -43,7 +45,7 @@ public class TokenRepository : ITokenRepository
         }
     }
 
-    public async Task<TokenInfo?> GetRefreshTokenAsync(string token)
+    public async Task<RefreshTokenInfo?> GetRefreshTokenAsync(string token)
     {
         try
         {
@@ -60,7 +62,7 @@ public class TokenRepository : ITokenRepository
                 return null;
             }
 
-            return new TokenInfo
+            return new RefreshTokenInfo
             {
                 Token = refreshTokenEntity.Token,
                 UserId = refreshTokenEntity.UserId,

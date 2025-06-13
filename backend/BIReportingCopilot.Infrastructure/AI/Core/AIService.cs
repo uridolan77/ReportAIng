@@ -2,7 +2,9 @@ using Azure.AI.OpenAI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
-using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Configuration;
 using System.Text.Json;
@@ -19,7 +21,7 @@ using CoreModels = BIReportingCopilot.Core.Models;
 namespace BIReportingCopilot.Infrastructure.AI.Core;
 
 /// <summary>
-/// Enhanced AI service with built-in resilience, monitoring, and adaptive capabilities
+/// AI service with built-in resilience, monitoring, and adaptive capabilities
 /// Consolidates multiple decorator patterns into a single, comprehensive service
 /// </summary>
 public class AIService : IAIService
@@ -68,7 +70,7 @@ public class AIService : IAIService
         // Initialize resilience policies
         InitializeResiliencePolicies();
 
-        _logger.LogInformation("Enhanced AI service with adaptive learning initialized with provider: {ProviderName}", _provider?.ProviderName ?? "None");
+        _logger.LogInformation("AI service with adaptive learning initialized with provider: {ProviderName}", _provider?.ProviderName ?? "None");
     }
 
     #region Standard AI Operations
@@ -89,7 +91,7 @@ public class AIService : IAIService
             activity?.SetTag("prompt.length", prompt.Length);
             activity?.SetTag("operation", "sql_generation");
 
-            _logger.LogInformation("Building enhanced prompt for SQL generation...");
+            _logger.LogInformation("Building prompt for SQL generation...");
 
             return await _combinedPolicy.ExecuteAsync(async () =>
             {
@@ -112,7 +114,7 @@ public class AIService : IAIService
                     }
                 }
 
-                var enhancedPrompt = BuildEnhancedPrompt(finalPrompt);
+                var enhancedPrompt = BuildPrompt(finalPrompt);
 
                 var options = new AIOptions
                 {
@@ -482,9 +484,9 @@ Return only valid JSON.";
 
     #region Private Helper Methods
 
-    private string BuildEnhancedPrompt(string originalPrompt)
+    private string BuildPrompt(string originalPrompt)
     {
-        // Enhanced prompt with NOLOCK instructions
+        // Prompt with NOLOCK instructions
         return $@"Generate SQL for: {originalPrompt}
 
 IMPORTANT REQUIREMENTS:
@@ -670,6 +672,70 @@ EXAMPLES:
     }
 
     #endregion
+
+    // =============================================================================
+    // MISSING INTERFACE METHOD IMPLEMENTATIONS
+    // =============================================================================
+
+    /// <summary>
+    /// Check if AI service is available
+    /// </summary>
+    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_provider == null)
+            {
+                return false;
+            }
+
+            // Test with a simple prompt
+            var testResult = await _provider.GenerateCompletionAsync(
+                "SELECT 1",
+                new AIOptions { MaxTokens = 10, TimeoutSeconds = 5 },
+                cancellationToken);
+
+            return !string.IsNullOrEmpty(testResult);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "AI service availability check failed");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Get AI service metrics
+    /// </summary>
+    public async Task<BIReportingCopilot.Core.Interfaces.AI.AIServiceMetrics> GetServiceMetricsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var isAvailable = await IsAvailableAsync(cancellationToken);
+
+            return new Core.Models.AIServiceMetrics
+            {
+                IsAvailable = isAvailable,
+                TotalRequests = 0, // Would need to track this
+                SuccessfulRequests = 0, // Would need to track this
+                FailedRequests = 0, // Would need to track this
+                AverageResponseTime = 0, // Would need to track this
+                LastHealthCheck = DateTime.UtcNow,
+                ProviderName = _provider?.ProviderName ?? "Unknown",
+                Version = "1.0.0"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting AI service metrics");
+            return new Core.Models.AIServiceMetrics
+            {
+                IsAvailable = false,
+                LastHealthCheck = DateTime.UtcNow,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
 }
 
 /// <summary>

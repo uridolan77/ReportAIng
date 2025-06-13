@@ -1,7 +1,9 @@
 using Azure.AI.OpenAI;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Configuration;
+using BIReportingCopilot.Infrastructure.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Runtime.CompilerServices;
@@ -18,6 +20,7 @@ public class OpenAIProvider : IAIProvider
     private readonly ILogger<OpenAIProvider> _logger;
 
     public string ProviderName => "OpenAI";
+    public string ProviderId => "openai";
     public bool IsConfigured => _config.IsConfigured;
 
     public OpenAIProvider(
@@ -195,5 +198,99 @@ public class OpenAIProvider : IAIProvider
             Content = errorMessage,
             IsComplete = true
         };
+    }
+
+    // =============================================================================
+    // MISSING INTERFACE METHOD IMPLEMENTATIONS
+    // =============================================================================
+
+    /// <summary>
+    /// Generate response async (IAIProvider interface)
+    /// </summary>
+    public async Task<AIResponse> GenerateResponseAsync(AIRequest request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var options = new AIOptions
+            {
+                Temperature = request.Temperature ?? 0.7f,
+                MaxTokens = request.MaxTokens ?? 2000,
+                SystemMessage = request.SystemMessage,
+                TimeoutSeconds = request.TimeoutSeconds ?? 30
+            };
+
+            var content = await GenerateCompletionAsync(request.Prompt, options, cancellationToken);
+
+            return new AIResponse
+            {
+                Content = content,
+                Success = true,
+                TokensUsed = content.Length / 4, // Rough estimate
+                Model = _config.Model,
+                Provider = ProviderId
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating AI response");
+            return new AIResponse
+            {
+                Content = string.Empty,
+                Success = false,
+                Error = ex.Message,
+                Model = _config.Model,
+                Provider = ProviderId
+            };
+        }
+    }
+
+    /// <summary>
+    /// Check if provider is available
+    /// </summary>
+    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!IsConfigured)
+                return false;
+
+            // Simple test request to check availability
+            var testRequest = new AIRequest
+            {
+                Prompt = "Test",
+                MaxTokens = 10,
+                Temperature = 0.1f
+            };
+
+            var response = await GenerateResponseAsync(testRequest, cancellationToken);
+            return response.Success;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Get provider metrics
+    /// </summary>
+    public async Task<AIProviderMetrics> GetMetricsAsync(CancellationToken cancellationToken = default)
+    {
+        return await Task.FromResult(new AIProviderMetrics
+        {
+            ProviderId = ProviderId,
+            ProviderName = ProviderName,
+            IsAvailable = IsConfigured,
+            ResponseTimeMs = 0, // Would track actual response times
+            RequestCount = 0, // Would track actual request count
+            ErrorCount = 0, // Would track actual error count
+            LastUsed = DateTime.UtcNow,
+            Configuration = new Dictionary<string, object>
+            {
+                ["model"] = _config.Model,
+                ["endpoint"] = _config.Endpoint,
+                ["configured"] = IsConfigured
+            }
+        });
     }
 }

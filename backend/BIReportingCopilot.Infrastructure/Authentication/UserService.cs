@@ -1,8 +1,10 @@
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
+using BIReportingCopilot.Infrastructure.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -16,12 +18,12 @@ public class UserService : IUserService
 {
     private readonly ILogger<UserService> _logger;
     private readonly IDbContextFactory _contextFactory;
-    private readonly IAuditService _auditService;
+    private readonly BIReportingCopilot.Core.Interfaces.Security.IAuditService _auditService;
 
     public UserService(
         ILogger<UserService> logger,
         IDbContextFactory contextFactory,
-        IAuditService auditService)
+        BIReportingCopilot.Core.Interfaces.Security.IAuditService auditService)
     {
         _logger = logger;
         _contextFactory = contextFactory;
@@ -75,7 +77,7 @@ public class UserService : IUserService
 
             if (existingPrefs == null)
             {
-                existingPrefs = new UserPreferencesEntity
+                existingPrefs = new Infrastructure.Data.Entities.UserPreferencesEntity
                 {
                     UserId = userId,
                     CreatedDate = DateTime.UtcNow
@@ -395,7 +397,7 @@ public class UserService : IUserService
         }
     }
 
-    private async Task<UserPreferencesEntity?> GetUserPreferencesEntityAsync(string userId)
+    private async Task<Infrastructure.Data.Entities.UserPreferencesEntity?> GetUserPreferencesEntityAsync(string userId)
     {
         return await _contextFactory.ExecuteWithContextAsync(ContextType.Security, async dbContext =>
         {
@@ -405,7 +407,7 @@ public class UserService : IUserService
         });
     }
 
-    private UserPreferences MapToUserPreferences(UserPreferencesEntity? entity)
+    private UserPreferences MapToUserPreferences(Infrastructure.Data.Entities.UserPreferencesEntity? entity)
     {
         if (entity == null)
         {

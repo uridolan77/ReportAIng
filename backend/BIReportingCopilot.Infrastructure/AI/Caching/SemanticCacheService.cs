@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.Statistics;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -163,13 +165,13 @@ public class SemanticCacheService : ISemanticCacheService
         }
     }
 
-    public async Task<SemanticCacheStatistics> GetSemanticCacheStatisticsAsync()
+    public async Task<BIReportingCopilot.Core.Interfaces.AI.SemanticCacheStatistics> GetSemanticCacheStatisticsAsync()
     {
         try
         {
             return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
             {
-                var stats = new SemanticCacheStatistics
+                var stats = new BIReportingCopilot.Core.Interfaces.AI.SemanticCacheStatistics
                 {
                     TotalEntries = 0,
                     HitCount = 0,
@@ -203,7 +205,7 @@ public class SemanticCacheService : ISemanticCacheService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting cache statistics");
-            return new SemanticCacheStatistics { LastUpdated = DateTime.UtcNow };
+            return new Core.Interfaces.AI.SemanticCacheStatistics { LastUpdated = DateTime.UtcNow };
         }
     }
 
@@ -424,12 +426,11 @@ public class SemanticCacheService : ISemanticCacheService
         return Task.CompletedTask;
     }
 
-    public Task<CacheHealthStatus> GetCacheHealthAsync()
+    public Task<BIReportingCopilot.Core.Models.CacheHealthStatus> GetCacheHealthAsync()
     {
-        return Task.FromResult(new CacheHealthStatus
+        return Task.FromResult(new BIReportingCopilot.Core.Models.CacheHealthStatus
         {
             IsHealthy = true,
-            Status = "Healthy",
             LastChecked = DateTime.UtcNow
         });
     }

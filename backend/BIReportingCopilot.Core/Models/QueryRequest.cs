@@ -79,50 +79,7 @@ public class QueryMetadata
 
 
 
-public class VisualizationConfig
-{
-    public string Type { get; set; } = string.Empty; // bar, line, pie, table, scatter, heatmap, etc.
-    public Dictionary<string, object> Config { get; set; } = new();
-    public string? Title { get; set; }
-    public string? XAxis { get; set; }
-    public string? YAxis { get; set; }
-    public string[]? Series { get; set; }
-    public ChartTheme Theme { get; set; } = ChartTheme.Modern;
-    public ColorScheme ColorScheme { get; set; } = ColorScheme.Business;
-    public bool EnableInteractivity { get; set; } = true;
-    public bool EnableAnimation { get; set; } = true;
-    public VisualizationMetadata? Metadata { get; set; }
-}
-
-public class VisualizationMetadata
-{
-    public string DataSource { get; set; } = string.Empty;
-    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
-    public int DataPointCount { get; set; }
-    public string[] SuggestedAlternatives { get; set; } = Array.Empty<string>();
-    public double ConfidenceScore { get; set; }
-    public string OptimizationLevel { get; set; } = "Standard";
-}
-
-public enum ChartTheme
-{
-    Modern,
-    Classic,
-    Dark,
-    Light,
-    Minimal,
-    Corporate
-}
-
-public enum ColorScheme
-{
-    Business,
-    Vibrant,
-    Pastel,
-    Monochrome,
-    Accessible,
-    Custom
-}
+// VisualizationConfig, VisualizationMetadata, ChartTheme, and ColorScheme moved to Visualization.cs
 
 // Enhanced visualization models for interactive features
 public class InteractiveVisualizationConfig
@@ -152,15 +109,7 @@ public class DrillDownOption
     public string TargetColumn { get; set; } = string.Empty;
 }
 
-public class DashboardConfig
-{
-    public string Title { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public VisualizationConfig[] Charts { get; set; } = Array.Empty<VisualizationConfig>();
-    public DashboardLayout Layout { get; set; } = new();
-    public FilterConfig[] GlobalFilters { get; set; } = Array.Empty<FilterConfig>();
-    public int? RefreshInterval { get; set; } // seconds
-}
+// DashboardConfig moved to Visualization.cs
 
 // DashboardLayout moved to MultiModalDashboards.cs to avoid duplicates
 
@@ -217,3 +166,5 @@ public class PromptSection
     public int Order { get; set; }
     public Dictionary<string, object>? Metadata { get; set; }
 }
+
+// DashboardLayout and FilterConfig classes moved to MultiModalDashboards.cs to avoid duplicates

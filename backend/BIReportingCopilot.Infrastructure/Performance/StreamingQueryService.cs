@@ -6,6 +6,8 @@ using System.Threading.Channels;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.DTOs;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Streaming;
 using BIReportingCopilot.Core.DTOs;
 
 namespace BIReportingCopilot.Infrastructure.Performance;

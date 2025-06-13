@@ -353,7 +353,7 @@ public class PerformanceManagementService
         {
             var queryMetrics = _metricsCache.Values
                 .Where(m => m.OperationType.StartsWith("query_"))
-                .Select(m => new QueryPerformanceMetrics
+                .Select(m => new BIReportingCopilot.Infrastructure.Performance.QueryPerformanceMetrics
                 {
                     QueryType = m.OperationType.Replace("query_", ""),
                     AverageExecutionTime = m.AverageExecutionTime,
