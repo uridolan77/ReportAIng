@@ -2,7 +2,7 @@
  * Suggestions Page - AI-powered smart query suggestions
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Row,
   Col,
@@ -11,7 +11,10 @@ import {
   Spin,
   Badge,
   Tooltip,
-  Typography
+  Typography,
+  Statistic,
+  Space,
+  message
 } from 'antd';
 import {
   BulbOutlined,
@@ -19,21 +22,58 @@ import {
   ClockCircleOutlined,
   RiseOutlined,
   UserOutlined,
-  DollarOutlined
+  DollarOutlined,
+  AppstoreOutlined,
+  FileTextOutlined,
+  BarChartOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SyncOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
 import { Card, CardContent } from '../components/core/Card';
-import { Button } from '../components/core/Button';
+import { Button, Tabs, Flex } from '../components/core';
+import { useAuthStore } from '../stores/authStore';
+import { CategoriesManager } from '../components/Admin/QuerySuggestions/CategoriesManager';
+import { SuggestionsManager } from '../components/Admin/QuerySuggestions/SuggestionsManager';
+import { SuggestionAnalytics } from '../components/Admin/QuerySuggestions/SuggestionAnalytics';
+import { SuggestionSyncUtility } from '../components/Admin/QuerySuggestions/SuggestionSyncUtility';
+import { querySuggestionService, SuggestionCategory, QuerySuggestion } from '../services/querySuggestionService';
 
 const { Text } = Typography;
+
+interface SuggestionStats {
+  totalCategories: number;
+  totalSuggestions: number;
+  activeSuggestions: number;
+  totalUsage: number;
+  popularCategories: string[];
+  recentlyUsed: string[];
+}
 
 const SuggestionsPageContent: React.FC = () => {
   const navigate = useNavigate();
   const { setQuery } = useQueryContext();
+  const { isAdmin } = useAuthStore();
+  const [activeTab, setActiveTab] = useState('suggestions');
   const [loading, setLoading] = useState(true);
   const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  // Management state
+  const [managementLoading, setManagementLoading] = useState(true);
+  const [stats, setStats] = useState<SuggestionStats>({
+    totalCategories: 0,
+    totalSuggestions: 0,
+    activeSuggestions: 0,
+    totalUsage: 0,
+    popularCategories: [],
+    recentlyUsed: []
+  });
+  const [categories, setCategories] = useState<SuggestionCategory[]>([]);
+  const [managementSuggestions, setManagementSuggestions] = useState<QuerySuggestion[]>([]);
 
   // Real AI suggestions - loaded from API
   const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
@@ -73,6 +113,66 @@ const SuggestionsPageContent: React.FC = () => {
     setLoading(loadingAI);
   }, [aiSuggestions, loadingAI]);
 
+  // Load management data
+  const loadManagementData = useCallback(async () => {
+    if (!isAdmin) return;
+
+    try {
+      setManagementLoading(true);
+
+      // Load categories and suggestions
+      const [categoriesData, suggestionsData] = await Promise.all([
+        querySuggestionService.getCategories(true), // Include inactive
+        querySuggestionService.searchSuggestions({ take: 1000 }) // Get all suggestions
+      ]);
+
+      setCategories(categoriesData);
+      setManagementSuggestions(suggestionsData.suggestions);
+
+      // Calculate stats
+      const activeSuggestions = suggestionsData.suggestions.filter(s => s.isActive).length;
+      const totalUsage = suggestionsData.suggestions.reduce((sum, s) => sum + s.usageCount, 0);
+
+      // Get popular categories (top 5 by suggestion count)
+      const categoryUsage = categoriesData.map(cat => ({
+        title: cat.title,
+        count: cat.suggestionCount
+      })).sort((a, b) => b.count - a.count).slice(0, 5);
+
+      // Get recently used suggestions (top 5 by last used)
+      const recentSuggestions = suggestionsData.suggestions
+        .filter(s => s.lastUsed)
+        .sort((a, b) => new Date(b.lastUsed!).getTime() - new Date(a.lastUsed!).getTime())
+        .slice(0, 5)
+        .map(s => s.description);
+
+      setStats({
+        totalCategories: categoriesData.length,
+        totalSuggestions: suggestionsData.suggestions.length,
+        activeSuggestions,
+        totalUsage,
+        popularCategories: categoryUsage.map(c => c.title),
+        recentlyUsed: recentSuggestions
+      });
+
+    } catch (error) {
+      console.error('Error loading suggestion management data:', error);
+      message.error('Failed to load suggestion management data');
+    } finally {
+      setManagementLoading(false);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin && activeTab !== 'suggestions') {
+      loadManagementData();
+    }
+  }, [isAdmin, activeTab, loadManagementData]);
+
+  const handleTabChange = useCallback((key: string) => {
+    setActiveTab(key);
+  }, []);
+
   const handleSuggestionSelect = (suggestion: any) => {
     setQuery(suggestion.query);
     navigate('/', { state: { selectedQuery: suggestion.query } });
@@ -90,16 +190,161 @@ const SuggestionsPageContent: React.FC = () => {
     }
   };
 
-  return (
+  const renderManagementOverview = () => (
     <div style={{ padding: '24px' }}>
-      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
-        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
-          <BulbOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
-          AI-Powered Query Suggestions
-        </h1>
-        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
-          Intelligent recommendations based on your data patterns and query history
-        </p>
+      {/* Stats Overview */}
+      <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Total Categories"
+              value={stats.totalCategories}
+              prefix={<AppstoreOutlined />}
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Total Suggestions"
+              value={stats.totalSuggestions}
+              prefix={<FileTextOutlined />}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Active Suggestions"
+              value={stats.activeSuggestions}
+              prefix={<BulbOutlined />}
+              valueStyle={{ color: '#faad14' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Total Usage"
+              value={stats.totalUsage}
+              prefix={<BarChartOutlined />}
+              valueStyle={{ color: '#722ed1' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Quick Actions */}
+      <Card
+        title="Quick Actions"
+        style={{ marginBottom: '24px' }}
+        extra={
+          <Button
+            variant="outline"
+            size="small"
+            onClick={loadManagementData}
+            loading={managementLoading}
+          >
+            <ReloadOutlined /> Refresh
+          </Button>
+        }
+      >
+        <Space wrap>
+          <Button
+            variant="primary"
+            onClick={() => setActiveTab('categories')}
+          >
+            <PlusOutlined /> Add Category
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setActiveTab('manage-suggestions')}
+          >
+            <PlusOutlined /> Add Suggestion
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setActiveTab('analytics')}
+          >
+            <BarChartOutlined /> View Analytics
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setActiveTab('sync')}
+          >
+            <SyncOutlined /> Sync Database
+          </Button>
+        </Space>
+      </Card>
+
+      {/* Popular Categories */}
+      <Row gutter={[24, 24]}>
+        <Col xs={24} lg={12}>
+          <Card title="Popular Categories" size="small">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {stats.popularCategories.map((category, index) => (
+                <div key={category} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text>{category}</Text>
+                  <Badge count={index + 1} style={{ backgroundColor: '#52c41a' }} />
+                </div>
+              ))}
+              {stats.popularCategories.length === 0 && (
+                <Text type="secondary">No categories available</Text>
+              )}
+            </Space>
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card title="Recently Used Suggestions" size="small">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {stats.recentlyUsed.map((suggestion, index) => (
+                <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text ellipsis style={{ maxWidth: '200px' }}>{suggestion}</Text>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>#{index + 1}</Text>
+                </div>
+              ))}
+              {stats.recentlyUsed.length === 0 && (
+                <Text type="secondary">No recent usage data</Text>
+              )}
+            </Space>
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
+
+  const renderSuggestionsContent = () => (
+    <div className="full-width-content">
+      {/* AI Status Card */}
+      <div style={{ marginBottom: '32px', padding: '24px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>AI Analysis Status</h3>
+          <RobotOutlined style={{ color: '#1890ff' }} />
+        </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px'
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{
+              color: '#1a1a1a',
+              fontWeight: 600,
+              marginBottom: '4px'
+            }}>
+              {loading ? 'Analyzing your data patterns...' : `Generated ${suggestions.length} personalized suggestions`}
+            </div>
+            <div style={{
+              color: '#666',
+              fontSize: '14px'
+            }}>
+              {loading ? 'Please wait while AI processes your query history' : 'Ready to explore intelligent recommendations'}
+            </div>
+          </div>
+          {loading && <Spin />}
+        </div>
       </div>
 
       {/* AI Status Card */}
@@ -337,6 +582,122 @@ const SuggestionsPageContent: React.FC = () => {
           </Button>
         </div>
       </div>
+    </div>
+  );
+
+  // Create tab items
+  const tabItems = [
+    {
+      key: 'suggestions',
+      label: '🤖 AI Suggestions',
+      children: renderSuggestionsContent(),
+    },
+  ];
+
+  // Add management tabs for admin users
+  if (isAdmin) {
+    tabItems.push(
+      {
+        key: 'overview',
+        label: (
+          <Space>
+            <BarChartOutlined />
+            <span>Management Overview</span>
+            <Badge count={stats.totalSuggestions} style={{ backgroundColor: '#52c41a' }} />
+          </Space>
+        ),
+        children: managementLoading && activeTab === 'overview' ? (
+          <div style={{ padding: '24px', textAlign: 'center' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: '16px' }}>
+              <Text type="secondary">Loading suggestion management data...</Text>
+            </div>
+          </div>
+        ) : renderManagementOverview()
+      },
+      {
+        key: 'categories',
+        label: (
+          <Space>
+            <AppstoreOutlined />
+            <span>Categories</span>
+            <Badge count={stats.totalCategories} style={{ backgroundColor: '#1890ff' }} />
+          </Space>
+        ),
+        children: (
+          <CategoriesManager
+            categories={categories}
+            onCategoriesChange={setCategories}
+            onRefresh={loadManagementData}
+          />
+        )
+      },
+      {
+        key: 'manage-suggestions',
+        label: (
+          <Space>
+            <FileTextOutlined />
+            <span>Manage Suggestions</span>
+            <Badge count={stats.activeSuggestions} style={{ backgroundColor: '#faad14' }} />
+          </Space>
+        ),
+        children: (
+          <SuggestionsManager
+            suggestions={managementSuggestions}
+            categories={categories}
+            onSuggestionsChange={setManagementSuggestions}
+            onRefresh={loadManagementData}
+          />
+        )
+      },
+      {
+        key: 'analytics',
+        label: (
+          <Space>
+            <BarChartOutlined />
+            <span>Analytics</span>
+          </Space>
+        ),
+        children: (
+          <SuggestionAnalytics
+            suggestions={managementSuggestions}
+            categories={categories}
+            stats={stats}
+          />
+        )
+      },
+      {
+        key: 'sync',
+        label: (
+          <Space>
+            <SyncOutlined />
+            <span>Sync Database</span>
+          </Space>
+        ),
+        children: <SuggestionSyncUtility onSyncComplete={loadManagementData} />
+      }
+    );
+  }
+
+  return (
+    <div style={{ padding: '24px' }}>
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+          <BulbOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+          AI-Powered Query Suggestions
+        </h1>
+        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+          Intelligent recommendations based on your data patterns and query history
+        </p>
+      </div>
+
+      <Tabs
+        variant="line"
+        size="large"
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        items={tabItems}
+      />
     </div>
   );
 };

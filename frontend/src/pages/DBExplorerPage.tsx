@@ -24,6 +24,7 @@ import { DBExplorer } from '../components/DBExplorer/DBExplorer';
 import { SchemaTree } from '../components/DBExplorer/SchemaTree';
 import { TableDataPreview } from '../components/DBExplorer/TableDataPreview';
 import { TableExplorer } from '../components/DBExplorer/TableExplorer';
+import { SchemaManagementDashboard } from '../components/SchemaManagement/SchemaManagementDashboard';
 import { DatabaseTable } from '../types/dbExplorer';
 
 const DBExplorerPage: React.FC = () => {
@@ -343,6 +344,15 @@ const DBExplorerPage: React.FC = () => {
         </div>
       ),
     },
+    {
+      key: 'schema-management',
+      label: '🗂️ Schema Management',
+      children: (
+        <div className="full-width-content">
+          <SchemaManagementDashboard />
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -350,10 +360,10 @@ const DBExplorerPage: React.FC = () => {
       <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
         <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
           <DatabaseOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
-          Database Explorer
+          DB Management
         </h1>
         <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
-          Explore database schema, preview table data, and understand your data structure
+          Explore database schema, manage business context, and understand your data structure
         </p>
       </div>
 

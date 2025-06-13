@@ -128,7 +128,7 @@
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  background: var(--neutral-50);
+  /* background: var(--neutral-50); - Removed to allow background image */
   font-family: var(--font-family-primary);
   font-size: var(--text-base);
   line-height: var(--line-height-normal);
@@ -269,6 +269,27 @@
 /* Fix dropdown arrow */
 .corner-status-panel .anticon-down {
   font-size: 8px !important;
+}
+
+/* Main content area with background image */
+.main-content-area {
+  position: relative;
+  overflow: hidden;
+}
+
+.main-content-area::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: inherit;
+  background-size: inherit;
+  background-position: inherit;
+  background-repeat: inherit;
+  background-attachment: inherit;
+  z-index: -1;
 }
 
 /* Ensure content doesn't overlap with corner panel and uses full width */
@@ -1348,6 +1369,19 @@ body.dark-theme {
   color: #f9fafb !important;
 }
 
+/* Allow main content area to be transparent when app has background image */
+[data-theme="dark"] .app-with-background .main-content-area,
+[data-theme="dark"] .app-with-background .ant-layout-content.main-content-area,
+.dark-theme .app-with-background .main-content-area,
+.dark-theme .app-with-background .ant-layout-content.main-content-area,
+[data-theme="light"] .app-with-background .main-content-area,
+[data-theme="light"] .app-with-background .ant-layout-content.main-content-area,
+.light-theme .app-with-background .main-content-area,
+.light-theme .app-with-background .ant-layout-content.main-content-area {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
 /* Force all children of main content to inherit dark theme */
 [data-theme="dark"] .main-content-area *,
 .dark-theme .main-content-area * {
@@ -1408,6 +1442,19 @@ body.dark-theme {
   background: #1f2937 !important;
   background-color: #1f2937 !important;
   color: #f9fafb !important;
+}
+
+/* Override dark mode background for apps with background images */
+[data-theme="dark"] .App.app-with-background,
+.dark-theme .App.app-with-background,
+[data-theme="light"] .App.app-with-background,
+.light-theme .App.app-with-background {
+  background-color: transparent !important;
+  background-image: var(--app-background-image) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
 }
 
 /* Force specific problematic elements */

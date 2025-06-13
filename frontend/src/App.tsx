@@ -19,6 +19,8 @@ import { ConcurrentSuspense } from './components/Performance/ConcurrentSuspense'
 import { initializeBundleOptimization } from './utils/bundleOptimization';
 import Sidebar from './components/Layout/Sidebar';
 import { CornerStatusPanel } from './components/Layout/AppHeader';
+// Using public folder for background image
+const mainBgImage = '/main-bg.jpg';
 import './App.css';
 
 // Enhanced lazy loading with webpack chunk names for better caching
@@ -55,18 +57,14 @@ const LLMManagementPage = lazy(() =>
   import(/* webpackChunkName: "admin-llm" */ './pages/admin/LLMManagementPage')
 );
 
-const SchemaManagementPage = lazy(() =>
-  import(/* webpackChunkName: "admin-schema" */ './components/SchemaManagement/SchemaManagementDashboard').then(module => ({ default: module.SchemaManagementDashboard }))
-);
+
 const CacheManagementPage = lazy(() =>
   import(/* webpackChunkName: "admin-cache" */ './components/Cache/CacheManager').then(module => ({ default: module.CacheManager }))
 );
 const SecurityPage = lazy(() =>
   import(/* webpackChunkName: "admin-security" */ './components/Security/SecurityDashboard').then(module => ({ default: module.SecurityDashboard }))
 );
-const SuggestionsManagementPage = lazy(() =>
-  import(/* webpackChunkName: "admin-suggestions" */ './components/Admin/QuerySuggestionsManager').then(module => ({ default: module.QuerySuggestionsManager }))
-);
+
 
 // Demo and development pages
 const UIDemo = lazy(() =>
@@ -140,14 +138,14 @@ const App: React.FC = () => {
   return (
     <PerformanceMonitor
       onMetrics={(metrics) => {
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env['NODE_ENV'] === 'development') {
           console.log('App performance metrics:', metrics);
         }
       }}
     >
       <BundleAnalyzer
         onAnalysis={(analysis) => {
-          if (process.env.NODE_ENV === 'development') {
+          if (process.env['NODE_ENV'] === 'development') {
             console.log('Bundle analysis:', analysis);
           }
         }}
@@ -170,13 +168,22 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
   isAuthenticated,
   isAdmin
 }) => {
-  const { antdTheme } = useTheme();
+  const { antdTheme, isDarkMode } = useTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+
+  // Debug background image and set CSS custom property
+  React.useEffect(() => {
+    console.log('Background image path:', mainBgImage);
+    console.log('isDarkMode:', isDarkMode);
+
+    // Set CSS custom property for background image
+    document.documentElement.style.setProperty('--app-background-image', `url(${mainBgImage})`);
+  }, [isDarkMode]);
 
   return (
     <ConfigProvider theme={antdTheme}>
       <Router>
-        <div className="App">
+        <div className="App app-with-background">
           {isAuthenticated ? (
             <ConcurrentSuspense
               fallback={<LoadingFallback />}
@@ -193,13 +200,29 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
                   className="main-content-area"
                   style={{
                     flex: 1,
-                    backgroundColor: '#f8fafc',
                     padding: '24px',
                     paddingTop: '80px', // Space for corner panel
-                    minHeight: '100vh'
+                    minHeight: '100vh',
+                    position: 'relative'
                   }}
                 >
-                  <Routes>
+                  {/* Subtle background overlay for content readability */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.15)' : 'rgba(248, 250, 252, 0.15)', // Theme-aware overlay
+                      backdropFilter: 'blur(0.5px)',
+                      zIndex: 0
+                    }}
+                  />
+
+                  {/* Content container */}
+                  <div style={{ position: 'relative', zIndex: 1 }}>
+                    <Routes>
                   {/* Main Interface */}
                   <Route path="/" element={<SimpleQueryInterface />} />
 
@@ -222,10 +245,8 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
                     <>
                       <Route path="/admin/tuning" element={<TuningPage />} />
                       <Route path="/admin/llm" element={<LLMManagementPage />} />
-                      <Route path="/admin/schemas" element={<SchemaManagementPage />} />
                       <Route path="/admin/cache" element={<CacheManagementPage />} />
                       <Route path="/admin/security" element={<SecurityPage />} />
-                      <Route path="/admin/suggestions" element={<SuggestionsManagementPage />} />
                       <Route path="/ui-demo" element={<UIDemo />} />
                     </>
                   )}
@@ -237,10 +258,14 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
                   <Route path="/security" element={<Navigate to="/admin/security" replace />} />
                   <Route path="/admin/llm-test" element={<Navigate to="/admin/llm" replace />} />
                   <Route path="/admin/llm-debug" element={<Navigate to="/admin/llm" replace />} />
+                  <Route path="/admin/schemas" element={<Navigate to="/db-explorer" replace />} />
+                  <Route path="/admin/suggestions" element={<Navigate to="/suggestions" replace />} />
+                  <Route path="/admin/suggestions" element={<Navigate to="/suggestions" replace />} />
 
-                  {/* Catch all */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+                    {/* Catch all */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                  </div>
                 </div>
               </div>
             </ConcurrentSuspense>
@@ -250,7 +275,7 @@ const AppWithTheme: React.FC<{ isAuthenticated: boolean; isAdmin: boolean }> = (
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           )}
-          {process.env.NODE_ENV === 'development' && <DevTools />}
+          {process.env['NODE_ENV'] === 'development' && <DevTools />}
         </div>
       </Router>
     </ConfigProvider>

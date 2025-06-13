@@ -45,18 +45,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     { path: '/suggestions', label: '💡 Suggestions', category: 'Query Tools' },
     
     // System Tools
-    { path: '/db-explorer', label: '🗄️ DB Explorer', category: 'System Tools' },
+    { path: '/db-explorer', label: '🗄️ DB Management', category: 'System Tools' },
     { path: '/performance', label: '⚡ Performance', category: 'System Tools' },
-    
+
     // Admin Features
     { path: '/admin/tuning', label: '🤖 AI Tuning', category: 'Admin', adminOnly: true },
     { path: '/admin/llm', label: '🧠 LLM Management', category: 'Admin', adminOnly: true },
-    { path: '/admin/llm-test', label: '🧪 LLM Test', category: 'Admin', adminOnly: true },
-    { path: '/admin/llm-debug', label: '🐛 LLM Debug', category: 'Admin', adminOnly: true },
-    { path: '/admin/schemas', label: '🗂️ Schema Management', category: 'Admin', adminOnly: true },
     { path: '/admin/cache', label: '💾 Cache Management', category: 'Admin', adminOnly: true },
     { path: '/admin/security', label: '🔒 Security', category: 'Admin', adminOnly: true },
-    { path: '/admin/suggestions', label: '🎯 Suggestions Mgmt', category: 'Admin', adminOnly: true },
   ];
 
   const isActive = (path: string) => {

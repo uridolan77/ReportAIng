@@ -48,10 +48,8 @@ const routeComponents: Record<string, () => Promise<any>> = {
   '/performance': () => import('../../components/Performance/PerformanceMonitoringDashboard'),
   '/admin/tuning': () => import('../../pages/admin/TuningPage'),
   '/admin/llm': () => import('../../pages/admin/LLMManagementPage'),
-  '/admin/schemas': () => import('../../components/SchemaManagement/SchemaManagementDashboard'),
   '/admin/cache': () => import('../../components/Cache/CacheManager'),
   '/admin/security': () => import('../../components/Security/SecurityDashboard'),
-  '/admin/suggestions': () => import('../../components/Admin/QuerySuggestionsManager'),
   '/ui-demo': () => import('../../pages/DesignSystemShowcase')
 };
 
