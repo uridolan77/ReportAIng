@@ -6,12 +6,12 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { 
-  PageLayout, 
-  Card, 
-  Button, 
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  Button,
   Tabs,
-  Container,
   Stack,
   Flex,
   Grid,
@@ -19,8 +19,7 @@ import {
   Input,
   Alert
 } from '../components/core';
-import { Breadcrumb } from '../components/core/Navigation';
-import { HomeOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { DatabaseOutlined } from '@ant-design/icons';
 import { DBExplorer } from '../components/DBExplorer/DBExplorer';
 import { SchemaTree } from '../components/DBExplorer/SchemaTree';
 import { TableDataPreview } from '../components/DBExplorer/TableDataPreview';
@@ -113,10 +112,10 @@ const DBExplorerPage: React.FC = () => {
           <Grid columns={3} gap="lg">
             {/* Schema Tree */}
             <Card variant="default" size="large">
-              <Card.Header>
+              <CardHeader>
                 <h3 style={{ margin: 0 }}>Database Schema</h3>
-              </Card.Header>
-              <Card.Content>
+              </CardHeader>
+              <CardContent>
                 {loading ? (
                   <div style={{ padding: '2rem', textAlign: 'center' }}>
                     <div>Loading database schema...</div>
@@ -129,26 +128,26 @@ const DBExplorerPage: React.FC = () => {
                   <SchemaTree
                     tables={schemaData}
                     onTableSelect={handleTableSelect}
-                    selectedTableName={selectedTable}
+                    selectedTableName={selectedTable || ''}
                   />
                 )}
-              </Card.Content>
+              </CardContent>
             </Card>
 
             {/* Table List */}
             <Card variant="default" size="large">
-              <Card.Header>
+              <CardHeader>
                 <Flex justify="between" align="center">
                   <h3 style={{ margin: 0 }}>Tables</h3>
                   <Badge variant="secondary">{filteredTables.length} tables</Badge>
                 </Flex>
-              </Card.Header>
-              <Card.Content>
+              </CardHeader>
+              <CardContent>
                 <Stack spacing="md">
                   <Input
                     placeholder="Search tables..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                     style={{ marginBottom: '16px' }}
                   />
                   
@@ -160,7 +159,7 @@ const DBExplorerPage: React.FC = () => {
                         interactive
                         onClick={() => handleTableSelect(table.name)}
                       >
-                        <Card.Content>
+                        <CardContent>
                           <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
                             {table.name}
                           </div>
@@ -178,22 +177,22 @@ const DBExplorerPage: React.FC = () => {
                           <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '4px' }}>
                             Updated {table.lastUpdated}
                           </div>
-                        </Card.Content>
+                        </CardContent>
                       </Card>
                     ))}
                   </Stack>
                 </Stack>
-              </Card.Content>
+              </CardContent>
             </Card>
 
             {/* Table Details */}
             <Card variant="default" size="large">
-              <Card.Header>
+              <CardHeader>
                 <h3 style={{ margin: 0 }}>
                   {selectedTable ? `Table: ${selectedTable}` : 'Select a Table'}
                 </h3>
-              </Card.Header>
-              <Card.Content>
+              </CardHeader>
+              <CardContent>
                 {loading ? (
                   <div style={{ padding: '2rem', textAlign: 'center' }}>
                     <div>Loading table details...</div>
@@ -227,7 +226,7 @@ const DBExplorerPage: React.FC = () => {
                     <p>Select a table to view its structure and preview data</p>
                   </div>
                 )}
-              </Card.Content>
+              </CardContent>
             </Card>
           </Grid>
         </div>
@@ -257,7 +256,7 @@ const DBExplorerPage: React.FC = () => {
 
             {/* Table Explorer */}
             <Card variant="default" size="large">
-              <Card.Header>
+              <CardHeader>
                 <Flex justify="between" align="center">
                   <h3 style={{ margin: 0 }}>Table Data Explorer</h3>
                   <Flex gap="sm">
@@ -269,8 +268,8 @@ const DBExplorerPage: React.FC = () => {
                     </Button>
                   </Flex>
                 </Flex>
-              </Card.Header>
-              <Card.Content>
+              </CardHeader>
+              <CardContent>
                 {loading ? (
                   <div style={{ padding: '2rem', textAlign: 'center' }}>
                     <div>Loading table explorer...</div>
@@ -312,7 +311,7 @@ const DBExplorerPage: React.FC = () => {
                     <p>Select a table from the Schema Explorer tab to view its details and explore data</p>
                   </div>
                 )}
-              </Card.Content>
+              </CardContent>
             </Card>
           </Stack>
         </div>
@@ -324,7 +323,7 @@ const DBExplorerPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <Flex justify="between" align="center">
                 <h3 style={{ margin: 0 }}>Database Explorer</h3>
                 <Flex gap="sm">
@@ -336,10 +335,10 @@ const DBExplorerPage: React.FC = () => {
                   </Button>
                 </Flex>
               </Flex>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <DBExplorer />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -347,39 +346,25 @@ const DBExplorerPage: React.FC = () => {
   ];
 
   return (
-    <PageLayout
-      title="Database Explorer"
-      subtitle="Explore database schema, preview table data, and understand your data structure"
-      breadcrumb={
-        <Breadcrumb
-          items={[
-            { title: 'Home', path: '/', icon: <HomeOutlined /> },
-            { title: 'Database Explorer', icon: <DatabaseOutlined /> }
-          ]}
-        />
-      }
-      tabs={
-        <Tabs
-          variant="line"
-          size="large"
-          activeKey={activeTab}
-          onChange={handleTabChange}
-          items={tabItems}
-        />
-      }
-      actions={
-        <Flex gap="md">
-          <Button variant="outline">
-            🔗 Connection Settings
-          </Button>
-          <Button variant="primary">
-            📊 Generate Schema Report
-          </Button>
-        </Flex>
-      }
-    >
-      {/* Tab content is handled by the Tabs component */}
-    </PageLayout>
+    <div style={{ padding: '24px' }}>
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+          <DatabaseOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+          Database Explorer
+        </h1>
+        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+          Explore database schema, preview table data, and understand your data structure
+        </p>
+      </div>
+
+      <Tabs
+        variant="line"
+        size="large"
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        items={tabItems}
+      />
+    </div>
   );
 };
 

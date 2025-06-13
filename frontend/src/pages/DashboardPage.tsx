@@ -16,9 +16,7 @@ import {
   Badge,
   Alert
 } from '../components/core';
-import { ModernPageLayout } from '../components/core/Layouts';
-import { Breadcrumb } from '../components/core/Navigation';
-import { HomeOutlined, DashboardOutlined } from '@ant-design/icons';
+import { DashboardOutlined } from '@ant-design/icons';
 import DashboardBuilder from '../components/Dashboard/DashboardBuilder';
 import { DashboardView } from '../components/Dashboard/DashboardView';
 import { useCurrentResult } from '../hooks/useCurrentResult';
@@ -67,39 +65,39 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   return (
-    <ModernPageLayout
-      title="Dashboard"
-      subtitle="Create and manage interactive dashboards"
-      breadcrumb={
-        <Breadcrumb
-          items={[
-            { title: 'Home', path: '/', icon: <HomeOutlined /> },
-            { title: 'Dashboard', icon: <DashboardOutlined /> }
-          ]}
-        />
-      }
-      actions={
-        <Flex gap="md">
-          <Button
-            variant={viewMode === 'view' ? 'primary' : 'outline'}
-            onClick={() => handleModeChange('view')}
-          >
-            📊 View Dashboards
-          </Button>
-          {isAdmin && (
+    <div style={{ padding: '24px' }}>
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+              <DashboardOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+              Dashboard
+            </h1>
+            <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+              Create and manage interactive dashboards
+            </p>
+          </div>
+          <Flex gap="md">
             <Button
-              variant={viewMode === 'builder' ? 'primary' : 'outline'}
-              onClick={() => handleModeChange('builder')}
+              variant={viewMode === 'view' ? 'primary' : 'outline'}
+              onClick={() => handleModeChange('view')}
             >
-              🔧 Dashboard Builder
+              📊 View Dashboards
             </Button>
-          )}
-          <Button variant="success">
-            ➕ New Dashboard
-          </Button>
-        </Flex>
-      }
-    >
+            {isAdmin && (
+              <Button
+                variant={viewMode === 'builder' ? 'primary' : 'outline'}
+                onClick={() => handleModeChange('builder')}
+              >
+                🔧 Dashboard Builder
+              </Button>
+            )}
+            <Button variant="success">
+              ➕ New Dashboard
+            </Button>
+          </Flex>
+        </div>
+      </div>
       <div className="full-width-content">
         {viewMode === 'view' ? (
           <Stack spacing="lg">
@@ -255,7 +253,7 @@ const DashboardPage: React.FC = () => {
           </Card>
         )}
       </div>
-    </ModernPageLayout>
+    </div>
   );
 };
 

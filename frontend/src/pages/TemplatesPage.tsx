@@ -14,7 +14,6 @@ import {
   Typography
 } from 'antd';
 import {
-  HomeOutlined,
   BookOutlined,
   SearchOutlined,
   StarOutlined,
@@ -24,10 +23,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
-import { ModernPageLayout, PageSection, PageGrid } from '../components/core/Layouts';
 import { Card, CardContent } from '../components/core/Card';
 import { Button } from '../components/core/Button';
-import { Breadcrumb } from '../components/core/Navigation';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -114,26 +111,21 @@ const TemplatesPageContent: React.FC = () => {
   };
 
   return (
-    <ModernPageLayout
-      title="Query Templates"
-      subtitle={`Pre-built queries to help you get started quickly (${templates.length} available)`}
-      breadcrumb={
-        <Breadcrumb
-          items={[
-            { title: 'Home', path: '/', icon: <HomeOutlined /> },
-            { title: 'Query Templates', icon: <BookOutlined /> }
-          ]}
-        />
-      }
-      className="full-width-content"
-    >
+    <div style={{ padding: '24px' }}>
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+          <BookOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+          Query Templates
+        </h1>
+        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+          Pre-built queries to help you get started quickly ({templates.length} available)
+        </p>
+      </div>
+
       {/* Search and Filters */}
-      <PageSection
-        title="Search & Filter"
-        subtitle="Find the perfect template for your needs"
-        background="card"
-        padding="lg"
-      >
+      <div style={{ marginBottom: '32px', padding: '24px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h3 style={{ marginBottom: '16px', fontSize: '1.25rem', fontWeight: 600 }}>Search & Filter</h3>
+        <p style={{ marginBottom: '16px', color: '#666' }}>Find the perfect template for your needs</p>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} md={12}>
             <Input
@@ -175,18 +167,17 @@ const TemplatesPageContent: React.FC = () => {
             </Text>
           </Col>
         </Row>
-      </PageSection>
+      </div>
 
       {/* Popular Templates */}
       {popularTemplates.length > 0 && selectedCategory === 'all' && !searchTerm && (
-        <PageSection
-          title="Popular Templates"
-          subtitle="Most frequently used templates"
-          background="card"
-          padding="lg"
-          actions={<FireOutlined style={{ color: 'var(--color-error)' }} />}
-        >
-          <PageGrid columns={3} gap="md">
+        <div style={{ marginBottom: '32px', padding: '24px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>Popular Templates</h3>
+            <FireOutlined style={{ color: '#ff4d4f' }} />
+          </div>
+          <p style={{ marginBottom: '16px', color: '#666' }}>Most frequently used templates</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
             {popularTemplates.slice(0, 3).map((template, index) => (
               <Card
                 key={template.id}
@@ -224,19 +215,16 @@ const TemplatesPageContent: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-          </PageGrid>
-        </PageSection>
+          </div>
+        </div>
       )}
 
       {/* Templates Grid */}
-      <PageSection
-        title="All Templates"
-        subtitle="Browse all available query templates"
-        background="transparent"
-        padding="none"
-      >
+      <div style={{ marginBottom: '32px' }}>
+        <h3 style={{ marginBottom: '16px', fontSize: '1.25rem', fontWeight: 600 }}>All Templates</h3>
+        <p style={{ marginBottom: '16px', color: '#666' }}>Browse all available query templates</p>
         {filteredTemplates.length > 0 ? (
-          <PageGrid columns={2} gap="lg">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
             {filteredTemplates.map((template, index) => (
               <Card
                 key={template.id}
@@ -313,38 +301,33 @@ const TemplatesPageContent: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-          </PageGrid>
+          </div>
         ) : (
-          <PageSection background="card" padding="lg">
-            <div style={{ textAlign: 'center', padding: 'var(--space-16) 0' }}>
-              <Empty
-                description="No templates found"
+          <div style={{ textAlign: 'center', padding: '64px 0', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+            <Empty
+              description="No templates found"
+            >
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('all');
+                }}
               >
-                <Button
-                  variant="primary"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setSelectedCategory('all');
-                  }}
-                >
-                  Clear Filters
-                </Button>
-              </Empty>
-            </div>
-          </PageSection>
+                Clear Filters
+              </Button>
+            </Empty>
+          </div>
         )}
-      </PageSection>
+      </div>
 
       {/* Quick Actions */}
-      <PageSection
-        title="Quick Actions"
-        subtitle="Navigate to related tools and features"
-        background="card"
-        padding="lg"
-      >
+      <div style={{ padding: '24px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h3 style={{ marginBottom: '16px', fontSize: '1.25rem', fontWeight: 600 }}>Quick Actions</h3>
+        <p style={{ marginBottom: '16px', color: '#666' }}>Navigate to related tools and features</p>
         <div style={{
           display: 'flex',
-          gap: 'var(--space-4)',
+          gap: '16px',
           flexWrap: 'wrap'
         }}>
           <Button
@@ -366,8 +349,8 @@ const TemplatesPageContent: React.FC = () => {
             Smart Suggestions
           </Button>
         </div>
-      </PageSection>
-    </ModernPageLayout>
+      </div>
+    </div>
   );
 };
 

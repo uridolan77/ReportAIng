@@ -576,14 +576,14 @@ export const CacheManager: React.FC = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={2}>
-          <DatabaseOutlined style={{ color: '#1890ff', marginRight: '8px' }} />
-          Cache Manager
-        </Title>
-        <Paragraph>
-          Manage query caching, AI prompt caching, and monitor cache performance metrics.
-        </Paragraph>
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+          <DatabaseOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+          Cache Management
+        </h1>
+        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+          Manage query caching, AI prompt caching, and monitor cache performance metrics
+        </p>
       </div>
 
       <Tabs defaultActiveKey="admin">

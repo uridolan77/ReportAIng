@@ -1,12 +1,14 @@
 /**
  * LLM Debug Page
- * 
+ *
  * Simple debug page to test LLM Management service and identify issues.
  */
 
 import React, { useState } from 'react';
 import { Card, Button, Space, Typography, Alert, Divider } from 'antd';
-import { BugOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { BugOutlined, PlayCircleOutlined, HomeOutlined, SettingOutlined } from '@ant-design/icons';
+import { ModernPageLayout } from '../../components/core/Layouts';
+import { Breadcrumb } from '../../components/core/Navigation';
 import { llmManagementService } from '../../services/llmManagementService';
 
 const { Title, Text, Paragraph } = Typography;
@@ -59,16 +61,19 @@ const LLMDebugPage: React.FC = () => {
   };
 
   return (
-    <div className="page-container full-width">
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={2}>
-          <BugOutlined /> LLM Management Debug
-        </Title>
-        <Paragraph>
-          This page tests the LLM Management service to identify any issues with the backend connection.
-        </Paragraph>
-      </div>
-
+    <ModernPageLayout
+      title="LLM Management Debug"
+      subtitle="Test LLM Management service and identify backend connection issues"
+      breadcrumb={
+        <Breadcrumb
+          items={[
+            { title: 'Home', path: '/', icon: <HomeOutlined /> },
+            { title: 'Admin', path: '/admin', icon: <SettingOutlined /> },
+            { title: 'LLM Debug', icon: <BugOutlined /> }
+          ]}
+        />
+      }
+    >
       <Card title="Service Tests" style={{ marginBottom: '24px' }}>
         <Space>
           <Button
@@ -143,7 +148,7 @@ const LLMDebugPage: React.FC = () => {
           </div>
         </Card>
       )}
-    </div>
+    </ModernPageLayout>
   );
 };
 

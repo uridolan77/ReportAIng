@@ -17,9 +17,7 @@ import {
   Badge,
   Grid
 } from '../components/core';
-import { ModernPageLayout } from '../components/core/Layouts';
-import { Breadcrumb } from '../components/core/Navigation';
-import { HomeOutlined, BarChartOutlined } from '@ant-design/icons';
+import { BarChartOutlined } from '@ant-design/icons';
 import { InteractiveVisualization } from '../components/Visualization/InteractiveVisualization';
 import { Chart } from '../components/Visualization/Chart';
 import ChartConfigurationPanel from '../components/Visualization/ChartConfigurationPanel';
@@ -281,29 +279,25 @@ const VisualizationPage: React.FC = () => {
   ];
 
   return (
-    <ModernPageLayout
-      title="Visualizations"
-      subtitle="Create interactive charts and AI-powered visualizations"
-      breadcrumb={
-        <Breadcrumb
-          items={[
-            { title: 'Home', path: '/', icon: <HomeOutlined /> },
-            { title: 'Visualizations', icon: <BarChartOutlined /> }
-          ]}
-        />
-      }
-      tabs={
-        <Tabs
-          variant="line"
-          size="large"
-          activeKey={activeTab}
-          onChange={handleTabChange}
-          items={tabItems}
-        />
-      }
-    >
-      {/* Tab content is handled by the Tabs component */}
-    </ModernPageLayout>
+    <div style={{ padding: '24px' }}>
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+          <BarChartOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+          Visualizations
+        </h1>
+        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+          Create interactive charts and AI-powered visualizations
+        </p>
+      </div>
+
+      <Tabs
+        variant="line"
+        size="large"
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        items={tabItems}
+      />
+    </div>
   );
 };
 

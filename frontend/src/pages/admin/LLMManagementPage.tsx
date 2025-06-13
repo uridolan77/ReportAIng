@@ -7,29 +7,43 @@
 
 import React, { useState, useCallback } from 'react';
 import {
-  PageLayout,
   Card,
+  CardHeader,
+  CardContent,
   Button,
   Tabs,
-  Container,
-  Stack,
   Flex,
-  Alert,
-  Badge
+  Alert
 } from '../../components/core';
-import { Breadcrumb } from '../../components/core/Navigation';
-import { HomeOutlined, SettingOutlined, RobotOutlined } from '@ant-design/icons';
+import { Card as AntCard, Button as AntButton, Space, Typography, Divider, Row, Col } from 'antd';
+import { RobotOutlined, BugOutlined, PlayCircleOutlined, CheckCircleOutlined, ExclamationCircleOutlined, ApiOutlined } from '@ant-design/icons';
 import { LLMDashboard } from '../../components/LLMManagement/LLMDashboard';
 import { ProviderSettings } from '../../components/LLMManagement/ProviderSettings';
 import { ModelConfiguration } from '../../components/LLMManagement/ModelConfiguration';
 import { UsageAnalytics } from '../../components/LLMManagement/UsageAnalytics';
 import { CostMonitoring } from '../../components/LLMManagement/CostMonitoring';
 import { PerformanceMonitoring } from '../../components/LLMManagement/PerformanceMonitoring';
+import { LLMSelector } from '../../components/AI/LLMSelector';
+import { LLMStatusWidget } from '../../components/AI/LLMStatusWidget';
+import { QueryInput } from '../../components/QueryInterface/QueryInput';
 import { useAuthStore } from '../../stores/authStore';
+import { llmManagementService } from '../../services/llmManagementService';
+
+const { Text } = Typography;
 
 const LLMManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const { user, isAdmin } = useAuthStore();
+
+  // Debug functionality state
+  const [debugResults, setDebugResults] = useState<any[]>([]);
+  const [debugTesting, setDebugTesting] = useState(false);
+
+  // Test functionality state
+  const [selectedProviderId, setSelectedProviderId] = useState<string>();
+  const [selectedModelId, setSelectedModelId] = useState<string>();
+  const [testResults, setTestResults] = useState<any[]>([]);
+  const [testing, setTesting] = useState(false);
 
   const handleTabChange = useCallback((key: string) => {
     setActiveTab(key);
@@ -43,43 +57,38 @@ const LLMManagementPage: React.FC = () => {
   // Show access denied message if user doesn't have required role
   if (!hasRequiredRole) {
     return (
-      <PageLayout
-        title="LLM Management"
-        subtitle="Access Denied"
-        breadcrumb={
-          <Breadcrumb
-            items={[
-              { title: 'Home', path: '/', icon: <HomeOutlined /> },
-              { title: 'Admin', path: '/admin', icon: <SettingOutlined /> },
-              { title: 'LLM Management', icon: <RobotOutlined /> }
-            ]}
-          />
-        }
-      >
-        <div style={{ padding: '24px' }}>
-          <Alert
-            message="Access Denied"
-            description={
-              <div>
-                <p>LLM Management requires Admin or Analyst role access.</p>
-                <p><strong>Current user:</strong> {user?.username || 'Unknown'}</p>
-                <p><strong>Current roles:</strong> {user?.roles?.join(', ') || 'None'}</p>
-                <p><strong>Required roles:</strong> Admin or Analyst</p>
-                <br />
-                <p>To access LLM Management:</p>
-                <ul>
-                  <li>Log in as an Admin user (username: <code>admin</code>, password: <code>Admin123!</code>)</li>
-                  <li>Log in as an Analyst user (username: <code>analyst</code>, password: <code>Analyst123!</code>)</li>
-                  <li>Or contact your system administrator to assign you the appropriate role</li>
-                </ul>
-              </div>
-            }
-            type="error"
-            showIcon
-            style={{ maxWidth: '800px' }}
-          />
+      <div style={{ padding: '24px' }}>
+        <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+          <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+            <RobotOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+            LLM Management
+          </h1>
+          <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+            Access Denied
+          </p>
         </div>
-      </PageLayout>
+
+        <Alert
+          message="Access Denied"
+          description={
+            <div>
+              <p>LLM Management requires Admin or Analyst role access.</p>
+              <p><strong>Current user:</strong> {user?.username || 'Unknown'}</p>
+              <p><strong>Current roles:</strong> {user?.roles?.join(', ') || 'None'}</p>
+              <p><strong>Required roles:</strong> Admin or Analyst</p>
+              <br />
+              <p>To access LLM Management:</p>
+              <ul>
+                <li>Log in as an Admin user (username: <code>admin</code>, password: <code>Admin123!</code>)</li>
+                <li>Log in as an Analyst user (username: <code>analyst</code>, password: <code>Analyst123!</code>)</li>
+                <li>Or contact your system administrator to assign you the appropriate role</li>
+              </ul>
+            </div>
+          }
+          variant="error"
+          style={{ maxWidth: '800px' }}
+        />
+      </div>
     );
   }
 
@@ -90,12 +99,12 @@ const LLMManagementPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <h3 className="text-xl font-semibold" style={{ margin: 0 }}>LLM Management Dashboard</h3>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <LLMDashboard />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -106,7 +115,7 @@ const LLMManagementPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <Flex justify="between" align="center">
                 <h3 className="text-xl font-semibold" style={{ margin: 0 }}>LLM Provider Configuration</h3>
                 <Flex gap="sm">
@@ -118,10 +127,10 @@ const LLMManagementPage: React.FC = () => {
                   </Button>
                 </Flex>
               </Flex>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <ProviderSettings />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -132,7 +141,7 @@ const LLMManagementPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <Flex justify="between" align="center">
                 <h3 className="text-xl font-semibold" style={{ margin: 0 }}>Model Configuration & Selection</h3>
                 <Flex gap="sm">
@@ -144,10 +153,10 @@ const LLMManagementPage: React.FC = () => {
                   </Button>
                 </Flex>
               </Flex>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <ModelConfiguration />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -158,7 +167,7 @@ const LLMManagementPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <Flex justify="between" align="center">
                 <h3 className="text-xl font-semibold" style={{ margin: 0 }}>Usage History & Analytics</h3>
                 <Flex gap="sm">
@@ -173,10 +182,10 @@ const LLMManagementPage: React.FC = () => {
                   </Button>
                 </Flex>
               </Flex>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <UsageAnalytics />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -187,7 +196,7 @@ const LLMManagementPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <Flex justify="between" align="center">
                 <h3 className="text-xl font-semibold" style={{ margin: 0 }}>Cost Monitoring & Management</h3>
                 <Flex gap="sm">
@@ -202,10 +211,10 @@ const LLMManagementPage: React.FC = () => {
                   </Button>
                 </Flex>
               </Flex>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <CostMonitoring />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -216,7 +225,7 @@ const LLMManagementPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <Flex justify="between" align="center">
                 <h3 className="text-xl font-semibold" style={{ margin: 0 }}>Performance Monitoring & Optimization</h3>
                 <Flex gap="sm">
@@ -231,10 +240,10 @@ const LLMManagementPage: React.FC = () => {
                   </Button>
                 </Flex>
               </Flex>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <PerformanceMonitoring />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -242,43 +251,25 @@ const LLMManagementPage: React.FC = () => {
   ];
 
   return (
-    <PageLayout
-      title="LLM Management"
-      subtitle="Configure AI providers, monitor usage, track costs, and optimize performance"
-      breadcrumb={
-        <Breadcrumb
-          items={[
-            { title: 'Home', path: '/', icon: <HomeOutlined /> },
-            { title: 'Admin', path: '/admin', icon: <SettingOutlined /> },
-            { title: 'LLM Management', icon: <RobotOutlined /> }
-          ]}
-        />
-      }
-      tabs={
-        <Tabs
-          variant="line"
-          size="large"
-          activeKey={activeTab}
-          onChange={handleTabChange}
-          items={tabItems}
-        />
-      }
-      actions={
-        <Flex gap="md">
-          <Button variant="outline">
-            📊 System Health
-          </Button>
-          <Button variant="outline">
-            📋 Usage Report
-          </Button>
-          <Button variant="primary">
-            💾 Save All Changes
-          </Button>
-        </Flex>
-      }
-    >
-      {/* Tab content is handled by the Tabs component */}
-    </PageLayout>
+    <div style={{ padding: '24px' }}>
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+          <RobotOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+          LLM Management
+        </h1>
+        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+          Configure AI providers, monitor usage, track costs, and optimize performance
+        </p>
+      </div>
+
+      <Tabs
+        variant="line"
+        size="large"
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        items={tabItems}
+      />
+    </div>
   );
 };
 

@@ -40,8 +40,16 @@ import {
   EditOutlined,
   DeleteOutlined,
   DownloadOutlined,
+  HomeOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../contexts/ThemeContext';
+import {
+  PageHeader,
+  PageHeaderPresets,
+  createHeaderActions,
+  createEnhancedBreadcrumbs
+} from '../components/core/PageHeader';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -69,24 +77,49 @@ const DesignSystemShowcase: React.FC = () => {
     message.success('Action completed successfully!');
   };
 
+  // Create breadcrumbs for the design system showcase
+  const breadcrumbs = createEnhancedBreadcrumbs.trail(
+    createEnhancedBreadcrumbs.create('Design System', '/ui-demo', '🎨')
+  );
+
+  // Create header actions
+  const headerActions = [
+    {
+      key: 'theme',
+      label: `Switch to ${isDarkMode ? 'Light' : 'Dark'} Mode`,
+      icon: '🌓',
+      onClick: toggleTheme,
+      type: 'default' as const
+    },
+    {
+      key: 'message',
+      label: 'Show Message',
+      icon: '💬',
+      onClick: showMessage,
+      type: 'default' as const
+    },
+    {
+      key: 'notification',
+      label: 'Show Notification',
+      icon: '🔔',
+      onClick: showNotification,
+      type: 'default' as const
+    }
+  ];
+
   return (
-    <div className="page-layout">
+    <div>
+      <PageHeader
+        title="Design System Showcase"
+        subtitle="Comprehensive demonstration of our standardized UI components and design tokens. This showcase ensures consistency across the entire ReportAIng application."
+        breadcrumbItems={breadcrumbs}
+        actions={headerActions}
+        variant="gradient"
+        animated={true}
+        showDivider={true}
+      />
+
       <div className="container">
-        <div className="page-header">
-          <Title level={1}>Design System Showcase</Title>
-          <Paragraph>
-            Comprehensive demonstration of our standardized UI components and design tokens.
-            This showcase ensures consistency across the entire ReportAIng application.
-          </Paragraph>
-          
-          <Space>
-            <Button type="primary" onClick={toggleTheme}>
-              Switch to {isDarkMode ? 'Light' : 'Dark'} Mode
-            </Button>
-            <Button onClick={showMessage}>Show Message</Button>
-            <Button onClick={showNotification}>Show Notification</Button>
-          </Space>
-        </div>
 
         <div className="page-content">
           {/* Typography Section */}

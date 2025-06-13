@@ -13,8 +13,11 @@ import {
   ApiOutlined,
   RobotOutlined,
   CheckCircleOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  HomeOutlined
 } from '@ant-design/icons';
+import { ModernPageLayout } from '../../components/core/Layouts';
+import { Breadcrumb } from '../../components/core/Navigation';
 import { LLMSelector } from '../../components/AI/LLMSelector';
 import { LLMStatusWidget } from '../../components/AI/LLMStatusWidget';
 import { QueryInput } from '../../components/QueryInterface/QueryInput';
@@ -85,17 +88,19 @@ const LLMTestPage: React.FC = () => {
   };
 
   return (
-    <div className="page-container full-width">
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={2}>
-          <SettingOutlined /> LLM Management System Test
-        </Title>
-        <Paragraph>
-          This page demonstrates the LLM Management system integration and allows you to test 
-          provider/model selection functionality.
-        </Paragraph>
-      </div>
-
+    <ModernPageLayout
+      title="LLM Management System Test"
+      subtitle="Test provider/model selection functionality and system integration"
+      breadcrumb={
+        <Breadcrumb
+          items={[
+            { title: 'Home', path: '/', icon: <HomeOutlined /> },
+            { title: 'Admin', path: '/admin', icon: <SettingOutlined /> },
+            { title: 'LLM Test', icon: <RobotOutlined /> }
+          ]}
+        />
+      }
+    >
       <Row gutter={[24, 24]}>
         {/* System Status */}
         <Col span={24}>
@@ -225,7 +230,7 @@ const LLMTestPage: React.FC = () => {
           </Card>
         </Col>
       </Row>
-    </div>
+    </ModernPageLayout>
   );
 };
 

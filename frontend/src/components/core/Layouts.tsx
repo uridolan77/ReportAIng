@@ -569,7 +569,7 @@ const ModernPageLayout = forwardRef<HTMLDivElement, PageLayoutProps>(
                     style={{
                       margin: 0,
                       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
-                      fontSize: '2.25rem',
+                      fontSize: '2.5rem',
                       fontWeight: '700',
                       lineHeight: '1.2',
                       color: '#111827',

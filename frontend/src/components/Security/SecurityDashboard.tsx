@@ -292,9 +292,15 @@ export const SecurityDashboard: React.FC = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      <Title level={3}>
-        <SafetyOutlined /> Security Dashboard
-      </Title>
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+          <SafetyOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+          Security Dashboard
+        </h1>
+        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+          Monitor security metrics, manage access controls, and track security events
+        </p>
+      </div>
 
       {/* Security Score Overview */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>

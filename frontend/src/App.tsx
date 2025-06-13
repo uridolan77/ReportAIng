@@ -78,7 +78,7 @@ const UIDemo = lazy(() =>
   import(/* webpackChunkName: "ui-demo" */ './pages/DesignSystemShowcase')
 );
 const PerformancePage = lazy(() =>
-  import(/* webpackChunkName: "performance-page" */ './components/Performance/PerformanceMonitoringDashboard').then(module => ({ default: module.default }))
+  import(/* webpackChunkName: "performance-page" */ './pages/PerformancePage')
 );
 
 // Preload critical components for better performance using concurrent features

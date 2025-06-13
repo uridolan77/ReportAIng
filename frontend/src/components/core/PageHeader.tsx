@@ -304,10 +304,13 @@ export const PageHeader = forwardRef<HTMLDivElement, PageHeaderProps>(
     // Create the heading element based on titleLevel
     const HeadingTag = `h${titleLevel}` as keyof JSX.IntrinsicElements;
 
+    // Ensure modern-page-header class is always included for consistency
+    const combinedClassName = `modern-page-header page-header ${variant} ${className || ''}`.trim();
+
     return (
-      <div 
-        ref={ref} 
-        className={`page-header ${variant} ${className || ''}`} 
+      <div
+        ref={ref}
+        className={combinedClassName}
         style={headerStyle}
         role="banner"
         aria-label={ariaLabel}
@@ -589,6 +592,36 @@ export const usePageHeaderTheme = (darkMode = false) => {
   } : {
     variant: 'default' as const,
     background: 'transparent',
+  };
+};
+
+// Utility function to ensure modern page header styling is applied consistently
+export const ensureModernPageHeader = (className?: string): string => {
+  const classes = ['modern-page-header'];
+  if (className) {
+    // Split existing className and filter out duplicates
+    const existingClasses = className.split(' ').filter(cls => cls.trim() && cls !== 'modern-page-header');
+    classes.push(...existingClasses);
+  }
+  return classes.join(' ');
+};
+
+// Hook to get standardized page header props for consistency
+export const useStandardPageHeader = (options?: {
+  variant?: PageHeaderProps['variant'];
+  size?: PageHeaderProps['size'];
+  animated?: boolean;
+}) => {
+  const { variant = 'default', size = 'medium', animated = false } = options || {};
+
+  return {
+    variant,
+    size,
+    animated,
+    className: ensureModernPageHeader(),
+    responsive: true,
+    mobileCollapse: true,
+    mobileStackActions: true,
   };
 };
 

@@ -7,18 +7,17 @@
 
 import React, { useState, useCallback } from 'react';
 import {
-  PageLayout,
   Card,
+  CardHeader,
+  CardContent,
   Button,
   Tabs,
-  Container,
   Stack,
   Flex,
   Alert,
   Badge
 } from '../../components/core';
-import { Breadcrumb } from '../../components/core/Navigation';
-import { HomeOutlined, SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined } from '@ant-design/icons';
 import { TuningOverview } from '../../components/Tuning/TuningOverview';
 import { AIConfigurationManager } from '../../components/Tuning/AIConfigurationManager';
 import { PromptManagementHub } from '../../components/Tuning/PromptManagementHub';
@@ -40,12 +39,12 @@ const TuningPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <h3 style={{ margin: 0 }}>AI Tuning Overview</h3>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <TuningOverview onNavigateToTab={setActiveTab} />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -62,12 +61,12 @@ const TuningPage: React.FC = () => {
               description="Changes to AI settings will affect all users. Please review carefully before applying."
             />
             <Card variant="default" size="large">
-              <Card.Header>
+              <CardHeader>
                 <h3 style={{ margin: 0 }}>AI Model & Behavior Configuration</h3>
-              </Card.Header>
-              <Card.Content>
+              </CardHeader>
+              <CardContent>
                 <AIConfigurationManager />
-              </Card.Content>
+              </CardContent>
             </Card>
           </Stack>
         </div>
@@ -79,17 +78,17 @@ const TuningPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <Flex justify="between" align="center">
                 <h3 style={{ margin: 0 }}>Prompt Templates & Testing</h3>
                 <Button variant="primary">
                   ➕ New Template
                 </Button>
               </Flex>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <PromptManagementHub />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -100,17 +99,17 @@ const TuningPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <Flex justify="between" align="center">
                 <h3 style={{ margin: 0 }}>Business Knowledge & Data Management</h3>
                 <Button variant="primary">
                   ➕ Add Knowledge
                 </Button>
               </Flex>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <KnowledgeBaseManager />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -121,17 +120,17 @@ const TuningPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <Flex justify="between" align="center">
                 <h3 style={{ margin: 0 }}>AI Content Auto-Generation</h3>
                 <Button variant="primary">
                   ▶️ Start Generation
                 </Button>
               </Flex>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <AutoGenerationManager />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -142,7 +141,7 @@ const TuningPage: React.FC = () => {
       children: (
         <div className="full-width-content">
           <Card variant="default" size="large">
-            <Card.Header>
+            <CardHeader>
               <Flex justify="between" align="center">
                 <h3 style={{ margin: 0 }}>AI Performance & Usage Analytics</h3>
                 <Flex gap="sm">
@@ -155,10 +154,10 @@ const TuningPage: React.FC = () => {
                   </Button>
                 </Flex>
               </Flex>
-            </Card.Header>
-            <Card.Content>
+            </CardHeader>
+            <CardContent>
               <MonitoringDashboard />
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
       ),
@@ -166,40 +165,25 @@ const TuningPage: React.FC = () => {
   ];
 
   return (
-    <PageLayout
-      title="AI Tuning"
-      subtitle="Configure AI models, prompts, and system behavior"
-      breadcrumb={
-        <Breadcrumb
-          items={[
-            { title: 'Home', path: '/', icon: <HomeOutlined /> },
-            { title: 'Admin', path: '/admin', icon: <SettingOutlined /> },
-            { title: 'AI Tuning', icon: <SettingOutlined /> }
-          ]}
-        />
-      }
-      tabs={
-        <Tabs
-          variant="line"
-          size="large"
-          activeKey={activeTab}
-          onChange={handleTabChange}
-          items={tabItems}
-        />
-      }
-      actions={
-        <Flex gap="md">
-          <Button variant="outline">
-            📊 Performance Report
-          </Button>
-          <Button variant="primary">
-            💾 Save All Changes
-          </Button>
-        </Flex>
-      }
-    >
-      {/* Tab content is handled by the Tabs component */}
-    </PageLayout>
+    <div style={{ padding: '24px' }}>
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+          <SettingOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+          AI Tuning
+        </h1>
+        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+          Configure AI models, prompts, and system behavior
+        </p>
+      </div>
+
+      <Tabs
+        variant="line"
+        size="large"
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        items={tabItems}
+      />
+    </div>
   );
 };
 

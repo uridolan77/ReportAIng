@@ -256,13 +256,14 @@ export const QuerySuggestionsManager: React.FC = () => {
       background: '#f5f5f5',
       minHeight: '100vh'
     }}>
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={3}>
-          <BulbOutlined /> Query Suggestions Management
-        </Title>
-        <Text type="secondary">
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+          <BulbOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+          Suggestions Management
+        </h1>
+        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
           Manage AI query suggestions, categories, and analyze usage patterns
-        </Text>
+        </p>
       </div>
 
       <Tabs

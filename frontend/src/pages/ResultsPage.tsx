@@ -7,7 +7,6 @@ import {
   Empty
 } from 'antd';
 import {
-  HomeOutlined,
   BarChartOutlined,
   ArrowLeftOutlined
 } from '@ant-design/icons';
@@ -15,8 +14,6 @@ import { useNavigate } from 'react-router-dom';
 import { useCurrentResult } from '../hooks/useCurrentResult';
 import { QueryResult } from '../components/QueryInterface/QueryResult';
 import { DataInsightsPanel } from '../components/Insights/DataInsightsPanel';
-import { ModernPageLayout, PageSection, PageGrid } from '../components/core/Layouts';
-import { Breadcrumb } from '../components/core/Navigation';
 import { Button } from '../components/core/Button';
 
 const ResultsPageContent: React.FC = () => {
@@ -31,130 +28,104 @@ const ResultsPageContent: React.FC = () => {
 
   if (!hasResult || !currentResult) {
     return (
-      <ModernPageLayout
-        title="Query Results & Analysis"
-        subtitle="Detailed view of your query results with insights and analysis"
-        breadcrumb={
-          <Breadcrumb
-            items={[
-              { title: 'Home', path: '/', icon: <HomeOutlined /> },
-              { title: 'Results', icon: <BarChartOutlined /> }
-            ]}
-          />
-        }
-        className="full-width-content"
-      >
-        <PageSection background="card" padding="lg">
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 'var(--space-16) 0',
-            textAlign: 'center'
-          }}>
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <div style={{ marginBottom: 'var(--space-6)' }}>
-                  <div style={{
-                    fontSize: 'var(--text-lg)',
-                    color: 'var(--text-secondary)',
-                    marginBottom: 'var(--space-2)'
-                  }}>
-                    No query results to display
-                  </div>
-                  <div style={{
-                    fontSize: 'var(--text-base)',
-                    color: 'var(--text-tertiary)'
-                  }}>
-                    Run a query first to see results here
-                  </div>
+      <div style={{ padding: '24px' }}>
+        <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+          <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+            <BarChartOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+            Query Results & Analysis
+          </h1>
+          <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+            Detailed view of your query results with insights and analysis
+          </p>
+        </div>
+
+        <div style={{ textAlign: 'center', padding: '64px 0', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{
+                  fontSize: '18px',
+                  color: '#666',
+                  marginBottom: '8px'
+                }}>
+                  No query results to display
                 </div>
-              }
+                <div style={{
+                  fontSize: '16px',
+                  color: '#999'
+                }}>
+                  Run a query first to see results here
+                </div>
+              </div>
+            }
+          >
+            <Button
+              variant="primary"
+              size="large"
+              onClick={() => navigate('/')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
             >
-              <Button
-                variant="primary"
-                size="large"
-                onClick={() => navigate('/')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-2)'
-                }}
-              >
-                <ArrowLeftOutlined />
-                Go to Query Interface
-              </Button>
-            </Empty>
-          </div>
-        </PageSection>
-      </ModernPageLayout>
+              <ArrowLeftOutlined />
+              Go to Query Interface
+            </Button>
+          </Empty>
+        </div>
+      </div>
     );
   }
 
   return (
-    <ModernPageLayout
-      title="Query Results & Analysis"
-      subtitle="Detailed view of your query results with insights and analysis"
-      breadcrumb={
-        <Breadcrumb
-          items={[
-            { title: 'Home', path: '/', icon: <HomeOutlined /> },
-            { title: 'Results', icon: <BarChartOutlined /> }
-          ]}
-        />
-      }
-      className="full-width-content"
-    >
-      <PageGrid columns={3} gap="lg">
-        <div style={{ gridColumn: 'span 2' }}>
-          <PageSection
-            title="Query Results"
-            background="card"
-            padding="lg"
-          >
-            <QueryResult
-              result={currentResult}
-              query={query}
-              onRequery={handleRequery}
-              onSuggestionClick={(suggestion) => {
-                // Handle suggestion click - could navigate back to main page with the suggestion
-                navigate('/', { state: { suggestedQuery: suggestion } });
-              }}
-            />
-          </PageSection>
+    <div style={{ padding: '24px' }}>
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+          <BarChartOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+          Query Results & Analysis
+        </h1>
+        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+          Detailed view of your query results with insights and analysis
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginBottom: '32px' }}>
+        <div style={{ padding: '24px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+          <h3 style={{ marginBottom: '16px', fontSize: '1.25rem', fontWeight: 600 }}>Query Results</h3>
+          <QueryResult
+            result={currentResult}
+            query={query}
+            onRequery={handleRequery}
+            onSuggestionClick={(suggestion) => {
+              // Handle suggestion click - could navigate back to main page with the suggestion
+              navigate('/', { state: { suggestedQuery: suggestion } });
+            }}
+          />
         </div>
 
-        <div>
-          <PageSection
-            title="Data Insights"
-            subtitle="AI-generated insights and analysis"
-            background="card"
-            padding="lg"
-          >
-            <DataInsightsPanel
-              queryResult={currentResult}
-              onInsightAction={(action) => {
-                console.log('Insight action:', action);
-                // Handle insight actions like drill-down, filtering, etc.
-              }}
-              autoGenerate={true}
-            />
-          </PageSection>
+        <div style={{ padding: '24px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+          <h3 style={{ marginBottom: '16px', fontSize: '1.25rem', fontWeight: 600 }}>Data Insights</h3>
+          <p style={{ marginBottom: '16px', color: '#666' }}>AI-generated insights and analysis</p>
+          <DataInsightsPanel
+            queryResult={currentResult}
+            onInsightAction={(action) => {
+              console.log('Insight action:', action);
+              // Handle insight actions like drill-down, filtering, etc.
+            }}
+            autoGenerate={true}
+          />
         </div>
-      </PageGrid>
+      </div>
 
       {/* Quick Actions */}
-      <PageSection
-        title="Quick Actions"
-        subtitle="Navigate to related tools and features"
-        background="card"
-        padding="lg"
-      >
+      <div style={{ padding: '24px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h3 style={{ marginBottom: '16px', fontSize: '1.25rem', fontWeight: 600 }}>Quick Actions</h3>
+        <p style={{ marginBottom: '16px', color: '#666' }}>Navigate to related tools and features</p>
         <div style={{
           display: 'flex',
-          gap: 'var(--space-4)',
+          gap: '16px',
           flexWrap: 'wrap'
         }}>
           <Button
@@ -185,8 +156,8 @@ const ResultsPageContent: React.FC = () => {
             AI-Powered Charts
           </Button>
         </div>
-      </PageSection>
-    </ModernPageLayout>
+      </div>
+    </div>
   );
 };
 

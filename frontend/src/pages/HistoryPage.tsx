@@ -3,18 +3,12 @@
  */
 
 import React from 'react';
-import {
-  HomeOutlined,
-  HistoryOutlined
-} from '@ant-design/icons';
+import { HistoryOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { QueryProvider } from '../components/QueryInterface/QueryProvider';
 import { useQueryContext } from '../components/QueryInterface/QueryProvider';
 import { QueryHistory } from '../components/QueryInterface/QueryHistory';
-import { ModernPageLayout, PageSection } from '../components/core/Layouts';
-import { Card } from '../components/core/Card';
 import { Button } from '../components/core/Button';
-import { Breadcrumb } from '../components/core/Navigation';
 
 const HistoryPageContent: React.FC = () => {
   const navigate = useNavigate();
@@ -26,25 +20,19 @@ const HistoryPageContent: React.FC = () => {
   };
 
   return (
-    <ModernPageLayout
-      title="Query History"
-      subtitle={`Browse and reuse your previous queries (${queryHistory.length} saved)`}
-      breadcrumb={
-        <Breadcrumb
-          items={[
-            { title: 'Home', path: '/', icon: <HomeOutlined /> },
-            { title: 'Query History', icon: <HistoryOutlined /> }
-          ]}
-        />
-      }
-      className="full-width-content"
-    >
-      <PageSection
-        title="Recent Queries"
-        subtitle="Your most recent query history"
-        background="card"
-        padding="lg"
-      >
+    <div style={{ padding: '24px' }}>
+      <div className="modern-page-header" style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+        <h1 className="modern-page-title" style={{ fontSize: '2.5rem', fontWeight: 600, margin: 0, marginBottom: '8px', color: '#1a1a1a' }}>
+          <HistoryOutlined style={{ color: '#1890ff', marginRight: '12px' }} />
+          Query History
+        </h1>
+        <p className="modern-page-subtitle" style={{ fontSize: '1.125rem', color: '#666', margin: 0, lineHeight: 1.5 }}>
+          Browse and reuse your previous queries ({queryHistory.length} saved)
+        </p>
+      </div>
+
+      <div style={{ marginBottom: '32px' }}>
+        <h3 style={{ marginBottom: '16px', fontSize: '1.25rem', fontWeight: 600 }}>Recent Queries</h3>
         {queryHistory.length > 100 ? (
           <div style={{
             height: '600px',
@@ -88,17 +76,13 @@ const HistoryPageContent: React.FC = () => {
         ) : (
           <QueryHistory onQuerySelect={handleQuerySelect} />
         )}
-      </PageSection>
+      </div>
 
-      <PageSection
-        title="Quick Actions"
-        subtitle="Navigate to related tools and features"
-        background="card"
-        padding="lg"
-      >
+      <div style={{ marginTop: '32px' }}>
+        <h3 style={{ marginBottom: '16px', fontSize: '1.25rem', fontWeight: 600 }}>Quick Actions</h3>
         <div style={{
           display: 'flex',
-          gap: 'var(--space-4)',
+          gap: '16px',
           flexWrap: 'wrap'
         }}>
           <Button
@@ -120,8 +104,8 @@ const HistoryPageContent: React.FC = () => {
             Smart Suggestions
           </Button>
         </div>
-      </PageSection>
-    </ModernPageLayout>
+      </div>
+    </div>
   );
 };
 

@@ -1,14 +1,16 @@
 /**
  * Core UI Components - Modern Reu// Layout Components
 export { AppLayout, PageLayout, ModernPageLayout, ContentLayout, SidebarLayout } from './Layouts';
-export { 
-  PageHeader, 
-  useBreadcrumbs, 
-  PageHeaderPresets, 
-  createHeaderActions, 
+export {
+  PageHeader,
+  useBreadcrumbs,
+  PageHeaderPresets,
+  createHeaderActions,
   createEnhancedBreadcrumbs,
   usePageHeaderResponsive,
-  usePageHeaderTheme 
+  usePageHeaderTheme,
+  ensureModernPageHeader,
+  useStandardPageHeader
 } from './PageHeader';
 export type { PageHeaderProps, PageHeaderAction } from './PageHeader';le System
  * 
