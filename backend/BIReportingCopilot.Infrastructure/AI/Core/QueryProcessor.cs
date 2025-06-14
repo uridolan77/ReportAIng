@@ -669,7 +669,7 @@ public class QueryProcessor : IQueryProcessor
             var semanticAnalysis = await _semanticAnalyzer.AnalyzeAsync(naturalLanguageQuery, cancellationToken);
 
             // Query classification
-            var classification = await _queryClassifier.ClassifyAsync(naturalLanguageQuery, cancellationToken);
+            var classification = await _queryClassifier.ClassifyQueryAsync(naturalLanguageQuery);
 
             // Generate SQL
             var sql = await _aiService.GenerateSQLAsync(naturalLanguageQuery, cancellationToken);
@@ -682,9 +682,19 @@ public class QueryProcessor : IQueryProcessor
                 GeneratedSQL = sql,
                 Confidence = confidence,
                 SemanticAnalysis = semanticAnalysis,
-                Classification = classification,
+                Classification = new QueryClassificationResult
+                {
+                    QueryType = classification.Category.ToString(),
+                    Intent = classification.Category.ToString(),
+                    Confidence = classification.ConfidenceScore,
+                    Categories = new List<string> { classification.Category.ToString() },
+                    Scores = new Dictionary<string, double>
+                    {
+                        [classification.Category.ToString()] = classification.ConfidenceScore
+                    }
+                },
                 ProcessingTime = TimeSpan.FromMilliseconds(100), // Placeholder
-                Suggestions = await GenerateQuerySuggestionsAsync(naturalLanguageQuery, cancellationToken),
+                Suggestions = await GenerateQuerySuggestionsAsync(naturalLanguageQuery),
                 Warnings = ExtractWarnings(sql),
                 Metadata = new Dictionary<string, object>
                 {
@@ -701,7 +711,7 @@ public class QueryProcessor : IQueryProcessor
                 GeneratedSQL = "SELECT 'Error processing query' as Message",
                 Confidence = 0.1,
                 ProcessingTime = TimeSpan.FromMilliseconds(50),
-                Suggestions = new List<QuerySuggestion>(),
+                Suggestions = new List<Core.Models.QuerySuggestions.QuerySuggestion>(),
                 Warnings = new List<string> { "Error occurred during processing" },
                 Metadata = new Dictionary<string, object>()
             };
@@ -739,13 +749,13 @@ public class QueryProcessor : IQueryProcessor
     /// <summary>
     /// Get query suggestions (IQueryProcessor interface)
     /// </summary>
-    public async Task<List<QuerySuggestion>> GetQuerySuggestionsAsync(string partialQuery, CancellationToken cancellationToken = default)
+    public async Task<List<Core.Models.QuerySuggestions.QuerySuggestion>> GetQuerySuggestionsAsync(string partialQuery, CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogDebug("🔍 Getting query suggestions for: {PartialQuery}", partialQuery);
 
-            var suggestions = new List<QuerySuggestion>();
+            var suggestions = new List<Core.Models.QuerySuggestions.QuerySuggestion>();
 
             // Get schema-based suggestions
             var schema = await _schemaService.GetSchemaMetadataAsync();
@@ -754,20 +764,16 @@ public class QueryProcessor : IQueryProcessor
             // Convert to QuerySuggestion objects
             foreach (var suggestion in schemaSuggestions.Take(5))
             {
-                suggestions.Add(new QuerySuggestion
+                suggestions.Add(new Core.Models.QuerySuggestions.QuerySuggestion
                 {
-                    Id = Guid.NewGuid().ToString(),
+                    Id = long.Parse(Guid.NewGuid().ToString("N")[..8], System.Globalization.NumberStyles.HexNumber),
                     Text = suggestion,
                     Description = $"Suggested query based on: {partialQuery}",
-                    Category = "Schema-based",
+                    Query = suggestion,
                     Confidence = 0.8,
                     UsageCount = 0,
                     CreatedAt = DateTime.UtcNow,
-                    Metadata = new Dictionary<string, object>
-                    {
-                        ["source"] = "schema_analysis",
-                        ["partial_query"] = partialQuery
-                    }
+                    Source = "schema_analysis"
                 });
             }
 
@@ -784,16 +790,17 @@ public class QueryProcessor : IQueryProcessor
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error getting query suggestions");
-            return new List<QuerySuggestion>
+            return new List<Core.Models.QuerySuggestions.QuerySuggestion>
             {
-                new QuerySuggestion
+                new Core.Models.QuerySuggestions.QuerySuggestion
                 {
-                    Id = Guid.NewGuid().ToString(),
+                    Id = 1,
                     Text = "Show me recent data",
                     Description = "Default suggestion",
-                    Category = "Default",
+                    Query = "Show me recent data",
                     Confidence = 0.5,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    Source = "default"
                 }
             };
         }
@@ -816,9 +823,9 @@ public class QueryProcessor : IQueryProcessor
         return warnings;
     }
 
-    private async Task<List<QuerySuggestion>> GenerateContextualSuggestionsFromPartial(string partialQuery)
+    private async Task<List<Core.Models.QuerySuggestions.QuerySuggestion>> GenerateContextualSuggestionsFromPartial(string partialQuery)
     {
-        var suggestions = new List<QuerySuggestion>();
+        var suggestions = new List<Core.Models.QuerySuggestions.QuerySuggestion>();
 
         try
         {
@@ -827,27 +834,29 @@ public class QueryProcessor : IQueryProcessor
 
             if (lowerPartial.Contains("show") || lowerPartial.Contains("get"))
             {
-                suggestions.Add(new QuerySuggestion
+                suggestions.Add(new Core.Models.QuerySuggestions.QuerySuggestion
                 {
-                    Id = Guid.NewGuid().ToString(),
+                    Id = long.Parse(Guid.NewGuid().ToString("N")[..8], System.Globalization.NumberStyles.HexNumber),
                     Text = $"{partialQuery} from last 7 days",
                     Description = "Add time filter",
-                    Category = "Time-based",
+                    Query = $"{partialQuery} from last 7 days",
                     Confidence = 0.7,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    Source = "contextual"
                 });
             }
 
             if (lowerPartial.Contains("total") || lowerPartial.Contains("sum"))
             {
-                suggestions.Add(new QuerySuggestion
+                suggestions.Add(new Core.Models.QuerySuggestions.QuerySuggestion
                 {
-                    Id = Guid.NewGuid().ToString(),
+                    Id = long.Parse(Guid.NewGuid().ToString("N")[..8], System.Globalization.NumberStyles.HexNumber),
                     Text = $"{partialQuery} grouped by category",
                     Description = "Add grouping",
-                    Category = "Aggregation",
+                    Query = $"{partialQuery} grouped by category",
                     Confidence = 0.7,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    Source = "contextual"
                 });
             }
         }

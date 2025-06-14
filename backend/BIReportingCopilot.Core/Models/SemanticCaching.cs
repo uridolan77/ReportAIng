@@ -259,7 +259,14 @@ public class SemanticCacheEntry : EnhancedSemanticCacheEntry
     /// <summary>
     /// Serialized response data
     /// </summary>
-    public string SerializedResponse { get; set; } = string.Empty;
+    public new string SerializedResponse { get; set; } = string.Empty;
+
+    // Additional properties expected by Infrastructure services
+    public string QueryHash { get; set; } = string.Empty;
+    public string CreatedBy { get; set; } = string.Empty;
+    public string UpdatedBy { get; set; } = string.Empty;
+    public string GeneratedSql { get; set; } = string.Empty;
+    public Dictionary<string, object> ResultData { get; set; } = new();
 }
 
 /// <summary>
@@ -306,4 +313,9 @@ public class SemanticCacheStatistics
     /// Performance metrics
     /// </summary>
     public Dictionary<string, object> PerformanceMetrics { get; set; } = new();
+
+    /// <summary>
+    /// Semantic cache hits (alias for HitCount)
+    /// </summary>
+    public long SemanticCacheHits => HitCount;
 }

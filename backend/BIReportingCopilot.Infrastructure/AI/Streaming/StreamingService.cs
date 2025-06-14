@@ -1,4 +1,4 @@
- using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
@@ -6,6 +6,7 @@ using BIReportingCopilot.Core.Interfaces.Streaming;
 using BIReportingCopilot.Core.Models;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using StreamingMetrics = BIReportingCopilot.Core.Models.StreamingMetrics;
 
 namespace BIReportingCopilot.Infrastructure.AI.Streaming;
 
@@ -368,7 +369,7 @@ public class StreamingService : IRealTimeStreamingService
     #endregion
 
     // Missing interface methods - stub implementations
-    public Task<StreamingSession> StartStreamingSessionAsync(string userId, BIReportingCopilot.Core.Interfaces.Streaming.StreamingConfiguration config)
+    public Task<StreamingSession> StartStreamingSessionAsync(string userId, StreamingConfiguration config)
     {
         return Task.FromResult(new StreamingSession
         {
@@ -608,10 +609,12 @@ public class StreamingService : IRealTimeStreamingService
         var sequenceNumber = 0L;
         while (!cancellationToken.IsCancellationRequested)
         {
+            StreamingDataPoint? dataPoint = null;
+
             try
             {
                 // Generate sample streaming data point
-                var dataPoint = new StreamingDataPoint
+                dataPoint = new StreamingDataPoint
                 {
                     StreamId = streamId,
                     Timestamp = DateTime.UtcNow,
@@ -628,11 +631,6 @@ public class StreamingService : IRealTimeStreamingService
                         ["version"] = "1.0"
                     }
                 };
-
-                yield return dataPoint;
-
-                // Wait before next data point
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
             catch (TaskCanceledException)
             {
@@ -643,6 +641,21 @@ public class StreamingService : IRealTimeStreamingService
                 _logger.LogError(ex, "❌ Error generating streaming data for: {StreamId}", streamId);
                 break;
             }
+
+            if (dataPoint != null)
+            {
+                yield return dataPoint;
+            }
+
+            try
+            {
+                // Wait before next data point
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
         }
 
         _logger.LogInformation("🛑 Streaming data stopped for stream: {StreamId}", streamId);
@@ -651,7 +664,7 @@ public class StreamingService : IRealTimeStreamingService
     /// <summary>
     /// Update streaming configuration (IRealTimeStreamingService interface)
     /// </summary>
-    public async Task<bool> UpdateStreamingConfigurationAsync(string streamId, BIReportingCopilot.Core.Interfaces.Streaming.StreamingConfiguration config, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateStreamingConfigurationAsync(string streamId, StreamingConfiguration config, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -662,18 +675,8 @@ public class StreamingService : IRealTimeStreamingService
 
             if (queryInfo != null)
             {
-                // Convert interface config to model config
-                queryInfo.Configuration = new BIReportingCopilot.Core.Models.StreamingConfiguration
-                {
-                    RefreshInterval = config.RefreshInterval,
-                    MaxDataPoints = config.MaxDataPoints,
-                    EnableAggregation = config.EnableAggregation,
-                    AggregationMethod = config.AggregationMethod,
-                    AggregationWindow = config.AggregationWindow,
-                    EnableAlerts = config.EnableAlerts,
-                    EnableDataRetention = config.EnableDataRetention,
-                    DataRetentionPeriod = config.DataRetentionPeriod
-                };
+                // Update configuration directly since they're now the same type
+                queryInfo.Configuration = config;
 
                 await _cacheService.SetAsync(cacheKey, queryInfo, TimeSpan.FromHours(24));
 
@@ -694,7 +697,7 @@ public class StreamingService : IRealTimeStreamingService
     /// <summary>
     /// Get streaming metrics (IRealTimeStreamingService interface)
     /// </summary>
-    public async Task<BIReportingCopilot.Core.Interfaces.Streaming.StreamingMetrics> GetStreamingMetricsAsync(string streamId, CancellationToken cancellationToken = default)
+    public async Task<StreamingMetrics> GetStreamingMetricsAsync(string streamId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -703,28 +706,28 @@ public class StreamingService : IRealTimeStreamingService
 
             if (queryInfo != null)
             {
-                return new BIReportingCopilot.Core.Interfaces.Streaming.StreamingMetrics
+                return new BIReportingCopilot.Core.Models.StreamingMetrics
                 {
                     TotalDataPoints = queryInfo.Metrics.EventsProcessed,
                     AverageLatency = queryInfo.Metrics.AverageLatency,
                     ThroughputPerSecond = queryInfo.Metrics.EventsPerSecond,
                     ErrorCount = queryInfo.Metrics.ErrorCount,
                     LastSuccessfulUpdate = DateTime.UtcNow,
-                    Uptime = queryInfo.Metrics.Uptime,
+                    StartTime = DateTime.UtcNow.Subtract(queryInfo.Metrics.Uptime),
                     CustomMetrics = queryInfo.Metrics.CustomMetrics
                 };
             }
 
-            return new BIReportingCopilot.Core.Interfaces.Streaming.StreamingMetrics
+            return new BIReportingCopilot.Core.Models.StreamingMetrics
             {
                 LastSuccessfulUpdate = DateTime.UtcNow,
-                Uptime = TimeSpan.Zero
+                StartTime = DateTime.UtcNow
             };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error getting streaming metrics for: {StreamId}", streamId);
-            return new BIReportingCopilot.Core.Interfaces.Streaming.StreamingMetrics
+            return new BIReportingCopilot.Core.Models.StreamingMetrics
             {
                 ErrorCount = 1,
                 LastSuccessfulUpdate = DateTime.UtcNow

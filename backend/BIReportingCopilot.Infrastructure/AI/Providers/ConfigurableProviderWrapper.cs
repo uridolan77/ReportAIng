@@ -301,7 +301,7 @@ public class ConfigurableProviderWrapper : IConfigurableAIProvider
             {
                 Prompt = "Test",
                 MaxTokens = 10,
-                Temperature = 0.1f
+                Temperature = 0.1
             };
 
             var response = await GenerateResponseAsync(testRequest, cancellationToken);

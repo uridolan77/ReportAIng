@@ -230,6 +230,8 @@ public class MonitoringManagementService : BIReportingCopilot.Core.Interfaces.Mo
         histogram.Record(value, tags ?? new TagList());
     }
 
+
+
     /// <summary>
     /// Increment counter (IMetricsCollector interface)
     /// </summary>
@@ -240,6 +242,8 @@ public class MonitoringManagementService : BIReportingCopilot.Core.Interfaces.Mo
         var counter = _counters.GetOrAdd(name, _ => _meter.CreateCounter<long>(name));
         counter.Add(1, tags ?? new TagList());
     }
+
+
 
     /// <summary>
     /// Record execution time (IMetricsCollector interface)
@@ -348,7 +352,7 @@ public class MonitoringManagementService : BIReportingCopilot.Core.Interfaces.Mo
         }
         else
         {
-            IncrementCounter(name);
+            IncrementCounter(name, (TagList?)null);
         }
     }
 
@@ -433,7 +437,7 @@ public class MonitoringManagementService : BIReportingCopilot.Core.Interfaces.Mo
     public async Task RecordUserActionAsync(string userId, string action, Dictionary<string, object>? metadata = null, CancellationToken cancellationToken = default)
     {
         await Task.CompletedTask;
-        IncrementCounter($"user_action_{action}");
+        IncrementCounter($"user_action_{action}", (TagList?)null);
     }
 
     /// <summary>
@@ -497,15 +501,31 @@ public class MonitoringManagementService : BIReportingCopilot.Core.Interfaces.Mo
         return dataPoints;
     }
 
-
-
     /// <summary>
     /// Get system health async (Core.Interfaces.Monitoring.IMetricsCollector interface)
     /// </summary>
     public async Task<Dictionary<string, object>> GetSystemHealthAsync(CancellationToken cancellationToken = default)
     {
-        return await GetMetricsSnapshotAsync();
+        await Task.CompletedTask;
+        var snapshot = GetSnapshot();
+
+        return new Dictionary<string, object>
+        {
+            ["status"] = snapshot.IsHealthy ? "healthy" : "unhealthy",
+            ["timestamp"] = DateTime.UtcNow,
+            ["memory_usage_mb"] = snapshot.MemoryUsageMB,
+            ["cpu_usage_percent"] = snapshot.CpuUsagePercent,
+            ["active_connections"] = snapshot.ActiveConnections,
+            ["total_queries"] = snapshot.TotalQueries,
+            ["total_errors"] = snapshot.TotalErrors,
+            ["error_rate"] = snapshot.TotalQueries > 0 ? snapshot.TotalErrors / snapshot.TotalQueries : 0.0,
+            ["uptime_seconds"] = (DateTime.UtcNow - Process.GetCurrentProcess().StartTime).TotalSeconds
+        };
     }
+
+
+
+
 
     #endregion
 
@@ -768,6 +788,99 @@ public class MonitoringManagementService : BIReportingCopilot.Core.Interfaces.Mo
             };
         }
     }
+
+    /// <summary>
+    /// Increment counter (IMetricsCollector interface)
+    /// </summary>
+    public void IncrementCounter(string name, Dictionary<string, string>? tags = null)
+    {
+        if (!_monitoringConfig.EnableMetrics) return;
+
+        var counter = _counters.GetOrAdd(name, _ => _meter.CreateCounter<long>(name));
+
+        if (tags != null)
+        {
+            var tagList = new TagList();
+            foreach (var tag in tags)
+            {
+                tagList.Add(tag.Key, tag.Value);
+            }
+            counter.Add(1, tagList);
+        }
+        else
+        {
+            counter.Add(1);
+        }
+    }
+
+    /// <summary>
+    /// Record histogram value (IMetricsCollector interface)
+    /// </summary>
+    public void RecordHistogram(string name, double value, Dictionary<string, string>? tags = null)
+    {
+        if (!_monitoringConfig.EnableMetrics) return;
+
+        var histogram = _histograms.GetOrAdd(name, _ => _meter.CreateHistogram<double>(name));
+
+        if (tags != null)
+        {
+            var tagList = new TagList();
+            foreach (var tag in tags)
+            {
+                tagList.Add(tag.Key, tag.Value);
+            }
+            histogram.Record(value, tagList);
+        }
+        else
+        {
+            histogram.Record(value);
+        }
+    }
+
+    /// <summary>
+    /// Set gauge value (IMetricsCollector interface)
+    /// </summary>
+    public void SetGaugeValue(string name, double value, Dictionary<string, string>? tags = null)
+    {
+        if (!_monitoringConfig.EnableMetrics) return;
+
+        _gaugeValues[name] = value;
+
+        // Also record as histogram for historical tracking
+        RecordHistogram(name, value, tags);
+    }
+
+    /// <summary>
+    /// Record query execution (IMetricsCollector interface)
+    /// </summary>
+    public void RecordQueryExecution(string queryType, TimeSpan duration, bool success)
+    {
+        try
+        {
+            var tags = new Dictionary<string, string>
+            {
+                ["query_type"] = queryType,
+                ["success"] = success.ToString().ToLower()
+            };
+
+            RecordHistogram("query_execution_duration", duration.TotalMilliseconds, tags);
+            IncrementCounter("query_executions_total", tags);
+
+            if (!success)
+            {
+                IncrementCounter("query_failures_total", tags);
+            }
+
+            _logger.LogDebug("📊 Recorded query execution: {QueryType}, Duration: {Duration}ms, Success: {Success}",
+                queryType, duration.TotalMilliseconds, success);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error recording query execution metrics");
+        }
+    }
+
+
 
     #endregion
 

@@ -655,7 +655,7 @@ public class QueryOptimizer : IQueryOptimizer
             {
                 OriginalQuery = query,
                 Intent = QueryIntent.Unknown,
-                Entities = new List<Entity>(),
+                Entities = new List<SemanticEntity>(),
                 Keywords = ExtractKeywords(query)
             };
 

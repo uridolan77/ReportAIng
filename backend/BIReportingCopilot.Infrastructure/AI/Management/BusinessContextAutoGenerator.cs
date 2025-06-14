@@ -114,7 +114,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
             if (progressCallback != null)
                 await progressCallback("Table Analysis", $"Loading metadata for {schemaName}.{tableName}...", null);
 
-            var tableMetadata = await _schemaService.GetTableMetadataAsync(tableName, schemaName);
+            var tableMetadata = await _schemaService.GetTableMetadataAsync($"{schemaName}.{tableName}");
             if (tableMetadata == null)
             {
                 throw new ArgumentException($"Table {schemaName}.{tableName} not found");
@@ -339,7 +339,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
 
         try
         {
-            var tableMetadata = await _schemaService.GetTableMetadataAsync(tableName, schemaName);
+            var tableMetadata = await _schemaService.GetTableMetadataAsync($"{schemaName}.{tableName}");
             if (tableMetadata == null) return results;
 
             var schema = await _schemaService.GetSchemaMetadataAsync();
@@ -1315,32 +1315,32 @@ Respond in JSON format:
                 SpecificTables = null // Generate for all tables
             };
 
-            var response = await GenerateBusinessContextAsync(request, "system");
+            var response = await GenerateBusinessContextInternalAsync(request, "system");
 
             return new BusinessContext
             {
                 Domain = domain,
                 Description = $"Auto-generated business context for {domain}",
-                Tables = response.GeneratedTableContexts.Select(t => new BusinessTable
+                Tables = response.GeneratedTableContexts.Select(t => new BIReportingCopilot.Core.Models.Business.BusinessTable
                 {
                     Name = t.TableName,
                     Schema = t.SchemaName,
-                    Purpose = t.BusinessPurpose,
-                    Context = t.BusinessContext
+                    BusinessPurpose = t.BusinessPurpose,
+                    BusinessContext = t.BusinessContext
                 }).ToList(),
-                Terms = response.GeneratedGlossaryTerms.Select(g => new BusinessTerm
+                Terms = response.GeneratedGlossaryTerms.Select(g => new BIReportingCopilot.Core.Models.Business.BusinessTerm
                 {
                     Term = g.Term,
                     Definition = g.Definition,
-                    Context = g.BusinessContext
+                    BusinessContext = g.BusinessContext
                 }).ToList(),
-                Relationships = response.RelationshipAnalysis?.Relationships.Select(r => new BusinessRelationship
+                Relationships = response.RelationshipAnalysis?.Relationships.Select(r => new BIReportingCopilot.Core.Models.Business.BusinessRelationship
                 {
-                    FromTable = r.FromTable,
-                    ToTable = r.ToTable,
-                    Type = r.RelationshipType,
-                    Description = r.Description
-                }).ToList() ?? new List<BusinessRelationship>(),
+                    SourceTable = r.FromTable,
+                    TargetTable = r.ToTable,
+                    RelationshipType = r.RelationshipType,
+                    BusinessDescription = r.BusinessRelationship
+                }).ToList() ?? new List<BIReportingCopilot.Core.Models.Business.BusinessRelationship>(),
                 GeneratedAt = DateTime.UtcNow
             };
         }
@@ -1355,6 +1355,294 @@ Respond in JSON format:
             };
         }
     }
+
+    /// <summary>
+    /// Generate context from schema async (IBusinessContextAutoGenerator interface)
+    /// </summary>
+    public async Task<BusinessContext> GenerateContextFromSchemaAsync(SchemaMetadata schema, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🏗️ Generating business context from schema with {TableCount} tables", schema.Tables?.Count ?? 0);
+
+            var domain = InferDomainFromSchema(schema);
+            return await GenerateContextAsync(domain, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error generating context from schema");
+            return new BusinessContext
+            {
+                Domain = "Unknown",
+                Description = "Auto-generated context from schema",
+                GeneratedAt = DateTime.UtcNow
+            };
+        }
+    }
+
+    /// <summary>
+    /// Get available contexts async (IBusinessContextAutoGenerator interface)
+    /// </summary>
+    public async Task<List<BusinessContext>> GetAvailableContextsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("📋 Getting available business contexts");
+
+            // Return predefined contexts for common business domains
+            return new List<BusinessContext>
+            {
+                await GenerateContextAsync("gaming", cancellationToken),
+                await GenerateContextAsync("finance", cancellationToken),
+                await GenerateContextAsync("retail", cancellationToken),
+                await GenerateContextAsync("healthcare", cancellationToken),
+                await GenerateContextAsync("education", cancellationToken)
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting available contexts");
+            return new List<BusinessContext>();
+        }
+    }
+
+    private string InferDomainFromSchema(SchemaMetadata schema)
+    {
+        var tableNames = schema.Tables?.Select(t => t.Name.ToLower()).ToList() ?? new List<string>();
+
+        if (tableNames.Any(t => t.Contains("player") || t.Contains("game") || t.Contains("bet")))
+            return "gaming";
+        if (tableNames.Any(t => t.Contains("transaction") || t.Contains("payment") || t.Contains("account")))
+            return "finance";
+        if (tableNames.Any(t => t.Contains("product") || t.Contains("order") || t.Contains("customer")))
+            return "retail";
+        if (tableNames.Any(t => t.Contains("patient") || t.Contains("medical") || t.Contains("treatment")))
+            return "healthcare";
+        if (tableNames.Any(t => t.Contains("student") || t.Contains("course") || t.Contains("grade")))
+            return "education";
+
+        return "general";
+    }
+
+    /// <summary>
+    /// Generate table context async (IBusinessContextAutoGenerator interface)
+    /// </summary>
+    public async Task<BusinessContext> GenerateTableContextAsync(string tableName, SchemaMetadata schema, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🔍 Generating table context for: {TableName}", tableName);
+
+            // Find the table in schema
+            var table = schema.Tables.FirstOrDefault(t => t.Name.Equals(tableName, StringComparison.OrdinalIgnoreCase));
+            if (table == null)
+            {
+                throw new ArgumentException($"Table '{tableName}' not found in schema");
+            }
+
+            // Generate business context using AI
+            var prompt = $"Generate business context for table '{tableName}' with columns: {string.Join(", ", table.Columns.Select(c => c.Name))}";
+            var aiResponse = await _aiService.GenerateSQLAsync(prompt);
+
+            return new BusinessContext
+            {
+                Domain = tableName,
+                Description = ExtractDescription(aiResponse),
+                GeneratedAt = DateTime.UtcNow,
+                Tables = new List<BIReportingCopilot.Core.Models.Business.BusinessTable>
+                {
+                    new BIReportingCopilot.Core.Models.Business.BusinessTable
+                    {
+                        Name = tableName,
+                        BusinessPurpose = ExtractBusinessName(aiResponse),
+                        BusinessContext = ExtractDescription(aiResponse)
+                    }
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error generating table context for: {TableName}", tableName);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Generate table contexts async (IBusinessContextAutoGenerator interface)
+    /// </summary>
+    public async Task<List<BusinessContext>> GenerateTableContextsAsync(List<string> tableNames, SchemaMetadata schema, CancellationToken cancellationToken = default)
+    {
+        var contexts = new List<BusinessContext>();
+
+        foreach (var tableName in tableNames)
+        {
+            try
+            {
+                var context = await GenerateTableContextAsync(tableName, schema, cancellationToken);
+                contexts.Add(context);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error generating context for table: {TableName}", tableName);
+                // Continue with other tables
+            }
+        }
+
+        return contexts;
+    }
+
+    /// <summary>
+    /// Generate glossary terms async (IBusinessContextAutoGenerator interface)
+    /// </summary>
+    public async Task<List<BusinessTerm>> GenerateGlossaryTermsAsync(SchemaMetadata schema, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("📚 Generating glossary terms for schema");
+
+            var terms = new List<BusinessTerm>();
+
+            // Generate terms for each table
+            foreach (var table in schema.Tables)
+            {
+                var prompt = $"Generate business glossary terms for table '{table.Name}' and its columns";
+                var aiResponse = await _aiService.GenerateSQLAsync(prompt);
+
+                // Parse AI response and create terms
+                var tableTerm = new BusinessTerm
+                {
+                    Term = table.Name,
+                    Definition = ExtractDefinition(aiResponse),
+                    Category = "Table"
+                };
+                terms.Add(tableTerm);
+            }
+
+            return terms;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error generating glossary terms");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Analyze table relationships async (IBusinessContextAutoGenerator interface)
+    /// </summary>
+    public async Task<List<BusinessRelationship>> AnalyzeTableRelationshipsAsync(SchemaMetadata schema, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🔗 Analyzing table relationships");
+
+            var relationships = new List<BusinessRelationship>();
+
+            // Analyze foreign key relationships
+            foreach (var table in schema.Tables)
+            {
+                foreach (var column in table.Columns.Where(c => c.IsForeignKey))
+                {
+                    var relationship = new BusinessRelationship
+                    {
+                        SourceTable = table.Name,
+                        TargetTable = "Unknown", // TODO: Add foreign key table detection
+                        RelationshipType = "Foreign Key",
+                        Description = $"{table.Name} has foreign key relationship"
+                    };
+                    relationships.Add(relationship);
+                }
+            }
+
+            return relationships;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error analyzing table relationships");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Generate business context internal async
+    /// </summary>
+    private async Task<AutoGenerationResponse> GenerateBusinessContextInternalAsync(AutoGenerationRequest request, string userId)
+    {
+        try
+        {
+            _logger.LogInformation("🤖 Generating business context for user: {UserId}", userId);
+
+            var response = new AutoGenerationResponse
+            {
+                GeneratedTableContexts = new List<AutoGeneratedTableContext>(),
+                GeneratedGlossaryTerms = new List<AutoGeneratedGlossaryTerm>(),
+                RelationshipAnalysis = new BusinessRelationshipAnalysis
+                {
+                    Relationships = new List<TableRelationship>()
+                }
+            };
+
+            // Generate table contexts if requested
+            if (request.GenerateTableContexts)
+            {
+                response.GeneratedTableContexts = await GenerateTableContextsAsync();
+            }
+
+            // Generate glossary terms if requested
+            if (request.GenerateGlossaryTerms)
+            {
+                response.GeneratedGlossaryTerms = await GenerateGlossaryTermsAsync();
+            }
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error generating business context");
+            throw;
+        }
+    }
+
+    #region Helper Methods
+
+    private string ExtractBusinessName(string aiResponse)
+    {
+        // Simple extraction logic - in real implementation, use more sophisticated parsing
+        return aiResponse.Split('\n').FirstOrDefault()?.Trim() ?? "Unknown";
+    }
+
+    private string ExtractDescription(string aiResponse)
+    {
+        // Simple extraction logic
+        return aiResponse.Length > 100 ? aiResponse.Substring(0, 100) + "..." : aiResponse;
+    }
+
+    private string ExtractCategory(string aiResponse)
+    {
+        // Simple categorization logic
+        if (aiResponse.ToLower().Contains("player")) return "Player Data";
+        if (aiResponse.ToLower().Contains("transaction")) return "Financial";
+        if (aiResponse.ToLower().Contains("game")) return "Gaming";
+        return "General";
+    }
+
+    private List<string> ExtractTags(string aiResponse)
+    {
+        // Simple tag extraction
+        var tags = new List<string>();
+        if (aiResponse.ToLower().Contains("daily")) tags.Add("daily");
+        if (aiResponse.ToLower().Contains("action")) tags.Add("action");
+        if (aiResponse.ToLower().Contains("player")) tags.Add("player");
+        return tags;
+    }
+
+    private string ExtractDefinition(string aiResponse)
+    {
+        // Simple definition extraction
+        return aiResponse.Split('.').FirstOrDefault()?.Trim() ?? "No definition available";
+    }
+
+    #endregion
 
     #endregion
 }

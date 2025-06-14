@@ -6,6 +6,7 @@ using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
 using BIReportingCopilot.Infrastructure.Configuration;
+using ContextType = BIReportingCopilot.Infrastructure.Data.Contexts.ContextType;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Caching.Distributed;
@@ -141,7 +142,7 @@ public class SchemaService : ISchemaService
     {
         try
         {
-            var schemaMetadata = await GetSchemaMetadataAsync();
+            var schemaMetadata = await GetSchemaMetadataAsync((string?)null);
             return schemaMetadata.Tables.FirstOrDefault(t =>
                 t.Name.Equals(tableName, StringComparison.OrdinalIgnoreCase) &&
                 (schema == null || t.Schema.Equals(schema, StringComparison.OrdinalIgnoreCase)));
@@ -158,7 +159,7 @@ public class SchemaService : ISchemaService
         try
         {
             var suggestions = new List<SchemaSuggestion>();
-            var schema = await GetSchemaMetadataAsync();
+            var schema = await GetSchemaMetadataAsync((string?)null);
 
             // Generate suggestions based on table names and common patterns
             foreach (var table in schema.Tables.Take(5))
@@ -187,7 +188,7 @@ public class SchemaService : ISchemaService
         try
         {
             // Basic implementation - in production, implement proper access control
-            var schema = await GetSchemaMetadataAsync();
+            var schema = await GetSchemaMetadataAsync((string?)null);
             return schema.Tables.Any(t => t.Name.Equals(tableName, StringComparison.OrdinalIgnoreCase));
         }
         catch (Exception ex)
@@ -201,7 +202,7 @@ public class SchemaService : ISchemaService
     {
         try
         {
-            var schema = await GetSchemaMetadataAsync();
+            var schema = await GetSchemaMetadataAsync((string?)null);
             // Basic implementation - return all tables
             // In production, filter based on user permissions
             return schema.Tables.Select(t => $"{t.Schema}.{t.Name}").ToList();
@@ -267,7 +268,7 @@ public class SchemaService : ISchemaService
             }
 
             // Calculate completeness (non-null values)
-            var tableMetadata = await GetTableMetadataAsync(tableName);
+            var tableMetadata = await GetTableMetadataAsync(tableName, (string?)null);
             var completenessScore = await CalculateCompletenessScore(connection, tableName, tableMetadata, totalRows);
 
             // Calculate uniqueness (for columns that should be unique)
@@ -646,7 +647,7 @@ public class SchemaService : ISchemaService
     {
         try
         {
-            var schemaMetadata = await GetSchemaMetadataAsync();
+            var schemaMetadata = await GetSchemaMetadataAsync((string?)null);
             var tables = schemaMetadata.Tables.AsQueryable();
 
             if (!string.IsNullOrEmpty(schema))
@@ -739,7 +740,7 @@ public class SchemaService : ISchemaService
     /// </summary>
     public async Task<SchemaMetadata> GetSchemaAsync(CancellationToken cancellationToken = default)
     {
-        return await GetSchemaMetadataAsync();
+        return await GetSchemaMetadataAsync((string?)null);
     }
 
     /// <summary>
@@ -747,7 +748,7 @@ public class SchemaService : ISchemaService
     /// </summary>
     public async Task RefreshSchemaAsync(CancellationToken cancellationToken = default)
     {
-        await RefreshSchemaMetadataAsync();
+        await RefreshSchemaMetadataAsync((string?)null);
     }
 
     /// <summary>
@@ -757,7 +758,7 @@ public class SchemaService : ISchemaService
     {
         try
         {
-            var schema = await GetSchemaMetadataAsync();
+            var schema = await GetSchemaMetadataAsync((string?)null);
             return schema.Tables.Select(t => $"{t.Schema}.{t.Name}").ToList();
         }
         catch (Exception ex)
@@ -774,7 +775,7 @@ public class SchemaService : ISchemaService
     {
         try
         {
-            var schema = await GetSchemaMetadataAsync();
+            var schema = await GetSchemaMetadataAsync((string?)null);
             var table = schema.Tables.FirstOrDefault(t =>
                 t.Name.Equals(tableName, StringComparison.OrdinalIgnoreCase) ||
                 $"{t.Schema}.{t.Name}".Equals(tableName, StringComparison.OrdinalIgnoreCase));
@@ -793,7 +794,41 @@ public class SchemaService : ISchemaService
     /// </summary>
     public async Task<SchemaMetadata> GetSchemaMetadataAsync(CancellationToken cancellationToken = default)
     {
-        return await GetSchemaMetadataAsync();
+        return await GetSchemaMetadataAsync((string?)null);
+    }
+
+    /// <summary>
+    /// Get table metadata async (ISchemaService interface)
+    /// </summary>
+    public async Task<TableMetadata?> GetTableMetadataAsync(string tableName, CancellationToken cancellationToken = default)
+    {
+        return await GetTableMetadataAsync(tableName, (string?)null);
+    }
+
+    /// <summary>
+    /// Refresh schema metadata async (ISchemaService interface)
+    /// </summary>
+    public async Task<SchemaMetadata> RefreshSchemaMetadataAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🔄 Refreshing schema metadata");
+
+            // Clear cache
+            // Clear distributed cache if available
+            await ClearDistributedCachedSchemaAsync(null);
+
+            // Get fresh schema metadata
+            var schema = await GetSchemaMetadataAsync(cancellationToken);
+
+            _logger.LogInformation("✅ Schema metadata refreshed successfully");
+            return schema;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error refreshing schema metadata");
+            throw;
+        }
     }
 
     #endregion

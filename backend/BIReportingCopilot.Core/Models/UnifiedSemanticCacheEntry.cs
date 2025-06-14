@@ -69,4 +69,39 @@ public class UnifiedSemanticCacheEntry
     /// Updated timestamp
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Query hash for unique identification (for compatibility with BICopilotContext)
+    /// </summary>
+    public string QueryHash { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Original query text (for compatibility with BICopilotContext)
+    /// </summary>
+    public string OriginalQuery { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Normalized query text (for compatibility with BICopilotContext)
+    /// </summary>
+    public string NormalizedQuery { get; set; } = string.Empty;
+
+    /// <summary>
+    /// User who created the record (for compatibility with BICopilotContext)
+    /// </summary>
+    public string? CreatedBy { get; set; }
+
+    /// <summary>
+    /// User who last updated the record (for compatibility with BICopilotContext)
+    /// </summary>
+    public string? UpdatedBy { get; set; }
+
+    /// <summary>
+    /// Generated SQL query (for compatibility with SemanticCacheService)
+    /// </summary>
+    public string? GeneratedSql { get; set; }
+
+    /// <summary>
+    /// Result data as dictionary (for compatibility with SemanticCacheService)
+    /// </summary>
+    public Dictionary<string, object>? ResultData { get; set; }
 }

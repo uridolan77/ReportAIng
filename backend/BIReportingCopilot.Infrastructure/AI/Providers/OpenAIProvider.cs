@@ -213,10 +213,10 @@ public class OpenAIProvider : IAIProvider
         {
             var options = new AIOptions
             {
-                Temperature = request.Temperature ?? 0.7f,
-                MaxTokens = request.MaxTokens ?? 2000,
+                Temperature = (float)request.Temperature,
+                MaxTokens = request.MaxTokens,
                 SystemMessage = request.SystemMessage,
-                TimeoutSeconds = request.TimeoutSeconds ?? 30
+                TimeoutSeconds = 30 // Default timeout
             };
 
             var content = await GenerateCompletionAsync(request.Prompt, options, cancellationToken);
@@ -259,7 +259,7 @@ public class OpenAIProvider : IAIProvider
             {
                 Prompt = "Test",
                 MaxTokens = 10,
-                Temperature = 0.1f
+                Temperature = 0.1
             };
 
             var response = await GenerateResponseAsync(testRequest, cancellationToken);
@@ -288,7 +288,7 @@ public class OpenAIProvider : IAIProvider
             Configuration = new Dictionary<string, object>
             {
                 ["model"] = _config.Model,
-                ["endpoint"] = _config.Endpoint,
+                ["endpoint"] = _config.BaseUrl,
                 ["configured"] = IsConfigured
             }
         });

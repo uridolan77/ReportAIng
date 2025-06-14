@@ -705,5 +705,22 @@ public class AITuningSettingsService : IAITuningSettingsService
         }
     }
 
+    /// <summary>
+    /// Get boolean setting value (IAITuningSettingsService interface)
+    /// </summary>
+    public async Task<bool> GetBooleanSettingAsync(string settingName)
+    {
+        try
+        {
+            var value = await GetStringSettingAsync(settingName, "false");
+            return bool.TryParse(value, out var result) && result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting boolean setting: {SettingName}", settingName);
+            return false;
+        }
+    }
+
     #endregion
 }

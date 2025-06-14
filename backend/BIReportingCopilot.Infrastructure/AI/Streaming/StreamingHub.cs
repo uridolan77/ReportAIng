@@ -290,14 +290,14 @@ public class StreamingHub : Hub
     {
         try
         {
-            var activeSessions = await _streamingService.GetActiveSessionsAsync(userId);
-            
-            foreach (var session in activeSessions)
+            var activeStreams = await _streamingService.GetActiveStreamsAsync(userId);
+
+            foreach (var stream in activeStreams)
             {
-                await _streamingService.StopStreamingSessionAsync(userId, session.SessionId);
+                await _streamingService.StopStreamingQueryAsync(stream.StreamId);
             }
 
-            _logger.LogDebug("🧹 Cleaned up {SessionCount} active sessions for user {UserId}", activeSessions.Count, userId);
+            _logger.LogDebug("🧹 Cleaned up {StreamCount} active streams for user {UserId}", activeStreams.Count, userId);
         }
         catch (Exception ex)
         {

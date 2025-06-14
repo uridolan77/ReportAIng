@@ -237,8 +237,8 @@ public class GlossaryManagementService : IGlossaryManagementService
             return new BIReportingCopilot.Core.Models.GlossaryStatistics
             {
                 TotalTerms = terms.Count,
-                ActiveTerms = terms.Count, // All queried terms are active
-                InactiveTerms = 0,
+                TotalCategories = categoryStats.Count,
+                TermsByCategory = categoryStats,
                 LastUpdated = DateTime.UtcNow
             };
         }

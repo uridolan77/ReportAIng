@@ -128,7 +128,7 @@ public class ExecuteSqlCommandHandler : IRequestHandler<ExecuteSqlCommand, SqlQu
         {
             _logger.LogInformation("🗄️ Executing SQL query - Length: {Length}", request.Sql.Length);
 
-            var queryResult = await _sqlQueryService.ExecuteSelectQueryAsync(request.Sql, request.Options, cancellationToken);
+            var queryResult = await _sqlQueryService.ExecuteSelectQueryAsync(request.Sql, cancellationToken);
             var executionTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
 
             // Convert QueryResult to SqlQueryResult

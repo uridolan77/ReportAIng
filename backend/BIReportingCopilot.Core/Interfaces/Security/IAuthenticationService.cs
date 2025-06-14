@@ -34,15 +34,7 @@ public interface IPasswordHasher
 // MISSING SECURITY INTERFACES
 // =============================================================================
 
-/// <summary>
-/// Metrics collector interface
-/// </summary>
-public interface IMetricsCollector
-{
-    Task RecordMetricAsync(string metricName, double value, Dictionary<string, string>? tags = null, CancellationToken cancellationToken = default);
-    Task IncrementCounterAsync(string counterName, Dictionary<string, string>? tags = null, CancellationToken cancellationToken = default);
-    Task RecordTimingAsync(string timerName, TimeSpan duration, Dictionary<string, string>? tags = null, CancellationToken cancellationToken = default);
-}
+// IMetricsCollector interface moved to BIReportingCopilot.Core.Interfaces.Monitoring.IMetricsCollector
 
 /// <summary>
 /// Audit service interface
@@ -66,6 +58,10 @@ public interface IEmailService
     Task SendEmailAsync(string to, string subject, string body, bool isHtml = false);
     Task SendEmailAsync(List<string> to, string subject, string body, bool isHtml = false);
     Task SendTemplateEmailAsync(string to, string templateId, Dictionary<string, object> templateData);
+
+    // Additional methods expected by Infrastructure services
+    Task<bool> SendAsync(string to, string subject, string body);
+    Task<bool> SendMfaCodeAsync(string email, string code);
 }
 
 /// <summary>
@@ -76,4 +72,8 @@ public interface ISmsService
     Task SendSmsAsync(string phoneNumber, string message);
     Task SendBulkSmsAsync(List<string> phoneNumbers, string message);
     Task<bool> ValidatePhoneNumberAsync(string phoneNumber);
+
+    // Additional methods expected by Infrastructure services
+    Task<bool> SendAsync(string phoneNumber, string message);
+    Task<bool> TestDeliveryAsync(string phoneNumber);
 }

@@ -74,4 +74,39 @@ public class UnifiedAIFeedbackEntry
     /// Updated timestamp
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// User who created the record
+    /// </summary>
+    public string? CreatedBy { get; set; }
+
+    /// <summary>
+    /// User who last updated the record
+    /// </summary>
+    public string? UpdatedBy { get; set; }
+
+    /// <summary>
+    /// Query ID (for compatibility)
+    /// </summary>
+    public string QueryId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Original query text (for compatibility)
+    /// </summary>
+    public string OriginalQuery { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Created date (for compatibility)
+    /// </summary>
+    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Last updated date (for compatibility)
+    /// </summary>
+    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Is active flag (for compatibility)
+    /// </summary>
+    public bool IsActive { get; set; } = true;
 }

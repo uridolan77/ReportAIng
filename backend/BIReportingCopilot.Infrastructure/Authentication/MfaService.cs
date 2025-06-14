@@ -293,7 +293,7 @@ public class MfaService : IMfaService
             {
                 ChallengeId = Guid.NewGuid().ToString(),
                 UserId = userId,
-                Method = method,
+                Method = method.ToString(),
                 Challenge = challengeCode,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(_securitySettings.MfaCodeExpirationMinutes)
             };
@@ -701,7 +701,7 @@ public class MfaService : IMfaService
             {
                 ChallengeId = Guid.NewGuid().ToString(),
                 UserId = userId,
-                Method = method,
+                Method = method.ToString(),
                 Challenge = challengeCode,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(_securitySettings.MfaCodeExpirationMinutes)
             };
@@ -718,7 +718,7 @@ public class MfaService : IMfaService
             return new MfaChallengeResult
             {
                 ChallengeId = challenge.ChallengeId,
-                Method = method,
+                Method = method.ToString(),
                 Success = success,
                 ExpiresAt = challenge.ExpiresAt,
                 MaskedDeliveryAddress = method == MfaMethod.SMS ? MaskPhoneNumber(user.PhoneNumber) : MaskEmail(user.Email),
@@ -780,7 +780,7 @@ public class MfaService : IMfaService
                 return false;
 
             // Basic TOTP validation (in a real implementation, use a proper TOTP library)
-            var isValid = await ValidateTotpCodeAsync(user.MfaSecret, code);
+            var isValid = await ValidateTotpAsync(user.MfaSecret, code);
 
             if (isValid && user != null)
             {
@@ -795,5 +795,11 @@ public class MfaService : IMfaService
             _logger.LogError(ex, "Error validating TOTP for user {UserId}", userId);
             return false;
         }
+    }
+
+    // Additional interface implementations
+    public async Task<string[]> GenerateBackupCodesAsync()
+    {
+        return await GenerateBackupCodesInternalAsync();
     }
 }

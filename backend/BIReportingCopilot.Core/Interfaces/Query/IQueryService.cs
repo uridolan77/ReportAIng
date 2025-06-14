@@ -11,7 +11,7 @@ public interface IQueryService
     Task<QueryResult> ExecuteQueryAsync(QueryRequest request, CancellationToken cancellationToken = default);
     Task<QueryResult> ExecuteSelectQueryAsync(string sqlQuery, CancellationToken cancellationToken = default);
     Task<bool> ValidateQueryAsync(string sqlQuery, CancellationToken cancellationToken = default);
-    Task<List<QueryHistoryEntity>> GetQueryHistoryAsync(string userId, int pageSize = 50, int pageNumber = 1, CancellationToken cancellationToken = default);
+    Task<List<UnifiedQueryHistoryEntity>> GetQueryHistoryAsync(string userId, int pageSize = 50, int pageNumber = 1, CancellationToken cancellationToken = default);
     Task<QueryResult> GetCachedQueryResultAsync(string cacheKey, CancellationToken cancellationToken = default);
     Task SaveQueryResultAsync(string cacheKey, QueryResult result, TimeSpan? expiry = null, CancellationToken cancellationToken = default);
     Task<QueryPerformanceMetrics> GetPerformanceMetricsAsync(CancellationToken cancellationToken = default);
@@ -28,7 +28,7 @@ public interface IQueryService
     Task InvalidateQueryCacheAsync(string pattern, CancellationToken cancellationToken = default);
     Task<QueryResult> ProcessAdvancedQueryAsync(QueryRequest request, CancellationToken cancellationToken = default);
     Task<double> CalculateSemanticSimilarityAsync(string query1, string query2, CancellationToken cancellationToken = default);
-    Task<List<QueryHistoryEntity>> FindSimilarQueriesAsync(string query, CancellationToken cancellationToken = default);
+    Task<List<UnifiedQueryHistoryEntity>> FindSimilarQueriesAsync(string query, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -54,6 +54,11 @@ public interface IQueryCacheService
     Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default);
     Task ClearAllAsync(CancellationToken cancellationToken = default);
     Task<CacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default);
+
+    // Additional methods expected by Infrastructure services
+    Task InvalidateByPatternAsync(string pattern, CancellationToken cancellationToken = default);
+    Task CacheQueryAsync(string key, object result, TimeSpan? expiration = null, CancellationToken cancellationToken = default);
+    Task<T?> GetCachedQueryAsync<T>(string key, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -103,6 +108,23 @@ public class QueryProcessingResult
     public List<string> Suggestions { get; set; } = new();
     public double ConfidenceScore { get; set; }
     public TimeSpan ProcessingTime { get; set; }
+
+    // Additional properties expected by Infrastructure services
+    public string GeneratedSQL
+    {
+        get => GeneratedSql;
+        set => GeneratedSql = value;
+    }
+
+    public double Confidence
+    {
+        get => ConfidenceScore;
+        set => ConfidenceScore = value;
+    }
+
+    public SemanticAnalysis SemanticAnalysis { get; set; } = new();
+    public QueryClassificationResult Classification { get; set; } = new();
+    public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
 /// <summary>
@@ -151,6 +173,10 @@ public interface ISqlQueryService
     Task<QueryResult> ExecuteQueryAsync(string sql, CancellationToken cancellationToken = default);
     Task<bool> ValidateQueryAsync(string sql, CancellationToken cancellationToken = default);
     Task<QueryMetadata> GetQueryMetadataAsync(string sql, CancellationToken cancellationToken = default);
+
+    // Additional methods expected by Infrastructure services
+    Task<QueryResult> ExecuteSelectQueryAsync(string sql, CancellationToken cancellationToken = default);
+    Task<bool> ValidateSqlAsync(string sql, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -159,7 +185,13 @@ public interface ISqlQueryService
 public interface ISchemaOptimizationService
 {
     Task<SchemaOptimizationResult> OptimizeSchemaAsync(SchemaMetadata schema, CancellationToken cancellationToken = default);
-    Task<List<IndexRecommendation>> GetIndexRecommendationsAsync(string tableName, CancellationToken cancellationToken = default);
+    Task<List<BIReportingCopilot.Core.Models.IndexRecommendation>> GetIndexRecommendationsAsync(string tableName, CancellationToken cancellationToken = default);
+
+    // Additional methods expected by Infrastructure services
+    Task<QueryOptimizationResult> AnalyzeQueryPerformanceAsync(string query, CancellationToken cancellationToken = default);
+    Task<BIReportingCopilot.Core.Models.SchemaOptimizationMetrics> GetOptimizationMetricsAsync(CancellationToken cancellationToken = default);
+    Task<BIReportingCopilot.Core.Models.SqlOptimizationResult> OptimizeSqlAsync(string sql, CancellationToken cancellationToken = default);
+    Task<List<BIReportingCopilot.Core.Models.IndexSuggestion>> SuggestIndexesAsync(string tableName, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -183,17 +215,10 @@ public class SchemaOptimizationResult
     public Dictionary<string, object> Metrics { get; set; } = new();
 }
 
-/// <summary>
-/// Index recommendation
-/// </summary>
-public class IndexRecommendation
-{
-    public string TableName { get; set; } = string.Empty;
-    public List<string> Columns { get; set; } = new();
-    public string IndexType { get; set; } = string.Empty;
-    public double ImpactScore { get; set; }
-    public string Reason { get; set; } = string.Empty;
-}
+// IndexRecommendation has been consolidated into Core.Models.IndexRecommendation
+// See: Core/Models/AIModels.cs
+
+// Note: Schema optimization classes moved to Core.Models to avoid ambiguous references
 
 // Duplicate IQueryCacheService removed - using the one defined above
 
@@ -209,6 +234,8 @@ public interface ISchemaService
 
     // Method expected by Infrastructure services
     Task<SchemaMetadata> GetSchemaMetadataAsync(CancellationToken cancellationToken = default);
+    Task<TableMetadata?> GetTableMetadataAsync(string tableName, CancellationToken cancellationToken = default);
+    Task<SchemaMetadata> RefreshSchemaMetadataAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -219,6 +246,7 @@ public interface ICacheService
     Task<T?> GetAsync<T>(string key);
     Task SetAsync<T>(string key, T value, TimeSpan? expiration = null);
     Task RemoveAsync(string key);
+    Task RemovePatternAsync(string pattern);
     Task<bool> ExistsAsync(string key);
     Task ClearAsync();
 }

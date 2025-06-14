@@ -59,4 +59,28 @@ public class CachePerformanceMetrics
     /// Last update timestamp
     /// </summary>
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Average time for cache hits
+    /// </summary>
+    public TimeSpan AverageHitTime { get; set; }
+
+    /// <summary>
+    /// Average time for cache misses
+    /// </summary>
+    public TimeSpan AverageMissTime { get; set; }
+
+    /// <summary>
+    /// Hit ratio (alias for HitRate)
+    /// </summary>
+    public double HitRatio
+    {
+        get => HitRate;
+        set => HitRate = value;
+    }
+
+    /// <summary>
+    /// Total number of requests
+    /// </summary>
+    public long TotalRequests { get; set; }
 }

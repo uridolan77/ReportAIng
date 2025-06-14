@@ -4,6 +4,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
+using ContextType = BIReportingCopilot.Infrastructure.Data.Contexts.ContextType;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -368,7 +369,8 @@ public class AuditService : IAuditService
     /// </summary>
     public async Task LogActionAsync(string action, string userId, string entityType, string entityId, Dictionary<string, object>? metadata = null)
     {
-        await LogActionAsync(action, userId, entityType, entityId, metadata != null ? JsonSerializer.Serialize(metadata) : null);
+        var details = metadata != null ? JsonSerializer.Serialize(metadata) : null;
+        await LogSecurityEventAsync(action, userId, details, null, "Info");
     }
 
     /// <summary>

@@ -167,7 +167,7 @@ public class GetSemanticCacheMetricsQueryHandler : IRequestHandler<GetSemanticCa
                 CacheHitRate = vectorMetrics.CacheHitRate,
                 IndexSizeBytes = vectorMetrics.IndexSizeBytes,
                 LastOptimized = vectorMetrics.LastOptimized,
-                TotalCacheEntries = cacheStats.TotalEntries,
+                TotalCacheEntries = (int)cacheStats.TotalKeys,
                 MemoryCacheHitRate = cacheStats.HitRate,
                 PerformanceMetrics = vectorMetrics.PerformanceMetrics
             };

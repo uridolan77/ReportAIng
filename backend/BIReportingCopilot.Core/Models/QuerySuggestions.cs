@@ -105,6 +105,11 @@ public class QuerySuggestion
     public double Confidence { get; set; } = 0.8;
     public string Source { get; set; } = "manual";
 
+    /// <summary>
+    /// Error message (for compatibility)
+    /// </summary>
+    public string? ErrorMessage { get; set; }
+
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
     [Required]

@@ -363,6 +363,45 @@ public class QueryCacheService : IQueryCacheService
         }
     }
 
+    /// <summary>
+    /// Invalidate by pattern (IQueryCacheService interface)
+    /// </summary>
+    public async Task InvalidateByPatternAsync(string pattern, CancellationToken cancellationToken = default)
+    {
+        await InvalidateByPatternAsync(pattern);
+    }
+
+    /// <summary>
+    /// Cache query result (IQueryCacheService interface)
+    /// </summary>
+    public async Task CacheQueryAsync(string key, object result, TimeSpan? expiration = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _cacheService.SetAsync(key, result, expiration);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error caching query result for key: {Key}", key);
+        }
+    }
+
+    /// <summary>
+    /// Get cached query result (IQueryCacheService interface)
+    /// </summary>
+    public async Task<T?> GetCachedQueryAsync<T>(string key, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _cacheService.GetAsync<T>(key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cached query result for key: {Key}", key);
+            return default;
+        }
+    }
+
     #endregion
 }
 
@@ -386,5 +425,6 @@ public class CacheStatistics
     public long SemanticCacheMisses { get; set; }
     public double SemanticCacheHitRate { get; set; }
     public int TotalSemanticEntries { get; set; }
+    public int TotalEntries => TotalSemanticEntries; // Alias for compatibility
     public DateTime LastUpdated { get; set; }
 }

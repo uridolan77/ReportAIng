@@ -750,5 +750,13 @@ public class InMemoryVectorSearchService : IVectorSearchService
         }
     }
 
+    /// <summary>
+    /// Find similar queries (IVectorSearchService interface)
+    /// </summary>
+    public async Task<List<SemanticSearchResult>> FindSimilarQueriesAsync(string query, double threshold = 0.8, int maxResults = 5, CancellationToken cancellationToken = default)
+    {
+        return await FindSimilarQueriesByTextAsync(query, threshold, maxResults, cancellationToken);
+    }
+
     #endregion
 }

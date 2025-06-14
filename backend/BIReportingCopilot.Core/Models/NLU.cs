@@ -579,6 +579,15 @@ public class IntelligentQuerySuggestion
     public double Confidence { get; set; }
     public List<string> Benefits { get; set; } = new();
     public string Category { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Text property (alias for QueryText for compatibility)
+    /// </summary>
+    public string Text
+    {
+        get => QueryText;
+        set => QueryText = value;
+    }
 }
 
 /// <summary>
@@ -591,6 +600,39 @@ public class QueryAssistance
     public List<string> Corrections { get; set; } = new();
     public List<IntelligentQuerySuggestion> Suggestions { get; set; } = new();
     public string Context { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Auto complete suggestions (alias for Completions)
+    /// </summary>
+    public List<string> AutoComplete
+    {
+        get => Completions;
+        set => Completions = value;
+    }
+
+    /// <summary>
+    /// Explanations for the suggestions
+    /// </summary>
+    public List<string> Explanations { get; set; } = new();
+
+    /// <summary>
+    /// Confidence score for the assistance
+    /// </summary>
+    public double Confidence { get; set; } = 0.8;
+
+    /// <summary>
+    /// Autocomplete suggestions (alias for Completions)
+    /// </summary>
+    public List<string> AutocompleteSuggestions
+    {
+        get => Completions;
+        set => Completions = value;
+    }
+
+    /// <summary>
+    /// Performance hints for the query
+    /// </summary>
+    public List<string> PerformanceHints { get; set; } = new();
 }
 
 /// <summary>
@@ -655,7 +697,9 @@ public enum IntentCategory
     Dashboard,
     Configuration,
     Help,
-    Unknown
+    Unknown,
+    Comparison,
+    Other
 }
 
 /// <summary>
@@ -717,6 +761,10 @@ public class NLUProcessingMetrics
     public int TokenCount { get; set; }
     public double ConfidenceScore { get; set; }
     public string ModelVersion { get; set; } = string.Empty;
+
+    // Properties expected by Infrastructure services
+    public List<string> ComponentsUsed { get; set; } = new();
+    public int CacheHits { get; set; }
 }
 
 /// <summary>
@@ -729,6 +777,16 @@ public class NLURecommendation
     public string Description { get; set; } = string.Empty;
     public double Confidence { get; set; }
     public Dictionary<string, object> Parameters { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    public string Message
+    {
+        get => Description;
+        set => Description = value;
+    }
+
+    public string Priority { get; set; } = "Medium";
+    public string ActionSuggestion { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -741,6 +799,11 @@ public class ConversationContext
     public List<string> MessageHistory { get; set; } = new();
     public Dictionary<string, object> ContextData { get; set; } = new();
     public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    public List<string> RecentQueries { get; set; } = new();
+    public string CurrentTopic { get; set; } = string.Empty;
+    public List<string> MentionedEntities { get; set; } = new();
 }
 
 /// <summary>
@@ -885,6 +948,10 @@ public class BusinessContext
     /// When this context was generated
     /// </summary>
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    public string Industry { get; set; } = string.Empty;
+    public List<string> BusinessProcesses { get; set; } = new();
 }
 
 /// <summary>
@@ -926,6 +993,32 @@ public class SemanticSearchResult
     public double Similarity { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
     public float[] Embedding { get; set; } = Array.Empty<float>();
+
+    // Properties expected by Infrastructure services
+    public string EmbeddingId
+    {
+        get => Id;
+        set => Id = value;
+    }
+
+    public string OriginalQuery
+    {
+        get => Text;
+        set => Text = value;
+    }
+
+    public string SqlQuery { get; set; } = string.Empty;
+    public object? CachedResponse { get; set; }
+
+    public double SimilarityScore
+    {
+        get => Similarity;
+        set => Similarity = value;
+    }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime LastAccessed { get; set; } = DateTime.UtcNow;
+    public int AccessCount { get; set; } = 0;
 }
 
 /// <summary>
@@ -956,14 +1049,19 @@ public class VectorSearchMetrics
     public double AverageSearchTime { get; set; }
 
     /// <summary>
-    /// Index size in bytes
+    /// Cache hit rate for vector searches
     /// </summary>
-    public long IndexSizeBytes { get; set; }
+    public double CacheHitRate { get; set; }
 
     /// <summary>
-    /// Last optimization timestamp
+    /// Last time the index was optimized
     /// </summary>
     public DateTime LastOptimized { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Size of the index in bytes
+    /// </summary>
+    public long IndexSizeBytes { get; set; }
 
     /// <summary>
     /// Additional performance metrics
@@ -980,6 +1078,11 @@ public class BatchEmbeddingResult
     public float[] Embedding { get; set; } = Array.Empty<float>();
     public bool Success { get; set; }
     public string? Error { get; set; }
+
+    /// <summary>
+    /// Time taken to process this embedding
+    /// </summary>
+    public TimeSpan ProcessingTime { get; set; }
 }
 
 /// <summary>
@@ -1013,6 +1116,37 @@ public class SemanticAnalysisResult
     // Properties expected by Infrastructure services
     public double ConfidenceScore { get; set; }
     public List<string> Keywords { get; set; } = new();
+
+    // Properties for SemanticAnalysis compatibility
+    public string OriginalQuery
+    {
+        get => Text;
+        set => Text = value;
+    }
+
+    public QueryIntent Intent { get; set; } = QueryIntent.General;
+
+    public string ProcessedQuery
+    {
+        get => Text;
+        set => Text = value;
+    }
+
+    // Implicit conversion to SemanticAnalysis
+    public static implicit operator SemanticAnalysis(SemanticAnalysisResult result)
+    {
+        return new SemanticAnalysis
+        {
+            OriginalQuery = result.Text,
+            Intent = result.Intent,
+            Entities = result.Entities,
+            Keywords = result.Keywords,
+            ConfidenceScore = result.ConfidenceScore,
+            Confidence = result.Confidence,
+            ProcessedQuery = result.Text,
+            Metadata = result.Metadata
+        };
+    }
 }
 
 // SemanticEntity already defined in AIModels.cs - removed duplicate
@@ -1038,9 +1172,26 @@ public class DashboardResult
 {
     public string DashboardId { get; set; } = Guid.NewGuid().ToString();
     public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Status { get; set; } = "Success";
     public List<DashboardWidget> Widgets { get; set; } = new();
+    public List<WidgetResult> WidgetResults { get; set; } = new();
     public Dictionary<string, object> Configuration { get; set; } = new();
+    public Dictionary<string, object> Metadata { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Widget result
+/// </summary>
+public class WidgetResult
+{
+    public string WidgetId { get; set; } = Guid.NewGuid().ToString();
+    public string Title { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string Status { get; set; } = "Success";
+    public string? ErrorMessage { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
 // DashboardWidget already defined in Visualization.cs - removed duplicate
@@ -1055,6 +1206,8 @@ public class DashboardRequest
     public List<string> DataSources { get; set; } = new();
     public Dictionary<string, object> Preferences { get; set; } = new();
     public string UserId { get; set; } = string.Empty;
+    public List<string> Tags { get; set; } = new();
+    public bool IsPublic { get; set; } = false;
 }
 
 /// <summary>
@@ -1078,6 +1231,16 @@ public class AIRequest
     /// Temperature for response generation
     /// </summary>
     public double Temperature { get; set; } = 0.7;
+
+    /// <summary>
+    /// System message for AI context
+    /// </summary>
+    public string? SystemMessage { get; set; }
+
+    /// <summary>
+    /// Timeout in seconds for the request
+    /// </summary>
+    public int TimeoutSeconds { get; set; } = 30;
 }
 
 /// <summary>
@@ -1104,9 +1267,19 @@ public class AIResponse
     }
 
     /// <summary>
-    /// Provider that generated this response
+    /// Number of tokens used in the response
     /// </summary>
-    public string Provider { get; set; } = string.Empty;
+    public int TokensUsed { get; set; }
+
+    /// <summary>
+    /// Model used for the response
+    /// </summary>
+    public string? Model { get; set; }
+
+    /// <summary>
+    /// Provider used for the response
+    /// </summary>
+    public string? Provider { get; set; }
 }
 
 /// <summary>
@@ -1120,4 +1293,38 @@ public class AIProviderMetrics
     public int FailedRequests { get; set; }
     public double AverageResponseTime { get; set; }
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    // Properties expected by Infrastructure services
+    public string ProviderName
+    {
+        get => ProviderId;
+        set => ProviderId = value;
+    }
+
+    public bool IsAvailable { get; set; } = true;
+    public double ResponseTimeMs
+    {
+        get => AverageResponseTime;
+        set => AverageResponseTime = value;
+    }
+
+    public int RequestCount
+    {
+        get => TotalRequests;
+        set => TotalRequests = value;
+    }
+
+    public int ErrorCount
+    {
+        get => FailedRequests;
+        set => FailedRequests = value;
+    }
+
+    public DateTime LastUsed
+    {
+        get => LastUpdated;
+        set => LastUpdated = value;
+    }
+
+    public Dictionary<string, object> Configuration { get; set; } = new();
 }

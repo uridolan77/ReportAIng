@@ -560,18 +560,18 @@ public class MultiModalDashboardService : IMultiModalDashboardService
             {
                 Name = request.Title,
                 Description = request.Description,
-                Category = request.Category ?? "General",
+                Category = "General", // DashboardRequest doesn't have Category property
                 Layout = CreateDefaultLayout(),
                 Configuration = new DashboardConfiguration
                 {
-                    Theme = "default",
+                    Theme = new ThemeConfiguration(), // Use ThemeConfiguration object instead of string
                     RefreshInterval = TimeSpan.FromMinutes(5),
-                    EnableAutoRefresh = true,
+                    AutoRefresh = true, // Use AutoRefresh instead of EnableAutoRefresh
                     EnableExport = true,
                     EnableSharing = true
                 },
-                Tags = request.Tags ?? new List<string>(),
-                IsPublic = request.IsPublic ?? false
+                Tags = request.Tags,
+                IsPublic = request.IsPublic
             };
 
             // Create dashboard using existing method
@@ -584,11 +584,12 @@ public class MultiModalDashboardService : IMultiModalDashboardService
                 Description = dashboard.Description,
                 Status = "Success",
                 CreatedAt = dashboard.CreatedAt,
-                Widgets = dashboard.Widgets.Select(w => new WidgetResult
+                Widgets = dashboard.Widgets,
+                WidgetResults = dashboard.Widgets.Select(w => new WidgetResult
                 {
                     WidgetId = w.WidgetId,
                     Title = w.Title,
-                    Type = w.Type,
+                    Type = w.Type.ToString(),
                     Status = "Success"
                 }).ToList(),
                 Metadata = new Dictionary<string, object>
@@ -623,7 +624,7 @@ public class MultiModalDashboardService : IMultiModalDashboardService
     /// <summary>
     /// Create dashboard (IMultiModalDashboardService interface)
     /// </summary>
-    Task<DashboardResult> IMultiModalDashboardService.CreateDashboardAsync(DashboardRequest request, CancellationToken cancellationToken)
+    async Task<DashboardResult> IMultiModalDashboardService.CreateDashboardAsync(DashboardRequest request, CancellationToken cancellationToken)
     {
         try
         {
@@ -634,18 +635,18 @@ public class MultiModalDashboardService : IMultiModalDashboardService
             {
                 Name = request.Title,
                 Description = request.Description,
-                Category = request.Category ?? "General",
+                Category = "General", // DashboardRequest doesn't have Category property
                 Layout = CreateDefaultLayout(),
                 Configuration = new DashboardConfiguration
                 {
-                    Theme = "default",
+                    Theme = new ThemeConfiguration(), // Use ThemeConfiguration object instead of string
                     RefreshInterval = TimeSpan.FromMinutes(5),
-                    EnableAutoRefresh = true,
+                    AutoRefresh = true, // Use AutoRefresh instead of EnableAutoRefresh
                     EnableExport = true,
                     EnableSharing = true
                 },
-                Tags = request.Tags ?? new List<string>(),
-                IsPublic = request.IsPublic ?? false
+                Tags = request.Tags,
+                IsPublic = request.IsPublic
             };
 
             // Create dashboard using existing method
@@ -658,11 +659,12 @@ public class MultiModalDashboardService : IMultiModalDashboardService
                 Description = dashboard.Description,
                 Status = "Success",
                 CreatedAt = dashboard.CreatedAt,
-                Widgets = dashboard.Widgets.Select(w => new WidgetResult
+                Widgets = dashboard.Widgets,
+                WidgetResults = dashboard.Widgets.Select(w => new WidgetResult
                 {
                     WidgetId = w.WidgetId,
                     Title = w.Title,
-                    Type = w.Type,
+                    Type = w.Type.ToString(),
                     Status = "Success"
                 }).ToList(),
                 Metadata = new Dictionary<string, object>
@@ -687,6 +689,39 @@ public class MultiModalDashboardService : IMultiModalDashboardService
                     ["error"] = ex.Message
                 }
             };
+        }
+    }
+
+    /// <summary>
+    /// Generate dashboard from description (IMultiModalDashboardService interface)
+    /// </summary>
+    public async Task<BIReportingCopilot.Core.Models.Dashboard> GenerateDashboardFromDescriptionAsync(string description, string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var dashboardModel = await GenerateDashboardFromDescriptionAsync(description, userId, (SchemaMetadata?)null);
+
+            // Convert DashboardModel to Dashboard
+            return new BIReportingCopilot.Core.Models.Dashboard
+            {
+                DashboardId = dashboardModel.DashboardId,
+                Name = dashboardModel.Name,
+                Description = dashboardModel.Description,
+                UserId = dashboardModel.UserId,
+                Category = dashboardModel.Category,
+                Widgets = dashboardModel.Widgets,
+                Layout = dashboardModel.Layout,
+                Configuration = dashboardModel.Configuration,
+                Permissions = dashboardModel.Permissions,
+                CreatedAt = dashboardModel.CreatedAt,
+                UpdatedAt = dashboardModel.UpdatedAt,
+                LastViewedAt = dashboardModel.LastViewedAt
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error generating dashboard from description via interface");
+            throw;
         }
     }
 

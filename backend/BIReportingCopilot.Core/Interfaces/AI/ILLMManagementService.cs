@@ -15,6 +15,13 @@ public interface ILLMManagementService
     Task<bool> TestProviderConnectionAsync(string providerId, CancellationToken cancellationToken = default);
     Task<LLMConfiguration> GetConfigurationAsync(CancellationToken cancellationToken = default);
     Task<bool> UpdateConfigurationAsync(LLMConfiguration configuration, CancellationToken cancellationToken = default);
+    Task<List<LLMProviderConfig>> GetProvidersAsync();
+
+    // Additional methods expected by Infrastructure services
+    Task<LLMModelConfig?> GetModelAsync(string modelId, CancellationToken cancellationToken = default);
+    Task<LLMModelConfig?> GetDefaultModelAsync(string useCase, CancellationToken cancellationToken = default);
+    Task LogUsageAsync(LLMUsageLog usageLog, CancellationToken cancellationToken = default);
+    Task<List<LLMProviderStatus>> GetProviderHealthStatusAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

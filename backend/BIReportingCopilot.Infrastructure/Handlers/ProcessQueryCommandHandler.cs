@@ -223,7 +223,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
         try
         {
             // Check if caching is enabled
-            var adminCachingEnabled = await _settingsService.GetBooleanSettingAsync("EnableQueryCaching", true);
+            var adminCachingEnabled = await _settingsService.GetBooleanSettingAsync("EnableQueryCaching");
             var requestCachingEnabled = request.Options.EnableCache;
             var isCachingEnabled = requestCachingEnabled && adminCachingEnabled;
 
@@ -235,7 +235,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
             }
 
             // Check enhanced semantic cache first (vector-based similarity)
-            var enhancedSemanticEnabled = await _settingsService.GetBooleanSettingAsync("EnableEnhancedSemanticCache", true);
+            var enhancedSemanticEnabled = await _settingsService.GetBooleanSettingAsync("EnableEnhancedSemanticCache");
             if (enhancedSemanticEnabled)
             {
                 var semanticCacheCommand = new GetSemanticCacheCommand
@@ -286,14 +286,14 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
     {
         try
         {
-            var adminCachingEnabled = await _settingsService.GetBooleanSettingAsync("EnableQueryCaching", true);
+            var adminCachingEnabled = await _settingsService.GetBooleanSettingAsync("EnableQueryCaching");
             var requestCachingEnabled = request.Options.EnableCache;
             var isCachingEnabled = requestCachingEnabled && adminCachingEnabled;
 
             if (isCachingEnabled)
             {
                 // Store in enhanced semantic cache (vector-based)
-                var enhancedSemanticEnabled = await _settingsService.GetBooleanSettingAsync("EnableEnhancedSemanticCache", true);
+                var enhancedSemanticEnabled = await _settingsService.GetBooleanSettingAsync("EnableEnhancedSemanticCache");
                 if (enhancedSemanticEnabled)
                 {
                     var storeSemanticCommand = new StoreSemanticCacheCommand

@@ -459,7 +459,12 @@ public class LLMAwareAIService : ILLMAwareAIService
                 QueryText = s,
                 Description = $"Suggested query based on: {partialQuery}",
                 Confidence = 0.8,
-                Category = "AI Generated"
+                Category = new SuggestionCategory
+                {
+                    CategoryKey = "general",
+                    Title = "General",
+                    CreatedBy = "system"
+                }
             }).ToList();
         }
         catch (Exception ex)
@@ -548,30 +553,33 @@ public class LLMAwareAIService : ILLMAwareAIService
     /// <summary>
     /// Get service metrics (ILLMAwareAIService interface)
     /// </summary>
-    public async Task<BIReportingCopilot.Core.Interfaces.AI.AIServiceMetrics> GetServiceMetricsAsync(CancellationToken cancellationToken = default)
+    public async Task<BIReportingCopilot.Core.Models.AIServiceMetrics> GetServiceMetricsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             var baseMetrics = await _baseAIService.GetServiceMetricsAsync(cancellationToken);
             var usage = await _llmManagementService.GetUsageStatisticsAsync(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow, cancellationToken);
 
-            return new BIReportingCopilot.Core.Interfaces.AI.AIServiceMetrics
+            return new BIReportingCopilot.Core.Models.AIServiceMetrics
             {
                 TotalRequests = baseMetrics.TotalRequests + (int)usage.TotalRequests,
                 SuccessfulRequests = baseMetrics.SuccessfulRequests + (int)usage.SuccessfulRequests,
                 FailedRequests = baseMetrics.FailedRequests + (int)usage.FailedRequests,
-                AverageResponseTime = (baseMetrics.AverageResponseTime + usage.AverageResponseTime.TotalMilliseconds) / 2,
-                LastRequestTime = DateTime.UtcNow,
-                ServiceStatus = await IsServiceHealthyAsync(cancellationToken) ? "Healthy" : "Unhealthy"
+                AverageResponseTime = (baseMetrics.AverageResponseTime + usage.AverageResponseTime) / 2,
+                LastHealthCheck = DateTime.UtcNow,
+                IsAvailable = await IsServiceHealthyAsync(cancellationToken),
+                ProviderName = "LLM-Aware AI Service",
+                Version = "1.0.0"
             };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting service metrics");
-            return new BIReportingCopilot.Core.Interfaces.AI.AIServiceMetrics
+            return new BIReportingCopilot.Core.Models.AIServiceMetrics
             {
-                ServiceStatus = "Error",
-                LastRequestTime = DateTime.UtcNow
+                IsAvailable = false,
+                LastHealthCheck = DateTime.UtcNow,
+                ErrorMessage = ex.Message
             };
         }
     }

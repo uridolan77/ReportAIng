@@ -98,6 +98,13 @@ public class QueryMetadata
     public string? DataSource { get; set; }
     public DateTime QueryTimestamp { get; set; } = DateTime.UtcNow;
     public string? Error { get; set; }
+
+    // Additional properties expected by Infrastructure services
+    public int EstimatedRowCount { get; set; }
+    public string QueryComplexity { get; set; } = "Unknown";
+    public bool SupportsStreaming { get; set; }
+    public List<string> RequiredTables { get; set; } = new();
+    public TimeSpan EstimatedExecutionTime { get; set; }
 }
 
 
@@ -167,6 +174,20 @@ public class QueryFeedback
 
     [StringLength(500, ErrorMessage = "Suggested improvement cannot exceed 500 characters")]
     public string? SuggestedImprovement { get; set; }
+
+    /// <summary>
+    /// Feedback text (alias for Comments property)
+    /// </summary>
+    public string? FeedbackText
+    {
+        get => Comments;
+        set => Comments = value;
+    }
+
+    /// <summary>
+    /// Submitted at timestamp
+    /// </summary>
+    public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
 }
 
 public class PromptDetails

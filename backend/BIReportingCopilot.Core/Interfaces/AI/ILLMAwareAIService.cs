@@ -1,5 +1,6 @@
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.QuerySuggestions;
+using CacheStatistics = BIReportingCopilot.Core.Interfaces.Query.CacheStatistics;
 
 namespace BIReportingCopilot.Core.Interfaces.AI;
 
@@ -47,6 +48,13 @@ public interface ISemanticCacheService
     Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default);
     Task<List<SemanticCacheEntry>> FindSimilarAsync(string query, double threshold = 0.8, int maxResults = 10, CancellationToken cancellationToken = default);
     Task<SemanticCacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default);
+    Task<SemanticCacheResult?> GetSemanticallySimilarAsync(string naturalLanguageQuery, string sqlQuery);
+    Task CacheSemanticQueryAsync(string naturalLanguageQuery, string sqlQuery, QueryResponse response, TimeSpan? expiry = null);
+    Task<CacheStatistics> GetCacheStatisticsAsync();
+    Task<CachePerformanceMetrics> GetCachePerformanceMetricsAsync();
+    Task OptimizeCacheAsync();
+    Task CleanupExpiredEntriesAsync();
+    Task InvalidateByDataChangeAsync(string tableName, string changeType);
 }
 
 /// <summary>
@@ -58,11 +66,19 @@ public interface IVectorSearchService
     Task<List<VectorSearchResult>> SearchAsync(string query, int maxResults = 10, double threshold = 0.7, CancellationToken cancellationToken = default);
     Task<List<VectorSearchResult>> SearchSimilarAsync(string documentId, int maxResults = 10, double threshold = 0.7, CancellationToken cancellationToken = default);
     Task<bool> DeleteDocumentAsync(string documentId, CancellationToken cancellationToken = default);
+
+    // Additional methods expected by Infrastructure services
+    Task<List<SemanticSearchResult>> FindSimilarQueriesAsync(string query, double threshold = 0.8, int maxResults = 5, CancellationToken cancellationToken = default);
     Task<bool> UpdateDocumentAsync(string documentId, string content, Dictionary<string, object>? metadata = null, CancellationToken cancellationToken = default);
     Task<VectorSearchStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default);
     Task<bool> ClearIndexAsync(CancellationToken cancellationToken = default);
     Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default);
     Task<string> StoreQueryEmbeddingAsync(string queryId, string query, float[] embedding, CancellationToken cancellationToken = default);
+    Task InvalidateByPatternAsync(string pattern, CancellationToken cancellationToken = default);
+
+    // Additional methods expected by Infrastructure services
+    Task OptimizeIndexAsync(CancellationToken cancellationToken = default);
+    Task<BIReportingCopilot.Core.Models.VectorSearchMetrics> GetMetricsAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -78,6 +94,7 @@ public interface ILLMAwareAIService
     Task<string> ExplainQueryResultsAsync(object[] data, string originalQuery, CancellationToken cancellationToken = default);
     Task<bool> IsServiceHealthyAsync(CancellationToken cancellationToken = default);
     Task<AIServiceMetrics> GetServiceMetricsAsync(CancellationToken cancellationToken = default);
+    Task<string> GenerateSQLWithManagedModelAsync(string prompt, string? providerId, string? modelId, CancellationToken cancellationToken = default);
 }
 
 // =============================================================================
@@ -98,6 +115,9 @@ public interface IAIService
     Task<string> GenerateVisualizationConfigAsync(string query, object[] data, CancellationToken cancellationToken = default);
     Task<IAsyncEnumerable<string>> GenerateSQLStreamAsync(string prompt, CancellationToken cancellationToken = default);
     Task<IAsyncEnumerable<string>> GenerateInsightStreamAsync(string query, object[] data, CancellationToken cancellationToken = default);
+    Task<double> CalculateConfidenceScoreAsync(string query, string generatedSql, CancellationToken cancellationToken = default);
+    Task<string[]> GenerateQuerySuggestionsAsync(string context, SchemaMetadata schema);
+    Task<bool> ValidateQueryIntentAsync(string query, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -107,9 +127,13 @@ public interface IAIProvider
 {
     string ProviderId { get; }
     string ProviderName { get; }
+    bool IsConfigured { get; }
     Task<AIResponse> GenerateResponseAsync(AIRequest request, CancellationToken cancellationToken = default);
+    Task<string> GenerateCompletionAsync(string prompt, AIOptions options);
+    Task<string> GenerateCompletionAsync(string prompt, AIOptions options, CancellationToken cancellationToken);
     Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
     Task<AIProviderMetrics> GetMetricsAsync(CancellationToken cancellationToken = default);
+    IAsyncEnumerable<StreamingResponse> GenerateCompletionStreamAsync(string prompt, AIOptions options, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -129,6 +153,14 @@ public interface IPromptService
 {
     Task<string> GetPromptAsync(string promptKey, CancellationToken cancellationToken = default);
     Task<string> FormatPromptAsync(string template, Dictionary<string, object> parameters, CancellationToken cancellationToken = default);
+    Task<string> BuildQueryPromptAsync(string naturalLanguageQuery, SchemaMetadata schema, string? context = null);
+    Task<PromptDetails> BuildDetailedQueryPromptAsync(string naturalLanguageQuery, SchemaMetadata schema, string? context = null);
+
+    // Additional methods expected by Infrastructure services
+    Task<string> GetPromptAsync(string promptKey, Dictionary<string, object>? parameters = null, CancellationToken cancellationToken = default);
+    Task SavePromptAsync(string promptKey, string template, CancellationToken cancellationToken = default);
+    Task<List<string>> GetPromptKeysAsync(CancellationToken cancellationToken = default);
+    Task<string> BuildSQLGenerationPromptAsync(string prompt, SchemaMetadata? schema = null, BIReportingCopilot.Core.Models.QueryContext? context = null);
 }
 
 /// <summary>
@@ -146,6 +178,12 @@ public interface IContextManager
 public interface ISemanticAnalyzer
 {
     Task<SemanticAnalysisResult> AnalyzeAsync(string text, CancellationToken cancellationToken = default);
+
+    // Additional methods expected by Infrastructure services
+    Task<BIReportingCopilot.Core.Models.SemanticSimilarity> CalculateSimilarityAsync(string query1, string query2, CancellationToken cancellationToken = default);
+    Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default);
+    Task<List<EntityExtraction>> ExtractEntitiesAsync(string text, CancellationToken cancellationToken = default);
+    Task<SemanticAnalysis> AnalyzeWithContextAsync(string query, string? userId = null, string? sessionId = null, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -170,6 +208,9 @@ public interface IQueryOptimizer
 public interface IAdvancedNLUService
 {
     Task<AdvancedNLUResult> ProcessAdvancedAsync(string text, CancellationToken cancellationToken = default);
+    Task<AdvancedNLUResult> AnalyzeQueryAsync(string naturalLanguageQuery, string userId, NLUAnalysisContext? context = null);
+    Task<NLUMetrics> GetMetricsAsync();
+    Task<IntentAnalysis> ClassifyIntentAsync(string query, string userId);
 }
 
 /// <summary>
@@ -178,6 +219,9 @@ public interface IAdvancedNLUService
 public interface IMultiModalDashboardService
 {
     Task<DashboardResult> CreateDashboardAsync(DashboardRequest request, CancellationToken cancellationToken = default);
+
+    // Additional methods expected by Infrastructure services
+    Task<BIReportingCopilot.Core.Models.Dashboard> GenerateDashboardFromDescriptionAsync(string description, string userId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -186,6 +230,14 @@ public interface IMultiModalDashboardService
 public interface IBusinessContextAutoGenerator
 {
     Task<BusinessContext> GenerateContextAsync(string domain, CancellationToken cancellationToken = default);
+
+    // Additional methods expected by Infrastructure services
+    Task<BusinessContext> GenerateContextFromSchemaAsync(SchemaMetadata schema, CancellationToken cancellationToken = default);
+    Task<List<BusinessContext>> GetAvailableContextsAsync(CancellationToken cancellationToken = default);
+    Task<BusinessContext> GenerateTableContextAsync(string tableName, SchemaMetadata schema, CancellationToken cancellationToken = default);
+    Task<List<BusinessContext>> GenerateTableContextsAsync(List<string> tableNames, SchemaMetadata schema, CancellationToken cancellationToken = default);
+    Task<List<BusinessTerm>> GenerateGlossaryTermsAsync(SchemaMetadata schema, CancellationToken cancellationToken = default);
+    Task<List<BusinessRelationship>> AnalyzeTableRelationshipsAsync(SchemaMetadata schema, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -205,15 +257,8 @@ public class QueryAnalysisResult
 /// <summary>
 /// AI service metrics
 /// </summary>
-public class AIServiceMetrics
-{
-    public int TotalRequests { get; set; }
-    public int SuccessfulRequests { get; set; }
-    public int FailedRequests { get; set; }
-    public double AverageResponseTime { get; set; }
-    public DateTime LastRequestTime { get; set; }
-    public string ServiceStatus { get; set; } = "Unknown";
-}
+// AIServiceMetrics has been consolidated into Infrastructure.AI.Core.Models.AIServiceMetrics
+// See: Infrastructure/AI/Core/Models/AIServiceMetrics.cs
 
 // =============================================================================
 // SUPPORTING MODEL CLASSES
@@ -393,6 +438,10 @@ public class SemanticCacheEntry
     public DateTime CreatedAt { get; set; }
     public DateTime ExpiresAt { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    public string GeneratedSql { get; set; } = string.Empty;
+    public string ResultData { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -432,5 +481,9 @@ public class VectorSearchStatistics
     public long IndexSize { get; set; }
     public DateTime LastIndexUpdate { get; set; }
 }
+
+// Note: VectorSearchMetrics class moved to Core.Models to avoid ambiguous references
+
+// Note: SemanticSimilarity class moved to Core.Models to avoid ambiguous references
 
 // ISemanticCacheService already defined above - removed duplicate

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
-using BIReportingCopilot.Core.Models;
+using ContextType = BIReportingCopilot.Infrastructure.Data.Contexts.ContextType;
 
 namespace BIReportingCopilot.Infrastructure.Data.Migration;
 
@@ -283,6 +283,17 @@ public enum MigrationComplexity
     Simple,
     Medium,
     Complex
+}
+
+/// <summary>
+/// Migration validation result
+/// </summary>
+public class MigrationValidationResult
+{
+    public bool IsValid { get; set; } = true;
+    public List<string> SuccessfulMigrations { get; set; } = new();
+    public Dictionary<string, string> FailedMigrations { get; set; } = new();
+    public DateTime ValidatedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>

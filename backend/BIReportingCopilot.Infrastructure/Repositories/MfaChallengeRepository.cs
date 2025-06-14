@@ -30,7 +30,7 @@ public class MfaChallengeRepository : IMfaChallengeRepository
         {
             challenge.ChallengeId = Guid.NewGuid().ToString();
             
-            var entity = new MfaChallengeEntity
+            var entity = new Infrastructure.Data.Entities.MfaChallengeEntity
             {
                 Id = challenge.ChallengeId,
                 UserId = challenge.UserId,
@@ -76,7 +76,7 @@ public class MfaChallengeRepository : IMfaChallengeRepository
             {
                 ChallengeId = entity.Id,
                 UserId = entity.UserId,
-                Method = Enum.Parse<MfaMethod>(entity.MfaMethod),
+                Method = entity.MfaMethod,
                 Challenge = entity.ChallengeCode,
                 ExpiresAt = entity.ExpiresAt,
                 IsUsed = entity.IsUsed
@@ -153,7 +153,7 @@ public class MfaChallengeRepository : IMfaChallengeRepository
             {
                 ChallengeId = entity.Id,
                 UserId = entity.UserId,
-                Method = Enum.Parse<MfaMethod>(entity.MfaMethod),
+                Method = entity.MfaMethod,
                 Challenge = entity.ChallengeCode,
                 ExpiresAt = entity.ExpiresAt,
                 IsUsed = entity.IsUsed
@@ -242,7 +242,7 @@ public class MfaChallengeRepository : IMfaChallengeRepository
             {
                 ChallengeId = entity.Id,
                 UserId = entity.UserId,
-                Method = method,
+                Method = method.ToString(),
                 Challenge = entity.ChallengeCode,
                 ExpiresAt = entity.ExpiresAt,
                 IsUsed = entity.IsUsed

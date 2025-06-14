@@ -3,6 +3,7 @@ using System.Diagnostics.Metrics;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Messaging;
+using BIReportingCopilot.Core.Interfaces.Monitoring;
 using BIReportingCopilot.Core.Interfaces.Query;
 using CoreISemanticCacheService = BIReportingCopilot.Core.Interfaces.AI.ISemanticCacheService;
 using BIReportingCopilot.Core.Models;
@@ -78,9 +79,8 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
             // Record query execution metrics
             _metricsCollector.RecordQueryExecution(
                 "natural_language",
-                @event.ExecutionTimeMs,
-                @event.IsSuccessful,
-                @event.RowCount);
+                TimeSpan.FromMilliseconds(@event.ExecutionTimeMs),
+                @event.IsSuccessful);
 
             // Record confidence score if available
             if (@event.ConfidenceScore.HasValue)
@@ -91,7 +91,7 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
             }
 
             // Record user activity
-            _metricsCollector.IncrementCounter("user_queries_total", new TagList
+            _metricsCollector.IncrementCounter("user_queries_total", new Dictionary<string, string>
             {
                 { "user_id", @event.UserId },
                 { "success", @event.IsSuccessful.ToString().ToLower() }
@@ -140,7 +140,7 @@ public class QueryExecutedEventHandler : IEventHandler<QueryExecutedEvent>
             // Update cache access patterns for future optimization
             var cacheStats = await _semanticCache.GetCacheStatisticsAsync();
 
-            _metricsCollector.SetGaugeValue("semantic_cache_entries", cacheStats.TotalEntries);
+            _metricsCollector.SetGaugeValue("semantic_cache_entries", cacheStats.TotalKeys);
             _metricsCollector.SetGaugeValue("semantic_cache_hit_rate", cacheStats.HitRate);
         }
         catch (Exception ex)
@@ -177,7 +177,7 @@ public class FeedbackReceivedEventHandler : IEventHandler<FeedbackReceivedEvent>
                 @event.UserId, @event.Rating);
 
             // Update feedback metrics
-            _metricsCollector.IncrementCounter("feedback_received_total", new TagList
+            _metricsCollector.IncrementCounter("feedback_received_total", new Dictionary<string, string>
             {
                 { "user_id", @event.UserId },
                 { "rating", @event.Rating.ToString() },
@@ -243,7 +243,7 @@ public class AnomalyDetectedEventHandler : IEventHandler<AnomalyDetectedEvent>
                 @event.UserId, @event.AnomalyType, @event.RiskLevel);
 
             // Update security metrics
-            _metricsCollector.IncrementCounter("anomalies_detected_total", new TagList
+            _metricsCollector.IncrementCounter("anomalies_detected_total", new Dictionary<string, string>
             {
                 { "user_id", @event.UserId },
                 { "anomaly_type", @event.AnomalyType },
@@ -314,7 +314,7 @@ public class CacheInvalidatedEventHandler : IEventHandler<CacheInvalidatedEvent>
                 @event.CacheType, @event.InvalidationReason, @event.AffectedKeys.Count);
 
             // Update cache metrics
-            _metricsCollector.IncrementCounter("cache_invalidations_total", new TagList
+            _metricsCollector.IncrementCounter("cache_invalidations_total", new Dictionary<string, string>
             {
                 { "cache_type", @event.CacheType },
                 { "reason", @event.InvalidationReason },

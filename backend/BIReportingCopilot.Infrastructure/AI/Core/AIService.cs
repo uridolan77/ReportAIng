@@ -5,6 +5,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Interfaces.Security;
+using BIReportingCopilot.Core.Interfaces.Monitoring;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Configuration;
 using System.Text.Json;
@@ -189,7 +190,7 @@ public class AIService : IAIService
             // Record error metrics
             if (_metricsCollector != null)
             {
-                _ = Task.Run(async () => await _metricsCollector.RecordErrorAsync("sql_generation", "AIService", ex.Message, ex.StackTrace));
+                _ = Task.Run(async () => await _metricsCollector.RecordErrorAsync("sql_generation_error", "AIService", ex.Message, ex.StackTrace));
             }
 
             _logger.LogError(ex, "Failed to generate SQL after all retry attempts for prompt: {Prompt}", prompt);
@@ -292,7 +293,7 @@ Return only valid JSON.";
         }
     }
 
-    public Task<double> CalculateConfidenceScoreAsync(string naturalLanguageQuery, string generatedSQL)
+    public Task<double> CalculateConfidenceScoreAsync(string naturalLanguageQuery, string generatedSQL, CancellationToken cancellationToken = default)
     {
         // Implement confidence calculation logic
         var score = 0.8; // Default confidence
@@ -455,7 +456,15 @@ Return only valid JSON.";
         string insightPrompt;
         try
         {
-            insightPrompt = await _promptService.BuildInsightGenerationPromptAsync(query, data, context);
+            // Use available IPromptService method with parameters
+            var parameters = new Dictionary<string, object>
+            {
+                ["query"] = query,
+                ["data"] = GenerateDataPreview(data),
+                ["context"] = context?.ToString() ?? "No additional context"
+            };
+
+            insightPrompt = await _promptService.GetPromptAsync("insight_generation", parameters);
         }
         catch (Exception ex)
         {
@@ -498,7 +507,17 @@ Return only valid JSON.";
         string explanationPrompt;
         try
         {
-            explanationPrompt = await _promptService.BuildSQLExplanationPromptAsync(sql, complexity);
+            // Use available IPromptService method with parameters
+            var parameters = new Dictionary<string, object>
+            {
+                ["sql"] = sql,
+                ["complexity"] = complexity.ToString(),
+                ["detail_level"] = complexity == CoreModels.StreamingQueryComplexity.Simple ? "Basic explanation" :
+                                 complexity == CoreModels.StreamingQueryComplexity.Complex ? "Detailed technical explanation" :
+                                 "Moderate explanation with key details"
+            };
+
+            explanationPrompt = await _promptService.GetPromptAsync("sql_explanation", parameters);
         }
         catch (Exception ex)
         {
@@ -528,7 +547,7 @@ Return only valid JSON.";
     {
         if (_provider == null)
         {
-            _provider = await _providerFactory.CreateProviderAsync("openai", new Dictionary<string, object>());
+            _provider = await _providerFactory.CreateProviderAsync("openai");
         }
         return _provider;
     }
@@ -756,13 +775,13 @@ EXAMPLES:
     /// <summary>
     /// Get AI service metrics
     /// </summary>
-    public async Task<BIReportingCopilot.Core.Interfaces.AI.AIServiceMetrics> GetServiceMetricsAsync(CancellationToken cancellationToken = default)
+    public async Task<BIReportingCopilot.Core.Models.AIServiceMetrics> GetServiceMetricsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             var isAvailable = await IsAvailableAsync(cancellationToken);
 
-            return new Core.Models.AIServiceMetrics
+            return new BIReportingCopilot.Core.Models.AIServiceMetrics
             {
                 IsAvailable = isAvailable,
                 TotalRequests = 0, // Would need to track this
@@ -777,7 +796,7 @@ EXAMPLES:
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting AI service metrics");
-            return new Core.Models.AIServiceMetrics
+            return new BIReportingCopilot.Core.Models.AIServiceMetrics
             {
                 IsAvailable = false,
                 LastHealthCheck = DateTime.UtcNow,
@@ -838,6 +857,37 @@ EXAMPLES:
         {
             _logger.LogError(ex, "Error generating insight stream");
             return CreateAsyncEnumerable("No insights available");
+        }
+    }
+
+    /// <summary>
+    /// Validate query intent async (IAIService interface)
+    /// </summary>
+    public async Task<bool> ValidateQueryIntentAsync(string query, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Basic intent validation - check if query looks like a valid SQL request
+            if (string.IsNullOrWhiteSpace(query))
+                return false;
+
+            // Check for common SQL keywords or natural language patterns
+            var lowerQuery = query.ToLowerInvariant();
+            var hasValidIntent = lowerQuery.Contains("select") ||
+                               lowerQuery.Contains("show") ||
+                               lowerQuery.Contains("get") ||
+                               lowerQuery.Contains("find") ||
+                               lowerQuery.Contains("list") ||
+                               lowerQuery.Contains("count") ||
+                               lowerQuery.Contains("sum") ||
+                               lowerQuery.Contains("average");
+
+            return hasValidIntent;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating query intent: {Query}", query);
+            return false;
         }
     }
 

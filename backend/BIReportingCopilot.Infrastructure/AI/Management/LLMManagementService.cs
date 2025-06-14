@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
+using ContextType = BIReportingCopilot.Infrastructure.Data.Contexts.ContextType;
 
 namespace BIReportingCopilot.Infrastructure.AI.Management;
 
@@ -408,7 +409,7 @@ public class LLMManagementService : ILLMManagementService
         }
     }
 
-    public async Task<List<LLMProviderStatus>> GetProviderHealthStatusAsync()
+    public async Task<List<LLMProviderStatus>> GetProviderHealthStatusAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -489,7 +490,7 @@ public class LLMManagementService : ILLMManagementService
         }
     }
 
-    public async Task<LLMModelConfig?> GetModelAsync(string modelId)
+    public async Task<LLMModelConfig?> GetModelAsync(string modelId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -596,7 +597,7 @@ public class LLMManagementService : ILLMManagementService
         }
     }
 
-    public async Task<LLMModelConfig?> GetDefaultModelAsync(string useCase)
+    public async Task<LLMModelConfig?> GetDefaultModelAsync(string useCase, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -656,7 +657,7 @@ public class LLMManagementService : ILLMManagementService
     
     #region Usage Tracking - Stub implementations for now
 
-    public async Task LogUsageAsync(LLMUsageLog usageLog)
+    public async Task LogUsageAsync(LLMUsageLog usageLog, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -1046,7 +1047,7 @@ public class LLMManagementService : ILLMManagementService
                                     {
                                         Id = Guid.NewGuid().ToString(),
                                         ProviderId = provider.ProviderId,
-                                        ThresholdAmount = limit,
+                                        ThresholdAmount = (double)limit,
                                         AlertType = currentCost > limit ? "EXCEEDED" : "WARNING",
                                         IsEnabled = true,
                                         CreatedAt = DateTime.UtcNow
@@ -1132,9 +1133,9 @@ public class LLMManagementService : ILLMManagementService
                         result[metric.ProviderId] = new ProviderPerformanceMetrics
                         {
                             ProviderId = metric.ProviderId,
-                            AverageResponseTime = (long)averageResponseTime,
-                            MedianResponseTime = (long)medianResponseTime,
-                            P95ResponseTime = (long)p95ResponseTime,
+                            AverageResponseTime = averageResponseTime,
+                            MedianResponseTime = medianResponseTime,
+                            P95ResponseTime = p95ResponseTime,
                             SuccessRate = metric.TotalRequests > 0
                                 ? (double)metric.SuccessfulRequests / metric.TotalRequests
                                 : 0,
@@ -1335,8 +1336,8 @@ public class LLMManagementService : ILLMManagementService
                         Name = m.Name,
                         Description = m.DisplayName ?? m.Name,
                         MaxTokens = m.MaxTokens,
-                        CostPerToken = (double)m.CostPerToken,
-                        Capabilities = m.Capabilities?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>()
+                        CostPerToken = m.CostPerToken,
+                        Capabilities = m.Capabilities?.ToString()?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>()
                     }).ToList(),
                     Configuration = new Dictionary<string, object>
                     {
@@ -1385,8 +1386,8 @@ public class LLMManagementService : ILLMManagementService
                         Name = m.Name,
                         Description = m.DisplayName ?? m.Name,
                         MaxTokens = m.MaxTokens,
-                        CostPerToken = (double)m.CostPerToken,
-                        Capabilities = m.Capabilities?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>()
+                        CostPerToken = m.CostPerToken,
+                        Capabilities = m.Capabilities?.ToString()?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>()
                     }).ToList(),
                     Configuration = new Dictionary<string, object>
                     {
@@ -1489,7 +1490,7 @@ public class LLMManagementService : ILLMManagementService
                     var failedRequests = totalRequests - successfulRequests;
                     var totalCost = logs.Sum(l => l.Cost);
                     var totalTokens = logs.Sum(l => l.TotalTokens);
-                    var averageResponseTime = logs.Any() ? TimeSpan.FromMilliseconds(logs.Average(l => l.DurationMs)) : TimeSpan.Zero;
+                    var averageResponseTime = logs.Any() ? logs.Average(l => l.DurationMs) : 0;
 
                     return new LLMUsageStatistics
                     {
@@ -1556,8 +1557,8 @@ public class LLMManagementService : ILLMManagementService
                 Name = m.Name,
                 Description = m.DisplayName ?? m.Name,
                 MaxTokens = m.MaxTokens,
-                CostPerToken = (double)m.CostPerToken,
-                Capabilities = m.Capabilities?.Split(',').ToList() ?? new List<string>(),
+                CostPerToken = m.CostPerToken,
+                Capabilities = m.Capabilities?.Keys.ToList() ?? new List<string>(),
                 Configuration = new Dictionary<string, object>
                 {
                     ["temperature"] = m.Temperature,

@@ -712,7 +712,7 @@ public class QuerySuggestionService : IQuerySuggestionService
                         SessionId = Guid.NewGuid().ToString(),
                         UsedAt = DateTime.UtcNow,
                         WasSuccessful = rating >= 3,
-                        UserFeedback = rating.ToString()
+                        UserFeedback = (byte?)rating
                     };
 
                     _context.SuggestionUsageAnalytics.Add(usage);
@@ -743,10 +743,10 @@ public class QuerySuggestionService : IQuerySuggestionService
 
         return new Core.Models.QuerySuggestions.QuerySuggestion
         {
-            Id = entity.Id.ToString(),
+            Id = entity.Id,
             Query = entity.QueryText,
             Description = entity.Description,
-            Category = entity.Category?.Title ?? "General",
+            Category = "General", // Use string instead of non-existent enum
             Keywords = keywords,
             RequiredTables = requiredTables,
             Complexity = entity.Complexity,

@@ -94,4 +94,29 @@ public class UnifiedAIGenerationAttempt
     /// Updated timestamp
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// When the attempt was made (for compatibility with BICopilotContext)
+    /// </summary>
+    public DateTime AttemptedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// AI provider used (for compatibility with BICopilotContext)
+    /// </summary>
+    public string AIProvider { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Model version (for compatibility with BICopilotContext)
+    /// </summary>
+    public string ModelVersion { get; set; } = string.Empty;
+
+    /// <summary>
+    /// User who created the record (for compatibility with BICopilotContext)
+    /// </summary>
+    public string? CreatedBy { get; set; }
+
+    /// <summary>
+    /// User who last updated the record (for compatibility with BICopilotContext)
+    /// </summary>
+    public string? UpdatedBy { get; set; }
 }

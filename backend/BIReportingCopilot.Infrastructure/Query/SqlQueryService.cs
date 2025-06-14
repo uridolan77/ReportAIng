@@ -13,6 +13,7 @@ using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Diagnostics;
 using System.Text.Json;
+using QueryPerformanceMetrics = BIReportingCopilot.Core.DTOs.QueryPerformanceMetrics;
 
 namespace BIReportingCopilot.Infrastructure.Query;
 
@@ -465,6 +466,22 @@ public class SqlQueryService : ISqlQueryService
     // =============================================================================
     // MISSING INTERFACE METHOD IMPLEMENTATIONS
     // =============================================================================
+
+    /// <summary>
+    /// Execute SELECT query (ISqlQueryService interface)
+    /// </summary>
+    public async Task<QueryResult> ExecuteSelectQueryAsync(string sql, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteSelectQueryAsync(sql, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Validate SQL query (ISqlQueryService interface)
+    /// </summary>
+    public async Task<bool> ValidateSqlAsync(string sql, CancellationToken cancellationToken = default)
+    {
+        return await ValidateSqlAsync(sql);
+    }
 
     /// <summary>
     /// Execute query with proper interface signature

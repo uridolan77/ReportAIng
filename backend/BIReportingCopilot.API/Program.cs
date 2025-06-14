@@ -497,7 +497,7 @@ builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Monitoring.MonitoringManagementService>();
 // MetricsCollector functionality consolidated into MonitoringManagementService
 // Register IMetricsCollector interface to use MonitoringManagementService
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IMetricsCollector>(provider =>
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Monitoring.IMetricsCollector>(provider =>
     provider.GetRequiredService<BIReportingCopilot.Infrastructure.Monitoring.MonitoringManagementService>());
 
 // ===== MESSAGING & EVENTS =====

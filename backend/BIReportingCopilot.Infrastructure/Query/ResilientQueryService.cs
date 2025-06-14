@@ -477,7 +477,7 @@ public class ResilientQueryService : IQueryService
     /// <summary>
     /// Get query history async (IQueryService interface)
     /// </summary>
-    public async Task<List<QueryHistoryEntity>> GetQueryHistoryAsync(string userId, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<List<UnifiedQueryHistoryEntity>> GetQueryHistoryAsync(string userId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -488,23 +488,13 @@ public class ResilientQueryService : IQueryService
             return await simpleRetryPolicy.ExecuteAsync(async () =>
             {
                 var historyItems = await _innerService.GetQueryHistoryAsync(userId, page, pageSize, cancellationToken);
-                return historyItems.Select(h => new QueryHistoryEntity
-                {
-                    Id = long.Parse(h.Id),
-                    UserId = h.UserId,
-                    Query = h.Query,
-                    ExecutedAt = h.ExecutedAt,
-                    ExecutionTimeMs = h.ExecutionTimeMs,
-                    IsSuccessful = h.IsSuccessful,
-                    ErrorMessage = h.ErrorMessage,
-                    ResultCount = h.ResultCount
-                }).ToList();
+                return historyItems; // Already UnifiedQueryHistoryEntity from the inner service
             });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get query history for user {UserId}", userId);
-            return new List<QueryHistoryEntity>();
+            return new List<UnifiedQueryHistoryEntity>();
         }
     }
 
@@ -591,7 +581,7 @@ public class ResilientQueryService : IQueryService
             return new Core.Interfaces.Query.QueryPerformanceMetrics
             {
                 TotalQueries = 0,
-                AverageExecutionTime = TimeSpan.Zero,
+                AverageExecutionTime = 0.0,
                 CacheHitRate = 0.0,
                 ErrorRate = 1.0,
                 LastUpdated = DateTime.UtcNow
@@ -612,7 +602,7 @@ public class ResilientQueryService : IQueryService
             {
                 Success = result.IsSuccessful,
                 Result = result,
-                ExecutionTimeMs = result.ExecutionTimeMs,
+                ExecutionTimeMs = (int)result.ExecutionTimeMs,
                 Timestamp = DateTime.UtcNow
             };
         }
@@ -777,17 +767,17 @@ public class ResilientQueryService : IQueryService
     /// <summary>
     /// Find similar queries async (IQueryService interface)
     /// </summary>
-    public async Task<List<QueryHistoryEntity>> FindSimilarQueriesAsync(string query, CancellationToken cancellationToken = default)
+    public async Task<List<UnifiedQueryHistoryEntity>> FindSimilarQueriesAsync(string query, CancellationToken cancellationToken = default)
     {
         try
         {
             // Stub implementation - return empty list for now
-            return new List<QueryHistoryEntity>();
+            return new List<UnifiedQueryHistoryEntity>();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error finding similar queries");
-            return new List<QueryHistoryEntity>();
+            return new List<UnifiedQueryHistoryEntity>();
         }
     }
 

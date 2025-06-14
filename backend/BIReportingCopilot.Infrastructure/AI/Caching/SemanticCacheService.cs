@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.Statistics;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
@@ -10,6 +11,7 @@ using System.Text.Json;
 using System.Security.Cryptography;
 using System.Text;
 using BIReportingCopilot.Infrastructure.Data;
+using ContextType = BIReportingCopilot.Infrastructure.Data.Contexts.ContextType;
 
 namespace BIReportingCopilot.Infrastructure.AI.Caching;
 
@@ -140,8 +142,8 @@ public class SemanticCacheService : ISemanticCacheService
                 {
                     Id = sq.DocumentId,
                     OriginalQuery = sq.Content,
-                    SqlQuery = sq.Metadata.ContainsKey("sql_query") ? sq.Metadata["sql_query"].ToString() ?? string.Empty : string.Empty,
-                    SerializedResponse = sq.Metadata.ContainsKey("cached_response") ? sq.Metadata["cached_response"].ToString() ?? string.Empty : string.Empty,
+                    SqlQuery = sq.Metadata.ContainsKey("sql_query") ? (sq.Metadata["sql_query"]?.ToString() ?? string.Empty) : string.Empty,
+                    SerializedResponse = sq.Metadata.ContainsKey("cached_response") ? (sq.Metadata["cached_response"]?.ToString() ?? string.Empty) : string.Empty,
                     ConfidenceScore = sq.Score,
                     CreatedAt = DateTime.UtcNow,
                     LastAccessedAt = DateTime.UtcNow
@@ -204,7 +206,7 @@ public class SemanticCacheService : ISemanticCacheService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting cache statistics");
-            return new Core.Interfaces.AI.SemanticCacheStatistics { LastUpdated = DateTime.UtcNow };
+            return new BIReportingCopilot.Core.Interfaces.AI.SemanticCacheStatistics { LastUpdated = DateTime.UtcNow };
         }
     }
 
@@ -311,7 +313,7 @@ public class SemanticCacheService : ISemanticCacheService
                             Id = entry.Id.ToString(),
                             OriginalQuery = entry.OriginalQuery,
                             SqlQuery = entry.GeneratedSql ?? string.Empty,
-                            SerializedResponse = entry.ResultData ?? string.Empty,
+                            SerializedResponse = entry.ResultData != null ? JsonSerializer.Serialize(entry.ResultData) : string.Empty,
                             CreatedAt = entry.CreatedAt,
                             LastAccessedAt = entry.LastAccessedAt
                         };
@@ -396,14 +398,14 @@ public class SemanticCacheService : ISemanticCacheService
         Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(query)));
 
     // Missing interface methods - stub implementations
-    public Task<CacheStatistics> GetCacheStatisticsAsync()
+    public Task<BIReportingCopilot.Core.Interfaces.Query.CacheStatistics> GetCacheStatisticsAsync()
     {
-        return Task.FromResult(new CacheStatistics
+        return Task.FromResult(new BIReportingCopilot.Core.Interfaces.Query.CacheStatistics
         {
-            TotalEntries = 0,
+            TotalKeys = 0,
             HitCount = 0,
             MissCount = 0,
-            TotalMemoryUsage = 0,
+            MemoryUsage = 0,
             LastUpdated = DateTime.UtcNow
         });
     }
@@ -481,9 +483,8 @@ public class SemanticCacheService : ISemanticCacheService
 
         try
         {
-            var embedding = await _vectorSearchService.GenerateEmbeddingAsync(query);
-            var similarQueries = await _vectorSearchService.FindSimilarQueriesAsync(embedding, threshold, 1);
-            return similarQueries.FirstOrDefault()?.CachedResponse;
+            var similarQueries = await _vectorSearchService.FindSimilarQueriesAsync(query, threshold, 1);
+            return similarQueries.FirstOrDefault()?.CachedResponse as QueryResponse;
         }
         catch
         {
@@ -703,7 +704,7 @@ public class SemanticCacheService : ISemanticCacheService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error finding similar cached entries for query: {Query}", query);
-            return new List<SemanticCacheEntry>();
+            return new List<BIReportingCopilot.Core.Interfaces.AI.SemanticCacheEntry>();
         }
     }
 
@@ -721,8 +722,8 @@ public class SemanticCacheService : ISemanticCacheService
                 TotalEntries = stats.TotalEntries,
                 HitCount = stats.HitCount,
                 MissCount = stats.MissCount,
-                SemanticHitCount = stats.SemanticCacheHits,
-                MemoryUsage = stats.TotalSizeBytes,
+                SemanticHitCount = stats.SemanticHitCount,
+                MemoryUsage = stats.MemoryUsage,
                 LastUpdated = stats.LastUpdated
             };
         }

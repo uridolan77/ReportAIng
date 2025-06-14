@@ -16,6 +16,34 @@ public interface IMetricsCollector
     Task<PerformanceMetrics> GetPerformanceMetricsAsync(DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
     Task<List<MetricDataPoint>> GetMetricHistoryAsync(string metricName, DateTime from, DateTime to, CancellationToken cancellationToken = default);
     Task<Dictionary<string, object>> GetSystemHealthAsync(CancellationToken cancellationToken = default);
+
+    // Additional methods expected by Infrastructure services
+    /// <summary>
+    /// Increment a counter
+    /// </summary>
+    void IncrementCounter(string name, Dictionary<string, string>? tags = null);
+
+    /// <summary>
+    /// Record a histogram value synchronously
+    /// </summary>
+    void RecordHistogram(string name, double value, Dictionary<string, string>? tags = null);
+
+    /// <summary>
+    /// Set a gauge value
+    /// </summary>
+    void SetGaugeValue(string name, double value, Dictionary<string, string>? tags = null);
+
+    /// <summary>
+    /// Record query execution synchronously
+    /// </summary>
+    void RecordQueryExecution(string queryType, TimeSpan duration, bool success);
+
+    /// <summary>
+    /// Record value (for compatibility)
+    /// </summary>
+    void RecordValue(string name, double value);
+
+
 }
 
 /// <summary>

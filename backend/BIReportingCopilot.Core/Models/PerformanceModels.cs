@@ -81,20 +81,6 @@ public class CacheStatistics
     public TimeSpan AverageRetrievalTime { get; set; }
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
     public Dictionary<string, object> AdditionalStats { get; set; } = new();
-
-    // Additional properties expected by Infrastructure layer
-    public long TotalKeys { get; set; } // Alias for TotalEntries
-    public long MemoryUsage { get; set; } // Alias for TotalSizeBytes
-    public double HitRatio => HitRate; // Alias for HitRate
-
-    // Additional properties for semantic cache compatibility
-    public int SemanticCacheHits { get; set; }
-    public int SemanticCacheMisses { get; set; }
-    public double SemanticCacheHitRate { get; set; }
-    public int TotalSemanticEntries { get; set; }
-
-    // Additional properties expected by Infrastructure services
-    public long TotalMemoryUsage { get; set; }
 }
 
 /// <summary>
@@ -192,6 +178,12 @@ public class IndexSuggestion
     // Additional properties for compatibility
     public double ImpactScore { get; set; }
     public string CreateStatement { get; set; } = string.Empty;
+
+    // Properties expected by Infrastructure services
+    public List<string> ColumnNames { get; set; } = new(); // Alias for Columns
+    public string IndexTypeString { get; set; } = string.Empty; // String version of Type
+    public string Reason { get; set; } = string.Empty; // Alias for Reasoning
+    public string EstimatedSize { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -429,6 +421,10 @@ public class SqlOptimizationResult
     public double ImprovementScore { get; set; }
     public double EstimatedPerformanceGain { get; set; }
     public List<string> Recommendations { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    public double EstimatedSpeedup { get; set; }
+    public Dictionary<string, object> Metrics { get; set; } = new();
 }
 
 /// <summary>
@@ -501,6 +497,15 @@ public class SchemaOptimizationMetrics
     public int IndexSuggestionsImplemented { get; set; }
     public double QueryPerformanceImprovement { get; set; }
     public Dictionary<string, int> OptimizationTypes { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    public int TotalTables { get; set; }
+    public int OptimizedTables { get; set; }
+    public int TotalIndexes { get; set; }
+    public int RecommendedIndexes { get; set; }
+    public double OverallScore { get; set; }
+    public DateTime LastAnalyzed { get; set; } = DateTime.UtcNow;
+    public string Details { get; set; } = string.Empty;
 }
 
 // DataPoint moved to VisualizationModels.cs to avoid duplicates
@@ -536,7 +541,10 @@ public enum RecommendationType
     Reliability,
     Index,
     Query,
-    Schema
+    Schema,
+    Clarification,
+    Enhancement,
+    Error
 }
 
 /// <summary>
@@ -978,7 +986,7 @@ public class RefreshTokenInfo
 // are already defined in other model files - removed duplicates
 
 /// <summary>
-/// AI service metrics
+/// AI service metrics (Core interface version)
 /// </summary>
 public class AIServiceMetrics
 {
@@ -1003,6 +1011,11 @@ public class MfaChallengeResult
     public string Challenge { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; } = DateTime.UtcNow.AddMinutes(5);
     public bool Success { get; set; }
+
+    // Properties expected by Infrastructure services
+    public string? ErrorMessage { get; set; }
+    public string Method { get; set; } = string.Empty;
+    public string? MaskedDeliveryAddress { get; set; }
 }
 
 /// <summary>
@@ -1021,63 +1034,17 @@ public class CreateUserRequest
 // MISSING ENTITY MODELS
 // =============================================================================
 
-/// <summary>
-/// User entity for database operations
-/// </summary>
-public class UserEntity
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string Email { get; set; } = string.Empty;
-    public string PasswordHash { get; set; } = string.Empty;
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public List<string> Roles { get; set; } = new();
-    public bool IsActive { get; set; } = true;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? LastLoginAt { get; set; }
-}
+// UserEntity has been consolidated into Infrastructure.Data.Entities.UserEntity
+// See: Infrastructure/Data/Entities/BaseEntity.cs
 
-/// <summary>
-/// Refresh token entity
-/// </summary>
-public class RefreshTokenEntity
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string Token { get; set; } = string.Empty;
-    public string UserId { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public bool IsRevoked { get; set; } = false;
-}
+// RefreshTokenEntity has been consolidated into Infrastructure.Data.Entities.RefreshTokenEntity
+// See: Infrastructure/Data/Entities/BaseEntity.cs
 
-/// <summary>
-/// MFA challenge entity
-/// </summary>
-public class MfaChallengeEntity
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string UserId { get; set; } = string.Empty;
-    public string ChallengeType { get; set; } = string.Empty;
-    public string Challenge { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public bool IsUsed { get; set; } = false;
-}
+// MfaChallengeEntity has been consolidated into Infrastructure.Data.Entities.MfaChallengeEntity
+// See: Infrastructure/Data/Entities/BaseEntity.cs
 
-/// <summary>
-/// User session entity
-/// </summary>
-public class UserSessionEntity
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string UserId { get; set; } = string.Empty;
-    public string SessionToken { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime ExpiresAt { get; set; }
-    public string IpAddress { get; set; } = string.Empty;
-    public string UserAgent { get; set; } = string.Empty;
-    public bool IsActive { get; set; } = true;
-}
+// UserSessionEntity has been consolidated into Infrastructure.Data.Entities.UserSessionEntity
+// See: Infrastructure/Data/Entities/BaseEntity.cs
 
 /// <summary>
 /// User preferences entity

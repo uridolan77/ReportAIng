@@ -463,7 +463,7 @@ public class NLUService : IAdvancedNLUService
             {
                 Name = c,
                 Category = "business",
-                Relevance = 0.8m
+                Relevance = 0.8
             }).ToList(),
             BusinessContext = new BusinessContext
             {
@@ -495,9 +495,9 @@ public class NLUService : IAdvancedNLUService
         {
             recommendations.Add(new NLURecommendation
             {
-                Type = RecommendationType.Clarification,
+                Type = RecommendationType.Clarification.ToString(),
                 Message = "Consider being more specific about what you want to do",
-                Priority = RecommendationPriority.High,
+                Priority = RecommendationPriority.High.ToString(),
                 ActionSuggestion = "Add action words like 'show', 'count', or 'find'"
             });
         }
@@ -506,9 +506,9 @@ public class NLUService : IAdvancedNLUService
         {
             recommendations.Add(new NLURecommendation
             {
-                Type = RecommendationType.Enhancement,
+                Type = RecommendationType.Enhancement.ToString(),
                 Message = "Some required information might be missing",
-                Priority = RecommendationPriority.Medium,
+                Priority = RecommendationPriority.Medium.ToString(),
                 ActionSuggestion = "Specify table or column names"
             });
         }
@@ -925,9 +925,9 @@ public class NLUService : IAdvancedNLUService
                 {
                     new NLURecommendation
                     {
-                        Type = RecommendationType.Error,
+                        Type = RecommendationType.Error.ToString(),
                         Message = "Error processing query",
-                        Priority = RecommendationPriority.High,
+                        Priority = RecommendationPriority.High.ToString(),
                         ActionSuggestion = "Please try rephrasing your query"
                     }
                 }

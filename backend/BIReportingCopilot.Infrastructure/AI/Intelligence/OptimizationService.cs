@@ -389,6 +389,32 @@ public class OptimizationService : ISchemaOptimizationService
     }
 
     // Missing interface methods
+    public async Task<QueryOptimizationResult> AnalyzeQueryPerformanceAsync(string query, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Create a basic schema metadata for analysis
+            var schema = new SchemaMetadata
+            {
+                Tables = new List<TableMetadata>(),
+                LastUpdated = DateTime.UtcNow
+            };
+
+            return await AnalyzeQueryPerformanceAsync(query, schema);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error analyzing query performance");
+            return new QueryOptimizationResult
+            {
+                OriginalSql = query,
+                OptimizedSql = query,
+                ImprovementScore = 0.0,
+                AnalyzedAt = DateTime.UtcNow
+            };
+        }
+    }
+
     public Task<List<QueryRewrite>> SuggestQueryRewritesAsync(string originalSql, SchemaMetadata schema)
     {
         return Task.FromResult(new List<QueryRewrite>());
@@ -760,32 +786,32 @@ public class OptimizationService : ISchemaOptimizationService
     /// <summary>
     /// Get index recommendations async (ISchemaOptimizationService interface)
     /// </summary>
-    public async Task<List<BIReportingCopilot.Core.Interfaces.Query.IndexRecommendation>> GetIndexRecommendationsAsync(string tableName, CancellationToken cancellationToken = default)
+    public async Task<List<BIReportingCopilot.Core.Models.IndexRecommendation>> GetIndexRecommendationsAsync(string tableName, CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogDebug("📊 Getting index recommendations for table: {TableName}", tableName);
 
-            var recommendations = new List<BIReportingCopilot.Core.Interfaces.Query.IndexRecommendation>();
+            var recommendations = new List<BIReportingCopilot.Core.Models.IndexRecommendation>();
 
             // Generate basic index recommendations
-            recommendations.Add(new BIReportingCopilot.Core.Interfaces.Query.IndexRecommendation
+            recommendations.Add(new BIReportingCopilot.Core.Models.IndexRecommendation
             {
                 TableName = tableName,
                 Columns = new List<string> { "Id" }, // Default recommendation
                 IndexType = "NONCLUSTERED",
                 ImpactScore = 0.7,
-                Reason = "Primary key optimization for common queries"
+                Reasoning = "Primary key optimization for common queries"
             });
 
             // Add date-based index if common pattern
-            recommendations.Add(new BIReportingCopilot.Core.Interfaces.Query.IndexRecommendation
+            recommendations.Add(new BIReportingCopilot.Core.Models.IndexRecommendation
             {
                 TableName = tableName,
                 Columns = new List<string> { "CreatedDate" },
                 IndexType = "NONCLUSTERED",
                 ImpactScore = 0.6,
-                Reason = "Optimize date range queries"
+                Reasoning = "Optimize date range queries"
             });
 
             _logger.LogDebug("✅ Generated {Count} index recommendations for table: {TableName}", recommendations.Count, tableName);
@@ -794,7 +820,7 @@ public class OptimizationService : ISchemaOptimizationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error getting index recommendations for table: {TableName}", tableName);
-            return new List<IndexRecommendation>();
+            return new List<BIReportingCopilot.Core.Models.IndexRecommendation>();
         }
     }
 
@@ -847,8 +873,8 @@ public class OptimizationService : ISchemaOptimizationService
             suggestions.Add(new IndexSuggestion
             {
                 TableName = table.Name,
-                ColumnNames = new List<string> { column.Name },
-                IndexType = "NONCLUSTERED",
+                Columns = new List<string> { column.Name },
+                IndexTypeString = "NONCLUSTERED",
                 EstimatedImpact = 0.7,
                 Reasoning = $"Foreign key column {column.Name} would benefit from an index for JOIN operations",
                 EstimatedSize = "Small to Medium"
@@ -898,6 +924,93 @@ public class OptimizationService : ISchemaOptimizationService
     {
         var baseTime = TimeSpan.FromHours(1); // Base time per optimization
         return TimeSpan.FromTicks(baseTime.Ticks * optimizations.Count);
+    }
+
+    /// <summary>
+    /// Get optimization metrics async (ISchemaOptimizationService interface)
+    /// </summary>
+    public async Task<BIReportingCopilot.Core.Models.SchemaOptimizationMetrics> GetOptimizationMetricsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("📊 Getting schema optimization metrics");
+
+            var metrics = await GetOptimizationMetricsAsync();
+            return new BIReportingCopilot.Core.Models.SchemaOptimizationMetrics
+            {
+                TotalTables = metrics.TotalTables,
+                OptimizedTables = metrics.OptimizedTables,
+                TotalIndexes = metrics.TotalIndexes,
+                RecommendedIndexes = metrics.RecommendedIndexes,
+                OverallScore = metrics.OverallScore,
+                LastAnalyzed = metrics.LastAnalyzed,
+                Details = metrics.Details
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting optimization metrics");
+            return new BIReportingCopilot.Core.Models.SchemaOptimizationMetrics();
+        }
+    }
+
+    /// <summary>
+    /// Optimize SQL async (ISchemaOptimizationService interface)
+    /// </summary>
+    public async Task<BIReportingCopilot.Core.Models.SqlOptimizationResult> OptimizeSqlAsync(string sql, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🔧 Optimizing SQL query");
+
+            var result = await OptimizeSqlAsync(sql);
+            return new BIReportingCopilot.Core.Models.SqlOptimizationResult
+            {
+                OriginalSql = result.OriginalSql,
+                OptimizedSql = result.OptimizedSql,
+                Optimizations = result.Optimizations,
+                ImprovementScore = result.ImprovementScore,
+                EstimatedSpeedup = result.EstimatedSpeedup,
+                Metrics = result.Metrics
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error optimizing SQL");
+            return new BIReportingCopilot.Core.Models.SqlOptimizationResult
+            {
+                OriginalSql = sql,
+                OptimizedSql = sql
+            };
+        }
+    }
+
+    /// <summary>
+    /// Suggest indexes async (ISchemaOptimizationService interface)
+    /// </summary>
+    public async Task<List<BIReportingCopilot.Core.Models.IndexSuggestion>> SuggestIndexesAsync(string tableName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("💡 Suggesting indexes for table: {TableName}", tableName);
+
+            var suggestions = await SuggestIndexesAsync(tableName);
+            return suggestions.Select(s => new BIReportingCopilot.Core.Models.IndexSuggestion
+            {
+                TableName = s.TableName,
+                Columns = s.Columns,
+                IndexTypeString = s.IndexTypeString,
+                Reasoning = s.Reasoning,
+                Priority = s.Priority,
+                EstimatedSize = s.EstimatedSize,
+                CreateStatement = s.CreateStatement
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error suggesting indexes for table: {TableName}", tableName);
+            return new List<BIReportingCopilot.Core.Models.IndexSuggestion>();
+        }
     }
 
     #endregion

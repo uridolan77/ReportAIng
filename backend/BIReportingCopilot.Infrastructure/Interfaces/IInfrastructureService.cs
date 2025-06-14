@@ -63,6 +63,7 @@ public interface ICacheService
     Task<T?> GetAsync<T>(string key);
     Task SetAsync<T>(string key, T value, TimeSpan? expiration = null);
     Task RemoveAsync(string key);
+    Task RemovePatternAsync(string pattern);
     Task<bool> ExistsAsync(string key);
     Task ClearAsync();
 }
@@ -280,16 +281,7 @@ public interface IPasswordHasher
     string GenerateSalt();
 }
 
-/// <summary>
-/// Metrics collector interface
-/// </summary>
-public interface IMetricsCollector
-{
-    Task RecordMetricAsync(string name, double value, Dictionary<string, string>? tags = null);
-    Task RecordCounterAsync(string name, long value = 1, Dictionary<string, string>? tags = null);
-    Task RecordTimingAsync(string name, TimeSpan duration, Dictionary<string, string>? tags = null);
-    Task<Dictionary<string, object>> GetMetricsAsync(string? filter = null);
-}
+// IMetricsCollector interface moved to BIReportingCopilot.Core.Interfaces.Monitoring.IMetricsCollector
 
 // Duplicate IEmailService and ISmsService removed - using the ones defined above
 
@@ -315,6 +307,9 @@ public interface IMfaService
     Task<bool> SendSmsAsync(string phoneNumber, string code);
     Task<string> GenerateEmailCodeAsync();
     Task<bool> SendEmailCodeAsync(string email, string code);
+    Task<string[]> GenerateBackupCodesAsync();
+    Task<string> GenerateSecretAsync();
+    Task<string> GenerateQrCodeAsync(string secret, string email, string issuer);
 }
 
 // Duplicate IUserService removed - using the one defined above

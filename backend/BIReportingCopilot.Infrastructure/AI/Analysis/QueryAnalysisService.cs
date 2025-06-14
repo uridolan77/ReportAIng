@@ -986,5 +986,69 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         }
     }
 
+    /// <summary>
+    /// Calculate similarity async (ISemanticAnalyzer interface)
+    /// </summary>
+    public async Task<BIReportingCopilot.Core.Models.SemanticSimilarity> CalculateSimilarityAsync(string query1, string query2, CancellationToken cancellationToken = default)
+    {
+        var result = await CalculateSimilarityAsync(query1, query2);
+        return new BIReportingCopilot.Core.Models.SemanticSimilarity
+        {
+            Query1 = result.Query1,
+            Query2 = result.Query2,
+            SimilarityScore = result.SimilarityScore,
+            CommonEntities = result.CommonEntities,
+            CommonKeywords = result.CommonKeywords
+        };
+    }
+
+    /// <summary>
+    /// Generate embedding async (ISemanticAnalyzer interface)
+    /// </summary>
+    public async Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default)
+    {
+        return await GenerateEmbeddingAsync(text);
+    }
+
+    /// <summary>
+    /// Extract entities async (ISemanticAnalyzer interface)
+    /// </summary>
+    public async Task<List<EntityExtraction>> ExtractEntitiesAsync(string text, CancellationToken cancellationToken = default)
+    {
+        var analysis = await AnalyzeAsync(text, cancellationToken);
+        return analysis.Entities.Select(e => new EntityExtraction
+        {
+            Entity = e.Text,
+            Type = e.Type.ToString(),
+            Confidence = e.Confidence,
+            StartIndex = e.StartPosition,
+            EndIndex = e.EndPosition,
+            Properties = e.Properties
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Analyze with context async (ISemanticAnalyzer interface)
+    /// </summary>
+    public async Task<SemanticAnalysis> AnalyzeWithContextAsync(string query, string? userId = null, string? sessionId = null, CancellationToken cancellationToken = default)
+    {
+        // Use existing analysis method and convert to SemanticAnalysis
+        var result = await AnalyzeAsync(query, cancellationToken);
+        return new SemanticAnalysis
+        {
+            OriginalQuery = query,
+            Intent = result.Intent,
+            ConfidenceScore = result.ConfidenceScore,
+            Entities = result.Entities.ToList(),
+            Keywords = result.Keywords.ToList(),
+            Metadata = new Dictionary<string, object>
+            {
+                ["user_id"] = userId ?? "",
+                ["session_id"] = sessionId ?? "",
+                ["has_context"] = !string.IsNullOrEmpty(userId)
+            }
+        };
+    }
+
     #endregion
 }

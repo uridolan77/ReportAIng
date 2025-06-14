@@ -273,12 +273,21 @@ public class BusinessTableManagementService : IBusinessTableManagementService
                 .Select(t => t.SchemaTable)
                 .ToList();
 
-            return new BusinessTableStatistics
+            return new BIReportingCopilot.Core.DTOs.BusinessTableStatistics
             {
-                TotalTables = stats.Count,
-                ActiveTables = stats.Count, // All queried tables are active
-                InactiveTables = 0,
-                LastUpdated = DateTime.UtcNow
+                TableId = "summary",
+                TableName = "Business Tables Summary",
+                TotalRecords = stats.Count,
+                TotalColumns = totalColumns,
+                LastUpdated = DateTime.UtcNow,
+                AverageQueryTime = 0.0,
+                QueryCount = 0,
+                AdditionalMetrics = new Dictionary<string, object>
+                {
+                    ["TotalTables"] = stats.Count,
+                    ["ActiveTables"] = stats.Count,
+                    ["RecentlyUpdatedTables"] = recentlyUpdatedTables
+                }
             };
         }
         catch (Exception ex)
@@ -404,15 +413,7 @@ public class BusinessTableManagementService : IBusinessTableManagementService
             PrimaryUseCase = tableInfo.PrimaryUseCase,
             CommonQueryPatterns = tableInfo.CommonQueryPatterns,
             BusinessRules = tableInfo.BusinessRules,
-            Columns = tableInfo.Columns?.Select(c => new CreateColumnInfoRequest
-            {
-                ColumnName = c.ColumnName,
-                BusinessMeaning = c.BusinessMeaning,
-                BusinessContext = c.BusinessContext,
-                DataExamples = c.DataExamples,
-                ValidationRules = c.ValidationRules,
-                IsKeyColumn = c.IsKeyColumn
-            }).ToList() ?? new List<CreateColumnInfoRequest>()
+            Columns = tableInfo.Columns ?? new List<BusinessColumnInfo>()
         };
 
         var created = await CreateBusinessTableAsync(request, "system");
@@ -434,15 +435,17 @@ public class BusinessTableManagementService : IBusinessTableManagementService
             PrimaryUseCase = tableInfo.PrimaryUseCase,
             CommonQueryPatterns = tableInfo.CommonQueryPatterns,
             BusinessRules = tableInfo.BusinessRules,
-            Columns = tableInfo.Columns?.Select(c => new CreateColumnInfoRequest
+            Columns = tableInfo.Columns?.Select(c => new BusinessColumnInfo
             {
                 ColumnName = c.ColumnName,
                 BusinessMeaning = c.BusinessMeaning,
                 BusinessContext = c.BusinessContext,
-                DataExamples = c.DataExamples,
-                ValidationRules = c.ValidationRules,
-                IsKeyColumn = c.IsKeyColumn
-            }).ToList() ?? new List<CreateColumnInfoRequest>()
+                DataType = c.DataType ?? "varchar",
+                IsKeyColumn = c.IsKeyColumn,
+                DataExamples = c.DataExamples ?? new List<string>(),
+                IsKey = c.IsKeyColumn,
+                IsRequired = c.IsKeyColumn
+            }).ToList() ?? new List<BusinessColumnInfo>()
         };
 
         var updated = await UpdateBusinessTableAsync(tableInfo.Id, request, "system");

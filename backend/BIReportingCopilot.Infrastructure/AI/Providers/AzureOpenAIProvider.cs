@@ -194,10 +194,10 @@ public class AzureOpenAIProvider : IAIProvider
         {
             var options = new AIOptions
             {
-                Temperature = request.Temperature ?? 0.7f,
-                MaxTokens = request.MaxTokens ?? 2000,
+                Temperature = (float)request.Temperature,
+                MaxTokens = request.MaxTokens,
                 SystemMessage = request.SystemMessage,
-                TimeoutSeconds = request.TimeoutSeconds ?? 30
+                TimeoutSeconds = 30 // Default timeout
             };
 
             var content = await GenerateCompletionAsync(request.Prompt, options, cancellationToken);
@@ -240,7 +240,7 @@ public class AzureOpenAIProvider : IAIProvider
             {
                 Prompt = "Test",
                 MaxTokens = 10,
-                Temperature = 0.1f
+                Temperature = 0.1
             };
 
             var response = await GenerateResponseAsync(testRequest, cancellationToken);

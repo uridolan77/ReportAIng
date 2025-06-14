@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Security;
+using BIReportingCopilot.Core.Interfaces.Monitoring;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.AI.Core;
@@ -128,7 +129,7 @@ public class SqlQueryValidator : IEnhancedSqlQueryValidator, ISqlQueryValidator
                 {
                     _logger.LogWarning("Dangerous SQL pattern detected for user {UserId}: {Pattern}", userId, pattern.Name);
                 }
-                _metricsCollector.IncrementCounter("sql_validation_dangerous_patterns", new TagList
+                _metricsCollector.IncrementCounter("sql_validation_dangerous_patterns", new Dictionary<string, string>
                 {
                     { "pattern", pattern.Name },
                     { "user_id", userId ?? "unknown" }
@@ -151,7 +152,7 @@ public class SqlQueryValidator : IEnhancedSqlQueryValidator, ISqlQueryValidator
                 }
 
                 _logger.LogWarning("Suspicious SQL pattern detected for user {UserId}: {Pattern}", userId, pattern.Name);
-                _metricsCollector.IncrementCounter("sql_validation_suspicious_patterns", new TagList
+                _metricsCollector.IncrementCounter("sql_validation_suspicious_patterns", new Dictionary<string, string>
                 {
                     { "pattern", pattern.Name },
                     { "user_id", userId ?? "unknown" }
@@ -227,7 +228,7 @@ public class SqlQueryValidator : IEnhancedSqlQueryValidator, ISqlQueryValidator
 
         // Record metrics
         _metricsCollector.RecordValue("sql_validation_risk_score", riskScore);
-        _metricsCollector.RecordHistogram("sql_validation_risk_score_detailed", riskScore, new TagList
+        _metricsCollector.RecordHistogram("sql_validation_risk_score_detailed", riskScore, new Dictionary<string, string>
         {
             { "security_level", securityLevel.ToString() },
             { "user_id", userId ?? "unknown" }

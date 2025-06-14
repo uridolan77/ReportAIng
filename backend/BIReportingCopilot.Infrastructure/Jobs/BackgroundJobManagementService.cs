@@ -282,8 +282,8 @@ public class BackgroundJobManagementService
 
         try
         {
-            var oldSchema = await _schemaService.GetSchemaMetadataAsync(dataSource);
-            var newSchema = await _schemaService.RefreshSchemaMetadataAsync(dataSource);
+            var oldSchema = await _schemaService.GetSchemaMetadataAsync();
+            var newSchema = await _schemaService.RefreshSchemaMetadataAsync();
 
             // Detect and handle schema changes
             var changes = DetectSchemaChanges(oldSchema, newSchema);

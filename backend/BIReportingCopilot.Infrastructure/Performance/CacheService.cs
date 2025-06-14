@@ -84,13 +84,13 @@ public class CacheService : ICacheService
 
             RecordMiss();
             _logger.LogDebug("Cache miss: {Key}", key);
-            return null;
+            return default(T);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting cached value for key: {Key}", key);
             RecordMiss();
-            return null;
+            return default(T);
         }
     }
 
@@ -525,7 +525,7 @@ public class CacheService : ICacheService
         return await GetAsync<T>(key);
     }
 
-    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken cancellationToken = default) where T : class
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry, CancellationToken cancellationToken) where T : class
     {
         await SetAsync(key, value, expiry);
     }

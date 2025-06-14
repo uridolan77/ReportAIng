@@ -3,6 +3,12 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Data.Configurations;
 using System.Text.Json;
+using InfraUserPreferencesEntity = BIReportingCopilot.Infrastructure.Data.Entities.UserPreferencesEntity;
+using InfraAuditLogEntity = BIReportingCopilot.Infrastructure.Data.Entities.AuditLogEntity;
+using InfraUserEntity = BIReportingCopilot.Infrastructure.Data.Entities.UserEntity;
+using InfraUserSessionEntity = BIReportingCopilot.Infrastructure.Data.Entities.UserSessionEntity;
+using InfraRefreshTokenEntity = BIReportingCopilot.Infrastructure.Data.Entities.RefreshTokenEntity;
+using InfraMfaChallengeEntity = BIReportingCopilot.Infrastructure.Data.Entities.MfaChallengeEntity;
 
 namespace BIReportingCopilot.Infrastructure.Data;
 
@@ -14,14 +20,14 @@ public class BICopilotContext : DbContext
 
     // Core entities
     public DbSet<SchemaMetadataEntity> SchemaMetadata { get; set; }
-    public DbSet<Core.Models.QueryHistoryEntity> QueryHistory { get; set; } // Query history
+    public DbSet<Core.Models.UnifiedQueryHistoryEntity> QueryHistory { get; set; } // Query history
     public DbSet<PromptTemplateEntity> PromptTemplates { get; set; }
     public DbSet<PromptLogEntity> PromptLogs { get; set; }
     public DbSet<AITuningSettingsEntity> AITuningSettings { get; set; }
     public DbSet<QueryCacheEntity> QueryCache { get; set; }
-    public DbSet<Infrastructure.Data.Entities.UserPreferencesEntity> UserPreferences { get; set; }
+    public DbSet<InfraUserPreferencesEntity> UserPreferences { get; set; }
     public DbSet<SystemConfigurationEntity> SystemConfiguration { get; set; }
-    public DbSet<Infrastructure.Data.Entities.AuditLogEntity> AuditLog { get; set; }
+    public DbSet<InfraAuditLogEntity> AuditLog { get; set; }
 
     // AI Tuning entities
     public DbSet<BusinessTableInfoEntity> BusinessTableInfo { get; set; }
@@ -30,10 +36,10 @@ public class BICopilotContext : DbContext
     public DbSet<BusinessGlossaryEntity> BusinessGlossary { get; set; }
 
     // User and session management
-    public DbSet<Infrastructure.Data.Entities.UserEntity> Users { get; set; }
-    public DbSet<Infrastructure.Data.Entities.UserSessionEntity> UserSessions { get; set; }
-    public DbSet<Infrastructure.Data.Entities.RefreshTokenEntity> RefreshTokens { get; set; }
-    public DbSet<Infrastructure.Data.Entities.MfaChallengeEntity> MfaChallenges { get; set; }
+    public DbSet<InfraUserEntity> Users { get; set; }
+    public DbSet<InfraUserSessionEntity> UserSessions { get; set; }
+    public DbSet<InfraRefreshTokenEntity> RefreshTokens { get; set; }
+    public DbSet<InfraMfaChallengeEntity> MfaChallenges { get; set; }
 
     // Analytics and monitoring
     public DbSet<QueryPerformanceEntity> QueryPerformance { get; set; }
@@ -41,8 +47,8 @@ public class BICopilotContext : DbContext
 
     // AI Learning and Semantic Cache
     public DbSet<Core.Models.AIGenerationAttempt> AIGenerationAttempts { get; set; }
-    public DbSet<Core.Models.AIFeedbackEntry> AIFeedbackEntries { get; set; }
-    public DbSet<Core.Models.SemanticCacheEntry> SemanticCacheEntries { get; set; }
+    public DbSet<Core.Models.UnifiedAIFeedbackEntry> AIFeedbackEntries { get; set; }
+    public DbSet<Core.Models.UnifiedSemanticCacheEntry> SemanticCacheEntries { get; set; }
 
     // Additional missing DbSets
     public DbSet<SystemMetricsEntity> PerformanceMetrics { get; set; }
@@ -111,7 +117,7 @@ public class BICopilotContext : DbContext
         });
 
         // Configure UserPreferences
-        modelBuilder.Entity<UserPreferencesEntity>(entity =>
+        modelBuilder.Entity<InfraUserPreferencesEntity>(entity =>
         {
             entity.HasKey(e => e.UserId);
             entity.Property(e => e.UserId).HasMaxLength(256);
@@ -131,7 +137,7 @@ public class BICopilotContext : DbContext
         });
 
         // Configure AuditLog
-        modelBuilder.Entity<AuditLogEntity>(entity =>
+        modelBuilder.Entity<InfraAuditLogEntity>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.Timestamp });
@@ -147,7 +153,7 @@ public class BICopilotContext : DbContext
         });
 
         // Configure Users
-        modelBuilder.Entity<UserEntity>(entity =>
+        modelBuilder.Entity<InfraUserEntity>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Username).IsUnique();
@@ -165,7 +171,7 @@ public class BICopilotContext : DbContext
         });
 
         // Configure UserSessions
-        modelBuilder.Entity<UserSessionEntity>(entity =>
+        modelBuilder.Entity<InfraUserSessionEntity>(entity =>
         {
             entity.HasKey(e => e.SessionId);
             entity.HasIndex(e => e.UserId);
@@ -177,7 +183,7 @@ public class BICopilotContext : DbContext
         });
 
         // Configure RefreshTokens
-        modelBuilder.Entity<RefreshTokenEntity>(entity =>
+        modelBuilder.Entity<InfraRefreshTokenEntity>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Token).IsUnique();
@@ -208,7 +214,7 @@ public class BICopilotContext : DbContext
         });
 
         // Configure MfaChallenges
-        modelBuilder.Entity<MfaChallengeEntity>(entity =>
+        modelBuilder.Entity<InfraMfaChallengeEntity>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.ExpiresAt });
@@ -439,8 +445,8 @@ Return only the SQL query without any explanation or markdown formatting.",
         );
 
         // Seed default admin user (password will be set during application startup)
-        modelBuilder.Entity<UserEntity>().HasData(
-            new UserEntity
+        modelBuilder.Entity<InfraUserEntity>().HasData(
+            new InfraUserEntity
             {
                 Id = "admin-user-001",
                 Username = "admin",

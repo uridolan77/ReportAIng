@@ -565,6 +565,15 @@ public class VisualizationRecommendation
     public string BestFor { get; set; } = string.Empty;
     public List<string> Limitations { get; set; } = new();
     public string EstimatedPerformance { get; set; } = "Good";
+
+    /// <summary>
+    /// Recommended type (alias for ChartType)
+    /// </summary>
+    public string RecommendedType
+    {
+        get => ChartType;
+        set => ChartType = value;
+    }
     public Dictionary<string, object> SuggestedConfig { get; set; } = new();
 }
 
@@ -726,6 +735,9 @@ public class RealTimeConfig
     public bool AutoRefresh { get; set; } = false;
     public bool ShowLastUpdated { get; set; } = true;
     public bool EnableNotifications { get; set; } = false;
+
+    // Properties expected by Infrastructure services
+    public AlertConfig[] Alerts { get; set; } = Array.Empty<AlertConfig>();
 }
 
 /// <summary>
@@ -738,6 +750,10 @@ public class CollaborationConfig
     public bool AllowComments { get; set; } = true;
     public bool AllowAnnotations { get; set; } = false;
     public List<string> SharedWith { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    public bool AllowEditing { get; set; } = false;
+    public string Permission { get; set; } = "read";
 }
 
 /// <summary>
@@ -750,6 +766,11 @@ public class SecurityConfig
     public bool EnableAuditLog { get; set; } = true;
     public bool EnableDataMasking { get; set; } = false;
     public Dictionary<string, object> SecurityPolicies { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    public bool EnableRowLevelSecurity { get; set; } = false;
+    public Dictionary<string, string> DataFilters { get; set; } = new();
+    public bool Enabled { get; set; } = true;
 }
 
 /// <summary>
@@ -762,6 +783,19 @@ public class AnalyticsConfig
     public bool TrackPerformance { get; set; } = true;
     public bool TrackUserInteractions { get; set; } = false;
     public int RetentionDays { get; set; } = 90;
+}
+
+/// <summary>
+/// Alert configuration for real-time dashboards
+/// </summary>
+public class AlertConfig
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Name { get; set; } = string.Empty;
+    public string Condition { get; set; } = string.Empty;
+    public string Threshold { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public bool Enabled { get; set; } = true;
 }
 
 // =============================================================================
@@ -810,9 +844,11 @@ public class DashboardPreferences
 {
     public string UserId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty; // Added for service compatibility
+    public string Theme { get; set; } = string.Empty; // Added for service compatibility
     public string PreferredLayout { get; set; } = "grid";
     public int DefaultColumns { get; set; } = 12;
     public int DefaultRows { get; set; } = 6;
+    public int GridGap { get; set; } = 10; // Added for service compatibility
     public bool EnableAutoRefresh { get; set; } = false;
     public int RefreshInterval { get; set; } = 30;
     public Dictionary<string, object> CustomSettings { get; set; } = new();

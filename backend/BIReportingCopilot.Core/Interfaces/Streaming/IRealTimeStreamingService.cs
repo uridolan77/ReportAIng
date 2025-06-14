@@ -17,6 +17,13 @@ public interface IRealTimeStreamingService
     Task<List<StreamingAlert>> GetStreamingAlertsAsync(string streamId, CancellationToken cancellationToken = default);
     Task<bool> CreateStreamingAlertAsync(string streamId, StreamingAlertRule rule, CancellationToken cancellationToken = default);
     Task<string> CreateRealTimeAlertAsync(RealTimeAlert alert, string userId, CancellationToken cancellationToken = default);
+
+    // Additional methods needed by handlers
+    Task<StreamingSession> StartStreamingSessionAsync(string userId, StreamingConfiguration configuration);
+    Task<bool> StopStreamingSessionAsync(string sessionId, string userId);
+    Task ProcessDataStreamEventAsync(DataStreamEvent streamEvent);
+    Task ProcessQueryStreamEventAsync(QueryStreamEvent queryEvent);
+    Task<RealTimeDashboard> GetRealTimeDashboardAsync(string userId);
 }
 
 /// <summary>
@@ -31,20 +38,8 @@ public class StreamingQueryRequest
     public Dictionary<string, object> Parameters { get; set; } = new();
 }
 
-/// <summary>
-/// Streaming configuration
-/// </summary>
-public class StreamingConfiguration
-{
-    public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(30);
-    public int MaxDataPoints { get; set; } = 1000;
-    public bool EnableAggregation { get; set; } = true;
-    public string AggregationMethod { get; set; } = "average"; // average, sum, count, min, max
-    public TimeSpan AggregationWindow { get; set; } = TimeSpan.FromMinutes(1);
-    public bool EnableAlerts { get; set; } = false;
-    public bool EnableDataRetention { get; set; } = true;
-    public TimeSpan DataRetentionPeriod { get; set; } = TimeSpan.FromHours(24);
-}
+// StreamingConfiguration has been consolidated into Core.Models.StreamingConfiguration
+// See: Core/Models/RealTimeStreaming.cs
 
 /// <summary>
 /// Streaming query status
@@ -86,19 +81,8 @@ public class StreamingDataPoint
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
-/// <summary>
-/// Streaming metrics
-/// </summary>
-public class StreamingMetrics
-{
-    public int TotalDataPoints { get; set; }
-    public double AverageLatency { get; set; }
-    public double ThroughputPerSecond { get; set; }
-    public int ErrorCount { get; set; }
-    public DateTime LastSuccessfulUpdate { get; set; }
-    public TimeSpan Uptime { get; set; }
-    public Dictionary<string, double> CustomMetrics { get; set; } = new();
-}
+// StreamingMetrics has been consolidated into Core.Models.StreamingMetrics
+// See: Core/Models/RealTimeStreaming.cs
 
 /// <summary>
 /// Streaming alert rule

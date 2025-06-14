@@ -74,3 +74,19 @@ public class CreateTableInfoRequest
 
     public List<BusinessColumnInfo> Columns { get; set; } = new(); // Added missing property
 }
+
+/// <summary>
+/// Business table statistics DTO (alias for compatibility)
+/// </summary>
+public class BusinessTableStatistics : BIReportingCopilot.Core.Models.BusinessTableStatistics
+{
+    // Inherits all properties from the base class
+}
+
+/// <summary>
+/// Create column info request DTO (alias for compatibility)
+/// </summary>
+public class CreateColumnInfoRequest : BIReportingCopilot.Core.Models.CreateColumnInfoRequest
+{
+    // Inherits all properties from the base class
+}

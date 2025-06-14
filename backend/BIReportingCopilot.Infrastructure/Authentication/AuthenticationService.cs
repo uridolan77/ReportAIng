@@ -600,7 +600,7 @@ public class AuthenticationService : IAuthenticationService
             var challenge = new MfaChallenge
             {
                 UserId = userId,
-                Method = user.MfaMethod,
+                Method = user.MfaMethod.ToString(),
                 ExpiresAt = DateTime.UtcNow.AddMinutes(5) // 5-minute expiration
             };
 
@@ -672,12 +672,12 @@ public class AuthenticationService : IAuthenticationService
             // Try to validate the code based on MFA method
             switch (challenge.Method)
             {
-                case MfaMethod.TOTP:
+                case "TOTP":
                     isValid = await _mfaService.ValidateTotpAsync(user.MfaSecret!, code);
                     break;
 
-                case MfaMethod.SMS:
-                case MfaMethod.Email:
+                case "SMS":
+                case "Email":
                     isValid = challenge.Challenge == code;
                     break;
             }

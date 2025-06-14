@@ -87,6 +87,11 @@ public class QueryExecutionPlan
     public List<string> Recommendations { get; set; } = new();
     public bool HasWarnings { get; set; }
     public List<string> Warnings { get; set; } = new();
+
+    /// <summary>
+    /// Query property (for compatibility)
+    /// </summary>
+    public string Query { get; set; } = string.Empty;
 }
 
 // QueryPerformanceMetrics moved to OptimizedDTOs.cs to avoid duplication

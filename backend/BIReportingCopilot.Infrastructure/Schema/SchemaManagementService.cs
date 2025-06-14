@@ -1565,7 +1565,7 @@ public class SchemaManagementService : ISchemaManagementService
                     Name = tableContext.TableName,
                     Schema = tableContext.SchemaName,
                     Description = tableContext.BusinessPurpose,
-                    LastUpdated = tableContext.UpdatedAt ?? tableContext.CreatedAt,
+                    LastUpdated = tableContext.UpdatedAt != default ? tableContext.UpdatedAt : tableContext.CreatedAt,
                     Columns = new List<ColumnMetadata>()
                 };
 
@@ -1579,8 +1579,8 @@ public class SchemaManagementService : ISchemaManagementService
                         IsNullable = true, // Default assumption
                         IsPrimaryKey = false, // Would need additional logic to determine
                         IsForeignKey = false, // Would need additional logic to determine
-                        SemanticTags = new List<string>(),
-                        SampleValues = new List<string>()
+                        SemanticTags = new string[0],
+                        SampleValues = new string[0]
                     });
                 }
 

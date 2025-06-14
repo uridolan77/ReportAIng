@@ -8,6 +8,7 @@ using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
 using IContextManager = BIReportingCopilot.Core.Interfaces.IContextManager;
+using ContextType = BIReportingCopilot.Infrastructure.Data.Contexts.ContextType;
 
 namespace BIReportingCopilot.Infrastructure.Handlers;
 
@@ -62,7 +63,7 @@ public class GetQueryHistoryQueryHandler : IRequestHandler<GetQueryHistoryQuery,
                         Question = entity.Query,
                         Sql = entity.GeneratedSql ?? "",
                         Timestamp = entity.ExecutedAt,
-                        ExecutionTimeMs = entity.ExecutionTimeMs,
+                        ExecutionTimeMs = (int)entity.ExecutionTimeMs,
                         Successful = entity.IsSuccessful,
                         Error = entity.ErrorMessage
                     })

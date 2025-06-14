@@ -251,8 +251,8 @@ public class VisualizationService : IVisualizationService
                 {
                     Name = f.ColumnName,
                     Type = f.FilterType,
-                    Label = f.Label,
-                    Values = new List<object>()
+                    Column = f.ColumnName,
+                    Options = new List<object>()
                 }).ToList(),
                 RefreshInterval = 0
             };
@@ -289,7 +289,7 @@ public class VisualizationService : IVisualizationService
                 ChartType = DetermineChartType(baseConfig.Type),
                 Animation = GenerateAnimationConfig(data.Length),
                 Interaction = GenerateInteractionConfig(dataAnalysis),
-                Theme = GenerateThemeConfig(preferences?.Theme),
+                Theme = GenerateThemeConfig(null),
                 DataProcessing = GenerateDataProcessingConfig(data.Length),
                 Export = GenerateExportConfig(),
                 Accessibility = GenerateAccessibilityConfig(),
@@ -298,10 +298,24 @@ public class VisualizationService : IVisualizationService
 
             return new AdvancedVisualizationConfig
             {
-                BaseConfig = config,
-                AdvancedFeatures = new Dictionary<string, object>(),
-                PerformanceOptimizations = new Dictionary<string, object>(),
-                InteractivityLevel = "Standard"
+                Type = config.Type,
+                Title = config.Title,
+                XAxis = config.XAxis,
+                YAxis = config.YAxis,
+                Series = config.Series,
+                Config = config.Config,
+                ChartType = config.ChartType,
+                Animation = config.Animation,
+                Interaction = config.Interaction,
+                Theme = config.Theme,
+                DataProcessing = config.DataProcessing,
+                Export = config.Export,
+                Accessibility = config.Accessibility,
+                Performance = config.Performance,
+                EnableInteractivity = true,
+                EnableAnimation = true,
+                SupportedInteractions = new List<string> { "zoom", "pan", "tooltip" },
+                AdvancedSettings = new Dictionary<string, object>()
             };
         }
         catch (Exception ex)
@@ -334,7 +348,7 @@ public class VisualizationService : IVisualizationService
                 Description = $"Comprehensive dashboard generated from: {query}",
                 Charts = chartConfigs,
                 Layout = GenerateDashboardLayout(chartConfigs.Count),
-                GlobalFilters = new List<FilterConfig>(),
+                GlobalFilters = new List<GlobalFilter>(),
                 RefreshInterval = preferences?.RefreshInterval ?? 0
             };
 
@@ -366,7 +380,7 @@ public class VisualizationService : IVisualizationService
                     Reasoning = "Multiple numeric columns detected",
                     BestFor = "Correlation analysis",
                     Limitations = new List<string> { "May be cluttered with large datasets" },
-                    EstimatedPerformance = new PerformanceEstimate { EstimatedRenderTime = TimeSpan.FromMilliseconds(500) },
+                    EstimatedPerformance = "Fast",
                     SuggestedConfig = new Dictionary<string, object> { ["enableRegression"] = true }
                 });
             }
@@ -625,7 +639,7 @@ public class VisualizationService : IVisualizationService
             options.Add(new DrillDownOption
             {
                 Name = column.Name,
-                Levels = new List<string> { column.Name },
+                Levels = new string[] { column.Name },
                 TargetColumn = column.Name
             });
         }
@@ -666,6 +680,33 @@ public class VisualizationService : IVisualizationService
         return filters.ToArray();
     }
 
+    private FilterConfig[] GenerateAdvancedGlobalFilters(DataCharacteristics analysis)
+    {
+        var filters = new List<FilterConfig>();
+
+        if (analysis.HasTimeColumn)
+        {
+            filters.Add(new FilterConfig
+            {
+                ColumnName = analysis.DateTimeColumns.First().Name,
+                FilterType = "dateRange",
+                Label = analysis.DateTimeColumns.First().Name
+            });
+        }
+
+        foreach (var column in analysis.CategoricalColumns.Take(3))
+        {
+            filters.Add(new FilterConfig
+            {
+                ColumnName = column.Name,
+                FilterType = "multiSelect",
+                Label = column.Name
+            });
+        }
+
+        return filters.ToArray();
+    }
+
     private string ExtractQuerySubject(string query)
     {
         var words = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -697,7 +738,7 @@ public class VisualizationService : IVisualizationService
             DelayByCategory = false,
             DelayIncrement = 0,
             AnimateOnDataChange = dataSize <= 5000,
-            AnimatedProperties = new List<string> { "opacity", "transform" }
+            AnimatedProperties = new string[] { "opacity", "transform" }
         };
     }
 
@@ -811,6 +852,24 @@ public class VisualizationService : IVisualizationService
         return GenerateAdvancedThemeConfig(themeName);
     }
 
+    private ThemeConfig GenerateAdvancedThemeConfig(string? themeName)
+    {
+        return new ThemeConfig
+        {
+            Name = themeName ?? "advanced",
+            DarkMode = false,
+            Colors = new ColorPalette
+            {
+                Primary = new List<string> { "#007acc", "#0066cc", "#004499", "#0052cc", "#003d99" },
+                Secondary = new List<string> { "#6c757d", "#5a6268", "#495057", "#343a40", "#212529" },
+                Background = "#ffffff",
+                Text = "#333333",
+                Grid = "#e0e0e0",
+                Axis = "#666666"
+            }
+        };
+    }
+
     private ResponsiveConfig GenerateResponsiveConfig()
     {
         return new ResponsiveConfig
@@ -848,7 +907,7 @@ public class VisualizationService : IVisualizationService
             AllowComments = enabled,
             AllowSharing = enabled,
             AllowEditing = enabled,
-            SharedWith = Array.Empty<string>(),
+            SharedWith = new List<string>(),
             Permission = "read"
         };
     }
@@ -858,7 +917,7 @@ public class VisualizationService : IVisualizationService
         return new SecurityConfig
         {
             RequireAuthentication = true,
-            AllowedRoles = new[] { "User", "Admin" },
+            AllowedRoles = new List<string> { "User", "Admin" },
             EnableRowLevelSecurity = false,
             DataFilters = new Dictionary<string, string>(),
             EnableAuditLog = true
@@ -887,7 +946,7 @@ public class VisualizationService : IVisualizationService
             {
                 Title = preferences?.Title ?? $"Advanced Dashboard: {ExtractQuerySubject(query)}",
                 Description = $"AI-powered dashboard analysis for: {query}",
-                Charts = charts.Select(c => new AdvancedVisualizationConfig
+                Charts = charts.Select(c => new VisualizationConfig
                 {
                     Type = c.Type,
                     Title = c.Title,
@@ -903,15 +962,20 @@ public class VisualizationService : IVisualizationService
                     Export = GenerateExportConfig(),
                     Accessibility = GenerateAccessibilityConfig(),
                     Performance = GeneratePerformanceConfig(data.Length)
-                }).ToArray(),
+                }).ToList(),
                 Layout = GenerateAdvancedDashboardLayout(charts.Length, preferences),
-                GlobalFilters = GenerateAdvancedGlobalFilters(dataAnalysis),
-                RefreshInterval = preferences?.RefreshInterval,
-                InteractiveFeatures = GenerateAdvancedInteractiveFeatures(dataAnalysis),
-                RealTimeCapabilities = GenerateRealTimeCapabilities(),
-                ExportOptions = GenerateAdvancedExportOptions(),
-                SecuritySettings = GenerateSecuritySettings(),
-                PerformanceSettings = GeneratePerformanceSettings(data.Length)
+                GlobalFilters = GenerateAdvancedGlobalFilters(dataAnalysis).Select(f => new GlobalFilter
+                {
+                    Name = f.ColumnName,
+                    Type = f.FilterType,
+                    Column = f.ColumnName,
+                    Options = new List<object>()
+                }).ToList(),
+                RefreshInterval = preferences?.RefreshInterval ?? 0,
+                RealTime = new RealTimeConfig { Enabled = false },
+                Collaboration = new CollaborationConfig { Enabled = false },
+                Security = new SecurityConfig { Enabled = false },
+                Analytics = new AnalyticsConfig { Enabled = false }
             };
 
             _logger.LogInformation("✅ Advanced dashboard generated successfully");
@@ -959,15 +1023,15 @@ public class VisualizationService : IVisualizationService
                 optimizedConfig.Performance!.EnableWebGL = true;
                 optimizedConfig.DataProcessing!.EnableSampling = true;
                 optimizedConfig.DataProcessing.SampleSize = Math.Min(5000, dataSize / 2);
-                optimizedConfig.Animation!.EnableAnimations = false;
+                optimizedConfig.Animation!.Enabled = false;
                 optimizedConfig.Config["enableVirtualization"] = true;
             }
 
             if (dataSize > 50000)
             {
-                optimizedConfig.Performance!.EnableWorkerThreads = true;
+                optimizedConfig.Performance!.EnableVirtualization = true;
                 optimizedConfig.DataProcessing!.EnableAggregation = true;
-                optimizedConfig.DataProcessing.AggregationLevel = "high";
+                optimizedConfig.DataProcessing.Aggregation!.Method = "avg";
                 optimizedConfig.Config["enableLazyLoading"] = true;
             }
 

@@ -1,5 +1,6 @@
 using MediatR;
 using BIReportingCopilot.Core.Models;
+using DashboardModel = BIReportingCopilot.Core.Models.Dashboard;
 
 namespace BIReportingCopilot.Core.Commands;
 
@@ -114,7 +115,7 @@ public class GetStreamingPerformanceQuery : IRequest<StreamingPerformanceMetrics
 /// <summary>
 /// Command to create dashboard
 /// </summary>
-public class CreateDashboardCommand : IRequest<Dashboard>
+public class CreateDashboardCommand : IRequest<DashboardModel>
 {
     public CreateDashboardRequest Request { get; set; } = new();
     public string UserId { get; set; } = string.Empty;
@@ -123,7 +124,7 @@ public class CreateDashboardCommand : IRequest<Dashboard>
 /// <summary>
 /// Command to update dashboard
 /// </summary>
-public class UpdateDashboardCommand : IRequest<Dashboard>
+public class UpdateDashboardCommand : IRequest<DashboardModel>
 {
     public string DashboardId { get; set; } = string.Empty;
     public UpdateDashboardRequest Request { get; set; } = new();
@@ -173,7 +174,7 @@ public class RemoveWidgetFromDashboardCommand : IRequest<bool>
 /// <summary>
 /// Command to generate dashboard from description
 /// </summary>
-public class GenerateDashboardFromDescriptionCommand : IRequest<Dashboard>
+public class GenerateDashboardFromDescriptionCommand : IRequest<DashboardModel>
 {
     public string Description { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
@@ -213,7 +214,7 @@ public class CloneDashboardCommand : IRequest<Dashboard>
 /// <summary>
 /// Command to create dashboard from template
 /// </summary>
-public class CreateDashboardFromTemplateCommand : IRequest<Dashboard>
+public class CreateDashboardFromTemplateCommand : IRequest<DashboardModel>
 {
     public string TemplateId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
@@ -235,7 +236,7 @@ public class GetDashboardQuery : IRequest<Dashboard?>
 /// <summary>
 /// Query to get user dashboards
 /// </summary>
-public class GetUserDashboardsQuery : IRequest<List<Dashboard>>
+public class GetUserDashboardsQuery : IRequest<List<DashboardModel>>
 {
     public string UserId { get; set; } = string.Empty;
     public DashboardFilter? Filter { get; set; }

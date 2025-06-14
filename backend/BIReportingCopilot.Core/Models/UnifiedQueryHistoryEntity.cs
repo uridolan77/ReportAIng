@@ -61,6 +61,11 @@ public class UnifiedQueryHistoryEntity
     public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
+    /// Query timestamp (alias for ExecutedAt for compatibility)
+    /// </summary>
+    public DateTime QueryTimestamp => ExecutedAt;
+
+    /// <summary>
     /// Created timestamp
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

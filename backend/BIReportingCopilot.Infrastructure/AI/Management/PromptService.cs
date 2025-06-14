@@ -1615,5 +1615,81 @@ Provide a clear, structured explanation that matches the requested complexity le
         };
     }
 
+    /// <summary>
+    /// Get prompt async with parameters (IPromptService interface overload)
+    /// </summary>
+    public async Task<string> GetPromptAsync(string promptKey, Dictionary<string, object>? parameters = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var template = await GetPromptAsync(promptKey, cancellationToken);
+
+            if (parameters != null && parameters.Any())
+            {
+                return await FormatPromptAsync(template, parameters, cancellationToken);
+            }
+
+            return template;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting prompt with parameters for key: {PromptKey}", promptKey);
+            return GetDefaultPromptContent(promptKey);
+        }
+    }
+
+    /// <summary>
+    /// Save prompt async (IPromptService interface)
+    /// </summary>
+    public async Task SavePromptAsync(string promptKey, string template, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("💾 Saving prompt template for key: {PromptKey}", promptKey);
+
+            var promptTemplate = new PromptTemplate
+            {
+                Name = promptKey,
+                Version = "1.0",
+                Content = template,
+                Description = $"Saved prompt template for {promptKey}",
+                IsActive = true,
+                CreatedBy = "System",
+                CreatedDate = DateTime.UtcNow,
+                Parameters = new Dictionary<string, object>()
+            };
+
+            await CreatePromptTemplateAsync(promptTemplate);
+            _logger.LogInformation("✅ Prompt template saved successfully for key: {PromptKey}", promptKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error saving prompt template for key: {PromptKey}", promptKey);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Get prompt keys async (IPromptService interface)
+    /// </summary>
+    public async Task<List<string>> GetPromptKeysAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("🔑 Getting all prompt keys");
+
+            var templates = await GetPromptTemplatesAsync();
+            var keys = templates.Select(t => t.Name).Distinct().ToList();
+
+            _logger.LogInformation("✅ Retrieved {Count} prompt keys", keys.Count);
+            return keys;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting prompt keys");
+            return new List<string> { "sql_generation", "explanation", "validation" };
+        }
+    }
+
     #endregion
 }

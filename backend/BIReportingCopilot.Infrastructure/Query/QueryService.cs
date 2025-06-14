@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MediatR;
 using CoreModels = BIReportingCopilot.Core.Models;
+using ContextType = BIReportingCopilot.Infrastructure.Data.Contexts.ContextType;
 
 namespace BIReportingCopilot.Infrastructure.Query;
 
@@ -354,13 +355,13 @@ public class QueryService : IQueryService
     /// <summary>
     /// Get query history (IQueryService interface)
     /// </summary>
-    public async Task<List<QueryHistoryEntity>> GetQueryHistoryAsync(string userId, int pageSize = 50, int pageNumber = 1, CancellationToken cancellationToken = default)
+    public async Task<List<UnifiedQueryHistoryEntity>> GetQueryHistoryAsync(string userId, int pageSize = 50, int pageNumber = 1, CancellationToken cancellationToken = default)
     {
         try
         {
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Application, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                var appContext = (ApplicationDbContext)context;
+                var appContext = (BICopilotContext)context;
                 return await appContext.QueryHistory
                     .Where(q => q.UserId == userId)
                     .OrderByDescending(q => q.ExecutedAt)
@@ -372,7 +373,7 @@ public class QueryService : IQueryService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting query history for user: {UserId}", userId);
-            return new List<QueryHistoryEntity>();
+            return new List<UnifiedQueryHistoryEntity>();
         }
     }
 
@@ -458,9 +459,9 @@ public class QueryService : IQueryService
     {
         try
         {
-            return await _contextFactory.ExecuteWithContextAsync(ContextType.Application, async context =>
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
             {
-                var appContext = (ApplicationDbContext)context;
+                var appContext = (BICopilotContext)context;
                 var recentQueries = await appContext.QueryHistory
                     .Where(q => q.ExecutedAt >= DateTime.UtcNow.AddDays(-7))
                     .ToListAsync(cancellationToken);
@@ -468,10 +469,10 @@ public class QueryService : IQueryService
                 return new BIReportingCopilot.Core.Interfaces.Query.QueryPerformanceMetrics
                 {
                     TotalQueries = recentQueries.Count,
-                    AverageExecutionTime = recentQueries.Any() ?
-                        TimeSpan.FromMilliseconds(recentQueries.Average(q => q.ExecutionTimeMs)) :
-                        TimeSpan.Zero,
-                    SuccessRate = recentQueries.Any() ?
+                    AverageExecutionTime = recentQueries.Count > 0 ?
+                        recentQueries.Average(q => q.ExecutionTimeMs ?? 0) :
+                        0.0,
+                    SuccessRate = recentQueries.Count > 0 ?
                         (double)recentQueries.Count(q => q.IsSuccessful) / recentQueries.Count :
                         0.0,
                     CacheHitRate = 0.0, // Not available in current implementation
@@ -623,17 +624,17 @@ public class QueryService : IQueryService
     /// <summary>
     /// Find similar queries async (IQueryService interface)
     /// </summary>
-    public async Task<List<QueryHistoryEntity>> FindSimilarQueriesAsync(string query, CancellationToken cancellationToken = default)
+    public async Task<List<UnifiedQueryHistoryEntity>> FindSimilarQueriesAsync(string query, CancellationToken cancellationToken = default)
     {
         try
         {
             // Stub implementation - return empty list for now
-            return new List<QueryHistoryEntity>();
+            return new List<UnifiedQueryHistoryEntity>();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error finding similar queries");
-            return new List<QueryHistoryEntity>();
+            return new List<UnifiedQueryHistoryEntity>();
         }
     }
 

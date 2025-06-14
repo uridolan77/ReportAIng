@@ -30,6 +30,16 @@ public class StreamingConfiguration
     public bool EnableAnomalyDetection { get; set; } = true;
     public List<string> EnabledEventTypes { get; set; } = new();
     public Dictionary<string, object> CustomSettings { get; set; } = new();
+
+    // Additional properties expected by Infrastructure services
+    public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(30);
+    public int MaxDataPoints { get; set; } = 1000;
+    public bool EnableAggregation { get; set; } = true;
+    public string AggregationMethod { get; set; } = "average";
+    public TimeSpan AggregationWindow { get; set; } = TimeSpan.FromMinutes(1);
+    public bool EnableAlerts { get; set; } = false;
+    public bool EnableDataRetention { get; set; } = true;
+    public TimeSpan DataRetentionPeriod { get; set; } = TimeSpan.FromHours(24);
 }
 
 /// <summary>
@@ -111,6 +121,8 @@ public class StreamingAnalyticsResult
     // Additional properties expected by Infrastructure services
     public int ActiveSessions { get; set; }
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public long EventsProcessed { get; set; }
+    public double EventsPerSecond { get; set; }
 }
 
 /// <summary>
@@ -223,6 +235,11 @@ public class StreamingMetrics
     public DateTime StartTime { get; set; } = DateTime.UtcNow;
     public TimeSpan Uptime => DateTime.UtcNow - StartTime;
     public Dictionary<string, object> CustomMetrics { get; set; } = new();
+
+    // Properties expected by Infrastructure services
+    public int TotalDataPoints { get; set; }
+    public double ThroughputPerSecond { get; set; }
+    public DateTime LastSuccessfulUpdate { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
@@ -523,4 +540,8 @@ public class StreamingAlert
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime Timestamp { get; set; } = DateTime.UtcNow; // Added missing property
     public bool IsAcknowledged { get; set; }
+
+    // Properties expected by Infrastructure services
+    public string StreamId { get; set; } = string.Empty;
+    public DateTime TriggeredAt { get; set; } = DateTime.UtcNow;
 }

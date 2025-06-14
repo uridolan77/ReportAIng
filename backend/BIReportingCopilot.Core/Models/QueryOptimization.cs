@@ -35,6 +35,13 @@ public class QueryOptimizationResult
     public PerformancePrediction? PerformancePrediction { get; set; }
     public List<IndexSuggestion> IndexSuggestions { get; set; } = new();
     public ComplexityAnalysis? ComplexityAnalysis { get; set; }
+
+    // Properties expected by QueryOptimizer
+    public string Explanation { get; set; } = string.Empty;
+    public double ConfidenceScore { get; set; }
+    public double PerformanceImprovementEstimate { get; set; }
+    public List<string> OptimizationSteps { get; set; } = new();
+    public List<string> IndexRecommendations { get; set; } = new();
 }
 
 /// <summary>

@@ -5,6 +5,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Streaming;
+using DashboardModel = BIReportingCopilot.Core.Models.Dashboard;
 
 namespace BIReportingCopilot.Infrastructure.Handlers;
 
@@ -195,7 +196,7 @@ public class GetRealTimeDashboardQueryHandler : IRequestHandler<GetRealTimeDashb
 /// <summary>
 /// Command handler for creating dashboard
 /// </summary>
-public class CreateDashboardCommandHandler : IRequestHandler<CreateDashboardCommand, Dashboard>
+public class CreateDashboardCommandHandler : IRequestHandler<CreateDashboardCommand, DashboardModel>
 {
     private readonly ILogger<CreateDashboardCommandHandler> _logger;
     private readonly IMultiModalDashboardService _dashboardService;
@@ -208,14 +209,33 @@ public class CreateDashboardCommandHandler : IRequestHandler<CreateDashboardComm
         _dashboardService = dashboardService;
     }
 
-    public async Task<Dashboard> Handle(CreateDashboardCommand request, CancellationToken cancellationToken)
+    public async Task<DashboardModel> Handle(CreateDashboardCommand request, CancellationToken cancellationToken)
     {
         try
         {
             _logger.LogDebug("🎨 Processing create dashboard command for user {UserId}: {Name}", 
                 request.UserId, request.Request.Name);
 
-            var dashboard = await _dashboardService.CreateDashboardAsync(request.Request, request.UserId);
+            // Convert CreateDashboardRequest to DashboardRequest for interface call
+            var dashboardRequest = new DashboardRequest
+            {
+                Title = request.Request.Name,
+                Description = request.Request.Description,
+                UserId = request.UserId
+            };
+
+            var dashboardResult = await _dashboardService.CreateDashboardAsync(dashboardRequest, cancellationToken);
+
+            // Convert DashboardResult back to DashboardModel for return
+            var dashboard = new DashboardModel
+            {
+                DashboardId = dashboardResult.DashboardId,
+                Name = dashboardResult.Title,
+                Description = request.Request.Description ?? string.Empty,
+                UserId = request.UserId,
+                CreatedAt = dashboardResult.CreatedAt,
+                Widgets = dashboardResult.Widgets ?? new List<DashboardWidget>()
+            };
 
             _logger.LogInformation("🎨 Dashboard '{Name}' created with ID {DashboardId} for user {UserId}", 
                 dashboard.Name, dashboard.DashboardId, request.UserId);
@@ -233,7 +253,7 @@ public class CreateDashboardCommandHandler : IRequestHandler<CreateDashboardComm
 /// <summary>
 /// Command handler for generating dashboard from description
 /// </summary>
-public class GenerateDashboardFromDescriptionCommandHandler : IRequestHandler<GenerateDashboardFromDescriptionCommand, Dashboard>
+public class GenerateDashboardFromDescriptionCommandHandler : IRequestHandler<GenerateDashboardFromDescriptionCommand, DashboardModel>
 {
     private readonly ILogger<GenerateDashboardFromDescriptionCommandHandler> _logger;
     private readonly IMultiModalDashboardService _dashboardService;
@@ -246,14 +266,30 @@ public class GenerateDashboardFromDescriptionCommandHandler : IRequestHandler<Ge
         _dashboardService = dashboardService;
     }
 
-    public async Task<Dashboard> Handle(GenerateDashboardFromDescriptionCommand request, CancellationToken cancellationToken)
+    public async Task<DashboardModel> Handle(GenerateDashboardFromDescriptionCommand request, CancellationToken cancellationToken)
     {
         try
         {
             _logger.LogDebug("🤖 Processing generate dashboard from description command for user {UserId}", request.UserId);
 
-            var dashboard = await _dashboardService.GenerateDashboardFromDescriptionAsync(
-                request.Description, request.UserId, request.Schema);
+            var dashboardCore = await _dashboardService.GenerateDashboardFromDescriptionAsync(
+                request.Description, request.UserId, cancellationToken);
+
+            // Convert Core.Models.Dashboard to DashboardModel
+            var dashboard = new DashboardModel
+            {
+                DashboardId = dashboardCore.DashboardId,
+                Name = dashboardCore.Name,
+                Description = dashboardCore.Description,
+                UserId = dashboardCore.UserId,
+                Category = dashboardCore.Category,
+                CreatedAt = dashboardCore.CreatedAt,
+                UpdatedAt = dashboardCore.UpdatedAt,
+                Widgets = dashboardCore.Widgets ?? new List<DashboardWidget>(),
+                Layout = dashboardCore.Layout,
+                Configuration = dashboardCore.Configuration,
+                Permissions = dashboardCore.Permissions
+            };
 
             _logger.LogInformation("🤖 AI-generated dashboard '{Name}' created for user {UserId} with {WidgetCount} widgets", 
                 dashboard.Name, request.UserId, dashboard.Widgets.Count);
@@ -271,7 +307,7 @@ public class GenerateDashboardFromDescriptionCommandHandler : IRequestHandler<Ge
 /// <summary>
 /// Query handler for getting user dashboards
 /// </summary>
-public class GetUserDashboardsQueryHandler : IRequestHandler<GetUserDashboardsQuery, List<Dashboard>>
+public class GetUserDashboardsQueryHandler : IRequestHandler<GetUserDashboardsQuery, List<DashboardModel>>
 {
     private readonly ILogger<GetUserDashboardsQueryHandler> _logger;
     private readonly IMultiModalDashboardService _dashboardService;
@@ -284,7 +320,7 @@ public class GetUserDashboardsQueryHandler : IRequestHandler<GetUserDashboardsQu
         _dashboardService = dashboardService;
     }
 
-    public async Task<List<Dashboard>> Handle(GetUserDashboardsQuery request, CancellationToken cancellationToken)
+    public async Task<List<DashboardModel>> Handle(GetUserDashboardsQuery request, CancellationToken cancellationToken)
     {
         try
         {
@@ -292,7 +328,7 @@ public class GetUserDashboardsQueryHandler : IRequestHandler<GetUserDashboardsQu
 
             // TODO: Implement GetUserDashboardsAsync in IMultiModalDashboardService
             // var dashboards = await _dashboardService.GetUserDashboardsAsync(request.UserId, request.Filter);
-            var dashboards = new List<Dashboard>();
+            var dashboards = new List<DashboardModel>();
 
             _logger.LogInformation("📋 Retrieved {Count} dashboards for user {UserId}", dashboards.Count, request.UserId);
 
@@ -301,7 +337,7 @@ public class GetUserDashboardsQueryHandler : IRequestHandler<GetUserDashboardsQu
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error getting dashboards for user {UserId}", request.UserId);
-            return new List<Dashboard>();
+            return new List<DashboardModel>();
         }
     }
 }
@@ -347,7 +383,7 @@ public class GetDashboardTemplatesQueryHandler : IRequestHandler<GetDashboardTem
 /// <summary>
 /// Command handler for creating dashboard from template
 /// </summary>
-public class CreateDashboardFromTemplateCommandHandler : IRequestHandler<CreateDashboardFromTemplateCommand, Dashboard>
+public class CreateDashboardFromTemplateCommandHandler : IRequestHandler<CreateDashboardFromTemplateCommand, DashboardModel>
 {
     private readonly ILogger<CreateDashboardFromTemplateCommandHandler> _logger;
     private readonly IMultiModalDashboardService _dashboardService;
@@ -360,7 +396,7 @@ public class CreateDashboardFromTemplateCommandHandler : IRequestHandler<CreateD
         _dashboardService = dashboardService;
     }
 
-    public async Task<Dashboard> Handle(CreateDashboardFromTemplateCommand request, CancellationToken cancellationToken)
+    public async Task<DashboardModel> Handle(CreateDashboardFromTemplateCommand request, CancellationToken cancellationToken)
     {
         try
         {
@@ -370,9 +406,9 @@ public class CreateDashboardFromTemplateCommandHandler : IRequestHandler<CreateD
             // TODO: Implement CreateDashboardFromTemplateAsync in IMultiModalDashboardService
             // var dashboard = await _dashboardService.CreateDashboardFromTemplateAsync(
             //     request.TemplateId, request.Name, request.UserId, request.Parameters);
-            var dashboard = new Dashboard
+            var dashboard = new DashboardModel
             {
-                Id = Guid.NewGuid().ToString(),
+                DashboardId = Guid.NewGuid().ToString(),
                 Name = request.Name,
                 UserId = request.UserId,
                 CreatedAt = DateTime.UtcNow
@@ -423,7 +459,7 @@ public class ExportDashboardCommandHandler : IRequestHandler<ExportDashboardComm
                 DashboardId = request.DashboardId,
                 Format = request.Format,
                 Data = new byte[0],
-                ExportedAt = DateTime.UtcNow
+                GeneratedAt = DateTime.UtcNow
             };
 
             _logger.LogInformation("📤 Dashboard {DashboardId} exported to {Format} ({Size} bytes)", 
@@ -466,9 +502,8 @@ public class AddWidgetToDashboardCommandHandler : IRequestHandler<AddWidgetToDas
             //     request.DashboardId, request.Request, request.UserId);
             var widget = new DashboardWidget
             {
-                Id = Guid.NewGuid().ToString(),
+                WidgetId = Guid.NewGuid().ToString(),
                 Title = "New Widget",
-                DashboardId = request.DashboardId,
                 CreatedAt = DateTime.UtcNow
             };
 

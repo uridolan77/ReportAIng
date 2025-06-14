@@ -173,9 +173,10 @@ public class GenerateIndexSuggestionsCommandHandler : IRequestHandler<GenerateIn
         {
             _logger.LogDebug("📊 Processing index suggestions generation command");
 
-            var suggestions = await _schemaOptimizationService.SuggestIndexesAsync(
-                request.QueryHistory, 
-                request.Schema);
+            // Use the interface method that takes a table name
+            // For now, use the first table from schema or a default table name
+            var tableName = request.Schema.Tables.FirstOrDefault()?.Name ?? "default_table";
+            var suggestions = await _schemaOptimizationService.SuggestIndexesAsync(tableName);
 
             _logger.LogInformation("📊 Index suggestions generated - Count: {Count}", suggestions.Count);
 
@@ -211,10 +212,8 @@ public class OptimizeSqlCommandHandler : IRequestHandler<OptimizeSqlCommand, Sql
         {
             _logger.LogDebug("⚡ Processing SQL optimization command");
 
-            var result = await _schemaOptimizationService.OptimizeSqlAsync(
-                request.OriginalSql, 
-                request.Schema, 
-                request.Goals);
+            // Use the interface method that only takes SQL string
+            var result = await _schemaOptimizationService.OptimizeSqlAsync(request.OriginalSql);
 
             _logger.LogInformation("⚡ SQL optimization completed - Confidence: {Confidence:P2}",
                 result.ConfidenceScore);

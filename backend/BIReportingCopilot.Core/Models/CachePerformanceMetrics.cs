@@ -54,4 +54,24 @@ public class CachePerformanceMetrics
     /// Performance efficiency score (0.0 to 1.0)
     /// </summary>
     public double EfficiencyScore => HitRate * 0.6 + (1.0 - (AverageResponseTime.TotalMilliseconds / 1000.0)) * 0.4;
+
+    // Properties expected by Infrastructure services
+    /// <summary>
+    /// Average time for cache hits
+    /// </summary>
+    public TimeSpan AverageHitTime { get; set; }
+
+    /// <summary>
+    /// Average time for cache misses
+    /// </summary>
+    public TimeSpan AverageMissTime { get; set; }
+
+    /// <summary>
+    /// Hit ratio (alias for HitRate)
+    /// </summary>
+    public double HitRatio
+    {
+        get => HitRate;
+        set => HitRate = value;
+    }
 }

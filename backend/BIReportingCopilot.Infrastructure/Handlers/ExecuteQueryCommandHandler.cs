@@ -55,10 +55,11 @@ public class ExecuteQueryCommandHandler : IRequestHandler<ExecuteQueryCommand, Q
             {
                 Question = request.Question,
                 SessionId = request.SessionId,
-                Options = request.Options
+                Options = request.Options,
+                UserId = request.UserId
             };
 
-            var response = await _queryService.ProcessQueryAsync(queryRequest, request.UserId);
+            var response = await _queryService.ProcessQueryAsync(queryRequest, cancellationToken);
             response.QueryId = queryId;
 
             // Notify completion

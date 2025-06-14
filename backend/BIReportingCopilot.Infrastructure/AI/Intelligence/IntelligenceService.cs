@@ -333,7 +333,25 @@ public class IntelligenceService : IQueryIntelligenceService
     {
         return Task.FromResult(new QueryAssistance
         {
-            Suggestions = new List<string> { "SELECT * FROM customers", "SELECT COUNT(*) FROM orders" },
+            Suggestions = new List<IntelligentQuerySuggestion>
+            {
+                new IntelligentQuerySuggestion
+                {
+                    QueryText = "SELECT * FROM customers",
+                    Description = "Get all customer data",
+                    Category = "Data Retrieval",
+                    Confidence = 0.8,
+                    Relevance = 0.7
+                },
+                new IntelligentQuerySuggestion
+                {
+                    QueryText = "SELECT COUNT(*) FROM orders",
+                    Description = "Count total orders",
+                    Category = "Analytics",
+                    Confidence = 0.8,
+                    Relevance = 0.7
+                }
+            },
             AutoComplete = new List<string> { "customers", "orders", "products" },
             Explanations = new List<string> { "This query will return customer data" },
             Confidence = 0.7

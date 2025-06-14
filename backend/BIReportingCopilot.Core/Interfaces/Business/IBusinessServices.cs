@@ -36,7 +36,7 @@ public interface IGlossaryManagementService
     Task<bool> DeleteGlossaryTermAsync(string termId, CancellationToken cancellationToken = default);
     Task<bool> DeleteGlossaryTermAsync(long id, CancellationToken cancellationToken = default);
     Task<List<BusinessGlossaryDto>> SearchGlossaryTermsAsync(string searchTerm, CancellationToken cancellationToken = default);
-    Task<GlossaryStatistics> GetGlossaryStatisticsAsync(CancellationToken cancellationToken = default);
+    Task<BIReportingCopilot.Core.Models.GlossaryStatistics> GetGlossaryStatisticsAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -65,6 +65,9 @@ public interface IAITuningSettingsService
     Task<bool> ResetToDefaultsAsync(CancellationToken cancellationToken = default);
     Task<AITuningSettingsDto> GetDefaultSettingsAsync(CancellationToken cancellationToken = default);
     Task<bool> ValidateSettingsAsync(AITuningSettingsDto settings, CancellationToken cancellationToken = default);
+
+    // Additional methods expected by Infrastructure services
+    Task<bool> GetBooleanSettingAsync(string settingName);
 }
 
 

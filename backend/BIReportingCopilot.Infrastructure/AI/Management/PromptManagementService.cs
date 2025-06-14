@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using IContextManager = BIReportingCopilot.Core.Interfaces.IContextManager;
+using ContextType = BIReportingCopilot.Infrastructure.Data.Contexts.ContextType;
 
 namespace BIReportingCopilot.Infrastructure.AI.Management;
 
@@ -1122,7 +1123,7 @@ public class PromptManagementService : IContextManager
                 UpdatedAt = DateTime.UtcNow,
                 CreatedBy = "system",
                 IsActive = true,
-                Version = 1,
+                Version = "1",
                 Metadata = new Dictionary<string, object>
                 {
                     ["source"] = "user_created",
@@ -1175,7 +1176,7 @@ public class PromptManagementService : IContextManager
                     Variables = new List<string> { "query", "schema", "preferences" },
                     CreatedAt = DateTime.UtcNow.AddDays(-30),
                     IsActive = true,
-                    Version = 1
+                    Version = "1"
                 },
                 new PromptTemplate
                 {
@@ -1188,7 +1189,7 @@ public class PromptManagementService : IContextManager
                     Variables = new List<string> { "data", "query", "business_context" },
                     CreatedAt = DateTime.UtcNow.AddDays(-20),
                     IsActive = true,
-                    Version = 1
+                    Version = "1"
                 }
             };
 

@@ -208,7 +208,8 @@ public enum QueryIntent
     Aggregation,
     Trend,
     Comparison,
-    Filtering
+    Filtering,
+    Unknown
 }
 
 public enum QueryComplexity
@@ -227,7 +228,12 @@ public enum VisualizationType
     ScatterPlot,
     Heatmap,
     Gauge,
-    KPI
+    KPI,
+
+    // Aliases for compatibility
+    Bar = BarChart,
+    Line = LineChart,
+    Pie = PieChart
 }
 
 public enum QueryComponentType
@@ -554,6 +560,11 @@ public class LLMUsageLog
     public string? ErrorMessage { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public Dictionary<string, object> Metadata { get; set; } = new();
+
+    /// <summary>
+    /// Method property (for compatibility)
+    /// </summary>
+    public string Method { get; set; } = string.Empty;
 }
 
 /// <summary>

@@ -24,7 +24,7 @@ public class TokenRepository : ITokenRepository
     {
         try
         {
-            var refreshTokenEntity = new RefreshTokenEntity
+            var refreshTokenEntity = new Infrastructure.Data.Entities.RefreshTokenEntity
             {
                 Token = token,
                 UserId = userId,
@@ -106,7 +106,7 @@ public class TokenRepository : ITokenRepository
                 oldTokenEntity.UpdatedDate = DateTime.UtcNow;
 
                 // Create new token
-                var newTokenEntity = new RefreshTokenEntity
+                var newTokenEntity = new Infrastructure.Data.Entities.RefreshTokenEntity
                 {
                     Token = newToken,
                     UserId = oldTokenEntity.UserId,
