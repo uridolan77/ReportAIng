@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BIReportingCopilot.Infrastructure.Repositories;
 
-public class TokenRepository : BIReportingCopilot.Core.Interfaces.Repository.ITokenRepository
+public class TokenRepository : BIReportingCopilot.Core.Interfaces.Repository.ITokenRepository, BIReportingCopilot.Infrastructure.Interfaces.ITokenRepository
 {
     private readonly BICopilotContext _context;
     private readonly ILogger<TokenRepository> _logger;

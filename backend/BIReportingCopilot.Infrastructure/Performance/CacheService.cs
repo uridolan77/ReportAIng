@@ -7,6 +7,7 @@ using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Configuration;
+using BIReportingCopilot.Infrastructure.Interfaces;
 using ModelsCacheStatistics = BIReportingCopilot.Core.Models.CacheStatistics;
 using System.Text.Json;
 using System.Collections.Concurrent;
@@ -18,7 +19,9 @@ namespace BIReportingCopilot.Infrastructure.Performance;
 /// Consolidates MemoryOptimizedCacheService, DistributedCacheService, and TestCacheService functionality
 /// Provides automatic fallback from distributed to memory cache with advanced features
 /// </summary>
-public class CacheService : ICacheService
+public class CacheService : 
+    BIReportingCopilot.Core.Interfaces.Cache.ICacheService,
+    BIReportingCopilot.Infrastructure.Interfaces.ICacheService
 {
     private readonly IMemoryCache _memoryCache;
     private readonly IDistributedCache? _distributedCache;
@@ -647,6 +650,15 @@ public class CacheService : ICacheService
             _logger.LogError(ex, "Error removing pattern {Pattern}", pattern);
             throw;
         }
+    }
+
+    #endregion
+
+    #region Infrastructure Interface Implementation
+
+    async Task BIReportingCopilot.Infrastructure.Interfaces.ICacheService.ClearAsync()
+    {
+        await ClearAsync(CancellationToken.None);
     }
 
     #endregion

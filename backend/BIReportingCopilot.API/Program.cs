@@ -570,7 +570,7 @@ else
 builder.Services.AddMemoryCache();
 
 // Unified cache service with built-in distributed caching support
-builder.Services.AddSingleton<ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();
+builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Interfaces.ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();
 
 // ===== SEMANTIC CACHE & VECTOR SEARCH SERVICES =====
 // Register vector search service for semantic similarity
@@ -643,8 +643,8 @@ builder.Services.AddScoped<IStreamingSqlQueryService>(provider =>
 builder.Services.AddScoped<IUserService, BIReportingCopilot.Infrastructure.Authentication.UserService>();
 builder.Services.AddScoped<IAuditService, BIReportingCopilot.Infrastructure.Data.AuditService>();
 builder.Services.AddScoped<IAuthenticationService, BIReportingCopilot.Infrastructure.Authentication.AuthenticationService>();
-// TODO: Create IMfaService interface
-// builder.Services.AddScoped<IMfaService, BIReportingCopilot.Infrastructure.Authentication.MfaService>();
+// MFA Service registration
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Security.IMfaService, BIReportingCopilot.Infrastructure.Authentication.MfaService>();
 // Unified notification services - NotificationManagementService implements both IEmailService and ISmsService
 builder.Services.AddScoped<IEmailService>(provider =>
     provider.GetRequiredService<BIReportingCopilot.Infrastructure.Messaging.NotificationManagementService>());
@@ -668,16 +668,42 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISecretsMa
 // Removed complex decorator patterns for better maintainability and performance
 
 // ===== INFRASTRUCTURE SERVICES =====
-// TODO: Fix missing interfaces
-// builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IPasswordHasher, BIReportingCopilot.Infrastructure.Security.PasswordHasher>();
+// Password hasher service registration
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Security.IPasswordHasher, BIReportingCopilot.Infrastructure.Security.PasswordHasher>();
+// Core infrastructure services
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Cache.ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Security.IAuditService, BIReportingCopilot.Infrastructure.Data.AuditService>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.AI.ISemanticAnalyzer, BIReportingCopilot.Infrastructure.AI.Analysis.QueryAnalysisService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Data.Contexts.IDbContextFactory, BIReportingCopilot.Infrastructure.Data.Contexts.DbContextFactory>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IContextManager, BIReportingCopilot.Infrastructure.AI.Management.PromptManagementService>();
+// AI services
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.AI.IAdvancedNLUService, BIReportingCopilot.Infrastructure.AI.Intelligence.NLUService>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.AI.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.Caching.SemanticCacheService>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Business.IAITuningSettingsService, BIReportingCopilot.Infrastructure.Business.AITuningSettingsService>();
+
+// Register UserRepository for both Core and Infrastructure interfaces
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Repository.IUserRepository, BIReportingCopilot.Infrastructure.Repositories.UserRepository>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.IUserRepository, BIReportingCopilot.Infrastructure.Repositories.UserRepository>();
+
+// Register TuningService for Infrastructure interface
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ITuningService, BIReportingCopilot.Infrastructure.Business.TuningService>();
+
+// Register TokenRepository for both Core and Infrastructure interfaces
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Repository.ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
+
+// Register SchemaManagementService for Infrastructure interface
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
+
 // IConnectionStringProvider already registered before configuration validation
 builder.Services.AddScoped<IDatabaseInitializationService, BIReportingCopilot.Infrastructure.Data.DatabaseInitializationService>();
 // TODO: Fix missing interfaces
 // builder.Services.AddScoped<ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
 // Focused tuning services (Enhancement #1: Refactor "God" Services)
 builder.Services.AddScoped<IBusinessTableManagementService, BIReportingCopilot.Infrastructure.Business.BusinessTableManagementService>();
-// TODO: Fix ambiguous interface reference
-// builder.Services.AddScoped<IQueryPatternManagementService, BIReportingCopilot.Infrastructure.Query.QueryPatternManagementService>();
+// Query Pattern Management Service - register the concrete implementation and wrapper
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Query.QueryPatternManagementService>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Business.IQueryPatternManagementService, BIReportingCopilot.Infrastructure.Business.BusinessQueryPatternManagementService>();
 builder.Services.AddScoped<IGlossaryManagementService, BIReportingCopilot.Infrastructure.Business.GlossaryManagementService>();
 builder.Services.AddScoped<IQueryCacheService, BIReportingCopilot.Infrastructure.Query.QueryCacheService>();
 

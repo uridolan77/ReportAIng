@@ -16,7 +16,7 @@ namespace BIReportingCopilot.Infrastructure.Repositories;
 /// Unified user repository implementing both domain model and entity operations
 /// Consolidates UserRepository and UserEntityRepository functionality
 /// </summary>
-public class UserRepository : BIReportingCopilot.Core.Interfaces.Repository.IUserRepository, IUserEntityRepository
+public class UserRepository : BIReportingCopilot.Core.Interfaces.Repository.IUserRepository, IUserEntityRepository, BIReportingCopilot.Infrastructure.Interfaces.IUserRepository
 {
     private readonly BICopilotContext _context;
     private readonly ILogger<UserRepository> _logger;
@@ -1141,6 +1141,18 @@ public class UserRepository : BIReportingCopilot.Core.Interfaces.Repository.IUse
             _logger.LogError(ex, "❌ Error checking if user exists by email: {Email}", email);
             throw;
         }
+    }
+
+    #endregion
+
+    #region Infrastructure.Interfaces.IUserRepository Implementation
+
+    /// <summary>
+    /// Delete async for Infrastructure interface (returns Task instead of Task&lt;bool&gt;)
+    /// </summary>
+    async Task BIReportingCopilot.Infrastructure.Interfaces.IUserRepository.DeleteAsync(string id, CancellationToken cancellationToken)
+    {
+        await DeleteAsync(id, cancellationToken);
     }
 
     #endregion
