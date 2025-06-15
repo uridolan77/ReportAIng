@@ -18,7 +18,7 @@ public class InMemoryVectorSearchService : IVectorSearchService
     private readonly IAIService _aiService;
     private readonly ConcurrentDictionary<string, VectorEntry> _vectorIndex;
     private readonly object _indexLock = new object();
-    private VectorSearchMetrics _metrics;
+    private BIReportingCopilot.Core.Interfaces.AI.VectorSearchMetrics _metrics;
 
     public InMemoryVectorSearchService(
         ILogger<InMemoryVectorSearchService> logger,
@@ -27,7 +27,7 @@ public class InMemoryVectorSearchService : IVectorSearchService
         _logger = logger;
         _aiService = aiService;
         _vectorIndex = new ConcurrentDictionary<string, VectorEntry>();
-        _metrics = new VectorSearchMetrics();
+        _metrics = new BIReportingCopilot.Core.Interfaces.AI.VectorSearchMetrics();
     }
 
     /// <summary>
@@ -62,33 +62,33 @@ public class InMemoryVectorSearchService : IVectorSearchService
     /// <summary>
     /// Store query embedding with metadata
     /// </summary>
-    public Task<string> StoreQueryEmbeddingAsync(
-        string queryText,
-        string sqlQuery,
-        QueryResponse response,
+    public Task StoreQueryEmbeddingAsync(
+        string queryId,
+        string query,
         float[] embedding,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var embeddingId = Guid.NewGuid().ToString();
+            var embeddingId = queryId;
 
             var vectorEntry = new VectorEntry
             {
                 Id = embeddingId,
-                QueryText = queryText,
-                SqlQuery = sqlQuery,
-                Response = response,
+                QueryText = query,
+                SqlQuery = string.Empty, // Not provided in this method
+                Response = null, // Not provided in this method
                 Embedding = embedding,
                 CreatedAt = DateTime.UtcNow,
                 LastAccessed = DateTime.UtcNow,
                 AccessCount = 0,
+                Text = query,
+                Vector = embedding,
+                IndexedAt = DateTime.UtcNow,
                 Metadata = new Dictionary<string, object>
                 {
-                    ["query_length"] = queryText.Length,
-                    ["sql_length"] = sqlQuery.Length,
-                    ["execution_time"] = response.ExecutionTimeMs,
-                    ["confidence"] = response.Confidence
+                    ["query_length"] = query.Length,
+                    ["embedding_dimensions"] = embedding.Length
                 }
             };
 
@@ -100,9 +100,9 @@ public class InMemoryVectorSearchService : IVectorSearchService
             }
 
             _logger.LogDebug("💾 Stored embedding {Id} for query: {Query}",
-                embeddingId, queryText.Substring(0, Math.Min(50, queryText.Length)));
+                embeddingId, query.Substring(0, Math.Min(50, query.Length)));
 
-            return Task.FromResult(embeddingId);
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
@@ -393,7 +393,7 @@ public class InMemoryVectorSearchService : IVectorSearchService
     /// <summary>
     /// Clear the entire vector index
     /// </summary>
-    public Task<bool> ClearIndexAsync(CancellationToken cancellationToken = default)
+    public Task ClearIndexAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -402,19 +402,19 @@ public class InMemoryVectorSearchService : IVectorSearchService
 
             lock (_indexLock)
             {
-                _metrics.TotalEmbeddings = 0;
-                _metrics.TotalSearches = 0;
+                _metrics.DocumentCount = 0;
+                _metrics.QueryCount = 0;
                 _metrics.AverageSearchTime = 0;
                 _metrics.IndexSizeBytes = 0;
             }
 
             _logger.LogInformation("🗑️ Cleared vector index - Removed {Count} entries", count);
-            return Task.FromResult(true);
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error clearing vector index");
-            return Task.FromResult(false);
+            return Task.CompletedTask;
         }
     }
 
@@ -510,12 +510,17 @@ public class InMemoryVectorSearchService : IVectorSearchService
         public string Id { get; set; } = string.Empty;
         public string QueryText { get; set; } = string.Empty;
         public string SqlQuery { get; set; } = string.Empty;
-        public QueryResponse Response { get; set; } = new();
+        public QueryResponse? Response { get; set; }
         public float[] Embedding { get; set; } = Array.Empty<float>();
         public DateTime CreatedAt { get; set; }
         public DateTime LastAccessed { get; set; }
         public int AccessCount { get; set; }
         public Dictionary<string, object> Metadata { get; set; } = new();
+        
+        // Additional properties for compatibility
+        public string Text { get; set; } = string.Empty;
+        public float[] Vector { get; set; } = Array.Empty<float>();
+        public DateTime IndexedAt { get; set; }
     }
 
     #region Missing Interface Method Implementations
@@ -728,34 +733,196 @@ public class InMemoryVectorSearchService : IVectorSearchService
     }
 
     /// <summary>
-    /// Store query embedding with simple signature (IVectorSearchService interface)
-    /// </summary>
-    public async Task<string> StoreQueryEmbeddingAsync(string queryId, string query, float[] embedding, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var metadata = new Dictionary<string, object>
-            {
-                ["type"] = "query",
-                ["queryId"] = queryId,
-                ["timestamp"] = DateTime.UtcNow
-            };
-
-            return await IndexDocumentAsync(queryId, query, metadata, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ Error storing query embedding: {QueryId}", queryId);
-            throw;
-        }
-    }
-
     /// <summary>
     /// Find similar queries (IVectorSearchService interface)
     /// </summary>
     public async Task<List<SemanticSearchResult>> FindSimilarQueriesAsync(string query, double threshold = 0.8, int maxResults = 5, CancellationToken cancellationToken = default)
     {
         return await FindSimilarQueriesByTextAsync(query, threshold, maxResults, cancellationToken);
+    }
+
+    // Additional IVectorSearchService interface implementations
+    public async Task<List<VectorSearchResult>> SearchByVectorAsync(float[] vector, int maxResults = 10, double similarityThreshold = 0.7, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var results = new List<VectorSearchResult>();
+            var searchResults = new List<(VectorEntry entry, double similarity)>();
+
+            foreach (var kvp in _vectorIndex)
+            {
+                var similarity = CosineSimilarity(vector, kvp.Value.Vector);
+                if (similarity >= similarityThreshold)
+                {
+                    searchResults.Add((kvp.Value, similarity));
+                }
+            }
+
+            var topResults = searchResults
+                .OrderByDescending(r => r.similarity)
+                .Take(maxResults);
+
+            foreach (var (entry, similarity) in topResults)
+            {
+                results.Add(new VectorSearchResult
+                {
+                    Id = entry.Id,
+                    Text = entry.Text,
+                    Score = similarity,
+                    Metadata = entry.Metadata
+                });
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in SearchByVectorAsync");
+            return new List<VectorSearchResult>();
+        }
+    }
+
+    public async Task<string> IndexDocumentAsync(VectorDocument document, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var vector = await _aiService.GenerateEmbeddingAsync(document.Content, cancellationToken);
+            var id = document.Id ?? Guid.NewGuid().ToString();
+            
+            var entry = new VectorEntry
+            {
+                Id = id,
+                QueryText = document.Content,
+                Text = document.Content,
+                Embedding = vector,
+                Vector = vector,
+                Metadata = document.Metadata ?? new Dictionary<string, object>(),
+                CreatedAt = DateTime.UtcNow,
+                IndexedAt = DateTime.UtcNow
+            };
+
+            _vectorIndex.AddOrUpdate(id, entry, (key, oldValue) => entry);
+            _metrics.DocumentCount = _vectorIndex.Count;
+
+            _logger.LogDebug("Document indexed successfully with ID: {DocumentId}", id);
+            return id;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error indexing document: {DocumentId}", document.Id);
+            throw;
+        }
+    }
+
+    public async Task<bool> UpdateDocumentAsync(string documentId, VectorDocument document, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!_vectorIndex.ContainsKey(documentId))
+            {
+                return false;
+            }
+
+            var vector = await _aiService.GenerateEmbeddingAsync(document.Content, cancellationToken);
+            
+            var entry = new VectorEntry
+            {
+                Id = documentId,
+                QueryText = document.Content,
+                Text = document.Content,
+                Embedding = vector,
+                Vector = vector,
+                Metadata = document.Metadata ?? new Dictionary<string, object>(),
+                CreatedAt = DateTime.UtcNow,
+                IndexedAt = DateTime.UtcNow
+            };
+
+            _vectorIndex.TryUpdate(documentId, entry, _vectorIndex[documentId]);
+            _logger.LogDebug("Document updated successfully: {DocumentId}", documentId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating document: {DocumentId}", documentId);
+            return false;
+        }
+    }
+
+    public async Task<VectorIndexStatistics> GetIndexStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        return await Task.FromResult(new VectorIndexStatistics
+        {
+            TotalDocuments = _vectorIndex.Count,
+            IndexSize = _vectorIndex.Count * 1536, // Approximate size based on embedding dimensions
+            LastUpdated = DateTime.UtcNow,
+            AverageQueryTime = _metrics.AverageQueryTime,
+            TotalQueries = _metrics.TotalQueries
+        });
+    }
+
+    public async Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Basic health check - ensure the index is accessible
+            var count = _vectorIndex.Count;
+            return await Task.FromResult(true);
+        }
+        catch
+        {
+            return await Task.FromResult(false);
+        }
+    }
+
+    public async Task<List<string>> FindSimilarQueriesByTextAsync(string text, int maxResults = 10, double threshold = 0.7, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var embedding = await _aiService.GenerateEmbeddingAsync(text, cancellationToken);
+            var results = await SearchByVectorAsync(embedding, maxResults, threshold, cancellationToken);
+            return results.Select(r => r.Text).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in FindSimilarQueriesByTextAsync");
+            return new List<string>();
+        }
+    }
+
+    /// <summary>
+    /// Find similar queries by text (IVectorSearchService interface)
+    /// </summary>
+    public async Task<List<VectorSearchResult>> FindSimilarQueriesAsync(string query, int maxResults = 10, double threshold = 0.7, CancellationToken cancellationToken = default)
+    {
+        return await SearchAsync(query, maxResults, threshold, cancellationToken);
+    }
+
+    /// <summary>
+    /// Calculate cosine similarity between two vectors
+    /// </summary>
+    private static double CosineSimilarity(float[] vector1, float[] vector2)
+    {
+        if (vector1.Length != vector2.Length)
+            return 0.0;
+
+        double dotProduct = 0.0;
+        double magnitude1 = 0.0;
+        double magnitude2 = 0.0;
+
+        for (int i = 0; i < vector1.Length; i++)
+        {
+            dotProduct += vector1[i] * vector2[i];
+            magnitude1 += vector1[i] * vector1[i];
+            magnitude2 += vector2[i] * vector2[i];
+        }
+
+        magnitude1 = Math.Sqrt(magnitude1);
+        magnitude2 = Math.Sqrt(magnitude2);
+
+        if (magnitude1 == 0.0 || magnitude2 == 0.0)
+            return 0.0;
+
+        return dotProduct / (magnitude1 * magnitude2);
     }
 
     #endregion

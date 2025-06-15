@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 using System.Security.Claims;
 using System.ComponentModel.DataAnnotations;
@@ -127,11 +128,9 @@ public class MfaController : ControllerBase
                 UserId = Guid.Parse(userId),
                 ChallengeId = request.Code, // This might need proper mapping based on your use case
                 Code = request.Code
-            };
+            };            var result = await _mfaService.ValidateMfaAsync(challengeRequest);
 
-            var result = await _mfaService.ValidateMfaAsync(challengeRequest);
-
-            if (!result)
+            if (result == null || !result.Success)
                 return BadRequest("Invalid MFA code");
 
             return Ok(new MfaValidationResult
@@ -156,13 +155,11 @@ public class MfaController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized("User not found");
-
-            var backupCodes = await _mfaService.GenerateBackupCodesAsync(userId);
+                return Unauthorized("User not found");            var backupCodesResult = await _mfaService.GenerateBackupCodesAsync(userId);
 
             return Ok(new BackupCodesResponse
             {
-                BackupCodes = backupCodes,
+                BackupCodes = backupCodesResult.BackupCodes.ToArray(),
                 Message = "New backup codes generated. Please store them securely."
             });
         }

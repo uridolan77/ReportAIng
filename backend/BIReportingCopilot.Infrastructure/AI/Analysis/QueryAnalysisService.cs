@@ -3,11 +3,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using IQueryClassifier = BIReportingCopilot.Core.Interfaces.IQueryClassifier;
+using ISemanticAnalyzer = BIReportingCopilot.Core.Interfaces.AI.ISemanticAnalyzer;
 
 namespace BIReportingCopilot.Infrastructure.AI.Analysis;
 
@@ -84,15 +86,16 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
             var analysis = new SemanticAnalysisResult
             {
                 Text = naturalLanguageQuery,
+                Keywords = keywords,
                 Entities = entities,
-                Confidence = CalculateConfidenceScore(entities, keywords, intent),
+                ConfidenceScore = CalculateConfidenceScore(entities, keywords, intent),
                 Metadata = ExtractMetadata(naturalLanguageQuery, entities, keywords)
             };
 
             // Cache the result
             await _cacheService.SetAsync(cacheKey, analysis, TimeSpan.FromHours(1));
 
-            _logger.LogDebug("Semantic analysis completed with confidence: {Confidence}", analysis.Confidence);
+            _logger.LogDebug("Semantic analysis completed with confidence: {Confidence}", analysis.ConfidenceScore);
             return analysis;
         }
         catch (Exception ex)
@@ -178,9 +181,9 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         }
     }
 
-    public Task<List<SemanticEntity>> ExtractEntitiesAsync(string query)
+    public Task<List<EntityExtraction>> ExtractEntitiesAsync(string query)
     {
-        var entities = new List<SemanticEntity>();
+        var entities = new List<EntityExtraction>();
         var lowerQuery = query.ToLowerInvariant();
 
         // Extract entities using pattern matching
@@ -190,11 +193,10 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
             {
                 var matches = Regex.Matches(lowerQuery, $@"\b{Regex.Escape(pattern)}\b", RegexOptions.IgnoreCase);
                 foreach (Match match in matches)
-                {
-                    entities.Add(new SemanticEntity
+                {                    entities.Add(new EntityExtraction
                     {
                         Text = match.Value,
-                        Type = entityType,
+                        Type = entityType.ToString(),
                         Confidence = 0.8, // High confidence for pattern matches
                         StartPosition = match.Index,
                         EndPosition = match.Index + match.Length
@@ -268,10 +270,9 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
             if (cachedResult != null)
             {
                 return cachedResult;
-            }
-
-            // Get semantic analysis (reuse from ISemanticAnalyzer implementation)
-            var semanticAnalysis = await AnalyzeAsync(query);
+            }            // Get semantic analysis (reuse from ISemanticAnalyzer implementation)
+            var semanticAnalysisResult = await AnalyzeAsync(query);
+            var semanticAnalysis = ConvertToSemanticAnalysis(semanticAnalysisResult);
 
             var classification = new QueryClassification
             {
@@ -300,11 +301,11 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         }
     }
 
-    public async Task<QueryComplexityScore> AnalyzeComplexityAsync(string query)
-    {
+    public async Task<QueryComplexityScore> AnalyzeComplexityAsync(string query)    {
         try
         {
-            var semanticAnalysis = await AnalyzeAsync(query);
+            var semanticAnalysisResult = await AnalyzeAsync(query);
+            var semanticAnalysis = ConvertToSemanticAnalysis(semanticAnalysisResult);
             var factors = new List<ComplexityFactor>();
             var score = 0;
 
@@ -538,7 +539,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         return stopWords.Contains(word);
     }
 
-    private double CalculateConfidenceScore(List<SemanticEntity> entities, List<string> keywords, QueryIntent intent)
+    private double CalculateConfidenceScore(List<EntityExtraction> entities, List<string> keywords, QueryIntent intent)
     {
         var score = 0.5; // Base score
 
@@ -555,15 +556,14 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         return Math.Min(1.0, score);
     }
 
-    private Dictionary<string, object> ExtractMetadata(string query, List<SemanticEntity> entities, List<string> keywords)
+    private Dictionary<string, object> ExtractMetadata(string query, List<EntityExtraction> entities, List<string> keywords)
     {
         return new Dictionary<string, object>
         {
             ["word_count"] = query.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
             ["entity_count"] = entities.Count,
-            ["keyword_count"] = keywords.Count,
-            ["has_aggregation"] = entities.Any(e => e.Type == EntityType.Aggregation),
-            ["has_date_filter"] = entities.Any(e => e.Type == EntityType.DateRange),
+            ["keyword_count"] = keywords.Count,            ["has_aggregation"] = entities.Any(e => e.Type == EntityType.Aggregation.ToString()),
+            ["has_date_filter"] = entities.Any(e => e.Type == EntityType.DateRange.ToString()),
             ["complexity_level"] = "medium"
         };
     }
@@ -580,18 +580,17 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         return "low";
     }
 
-    private List<SemanticEntity> ExtractNumbers(string query)
+    private List<EntityExtraction> ExtractNumbers(string query)
     {
-        var entities = new List<SemanticEntity>();
+        var entities = new List<EntityExtraction>();
         var numberPattern = @"\b\d+(?:\.\d+)?\b";
         var matches = Regex.Matches(query, numberPattern);
 
         foreach (Match match in matches)
         {
-            entities.Add(new SemanticEntity
+            entities.Add(new EntityExtraction
             {
-                Text = match.Value,
-                Type = EntityType.Number,
+                Text = match.Value,                    Type = EntityType.Number.ToString(),
                 Confidence = 0.9,
                 StartPosition = match.Index,
                 EndPosition = match.Index + match.Length,
@@ -602,9 +601,9 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         return entities;
     }
 
-    private List<SemanticEntity> ExtractDates(string query)
+    private List<EntityExtraction> ExtractDates(string query)
     {
-        var entities = new List<SemanticEntity>();
+        var entities = new List<EntityExtraction>();
         var datePatterns = new[]
         {
             @"\b\d{4}-\d{2}-\d{2}\b", // YYYY-MM-DD
@@ -617,10 +616,10 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
             var matches = Regex.Matches(query, pattern);
             foreach (Match match in matches)
             {
-                entities.Add(new SemanticEntity
+                entities.Add(new EntityExtraction
                 {
                     Text = match.Value,
-                    Type = EntityType.DateRange,
+                    Type = EntityType.DateRange.ToString(),
                     Confidence = 0.95,
                     StartPosition = match.Index,
                     EndPosition = match.Index + match.Length,
@@ -667,7 +666,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         return new SemanticAnalysisResult
         {
             Text = query,
-            Entities = new List<SemanticEntity>(),
+            Entities = new List<EntityExtraction>(),
             Confidence = 0.3,
             Metadata = new Dictionary<string, object>
             {
@@ -684,7 +683,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
             OriginalQuery = query,
             ProcessedQuery = query,
             Intent = QueryIntent.General,
-            Entities = new List<SemanticEntity>(),
+            Entities = new List<EntityExtraction>(),
             Keywords = ExtractKeywords(query),
             ConfidenceScore = 0.3,
             Metadata = new Dictionary<string, object> { ["fallback"] = true }
@@ -893,7 +892,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
 
     private int CountAggregations(string query, SemanticAnalysis semanticAnalysis)
     {
-        return semanticAnalysis.Entities.Count(e => e.Type == EntityType.Aggregation);
+        return semanticAnalysis.Entities.Count(e => e.Type == EntityType.Aggregation.ToString());
     }
 
     private int CountConditions(string query)
@@ -989,17 +988,180 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
     /// <summary>
     /// Calculate similarity async (ISemanticAnalyzer interface)
     /// </summary>
-    public async Task<BIReportingCopilot.Core.Models.SemanticSimilarity> CalculateSimilarityAsync(string query1, string query2, CancellationToken cancellationToken = default)
+    public async Task<double> CalculateSimilarityAsync(string query1, string query2, CancellationToken cancellationToken = default)
     {
         var result = await CalculateSimilarityAsync(query1, query2);
-        return new BIReportingCopilot.Core.Models.SemanticSimilarity
+        return result.SimilarityScore;
+    }
+
+    /// <summary>
+    /// Extract keywords async (ISemanticAnalyzer interface)
+    /// </summary>
+    public async Task<List<string>> ExtractKeywordsAsync(string text, int maxKeywords = 10, CancellationToken cancellationToken = default)
+    {
+        var analysis = await AnalyzeAsync(text, cancellationToken);
+        return analysis.Keywords.Take(maxKeywords).ToList();
+    }
+
+    /// <summary>
+    /// Analyze sentiment async (ISemanticAnalyzer interface)
+    /// </summary>
+    public async Task<SentimentAnalysis> AnalyzeSentimentAsync(string text, CancellationToken cancellationToken = default)
+    {
+        try
         {
-            Query1 = result.Query1,
-            Query2 = result.Query2,
-            SimilarityScore = result.SimilarityScore,
-            CommonEntities = result.CommonEntities,
-            CommonKeywords = result.CommonKeywords
-        };
+            // Simple sentiment analysis based on keywords
+            var positiveWords = new[] { "good", "great", "excellent", "positive", "success", "high", "best", "increase", "improve" };
+            var negativeWords = new[] { "bad", "poor", "terrible", "negative", "failure", "low", "worst", "decrease", "decline" };
+
+            var words = text.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var positiveCount = words.Count(w => positiveWords.Contains(w));
+            var negativeCount = words.Count(w => negativeWords.Contains(w));
+            var totalCount = positiveCount + negativeCount;
+
+            if (totalCount == 0)
+            {
+                return new SentimentAnalysis
+                {
+                    Sentiment = "Neutral",
+                    Confidence = 0.5,
+                    PositiveScore = 0.5,
+                    NegativeScore = 0.5
+                };
+            }
+
+            var positiveRatio = (double)positiveCount / totalCount;
+            var sentiment = positiveRatio > 0.6 ? "Positive" : positiveRatio < 0.4 ? "Negative" : "Neutral";
+
+            return new SentimentAnalysis
+            {
+                Sentiment = sentiment,
+                Confidence = Math.Abs(positiveRatio - 0.5) * 2,
+                PositiveScore = positiveRatio,
+                NegativeScore = 1 - positiveRatio
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error analyzing sentiment for text: {Text}", text);
+            return new SentimentAnalysis
+            {
+                Sentiment = "Neutral",
+                Confidence = 0.0,
+                PositiveScore = 0.5,
+                NegativeScore = 0.5
+            };
+        }
+    }
+
+    /// <summary>
+    /// Classify text async (ISemanticAnalyzer interface)
+    /// </summary>
+    public Task<TextClassification> ClassifyTextAsync(string text, List<string> categories, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var lowerText = text.ToLowerInvariant();
+            var scores = new List<ClassificationScore>();
+
+            foreach (var category in categories)
+            {
+                var score = CalculateCategoryScore(lowerText, category.ToLowerInvariant());
+                scores.Add(new ClassificationScore
+                {
+                    Category = category,
+                    Score = score
+                });
+            }
+
+            var bestScore = scores.OrderByDescending(s => s.Score).First();
+
+            return Task.FromResult(new TextClassification
+            {
+                Category = bestScore.Category,
+                Confidence = bestScore.Score,
+                AllScores = scores
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error classifying text: {Text}", text);
+            return Task.FromResult(new TextClassification
+            {
+                Category = categories.FirstOrDefault() ?? "Unknown",
+                Confidence = 0.0,
+                AllScores = categories.Select(c => new ClassificationScore { Category = c, Score = 0.0 }).ToList()
+            });
+        }
+    }
+
+    /// <summary>
+    /// Build context async (ISemanticAnalyzer interface)
+    /// </summary>
+    public async Task<SemanticContext> BuildContextAsync(string text, SchemaMetadata? schema = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var analysis = await AnalyzeAsync(text, cancellationToken);
+            var relatedTables = new List<string>();
+            var relatedColumns = new List<string>();
+
+            if (schema != null)
+            {
+                // Find related tables and columns based on text content
+                var lowerText = text.ToLowerInvariant();
+                relatedTables = schema.Tables
+                    .Where(t => lowerText.Contains(t.Name.ToLowerInvariant()))
+                    .Select(t => t.Name)
+                    .ToList();
+
+                relatedColumns = schema.Tables
+                    .SelectMany(t => t.Columns)
+                    .Where(c => lowerText.Contains(c.Name.ToLowerInvariant()))
+                    .Select(c => c.Name)
+                    .ToList();
+            }
+
+            return new SemanticContext
+            {
+                Text = text,
+                RelatedTables = relatedTables,
+                RelatedColumns = relatedColumns,
+                Keywords = analysis.Keywords,
+                Entities = analysis.Entities,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["confidence"] = analysis.ConfidenceScore,
+                    ["timestamp"] = DateTime.UtcNow
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error building semantic context for text: {Text}", text);
+            return new SemanticContext
+            {
+                Text = text,
+                RelatedTables = new List<string>(),
+                RelatedColumns = new List<string>(),
+                Keywords = new List<string>(),
+                Entities = new List<EntityExtraction>(),
+                Metadata = new Dictionary<string, object>()
+            };
+        }
+    }
+
+    private double CalculateCategoryScore(string text, string category)
+    {
+        // Simple keyword-based scoring
+        var categoryKeywords = _categoryKeywords.ContainsKey(Enum.Parse<QueryCategory>(category, true))
+            ? _categoryKeywords[Enum.Parse<QueryCategory>(category, true)]
+            : new List<string> { category };
+
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var matches = words.Count(w => categoryKeywords.Any(k => w.Contains(k)));
+
+        return matches > 0 ? (double)matches / words.Length : 0.0;
     }
 
     /// <summary>
@@ -1037,16 +1199,33 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         return new SemanticAnalysis
         {
             OriginalQuery = query,
-            Intent = result.Intent,
+            Intent = Enum.TryParse<QueryIntent>(result.Intent, true, out var intent) ? intent : QueryIntent.General,
             ConfidenceScore = result.ConfidenceScore,
             Entities = result.Entities.ToList(),
             Keywords = result.Keywords.ToList(),
             Metadata = new Dictionary<string, object>
             {
-                ["user_id"] = userId ?? "",
-                ["session_id"] = sessionId ?? "",
+                ["user_id"] = userId ?? "",                ["session_id"] = sessionId ?? "",
                 ["has_context"] = !string.IsNullOrEmpty(userId)
             }
+        };
+    }
+
+    /// <summary>
+    /// Convert SemanticAnalysisResult to SemanticAnalysis for compatibility
+    /// </summary>
+    private static SemanticAnalysis ConvertToSemanticAnalysis(SemanticAnalysisResult result)
+    {
+        return new SemanticAnalysis
+        {
+            OriginalQuery = result.Text,
+            Intent = Enum.TryParse<QueryIntent>(result.Intent, out var intent) ? intent : QueryIntent.Unknown,
+            Entities = result.Entities ?? new List<EntityExtraction>(),
+            Keywords = result.Keywords ?? new List<string>(),
+            ConfidenceScore = result.ConfidenceScore,
+            Confidence = result.ConfidenceScore,
+            ProcessedQuery = result.Text,
+            Metadata = result.Metadata ?? new Dictionary<string, object>()
         };
     }
 

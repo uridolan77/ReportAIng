@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Schema;
 using BIReportingCopilot.Core.Interfaces.Streaming;
 using BIReportingCopilot.Core.Models;
 using System.Runtime.CompilerServices;
@@ -73,6 +75,7 @@ public class StreamingService : IRealTimeStreamingService
 
         // Step 3: SQL Generation with streaming
         yield return new StreamingQueryResponse
+        
         {
             Type = StreamingResponseType.SqlGeneration,
             Content = "Generating SQL query...",
@@ -81,7 +84,8 @@ public class StreamingService : IRealTimeStreamingService
         };
 
         var sqlBuilder = new System.Text.StringBuilder();
-        var sqlStream = await _aiService.GenerateSQLStreamAsync(query, cancellationToken);
+        var context = $"Streaming query processing for user {userId}";
+        var sqlStream = await _aiService.GenerateSQLStreamAsync(query, schema, context, cancellationToken);
         await foreach (var sqlChunk in sqlStream)
         {
             sqlBuilder.Append(sqlChunk);
@@ -179,7 +183,8 @@ public class StreamingService : IRealTimeStreamingService
         };
 
         var insightBuilder = new System.Text.StringBuilder();
-        var insightStream = await _aiService.GenerateInsightStreamAsync(query, data, cancellationToken);
+        var dataString = System.Text.Json.JsonSerializer.Serialize(data);
+        var insightStream = await _aiService.GenerateInsightStreamAsync(query, dataString, cancellationToken);
         await foreach (var insightChunk in insightStream)
         {
             insightBuilder.Append(insightChunk);

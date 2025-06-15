@@ -746,7 +746,12 @@ public class QuerySuggestionService : IQuerySuggestionService
             Id = entity.Id,
             Query = entity.QueryText,
             Description = entity.Description,
-            Category = "General", // Use string instead of non-existent enum
+            Category = new SuggestionCategory 
+            { 
+                CategoryKey = "General", 
+                Title = "General", 
+                Id = 1 
+            }, // Create SuggestionCategory object
             Keywords = keywords,
             RequiredTables = requiredTables,
             Complexity = entity.Complexity,
@@ -766,6 +771,39 @@ public class QuerySuggestionService : IQuerySuggestionService
         var recencyBonus = entity.LastUsed.HasValue && entity.LastUsed.Value > DateTime.UtcNow.AddDays(-30) ? 0.2 : 0.0;
 
         return Math.Min(baseConfidence + usageBonus + recencyBonus, 1.0);
+    }
+
+    /// <summary>
+    /// Get query suggestions (interface method - legacy support)
+    /// </summary>
+    public async Task<List<QuerySuggestion>> GetQuerySuggestionsAsync(string query, string? userId = null, CancellationToken cancellationToken = default)
+    {
+        return await GetSuggestionsAsync(query, userId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Get usage analytics (interface method)
+    /// </summary>
+    public async Task<object> GetUsageAnalyticsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Return basic analytics data
+            var totalSuggestions = await _context.QuerySuggestions.CountAsync(cancellationToken);
+            var activeSuggestions = await _context.QuerySuggestions.CountAsync(s => s.IsActive, cancellationToken);
+            
+            return new
+            {
+                TotalSuggestions = totalSuggestions,
+                ActiveSuggestions = activeSuggestions,
+                GeneratedAt = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting usage analytics");
+            return new { Error = "Failed to get usage analytics" };
+        }
     }
 
     #endregion

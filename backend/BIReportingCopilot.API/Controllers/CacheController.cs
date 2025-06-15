@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Cache;
+using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core;
 using BIReportingCopilot.Core.Commands;
 using BIReportingCopilot.Infrastructure.Handlers;
+using BIReportingCopilot.Infrastructure.AI.Intelligence;
 using MediatR;
 using System.Security.Cryptography;
 using System.Text;
@@ -252,7 +255,7 @@ public class CacheController : ControllerBase
 
             _logger.LogInformation("🔍 Searching for similar queries: {Query}", request.Query);
 
-            var similarQueries = await _vectorSearchService.FindSimilarQueriesByTextAsync(
+            var similarQueries = await ((InMemoryVectorSearchService)_vectorSearchService).FindSimilarQueriesAsync(
                 request.Query,
                 request.SimilarityThreshold,
                 request.MaxResults);

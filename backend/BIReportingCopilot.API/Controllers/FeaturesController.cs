@@ -208,7 +208,7 @@ public class FeaturesController : ControllerBase
                 {
                     autocomplete_count = assistance.AutocompleteSuggestions.Count,
                     hint_count = assistance.PerformanceHints.Count,
-                    validation_errors = assistance.ValidationErrors.Count
+                    validation_errors = assistance.Corrections.Count
                 }
             });
         }

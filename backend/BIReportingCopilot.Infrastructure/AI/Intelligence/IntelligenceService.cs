@@ -2,6 +2,8 @@ using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Schema;
+using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Models;
 using System.Text.Json;
 

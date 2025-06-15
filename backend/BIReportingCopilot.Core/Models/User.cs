@@ -148,15 +148,7 @@ public class MfaSetupRequest
     public string? PhoneNumber { get; set; } // Required for SMS
 }
 
-public class MfaSetupResult
-{
-    public bool Success { get; set; }
-    public string? Secret { get; set; } // For TOTP
-    public string? QrCode { get; set; } // For TOTP
-    public string[]? BackupCodes { get; set; }
-    public string? ErrorMessage { get; set; }
-}
-
+// MfaSetupResult definition moved to IMfaService.cs interface - removed duplicate
 // MfaValidationRequest moved to PerformanceModels.cs - removed duplicate
 
 // MfaValidationResult moved to PerformanceModels.cs - removed duplicate

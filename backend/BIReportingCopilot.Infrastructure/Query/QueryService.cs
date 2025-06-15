@@ -7,6 +7,7 @@ using BIReportingCopilot.Core.Models.QuerySuggestions;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
+using BIReportingCopilot.Infrastructure.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MediatR;
@@ -470,7 +471,7 @@ public class QueryService : IQueryService
                 {
                     TotalQueries = recentQueries.Count,
                     AverageExecutionTime = recentQueries.Count > 0 ?
-                        recentQueries.Average(q => q.ExecutionTimeMs ?? 0) :
+                        recentQueries.Average(q => q.ExecutionTimeMs) :
                         0.0,
                     SuccessRate = recentQueries.Count > 0 ?
                         (double)recentQueries.Count(q => q.IsSuccessful) / recentQueries.Count :
@@ -634,6 +635,104 @@ public class QueryService : IQueryService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error finding similar queries");
+            return new List<UnifiedQueryHistoryEntity>();
+        }
+    }
+
+    // Missing IQueryService interface methods
+    public async Task<bool> SubmitFeedbackAsync(QueryFeedback feedback, string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Submitting query feedback for user {UserId}", userId);
+            
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            {
+                var queryContext = (QueryDbContext)context;
+                
+                // Create feedback entity
+                var feedbackEntity = new QueryFeedbackEntity
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    UserId = userId,
+                    QueryId = feedback.QueryId,
+                    Rating = feedback.Rating,
+                    Comments = feedback.Comments,
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                queryContext.QueryFeedback.Add(feedbackEntity);
+                await queryContext.SaveChangesAsync(cancellationToken);
+                
+                _logger.LogInformation("Query feedback submitted successfully for user {UserId}", userId);
+                return true;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error submitting query feedback for user {UserId}", userId);
+            return false;
+        }
+    }
+
+    public async Task<List<QuerySuggestion>> GetQuerySuggestionsAsync(string partialQuery, string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Getting query suggestions for user {UserId}, partial query: {PartialQuery}", userId, partialQuery);
+            
+            var suggestions = new List<QuerySuggestion>();
+            
+            // Add some basic suggestions based on partial query
+            if (!string.IsNullOrWhiteSpace(partialQuery))
+            {
+                suggestions.Add(new QuerySuggestion
+                {
+                    Text = $"{partialQuery} by date",
+                    Confidence = 0.8,
+                    Category = new SuggestionCategory { CategoryKey = "Temporal", Title = "Temporal" }
+                });
+                
+                suggestions.Add(new QuerySuggestion
+                {
+                    Text = $"{partialQuery} top 10",
+                    Confidence = 0.7,
+                    Category = new SuggestionCategory { CategoryKey = "Aggregation", Title = "Aggregation" }
+                });
+            }
+            
+            return suggestions;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting query suggestions for user {UserId}", userId);
+            return new List<QuerySuggestion>();
+        }
+    }
+
+    public async Task<List<UnifiedQueryHistoryEntity>> FindSimilarQueriesAsync(string query, string userId, int maxResults = 10, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Finding similar queries for user {UserId}, query: {Query}", userId, query);
+            
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async context =>
+            {
+                var queryContext = (QueryDbContext)context;
+                
+                // Find similar queries based on text similarity
+                var similarQueries = await queryContext.QueryHistory
+                    .Where(q => q.UserId == userId && q.Query.Contains(query))
+                    .Take(maxResults)
+                    .ToListAsync(cancellationToken);
+
+                _logger.LogInformation("Found {Count} similar queries for user {UserId}", similarQueries.Count, userId);
+                return similarQueries;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error finding similar queries for user {UserId}", userId);
             return new List<UnifiedQueryHistoryEntity>();
         }
     }

@@ -105,8 +105,24 @@ namespace BIReportingCopilot.Core.Models;
         Performance
     }
 
-// BusinessTableInfoDto already exists in DTOs namespace - removed duplicate
+    /// <summary>
+    /// Performance analysis result for tuning operations
+    /// </summary>
+    public class PerformanceAnalysisResult
+    {
+        public string AnalysisId { get; set; } = string.Empty;
+        public DateTime AnalysisDate { get; set; } = DateTime.UtcNow;
+        public string QueryId { get; set; } = string.Empty;
+        public string OriginalQuery { get; set; } = string.Empty;
+        public string OptimizedQuery { get; set; } = string.Empty;
+        public TimeSpan OriginalExecutionTime { get; set; }
+        public TimeSpan OptimizedExecutionTime { get; set; }
+        public double PerformanceImprovement { get; set; }
+        public List<string> OptimizationSuggestions { get; set; } = new();
+        public List<string> Warnings { get; set; } = new();
+        public Dictionary<string, object> Metrics { get; set; } = new();
+        public string Status { get; set; } = string.Empty;
+        public string? ErrorMessage { get; set; }
+    }
 
 // All other DTOs and statistics classes already exist in other files - removed duplicates
-
-// QueryResponse, EnhancedSemanticCacheEntry, SemanticCacheResult, CacheStatistics, and SemanticCacheConfiguration already exist in other files - removed duplicates

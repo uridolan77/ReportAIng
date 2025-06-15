@@ -67,7 +67,14 @@ public class VisualizationService : IVisualizationService
             var recommendedType = DetermineOptimalVisualizationType(dataAnalysis);
 
             // Use AI to generate enhanced configuration
-            var aiConfig = await _aiService.GenerateVisualizationConfigAsync(query, columns, CancellationToken.None);
+            var schema = new SchemaMetadata 
+            { 
+                Tables = new List<TableMetadata> 
+                { 
+                    new TableMetadata { Columns = columns.ToList() } 
+                } 
+            };
+            var aiConfig = await _aiService.GenerateVisualizationConfigAsync(query, schema, CancellationToken.None);
             var parsedConfig = ParseAIVisualizationConfig(aiConfig);
 
             var config = new VisualizationConfig

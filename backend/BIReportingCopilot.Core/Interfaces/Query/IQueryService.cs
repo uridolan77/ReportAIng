@@ -1,5 +1,6 @@
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.QuerySuggestions;
+using BIReportingCopilot.Core.Interfaces.AI;
 
 namespace BIReportingCopilot.Core.Interfaces.Query;
 
@@ -19,7 +20,9 @@ public interface IQueryService
     // Methods expected by Infrastructure services
     Task<QueryResponse> ProcessQueryAsync(QueryRequest request, CancellationToken cancellationToken = default);
     Task<bool> SubmitFeedbackAsync(string queryId, string feedback, CancellationToken cancellationToken = default);
+    Task<bool> SubmitFeedbackAsync(QueryFeedback feedback, string userId, CancellationToken cancellationToken = default);
     Task<List<QuerySuggestion>> GetQuerySuggestionsAsync(string partialQuery, CancellationToken cancellationToken = default);
+    Task<List<QuerySuggestion>> GetQuerySuggestionsAsync(string userId, string context, CancellationToken cancellationToken = default);
     Task<QueryResult?> GetCachedQueryAsync(string cacheKey, CancellationToken cancellationToken = default);
     Task CacheQueryAsync(string cacheKey, QueryResult result, CancellationToken cancellationToken = default);
     Task<QueryPerformanceMetrics> GetQueryPerformanceAsync(CancellationToken cancellationToken = default);
@@ -29,6 +32,7 @@ public interface IQueryService
     Task<QueryResult> ProcessAdvancedQueryAsync(QueryRequest request, CancellationToken cancellationToken = default);
     Task<double> CalculateSemanticSimilarityAsync(string query1, string query2, CancellationToken cancellationToken = default);
     Task<List<UnifiedQueryHistoryEntity>> FindSimilarQueriesAsync(string query, CancellationToken cancellationToken = default);
+    Task<List<UnifiedQueryHistoryEntity>> FindSimilarQueriesAsync(string query, string userId, int limit, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -38,6 +42,7 @@ public interface IQueryProcessor
 {
     Task<string> ProcessNaturalLanguageQueryAsync(string naturalLanguageQuery, string? context = null, CancellationToken cancellationToken = default);
     Task<QueryProcessingResult> ProcessQueryWithAnalysisAsync(string naturalLanguageQuery, string? context = null, CancellationToken cancellationToken = default);
+    Task<QueryProcessingResult> ProcessQueryAsync(string query, string userId, CancellationToken cancellationToken = default);
     Task<bool> ValidateQueryIntentAsync(string query, CancellationToken cancellationToken = default);
     Task<List<QuerySuggestion>> GetQuerySuggestionsAsync(string partialQuery, CancellationToken cancellationToken = default);
 }
@@ -62,18 +67,6 @@ public interface IQueryCacheService
 }
 
 /// <summary>
-/// Query suggestion service interface
-/// </summary>
-public interface IQuerySuggestionService
-{
-    Task<List<QuerySuggestion>> GetSuggestionsAsync(string partialQuery, string? context = null, CancellationToken cancellationToken = default);
-    Task<List<QuerySuggestion>> GetPopularQueriesAsync(int count = 10, CancellationToken cancellationToken = default);
-    Task<List<QuerySuggestion>> GetRecentQueriesAsync(string userId, int count = 10, CancellationToken cancellationToken = default);
-    Task SaveQuerySuggestionAsync(QuerySuggestion suggestion, CancellationToken cancellationToken = default);
-    Task<bool> UpdateSuggestionRatingAsync(string suggestionId, int rating, CancellationToken cancellationToken = default);
-}
-
-/// <summary>
 /// Query pattern management service interface
 /// </summary>
 public interface IQueryPatternManagementService
@@ -86,46 +79,7 @@ public interface IQueryPatternManagementService
     Task<List<QueryPattern>> FindSimilarPatternsAsync(string query, double threshold = 0.8, CancellationToken cancellationToken = default);
 }
 
-/// <summary>
-/// Query progress notifier interface
-/// </summary>
-public interface IQueryProgressNotifier
-{
-    Task NotifyQueryStartedAsync(string queryId, string userId, CancellationToken cancellationToken = default);
-    Task NotifyQueryProgressAsync(string queryId, int progressPercentage, string? message = null, CancellationToken cancellationToken = default);
-    Task NotifyQueryCompletedAsync(string queryId, QueryResult result, CancellationToken cancellationToken = default);
-    Task NotifyQueryFailedAsync(string queryId, string error, CancellationToken cancellationToken = default);
-}
-
-/// <summary>
-/// Query processing result
-/// </summary>
-public class QueryProcessingResult
-{
-    public string GeneratedSql { get; set; } = string.Empty;
-    public QueryAnalysisResult Analysis { get; set; } = new();
-    public List<string> Warnings { get; set; } = new();
-    public List<string> Suggestions { get; set; } = new();
-    public double ConfidenceScore { get; set; }
-    public TimeSpan ProcessingTime { get; set; }
-
-    // Additional properties expected by Infrastructure services
-    public string GeneratedSQL
-    {
-        get => GeneratedSql;
-        set => GeneratedSql = value;
-    }
-
-    public double Confidence
-    {
-        get => ConfidenceScore;
-        set => ConfidenceScore = value;
-    }
-
-    public SemanticAnalysis SemanticAnalysis { get; set; } = new();
-    public QueryClassificationResult Classification { get; set; } = new();
-    public Dictionary<string, object> Metadata { get; set; } = new();
-}
+// QueryProcessingResult definition moved to Core.Interfaces.AI.IAIService.cs - removed duplicate
 
 /// <summary>
 /// Cache statistics
@@ -176,6 +130,7 @@ public interface ISqlQueryService
 
     // Additional methods expected by Infrastructure services
     Task<QueryResult> ExecuteSelectQueryAsync(string sql, CancellationToken cancellationToken = default);
+    Task<QueryResult> ExecuteSelectQueryAsync(string sql, QueryOptions options, CancellationToken cancellationToken = default);
     Task<bool> ValidateSqlAsync(string sql, CancellationToken cancellationToken = default);
 }
 
@@ -189,6 +144,7 @@ public interface ISchemaOptimizationService
 
     // Additional methods expected by Infrastructure services
     Task<QueryOptimizationResult> AnalyzeQueryPerformanceAsync(string query, CancellationToken cancellationToken = default);
+    Task<QueryOptimizationResult> AnalyzeQueryPerformanceAsync(string sql, SchemaMetadata schema, QueryExecutionMetrics? metrics = null);
     Task<BIReportingCopilot.Core.Models.SchemaOptimizationMetrics> GetOptimizationMetricsAsync(CancellationToken cancellationToken = default);
     Task<BIReportingCopilot.Core.Models.SqlOptimizationResult> OptimizeSqlAsync(string sql, CancellationToken cancellationToken = default);
     Task<List<BIReportingCopilot.Core.Models.IndexSuggestion>> SuggestIndexesAsync(string tableName, CancellationToken cancellationToken = default);
@@ -222,31 +178,7 @@ public class SchemaOptimizationResult
 
 // Duplicate IQueryCacheService removed - using the one defined above
 
-/// <summary>
-/// Schema service interface
-/// </summary>
-public interface ISchemaService
-{
-    Task<SchemaMetadata> GetSchemaAsync(CancellationToken cancellationToken = default);
-    Task RefreshSchemaAsync(CancellationToken cancellationToken = default);
-    Task<List<string>> GetTableNamesAsync(CancellationToken cancellationToken = default);
-    Task<List<string>> GetColumnNamesAsync(string tableName, CancellationToken cancellationToken = default);
-
-    // Method expected by Infrastructure services
-    Task<SchemaMetadata> GetSchemaMetadataAsync(CancellationToken cancellationToken = default);
-    Task<TableMetadata?> GetTableMetadataAsync(string tableName, CancellationToken cancellationToken = default);
-    Task<SchemaMetadata> RefreshSchemaMetadataAsync(CancellationToken cancellationToken = default);
-}
-
-/// <summary>
-/// Cache service interface
-/// </summary>
-public interface ICacheService
-{
-    Task<T?> GetAsync<T>(string key);
-    Task SetAsync<T>(string key, T value, TimeSpan? expiration = null);
-    Task RemoveAsync(string key);
-    Task RemovePatternAsync(string pattern);
-    Task<bool> ExistsAsync(string key);
-    Task ClearAsync();
-}
+// Note: ISchemaService and ICacheService have been moved to their respective namespaces
+// to avoid ambiguous references. Use:
+// - BIReportingCopilot.Core.Interfaces.Schema.ISchemaService
+// - BIReportingCopilot.Core.Interfaces.Cache.ICacheService

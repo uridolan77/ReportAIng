@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core;
 
@@ -290,7 +291,7 @@ public class QuerySuggestionsController : ControllerBase
     {
         try
         {
-            var analytics = await _suggestionService.GetUsageAnalyticsAsync(fromDate, toDate);
+            var analytics = await _suggestionService.GetUsageAnalyticsAsync();
             return Ok(analytics);
         }
         catch (Exception ex)

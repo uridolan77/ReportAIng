@@ -27,6 +27,12 @@ public interface IProgressReporter
     Task ReportFailedAsync(string operationId, string error, Exception? exception = null, CancellationToken cancellationToken = default);
     Task ReportStepAsync(string operationId, string stepName, string? description = null, CancellationToken cancellationToken = default);
     IDisposable CreateScope(string operationId, string description);
+    
+    // Method used by TuningService
+    Task SendProgressUpdateAsync(string userId, double progress, string message, string stage, 
+        string? currentTable = null, string? currentColumn = null, int? tablesProcessed = null, 
+        int? totalTables = null, int? columnsProcessed = null, int? totalColumns = null, 
+        int? glossaryTermsGenerated = null, int? relationshipsFound = null, object? aiPrompt = null);
 }
 
 /// <summary>

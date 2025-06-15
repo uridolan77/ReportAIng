@@ -1574,8 +1574,8 @@ public class SchemaManagementService : ISchemaManagementService
                     table.Columns.Add(new ColumnMetadata
                     {
                         Name = columnContext.ColumnName,
-                        DataType = columnContext.DataType ?? "unknown",
-                        Description = columnContext.BusinessMeaning,
+                        DataType = columnContext.BusinessDataType ?? "unknown",
+                        Description = columnContext.BusinessDescription,
                         IsNullable = true, // Default assumption
                         IsPrimaryKey = false, // Would need additional logic to determine
                         IsForeignKey = false, // Would need additional logic to determine

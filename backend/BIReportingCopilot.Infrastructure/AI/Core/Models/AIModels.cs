@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using BIReportingCopilot.Core.Interfaces.AI;
 
 namespace BIReportingCopilot.Infrastructure.AI.Core.Models;
 
@@ -32,20 +33,7 @@ public class IntentClassification
     public DateTime ClassifiedAt { get; set; } = DateTime.UtcNow;
 }
 
-/// <summary>
-/// Semantic analysis result
-/// </summary>
-public class SemanticAnalysisResult
-{
-    public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
-    public string Query { get; set; } = string.Empty;
-    public List<ExtractedEntity> Entities { get; set; } = new();
-    public IntentClassification Intent { get; set; } = new();
-    public List<string> Keywords { get; set; } = new();
-    public Dictionary<string, double> TopicScores { get; set; } = new();
-    public double OverallConfidence { get; set; } = 0.8;
-    public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
-}
+// SemanticAnalysisResult definition moved to Core.Interfaces.AI.IAIService.cs - removed duplicate
 
 /// <summary>
 /// Query context information

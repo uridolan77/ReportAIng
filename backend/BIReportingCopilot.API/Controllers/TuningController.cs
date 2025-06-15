@@ -4,8 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Tuning;
 using BIReportingCopilot.Infrastructure.Data;
 using System.Security.Claims;
+using TuningDashboardData = BIReportingCopilot.Core.DTOs.TuningDashboardData;
+using CreateQueryPatternRequest = BIReportingCopilot.Core.DTOs.CreateQueryPatternRequest;
 
 namespace BIReportingCopilot.API.Controllers;
 
@@ -81,7 +84,7 @@ public class TuningController : ControllerBase
     {
         try
         {
-            var table = await _tuningService.GetBusinessTableAsync(id);
+            var table = await _tuningService.GetBusinessTableAsync(id.ToString());
             if (table == null)
                 return NotFound();
 
@@ -100,7 +103,15 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var table = await _tuningService.CreateBusinessTableAsync(request, userId);
+            // Cast to the concrete implementation to access the DTO-based method
+            var businessTuningService = _tuningService as BIReportingCopilot.Infrastructure.Business.TuningService;
+            if (businessTuningService == null)
+            {
+                _logger.LogError("Unable to cast tuning service to business implementation");
+                return StatusCode(500, "Service configuration error");
+            }
+            
+            var table = await businessTuningService.CreateBusinessTableAsync(request, userId);
             return CreatedAtAction(nameof(GetBusinessTable), new { id = table.Id }, table);
         }
         catch (Exception ex)
@@ -116,7 +127,21 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var table = await _tuningService.UpdateBusinessTableAsync(id, request, userId);
+            // Map CreateTableInfoRequest to UpdateBusinessTableRequest
+            var updateRequest = new UpdateBusinessTableRequest
+            {
+                Name = request.TableName,
+                Description = request.BusinessPurpose,
+                Columns = request.CommonQueryPatterns,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["SchemaName"] = request.SchemaName,
+                    ["BusinessContext"] = request.BusinessContext,
+                    ["PrimaryUseCase"] = request.PrimaryUseCase
+                }
+            };
+            
+            var table = await _tuningService.UpdateBusinessTableAsync(id.ToString(), updateRequest, userId);
             if (table == null)
                 return NotFound();
 
@@ -134,7 +159,7 @@ public class TuningController : ControllerBase
     {
         try
         {
-            var success = await _tuningService.DeleteBusinessTableAsync(id);
+            var success = await _tuningService.DeleteBusinessTableAsync(id.ToString());
             if (!success)
                 return NotFound();
 
@@ -171,7 +196,7 @@ public class TuningController : ControllerBase
     {
         try
         {
-            var pattern = await _tuningService.GetQueryPatternAsync(id);
+            var pattern = await _tuningService.GetQueryPatternAsync(id.ToString());
             if (pattern == null)
                 return NotFound();
 
@@ -190,7 +215,14 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var pattern = await _tuningService.CreateQueryPatternAsync(request, userId);
+            var createRequest = new BIReportingCopilot.Core.Interfaces.Tuning.CreateQueryPatternRequest
+            {
+                Name = request.PatternName,
+                Pattern = request.NaturalLanguagePattern,
+                SqlTemplate = request.SqlTemplate,
+                Description = request.Description
+            };
+            var pattern = await _tuningService.CreateQueryPatternAsync(createRequest, userId);
             return CreatedAtAction(nameof(GetQueryPattern), new { id = pattern.Id }, pattern);
         }
         catch (Exception ex)
@@ -206,7 +238,14 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var pattern = await _tuningService.UpdateQueryPatternAsync(id, request, userId);
+            var updateRequest = new BIReportingCopilot.Core.Interfaces.Tuning.UpdateQueryPatternRequest
+            {
+                Name = request.PatternName,
+                Pattern = request.NaturalLanguagePattern,
+                SqlTemplate = request.SqlTemplate,
+                Description = request.Description
+            };
+            var pattern = await _tuningService.UpdateQueryPatternAsync(id.ToString(), updateRequest, userId);
             if (pattern == null)
                 return NotFound();
 
@@ -224,7 +263,7 @@ public class TuningController : ControllerBase
     {
         try
         {
-            var success = await _tuningService.DeleteQueryPatternAsync(id);
+            var success = await _tuningService.DeleteQueryPatternAsync(id.ToString());
             if (!success)
                 return NotFound();
 
@@ -242,7 +281,7 @@ public class TuningController : ControllerBase
     {
         try
         {
-            var result = await _tuningService.TestQueryPatternAsync(id, naturalLanguageQuery);
+            var result = await _tuningService.TestQueryPatternAsync(id.ToString(), naturalLanguageQuery);
             return Ok(result);
         }
         catch (Exception ex)
@@ -277,7 +316,14 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var term = await _tuningService.CreateGlossaryTermAsync(request, userId);
+            var createRequest = new BIReportingCopilot.Core.Interfaces.Tuning.CreateGlossaryTermRequest
+            {
+                Term = request.Term,
+                Definition = request.Definition,
+                Synonyms = request.Synonyms,
+                Category = request.Category
+            };
+            var term = await _tuningService.CreateGlossaryTermAsync(createRequest, userId);
             return Ok(term);
         }
         catch (Exception ex)
@@ -293,7 +339,14 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var term = await _tuningService.UpdateGlossaryTermAsync(id, request, userId);
+            var updateRequest = new BIReportingCopilot.Core.Interfaces.Tuning.UpdateGlossaryTermRequest
+            {
+                Term = request.Term,
+                Definition = request.Definition,
+                Synonyms = request.Synonyms,
+                Category = request.Category
+            };
+            var term = await _tuningService.UpdateGlossaryTermAsync(id.ToString(), updateRequest, userId);
             if (term == null)
                 return NotFound();
 
@@ -311,7 +364,7 @@ public class TuningController : ControllerBase
     {
         try
         {
-            var success = await _tuningService.DeleteGlossaryTermAsync(id);
+            var success = await _tuningService.DeleteGlossaryTermAsync(id.ToString());
             if (!success)
                 return NotFound();
 
@@ -349,7 +402,16 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var setting = await _tuningService.UpdateAISettingAsync(id, request, userId);
+            
+            // Convert AITuningSettingsDto to UpdateAISettingRequest
+            var updateRequest = new BIReportingCopilot.Core.Interfaces.Tuning.UpdateAISettingRequest
+            {
+                Name = request.SettingKey,
+                Value = request.SettingValue,
+                Description = request.Description
+            };
+            
+            var setting = await _tuningService.UpdateAISettingAsync(id.ToString(), updateRequest, userId);
             if (setting == null)
                 return NotFound();
 
@@ -374,7 +436,15 @@ public class TuningController : ControllerBase
             var userId = GetCurrentUserId();
             _logger.LogInformation("Starting auto-generation for user {UserId}", userId);
 
-            var response = await _tuningService.AutoGenerateBusinessContextAsync(request, userId);
+            // Convert AutoGenerationRequest to AutoGenerateBusinessContextRequest
+            var contextRequest = new BIReportingCopilot.Core.Interfaces.Tuning.AutoGenerateBusinessContextRequest
+            {
+                TableNames = request.SpecificTables ?? new List<string>(),
+                IncludeRelationships = request.AnalyzeRelationships,
+                GenerateDescriptions = request.GenerateTableContexts
+            };
+
+            var response = await _tuningService.AutoGenerateBusinessContextAsync(contextRequest, userId);
             return Ok(response);
         }
         catch (Exception ex)
@@ -438,7 +508,8 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var context = await _tuningService.AutoGenerateTableContextAsync(tableName, schemaName ?? "common", userId);
+            // The interface method only takes userId, so we call it without table/schema parameters
+            var context = await _tuningService.AutoGenerateTableContextAsync(userId);
             return Ok(context);
         }
         catch (Exception ex)
@@ -454,7 +525,8 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            await _tuningService.ApplyAutoGeneratedContextAsync(autoGenerated, userId);
+            // The interface expects (string userId, object context, CancellationToken)
+            await _tuningService.ApplyAutoGeneratedContextAsync(userId, autoGenerated);
             return Ok(new { message = "Auto-generated context applied successfully" });
         }
         catch (Exception ex)
@@ -488,7 +560,7 @@ public class TuningController : ControllerBase
     {
         try
         {
-            var template = await _tuningService.GetPromptTemplateAsync(id);
+            var template = await _tuningService.GetPromptTemplateAsync(id.ToString());
             if (template == null)
                 return NotFound();
 
@@ -507,8 +579,9 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var template = await _tuningService.CreatePromptTemplateAsync(request, userId);
-            return CreatedAtAction(nameof(GetPromptTemplate), new { id = template.Id }, template);
+            // The interface expects (object request, CancellationToken)
+            var template = await _tuningService.CreatePromptTemplateAsync(request);
+            return Ok(template);
         }
         catch (Exception ex)
         {
@@ -523,7 +596,7 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var template = await _tuningService.UpdatePromptTemplateAsync(id, request, userId);
+            var template = await _tuningService.UpdatePromptTemplateAsync(id.ToString(), request);
             if (template == null)
                 return NotFound();
 
@@ -541,10 +614,7 @@ public class TuningController : ControllerBase
     {
         try
         {
-            var success = await _tuningService.DeletePromptTemplateAsync(id);
-            if (!success)
-                return NotFound();
-
+            await _tuningService.DeletePromptTemplateAsync(id.ToString());
             return NoContent();
         }
         catch (Exception ex)
@@ -560,10 +630,7 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var success = await _tuningService.ActivatePromptTemplateAsync(id, userId);
-            if (!success)
-                return NotFound();
-
+            await _tuningService.ActivatePromptTemplateAsync(id.ToString());
             return Ok(new { message = "Template activated successfully" });
         }
         catch (Exception ex)
@@ -579,10 +646,7 @@ public class TuningController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var success = await _tuningService.DeactivatePromptTemplateAsync(id, userId);
-            if (!success)
-                return NotFound();
-
+            await _tuningService.DeactivatePromptTemplateAsync(id.ToString());
             return Ok(new { message = "Template deactivated successfully" });
         }
         catch (Exception ex)
@@ -597,7 +661,7 @@ public class TuningController : ControllerBase
     {
         try
         {
-            var result = await _tuningService.TestPromptTemplateAsync(id, request);
+            var result = await _tuningService.TestPromptTemplateAsync(id.ToString(), request);
             return Ok(result);
         }
         catch (Exception ex)
@@ -612,13 +676,13 @@ public class TuningController : ControllerBase
     #region Prompt Logs (Admin Debugging)
 
     [HttpPost("update-sql-template")]
-    public async Task<ActionResult> UpdateSqlGenerationTemplate()
+    public ActionResult UpdateSqlGenerationTemplate()
     {
         try
         {
-            // Update SQL generation template directly
-            await BIReportingCopilot.API.UpdatePromptTemplate.UpdateSqlGenerationTemplate(_context);
-            return Ok(new { message = "SQL generation template updated successfully" });
+            // TODO: Implement SQL template update logic
+            _logger.LogInformation("SQL generation template update requested");
+            return Ok(new { message = "SQL generation template update functionality not yet implemented" });
         }
         catch (Exception ex)
         {

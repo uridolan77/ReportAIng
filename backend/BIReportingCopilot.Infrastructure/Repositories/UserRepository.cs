@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Repository;
 using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
@@ -15,7 +16,7 @@ namespace BIReportingCopilot.Infrastructure.Repositories;
 /// Unified user repository implementing both domain model and entity operations
 /// Consolidates UserRepository and UserEntityRepository functionality
 /// </summary>
-public class UserRepository : IUserRepository, IUserEntityRepository
+public class UserRepository : BIReportingCopilot.Core.Interfaces.Repository.IUserRepository, IUserEntityRepository
 {
     private readonly BICopilotContext _context;
     private readonly ILogger<UserRepository> _logger;
@@ -778,10 +779,11 @@ public class UserRepository : IUserRepository, IUserEntityRepository
         return user?.ActivitySummary;
     }
 
-    public async Task RecordUserActivityAsync(string userId, string activityType, Dictionary<string, object>? metadata = null)
+    public Task RecordUserActivityAsync(string userId, string activityType, Dictionary<string, object>? metadata = null)
     {
         // Implementation would record activity in activity log table
         _logger.LogInformation("User activity recorded: {UserId} - {ActivityType}", userId, activityType);
+        return Task.CompletedTask;
     }
 
     public async Task<bool> UpdatePreferencesAsync(string userId, UserPreferences preferences)
@@ -1064,7 +1066,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
     /// <summary>
     /// Delete async (IUserRepository interface)
     /// </summary>
-    public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -1074,7 +1076,7 @@ public class UserRepository : IUserRepository, IUserEntityRepository
             if (userEntity == null)
             {
                 _logger.LogWarning("User not found for deletion: {UserId}", id);
-                return;
+                return false;
             }
 
             // Soft delete
@@ -1084,10 +1086,59 @@ public class UserRepository : IUserRepository, IUserEntityRepository
             await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("✅ User deleted successfully: {UserId}", id);
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error deleting user: {UserId}", id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Check if user exists by ID (IUserRepository interface)
+    /// </summary>
+    public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _context.Users.AnyAsync(u => u.Id == id && u.IsActive, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error checking if user exists: {UserId}", id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Check if user exists by username (IUserRepository interface)
+    /// </summary>
+    public async Task<bool> ExistsByUsernameAsync(string username, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _context.Users.AnyAsync(u => u.Username == username && u.IsActive, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error checking if user exists by username: {Username}", username);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Check if user exists by email (IUserRepository interface)
+    /// </summary>
+    public async Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _context.Users.AnyAsync(u => u.Email == email && u.IsActive, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error checking if user exists by email: {Email}", email);
             throw;
         }
     }

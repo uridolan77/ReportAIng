@@ -29,7 +29,7 @@ public class TuningService : ITuningService
     private readonly ILogger<TuningService> _logger;
     private readonly IBusinessContextAutoGenerator _autoGenerator;
     private readonly PerformanceManagementService _performanceService;
-    private readonly Core.Interfaces.Query.ISchemaService _schemaService;
+    private readonly Core.Interfaces.Schema.ISchemaService _schemaService;
     private readonly ConfigurationService _configurationService;
     private readonly IProgressReporter _progressReporter;
     private readonly ISchemaManagementService _schemaManagementService;
@@ -44,7 +44,7 @@ public class TuningService : ITuningService
         ILogger<TuningService> logger,
         IBusinessContextAutoGenerator autoGenerator,
         PerformanceManagementService performanceService,
-        Core.Interfaces.Query.ISchemaService schemaService,
+        Core.Interfaces.Schema.ISchemaService schemaService,
         ConfigurationService configurationService,
         IProgressReporter progressReporter,
         ISchemaManagementService schemaManagementService,
@@ -1496,9 +1496,9 @@ public class TuningService : ITuningService
     {
         try
         {
-            var tableStats = await GetTableStatisticsAsync();
-            var patternStats = await GetPatternStatisticsAsync();
-            var glossaryStats = await GetGlossaryStatisticsAsync();
+            var tableStats = await GetTableStatisticsAsync(cancellationToken);
+            var patternStats = await GetPatternStatisticsAsync(cancellationToken);
+            var glossaryStats = await GetGlossaryStatisticsAsync(cancellationToken);
 
             return new
             {
@@ -1513,6 +1513,24 @@ public class TuningService : ITuningService
             _logger.LogError(ex, "Error getting dashboard data");
             return new { Error = "Failed to load dashboard data" };
         }
+    }
+
+    private async Task<object> GetTableStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        // TODO: Implement table statistics retrieval
+        return new { TotalTables = 0, ProcessedTables = 0 };
+    }
+
+    private async Task<object> GetPatternStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        // TODO: Implement pattern statistics retrieval
+        return new { TotalPatterns = 0, SuccessfulPatterns = 0 };
+    }
+
+    private async Task<object> GetGlossaryStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        // TODO: Implement glossary statistics retrieval
+        return new { TotalTerms = 0, GeneratedTerms = 0 };
     }
 
     #endregion

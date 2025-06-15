@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Services;
 using BIReportingCopilot.Core.Models;
 using System.Security.Claims;
 
@@ -60,7 +61,8 @@ public class UserController : ControllerBase
             var userId = GetCurrentUserId();
             _logger.LogInformation("Updating profile for user {UserId}", userId);
 
-            var updatedProfile = await _userService.UpdateUserPreferencesAsync(userId, profile.Preferences);
+            await _userService.UpdateUserPreferencesAsync(userId, profile.Preferences);
+            var updatedProfile = await _userService.GetUserAsync(userId);
             return Ok(updatedProfile);
         }
         catch (Exception ex)
@@ -106,7 +108,8 @@ public class UserController : ControllerBase
             var userId = GetCurrentUserId();
             _logger.LogInformation("Updating preferences for user {UserId}", userId);
 
-            var updatedPreferences = await _userService.UpdateUserPreferencesAsync(userId, preferences);
+            await _userService.UpdateUserPreferencesAsync(userId, preferences);
+            var updatedPreferences = preferences;
             return Ok(updatedPreferences);
         }
         catch (Exception ex)
@@ -129,13 +132,14 @@ public class UserController : ControllerBase
             var userId = GetCurrentUserId();
             _logger.LogInformation("Getting activity summary for user {UserId}, last {Days} days", userId, days);
 
-            var activities = await _userService.GetUserActivityAsync(userId, DateTime.UtcNow.AddDays(-days), DateTime.UtcNow);
+            var activities = await _userService.GetUserActivityAsync(userId);
+            var activityList = activities.Cast<UserActivity>().ToList();
             var activity = new UserActivitySummary
             {
-                TotalQueries = activities.Count,
-                QueriesThisWeek = activities.Count(a => a.Timestamp > DateTime.UtcNow.AddDays(-7)),
-                QueriesThisMonth = activities.Count(a => a.Timestamp > DateTime.UtcNow.AddDays(-30)),
-                LastActivity = activities.Any() ? activities.Max(a => a.Timestamp) : DateTime.MinValue
+                TotalQueries = activityList.Count,
+                QueriesThisWeek = activityList.Count(a => a.Timestamp > DateTime.UtcNow.AddDays(-7)),
+                QueriesThisMonth = activityList.Count(a => a.Timestamp > DateTime.UtcNow.AddDays(-30)),
+                LastActivity = activityList.Any() ? activityList.Max(a => a.Timestamp) : DateTime.MinValue
             };
             return Ok(activity);
         }
@@ -161,7 +165,7 @@ public class UserController : ControllerBase
             var permissionsList = await _userService.GetUserPermissionsAsync(userId);
             var permissions = new UserPermissions
             {
-                Permissions = permissionsList,
+                Permissions = permissionsList.ToList(),
                 Roles = new List<string>(),
                 FeatureAccess = new Dictionary<string, bool>(),
                 AllowedDatabases = new List<string>()
@@ -205,7 +209,7 @@ public class UserController : ControllerBase
                 UserAgent = HttpContext.Request.Headers["User-Agent"].ToString()
             };
 
-            await _userService.LogUserActivityAsync(loginActivity);
+            await _userService.LogUserActivityAsync(userId, "LOGIN");
 
             return Ok(new { message = "Last login updated successfully", timestamp = DateTime.UtcNow });
         }
@@ -228,8 +232,9 @@ public class UserController : ControllerBase
             var userId = GetCurrentUserId();
             _logger.LogInformation("Getting sessions for user {UserId}", userId);
 
-            // Get recent login activities to simulate sessions
-            var loginActivities = await _userService.GetUserActivityAsync(userId, DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+            // Get recent user activities to simulate sessions
+            var userActivities = await _userService.GetUserActivityAsync(userId);
+            var loginActivities = userActivities.Cast<UserActivity>().ToList();
             var loginSessions = loginActivities
                 .Where(a => a.Action == "LOGIN")
                 .OrderByDescending(a => a.Timestamp)
@@ -240,8 +245,8 @@ public class UserController : ControllerBase
                     UserId = userId,
                     StartTime = a.Timestamp,
                     LastActivity = a.Timestamp,
-                    IpAddress = a.IpAddress,
-                    UserAgent = a.UserAgent,
+                    IpAddress = a.IpAddress ?? "Unknown",
+                    UserAgent = a.UserAgent ?? "Unknown",
                     IsActive = a.Timestamp > DateTime.UtcNow.AddHours(-24)
                 })
                 .ToList();

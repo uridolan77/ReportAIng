@@ -16,7 +16,7 @@ namespace BIReportingCopilot.Infrastructure.Authentication;
 /// <summary>
 /// Multi-factor authentication service supporting TOTP, SMS, and Email
 /// </summary>
-public class MfaService : IMfaService
+public class MfaService : BIReportingCopilot.Core.Interfaces.Security.IMfaService
 {
     private readonly IUserRepository _userRepository;
     private readonly BIReportingCopilot.Core.Interfaces.Security.IMfaChallengeRepository _mfaChallengeRepository;
@@ -713,12 +713,10 @@ public class MfaService : IMfaService
                 MfaMethod.SMS => await SendSmsAsync(user.PhoneNumber ?? "", challengeCode),
                 MfaMethod.Email => await SendEmailCodeAsync(user.Email, challengeCode),
                 _ => false
-            };
-
-            return new MfaChallengeResult
+            };            return new MfaChallengeResult
             {
                 ChallengeId = challenge.ChallengeId,
-                Method = method.ToString(),
+                Method = method,
                 Success = success,
                 ExpiresAt = challenge.ExpiresAt,
                 MaskedDeliveryAddress = method == MfaMethod.SMS ? MaskPhoneNumber(user.PhoneNumber) : MaskEmail(user.Email),
@@ -801,5 +799,173 @@ public class MfaService : IMfaService
     public async Task<string[]> GenerateBackupCodesAsync()
     {
         return await GenerateBackupCodesInternalAsync();
+    }
+
+    // IMfaService interface implementations with correct signatures
+    public async Task<MfaSetupResult> SetupMfaAsync(string userId, MfaMethod method, CancellationToken cancellationToken = default)
+    {
+        var result = await SetupMfaAsync(userId, method);
+        return new MfaSetupResult
+        {
+            Success = result != null,
+            SecretKey = result?.SecretKey ?? string.Empty,
+            QrCodeUrl = result?.QrCodeUrl ?? string.Empty,
+            BackupCodes = result?.BackupCodes?.ToList() ?? new List<string>(),
+            Message = result != null ? "MFA setup successful" : "MFA setup failed"
+        };
+    }
+
+    public async Task<MfaChallengeResult> InitiateChallengeAsync(string userId, MfaMethod method, CancellationToken cancellationToken = default)
+    {
+        var response = await SendMfaChallengeAsync(userId, method);
+        return new MfaChallengeResult
+        {
+            Success = response != null,
+            ChallengeId = response?.ChallengeId ?? string.Empty,
+            Method = method,
+            DeliveryTarget = response?.DeliveryTarget ?? string.Empty,
+            ExpiresAt = response?.ExpiresAt ?? DateTime.UtcNow.AddMinutes(5),
+            Message = response?.Message ?? "Challenge failed"
+        };
+    }
+
+    public async Task<MfaVerificationResult> VerifyChallengeAsync(string userId, string challengeId, string code, CancellationToken cancellationToken = default)
+    {
+        var isValid = await ValidateChallengeAsync(challengeId, code, cancellationToken);
+        return new MfaVerificationResult
+        {
+            Success = isValid,
+            Message = isValid ? "Verification successful" : "Verification failed"
+        };
+    }
+
+    public async Task<bool> DisableMfaAsync(string userId, string verificationCode, CancellationToken cancellationToken = default)
+    {
+        return await DisableMfaAsync(userId, verificationCode);
+    }
+
+    public async Task<List<MfaMethod>> GetEnabledMethodsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var status = await GetMfaStatusAsync(userId);
+        var methods = new List<MfaMethod>();
+        
+        if (status?.TotpEnabled == true) methods.Add(MfaMethod.TOTP);
+        if (status?.SmsEnabled == true) methods.Add(MfaMethod.SMS);
+        if (status?.EmailEnabled == true) methods.Add(MfaMethod.Email);
+        
+        return methods;
+    }
+
+    public async Task<MfaStatus> GetMfaStatusAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var status = await GetMfaStatusAsync(userId);
+        return status ?? new MfaStatus();
+    }
+
+    public async Task<bool> IsMfaRequiredAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var status = await GetMfaStatusAsync(userId, cancellationToken);
+        return status.IsEnabled;
+    }
+
+    public async Task<MfaBackupCodesResult> GenerateBackupCodesAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var codes = await GenerateBackupCodesAsync(userId);
+        return new MfaBackupCodesResult
+        {
+            Success = codes?.Length > 0,
+            BackupCodes = codes?.ToList() ?? new List<string>(),
+            Message = codes?.Length > 0 ? "Backup codes generated" : "Failed to generate backup codes"
+        };
+    }
+
+    public async Task<bool> VerifyBackupCodeAsync(string userId, string backupCode, CancellationToken cancellationToken = default)
+    {
+        // Implementation needed - validate backup code against stored codes
+        return await Task.FromResult(false);
+    }
+
+    public async Task<bool> ResetMfaAsync(string userId, string adminToken, CancellationToken cancellationToken = default)
+    {
+        // Implementation needed - reset MFA with admin token validation
+        return await Task.FromResult(false);
+    }
+
+    public async Task<bool> VerifyMfaSetupAsync(string userId, string code, CancellationToken cancellationToken = default)
+    {
+        return await VerifyMfaSetupAsync(userId, code);
+    }
+
+    public async Task<MfaValidationResult> ValidateMfaAsync(MfaChallengeRequest challengeRequest, CancellationToken cancellationToken = default)
+    {
+        var isValid = await ValidateMfaAsync(challengeRequest);
+        return new MfaValidationResult
+        {
+            Success = isValid,
+            Message = isValid ? "MFA validation successful" : "MFA validation failed"
+        };
+    }
+
+    public async Task<int> GetRemainingBackupCodesCountAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        return await GetRemainingBackupCodesCountAsync(userId);
+    }
+
+    public async Task<MfaChallengeResult> SendMfaChallengeAsync(string userId, MfaMethod method, CancellationToken cancellationToken = default)
+    {
+        var response = await SendMfaChallengeAsync(userId, method);
+        return new MfaChallengeResult
+        {
+            Success = response != null,
+            ChallengeId = response?.ChallengeId ?? string.Empty,
+            Method = method,
+            DeliveryTarget = response?.DeliveryTarget ?? string.Empty,
+            ExpiresAt = response?.ExpiresAt ?? DateTime.UtcNow.AddMinutes(5),
+            Message = response?.Message ?? "Challenge failed"
+        };
+    }    public async Task<bool> TestSmsDeliveryAsync(string phoneNumber, CancellationToken cancellationToken = default)
+    {
+        return await TestSmsDeliveryAsync(phoneNumber);
+    }
+
+    // Additional methods required by IMfaService interface
+    public async Task<string> GenerateSmsCodeAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        // Generate 6-digit code
+        var code = new Random().Next(100000, 999999).ToString();
+        // TODO: Store code with expiration
+        return code;
+    }
+
+    public async Task SendSmsAsync(string phoneNumber, string code, CancellationToken cancellationToken = default)
+    {
+        await _smsService.SendSmsAsync(phoneNumber, $"Your verification code is: {code}");
+    }
+
+    public async Task<string> GenerateEmailCodeAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        // Generate 6-digit code
+        var code = new Random().Next(100000, 999999).ToString();
+        // TODO: Store code with expiration
+        return code;
+    }
+
+    public async Task SendEmailCodeAsync(string email, string code, CancellationToken cancellationToken = default)
+    {
+        await _emailService.SendMfaCodeAsync(email, code);
+    }    public async Task<string> GenerateSecretAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        // Generate TOTP secret using existing method
+        return await GenerateSecretAsync();
+    }
+
+    public async Task<string> GenerateQrCodeAsync(string userId, string secret, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user != null)
+        {
+            return await GenerateQrCodeAsync(secret, user.Email ?? userId, "BIReportingCopilot");
+        }
+        return await GenerateQrCodeAsync(secret, userId, "BIReportingCopilot");
     }
 }

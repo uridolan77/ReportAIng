@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.API.Controllers;
@@ -105,7 +106,7 @@ public class AuthController : ControllerBase
         {
             _logger.LogInformation("Token refresh attempt");
 
-            var result = await _authService.RefreshTokenAsync(request.RefreshToken);
+            var result = await _authService.RefreshTokenAsync(request);
 
             if (result.Success)
             {

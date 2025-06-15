@@ -955,16 +955,10 @@ public class MfaValidationRequest
 {
     public string ChallengeId { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
 }
 
-/// <summary>
-/// MFA validation result
-/// </summary>
-public class MfaValidationResult
-{
-    public bool Success { get; set; }
-    public string? ErrorMessage { get; set; }
-}
+// MfaValidationResult definition moved to IMfaService.cs interface - removed duplicate
 
 // =============================================================================
 // MISSING INTERFACE SUPPORT MODELS
@@ -1002,20 +996,15 @@ public class AIServiceMetrics
 }
 
 /// <summary>
-/// MFA challenge result
+/// <summary>
+/// MFA performance metrics
 /// </summary>
-public class MfaChallengeResult
+public class MfaPerformanceMetrics
 {
-    public string ChallengeId { get; set; } = Guid.NewGuid().ToString();
-    public string Type { get; set; } = string.Empty;
-    public string Challenge { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; } = DateTime.UtcNow.AddMinutes(5);
-    public bool Success { get; set; }
-
-    // Properties expected by Infrastructure services
-    public string? ErrorMessage { get; set; }
-    public string Method { get; set; } = string.Empty;
-    public string? MaskedDeliveryAddress { get; set; }
+    public int SuccessfulChallenges { get; set; }
+    public int FailedChallenges { get; set; }
+    public double AverageResponseTime { get; set; }
+    public Dictionary<string, object> MethodMetrics { get; set; } = new();
 }
 
 /// <summary>

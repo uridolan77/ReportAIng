@@ -1022,54 +1022,6 @@ public class SemanticSearchResult
 }
 
 /// <summary>
-/// Vector search metrics
-/// </summary>
-public class VectorSearchMetrics
-{
-    public int TotalDocuments { get; set; }
-    public int TotalQueries { get; set; }
-    public double AverageQueryTime { get; set; }
-    public double AverageSimilarity { get; set; }
-    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
-
-    // Properties expected by Infrastructure services
-    /// <summary>
-    /// Total number of embeddings in the index
-    /// </summary>
-    public int TotalEmbeddings { get; set; }
-
-    /// <summary>
-    /// Total number of searches performed
-    /// </summary>
-    public int TotalSearches { get; set; }
-
-    /// <summary>
-    /// Average search time in milliseconds
-    /// </summary>
-    public double AverageSearchTime { get; set; }
-
-    /// <summary>
-    /// Cache hit rate for vector searches
-    /// </summary>
-    public double CacheHitRate { get; set; }
-
-    /// <summary>
-    /// Last time the index was optimized
-    /// </summary>
-    public DateTime LastOptimized { get; set; } = DateTime.UtcNow;
-
-    /// <summary>
-    /// Size of the index in bytes
-    /// </summary>
-    public long IndexSizeBytes { get; set; }
-
-    /// <summary>
-    /// Additional performance metrics
-    /// </summary>
-    public Dictionary<string, object> PerformanceMetrics { get; set; } = new();
-}
-
-/// <summary>
 /// Batch embedding result
 /// </summary>
 public class BatchEmbeddingResult
@@ -1102,52 +1054,7 @@ public class ConversationTurn
 // MISSING AI RESULT MODELS
 // =============================================================================
 
-/// <summary>
-/// Semantic analysis result
-/// </summary>
-public class SemanticAnalysisResult
-{
-    public string Text { get; set; } = string.Empty;
-    public List<SemanticEntity> Entities { get; set; } = new();
-    public List<SemanticRelation> Relations { get; set; } = new();
-    public double Confidence { get; set; }
-    public Dictionary<string, object> Metadata { get; set; } = new();
-
-    // Properties expected by Infrastructure services
-    public double ConfidenceScore { get; set; }
-    public List<string> Keywords { get; set; } = new();
-
-    // Properties for SemanticAnalysis compatibility
-    public string OriginalQuery
-    {
-        get => Text;
-        set => Text = value;
-    }
-
-    public QueryIntent Intent { get; set; } = QueryIntent.General;
-
-    public string ProcessedQuery
-    {
-        get => Text;
-        set => Text = value;
-    }
-
-    // Implicit conversion to SemanticAnalysis
-    public static implicit operator SemanticAnalysis(SemanticAnalysisResult result)
-    {
-        return new SemanticAnalysis
-        {
-            OriginalQuery = result.Text,
-            Intent = result.Intent,
-            Entities = result.Entities,
-            Keywords = result.Keywords,
-            ConfidenceScore = result.ConfidenceScore,
-            Confidence = result.Confidence,
-            ProcessedQuery = result.Text,
-            Metadata = result.Metadata
-        };
-    }
-}
+// SemanticAnalysisResult definition moved to IAIService.cs interface - removed duplicate to avoid ambiguous references
 
 // SemanticEntity already defined in AIModels.cs - removed duplicate
 

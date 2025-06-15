@@ -1,5 +1,6 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.Statistics;

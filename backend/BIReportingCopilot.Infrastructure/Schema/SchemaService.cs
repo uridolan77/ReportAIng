@@ -1,6 +1,7 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Business;
 using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Schema;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
@@ -154,17 +155,17 @@ public class SchemaService : ISchemaService
         }
     }
 
-    public async Task<List<SchemaSuggestion>> GetSchemaSuggestionsAsync(string userId)
+    public async Task<List<Core.Models.SchemaSuggestion>> GetSchemaSuggestionsAsync(string userId)
     {
         try
         {
-            var suggestions = new List<SchemaSuggestion>();
+            var suggestions = new List<Core.Models.SchemaSuggestion>();
             var schema = await GetSchemaMetadataAsync((string?)null);
 
             // Generate suggestions based on table names and common patterns
             foreach (var table in schema.Tables.Take(5))
             {
-                suggestions.Add(new SchemaSuggestion
+                suggestions.Add(new Core.Models.SchemaSuggestion
                 {
                     Type = "table",
                     Name = table.Name,
@@ -179,7 +180,7 @@ public class SchemaService : ISchemaService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting schema suggestions for user: {UserId}", userId);
-            return new List<SchemaSuggestion>();
+            return new List<Core.Models.SchemaSuggestion>();
         }
     }
 
@@ -746,9 +747,10 @@ public class SchemaService : ISchemaService
     /// <summary>
     /// Refresh schema async (ISchemaService interface)
     /// </summary>
-    public async Task RefreshSchemaAsync(CancellationToken cancellationToken = default)
+    public async Task<SchemaMetadata> RefreshSchemaAsync(CancellationToken cancellationToken = default)
     {
         await RefreshSchemaMetadataAsync((string?)null);
+        return await GetSchemaMetadataAsync(cancellationToken);
     }
 
     /// <summary>
@@ -828,6 +830,196 @@ public class SchemaService : ISchemaService
         {
             _logger.LogError(ex, "❌ Error refreshing schema metadata");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Get schema metadata async (ISchemaService interface - with connection name)
+    /// </summary>
+    public async Task<SchemaMetadata> GetSchemaMetadataAsync(string connectionName, CancellationToken cancellationToken = default)
+    {
+        return await GetSchemaMetadataAsync(connectionName);
+    }
+
+    /// <summary>
+    /// Get table metadata async (ISchemaService interface - with connection name)
+    /// </summary>
+    public async Task<TableMetadata?> GetTableMetadataAsync(string tableName, string connectionName, CancellationToken cancellationToken = default)
+    {
+        return await GetTableMetadataAsync(tableName, null);
+    }
+
+    /// <summary>
+    /// Refresh schema metadata async (ISchemaService interface - with connection name)
+    /// </summary>
+    public async Task RefreshSchemaMetadataAsync(string connectionName, CancellationToken cancellationToken = default)
+    {
+        await RefreshSchemaMetadataAsync(connectionName);
+    }
+
+    /// <summary>
+    /// Get table relationships async (ISchemaService interface)
+    /// </summary>
+    public async Task<List<TableRelationship>> GetTableRelationshipsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var schema = await GetSchemaMetadataAsync(cancellationToken);
+            // Convert RelationshipMetadata to TableRelationship
+            return schema.Relationships?.Select(r => new TableRelationship
+            {
+                FromTable = r.ParentTable,
+                ToTable = r.ChildTable,
+                RelationshipType = r.RelationshipType,
+                ColumnMappings = new List<ColumnMapping>
+                {
+                    new ColumnMapping
+                    {
+                        FromColumn = r.ParentColumn,
+                        ToColumn = r.ChildColumn
+                    }
+                }
+            }).ToList() ?? new List<TableRelationship>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting table relationships");
+            return new List<TableRelationship>();
+        }
+    }
+
+    /// <summary>
+    /// Validate schema async (ISchemaService interface)
+    /// </summary>
+    public async Task<SchemaValidationResult> ValidateSchemaAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var schema = await GetSchemaMetadataAsync(cancellationToken);
+            var errors = new List<string>();
+            var warnings = new List<string>();
+
+            // Basic validation
+            if (schema.Tables.Count == 0)
+            {
+                errors.Add("No tables found in schema");
+            }
+
+            foreach (var table in schema.Tables)
+            {
+                if (table.Columns.Count == 0)
+                {
+                    warnings.Add($"Table {table.Name} has no columns");
+                }
+            }
+
+            return new SchemaValidationResult
+            {
+                IsValid = errors.Count == 0,
+                Errors = errors,
+                Warnings = warnings,
+                ValidatedAt = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error validating schema");
+            return new SchemaValidationResult
+            {
+                IsValid = false,
+                Errors = new List<string> { ex.Message },
+                Warnings = new List<string>(),
+                ValidatedAt = DateTime.UtcNow
+            };
+        }
+    }
+
+    /// <summary>
+    /// Get accessible tables async (ISchemaService interface)
+    /// </summary>
+    public async Task<List<string>> GetAccessibleTablesAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        return await GetAccessibleTablesAsync(userId);
+    }
+
+    /// <summary>
+    /// Get schema suggestions async (ISchemaService interface)
+    /// </summary>
+    public async Task<List<Core.Interfaces.Schema.SchemaSuggestion>> GetSchemaSuggestionsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var modelSuggestions = await GetSchemaSuggestionsAsync(userId);
+        // Convert from Core.Models.SchemaSuggestion to Core.Interfaces.Schema.SchemaSuggestion
+        return modelSuggestions.Select(s => new Core.Interfaces.Schema.SchemaSuggestion
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = s.Name,
+            Title = s.Name,
+            Description = s.Description ?? "No description available",
+            Type = Core.Interfaces.Schema.SchemaSuggestionType.PerformanceImprovement, // Default value
+            ConfidenceScore = s.Confidence
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Assess data quality async (ISchemaService interface)
+    /// </summary>
+    public async Task<DataQualityAssessment> AssessDataQualityAsync(string tableName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var qualityScore = await AssessDataQualityAsync(tableName);
+            return new DataQualityAssessment
+            {
+                TableName = tableName,
+                OverallScore = qualityScore.OverallScore,
+                Issues = new List<Core.Interfaces.Schema.DataQualityIssue>(), // Empty for now
+                Recommendations = new List<string>(), // Empty for now
+                AssessedAt = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error assessing data quality for table: {TableName}", tableName);
+            return new DataQualityAssessment
+            {
+                TableName = tableName,
+                OverallScore = 0,
+                Issues = new List<Core.Interfaces.Schema.DataQualityIssue>(),
+                Recommendations = new List<string>(),
+                AssessedAt = DateTime.UtcNow
+            };
+        }
+    }
+
+    /// <summary>
+    /// Get schema summary async (ISchemaService interface)
+    /// </summary>
+    public async Task<SchemaSummary> GetSchemaSummaryAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var schema = await GetSchemaMetadataAsync(cancellationToken);
+            
+            return new SchemaSummary
+            {
+                TotalTables = schema.Tables.Count,
+                TotalColumns = schema.Tables.Sum(t => t.Columns.Count),
+                TotalRelationships = schema.Relationships?.Count ?? 0,
+                TableNames = schema.Tables.Select(t => t.Name).ToList(),
+                LastUpdated = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting schema summary");
+            return new SchemaSummary
+            {
+                TotalTables = 0,
+                TotalColumns = 0,
+                TotalRelationships = 0,
+                TableNames = new List<string>(),
+                LastUpdated = DateTime.UtcNow
+            };
         }
     }
 

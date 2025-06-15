@@ -58,66 +58,17 @@ public interface ISemanticCacheService
 }
 
 /// <summary>
-/// Vector search service interface for similarity search
-/// </summary>
-public interface IVectorSearchService
-{
-    Task<string> IndexDocumentAsync(string documentId, string content, Dictionary<string, object>? metadata = null, CancellationToken cancellationToken = default);
-    Task<List<VectorSearchResult>> SearchAsync(string query, int maxResults = 10, double threshold = 0.7, CancellationToken cancellationToken = default);
-    Task<List<VectorSearchResult>> SearchSimilarAsync(string documentId, int maxResults = 10, double threshold = 0.7, CancellationToken cancellationToken = default);
-    Task<bool> DeleteDocumentAsync(string documentId, CancellationToken cancellationToken = default);
-
-    // Additional methods expected by Infrastructure services
-    Task<List<SemanticSearchResult>> FindSimilarQueriesAsync(string query, double threshold = 0.8, int maxResults = 5, CancellationToken cancellationToken = default);
-    Task<bool> UpdateDocumentAsync(string documentId, string content, Dictionary<string, object>? metadata = null, CancellationToken cancellationToken = default);
-    Task<VectorSearchStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default);
-    Task<bool> ClearIndexAsync(CancellationToken cancellationToken = default);
-    Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default);
-    Task<string> StoreQueryEmbeddingAsync(string queryId, string query, float[] embedding, CancellationToken cancellationToken = default);
-    Task InvalidateByPatternAsync(string pattern, CancellationToken cancellationToken = default);
-
-    // Additional methods expected by Infrastructure services
-    Task OptimizeIndexAsync(CancellationToken cancellationToken = default);
-    Task<BIReportingCopilot.Core.Models.VectorSearchMetrics> GetMetricsAsync(CancellationToken cancellationToken = default);
-}
-
-/// <summary>
 /// LLM-aware AI service interface for advanced AI operations
 /// </summary>
-public interface ILLMAwareAIService
+public interface ILLMAwareAIService : IAIService
 {
     Task<string> GenerateSqlQueryAsync(string naturalLanguageQuery, string schema, CancellationToken cancellationToken = default);
-    Task<bool> ValidateQueryIntentAsync(string query, CancellationToken cancellationToken = default);
     Task<QueryAnalysisResult> AnalyzeQueryComplexityAsync(string query, CancellationToken cancellationToken = default);
     Task<List<QuerySuggestion>> GenerateQuerySuggestionsAsync(string partialQuery, string schema, CancellationToken cancellationToken = default);
     Task<VisualizationRecommendation> RecommendVisualizationAsync(object[] data, string[] columnNames, CancellationToken cancellationToken = default);
     Task<string> ExplainQueryResultsAsync(object[] data, string originalQuery, CancellationToken cancellationToken = default);
     Task<bool> IsServiceHealthyAsync(CancellationToken cancellationToken = default);
-    Task<AIServiceMetrics> GetServiceMetricsAsync(CancellationToken cancellationToken = default);
     Task<string> GenerateSQLWithManagedModelAsync(string prompt, string? providerId, string? modelId, CancellationToken cancellationToken = default);
-}
-
-// =============================================================================
-// MISSING AI INTERFACES
-// =============================================================================
-
-/// <summary>
-/// Core AI service interface
-/// </summary>
-public interface IAIService
-{
-    Task<string> GenerateSQLAsync(string prompt, CancellationToken cancellationToken = default);
-    Task<string> GenerateInsightAsync(string query, object[] data);
-    Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
-    Task<AIServiceMetrics> GetServiceMetricsAsync(CancellationToken cancellationToken = default);
-
-    // Methods expected by Infrastructure services
-    Task<string> GenerateVisualizationConfigAsync(string query, object[] data, CancellationToken cancellationToken = default);
-    Task<IAsyncEnumerable<string>> GenerateSQLStreamAsync(string prompt, CancellationToken cancellationToken = default);
-    Task<IAsyncEnumerable<string>> GenerateInsightStreamAsync(string query, object[] data, CancellationToken cancellationToken = default);
-    Task<double> CalculateConfidenceScoreAsync(string query, string generatedSql, CancellationToken cancellationToken = default);
-    Task<string[]> GenerateQuerySuggestionsAsync(string context, SchemaMetadata schema);
-    Task<bool> ValidateQueryIntentAsync(string query, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -173,20 +124,6 @@ public interface IContextManager
 }
 
 /// <summary>
-/// Semantic analyzer interface
-/// </summary>
-public interface ISemanticAnalyzer
-{
-    Task<SemanticAnalysisResult> AnalyzeAsync(string text, CancellationToken cancellationToken = default);
-
-    // Additional methods expected by Infrastructure services
-    Task<BIReportingCopilot.Core.Models.SemanticSimilarity> CalculateSimilarityAsync(string query1, string query2, CancellationToken cancellationToken = default);
-    Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default);
-    Task<List<EntityExtraction>> ExtractEntitiesAsync(string text, CancellationToken cancellationToken = default);
-    Task<SemanticAnalysis> AnalyzeWithContextAsync(string query, string? userId = null, string? sessionId = null, CancellationToken cancellationToken = default);
-}
-
-/// <summary>
 /// Query classifier interface
 /// </summary>
 public interface IQueryClassifier
@@ -238,6 +175,12 @@ public interface IBusinessContextAutoGenerator
     Task<List<BusinessContext>> GenerateTableContextsAsync(List<string> tableNames, SchemaMetadata schema, CancellationToken cancellationToken = default);
     Task<List<BusinessTerm>> GenerateGlossaryTermsAsync(SchemaMetadata schema, CancellationToken cancellationToken = default);
     Task<List<BusinessRelationship>> AnalyzeTableRelationshipsAsync(SchemaMetadata schema, CancellationToken cancellationToken = default);
+
+    // Implementation-specific methods used by TuningService
+    Task<AutoGeneratedTableContext> GenerateTableContextAsync(string tableName, string schemaName, Func<string, string, string?, Task>? progressCallback = null, bool mockMode = false);
+    Task<List<AutoGeneratedGlossaryTerm>> GenerateGlossaryTermsAsync(List<string>? specificTables = null, Func<string, string, string?, Task>? progressCallback = null, bool mockMode = false);
+    Task<List<AutoGeneratedGlossaryTerm>> GenerateGlossaryTermsAsync();
+    Task<BusinessRelationshipAnalysis> AnalyzeTableRelationshipsAsync();
 }
 
 /// <summary>
@@ -373,19 +316,6 @@ public class NLUResult
 }
 
 /// <summary>
-/// Entity extraction result
-/// </summary>
-public class EntityExtraction
-{
-    public string Entity { get; set; } = string.Empty;
-    public string Type { get; set; } = string.Empty;
-    public double Confidence { get; set; }
-    public int StartIndex { get; set; }
-    public int EndIndex { get; set; }
-    public Dictionary<string, object> Properties { get; set; } = new();
-}
-
-/// <summary>
 /// Sentiment analysis result
 /// </summary>
 public class SentimentAnalysis
@@ -460,17 +390,6 @@ public class SemanticCacheStatistics
 }
 
 /// <summary>
-/// Vector search result
-/// </summary>
-public class VectorSearchResult
-{
-    public string DocumentId { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-    public double Score { get; set; }
-    public Dictionary<string, object> Metadata { get; set; } = new();
-}
-
-/// <summary>
 /// Vector search statistics
 /// </summary>
 public class VectorSearchStatistics
@@ -483,7 +402,6 @@ public class VectorSearchStatistics
 }
 
 // Note: VectorSearchMetrics class moved to Core.Models to avoid ambiguous references
-
 // Note: SemanticSimilarity class moved to Core.Models to avoid ambiguous references
-
+// Note: VectorSearchResult class moved to IAIService.cs to avoid duplicates
 // ISemanticCacheService already defined above - removed duplicate

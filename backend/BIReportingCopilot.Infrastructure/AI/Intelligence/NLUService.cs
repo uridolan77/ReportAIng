@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Schema;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.QuerySuggestions;
 using System.Text.RegularExpressions;

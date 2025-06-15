@@ -24,6 +24,9 @@ public class QueryDbContext : DbContext
     // Query performance
     public DbSet<QueryPerformanceEntity> QueryPerformance { get; set; }
 
+    // Query feedback
+    public DbSet<QueryFeedbackEntity> QueryFeedback { get; set; }
+
     // Query suggestions system
     public DbSet<SuggestionCategory> SuggestionCategories { get; set; }
     public DbSet<Core.Models.QuerySuggestions.QuerySuggestion> QuerySuggestions { get; set; }

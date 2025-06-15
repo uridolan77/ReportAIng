@@ -5,7 +5,7 @@ public class SemanticAnalysis
 {
     public string OriginalQuery { get; set; } = string.Empty;
     public QueryIntent Intent { get; set; }
-    public List<SemanticEntity> Entities { get; set; } = new();
+    public List<EntityExtraction> Entities { get; set; } = new();
     public List<string> Keywords { get; set; } = new();
     public double ConfidenceScore { get; set; }
     public double Confidence { get; set; } // Alias for ConfidenceScore for compatibility
@@ -13,15 +13,20 @@ public class SemanticAnalysis
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
-public class SemanticEntity
+public class EntityExtraction
 {
-    public string Text { get; set; } = string.Empty;
-    public EntityType Type { get; set; }
+    public string Entity { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
     public double Confidence { get; set; }
-    public int StartPosition { get; set; }
-    public int EndPosition { get; set; }
-    public string? ResolvedValue { get; set; }
+    public int StartIndex { get; set; }
+    public int EndIndex { get; set; }
     public Dictionary<string, object> Properties { get; set; } = new();
+    
+    // Compatibility properties for existing code
+    public string Text { get => Entity; set => Entity = value; }
+    public int StartPosition { get => StartIndex; set => StartIndex = value; }
+    public int EndPosition { get => EndIndex; set => EndIndex = value; }
+    public string? ResolvedValue { get; set; }
 }
 
 public class SemanticSimilarity
@@ -163,7 +168,7 @@ public class ProcessedQuery
     public string Explanation { get; set; } = string.Empty;
     public double Confidence { get; set; }
     public List<SqlCandidate> AlternativeQueries { get; set; } = new();
-    public List<SemanticEntity> SemanticEntities { get; set; } = new();
+    public List<EntityExtraction> SemanticEntities { get; set; } = new();
     public QueryClassification Classification { get; set; } = new();
     public SchemaContext UsedSchema { get; set; } = new();
 

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Models;
 using System.Text.RegularExpressions;
 using IQueryOptimizer = BIReportingCopilot.Core.Interfaces.IQueryOptimizer;
@@ -655,7 +656,7 @@ public class QueryOptimizer : IQueryOptimizer
             {
                 OriginalQuery = query,
                 Intent = QueryIntent.Unknown,
-                Entities = new List<SemanticEntity>(),
+                Entities = new List<EntityExtraction>(),
                 Keywords = ExtractKeywords(query)
             };
 

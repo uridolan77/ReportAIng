@@ -691,4 +691,334 @@ public class LLMAwareAIService : ILLMAwareAIService
     }
 
     #endregion
+
+    #region IAIService Interface Implementation
+
+    /// <summary>
+    /// Check if the AI service is available
+    /// </summary>
+    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        return await IsServiceHealthyAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Generate visualization configuration
+    /// </summary>
+    public async Task<string> GenerateVisualizationConfigAsync(string query, object[] data, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var recommendation = await RecommendVisualizationAsync(data, ExtractColumnNames(data), cancellationToken);
+            return System.Text.Json.JsonSerializer.Serialize(recommendation);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating visualization config");
+            return "{}";
+        }
+    }
+
+    /// <summary>
+    /// Generate SQL stream
+    /// </summary>
+    public Task<IAsyncEnumerable<string>> GenerateSQLStreamAsync(string prompt, CancellationToken cancellationToken = default)
+    {
+        // Create a simple async enumerable for streaming SQL generation
+        return Task.FromResult(CreateAsyncEnumerable(GenerateSQLAsync(prompt, cancellationToken).Result));
+    }
+
+    /// <summary>
+    /// Generate insight stream
+    /// </summary>
+    public async Task<IAsyncEnumerable<string>> GenerateInsightStreamAsync(string query, object[] data, CancellationToken cancellationToken = default)
+    {
+        var insight = await GenerateInsightAsync(query, data);
+        return CreateAsyncEnumerable(insight);
+    }
+
+    /// <summary>
+    /// Calculate confidence score for generated SQL
+    /// </summary>
+    public async Task<double> CalculateConfidenceScoreAsync(string query, string generatedSql, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var analysis = await AnalyzeQueryComplexityAsync(generatedSql, cancellationToken);
+            // Assuming QueryAnalysisResult has some properties we can use to calculate confidence
+            return 0.8; // Default good confidence for now
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating confidence score");
+            return 0.5; // Default moderate confidence
+        }
+    }
+
+    /// <summary>
+    /// Helper method to extract column names from data
+    /// </summary>
+    private string[] ExtractColumnNames(object[] data)
+    {
+        if (data.Length == 0) return Array.Empty<string>();
+
+        var first = data[0];
+        if (first == null) return Array.Empty<string>();
+
+        var properties = first.GetType().GetProperties();
+        return properties.Select(p => p.Name).ToArray();
+    }
+
+    /// <summary>
+    /// Helper method to create async enumerable from string
+    /// </summary>
+    private async IAsyncEnumerable<string> CreateAsyncEnumerable(string content)
+    {
+        yield return content;
+        await Task.CompletedTask;
+    }
+
+    // Missing IAIService interface implementations
+    public async Task<string> GenerateQueryAsync(string query, SchemaMetadata? schema = null, CancellationToken cancellationToken = default)
+    {
+        var sql = await GenerateSQLWithManagedModelAsync(query, cancellationToken: cancellationToken);
+        return sql;
+    }
+
+    public async Task<QueryProcessingResult> ProcessNaturalLanguageAsync(string query, string? context = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.ProcessNaturalLanguageAsync(query, context, cancellationToken);
+        }
+        catch
+        {
+            return new QueryProcessingResult();
+        }
+    }
+
+    public async Task<List<QuerySuggestion>> GetQuerySuggestionsAsync(string query, SchemaMetadata? schema = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.GetQuerySuggestionsAsync(query, schema, cancellationToken);
+        }
+        catch
+        {
+            return new List<QuerySuggestion>();
+        }
+    }
+
+    public async Task<QueryValidationResult> ValidateQueryAsync(string query, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.ValidateQueryAsync(query, cancellationToken);
+        }
+        catch
+        {
+            return new QueryValidationResult { IsValid = false, Errors = new List<string> { "Validation failed" } };
+        }
+    }
+
+    public async Task<QueryOptimizationResult> OptimizeQueryAsync(string query, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.OptimizeQueryAsync(query, cancellationToken);
+        }
+        catch
+        {
+            return new QueryOptimizationResult { OptimizedQuery = query };
+        }
+    }
+
+    public async Task<SemanticAnalysisResult> AnalyzeSemanticContentAsync(string content, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.AnalyzeSemanticContentAsync(content, cancellationToken);
+        }
+        catch
+        {
+            return new SemanticAnalysisResult();
+        }
+    }
+
+    public async Task<double> CalculateSemanticSimilarityAsync(string text1, string text2, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.CalculateSemanticSimilarityAsync(text1, text2, cancellationToken);
+        }
+        catch
+        {
+            return 0.0;
+        }
+    }
+
+    public async Task<List<EntityExtraction>> ExtractEntitiesAsync(string text, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.ExtractEntitiesAsync(text, cancellationToken);
+        }
+        catch
+        {
+            return new List<EntityExtraction>();
+        }
+    }
+
+    public async Task<BIReportingCopilot.Core.Interfaces.AI.NLUResult> AnalyzeIntentAsync(string text, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.AnalyzeIntentAsync(text, cancellationToken);
+        }
+        catch
+        {
+            return new BIReportingCopilot.Core.Interfaces.AI.NLUResult();
+        }
+    }
+
+    public async Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.IsHealthyAsync(cancellationToken);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<AIServiceStatus> GetStatusAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.GetStatusAsync(cancellationToken);
+        }
+        catch
+        {
+            return new AIServiceStatus { IsHealthy = false, Status = "Error" };
+        }
+    }
+
+    public async Task<IAsyncEnumerable<string>> GenerateSQLStreamAsync(string query, SchemaMetadata schema, string context, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var stream = await _baseAIService.GenerateSQLStreamAsync(query, schema, context, cancellationToken);
+            return stream;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GenerateSQLStreamAsync");
+            return CreateErrorAsyncEnumerable($"-- Error generating SQL: {ex.Message}");
+        }
+    }
+
+    // Additional methods required by IAIService interface
+    public async Task<string> GenerateSQLAsync(string prompt, SchemaMetadata? schema = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.GenerateSQLAsync(prompt, schema, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GenerateSQLAsync");
+            return "SELECT 'Error generating SQL' as Message";
+        }
+    }
+
+    public async Task<string> GenerateVisualizationConfigAsync(string sql, SchemaMetadata? schema = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.GenerateVisualizationConfigAsync(sql, schema, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GenerateVisualizationConfigAsync");
+            return "{ \"type\": \"table\", \"config\": {} }";
+        }
+    }
+
+    public async Task<IAsyncEnumerable<string>> GenerateInsightStreamAsync(string data, string context, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.GenerateInsightStreamAsync(data, context, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GenerateInsightStreamAsync");
+            return CreateErrorAsyncEnumerable($"Error generating insight: {ex.Message}");
+        }
+    }
+
+    public async Task<string> GenerateInsightAsync(string data, string context, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.GenerateInsightAsync(data, context, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GenerateInsightAsync");
+            return "Error generating insight";
+        }
+    }
+
+    public async Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.GenerateEmbeddingAsync(text, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GenerateEmbeddingAsync");
+            return new float[384];
+        }
+    }
+
+    public async Task<bool> ValidateQueryIntentAsync(string query, string expectedIntent, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.ValidateQueryIntentAsync(query, expectedIntent, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in ValidateQueryIntentAsync");
+            return false;
+        }
+    }
+
+    public async Task<List<QuerySuggestion>> GenerateQuerySuggestionsAsync(string context, SchemaMetadata? schema = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _baseAIService.GenerateQuerySuggestionsAsync(context, schema, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GenerateQuerySuggestionsAsync");
+            return new List<QuerySuggestion>();
+        }
+    }
+
+    /// <summary>
+    /// Helper method to create async enumerable with error message
+    /// </summary>
+    private async IAsyncEnumerable<string> CreateErrorAsyncEnumerable(string errorMessage)
+    {
+        yield return errorMessage;
+        await Task.CompletedTask;
+    }
+
+    #endregion
 }

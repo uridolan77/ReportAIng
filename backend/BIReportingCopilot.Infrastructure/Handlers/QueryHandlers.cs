@@ -6,6 +6,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Schema;
 using BIReportingCopilot.Infrastructure.Data.Contexts;
 using IContextManager = BIReportingCopilot.Core.Interfaces.IContextManager;
 using ContextType = BIReportingCopilot.Infrastructure.Data.Contexts.ContextType;
@@ -115,7 +116,7 @@ public class GetCachedQueryQueryHandler : IRequestHandler<GetCachedQueryQuery, Q
     {
         try
         {
-            var result = await _queryCacheService.GetCachedQueryAsync(request.QueryHash);
+            var result = await _queryCacheService.GetCachedQueryAsync<QueryResponse>(request.QueryHash, cancellationToken);
             
             if (result != null)
             {
@@ -166,9 +167,9 @@ public class GetQuerySuggestionsQueryHandler : IRequestHandler<GetQuerySuggestio
                 request.Context ?? "general business queries", schema);
 
             _logger.LogInformation("💡 Generated {Count} suggestions for user {UserId}",
-                suggestions?.Length ?? 0, request.UserId);
+                suggestions?.Count ?? 0, request.UserId);
 
-            return suggestions?.ToList() ?? new List<string>();
+            return suggestions?.Select(s => s.Text).ToList() ?? new List<string>();
         }
         catch (Exception ex)
         {

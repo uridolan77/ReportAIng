@@ -153,7 +153,7 @@ public class QueryCacheService : IQueryCacheService
                 SemanticCacheHits = semanticStats.HitCount,
                 SemanticCacheMisses = semanticStats.MissCount,
                 SemanticCacheHitRate = semanticStats.HitRate,
-                TotalSemanticEntries = semanticStats.TotalEntries,
+                TotalSemanticEntries = (int)semanticStats.TotalKeys, // Convert TotalKeys to TotalEntries
                 LastUpdated = DateTime.UtcNow
             };
         }

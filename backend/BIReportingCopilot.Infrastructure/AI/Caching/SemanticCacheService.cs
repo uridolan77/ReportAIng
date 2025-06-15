@@ -483,8 +483,13 @@ public class SemanticCacheService : ISemanticCacheService
 
         try
         {
-            var similarQueries = await _vectorSearchService.FindSimilarQueriesAsync(query, threshold, 1);
-            return similarQueries.FirstOrDefault()?.CachedResponse as QueryResponse;
+            var similarQueries = await _vectorSearchService.FindSimilarQueriesAsync(query, (int)Math.Round(threshold * 100), 1);
+            var firstResult = similarQueries.FirstOrDefault();
+            if (firstResult?.Metadata?.ContainsKey("CachedResponse") == true)
+            {
+                return firstResult.Metadata["CachedResponse"] as QueryResponse;
+            }
+            return null;
         }
         catch
         {

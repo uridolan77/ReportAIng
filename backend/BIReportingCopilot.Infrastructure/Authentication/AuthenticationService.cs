@@ -26,8 +26,8 @@ public class AuthenticationService : IAuthenticationService
     private readonly Core.Interfaces.Security.IPasswordHasher _passwordHasher;
     private readonly Core.Interfaces.Security.IAuditService _auditService;
     private readonly SecurityConfiguration _securitySettings;
-    private readonly Core.Interfaces.Query.ICacheService _cacheService;
-    private readonly IMfaService _mfaService;
+    private readonly Core.Interfaces.Cache.ICacheService _cacheService;
+    private readonly Core.Interfaces.Security.IMfaService _mfaService;
     private readonly BIReportingCopilot.Core.Interfaces.Security.IMfaChallengeRepository _mfaChallengeRepository;
 
     public AuthenticationService(
@@ -37,8 +37,8 @@ public class AuthenticationService : IAuthenticationService
         Core.Interfaces.Security.IPasswordHasher passwordHasher,
         Core.Interfaces.Security.IAuditService auditService,
         IOptions<SecurityConfiguration> securitySettings,
-        Core.Interfaces.Query.ICacheService cacheService,
-        IMfaService mfaService,
+        Core.Interfaces.Cache.ICacheService cacheService,
+        Core.Interfaces.Security.IMfaService mfaService,
         BIReportingCopilot.Core.Interfaces.Security.IMfaChallengeRepository mfaChallengeRepository)
     {
         _logger = logger;
@@ -613,14 +613,14 @@ public class AuthenticationService : IAuthenticationService
                 case MfaMethod.SMS:
                     if (!string.IsNullOrEmpty(user.PhoneNumber))
                     {
-                        var smsCode = await _mfaService.GenerateSmsCodeAsync();
+                        var smsCode = await _mfaService.GenerateSmsCodeAsync(userId);
                         challenge.Challenge = smsCode;
                         await _mfaService.SendSmsAsync(user.PhoneNumber, smsCode);
                     }
                     break;
 
                 case MfaMethod.Email:
-                    var emailCode = await _mfaService.GenerateEmailCodeAsync();
+                    var emailCode = await _mfaService.GenerateEmailCodeAsync(userId);
                     challenge.Challenge = emailCode;
                     await _mfaService.SendEmailCodeAsync(user.Email, emailCode);
                     break;
@@ -763,18 +763,18 @@ public class AuthenticationService : IAuthenticationService
                 throw new InvalidOperationException("MFA must be enabled to generate backup codes");
             }
 
-            var backupCodes = await _mfaService.GenerateBackupCodesAsync();
+            var backupCodesResult = await _mfaService.GenerateBackupCodesAsync(userId);
 
             // Hash the backup codes before storing
-            user.BackupCodes = backupCodes.Select(code => _passwordHasher.HashPassword(code)).ToArray();
+            user.BackupCodes = backupCodesResult.BackupCodes.Select(code => _passwordHasher.HashPassword(code)).ToArray();
             await _userRepository.UpdateUserAsync(user);
 
             await _auditService.LogAsync("BACKUP_CODES_GENERATED", userId, "User", userId);
 
-            _logger.LogInformation("Generated {Count} backup codes for user: {UserId}", backupCodes.Length, userId);
+            _logger.LogInformation("Generated {Count} backup codes for user: {UserId}", backupCodesResult.BackupCodes.Count, userId);
 
             // Return the plain text codes to the user (only time they can see them)
-            return backupCodes;
+            return backupCodesResult.BackupCodes.ToArray();
         }
         catch (Exception ex)
         {
@@ -823,15 +823,15 @@ public class AuthenticationService : IAuthenticationService
 
     private async Task<MfaSetupResult> SetupTotpAsync(User user)
     {
-        var secret = await _mfaService.GenerateSecretAsync();
-        var qrCode = await _mfaService.GenerateQrCodeAsync(secret, user.Email, "BI Reporting Copilot");
-        var backupCodes = await _mfaService.GenerateBackupCodesAsync();
+        var secret = await _mfaService.GenerateSecretAsync(user.Id);
+        var qrCode = await _mfaService.GenerateQrCodeAsync(user.Id, secret);
+        var backupCodesResult = await _mfaService.GenerateBackupCodesAsync(user.Id);
 
         // Store the secret and setup info
         user.IsMfaEnabled = true;
         user.MfaSecret = secret;
         user.MfaMethod = MfaMethod.TOTP;
-        user.BackupCodes = backupCodes.Select(code => _passwordHasher.HashPassword(code)).ToArray();
+        user.BackupCodes = backupCodesResult.BackupCodes.Select(code => _passwordHasher.HashPassword(code)).ToArray();
 
         await _userRepository.UpdateUserAsync(user);
         await _auditService.LogAsync("MFA_SETUP_TOTP", user.Id, "User", user.Id);
@@ -841,19 +841,19 @@ public class AuthenticationService : IAuthenticationService
             Success = true,
             Secret = secret,
             QrCode = qrCode,
-            BackupCodes = backupCodes
+            BackupCodes = backupCodesResult.BackupCodes
         };
     }
 
     private async Task<MfaSetupResult> SetupSmsAsync(User user, string phoneNumber)
     {
-        var backupCodes = await _mfaService.GenerateBackupCodesAsync();
+        var backupCodesResult = await _mfaService.GenerateBackupCodesAsync(user.Id);
 
         user.IsMfaEnabled = true;
         user.MfaMethod = MfaMethod.SMS;
         user.PhoneNumber = phoneNumber;
         user.IsPhoneNumberVerified = true; // Assume verified for now
-        user.BackupCodes = backupCodes.Select(code => _passwordHasher.HashPassword(code)).ToArray();
+        user.BackupCodes = backupCodesResult.BackupCodes.Select(code => _passwordHasher.HashPassword(code)).ToArray();
 
         await _userRepository.UpdateUserAsync(user);
         await _auditService.LogAsync("MFA_SETUP_SMS", user.Id, "User", user.Id);
@@ -861,17 +861,17 @@ public class AuthenticationService : IAuthenticationService
         return new MfaSetupResult
         {
             Success = true,
-            BackupCodes = backupCodes
+            BackupCodes = backupCodesResult.BackupCodes
         };
     }
 
     private async Task<MfaSetupResult> SetupEmailAsync(User user)
     {
-        var backupCodes = await _mfaService.GenerateBackupCodesAsync();
+        var backupCodesResult = await _mfaService.GenerateBackupCodesAsync(user.Id);
 
         user.IsMfaEnabled = true;
         user.MfaMethod = MfaMethod.Email;
-        user.BackupCodes = backupCodes.Select(code => _passwordHasher.HashPassword(code)).ToArray();
+        user.BackupCodes = backupCodesResult.BackupCodes.Select(code => _passwordHasher.HashPassword(code)).ToArray();
 
         await _userRepository.UpdateUserAsync(user);
         await _auditService.LogAsync("MFA_SETUP_EMAIL", user.Id, "User", user.Id);
@@ -879,7 +879,7 @@ public class AuthenticationService : IAuthenticationService
         return new MfaSetupResult
         {
             Success = true,
-            BackupCodes = backupCodes
+            BackupCodes = backupCodesResult.BackupCodes
         };
     }
 

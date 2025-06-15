@@ -2,6 +2,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Business;
 using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Schema;
 using BIReportingCopilot.Core.Models;
 using Microsoft.Extensions.Logging;
 using System.Text;
@@ -155,7 +156,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
                     await progressCallback("Table Analysis", $"Sending AI request for {schemaName}.{tableName}...", null);
 
                 // Get AI analysis using the correct method for business context generation
-                var aiResponse = await _aiService.GenerateInsightAsync(prompt, new object[0]);
+                var aiResponse = await _aiService.GenerateInsightAsync(prompt, string.Empty);
 
                 if (progressCallback != null)
                     await progressCallback("Table Analysis", $"Parsing AI response for {schemaName}.{tableName}...", null);
@@ -678,7 +679,7 @@ Respond in JSON format:
             var prompt = BuildGlossaryTermPrompt(term, schema, sourceTable, sourceColumn);
 
             // Get AI analysis using the correct method for business context generation
-            var aiResponse = await _aiService.GenerateInsightAsync(prompt, new object[0]);
+            var aiResponse = await _aiService.GenerateInsightAsync(prompt, string.Empty);
 
             // Parse AI response
             var glossaryTerm = ParseGlossaryTermResponse(aiResponse, term, sourceTable, sourceColumn);

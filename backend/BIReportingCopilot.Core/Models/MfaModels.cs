@@ -14,6 +14,11 @@ public class MfaStatus
     public string? MaskedPhoneNumber { get; set; }
     public string? MaskedEmail { get; set; }
     public DateTime? LastValidationDate { get; set; }
+    
+    // Additional properties referenced in Infrastructure
+    public bool TotpEnabled { get; set; } = false;
+    public bool SmsEnabled { get; set; } = false;
+    public bool EmailEnabled { get; set; } = false;
 }
 
 /// <summary>
@@ -27,6 +32,13 @@ public class MfaSetupInfo
     public string[] BackupCodes { get; set; } = Array.Empty<string>();
     public bool Success { get; set; } = true;
     public string? ErrorMessage { get; set; }
+    
+    // Additional properties referenced in Infrastructure
+    public string? SecretKey
+    {
+        get => TotpSecret;
+        set => TotpSecret = value;
+    }
 }
 
 /// <summary>
@@ -53,4 +65,17 @@ public class MfaChallengeResponse
     public string? ErrorMessage { get; set; }
     public DateTime ExpiresAt { get; set; }
     public string? MaskedDeliveryAddress { get; set; } // Masked phone/email
+    
+    // Additional properties referenced in Infrastructure
+    public string? DeliveryTarget
+    {
+        get => MaskedDeliveryAddress;
+        set => MaskedDeliveryAddress = value;
+    }
+    
+    public string? Message
+    {
+        get => ErrorMessage;
+        set => ErrorMessage = value;
+    }
 }

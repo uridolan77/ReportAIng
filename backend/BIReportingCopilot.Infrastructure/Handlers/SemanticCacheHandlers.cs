@@ -161,8 +161,8 @@ public class GetSemanticCacheMetricsQueryHandler : IRequestHandler<GetSemanticCa
 
             var metrics = new SemanticCacheMetrics
             {
-                TotalEmbeddings = vectorMetrics.TotalEmbeddings,
-                TotalSearches = vectorMetrics.TotalSearches,
+                TotalEmbeddings = (int)vectorMetrics.TotalEmbeddings,
+                TotalSearches = (int)vectorMetrics.TotalSearches,
                 AverageSearchTime = vectorMetrics.AverageSearchTime,
                 CacheHitRate = vectorMetrics.CacheHitRate,
                 IndexSizeBytes = vectorMetrics.IndexSizeBytes,

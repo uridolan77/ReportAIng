@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Interfaces.Query;
 
 namespace BIReportingCopilot.Infrastructure.AI.Management;

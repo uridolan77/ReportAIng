@@ -141,4 +141,24 @@ public class UnifiedQueryHistoryEntity
     /// Whether the record is active
     /// </summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// SQL query (alias for GeneratedSql for compatibility)
+    /// </summary>
+    public string Sql => GeneratedSql;
+
+    /// <summary>
+    /// Query explanation
+    /// </summary>
+    public string? Explanation { get; set; }
+
+    /// <summary>
+    /// Confidence score as property
+    /// </summary>
+    public double Confidence => ConfidenceScore;
+
+    /// <summary>
+    /// Query classification
+    /// </summary>
+    public string? Classification { get; set; }
 }

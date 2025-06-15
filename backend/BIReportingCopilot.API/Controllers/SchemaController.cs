@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Schema;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Commands;
@@ -253,7 +254,7 @@ public class SchemaController : ControllerBase
         try
         {
             var userId = GetUserId();
-            var schema = await _schemaManagementService.GetBusinessSchemaAsync(schemaId, userId);
+            var schema = await _schemaManagementService.GetBusinessSchemaAsync(schemaId.ToString(), userId);
             
             if (schema == null)
             {
@@ -273,7 +274,7 @@ public class SchemaController : ControllerBase
     /// Create a new business schema
     /// </summary>
     [HttpPost("business-schemas")]
-    public async Task<ActionResult<BusinessSchemaDto>> CreateBusinessSchema([FromBody] CreateBusinessSchemaRequest request)
+    public async Task<ActionResult<BusinessSchemaDto>> CreateBusinessSchema([FromBody] BIReportingCopilot.Core.DTOs.CreateBusinessSchemaRequest request)
     {
         try
         {
@@ -283,7 +284,16 @@ public class SchemaController : ControllerBase
             }
 
             var userId = GetUserId();
-            var schema = await _schemaManagementService.CreateBusinessSchemaAsync(request, userId);
+            
+            // Map DTO to interface model
+            var interfaceRequest = new BIReportingCopilot.Core.Interfaces.Schema.CreateBusinessSchemaRequest
+            {
+                Name = request.Name,
+                Description = request.Description ?? string.Empty,
+                IsPublic = !request.IsDefault // Map IsDefault to IsPublic inversely, adjust as needed
+            };
+            
+            var schema = await _schemaManagementService.CreateBusinessSchemaAsync(interfaceRequest, userId);
             return CreatedAtAction(nameof(GetBusinessSchema), new { schemaId = schema.Id }, schema);
         }
         catch (ArgumentException ex)

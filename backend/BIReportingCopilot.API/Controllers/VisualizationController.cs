@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Visualization;
 using System.ComponentModel.DataAnnotations;
@@ -72,7 +73,7 @@ public class VisualizationController : ControllerBase
             if (request.Data?.Any() != true)
             {
                 var queryRequest = new QueryRequest { Question = request.Query };
-                var result = await _queryService.ProcessQueryAsync(queryRequest, GetCurrentUserId());
+                var result = await _queryService.ProcessQueryAsync(queryRequest, CancellationToken.None);
 
                 if (!result.Success || result.Result?.Data == null)
                 {
@@ -221,7 +222,7 @@ public class VisualizationController : ControllerBase
 
             // Execute query to get data
             var queryRequest = new QueryRequest { Question = request.Query };
-            var queryResult = await _queryService.ProcessQueryAsync(queryRequest, userId);
+            var queryResult = await _queryService.ProcessQueryAsync(queryRequest, CancellationToken.None);
 
             if (!queryResult.Success || queryResult.Result?.Data == null)
             {
@@ -287,7 +288,7 @@ public class VisualizationController : ControllerBase
 
             // Execute query to get data
             var queryRequest = new QueryRequest { Question = request.Query };
-            var queryResult = await _queryService.ProcessQueryAsync(queryRequest, userId);
+            var queryResult = await _queryService.ProcessQueryAsync(queryRequest, CancellationToken.None);
 
             if (!queryResult.Success || queryResult.Result?.Data == null)
             {
@@ -307,10 +308,10 @@ public class VisualizationController : ControllerBase
                 Dashboard = dashboard,
                 ComplexityScore = CalculateComplexityScore(dashboard),
                 EstimatedLoadTime = EstimateLoadTime(dashboard),
-                RecommendedLayout = DetermineOptimalLayout(dashboard.Charts.Length)
+                RecommendedLayout = DetermineOptimalLayout(dashboard.Charts.Count)
             };
 
-            _logger.LogInformation("Successfully generated advanced dashboard with {ChartCount} charts", dashboard.Charts.Length);
+            _logger.LogInformation("Successfully generated advanced dashboard with {ChartCount} charts", dashboard.Charts.Count);
 
             return Ok(response);
         }
@@ -443,7 +444,7 @@ public class VisualizationController : ControllerBase
 
     private double CalculateComplexityScore(AdvancedDashboardConfig dashboard)
     {
-        var score = dashboard.Charts.Length * 0.2; // Base complexity from chart count
+        var score = dashboard.Charts.Count * 0.2; // Base complexity from chart count
 
         // Add complexity for advanced features
         if (dashboard.RealTime?.Enabled == true) score += 0.3;
@@ -455,7 +456,7 @@ public class VisualizationController : ControllerBase
 
     private string EstimateLoadTime(AdvancedDashboardConfig dashboard)
     {
-        var chartCount = dashboard.Charts.Length;
+        var chartCount = dashboard.Charts.Count;
         var hasRealTime = dashboard.RealTime?.Enabled == true;
 
         return (chartCount, hasRealTime) switch

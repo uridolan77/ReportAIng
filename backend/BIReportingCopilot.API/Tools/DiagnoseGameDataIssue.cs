@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Query;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Query;
 
 namespace BIReportingCopilot.API.Tools
 {

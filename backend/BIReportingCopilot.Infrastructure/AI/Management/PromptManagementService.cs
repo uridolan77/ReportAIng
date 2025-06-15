@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
@@ -12,6 +13,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using IContextManager = BIReportingCopilot.Core.Interfaces.IContextManager;
 using ContextType = BIReportingCopilot.Infrastructure.Data.Contexts.ContextType;
+using ISemanticAnalyzer = BIReportingCopilot.Core.Interfaces.AI.ISemanticAnalyzer;
 
 namespace BIReportingCopilot.Infrastructure.AI.Management;
 
@@ -141,7 +143,8 @@ public class PromptManagementService : IContextManager
 
         try
         {
-            var semanticAnalysis = await _semanticAnalyzer.AnalyzeAsync(query);
+            var semanticAnalysisResult = await _semanticAnalyzer.AnalyzeAsync(query);
+            var semanticAnalysis = ConvertSemanticAnalysisResult(semanticAnalysisResult);
             var schemaContext = new SchemaContext();
 
             // Find relevant tables based on semantic entities and keywords
@@ -1280,6 +1283,25 @@ public class PromptManagementService : IContextManager
         }
 
         return variables.Distinct().ToList();
+    }
+
+    /// <summary>
+    /// Convert SemanticAnalysisResult to SemanticAnalysis
+    /// </summary>
+    private SemanticAnalysis ConvertSemanticAnalysisResult(SemanticAnalysisResult result)
+    {
+        return new SemanticAnalysis
+        {
+            Entities = result.Entities?.Select(e => new EntityExtraction
+            {
+                Text = e.Text,
+                Type = e.Type,
+                Confidence = e.Confidence
+            }).ToList() ?? new List<EntityExtraction>(),
+            Intent = Enum.TryParse<QueryIntent>(result.Intent, true, out var intent) ? intent : QueryIntent.Unknown,
+            Keywords = result.Keywords ?? new List<string>(),
+            Confidence = result.Confidence
+        };
     }
 
     #endregion

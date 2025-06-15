@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Infrastructure.Performance;
 using BIReportingCopilot.Infrastructure.Monitoring;
 using BIReportingCopilot.Infrastructure.AI;
@@ -18,13 +19,13 @@ public class PerformanceMonitoringController : ControllerBase
 {
     private readonly PerformanceManagementService _performanceService;
     private readonly MonitoringManagementService _monitoringService;
-    private readonly BIReportingCopilot.Core.Interfaces.ISemanticCacheService _cacheService;
+    private readonly ISemanticCacheService _cacheService;
     private readonly ILogger<PerformanceMonitoringController> _logger;
 
     public PerformanceMonitoringController(
         PerformanceManagementService performanceService,
         MonitoringManagementService monitoringService,
-        BIReportingCopilot.Core.Interfaces.ISemanticCacheService cacheService,
+        ISemanticCacheService cacheService,
         ILogger<PerformanceMonitoringController> logger)
     {
         _performanceService = performanceService;
@@ -112,7 +113,7 @@ public class PerformanceMonitoringController : ControllerBase
                 hitRate = cacheMetrics.HitRate * 100,
                 missRate = cacheMetrics.MissRate * 100,
                 totalRequests = cacheMetrics.TotalRequests,
-                averageRetrievalTime = cacheMetrics.AverageRetrievalTime.TotalMilliseconds,
+                averageRetrievalTime = cacheMetrics.AverageResponseTime,
                 memoryUsage = (memoryInfo / (1024.0 * 1024.0 * 1024.0)) * 100, // Convert to percentage
                 evictionCount = 0, // Would be tracked by cache implementation
                 lastUpdated = cacheMetrics.LastUpdated

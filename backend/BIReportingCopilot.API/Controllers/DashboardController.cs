@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using MediatR;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Data;
+using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Services;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Commands;
 using System.Security.Claims;
@@ -518,7 +521,8 @@ public class DashboardController : ControllerBase
     // Placeholder helper methods - implement based on original DashboardController logic
     private async Task<UserActivitySummary> GetUserActivitySummaryAsync(string userId, int days)
     {
-        var activities = await _userService.GetUserActivityAsync(userId, DateTime.UtcNow.AddDays(-days), DateTime.UtcNow);
+        var allActivities = await _userService.GetUserActivityAsync(userId);
+        var activities = allActivities.Cast<UserActivity>().ToList();
         return new UserActivitySummary
         {
             TotalQueries = activities.Count,
@@ -533,7 +537,19 @@ public class DashboardController : ControllerBase
         try
         {
             var queryHistory = await _queryService.GetQueryHistoryAsync(userId, 1, limit);
-            return queryHistory;
+            return queryHistory.Select(q => new QueryHistoryItem
+            {
+                Id = q.Id,
+                Question = q.OriginalQuery, // UnifiedQueryHistoryEntity.OriginalQuery -> QueryHistoryItem.Question
+                Sql = q.GeneratedSql, // UnifiedQueryHistoryEntity.GeneratedSql -> QueryHistoryItem.Sql
+                ExecutionTimeMs = (int)q.ExecutionTimeMs, // Already int in both, just cast long to int
+                Timestamp = q.ExecutedAt, // UnifiedQueryHistoryEntity.ExecutedAt -> QueryHistoryItem.Timestamp (DateTime)
+                Successful = q.Status == "Success", // UnifiedQueryHistoryEntity.Status -> QueryHistoryItem.Successful (bool)
+                Confidence = 1.0, // Default confidence score
+                Error = q.ErrorMessage, // UnifiedQueryHistoryEntity.ErrorMessage -> QueryHistoryItem.Error
+                UserId = q.UserId, // Both have UserId
+                SessionId = q.SessionId // Both have SessionId
+            }).ToList();
         }
         catch (Exception ex)
         {
@@ -546,8 +562,8 @@ public class DashboardController : ControllerBase
     {
         try
         {
-            var auditLogs = await _auditService.GetAuditLogsAsync(null, DateTime.UtcNow.AddHours(-1), DateTime.UtcNow);
-            var recentQueries = auditLogs.Where(a => a.Action == "QUERY_EXECUTED").ToList();
+            var auditLogs = await _auditService.GetAuditLogsAsync("", DateTime.UtcNow.AddHours(-1), DateTime.UtcNow);
+            var recentQueries = auditLogs.OfType<AuditLogEntry>().Where(a => a.Action == "QUERY_EXECUTED").ToList();
 
             var averageQueryTime = recentQueries.Any()
                 ? recentQueries.Average(q => ExtractExecutionTime(q.Details))
@@ -578,7 +594,8 @@ public class DashboardController : ControllerBase
     {
         try
         {
-            var userActivities = await _userService.GetUserActivityAsync(userId, DateTime.UtcNow.AddDays(-30), DateTime.UtcNow);
+            var allUserActivities = await _userService.GetUserActivityAsync(userId);
+            var userActivities = allUserActivities.Cast<UserActivity>().ToList();
             return new QuickStats
             {
                 TotalQueries = userActivities.Count,

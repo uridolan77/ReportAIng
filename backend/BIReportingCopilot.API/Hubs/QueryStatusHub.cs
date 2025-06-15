@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Messaging;
 
 namespace BIReportingCopilot.API.Hubs;
 
@@ -177,6 +178,203 @@ public class QueryStatusHub : BaseHub, IProgressHub
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending auto generation progress to user {UserId}", userId);
+        }
+    }
+
+    // IProgressHub interface implementation
+    public async Task SendProgressUpdateAsync(string userId, string operationId, int progressPercentage, string? message = null)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(operationId))
+            {
+                _logger.LogWarning("SendProgressUpdateAsync called with empty userId or operationId");
+                return;
+            }
+
+            await SafeSendAsync(Clients.Group($"user_{userId}"), "ProgressUpdate", new
+            {
+                OperationId = operationId,
+                Progress = Math.Max(0, Math.Min(100, progressPercentage)),
+                Message = message,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending progress update to user {UserId}", userId);
+        }
+    }
+
+    public async Task SendQueryStartedAsync(string userId, string queryId, string query)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(queryId))
+            {
+                _logger.LogWarning("SendQueryStartedAsync called with empty userId or queryId");
+                return;
+            }
+
+            await SafeSendAsync(Clients.Group($"user_{userId}"), "QueryStarted", new
+            {
+                QueryId = queryId,
+                Query = query,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending query started to user {UserId}", userId);
+        }
+    }
+
+    public async Task SendQueryCompletedAsync(string userId, string queryId, object result)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(queryId))
+            {
+                _logger.LogWarning("SendQueryCompletedAsync called with empty userId or queryId");
+                return;
+            }
+
+            await SafeSendAsync(Clients.Group($"user_{userId}"), "QueryCompleted", new
+            {
+                QueryId = queryId,
+                Result = result,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending query completed to user {UserId}", userId);
+        }
+    }
+
+    public async Task SendQueryFailedAsync(string userId, string queryId, string error)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(queryId))
+            {
+                _logger.LogWarning("SendQueryFailedAsync called with empty userId or queryId");
+                return;
+            }
+
+            await SafeSendAsync(Clients.Group($"user_{userId}"), "QueryFailed", new
+            {
+                QueryId = queryId,
+                Error = error,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending query failed to user {UserId}", userId);
+        }
+    }
+
+    public async Task SendNotificationAsync(string userId, string title, string message, string type = "info")
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                _logger.LogWarning("SendNotificationAsync called with empty userId");
+                return;
+            }
+
+            await SafeSendAsync(Clients.Group($"user_{userId}"), "Notification", new
+            {
+                Title = title,
+                Message = message,
+                Type = type,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending notification to user {UserId}", userId);
+        }
+    }
+
+    public async Task SendToGroupAsync(string groupName, string method, object data)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(groupName) || string.IsNullOrWhiteSpace(method))
+            {
+                _logger.LogWarning("SendToGroupAsync called with empty groupName or method");
+                return;
+            }
+
+            await SafeSendAsync(Clients.Group(groupName), method, data);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending to group {GroupName} with method {Method}", groupName, method);
+        }
+    }
+
+    public async Task AddToGroupAsync(string connectionId, string groupName)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(connectionId) || string.IsNullOrWhiteSpace(groupName))
+            {
+                _logger.LogWarning("AddToGroupAsync called with empty connectionId or groupName");
+                return;
+            }
+
+            await Groups.AddToGroupAsync(connectionId, groupName);
+            _logger.LogDebug("Added connection {ConnectionId} to group {GroupName}", connectionId, groupName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding connection {ConnectionId} to group {GroupName}", connectionId, groupName);
+        }
+    }
+
+    public async Task RemoveFromGroupAsync(string connectionId, string groupName)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(connectionId) || string.IsNullOrWhiteSpace(groupName))
+            {
+                _logger.LogWarning("RemoveFromGroupAsync called with empty connectionId or groupName");
+                return;
+            }
+
+            await Groups.RemoveFromGroupAsync(connectionId, groupName);
+            _logger.LogDebug("Removed connection {ConnectionId} from group {GroupName}", connectionId, groupName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing connection {ConnectionId} from group {GroupName}", connectionId, groupName);
+        }
+    }
+
+    public async Task SendSystemNotificationAsync(string message, string type = "info")
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                _logger.LogWarning("SendSystemNotificationAsync called with empty message");
+                return;
+            }
+
+            await SafeSendAsync(Clients.All, "SystemNotification", new
+            {
+                Message = message,
+                Type = type,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending system notification");
         }
     }
 }

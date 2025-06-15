@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Configuration;
@@ -525,7 +526,7 @@ public class CacheService : ICacheService
         return await GetAsync<T>(key);
     }
 
-    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry, CancellationToken cancellationToken) where T : class
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry, CancellationToken cancellationToken)
     {
         await SetAsync(key, value, expiry);
     }
@@ -545,14 +546,22 @@ public class CacheService : ICacheService
         await ClearAllAsync();
     }
 
-    public async Task ClearAsync()
+    public async Task ClearAsync(CancellationToken cancellationToken = default)
     {
         await ClearAllAsync();
     }
 
-    public async Task<ModelsCacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
+    public async Task<Core.Interfaces.Cache.CacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
     {
-        return await GetStatisticsAsync();
+        var modelStats = await GetStatisticsAsync();
+        return new Core.Interfaces.Cache.CacheStatistics
+        {
+            TotalKeys = modelStats.TotalEntries,
+            HitCount = modelStats.HitCount,
+            MissCount = modelStats.MissCount,
+            MemoryUsage = modelStats.TotalSizeBytes,
+            LastUpdated = DateTime.UtcNow
+        };
     }
 
     public async Task<CacheHealthStatus> GetHealthStatusAsync(CancellationToken cancellationToken = default)
@@ -613,6 +622,30 @@ public class CacheService : ICacheService
                 TotalEntries = 0,
                 LastChecked = DateTime.UtcNow
             };
+        }
+    }
+
+    // Missing ICacheService interface methods
+    public async Task RemovePatternAsync(string pattern, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("Removing keys by pattern: {Pattern}", pattern);
+            
+            // For memory cache, we need to track keys to support pattern removal
+            // This is a simplified implementation
+            var keysToRemove = new List<string>();
+            
+            // Note: IMemoryCache doesn't provide key enumeration
+            // In a production system, you'd need to maintain a separate key registry
+            _logger.LogWarning("Pattern removal not fully supported in memory cache: {Pattern}", pattern);
+            
+            await Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing pattern {Pattern}", pattern);
+            throw;
         }
     }
 

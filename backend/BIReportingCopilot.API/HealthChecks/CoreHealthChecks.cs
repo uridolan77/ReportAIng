@@ -2,6 +2,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Caching.Distributed;
 using Azure.AI.OpenAI;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Infrastructure.Configuration;
 using Microsoft.Data.SqlClient;
 using System.Text;
@@ -37,7 +38,7 @@ public class OpenAIHealthCheck : IHealthCheck
             cts.CancelAfter(timeout);
 
             // Quick validation test - lightweight API call
-            var isValid = await _aiService.ValidateQueryIntentAsync("test");
+            var isValid = await _aiService.ValidateQueryIntentAsync("test", "data_query");
 
             if (!isValid)
             {

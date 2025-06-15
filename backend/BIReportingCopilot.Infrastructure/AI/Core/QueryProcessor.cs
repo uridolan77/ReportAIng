@@ -2,6 +2,8 @@ using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Core.Interfaces.Schema;
+using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.QuerySuggestions;
 using IContextManager = BIReportingCopilot.Core.Interfaces.IContextManager;
@@ -80,7 +82,7 @@ public class QueryProcessor : IQueryProcessor
                 Entities = semanticAnalysis.Entities,
                 Keywords = new List<string>(), // Extract from metadata if needed
                 Intent = QueryIntent.General, // Default value
-                Confidence = semanticAnalysis.Confidence
+                Confidence = semanticAnalysis.ConfidenceScore
             };
 
             var sqlCandidates = await _queryOptimizer.GenerateCandidatesAsync(semanticAnalysisForOptimizer, schemaContext);
@@ -384,17 +386,16 @@ public class QueryProcessor : IQueryProcessor
 
         // Based on semantic entities found
         foreach (var entity in contextAnalysis.Entities.Take(3))
-        {
-            switch (entity.Type)
+        {            switch (entity.Type)
             {
-                case EntityType.Table:
+                case nameof(EntityType.Table):
                     suggestions.Add($"Show me all data from {entity.Text}");
                     suggestions.Add($"Count records in {entity.Text}");
                     break;
-                case EntityType.Aggregation:
+                case nameof(EntityType.Aggregation):
                     suggestions.Add($"Calculate {entity.Text} by category");
                     break;
-                case EntityType.DateRange:
+                case nameof(EntityType.DateRange):
                     suggestions.Add($"Show trends over {entity.Text}");
                     break;
             }
@@ -603,7 +604,7 @@ public class QueryProcessor : IQueryProcessor
                 Explanation = "Generated using fallback processing due to error in pipeline",
                 Confidence = fallbackConfidence * 0.7, // Reduce confidence for fallback
                 AlternativeQueries = new List<SqlCandidate>(),
-                SemanticEntities = new List<SemanticEntity>(),
+                SemanticEntities = new List<EntityExtraction>(),
                 Classification = new QueryClassification
                 {
                     Category = QueryCategory.Lookup,
@@ -622,7 +623,7 @@ public class QueryProcessor : IQueryProcessor
                 Explanation = "Unable to process query due to system error",
                 Confidence = 0.1,
                 AlternativeQueries = new List<SqlCandidate>(),
-                SemanticEntities = new List<SemanticEntity>(),
+                SemanticEntities = new List<EntityExtraction>(),
                 Classification = new QueryClassification(),
                 UsedSchema = new SchemaContext()
             };
@@ -637,14 +638,13 @@ public class QueryProcessor : IQueryProcessor
     public async Task<string> ProcessNaturalLanguageQueryAsync(string naturalLanguageQuery, string? context = null, CancellationToken cancellationToken = default)
     {
         try
-        {
-            _logger.LogInformation("🔍 Processing natural language query: {Query}", naturalLanguageQuery);
+        {            _logger.LogInformation("🔍 Processing natural language query: {Query}", naturalLanguageQuery);
 
             // Get schema context
             var schema = await _schemaService.GetSchemaMetadataAsync();
 
             // Use AI service to generate SQL
-            var sql = await _aiService.GenerateSQLAsync(naturalLanguageQuery, cancellationToken);
+            var sql = await _aiService.GenerateSQLAsync(naturalLanguageQuery, schema, cancellationToken);
 
             _logger.LogInformation("✅ Generated SQL: {SQL}", sql);
             return sql;
@@ -669,10 +669,8 @@ public class QueryProcessor : IQueryProcessor
             var semanticAnalysis = await _semanticAnalyzer.AnalyzeAsync(naturalLanguageQuery, cancellationToken);
 
             // Query classification
-            var classification = await _queryClassifier.ClassifyQueryAsync(naturalLanguageQuery);
-
-            // Generate SQL
-            var sql = await _aiService.GenerateSQLAsync(naturalLanguageQuery, cancellationToken);
+            var classification = await _queryClassifier.ClassifyQueryAsync(naturalLanguageQuery);            // Generate SQL
+            var sql = await _aiService.GenerateSQLAsync(naturalLanguageQuery, null, cancellationToken);
 
             // Calculate confidence
             var confidence = await _aiService.CalculateConfidenceScoreAsync(naturalLanguageQuery, sql);
@@ -681,7 +679,16 @@ public class QueryProcessor : IQueryProcessor
             {
                 GeneratedSQL = sql,
                 Confidence = confidence,
-                SemanticAnalysis = semanticAnalysis,
+                SemanticAnalysis = new SemanticAnalysis
+                {
+                    OriginalQuery = naturalLanguageQuery,
+                    Intent = Enum.TryParse<QueryIntent>(semanticAnalysis.Intent, true, out var intent) ? intent : QueryIntent.General,
+                    Entities = semanticAnalysis.Entities.ToList(),
+                    Keywords = semanticAnalysis.Keywords.ToList(),
+                    ConfidenceScore = semanticAnalysis.ConfidenceScore,
+                    ProcessedQuery = naturalLanguageQuery,
+                    Metadata = semanticAnalysis.Metadata
+                },
                 Classification = new QueryClassificationResult
                 {
                     QueryType = classification.Category.ToString(),
@@ -694,8 +701,8 @@ public class QueryProcessor : IQueryProcessor
                     }
                 },
                 ProcessingTime = TimeSpan.FromMilliseconds(100), // Placeholder
-                Suggestions = await GenerateQuerySuggestionsAsync(naturalLanguageQuery),
-                Warnings = ExtractWarnings(sql),
+                Suggestions = (await GetQuerySuggestionsAsync(naturalLanguageQuery)).Select(s => s.Text).ToList(),
+                Warnings = new List<string>(), // TODO: Implement SQL warning extraction
                 Metadata = new Dictionary<string, object>
                 {
                     ["context"] = context ?? string.Empty,
@@ -711,7 +718,7 @@ public class QueryProcessor : IQueryProcessor
                 GeneratedSQL = "SELECT 'Error processing query' as Message",
                 Confidence = 0.1,
                 ProcessingTime = TimeSpan.FromMilliseconds(50),
-                Suggestions = new List<Core.Models.QuerySuggestions.QuerySuggestion>(),
+                Suggestions = new List<string>(),
                 Warnings = new List<string> { "Error occurred during processing" },
                 Metadata = new Dictionary<string, object>()
             };
@@ -728,11 +735,11 @@ public class QueryProcessor : IQueryProcessor
             _logger.LogDebug("🔍 Validating query intent: {Query}", query);
 
             // Use AI service to validate intent
-            var isValid = await _aiService.ValidateQueryIntentAsync(query);
+            var isValid = await _aiService.ValidateQueryIntentAsync(query, "valid", cancellationToken);
 
             // Additional validation using semantic analysis
             var semanticAnalysis = await _semanticAnalyzer.AnalyzeAsync(query, cancellationToken);
-            var hasValidIntent = semanticAnalysis.Intent != QueryIntent.Unknown && semanticAnalysis.ConfidenceScore > 0.5;
+            var hasValidIntent = semanticAnalysis.Intent != QueryIntent.Unknown.ToString() && semanticAnalysis.ConfidenceScore > 0.5;
 
             var result = isValid && hasValidIntent;
             _logger.LogDebug("✅ Query intent validation result: {IsValid}", result);
@@ -749,13 +756,13 @@ public class QueryProcessor : IQueryProcessor
     /// <summary>
     /// Get query suggestions (IQueryProcessor interface)
     /// </summary>
-    public async Task<List<Core.Models.QuerySuggestions.QuerySuggestion>> GetQuerySuggestionsAsync(string partialQuery, CancellationToken cancellationToken = default)
+    public async Task<List<QuerySuggestion>> GetQuerySuggestionsAsync(string partialQuery, CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogDebug("🔍 Getting query suggestions for: {PartialQuery}", partialQuery);
 
-            var suggestions = new List<Core.Models.QuerySuggestions.QuerySuggestion>();
+            var suggestions = new List<QuerySuggestion>();
 
             // Get schema-based suggestions
             var schema = await _schemaService.GetSchemaMetadataAsync();
@@ -764,7 +771,7 @@ public class QueryProcessor : IQueryProcessor
             // Convert to QuerySuggestion objects
             foreach (var suggestion in schemaSuggestions.Take(5))
             {
-                suggestions.Add(new Core.Models.QuerySuggestions.QuerySuggestion
+                suggestions.Add(new QuerySuggestion
                 {
                     Id = long.Parse(Guid.NewGuid().ToString("N")[..8], System.Globalization.NumberStyles.HexNumber),
                     Text = suggestion,
@@ -779,8 +786,7 @@ public class QueryProcessor : IQueryProcessor
 
             // Add contextual suggestions if partial query has content
             if (!string.IsNullOrWhiteSpace(partialQuery))
-            {
-                var contextualSuggestions = await GenerateContextualSuggestionsFromPartial(partialQuery);
+            {                var contextualSuggestions = new List<QuerySuggestion>(); // TODO: Implement contextual suggestions
                 suggestions.AddRange(contextualSuggestions);
             }
 
@@ -790,9 +796,9 @@ public class QueryProcessor : IQueryProcessor
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error getting query suggestions");
-            return new List<Core.Models.QuerySuggestions.QuerySuggestion>
+            return new List<QuerySuggestion>
             {
-                new Core.Models.QuerySuggestions.QuerySuggestion
+                new QuerySuggestion
                 {
                     Id = 1,
                     Text = "Show me recent data",
@@ -806,66 +812,33 @@ public class QueryProcessor : IQueryProcessor
         }
     }
 
-    #endregion
-
-    #region Helper Methods for Interface Implementations
-
-    private List<string> ExtractWarnings(string sql)
+    /// <summary>
+    /// Process query with user context (IQueryProcessor interface)
+    /// </summary>
+    public async Task<QueryProcessingResult> ProcessQueryAsync(string query, string userId, CancellationToken cancellationToken = default)
     {
-        var warnings = new List<string>();
-
-        if (sql.Contains("SELECT *", StringComparison.OrdinalIgnoreCase))
-            warnings.Add("Using SELECT * may impact performance");
-
-        if (sql.Contains("DELETE", StringComparison.OrdinalIgnoreCase) && !sql.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
-            warnings.Add("DELETE without WHERE clause detected");
-
-        return warnings;
-    }
-
-    private async Task<List<Core.Models.QuerySuggestions.QuerySuggestion>> GenerateContextualSuggestionsFromPartial(string partialQuery)
-    {
-        var suggestions = new List<Core.Models.QuerySuggestions.QuerySuggestion>();
-
         try
         {
-            // Analyze partial query for context
-            var lowerPartial = partialQuery.ToLowerInvariant();
-
-            if (lowerPartial.Contains("show") || lowerPartial.Contains("get"))
-            {
-                suggestions.Add(new Core.Models.QuerySuggestions.QuerySuggestion
-                {
-                    Id = long.Parse(Guid.NewGuid().ToString("N")[..8], System.Globalization.NumberStyles.HexNumber),
-                    Text = $"{partialQuery} from last 7 days",
-                    Description = "Add time filter",
-                    Query = $"{partialQuery} from last 7 days",
-                    Confidence = 0.7,
-                    CreatedAt = DateTime.UtcNow,
-                    Source = "contextual"
-                });
-            }
-
-            if (lowerPartial.Contains("total") || lowerPartial.Contains("sum"))
-            {
-                suggestions.Add(new Core.Models.QuerySuggestions.QuerySuggestion
-                {
-                    Id = long.Parse(Guid.NewGuid().ToString("N")[..8], System.Globalization.NumberStyles.HexNumber),
-                    Text = $"{partialQuery} grouped by category",
-                    Description = "Add grouping",
-                    Query = $"{partialQuery} grouped by category",
-                    Confidence = 0.7,
-                    CreatedAt = DateTime.UtcNow,
-                    Source = "contextual"
-                });
-            }
+            _logger.LogInformation("Processing query for user {UserId}: {Query}", userId, query);
+            
+            // Use the existing ProcessQueryWithAnalysisAsync method with user context
+            var context = $"user:{userId}";
+            var result = await ProcessQueryWithAnalysisAsync(query, context, cancellationToken);
+            
+            _logger.LogInformation("Query processed successfully for user {UserId}", userId);
+            return result;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Error generating contextual suggestions");
+            _logger.LogError(ex, "Error processing query for user {UserId}: {Query}", userId, query);
+            return new QueryProcessingResult
+            {
+                Success = false,
+                Error = ex.Message,
+                Query = query,
+                Context = $"user:{userId}"
+            };
         }
-
-        return suggestions;
     }
 
     #endregion

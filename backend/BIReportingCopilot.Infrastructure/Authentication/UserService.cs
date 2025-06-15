@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Services;
 using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
@@ -15,7 +16,7 @@ namespace BIReportingCopilot.Infrastructure.Authentication;
 /// <summary>
 /// Enhanced UserService using bounded contexts for better performance and maintainability
 /// </summary>
-public class UserService : IUserService
+public class UserService : BIReportingCopilot.Core.Interfaces.Services.IUserService
 {
     private readonly ILogger<UserService> _logger;
     private readonly IDbContextFactory _contextFactory;
@@ -722,6 +723,156 @@ public class UserService : IUserService
         // Simple implementation - in production, use proper password hashing
         // Simple hash comparison - in production, use proper password hashing library
         return password.GetHashCode().ToString() == hash;
+    }
+
+    #endregion
+
+    #region IUserService Interface Implementation
+
+    /// <summary>
+    /// Create user async (IUserService interface alias)
+    /// </summary>
+    public async Task<User> CreateUserAsync(User user, CancellationToken cancellationToken = default)
+    {
+        return await CreateAsync(user, cancellationToken);
+    }
+
+    /// <summary>
+    /// Update user async (IUserService interface implementation)
+    /// </summary>
+    public async Task<User> UpdateUserAsync(User user, CancellationToken cancellationToken = default)
+    {
+        return await UpdateAsync(user, cancellationToken);
+    }
+
+    /// <summary>
+    /// Delete user async (IUserService interface alias)
+    /// </summary>
+    public async Task DeleteUserAsync(string id, CancellationToken cancellationToken = default)
+    {
+        await DeleteAsync(id, cancellationToken);
+    }
+
+    /// <summary>
+    /// Validate user credentials async (IUserService interface alias)
+    /// </summary>
+    public async Task<bool> ValidateUserCredentialsAsync(string username, string password)
+    {
+        var user = await ValidateCredentialsAsync(username, password);
+        return user != null;
+    }
+
+    /// <summary>
+    /// Check if user exists by ID (IUserService interface)
+    /// </summary>
+    public async Task<bool> UserExistsAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var user = await GetByIdAsync(id, cancellationToken);
+        return user != null;
+    }
+
+    /// <summary>
+    /// Check if username exists (IUserService interface)
+    /// </summary>
+    public async Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default)
+    {
+        var user = await GetByUsernameAsync(username, cancellationToken);
+        return user != null;
+    }
+
+    /// <summary>
+    /// Check if email exists (IUserService interface)
+    /// </summary>
+    public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var user = await GetByEmailAsync(email, cancellationToken);
+        return user != null;
+    }
+
+    /// <summary>
+    /// Get user by ID (IUserService interface - alias for GetUserAsync)
+    /// </summary>
+    public async Task<User?> GetUserAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var userInfo = await GetUserAsync(userId);
+        return userInfo != null ? new User
+        {
+            Id = userInfo.Id,
+            Username = userInfo.Username,
+            Email = userInfo.Email,
+            DisplayName = userInfo.DisplayName ?? userInfo.Username,
+            IsActive = true,
+            CreatedDate = DateTime.UtcNow
+        } : null;
+    }
+
+    /// <summary>
+    /// Update user preferences (IUserService interface)
+    /// </summary>
+    public async Task UpdateUserPreferencesAsync(string userId, object preferences, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Stub implementation for now
+            _logger.LogInformation("User preferences updated for user {UserId}", userId);
+            await Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user preferences for user {UserId}", userId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Get user activity (IUserService interface)
+    /// </summary>
+    public async Task<IEnumerable<object>> GetUserActivityAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Return empty collection for now
+            return await Task.FromResult(new List<object>());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user activity for user {UserId}", userId);
+            return new List<object>();
+        }
+    }
+
+    /// <summary>
+    /// Get user permissions (IUserService interface)
+    /// </summary>
+    public async Task<IEnumerable<string>> GetUserPermissionsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Return basic permissions for now
+            return await Task.FromResult(new List<string> { "read", "write" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user permissions for user {UserId}", userId);
+            return new List<string>();
+        }
+    }
+
+    /// <summary>
+    /// Log user activity (IUserService interface)
+    /// </summary>
+    public async Task LogUserActivityAsync(string userId, string activity, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Stub implementation - just log it
+            _logger.LogInformation("User activity logged for user {UserId}: {Activity}", userId, activity);
+            await Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error logging user activity for user {UserId}", userId);
+        }
     }
 
     #endregion

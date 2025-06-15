@@ -57,7 +57,7 @@ public class GenerateSqlCommandHandler : IRequestHandler<GenerateSqlCommand, Gen
             }
             else
             {
-                generatedSQL = await _aiService.GenerateSQLAsync(prompt, cancellationToken);
+                generatedSQL = await _aiService.GenerateSQLAsync(prompt, request.Schema, cancellationToken);
             }
             var aiExecutionTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
 
