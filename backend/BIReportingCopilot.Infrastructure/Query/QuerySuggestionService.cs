@@ -758,7 +758,7 @@ public class QuerySuggestionService : IQuerySuggestionService
             UsageCount = entity.UsageCount,
             LastUsed = entity.LastUsed,
             CreatedAt = entity.CreatedDate,
-            Confidence = CalculateConfidence(entity),
+            Confidence = (decimal)CalculateConfidence(entity),
             Source = "Database"
         };
     }

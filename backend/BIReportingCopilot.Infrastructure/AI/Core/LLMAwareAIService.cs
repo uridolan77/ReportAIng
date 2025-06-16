@@ -458,7 +458,7 @@ public class LLMAwareAIService : ILLMAwareAIService
             {
                 QueryText = s,
                 Description = $"Suggested query based on: {partialQuery}",
-                Confidence = 0.8,
+                Confidence = 0.8m,
                 Category = new SuggestionCategory
                 {
                     CategoryKey = "general",

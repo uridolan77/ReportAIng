@@ -689,14 +689,14 @@ public class QueryService : IQueryService
                 suggestions.Add(new QuerySuggestion
                 {
                     Text = $"{partialQuery} by date",
-                    Confidence = 0.8,
+                    Confidence = 0.8m,
                     Category = new SuggestionCategory { CategoryKey = "Temporal", Title = "Temporal" }
                 });
                 
                 suggestions.Add(new QuerySuggestion
                 {
                     Text = $"{partialQuery} top 10",
-                    Confidence = 0.7,
+                    Confidence = 0.7m,
                     Category = new SuggestionCategory { CategoryKey = "Aggregation", Title = "Aggregation" }
                 });
             }

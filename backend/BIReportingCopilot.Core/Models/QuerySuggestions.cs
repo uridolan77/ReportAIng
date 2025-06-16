@@ -102,7 +102,7 @@ public class QuerySuggestion
     public List<string> Keywords { get; set; } = new();
     public List<string> RequiredTables { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public double Confidence { get; set; } = 0.8;
+    public decimal Confidence { get; set; } = 0.8m;
     public string Source { get; set; } = "manual";
 
     /// <summary>

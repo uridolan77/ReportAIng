@@ -911,7 +911,7 @@ EXAMPLES:
             {
                 Text = $"SELECT * FROM table WHERE {partialQuery}",
                 Description = "Complete the query",
-                Confidence = 0.8
+                Confidence = 0.8m
             }
         });
     }

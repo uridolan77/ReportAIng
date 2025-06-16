@@ -770,14 +770,13 @@ public class QueryProcessor : IQueryProcessor
 
             // Convert to QuerySuggestion objects
             foreach (var suggestion in schemaSuggestions.Take(5))
-            {
-                suggestions.Add(new QuerySuggestion
+            {                suggestions.Add(new QuerySuggestion
                 {
                     Id = long.Parse(Guid.NewGuid().ToString("N")[..8], System.Globalization.NumberStyles.HexNumber),
                     Text = suggestion,
                     Description = $"Suggested query based on: {partialQuery}",
                     Query = suggestion,
-                    Confidence = 0.8,
+                    Confidence = 0.8m,
                     UsageCount = 0,
                     CreatedAt = DateTime.UtcNow,
                     Source = "schema_analysis"
@@ -797,14 +796,13 @@ public class QueryProcessor : IQueryProcessor
         {
             _logger.LogError(ex, "❌ Error getting query suggestions");
             return new List<QuerySuggestion>
-            {
-                new QuerySuggestion
+            {                new QuerySuggestion
                 {
                     Id = 1,
                     Text = "Show me recent data",
                     Description = "Default suggestion",
                     Query = "Show me recent data",
-                    Confidence = 0.5,
+                    Confidence = 0.5m,
                     CreatedAt = DateTime.UtcNow,
                     Source = "default"
                 }

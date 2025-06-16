@@ -329,6 +329,9 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.NormalizedQuery).HasMaxLength(4000);
             entity.Property(e => e.CreatedBy).HasMaxLength(500);
             entity.Property(e => e.UpdatedBy).HasMaxLength(500);
+            
+            // Ignore the ResultData navigation property as it's a complex type
+            entity.Ignore(e => e.ResultData);
         });
 
         modelBuilder.Entity<Core.Models.UnifiedQueryHistoryEntity>(entity =>
@@ -491,6 +494,7 @@ Return only the SQL query without any explanation or markdown formatting.",
             entity.Property(e => e.RequiredPermissions).HasMaxLength(200);
             entity.Property(e => e.Tags).HasMaxLength(300);
             entity.Property(e => e.Relevance).HasDefaultValue(0.8).HasPrecision(3, 2);
+            entity.Property(e => e.Confidence).HasDefaultValue(0.8).HasPrecision(3, 2);
             entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(256);
             entity.Property(e => e.UpdatedBy).HasMaxLength(256);
 
