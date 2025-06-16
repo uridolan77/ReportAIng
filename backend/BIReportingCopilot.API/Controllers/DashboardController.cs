@@ -539,7 +539,7 @@ public class DashboardController : ControllerBase
             var queryHistory = await _queryService.GetQueryHistoryAsync(userId, 1, limit);
             return queryHistory.Select(q => new QueryHistoryItem
             {
-                Id = q.Id,
+                Id = q.Id.ToString(),
                 Question = q.OriginalQuery, // UnifiedQueryHistoryEntity.OriginalQuery -> QueryHistoryItem.Question
                 Sql = q.GeneratedSql, // UnifiedQueryHistoryEntity.GeneratedSql -> QueryHistoryItem.Sql
                 ExecutionTimeMs = (int)q.ExecutionTimeMs, // Already int in both, just cast long to int

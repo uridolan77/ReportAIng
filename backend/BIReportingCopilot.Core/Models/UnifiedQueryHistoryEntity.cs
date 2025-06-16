@@ -8,7 +8,7 @@ public class UnifiedQueryHistoryEntity
     /// <summary>
     /// Unique identifier for the query history entry
     /// </summary>
-    public string Id { get; set; } = string.Empty;
+    public long Id { get; set; }
 
     /// <summary>
     /// User ID who executed the query
