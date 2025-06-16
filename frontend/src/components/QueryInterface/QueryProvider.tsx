@@ -190,11 +190,17 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
           
           // Parse the data which is already JSON stringified by the WebSocket hook
           const message = JSON.parse(lastMessage.data);
+          console.log('🔄 Query processing progress update - FULL MESSAGE:', message);
           console.log('🔄 Query processing progress update:', {
             type: lastMessage.type,
             message,
             messageKeys: Object.keys(message),
-            hasDetails: !!(message.Details || message.details)
+            hasDetails: !!(message.Details || message.details),
+            stage: message.Stage || message.stage,
+            messageText: message.Message || message.message,
+            progress: message.Progress || message.progress,
+            queryId: message.QueryId || message.queryId,
+            timestamp: message.Timestamp || message.timestamp
           });
 
           // Update current query ID and stage - handle both uppercase and lowercase field names
@@ -617,6 +623,63 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
         response: (error as any)?.response?.data,
         status: (error as any)?.response?.status
       });
+
+      // Add error stage to processing viewer
+      setProcessingStages(prev => {
+        // Get more detailed error information
+        const responseData = (error as any)?.response?.data;
+        const httpStatus = (error as any)?.response?.status;
+        const errorMessage = responseData?.message || responseData?.error || (error instanceof Error ? error.message : 'Unknown error');
+        
+        const errorStage = {
+          stage: 'error',
+          message: `Query failed: ${errorMessage}`,
+          progress: 100,
+          timestamp: new Date().toISOString(),
+          details: {
+            error: errorMessage,
+            httpStatus: httpStatus || 'Unknown',
+            httpStatusText: httpStatus === 400 ? 'Bad Request' : httpStatus === 401 ? 'Unauthorized' : httpStatus === 500 ? 'Internal Server Error' : 'Unknown',
+            responseData: responseData,
+            fullError: error instanceof Error ? error.message : 'Unknown error',
+            endpoint: '/api/query/execute',
+            suggestion: httpStatus === 400 ? 'Please check your query syntax and try again' : 
+                       httpStatus === 401 ? 'Please check your authentication and try again' :
+                       httpStatus === 500 ? 'Server error - please try again later' : 
+                       'Please try again or contact support'
+          },
+          status: 'error'
+        };
+
+        // Mark all existing stages as 100% complete and add error stage
+        const updatedStages = prev.map(stage => ({
+          ...stage,
+          progress: 100,
+          status: stage.status === 'active' ? 'completed' : stage.status
+        }));
+
+        console.log('❌ Added error stage to processing viewer:', errorStage);
+        return [...updatedStages, errorStage];
+      });
+
+      setCurrentProcessingStage('error');
+      
+      // Show processing details to display the error
+      setShowProcessingDetails(true);
+      setProcessingViewMode('processing');
+
+      // Create error result for the result display
+      const errorResult = {
+        success: false,
+        error: error instanceof Error ? error.message : 'Query execution failed',
+        result: null,
+        sql: '',
+        promptDetails: null,
+        queryId: currentQueryId || ''
+      };
+
+      setUnifiedResult(errorResult, query, 'query', 'main');
+      setActiveTab('result');
     } finally {
       setProgress(0);
       // Don't automatically hide processing details - let the UI manage this

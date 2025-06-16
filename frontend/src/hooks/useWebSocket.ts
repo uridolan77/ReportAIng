@@ -196,6 +196,15 @@ export const useSignalR = (): UseSignalRReturn => {
         hubConnection.on('QueryProcessingProgress', (data) => {
           if (process.env.NODE_ENV === 'development') {
             console.log('🔄 Received QueryProcessingProgress via SignalR:', data);
+            console.log('🔄 QueryProcessingProgress data details:', {
+              stage: data?.Stage || data?.stage,
+              message: data?.Message || data?.message,
+              progress: data?.Progress || data?.progress,
+              queryId: data?.QueryId || data?.queryId,
+              timestamp: data?.Timestamp || data?.timestamp,
+              details: data?.Details || data?.details,
+              allKeys: Object.keys(data || {})
+            });
           }
           const message: WebSocketMessage = {
             data: JSON.stringify(data),
