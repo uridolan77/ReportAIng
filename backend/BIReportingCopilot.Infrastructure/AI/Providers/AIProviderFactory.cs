@@ -39,39 +39,15 @@ public class AIProviderFactory : IAIProviderFactory
     {
         try
         {
-            // Try to get LLM Management service (lazy loading to avoid circular dependency)
-            var llmManagementService = _serviceProvider.GetService<ILLMManagementService>();
-
-            if (llmManagementService != null)
-            {
-                // Get the default provider from LLM Management system
-                var providers = llmManagementService.GetProvidersAsync().GetAwaiter().GetResult();
-                var defaultProvider = providers.FirstOrDefault(p => p.IsDefault && p.IsEnabled);
-
-                if (defaultProvider != null)
-                {
-                    _logger.LogInformation("Using LLM managed provider: {ProviderName} ({ProviderId})",
-                        defaultProvider.Name, defaultProvider.ProviderId);
-                    return GetManagedProvider(defaultProvider);
-                }
-
-                // Fallback to first enabled provider
-                var enabledProvider = providers.FirstOrDefault(p => p.IsEnabled);
-                if (enabledProvider != null)
-                {
-                    _logger.LogInformation("Using first enabled LLM provider: {ProviderName} ({ProviderId})",
-                        enabledProvider.Name, enabledProvider.ProviderId);
-                    return GetManagedProvider(enabledProvider);
-                }
-            }
-
-            _logger.LogWarning("No enabled providers found in LLM Management system. Falling back to configuration-based provider.");
+            // For synchronous calls, skip LLM Management service to avoid deadlocks
+            // and potential stack overflow from async-to-sync calls
+            _logger.LogDebug("Using legacy configuration for synchronous provider selection");
             return GetLegacyProvider();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting provider from LLM Management system. Falling back to configuration-based provider.");
-            return GetLegacyProvider();
+            _logger.LogError(ex, "Error getting provider. Using fallback.");
+            return new FallbackAIProvider(_logger);
         }
     }
 
@@ -104,31 +80,9 @@ public class AIProviderFactory : IAIProviderFactory
             throw new ArgumentException("Provider name cannot be null or empty", nameof(providerName));
         }
 
-        try
-        {
-            // Try to get LLM Management service (lazy loading to avoid circular dependency)
-            var llmManagementService = _serviceProvider.GetService<ILLMManagementService>();
-
-            if (llmManagementService != null)
-            {
-                // First try to get from LLM Management system
-                var providers = llmManagementService.GetProvidersAsync().GetAwaiter().GetResult();
-                var managedProvider = providers.FirstOrDefault(p =>
-                    p.ProviderId.Equals(providerName, StringComparison.OrdinalIgnoreCase) ||
-                    p.Name.Equals(providerName, StringComparison.OrdinalIgnoreCase));
-
-                if (managedProvider != null && managedProvider.IsEnabled)
-                {
-                    _logger.LogInformation("Using LLM managed provider: {ProviderName} ({ProviderId})",
-                        managedProvider.Name, managedProvider.ProviderId);
-                    return GetManagedProvider(managedProvider);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting managed provider {ProviderName}. Falling back to legacy provider.", providerName);
-        }
+        // For synchronous calls, skip LLM Management service to avoid deadlocks
+        // and potential stack overflow from async-to-sync calls
+        _logger.LogDebug("Using legacy provider factory for synchronous call: {ProviderName}", providerName);
 
         // Fallback to legacy provider factory
         if (_providerFactories.TryGetValue(providerName, out var factory))
@@ -194,7 +148,7 @@ public class AIProviderFactory : IAIProviderFactory
     /// </summary>
     public IAIProvider CreateProvider(string providerType)
     {
-        return CreateProviderAsync(providerType).GetAwaiter().GetResult();
+        return GetProvider(providerType);
     }
 
     /// <summary>
@@ -202,7 +156,39 @@ public class AIProviderFactory : IAIProviderFactory
     /// </summary>
     public async Task<IAIProvider> CreateProviderAsync(string providerType, CancellationToken cancellationToken = default)
     {
-        return await CreateProviderAsync(providerType);
+        if (string.IsNullOrEmpty(providerType))
+        {
+            throw new ArgumentException("Provider type cannot be null or empty", nameof(providerType));
+        }
+
+        try
+        {
+            // Try to get LLM Management service (lazy loading to avoid circular dependency)
+            var llmManagementService = _serviceProvider.GetService<ILLMManagementService>();
+
+            if (llmManagementService != null)
+            {
+                // First try to get from LLM Management system
+                var providers = await llmManagementService.GetProvidersAsync();
+                var managedProvider = providers.FirstOrDefault(p =>
+                    p.ProviderId.Equals(providerType, StringComparison.OrdinalIgnoreCase) ||
+                    p.Name.Equals(providerType, StringComparison.OrdinalIgnoreCase));
+
+                if (managedProvider != null && managedProvider.IsEnabled)
+                {
+                    _logger.LogInformation("Using LLM managed provider: {ProviderName} ({ProviderId})",
+                        managedProvider.Name, managedProvider.ProviderId);
+                    return GetManagedProvider(managedProvider);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting managed provider {ProviderType}. Falling back to legacy provider.", providerType);
+        }
+
+        // Fallback to legacy provider factory (synchronous call)
+        return GetProvider(providerType);
     }
 
     /// <summary>
