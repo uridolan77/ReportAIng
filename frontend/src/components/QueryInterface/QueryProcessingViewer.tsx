@@ -87,7 +87,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
   };
 
   // Helper function to get step timing
-  const getStepTiming = (stageData: ProcessingStage, index: number) => {
+  const getStepTiming = (stageData: ProcessingStage) => {
     const stepTiming = timingInfo.stepTimes.find(t => t.stage === stageData.stage);
     return stepTiming || null;
   };
@@ -98,18 +98,19 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
       return isProcessing ? 0 : 0; // Start at 0 when processing begins
     }
 
-    // Define stage weights for more realistic progress
+    // Define stage weights for more realistic progress - increased weights for key stages
     const stageWeights: Record<string, number> = {
       'initializing': 5,
       'connecting': 5,
       'started': 5,
       'cache_check': 5,
-      'schema_loading': 10,
-      'schema_analysis': 10,
+      'schema_loading': 15, // Increased importance
+      'schema_analysis': 15, // Increased importance
       'prompt_building': 10,
-      'ai_processing': 30,
+      'prompt_details': 5,
+      'ai_processing': 25, // Reduced from 30 to balance
       'ai_completed': 5,
-      'sql_validation': 5,
+      'sql_validation': 10, // Increased importance
       'sql_execution': 15,
       'confidence_calculation': 5,
       'visualization_generation': 5,
@@ -130,7 +131,8 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
     // If we have active stages, calculate weighted progress
     if (totalWeight > 0) {
       const weightedProgress = Math.round((completedWeight / totalWeight) * 100);
-      // Ensure progress doesn't exceed 100% and starts properly
+      
+      // Ensure progress doesn't exceed 100% and starts properly - enhanced
       return Math.min(Math.max(weightedProgress, 0), 100);
     }
 
@@ -190,13 +192,16 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
     const firstStage = sortedStages[0];
     const lastStage = sortedStages[sortedStages.length - 1];
 
+    if (!firstStage || !lastStage) return { totalTime: 0, stepTimes: [] };
+
     const startTime = new Date(firstStage.timestamp).getTime();
     const endTime = isProcessing ? Date.now() : new Date(lastStage.timestamp).getTime();
     const totalTime = endTime - startTime;
 
     const stepTimes = sortedStages.map((stage, index) => {
       const stageTime = new Date(stage.timestamp).getTime();
-      const prevTime = index > 0 ? new Date(sortedStages[index - 1].timestamp).getTime() : startTime;
+      const prevStage = index > 0 ? sortedStages[index - 1] : null;
+      const prevTime = prevStage ? new Date(prevStage.timestamp).getTime() : startTime;
       const stepDuration = stageTime - prevTime;
 
       return {
@@ -214,7 +219,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
 
   // Debug logging for hidden mode (only when stages actually change)
   React.useEffect(() => {
-    if ((mode === 'hidden' || !isVisible) && process.env.NODE_ENV === 'development') {
+    if ((mode === 'hidden' || !isVisible) && process.env['NODE_ENV'] === 'development') {
       console.log('🔍 QueryProcessingViewer Hidden Mode:', {
         stages: stages.length,
         completedStages,
@@ -819,11 +824,10 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
         </div>
       </div>
 
-      {/* Processing Timeline - only show in processing and advanced modes */}
-      {(mode === 'processing' || mode === 'advanced') && (
-        <div style={{ marginTop: '16px' }}>
+      {/* Processing Timeline - SHOW BY DEFAULT instead of only in processing and advanced modes */}
+      <div style={{ marginTop: '16px' }}>
           <Text strong style={{ fontSize: '14px', color: '#374151', marginBottom: '12px', display: 'block' }}>
-            Processing Steps
+            Processing Steps {stages.length > 0 && `(${stages.length} stages)`}
           </Text>
 
         {stages.length === 0 && isProcessing ? (
@@ -894,7 +898,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
                       </Text>
                       <Space size="small">
                         {(() => {
-                          const stepTiming = getStepTiming(stageData, index);
+                          const stepTiming = getStepTiming(stageData);
                           return stepTiming && stepTiming.duration > 0 ? (
                             <Tag color="cyan" style={{ fontSize: '9px', fontWeight: 500 }}>
                               {formatDuration(stepTiming.duration)}
@@ -926,6 +930,68 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
                       {stageData.message || 'Processing...'}
                     </Text>
 
+                    {/* Show key information summary for important stages BY DEFAULT */}
+                    {stageData.details && (stageData.stage === 'ai_processing' || stageData.stage === 'sql_execution' || stageData.stage === 'completed') && (
+                      <div style={{ marginTop: '8px' }}>
+                        {stageData.stage === 'ai_processing' && stageData.details?.promptDetails && (
+                          <div style={{
+                            background: '#e0f2fe',
+                            padding: '8px',
+                            borderRadius: '6px',
+                            border: '1px solid #0ea5e9',
+                            fontSize: '11px'
+                          }}>
+                            <Text strong style={{ color: '#0c4a6e' }}>🤖 AI Processing</Text>
+                            <div style={{ color: '#374151', marginTop: '4px' }}>
+                              Model: {stageData.details.promptDetails.model || 'GPT-4'}
+                              {stageData.details.promptDetails.tokenCount && (
+                                <span> • Tokens: {stageData.details.promptDetails.tokenCount}</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {stageData.stage === 'sql_execution' && stageData.details && (
+                          <div style={{
+                            background: '#f0f9ff',
+                            padding: '8px',
+                            borderRadius: '6px',
+                            border: '1px solid #3b82f6',
+                            fontSize: '11px'
+                          }}>
+                            <Text strong style={{ color: '#1e40af' }}>🗄️ Database Execution</Text>
+                            <div style={{ color: '#374151', marginTop: '4px' }}>
+                              {stageData.details.executionTime ? `Time: ${stageData.details.executionTime}ms` : 'Executing query...'}
+                              {stageData.details.rowCount && (
+                                <span> • Rows: {stageData.details.rowCount}</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {stageData.stage === 'completed' && stageData.details && (
+                          <div style={{
+                            background: '#f0fdf4',
+                            padding: '8px',
+                            borderRadius: '6px',
+                            border: '1px solid #22c55e',
+                            fontSize: '11px'
+                          }}>
+                            <Text strong style={{ color: '#15803d' }}>✅ Completion Summary</Text>
+                            <div style={{ color: '#374151', marginTop: '4px' }}>
+                              Status: {stageData.details.success ? 'Success' : 'Error'}
+                              {stageData.details.rowCount && (
+                                <span> • {stageData.details.rowCount} rows returned</span>
+                              )}
+                              {stageData.details.executionTime && (
+                                <span> • {stageData.details.executionTime}ms total</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Expandable details for each step */}
                     {expandedPanels.includes(`details-${index}`) && (
                       <div style={{
@@ -941,7 +1007,7 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
                               Step Details
                             </Text>
                             {(() => {
-                              const stepTiming = getStepTiming(stageData, index);
+                              const stepTiming = getStepTiming(stageData);
                               return stepTiming ? (
                                 <Space size="small">
                                   <Tag color="blue" style={{ fontSize: '10px' }}>
@@ -1210,7 +1276,6 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
           </Timeline>
         )}
         </div>
-      )}
 
       {isProcessing && (
         <div style={{

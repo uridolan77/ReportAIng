@@ -121,7 +121,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
       sessionId: result.sessionId || getOrCreateSessionId()
     });
 
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.log('🔄 Unified result set:', {
         hasResult: !!result,
         success: result?.success,
@@ -162,7 +162,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   const [processingStages, setProcessingStages] = useState<any[]>([]);
   const [currentProcessingStage, setCurrentProcessingStage] = useState<string>('');
   const [showProcessingDetails, setShowProcessingDetails] = useState(false);
-  const [processingViewMode, setProcessingViewMode] = useState<'minimal' | 'processing' | 'advanced' | 'hidden'>('hidden');
+  const [processingViewMode, setProcessingViewMode] = useState<'minimal' | 'processing' | 'advanced' | 'hidden'>('processing');
   const [currentQueryId, setCurrentQueryId] = useState<string>('');
 
   // Refs
@@ -248,6 +248,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
           // Auto-show processing details when query starts
           if (stage === 'started') {
             setShowProcessingDetails(true);
+            setProcessingViewMode('processing'); // Show details by default
             setProcessingStages([]); // Clear previous stages
             console.log('🚀 Query processing started - showing processing details');
           }
@@ -638,7 +639,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   }, [currentResult, query, addToFavoritesMutation]);
 
   // Handle wizard query generation
-  const handleWizardQueryGenerated = useCallback(async (generatedQuery: string, wizardData: any) => {
+  const handleWizardQueryGenerated = useCallback(async (generatedQuery: string, _wizardData: any) => {
     setQuery(generatedQuery);
     setShowWizard(false);
     setProgress(10);
@@ -660,7 +661,7 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
   }, [executeQueryMutation, createQueryRequest, setActiveResult, clearActiveResult]);
 
   // Handle template application
-  const handleTemplateApply = useCallback(async (generatedQuery: string, template: any) => {
+  const handleTemplateApply = useCallback(async (generatedQuery: string, _template: any) => {
     setQuery(generatedQuery);
     setShowTemplateLibrary(false);
     setProgress(10);
