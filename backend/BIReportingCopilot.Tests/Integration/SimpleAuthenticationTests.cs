@@ -12,6 +12,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
+using IPasswordHasher = BIReportingCopilot.Core.Interfaces.Security.IPasswordHasher;
+using IAuditService = BIReportingCopilot.Core.Interfaces.Security.IAuditService;
+using ICacheService = BIReportingCopilot.Core.Interfaces.Cache.ICacheService;
+using IMfaService = BIReportingCopilot.Core.Interfaces.Security.IMfaService;
+using IMfaChallengeRepository = BIReportingCopilot.Core.Interfaces.Security.IMfaChallengeRepository;
+using ITokenRepository = BIReportingCopilot.Infrastructure.Interfaces.ITokenRepository;
+using IUserRepository = BIReportingCopilot.Infrastructure.Interfaces.IUserRepository;
+using IAuthenticationService = BIReportingCopilot.Core.Interfaces.Security.IAuthenticationService;
 
 namespace BIReportingCopilot.Tests.Integration;
 
@@ -132,7 +140,7 @@ public class SimpleAuthenticationTests : IDisposable
     }
 
     [Fact]
-    public async Task PasswordHasher_HashAndVerify_WorksCorrectly()
+    public void PasswordHasher_HashAndVerify_WorksCorrectly()
     {
         // Arrange
         var password = "TestPassword123!";

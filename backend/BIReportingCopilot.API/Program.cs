@@ -411,6 +411,7 @@ builder.Services.AddScoped<IAIProviderFactory, BIReportingCopilot.Infrastructure
 
 // ===== LLM MANAGEMENT SERVICES =====
 builder.Services.AddScoped<ILLMManagementService, BIReportingCopilot.Infrastructure.AI.Management.LLMManagementService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Management.LLMManagementService>();
 
 // ===== LLM-AWARE AI SERVICE =====
 // Register the base AI service directly (without circular dependency)

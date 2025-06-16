@@ -7,6 +7,7 @@ using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Security;
 using Moq;
 
 namespace BIReportingCopilot.Tests.Unit;

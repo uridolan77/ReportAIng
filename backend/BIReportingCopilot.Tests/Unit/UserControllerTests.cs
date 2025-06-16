@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using FluentAssertions;
 using BIReportingCopilot.API.Controllers;
 using BIReportingCopilot.Core.Interfaces;
+using BIReportingCopilot.Core.Interfaces.Services;
 using BIReportingCopilot.Core.Models;
 using System.Security.Claims;
 
