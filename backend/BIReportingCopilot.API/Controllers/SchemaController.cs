@@ -141,15 +141,13 @@ public class SchemaController : ControllerBase
         try
         {
             _logger.LogInformation("Getting data sources");
-            var tables = await _schemaManagementService.GetTablesAsync();
-            
-            // Transform to simple format expected by frontend
+            var tables = await _schemaManagementService.GetTablesAsync();            // Transform to simple format expected by frontend
             var dataSources = tables.Select(t => new
             {
                 name = t.Name,
                 schema = t.Schema ?? "dbo",
                 type = "table",
-                rowCount = t.RowCount ?? 0,
+                rowCount = (int)t.RowCount,
                 columns = t.Columns?.Count ?? 0
             }).ToList();
             

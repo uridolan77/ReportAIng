@@ -697,13 +697,11 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ITuningS
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Repository.ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
 
-// Register SchemaManagementService for Infrastructure interface
+// Register SchemaManagementService for Infrastructure interface (used by simplified SchemaController)
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
 
 // IConnectionStringProvider already registered before configuration validation
 builder.Services.AddScoped<IDatabaseInitializationService, BIReportingCopilot.Infrastructure.Data.DatabaseInitializationService>();
-// Register Infrastructure schema management service (temporary fix for DI issue)
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
 // Focused tuning services (Enhancement #1: Refactor "God" Services)
 builder.Services.AddScoped<IBusinessTableManagementService, BIReportingCopilot.Infrastructure.Business.BusinessTableManagementService>();
 // Query Pattern Management Service - register the concrete implementation and wrapper
@@ -767,11 +765,13 @@ builder.Services.AddEndpointsApiExplorer();
 var healthChecks = builder.Services.AddHealthChecks();
 
 // Add fast health checks that return cached status
-healthChecks.AddCheck<BIReportingCopilot.API.HealthChecks.BIDatabaseHealthCheck>("bidatabase");
+// TODO: Fix missing health check classes
+// healthChecks.AddCheck<BIReportingCopilot.API.HealthChecks.BIDatabaseHealthCheck>("bidatabase");
 
 // Add configuration health checks (Enhancement #3: Configuration Management)
 healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.ConfigurationHealthCheck>("configuration");
-healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.ConfigurationPerformanceHealthCheck>("configuration-performance");
+// TODO: Fix missing health check class
+// healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.ConfigurationPerformanceHealthCheck>("configuration-performance");
 
 // Add bounded contexts health check (Enhancement #4: Database Context Optimization)
 healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.BoundedContextsHealthCheck>("bounded-contexts");
