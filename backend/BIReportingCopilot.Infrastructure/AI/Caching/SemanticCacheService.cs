@@ -410,14 +410,14 @@ public class SemanticCacheService : ISemanticCacheService
         });
     }
 
-    public Task<BIReportingCopilot.Core.Interfaces.CachePerformanceMetrics> GetCachePerformanceMetricsAsync()
+    public Task<BIReportingCopilot.Core.Models.CachePerformanceMetrics> GetCachePerformanceMetricsAsync()
     {
-        return Task.FromResult(new BIReportingCopilot.Core.Interfaces.CachePerformanceMetrics
+        return Task.FromResult(new BIReportingCopilot.Core.Models.CachePerformanceMetrics
         {
             AverageHitTime = TimeSpan.FromMilliseconds(10),
             AverageMissTime = TimeSpan.FromMilliseconds(100),
             HitRatio = 0.75,
-            LastUpdated = DateTime.UtcNow
+            GeneratedAt = DateTime.UtcNow
         });
     }
 
@@ -685,21 +685,21 @@ public class SemanticCacheService : ISemanticCacheService
     /// <summary>
     /// Find similar cached entries (ISemanticCacheService interface)
     /// </summary>
-    public async Task<List<BIReportingCopilot.Core.Interfaces.AI.SemanticCacheEntry>> FindSimilarAsync(string query, double threshold = 0.8, int maxResults = 10, CancellationToken cancellationToken = default)
+    public async Task<List<BIReportingCopilot.Core.Models.SemanticCacheEntry>> FindSimilarAsync(string query, double threshold = 0.8, int maxResults = 10, CancellationToken cancellationToken = default)
     {
         try
         {
             var enhancedEntries = await FindSimilarQueriesAsync(query, maxResults);
 
-            return enhancedEntries.Select(e => new BIReportingCopilot.Core.Interfaces.AI.SemanticCacheEntry
+            return enhancedEntries.Select(e => new BIReportingCopilot.Core.Models.SemanticCacheEntry
             {
-                Key = e.Id,
-                Query = e.OriginalQuery,
-                Value = e.SerializedResponse,
-                SimilarityScore = e.ConfidenceScore,
+                Id = e.Id,
+                OriginalQuery = e.OriginalQuery,
+                SerializedResponse = e.SerializedResponse,
+                ConfidenceScore = e.ConfidenceScore,
                 CreatedAt = e.CreatedAt,
                 ExpiresAt = e.CreatedAt.Add(_config.DefaultExpiration),
-                Metadata = new Dictionary<string, object>
+                ResultData = new Dictionary<string, object>
                 {
                     ["sql"] = e.SqlQuery ?? string.Empty,
                     ["confidence"] = e.ConfidenceScore
@@ -709,7 +709,7 @@ public class SemanticCacheService : ISemanticCacheService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error finding similar cached entries for query: {Query}", query);
-            return new List<BIReportingCopilot.Core.Interfaces.AI.SemanticCacheEntry>();
+            return new List<BIReportingCopilot.Core.Models.SemanticCacheEntry>();
         }
     }
 

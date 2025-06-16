@@ -4,6 +4,7 @@ using Azure.AI.OpenAI;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Infrastructure.Configuration;
+using BIReportingCopilot.Core.Interfaces.Repository;
 using Microsoft.Data.SqlClient;
 using System.Text;
 

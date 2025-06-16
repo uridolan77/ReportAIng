@@ -349,6 +349,9 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.UpdatedBy).HasMaxLength(500);
         });
 
+        // Configure CachePerformanceMetrics as keyless entity (it's used for metrics, not persistence)
+        modelBuilder.Entity<Core.Models.CachePerformanceMetrics>().HasNoKey();
+
         // Apply schema management configurations
         modelBuilder.ApplyConfiguration(new BusinessSchemaConfiguration());
         modelBuilder.ApplyConfiguration(new BusinessSchemaVersionConfiguration());

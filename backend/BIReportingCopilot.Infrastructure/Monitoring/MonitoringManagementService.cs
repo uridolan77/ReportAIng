@@ -452,25 +452,20 @@ public class MonitoringManagementService : BIReportingCopilot.Core.Interfaces.Mo
     /// <summary>
     /// Get performance metrics async (Core.Interfaces.Monitoring.IMetricsCollector interface)
     /// </summary>
-    public async Task<BIReportingCopilot.Core.Interfaces.Monitoring.PerformanceMetrics> GetPerformanceMetricsAsync(DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
+    public async Task<BIReportingCopilot.Core.Models.PerformanceMetrics> GetPerformanceMetricsAsync(DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
     {
         await Task.CompletedTask;
         var snapshot = GetSnapshot();
 
-        return new BIReportingCopilot.Core.Interfaces.Monitoring.PerformanceMetrics
+        return new BIReportingCopilot.Core.Models.PerformanceMetrics
         {
-            PeriodStart = from ?? DateTime.UtcNow.AddHours(-1),
-            PeriodEnd = to ?? DateTime.UtcNow,
-            TotalQueries = (int)snapshot.TotalQueries,
-            AverageQueryTime = 100.0, // Default value
-            MedianQueryTime = 90.0,
-            P95QueryTime = 200.0,
-            P99QueryTime = 500.0,
-            TotalAIRequests = (int)snapshot.TotalAIOperations,
-            AverageAIResponseTime = 1500.0,
-            CacheHits = (int)snapshot.TotalCacheOperations / 2, // Estimate
-            CacheMisses = (int)snapshot.TotalCacheOperations / 2, // Estimate
-            TotalErrors = (int)snapshot.TotalErrors
+            TotalOperations = (int)snapshot.TotalQueries,
+            AverageResponseTime = 100.0, // Default value
+            MedianResponseTime = 90.0,
+            P95ResponseTime = 200.0,
+            ErrorCount = (int)snapshot.TotalErrors,
+            AverageExecutionTime = TimeSpan.FromMilliseconds(100),
+            LastUpdated = DateTime.UtcNow
         };
     }
 

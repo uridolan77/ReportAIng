@@ -1,5 +1,7 @@
 namespace BIReportingCopilot.Core.Models;
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 /// <summary>
 /// Cache health status information
 /// </summary>
@@ -13,6 +15,7 @@ public class CacheHealthStatus
     /// <summary>
     /// List of health issues if any
     /// </summary>
+    [NotMapped]
     public List<string> Issues { get; set; } = new();
 
     /// <summary>
@@ -33,6 +36,7 @@ public class CacheHealthStatus
     /// <summary>
     /// Additional health metrics
     /// </summary>
+    [NotMapped]
     public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
 
     /// <summary>

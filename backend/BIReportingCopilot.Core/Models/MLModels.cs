@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BIReportingCopilot.Core.Models;
 
@@ -18,6 +19,7 @@ public class QueryMetrics
     public bool IsSuccessful { get; set; }
     public double? ConfidenceScore { get; set; }
     public string? ErrorMessage { get; set; }
+    [NotMapped]
     public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
 
     // Aggregate metrics (from GetQueryHistoryQuery)
@@ -25,7 +27,9 @@ public class QueryMetrics
     public int SuccessfulQueries { get; set; }
     public double AverageExecutionTime { get; set; }
     public double SuccessRate { get; set; }
+    [NotMapped]
     public List<string> MostCommonErrors { get; set; } = new();
+    [NotMapped]
     public List<string> PopularQuestions { get; set; } = new();
 
     // Additional properties expected by Infrastructure services

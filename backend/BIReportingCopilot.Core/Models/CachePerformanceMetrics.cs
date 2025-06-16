@@ -1,8 +1,13 @@
 namespace BIReportingCopilot.Core.Models;
 
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+
 /// <summary>
-/// Cache performance metrics
+/// Cache performance metrics - Primary definition (consolidates all duplicates)
+/// Used across Core.Models, Core.Interfaces, and Infrastructure.AI.Core.Models
 /// </summary>
+[Table("CachePerformanceMetrics")]
 public class CachePerformanceMetrics
 {
     /// <summary>
@@ -48,6 +53,7 @@ public class CachePerformanceMetrics
     /// <summary>
     /// Additional performance metrics
     /// </summary>
+    [NotMapped]
     public Dictionary<string, double> AdditionalMetrics { get; set; } = new();
 
     /// <summary>
@@ -73,5 +79,14 @@ public class CachePerformanceMetrics
     {
         get => HitRate;
         set => HitRate = value;
+    }
+
+    /// <summary>
+    /// Last updated timestamp (alias for GeneratedAt)
+    /// </summary>
+    public DateTime LastUpdated
+    {
+        get => GeneratedAt;
+        set => GeneratedAt = value;
     }
 }

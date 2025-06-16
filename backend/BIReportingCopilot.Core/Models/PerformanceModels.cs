@@ -1,5 +1,7 @@
 namespace BIReportingCopilot.Core.Models;
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 /// <summary>
 /// Query execution metrics for performance tracking
 /// </summary>
@@ -14,6 +16,7 @@ public class QueryExecutionMetrics
     public int CpuUsagePercent { get; set; }
     public bool Success { get; set; }
     public string? Error { get; set; }
+    [NotMapped]
     public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
 }
 
@@ -32,6 +35,8 @@ public class PerformanceGoal
     public string Unit { get; set; } = string.Empty;
     public PerformanceGoalPriority Priority { get; set; } = PerformanceGoalPriority.Medium;
     public bool IsActive { get; set; } = true;
+    [NotMapped]
+    public Dictionary<string, double> CustomMetrics { get; set; } = new();
 }
 
 /// <summary>
@@ -64,6 +69,7 @@ public class PerformanceMetrics
 
     // Metadata
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    [NotMapped]
     public Dictionary<string, double> CustomMetrics { get; set; } = new();
 }
 
@@ -80,6 +86,7 @@ public class CacheStatistics
     public int TotalRequests => HitCount + MissCount;
     public TimeSpan AverageRetrievalTime { get; set; }
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    [NotMapped]
     public Dictionary<string, object> AdditionalStats { get; set; } = new();
 }
 
@@ -96,6 +103,7 @@ public class SqlQueryResult
     public int ExecutionTimeMs { get; set; }
     public string ExecutedSql { get; set; } = string.Empty;
     public QueryExecutionMetrics Metrics { get; set; } = new();
+    [NotMapped]
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
 

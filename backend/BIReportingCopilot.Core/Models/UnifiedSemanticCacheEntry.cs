@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace BIReportingCopilot.Core.Models;
 
 /// <summary>
@@ -103,5 +105,6 @@ public class UnifiedSemanticCacheEntry
     /// <summary>
     /// Result data as dictionary (for compatibility with SemanticCacheService)
     /// </summary>
+    [NotMapped]
     public Dictionary<string, object>? ResultData { get; set; }
 }

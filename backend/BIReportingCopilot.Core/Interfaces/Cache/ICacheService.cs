@@ -27,9 +27,9 @@ public interface ISemanticCacheService
     Task RemoveAsync(string key, CancellationToken cancellationToken = default);
     Task RemoveSemanticAsync(string query, CancellationToken cancellationToken = default);
     Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default);
-    Task<List<SemanticCacheEntry>> FindSimilarAsync(string query, double threshold = 0.8, int maxResults = 10, CancellationToken cancellationToken = default);
+    Task<List<Models.SemanticCacheEntry>> FindSimilarAsync(string query, double threshold = 0.8, int maxResults = 10, CancellationToken cancellationToken = default);
     Task<SemanticCacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default);
-    Task<CachePerformanceMetrics> GetCachePerformanceMetricsAsync(CancellationToken cancellationToken = default);
+    Task<Models.CachePerformanceMetrics> GetCachePerformanceMetricsAsync(CancellationToken cancellationToken = default);
     Task OptimizeCacheAsync(CancellationToken cancellationToken = default);
     Task InvalidateCacheByPatternAsync(string pattern, CancellationToken cancellationToken = default);
     Task ClearSemanticCacheAsync(CancellationToken cancellationToken = default);
@@ -60,17 +60,5 @@ public class SemanticCacheStatistics : CacheStatistics
     public long VectorOperations { get; set; }
 }
 
-/// <summary>
-/// Semantic cache entry
-/// </summary>
-public class SemanticCacheEntry
-{
-    public string Key { get; set; } = string.Empty;
-    public string Query { get; set; } = string.Empty;
-    public object Value { get; set; } = new();
-    public float[] Vector { get; set; } = Array.Empty<float>();
-    public double SimilarityScore { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? ExpiresAt { get; set; }
-    public Dictionary<string, object> Metadata { get; set; } = new();
-}
+// SemanticCacheEntry moved to Core.Models.SemanticCaching.cs to eliminate duplicates
+// Use: BIReportingCopilot.Core.Models.SemanticCacheEntry instead

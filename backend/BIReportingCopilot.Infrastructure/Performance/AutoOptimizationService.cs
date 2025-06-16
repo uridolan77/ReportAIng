@@ -145,7 +145,7 @@ public class AutoOptimizationService : IHostedService, IDisposable
         }
     }
 
-    private async Task<int> OptimizeCache(Core.Interfaces.CachePerformanceMetrics cacheMetrics, ISemanticCacheService cacheService)
+    private async Task<int> OptimizeCache(Core.Models.CachePerformanceMetrics cacheMetrics, ISemanticCacheService cacheService)
     {
         var optimizations = 0;
 

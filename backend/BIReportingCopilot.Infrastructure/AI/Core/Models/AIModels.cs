@@ -249,23 +249,5 @@ public class CacheQueryClassification
     public string Complexity { get; set; } = "medium";
 }
 
-/// <summary>
-/// Cache performance metrics
-/// </summary>
-public class CachePerformanceMetrics
-{
-    public string MetricsId { get; set; } = Guid.NewGuid().ToString();
-    public double HitRate { get; set; } = 0.0;
-    public double MissRate { get; set; } = 0.0;
-    public TimeSpan AverageRetrievalTime { get; set; }
-    public long TotalRequests { get; set; }
-    public long CacheSize { get; set; }
-    public DateTime MeasuredAt { get; set; } = DateTime.UtcNow;
-
-    // Additional properties expected by Infrastructure services
-    public TimeSpan OriginalExecutionTime { get; set; }
-    public long ResultSizeBytes { get; set; }
-    public TimeSpan AverageHitTime { get; set; }
-    public TimeSpan AverageMissTime { get; set; }
-    public double HitRatio { get; set; }
-}
+// CachePerformanceMetrics moved to Core.Models.CachePerformanceMetrics.cs to eliminate duplicates
+// Use: BIReportingCopilot.Core.Models.CachePerformanceMetrics instead

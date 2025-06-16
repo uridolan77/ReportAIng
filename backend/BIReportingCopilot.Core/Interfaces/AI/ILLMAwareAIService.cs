@@ -46,12 +46,12 @@ public interface ISemanticCacheService
     Task RemoveAsync(string key, CancellationToken cancellationToken = default);
     Task RemoveSemanticAsync(string query, CancellationToken cancellationToken = default);
     Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default);
-    Task<List<SemanticCacheEntry>> FindSimilarAsync(string query, double threshold = 0.8, int maxResults = 10, CancellationToken cancellationToken = default);
+    Task<List<Models.SemanticCacheEntry>> FindSimilarAsync(string query, double threshold = 0.8, int maxResults = 10, CancellationToken cancellationToken = default);
     Task<SemanticCacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default);
     Task<SemanticCacheResult?> GetSemanticallySimilarAsync(string naturalLanguageQuery, string sqlQuery);
     Task CacheSemanticQueryAsync(string naturalLanguageQuery, string sqlQuery, QueryResponse response, TimeSpan? expiry = null);
     Task<CacheStatistics> GetCacheStatisticsAsync();
-    Task<CachePerformanceMetrics> GetCachePerformanceMetricsAsync();
+    Task<Models.CachePerformanceMetrics> GetCachePerformanceMetricsAsync();
     Task OptimizeCacheAsync();
     Task CleanupExpiredEntriesAsync();
     Task InvalidateByDataChangeAsync(string tableName, string changeType);
@@ -356,23 +356,8 @@ public class LanguageDetection
     public double Confidence { get; set; }
 }
 
-/// <summary>
-/// Semantic cache entry
-/// </summary>
-public class SemanticCacheEntry
-{
-    public string Key { get; set; } = string.Empty;
-    public string Query { get; set; } = string.Empty;
-    public object Value { get; set; } = new();
-    public double SimilarityScore { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime ExpiresAt { get; set; }
-    public Dictionary<string, object> Metadata { get; set; } = new();
-
-    // Properties expected by Infrastructure services
-    public string GeneratedSql { get; set; } = string.Empty;
-    public string ResultData { get; set; } = string.Empty;
-}
+// SemanticCacheEntry moved to Core.Models.SemanticCaching.cs to eliminate duplicates
+// Use: BIReportingCopilot.Core.Models.SemanticCacheEntry instead
 
 /// <summary>
 /// Semantic cache statistics

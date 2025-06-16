@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BIReportingCopilot.Core.Models;
 
@@ -23,6 +24,7 @@ public class EnhancedSemanticCacheEntry
     /// <summary>
     /// Vector embedding for semantic similarity search
     /// </summary>
+    [NotMapped]
     public float[] Embedding { get; set; } = Array.Empty<float>();
     
     /// <summary>
@@ -33,11 +35,13 @@ public class EnhancedSemanticCacheEntry
     /// <summary>
     /// Semantic features extracted from the query
     /// </summary>
+    [NotMapped]
     public SemanticFeatures SemanticFeatures { get; set; } = new();
     
     /// <summary>
     /// Query classification and intent
     /// </summary>
+    [NotMapped]
     public CacheQueryClassification Classification { get; set; } = new();
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -50,6 +54,7 @@ public class EnhancedSemanticCacheEntry
     /// <summary>
     /// Performance metrics for this cache entry
     /// </summary>
+    [NotMapped]
     public CachePerformanceMetrics Performance { get; set; } = new();
 
     /// <summary>
@@ -60,6 +65,7 @@ public class EnhancedSemanticCacheEntry
     /// <summary>
     /// Additional metadata for advanced features
     /// </summary>
+    [NotMapped]
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
@@ -71,26 +77,31 @@ public class SemanticFeatures
     /// <summary>
     /// Key entities mentioned in the query (tables, columns, values)
     /// </summary>
+    [NotMapped]
     public List<string> Entities { get; set; } = new();
     
     /// <summary>
     /// Query intent (aggregation, filtering, sorting, etc.)
     /// </summary>
+    [NotMapped]
     public List<string> Intents { get; set; } = new();
     
     /// <summary>
     /// Temporal expressions (yesterday, last week, etc.)
     /// </summary>
+    [NotMapped]
     public List<string> TemporalExpressions { get; set; } = new();
     
     /// <summary>
     /// Numerical expressions and comparisons
     /// </summary>
+    [NotMapped]
     public List<string> NumericalExpressions { get; set; } = new();
     
     /// <summary>
     /// Business domain concepts
     /// </summary>
+    [NotMapped]
     public List<string> DomainConcepts { get; set; } = new();
     
     /// <summary>
@@ -101,6 +112,7 @@ public class SemanticFeatures
     /// <summary>
     /// Language and linguistic features
     /// </summary>
+    [NotMapped]
     public LinguisticFeatures Linguistic { get; set; } = new();
 }
 
@@ -266,6 +278,8 @@ public class SemanticCacheEntry : EnhancedSemanticCacheEntry
     public string CreatedBy { get; set; } = string.Empty;
     public string UpdatedBy { get; set; } = string.Empty;
     public string GeneratedSql { get; set; } = string.Empty;
+    
+    [NotMapped]
     public Dictionary<string, object> ResultData { get; set; } = new();
 }
 

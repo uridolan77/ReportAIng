@@ -495,9 +495,13 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Management.Promp
 
 // Unified learning service - consolidates MLAnomalyDetector and FeedbackLearningEngine
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Core.LearningService>();
-// TODO: Fix interface implementations
-// builder.Services.AddScoped<IQueryOptimizer, BIReportingCopilot.Infrastructure.AI.Analysis.QueryOptimizer>();
-// builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.Core.QueryProcessor>();
+// Query processor service - critical for application functionality
+builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.Core.QueryProcessor>();
+// Register missing dependencies for QueryProcessor
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IQueryOptimizer, BIReportingCopilot.Infrastructure.AI.Analysis.QueryOptimizer>();
+// Register IQueryClassifier from QueryAnalysisService (consolidated service)
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IQueryClassifier>(provider =>
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.Analysis.QueryAnalysisService>());
 
 // ===== ML & ANOMALY DETECTION SERVICES =====
 // Unified learning service provides all ML functionality including anomaly detection and feedback learning
