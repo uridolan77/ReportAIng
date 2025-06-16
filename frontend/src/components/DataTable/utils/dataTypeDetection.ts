@@ -85,9 +85,6 @@ export class DataTypeDetector {
     const booleanAnalysis = this.analyzeBooleanType(nonNullSample, columnName);
     if (booleanAnalysis.confidence && booleanAnalysis.confidence > 0.8) {
       const result = { ...analysis, ...booleanAnalysis };
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔍 Column "${columnName}" detected as BOOLEAN:`, result);
-      }
       return result;
     }
 
@@ -95,9 +92,6 @@ export class DataTypeDetector {
     const moneyAnalysis = this.analyzeMoneyType(nonNullSample, columnName);
     if (moneyAnalysis.confidence && moneyAnalysis.confidence > 0.7) {
       const result = { ...analysis, ...moneyAnalysis };
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔍 Column "${columnName}" detected as MONEY:`, result);
-      }
       return result;
     }
 
@@ -105,9 +99,6 @@ export class DataTypeDetector {
     const dateAnalysis = this.analyzeDateType(nonNullSample, columnName);
     if (dateAnalysis.confidence && dateAnalysis.confidence > 0.8) {
       const result = { ...analysis, ...dateAnalysis };
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔍 Column "${columnName}" detected as DATE:`, result);
-      }
       return result;
     }
 
@@ -115,18 +106,12 @@ export class DataTypeDetector {
     const numericAnalysis = this.analyzeNumericType(nonNullSample, columnName);
     if (numericAnalysis.confidence && numericAnalysis.confidence > 0.8) {
       const result = { ...analysis, ...numericAnalysis };
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔍 Column "${columnName}" detected as NUMBER:`, result);
-      }
       return result;
     }
 
     // Default to string analysis
     const stringAnalysis = this.analyzeStringType(nonNullSample, uniqueValues, columnName);
     const result = { ...analysis, ...stringAnalysis };
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 Column "${columnName}" detected as STRING:`, result);
-    }
     return result;
   }
 

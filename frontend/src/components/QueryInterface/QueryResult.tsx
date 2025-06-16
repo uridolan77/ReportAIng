@@ -389,10 +389,12 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
     },
   })) || [];
 
-  const dataSource = result.result?.data.map((row, index) => ({
-    ...row,
-    id: index, // DataTable uses 'id' as default keyField
-  })) || [];
+  const dataSource = React.useMemo(() => 
+    result.result?.data.map((row, index) => ({
+      ...row,
+      id: index, // DataTable uses 'id' as default keyField
+    })) || []
+  , [result.result?.data]);
 
 
 
@@ -414,18 +416,19 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
   }
 
   // If no columns in metadata, generate them from the first row of data
-  const finalColumns = columns.length > 0 ? columns :
-    (dataSource.length > 0 ?
-      Object.keys(dataSource[0])
-        .filter(key => key !== 'id') // Exclude the DataTable id key
-        .map(key => ({
-          title: key,
-          dataIndex: key,
-          key: key,
-          width: 150,
-          // Let automatic type detection handle the dataType
-          sortable: true,
-          filterable: true,
+  const finalColumns = React.useMemo(() => 
+    columns.length > 0 ? columns :
+      (dataSource.length > 0 ?
+        Object.keys(dataSource[0])
+          .filter(key => key !== 'id') // Exclude the DataTable id key
+          .map(key => ({
+            title: key,
+            dataIndex: key,
+            key: key,
+            width: 150,
+            // Let automatic type detection handle the dataType
+            sortable: true,
+            filterable: true,
           searchable: true,
           resizable: true,
           copyable: true,
@@ -435,7 +438,8 @@ export const QueryResult: React.FC<QueryResultProps> = ({ result, query, onReque
             }
             return <span style={{ color: '#000', fontWeight: 'normal' }}>{String(value)}</span>;
           },
-        })) : []);
+        })) : [])
+  , [columns, dataSource]);
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>

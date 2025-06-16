@@ -170,14 +170,24 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
 
   // Handle WebSocket messages for query progress
   useEffect(() => {
+    console.log('🔗 WebSocket useEffect triggered - Connection Status:', isConnected);
+    
     if (lastMessage) {
-      console.log('📨 Received WebSocket message:', lastMessage);
+      console.log('📨 RAW WebSocket message received:', {
+        type: lastMessage.type,
+        data: lastMessage.data,
+        timestamp: new Date().toISOString(),
+        dataLength: lastMessage.data?.length,
+        isString: typeof lastMessage.data === 'string'
+      });
 
       try {
         // Handle different message types - check for both old and new event names
         if (lastMessage.type === 'QueryProcessingProgress' ||
             lastMessage.type === 'QueryProgress' ||
             lastMessage.type === 'DetailedProgress') {
+          console.log('✅ Matched progress message type:', lastMessage.type);
+          
           // Parse the data which is already JSON stringified by the WebSocket hook
           const message = JSON.parse(lastMessage.data);
           console.log('🔄 Query processing progress update:', {
@@ -215,6 +225,14 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
 
           // Add or update processing stage
           setProcessingStages(prev => {
+            console.log('🔍 WebSocket stage update - Before:', {
+              currentStages: prev.length,
+              stageNames: prev.map(s => s.stage),
+              incomingStage: stage,
+              incomingProgress: progress,
+              incomingMessage: messageText
+            });
+
             const existingIndex = prev.findIndex(stageData => stageData.stage === stage);
 
             // Determine status based on stage type and progress
@@ -234,22 +252,34 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
               status: status
             };
 
+            let updatedStages;
             if (existingIndex >= 0) {
               // Update existing stage
-              const updated = [...prev];
-              updated[existingIndex] = newStage;
-              return updated;
+              updatedStages = [...prev];
+              updatedStages[existingIndex] = newStage;
+              console.log('🔄 Updated existing stage:', stage, 'at index', existingIndex);
             } else {
               // Add new stage
-              return [...prev, newStage];
+              updatedStages = [...prev, newStage];
+              console.log('➕ Added new stage:', stage, 'total stages now:', updatedStages.length);
             }
+
+            console.log('🔍 Processing stages updated - After:', {
+              stage,
+              totalStages: updatedStages.length,
+              stageNames: updatedStages.map(s => s.stage),
+              progress,
+              message: messageText
+            });
+
+            return updatedStages;
           });
 
           // Auto-show processing details when query starts
           if (stage === 'started') {
             setShowProcessingDetails(true);
             setProcessingViewMode('processing'); // Show details by default
-            setProcessingStages([]); // Clear previous stages
+            // Don't clear stages - keep accumulating them for better progress tracking
             console.log('🚀 Query processing started - showing processing details');
           }
 
@@ -391,14 +421,25 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
               setShowProcessingDetails(false);
               break;
             default:
-              console.log('📨 Unhandled message type:', lastMessage.type, message);
+              console.log('📨 Unhandled WebSocket message type:', lastMessage.type);
+              try {
+                const message = JSON.parse(lastMessage.data);
+                console.log('📨 Unhandled message content:', message);
+              } catch (e) {
+                console.log('📨 Unhandled message raw data:', lastMessage.data);
+              }
           }
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error, lastMessage);
       }
     }
-  }, [lastMessage]);
+  }, [lastMessage, setCurrentQueryId, setActiveTab, setUnifiedResult, query]);
+
+  // Debug WebSocket connection status
+  useEffect(() => {
+    console.log('🔗 WebSocket Connection Status Changed:', isConnected);
+  }, [isConnected]);
 
   // Create query request helper
   const createQueryRequest = useCallback((
@@ -412,8 +453,8 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
       maxRows: 1000,
       enableCache: true,
       confidenceThreshold: 0.7,
-      providerId: llmOptions?.providerId,
-      modelId: llmOptions?.modelId
+      ...(llmOptions?.providerId && { providerId: llmOptions.providerId }),
+      ...(llmOptions?.modelId && { modelId: llmOptions.modelId })
     }
   }), []);
 
@@ -436,29 +477,21 @@ export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {
     // Provide immediate visual feedback with smooth progress
     const startTime = Date.now();
 
-    // Add initial stage immediately
-    setProcessingStages([{
-      stage: 'initializing',
-      message: 'Preparing your query...',
-      progress: 5,
-      timestamp: new Date().toISOString(),
-      details: { startTime },
-      status: 'active'
-    }]);
-    setProgress(5);
-
-    // Quick progress updates for better UX
-    setTimeout(() => {
-      setProcessingStages(prev => [...prev, {
-        stage: 'connecting',
-        message: 'Connecting to AI service...',
-        progress: 10,
+    // Add initial stages immediately for better user experience
+    const initialStages = [
+      {
+        stage: 'initializing',
+        message: 'Preparing your query...',
+        progress: 5,
         timestamp: new Date().toISOString(),
-        details: {},
+        details: { startTime, query: query.substring(0, 100) + (query.length > 100 ? '...' : '') },
         status: 'active'
-      }]);
-      setProgress(10);
-    }, 100);
+      }
+    ];
+    
+    console.log('🚀 Setting initial processing stages:', initialStages.map(s => `${s.stage}:${s.progress}%`));
+    setProcessingStages(initialStages);
+    setProgress(5);
 
     try {
       const result = await executeQueryMutation.mutateAsync(queryRequest);

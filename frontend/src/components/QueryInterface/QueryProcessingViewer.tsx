@@ -50,24 +50,44 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const [expandedPanels, setExpandedPanels] = useState<string[]>([]);
 
-  // Debug logging
+  // Debug logging with more detail about stages
   React.useEffect(() => {
-    console.log('🔍 QueryProcessingViewer props:', {
+    console.log('🔍 QueryProcessingViewer props received:', {
       stagesCount: stages.length,
       isProcessing,
       currentStage,
       queryId,
       isVisible,
-      stages: stages.map(s => ({
+      mode,
+      timestamp: new Date().toISOString(),
+      stages: stages.map((s, idx) => ({
+        index: idx,
         stage: s?.stage || 'undefined',
         progress: s?.progress || 0,
-        message: s?.message || 'undefined',
+        message: s?.message?.substring(0, 50) || 'undefined',
         timestamp: s?.timestamp || 'undefined',
+        status: s?.status || 'unknown',
         details: s?.details ? Object.keys(s.details) : 'no details',
-        fullDetails: s?.details // Log full details to see structure
+        hasDetails: !!s?.details
       }))
     });
-  }, [stages, isProcessing, currentStage, queryId, isVisible]);
+
+    // Log detailed stage names and timing
+    if (stages.length > 0) {
+      console.log('🕐 QueryProcessingViewer stage timeline:', stages.map((s, idx) => 
+        `${idx + 1}. ${s?.stage || 'unknown'} (${s?.progress || 0}%) - ${s?.message?.substring(0, 30) || 'no message'}`
+      ));
+      
+      const stageNames = stages.map(s => s?.stage).filter(Boolean);
+      const uniqueStages = [...new Set(stageNames)];
+      if (stageNames.length !== uniqueStages.length) {
+        console.warn('⚠️ Duplicate stages detected:', stageNames);
+        console.warn('⚠️ Unique stages:', uniqueStages);
+      }
+    } else {
+      console.log('⚠️ QueryProcessingViewer received no stages');
+    }
+  }, [stages, isProcessing, currentStage, queryId, isVisible, mode]);
 
   // Helper function to format stage titles
   const formatStageTitle = (stage: string) => {
@@ -851,17 +871,26 @@ export const QueryProcessingViewer: React.FC<QueryProcessingViewerProps> = ({
           </div>
         ) : (
           <Timeline mode="left">
-            {stages.filter(stageData => stageData && stageData.stage).map((stageData, index) => {
-            const isCurrentStage = stageData.stage === currentStage;
-            const status = isCurrentStage && isProcessing ? 'active' :
-                          stageData.progress === 100 ? 'completed' : 'pending';
+            {stages
+              .filter(stageData => stageData && stageData.stage) // Filter out invalid stages
+              .sort((a, b) => {
+                // Sort by timestamp to ensure proper chronological order
+                const timeA = new Date(a.timestamp || 0).getTime();
+                const timeB = new Date(b.timestamp || 0).getTime();
+                return timeA - timeB;
+              })
+              .map((stageData, index) => {
+              const isCurrentStage = stageData.stage === currentStage;
+              const status = isCurrentStage && isProcessing ? 'active' :
+                            stageData.progress === 100 ? 'completed' : 
+                            stageData.status === 'error' ? 'error' : 'pending';
 
-            return (
-              <Timeline.Item
-                key={`${stageData.stage || 'unknown'}-${index}`}
-                dot={getStageIcon(stageData.stage || 'unknown', status)}
-                color={status === 'active' ? '#6b7280' : status === 'completed' ? '#374151' : '#d1d5db'}
-              >
+              return (
+                <Timeline.Item
+                  key={`${stageData.stage || 'unknown'}-${stageData.timestamp || index}`}
+                  dot={getStageIcon(stageData.stage || 'unknown', status)}
+                  color={status === 'active' ? '#6b7280' : status === 'completed' ? '#374151' : status === 'error' ? '#ff4d4f' : '#d1d5db'}
+                >
                 <div style={{
                   padding: '12px 16px',
                   background: status === 'active' ? '#f9fafb' : '#ffffff',

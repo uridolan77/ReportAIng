@@ -38,22 +38,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
   onClearAll
 }) => {
   const [, token] = useToken();
-
   // Debug logging for filter panel
   React.useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && visible) {
-      console.log('🔍 FilterPanel Debug:', {
-        columns: columns.map(col => ({
-          key: col.key,
-          title: col.title,
-          dataType: col.dataType,
-          filterType: col.filterType,
-          hasFilterOptions: !!col.filterOptions,
-          filterOptionsCount: col.filterOptions?.length
-        })),
-        filterConfig
-      });
-    }
+    // Filter panel state tracking for debugging
   }, [visible, columns, filterConfig]);
 
   if (!visible) return null;

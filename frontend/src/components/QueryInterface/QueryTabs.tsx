@@ -89,7 +89,6 @@ export const QueryTabs: React.FC = () => {
 
   // Handle SQL editor execution
   const handleSqlExecute = (sqlResult: FrontendQueryResponse) => {
-    console.log('🔍 QueryTabs - SQL Editor result:', sqlResult);
     const sqlQuery = `SQL: ${sqlResult.sql?.substring(0, 50)}...`;
 
     // Update both active and global result stores
@@ -103,32 +102,9 @@ export const QueryTabs: React.FC = () => {
     setActiveTab('result');
   };
 
-  // Debug logging for current visualization
-  useEffect(() => {
-    console.log('QueryTabs - Current visualization state:', {
-      hasVisualization: !!currentVisualization,
-      visualizationType: currentVisualization?.chartType,
-      isGamingData,
-      resultKey
-    });
-  }, [currentVisualization, isGamingData, resultKey]);
-
   // Debug logging for prompt details
   React.useEffect(() => {
-    if (currentResult) {
-      console.log('QueryTabs - Current result:', {
-        hasResult: !!currentResult,
-        hasPromptDetails: !!currentResult.promptDetails,
-        promptDetails: currentResult.promptDetails,
-        queryId: currentResult.queryId,
-        success: currentResult.success,
-        error: currentResult.error,
-        resultKeys: Object.keys(currentResult),
-        willRenderQueryResult: true
-      });
-    } else {
-      console.log('QueryTabs - No current result available');
-    }
+    // Query result state tracking for debugging
   }, [currentResult]);
 
   return (
@@ -364,19 +340,6 @@ export const QueryTabs: React.FC = () => {
         }
         key="charts"
       >
-        {/* Debug Information */}
-        {console.log('🎯 QueryTabs Charts Tab - Debug Info:', {
-          hasCurrentResult: !!currentResult,
-          isSuccess: currentResult?.success,
-          hasData: !!currentResult?.result?.data,
-          dataLength: currentResult?.result?.data?.length,
-          hasColumns: !!currentResult?.result?.metadata?.columns,
-          columnsLength: currentResult?.result?.metadata?.columns?.length,
-          filteredDataLength: filteredData.length,
-          sampleData: currentResult?.result?.data?.slice(0, 2),
-          sampleColumns: currentResult?.result?.metadata?.columns?.slice(0, 5)
-        })}
-
         {currentResult && currentResult.success && currentResult.result?.data?.length > 0 ? (
           <div style={{
             background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
@@ -486,28 +449,15 @@ export const QueryTabs: React.FC = () => {
                   >
                     <ChartConfigurationPanel
                       data={(() => {
-                        const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }));
-                        console.log('🎯 QueryTabs - Passing data to ChartConfigurationPanel:', {
-                          dataLength: dataToUse.length,
-                          sampleRow: dataToUse[0],
-                          dataKeys: dataToUse.length > 0 ? Object.keys(dataToUse[0]) : [],
-                          filteredDataLength: filteredData.length,
-                          originalDataLength: currentResult.result.data.length
-                        });
+                        const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data.map((row: any, index: any) => ({ ...row, id: index }));
                         return dataToUse;
                       })()}
                       columns={(() => {
                         const cols = currentResult.result?.metadata.columns || [];
-                        console.log('🎯 QueryTabs - Passing columns to ChartConfigurationPanel:', {
-                          columnsLength: cols.length,
-                          columns: cols,
-                          columnNames: cols.map(col => col.name || col)
-                        });
                         return cols;
                       })()}
                       currentConfig={currentVisualization}
                       onConfigChange={(config) => {
-                        console.log('🎯 QueryTabs - Chart config changed:', config);
                         setVisualization(config);
                       }}
                     />
@@ -596,24 +546,12 @@ export const QueryTabs: React.FC = () => {
 
                     <Chart
                       data={(() => {
-                        const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }));
-                        console.log('🎯 QueryTabs - Passing data to Chart:', {
-                          dataLength: dataToUse.length,
-                          sampleRow: dataToUse[0],
-                          xAxisKey: currentVisualization?.xAxis,
-                          yAxisKey: currentVisualization?.yAxis,
-                          chartType: currentVisualization?.chartType
-                        });
+                        const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data.map((row: any, index: any) => ({ ...row, id: index }));
                         return dataToUse;
                       })()}
                       columns={(() => {
                         const cols = currentResult.result?.metadata?.columns || [];
-                        console.log('🎯 QueryTabs - Passing columns to Chart (main):', {
-                          columnsLength: cols.length,
-                          columns: cols,
-                          columnNames: cols.map(col => col.name || col)
-                        });
-                        return cols.map(col => col.name || col);
+                        return cols.map((col: any) => col.name || col);
                       })()}
                       config={{
                         type: currentVisualization?.chartType?.toLowerCase() as any || 'bar',
@@ -695,7 +633,6 @@ export const QueryTabs: React.FC = () => {
                               config: {}
                             };
 
-                            console.log('🚀 Auto-generating quick chart config:', quickConfig);
                             setVisualization(quickConfig);
                           }}
                           style={{ borderRadius: '8px' }}
@@ -706,28 +643,12 @@ export const QueryTabs: React.FC = () => {
 
                       <Chart
                         data={(() => {
-                          const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data.map((row, index) => ({ ...row, id: index }));
-                          const dataKeys = Object.keys(dataToUse[0] || {});
-                          const xKey = dataKeys.find(key => typeof dataToUse[0][key] === 'string') || dataKeys[0] || 'name';
-                          const yKey = dataKeys.find(key => typeof dataToUse[0][key] === 'number') || dataKeys[1] || 'value';
-
-                          console.log('🎯 QueryTabs - Quick preview chart data:', {
-                            dataLength: dataToUse.length,
-                            detectedXKey: xKey,
-                            detectedYKey: yKey,
-                            sampleRow: dataToUse[0]
-                          });
-
+                          const dataToUse = filteredData.length > 0 ? filteredData : currentResult.result.data.map((row: any, index: any) => ({ ...row, id: index }));
                           return dataToUse;
                         })()}
                         columns={(() => {
                           const cols = currentResult.result?.metadata?.columns || [];
-                          console.log('🎯 QueryTabs - Passing columns to Chart (preview):', {
-                            columnsLength: cols.length,
-                            columns: cols,
-                            columnNames: cols.map(col => col.name || col)
-                          });
-                          return cols.map(col => col.name || col);
+                          return cols.map((col: any) => col.name || col);
                         })()}
                         config={{
                           type: 'bar',

@@ -65,22 +65,6 @@ const DataTable: React.FC<DataTableProps> = (props) => {
     autoDetectTypes,
     sampleSize: 100
   });
-
-  // Debug logging for enhanced columns
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && autoDetectTypes && data.length > 0) {
-      console.log('🔍 DataTable Enhanced Columns Debug:', {
-        originalColumns: columns,
-        enhancedColumns,
-        columnAnalysis,
-        autoDetectTypes,
-        autoGenerateFilterOptions,
-        dataLength: data.length,
-        sampleData: data.slice(0, 3)
-      });
-    }
-  }, [columns, enhancedColumns, columnAnalysis, autoDetectTypes, autoGenerateFilterOptions, data]);
-
   // Use enhanced columns if auto-detection is enabled, otherwise use original columns
   const finalColumns = autoDetectTypes ? enhancedColumns : columns;
 
@@ -217,12 +201,9 @@ const DataTable: React.FC<DataTableProps> = (props) => {
     );
   }
 
-  return (
-    <PerformanceMonitor
+  return (    <PerformanceMonitor
       onMetrics={(metrics) => {
-        if (enabledFeatures.performanceMonitoring) {
-          console.log('DataTable performance metrics:', metrics);
-        }
+        // Performance metrics handled internally by PerformanceMonitor
       }}
     >
       <ConfigProvider theme={{ token }}>
