@@ -963,7 +963,14 @@ public class OptimizationService : ISchemaOptimizationService
         {
             _logger.LogInformation("🔧 Optimizing SQL query");
 
-            var result = await OptimizeSqlAsync(sql);
+            // Create a basic schema metadata for optimization
+            var schema = new SchemaMetadata
+            {
+                Tables = new List<TableMetadata>(),
+                LastUpdated = DateTime.UtcNow
+            };
+
+            var result = await OptimizeSqlAsync(sql, schema);
             return new BIReportingCopilot.Core.Models.SqlOptimizationResult
             {
                 OriginalSql = result.OriginalSql,
