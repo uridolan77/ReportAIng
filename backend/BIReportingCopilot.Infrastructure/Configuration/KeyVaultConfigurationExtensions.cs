@@ -57,6 +57,9 @@ public class SecureConnectionStringProvider : IConnectionStringProvider
     private readonly IConfiguration _configuration;
     private readonly ILogger<SecureConnectionStringProvider> _logger;
     private readonly Dictionary<string, string> _cache = new();
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private static readonly Dictionary<string, (string Value, DateTime CachedAt)> _globalCache = new();
+    private static readonly TimeSpan _cacheExpiry = TimeSpan.FromMinutes(5);
 
     public SecureConnectionStringProvider(
         IConfiguration configuration,
@@ -70,37 +73,66 @@ public class SecureConnectionStringProvider : IConnectionStringProvider
     {
         _logger.LogDebug("Getting connection string for '{Name}'", name);
 
+        // Check local cache first
         if (_cache.TryGetValue(name, out var cached))
         {
             _logger.LogDebug("Using cached connection string for '{Name}'", name);
             return cached;
         }
 
-        var connectionString = _configuration.GetConnectionString(name);
-
-        if (string.IsNullOrEmpty(connectionString))
+        // Check global cache with expiry
+        var cacheKey = $"{name}";
+        if (_globalCache.TryGetValue(cacheKey, out var globalCached) && 
+            DateTime.UtcNow - globalCached.CachedAt < _cacheExpiry)
         {
-            _logger.LogError("Connection string '{Name}' not found", name);
-            throw new InvalidOperationException($"Connection string '{name}' not configured");
+            _logger.LogDebug("Using global cached connection string for '{Name}' (age: {Age})", 
+                name, DateTime.UtcNow - globalCached.CachedAt);
+            _cache[name] = globalCached.Value;
+            return globalCached.Value;
         }
 
-        // Replace any remaining placeholders
-        connectionString = await ReplacePlaceholdersAsync(connectionString);
-
-        // Log connection string details (without sensitive data)
+        await _semaphore.WaitAsync();
         try
         {
-            var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connectionString);
-            _logger.LogInformation("Connection string resolved for '{Name}' - Server: {Server}, Database: {Database}, Length: {Length}",
-                name, builder.DataSource, builder.InitialCatalog, connectionString.Length);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not parse connection string for '{Name}', Length: {Length}", name, connectionString.Length);
-        }
+            // Double-check after acquiring lock
+            if (_cache.TryGetValue(name, out cached))
+            {
+                return cached;
+            }
 
-        _cache[name] = connectionString;
-        return connectionString;
+            var connectionString = _configuration.GetConnectionString(name);
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                _logger.LogError("Connection string '{Name}' not found", name);
+                throw new InvalidOperationException($"Connection string '{name}' not configured");
+            }
+
+            // Replace any remaining placeholders
+            connectionString = await ReplacePlaceholdersAsync(connectionString);
+
+            // Log connection string details (without sensitive data)
+            try
+            {
+                var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connectionString);
+                _logger.LogInformation("Connection string resolved for '{Name}' - Server: {Server}, Database: {Database}, Length: {Length}",
+                    name, builder.DataSource, builder.InitialCatalog, connectionString.Length);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not parse connection string for '{Name}', Length: {Length}", name, connectionString.Length);
+            }
+
+            // Cache both locally and globally
+            _cache[name] = connectionString;
+            _globalCache[cacheKey] = (connectionString, DateTime.UtcNow);
+            
+            return connectionString;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     private async Task<string> ReplacePlaceholdersAsync(string connectionString)
