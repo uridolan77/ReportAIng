@@ -565,11 +565,6 @@ public class LLMUsageLog
     public string? ErrorMessage { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public Dictionary<string, object> Metadata { get; set; } = new();
-
-    /// <summary>
-    /// Method property (for compatibility)
-    /// </summary>
-    public string Method { get; set; } = string.Empty;
 }
 
 /// <summary>
