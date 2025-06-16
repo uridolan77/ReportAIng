@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
-using System.Data.SqlClient;
+using BIReportingCopilot.Infrastructure.Configuration;
+using Microsoft.Data.SqlClient;
 
 namespace BIReportingCopilot.API.HealthChecks;
 
