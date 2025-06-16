@@ -702,8 +702,8 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ISchemaM
 
 // IConnectionStringProvider already registered before configuration validation
 builder.Services.AddScoped<IDatabaseInitializationService, BIReportingCopilot.Infrastructure.Data.DatabaseInitializationService>();
-// TODO: Fix missing interfaces
-// builder.Services.AddScoped<ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
+// Register Infrastructure schema management service (temporary fix for DI issue)
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
 // Focused tuning services (Enhancement #1: Refactor "God" Services)
 builder.Services.AddScoped<IBusinessTableManagementService, BIReportingCopilot.Infrastructure.Business.BusinessTableManagementService>();
 // Query Pattern Management Service - register the concrete implementation and wrapper

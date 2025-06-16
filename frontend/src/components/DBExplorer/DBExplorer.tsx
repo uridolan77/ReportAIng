@@ -7,8 +7,6 @@ import {
   Alert,
   Spin,
   message,
-  Row,
-  Col,
   Drawer
 } from 'antd';
 import { Resizable } from 'react-resizable';
@@ -51,8 +49,12 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
 
 
   // Load database schema
-  const loadSchema = useCallback(async (bustCache: boolean = false) => {
-    setState(prev => ({ ...prev, loading: true, error: undefined }));
+  const loadSchema = useCallback(async () => {
+    setState(prev => {
+      const newState = { ...prev, loading: true };
+      delete newState.error;
+      return newState;
+    });
 
     try {
       const rawSchemaData = await ApiService.getSchema();
@@ -131,8 +133,8 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
     try {
       console.log('🔄 Starting schema refresh...');
       await DBExplorerAPI.refreshSchema();
-      console.log('🔄 Schema refresh completed, reloading with cache busting...');
-      await loadSchema(true); // Pass true to bust cache
+      console.log('🔄 Schema refresh completed, reloading...');
+      await loadSchema();
       console.log('🔄 Schema reload completed');
     } catch (error) {
       console.error('🔄 Schema refresh failed:', error);
@@ -143,61 +145,51 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
   const tables = schema?.tables || [];
 
   return (
-    <div className="db-explorer-container" style={{ height: '100vh', background: '#f0f2f5' }}>
-      {/* Header */}
-      <Card 
-        style={{ 
-          margin: '16px 16px 0 16px', 
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}
-        bodyStyle={{ padding: '16px 24px' }}
-      >
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Space size="middle">
-              <DatabaseOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-              <div>
-                <Title level={3} style={{ margin: 0 }}>
-                  Database Explorer
-                </Title>
-                <Text type="secondary">
-                  Explore your database schema, view table structures, and preview data
-                </Text>
-              </div>
-            </Space>
-          </Col>
-          <Col>
-            <Space>
-              <Button
-                icon={<QuestionCircleOutlined />}
-                onClick={() => {
-                  message.info('Use the tree view to explore tables, click on tables to see details, and use the preview button to see sample data.');
-                }}
-              >
-                Help
-              </Button>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-                loading={state.loading}
-              >
-                Refresh Schema
-              </Button>
-              <Button
-                icon={<FullscreenOutlined />}
-                onClick={() => setSiderCollapsed(!siderCollapsed)}
-              >
-                {siderCollapsed ? 'Expand' : 'Collapse'} Tree
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+    <div className="db-explorer" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Top Action Bar */}
+      <div style={{ 
+        padding: '12px 16px', 
+        borderBottom: '1px solid #f0f0f0',
+        background: '#fafafa',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <Text type="secondary">
+          Comprehensive database interface with schema browsing, table exploration, and data preview
+        </Text>
+        <Space>
+          <Button
+            icon={<QuestionCircleOutlined />}
+            size="small"
+            onClick={() => {
+              message.info('Use the tree view to explore tables, click on tables to see details, and use the preview button to see sample data.');
+            }}
+          >
+            Help
+          </Button>
+          <Button
+            icon={<ReloadOutlined />}
+            size="small"
+            onClick={handleRefresh}
+            loading={state.loading}
+          >
+            Refresh Schema
+          </Button>
+          <Button
+            icon={<FullscreenOutlined />}
+            size="small"
+            onClick={() => setSiderCollapsed(!siderCollapsed)}
+          >
+            {siderCollapsed ? 'Expand' : 'Collapse'} Tree
+          </Button>
+        </Space>
+      </div>
 
       {/* Error Alert */}
       {state.error && (
         <Alert
+          style={{ margin: '0 16px 16px 16px' }}
           message="Error Loading Database Schema"
           description={state.error}
           type="error"
@@ -208,19 +200,18 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
               Retry
             </Button>
           }
-          style={{ margin: '16px' }}
         />
       )}
 
       {/* Main Content */}
-      <div style={{ margin: '16px', height: 'calc(100vh - 140px)' }}>
-        <div style={{ display: 'flex', height: '100%', gap: '16px' }}>
+      <div style={{ flex: 1, margin: '0 16px 16px 16px', display: 'flex', minHeight: 0 }}>
+        <div style={{ display: 'flex', height: '100%', width: '100%', gap: '16px' }}>
           {/* Resizable Schema Tree Sidebar */}
           {!siderCollapsed && (
             <Resizable
               width={siderWidth}
               height={0}
-              onResize={(e, { size }) => {
+              onResize={(_, { size }) => {
                 setSiderWidth(size.width);
               }}
               minConstraints={[250, 0]}
@@ -241,7 +232,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
                   onTableSelect={handleTableSelect}
                   onPreviewTable={handleTablePreview}
                   onRefresh={handleRefresh}
-                  selectedTableName={state.selectedTable?.name}
+                  selectedTableName={state.selectedTable?.name || ''}
                   expandedKeys={Array.from(state.expandedTables)}
                   onExpandedKeysChange={handleExpandedKeysChange}
                 />
