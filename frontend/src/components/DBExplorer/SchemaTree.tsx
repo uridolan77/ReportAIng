@@ -74,11 +74,11 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
         title: (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <Space size="small">
-              <TableOutlined style={{ color: '#1890ff' }} />
-              <Text strong>{table.name}</Text>
-              {table.type === 'view' && <Tag color="purple">VIEW</Tag>}
+              <TableOutlined style={{ color: '#1890ff', fontSize: '11px' }} />
+              <Text strong style={{ fontSize: '11px' }}>{table.name}</Text>
+              {table.type === 'view' && <Tag color="purple" style={{ fontSize: '8px', padding: '0 3px', lineHeight: '12px' }}>VIEW</Tag>}
               {table.rowCount !== undefined && (
-                <Text type="secondary" style={{ fontSize: '12px' }}>
+                <Text type="secondary" style={{ fontSize: '9px' }}>
                   ({table.rowCount.toLocaleString()} rows)
                 </Text>
               )}
@@ -86,48 +86,48 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
             <Button
               type="text"
               size="small"
-              icon={<EyeOutlined />}
+              icon={<EyeOutlined style={{ fontSize: '10px' }} />}
               onClick={(e) => {
                 e.stopPropagation();
                 onPreviewTable?.(table);
               }}
-              style={{ opacity: 0.6 }}
+              style={{ opacity: 0.6, padding: '2px 4px' }}
             />
           </div>
         ),
         key: tableKey,
-        icon: <TableOutlined />,
+        icon: <TableOutlined style={{ fontSize: '11px' }} />,
         children: table.columns.map(column => ({
           title: (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <Space size="small">
-                <Text style={{ fontSize: '13px' }}>{column.name}</Text>
-                <Text type="secondary" style={{ fontSize: '11px' }}>
+              <Space size={2}>
+                <Text style={{ fontSize: '11px' }}>{column.name}</Text>
+                <Text type="secondary" style={{ fontSize: '9px' }}>
                   {column.dataType}
                   {column.maxLength && `(${column.maxLength})`}
                 </Text>
                 {column.isPrimaryKey && (
                   <Tooltip title="Primary Key">
-                    <KeyOutlined style={{ color: '#faad14', fontSize: '12px' }} />
+                    <KeyOutlined style={{ color: '#faad14', fontSize: '10px' }} />
                   </Tooltip>
                 )}
                 {column.isForeignKey && (
                   <Tooltip title={`Foreign Key → ${column.referencedTable}.${column.referencedColumn}`}>
-                    <KeyOutlined style={{ color: '#52c41a', fontSize: '12px' }} />
+                    <KeyOutlined style={{ color: '#52c41a', fontSize: '10px' }} />
                   </Tooltip>
                 )}
                 {!column.isNullable && (
-                  <Tag color="red" style={{ fontSize: '10px', padding: '0 4px' }}>
-                    NOT NULL
+                  <Tag color="red" style={{ fontSize: '8px', padding: '0 2px', lineHeight: '12px' }}>
+                    NN
                   </Tag>
                 )}
               </Space>
             </div>
           ),
           key: `column-${table.name}-${column.name}`,
-          icon: column.isPrimaryKey ? 
-            <KeyOutlined style={{ color: '#faad14' }} /> : 
-            <div style={{ width: '14px', height: '14px', backgroundColor: '#d9d9d9', borderRadius: '2px' }} />,
+          icon: column.isPrimaryKey ?
+            <KeyOutlined style={{ color: '#faad14', fontSize: '10px' }} /> :
+            <div style={{ width: '10px', height: '10px', backgroundColor: '#d9d9d9', borderRadius: '2px' }} />,
           isLeaf: true,
           data: { table, column }
         })),
@@ -176,47 +176,50 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
   };
 
   return (
-    <Card 
+    <Card
       title={
-        <Space>
-          <DatabaseOutlined />
-          <span>Database Schema</span>
-          <Text type="secondary">({tables.length} tables)</Text>
+        <Space size="small">
+          <DatabaseOutlined style={{ fontSize: '12px' }} />
+          <span style={{ fontSize: '12px', fontWeight: 500 }}>Database Schema</span>
+          <Text type="secondary" style={{ fontSize: '10px' }}>({tables.length} tables)</Text>
         </Space>
       }
       extra={
         <Button
           type="text"
-          icon={<ReloadOutlined />}
+          icon={<ReloadOutlined style={{ fontSize: '11px' }} />}
           onClick={onRefresh}
           loading={loading}
           size="small"
+          style={{ padding: '2px 4px' }}
         />
       }
       size="small"
       style={{ height: '100%' }}
-      bodyStyle={{ padding: '12px', height: 'calc(100% - 57px)' }}
+      bodyStyle={{ padding: '8px', height: 'calc(100% - 45px)' }}
+      headStyle={{ padding: '6px 12px', minHeight: '45px' }}
       className="schema-tree-container"
     >
-      <Space direction="vertical" style={{ width: '100%', height: '100%' }}>
+      <Space direction="vertical" style={{ width: '100%', height: '100%' }} size="small">
         <Search
           placeholder="Search tables and columns..."
           allowClear
           onChange={(e) => handleSearch(e.target.value)}
-          style={{ marginBottom: '8px' }}
+          style={{ marginBottom: '4px' }}
           prefix={<SearchOutlined />}
+          size="small"
         />
-        
+
         <div style={{ flex: 1, overflow: 'auto' }} className="schema-tree-container">
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-              <Spin size="large" />
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <Spin size="default" />
             </div>
           ) : treeData.length === 0 ? (
-            <Empty 
+            <Empty
               description="No tables found"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
-              style={{ marginTop: '40px' }}
+              style={{ marginTop: '20px' }}
             />
           ) : (
             <Tree
@@ -228,7 +231,7 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
               selectedKeys={selectedTableName ? [`table-${selectedTableName}`] : []}
               showIcon
               blockNode
-              style={{ fontSize: '13px' }}
+              style={{ fontSize: '11px' }}
             />
           )}
         </div>

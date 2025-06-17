@@ -696,8 +696,8 @@ builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Business.IAITuning
 // Register TokenRepository for both Core and Infrastructure interfaces - REMOVED (consolidated above)
 
 // Register SchemaManagementService for Infrastructure interface (used by simplified SchemaController)
-// TODO: Fix interface implementation in SchemaManagementService
-// builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Schema.ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Schema.DatabaseSchemaDiscoveryService>();
 
 // IConnectionStringProvider already registered before configuration validation
 builder.Services.AddScoped<IDatabaseInitializationService, BIReportingCopilot.Infrastructure.Data.DatabaseInitializationService>();

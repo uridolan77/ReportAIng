@@ -174,38 +174,45 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
   return (
     <Card
       title={
-        <Space>
+        <Space size="small">
           <TableOutlined style={{ fontSize: '12px' }} />
-          <span style={{ fontSize: '12px', fontWeight: 'normal', margin: 0 }}>
+          <span style={{ fontSize: '12px', fontWeight: 500 }}>
             {table.name}
           </span>
-          {table.type === 'view' && <Tag color="purple" style={{ fontSize: '10px' }}>VIEW</Tag>}
+          {table.type === 'view' && <Tag color="purple" style={{ fontSize: '9px', padding: '0 4px' }}>VIEW</Tag>}
         </Space>
       }
       headStyle={{
         fontSize: '12px',
         fontWeight: 'normal',
-        padding: '8px 16px'
+        padding: '6px 12px',
+        minHeight: '40px'
       }}
       extra={
-        <Space>
-          <Button type="primary" icon={<DatabaseOutlined />} onClick={onPreviewData}>
+        <Space size="small">
+          <Button
+            type="primary"
+            icon={<DatabaseOutlined style={{ fontSize: '11px' }} />}
+            onClick={onPreviewData}
+            size="small"
+            style={{ fontSize: '11px' }}
+          >
             Preview Data
           </Button>
         </Space>
       }
       style={{ height: '100%' }}
-      bodyStyle={{ padding: '16px', height: 'calc(100% - 57px)' }}
+      bodyStyle={{ padding: '12px', height: 'calc(100% - 40px)' }}
       className="table-info-container"
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="large">
+      <Space direction="vertical" style={{ width: '100%' }} size="small">
         {/* Table Information */}
         <Descriptions
-          title={<span style={{ fontSize: '12px', fontWeight: 'normal' }}>Table Information</span>}
+          title={<span style={{ fontSize: '11px', fontWeight: 500 }}>Table Information</span>}
           bordered
           size="small"
           column={2}
-          style={{ fontSize: '11px' }}
+          style={{ fontSize: '10px' }}
         >
           <Descriptions.Item label="Schema">{table.schema}</Descriptions.Item>
           <Descriptions.Item label="Type">{table.type}</Descriptions.Item>
@@ -237,33 +244,34 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
-          style={{ fontSize: '12px' }}
+          style={{ fontSize: '11px' }}
+          size="small"
         >
-          <TabPane tab={<span style={{ fontSize: '12px' }}>Columns</span>} key="columns">
+          <TabPane tab={<span style={{ fontSize: '11px' }}>Columns</span>} key="columns">
             <Table
               dataSource={table.columns}
               columns={columnTableColumns}
               rowKey="name"
               size="small"
               pagination={false}
-              style={{ fontSize: '12px' }}
+              style={{ fontSize: '11px' }}
             />
           </TabPane>
 
           {table.foreignKeys && table.foreignKeys.length > 0 && (
-            <TabPane tab={<span style={{ fontSize: '12px' }}>{`Foreign Keys (${table.foreignKeys.length})`}</span>} key="foreignKeys">
+            <TabPane tab={<span style={{ fontSize: '11px' }}>{`Foreign Keys (${table.foreignKeys.length})`}</span>} key="foreignKeys">
               <Table
                 dataSource={table.foreignKeys}
                 columns={foreignKeyColumns}
                 rowKey="name"
                 size="small"
                 pagination={false}
-                style={{ fontSize: '12px' }}
+                style={{ fontSize: '11px' }}
               />
             </TabPane>
           )}
 
-          <TabPane tab={<span style={{ fontSize: '12px' }}>Sample Queries</span>} key="queries">
+          <TabPane tab={<span style={{ fontSize: '11px' }}>Sample Queries</span>} key="queries">
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               {generateSampleQueries().map((queryInfo, index) => (
                 <Card key={index} size="small">

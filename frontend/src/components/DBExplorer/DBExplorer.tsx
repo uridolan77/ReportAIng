@@ -44,7 +44,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
   const [schema, setSchema] = useState<DatabaseSchema | null>(null);
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [previewDrawerVisible, setPreviewDrawerVisible] = useState(false);
-  const [siderWidth, setSiderWidth] = useState(350);
+  const [siderWidth, setSiderWidth] = useState(280);
 
 
 
@@ -147,41 +147,53 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
   return (
     <div className="db-explorer" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Top Action Bar */}
-      <div style={{ 
-        padding: '12px 16px', 
-        borderBottom: '1px solid #f0f0f0',
+      <div style={{
+        padding: '8px 12px',
+        borderBottom: '1px solid #e8e8e8',
         background: '#fafafa',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        minHeight: '40px'
       }}>
-        <Text type="secondary">
-          Comprehensive database interface with schema browsing, table exploration, and data preview
-        </Text>
-        <Space>
+        <Space size="small">
+          <DatabaseOutlined style={{ fontSize: '14px', color: '#1890ff' }} />
+          <Text strong style={{ fontSize: '13px' }}>Database Management</Text>
+          <Text type="secondary" style={{ fontSize: '11px' }}>
+            Schema browsing, table exploration, and data preview
+          </Text>
+          {!siderCollapsed && (
+            <Text type="secondary" style={{ fontSize: '10px', fontStyle: 'italic' }}>
+              • Drag sidebar edge to resize
+            </Text>
+          )}
+        </Space>
+        <Space size="small">
           <Button
             icon={<QuestionCircleOutlined />}
             size="small"
+            type="text"
             onClick={() => {
               message.info('Use the tree view to explore tables, click on tables to see details, and use the preview button to see sample data.');
             }}
-          >
-            Help
-          </Button>
+            style={{ fontSize: '11px', padding: '2px 6px' }}
+          />
           <Button
             icon={<ReloadOutlined />}
             size="small"
             onClick={handleRefresh}
             loading={state.loading}
+            style={{ fontSize: '11px', padding: '2px 8px' }}
           >
-            Refresh Schema
+            Refresh
           </Button>
           <Button
             icon={<FullscreenOutlined />}
             size="small"
             onClick={() => setSiderCollapsed(!siderCollapsed)}
+            style={{ fontSize: '11px', padding: '2px 8px' }}
           >
-            {siderCollapsed ? 'Expand' : 'Collapse'} Tree
+            {siderCollapsed ? 'Show' : 'Hide'} Tree
           </Button>
         </Space>
       </div>
@@ -204,8 +216,8 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
       )}
 
       {/* Main Content */}
-      <div style={{ flex: 1, margin: '0 16px 16px 16px', display: 'flex', minHeight: 0 }}>
-        <div style={{ display: 'flex', height: '100%', width: '100%', gap: '16px' }}>
+      <div style={{ flex: 1, margin: '0 8px 8px 8px', display: 'flex', minHeight: 0 }}>
+        <div style={{ display: 'flex', height: '100%', width: '100%', gap: '8px' }}>
           {/* Resizable Schema Tree Sidebar */}
           {!siderCollapsed && (
             <Resizable
@@ -214,8 +226,8 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
               onResize={(_, { size }) => {
                 setSiderWidth(size.width);
               }}
-              minConstraints={[250, 0]}
-              maxConstraints={[600, 0]}
+              minConstraints={[200, 0]}
+              maxConstraints={[500, 0]}
               resizeHandles={['e']}
               className="db-explorer-resizable"
             >
@@ -235,6 +247,30 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
                   selectedTableName={state.selectedTable?.name || ''}
                   expandedKeys={Array.from(state.expandedTables)}
                   onExpandedKeysChange={handleExpandedKeysChange}
+                />
+                {/* Resize indicator */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: -3,
+                    top: 0,
+                    bottom: 0,
+                    width: '6px',
+                    background: 'linear-gradient(90deg, transparent 30%, #d9d9d9 50%, transparent 70%)',
+                    cursor: 'col-resize',
+                    opacity: 0.4,
+                    transition: 'opacity 0.2s ease, background 0.2s ease',
+                    zIndex: 10
+                  }}
+                  className="resize-indicator"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                    e.currentTarget.style.background = 'linear-gradient(90deg, transparent 20%, #1890ff 50%, transparent 80%)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '0.4';
+                    e.currentTarget.style.background = 'linear-gradient(90deg, transparent 30%, #d9d9d9 50%, transparent 70%)';
+                  }}
                 />
               </div>
             </Resizable>
@@ -258,18 +294,18 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
                 onGenerateQuery={handleQueryGenerated}
               />
             ) : (
-              <Card style={{ height: '100%', textAlign: 'center' }}>
-                <div style={{ padding: '100px 20px' }}>
-                  <DatabaseOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
-                  <Title level={3} type="secondary" style={{ marginTop: '24px' }}>
+              <Card style={{ height: '100%', textAlign: 'center' }} bodyStyle={{ padding: '40px 20px' }}>
+                <div>
+                  <DatabaseOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />
+                  <Title level={4} type="secondary" style={{ marginTop: '16px', fontSize: '16px' }}>
                     Select a Table to Explore
                   </Title>
-                  <Text type="secondary">
-                    Choose a table from the schema tree on the left to view its structure, columns, and sample data.
+                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                    Choose a table from the schema tree {siderCollapsed ? '(click "Show Tree" to expand)' : 'on the left'} to view its structure, columns, and sample data.
                   </Text>
                   {tables.length > 0 && (
-                    <div style={{ marginTop: '24px' }}>
-                      <Text type="secondary">
+                    <div style={{ marginTop: '16px' }}>
+                      <Text type="secondary" style={{ fontSize: '11px' }}>
                         Found {tables.length} tables in the database
                       </Text>
                     </div>

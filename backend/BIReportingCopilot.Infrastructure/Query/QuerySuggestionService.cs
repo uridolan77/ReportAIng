@@ -32,22 +32,25 @@ public class QuerySuggestionService : IQuerySuggestionService
             query = query.Where(c => c.IsActive);
 
         var categories = await query
-            .OrderBy(c => c.SortOrder)
-            .ThenBy(c => c.Title)
+            .ToListAsync(); // Force client evaluation
+
+        var result = categories
+            .OrderBy(c => c.DisplayOrder)
+            .ThenBy(c => c.Name)
             .Select(c => new SuggestionCategoryDto
             {
                 Id = c.Id,
                 CategoryKey = c.CategoryKey,
-                Title = c.Title,
+                Title = c.Name,
                 Icon = c.Icon,
                 Description = c.Description,
-                SortOrder = c.SortOrder,
+                SortOrder = c.DisplayOrder,
                 IsActive = c.IsActive,
                 SuggestionCount = c.Suggestions.Count(s => s.IsActive)
             })
-            .ToListAsync();
+            .ToList();
 
-        return categories;
+        return result;
     }
 
     public async Task<SuggestionCategoryDto?> GetCategoryAsync(long id)
@@ -58,10 +61,10 @@ public class QuerySuggestionService : IQuerySuggestionService
             {
                 Id = c.Id,
                 CategoryKey = c.CategoryKey,
-                Title = c.Title,
+                Title = c.Name,
                 Icon = c.Icon,
                 Description = c.Description,
-                SortOrder = c.SortOrder,
+                SortOrder = c.DisplayOrder,
                 IsActive = c.IsActive,
                 SuggestionCount = c.Suggestions.Count(s => s.IsActive)
             })
@@ -78,10 +81,10 @@ public class QuerySuggestionService : IQuerySuggestionService
             {
                 Id = c.Id,
                 CategoryKey = c.CategoryKey,
-                Title = c.Title,
+                Title = c.Name,
                 Icon = c.Icon,
                 Description = c.Description,
-                SortOrder = c.SortOrder,
+                SortOrder = c.DisplayOrder,
                 IsActive = c.IsActive,
                 SuggestionCount = c.Suggestions.Count(s => s.IsActive)
             })
@@ -95,13 +98,13 @@ public class QuerySuggestionService : IQuerySuggestionService
         var category = new SuggestionCategory
         {
             CategoryKey = dto.CategoryKey,
-            Title = dto.Title,
+            Name = dto.Title,
             Icon = dto.Icon,
             Description = dto.Description,
-            SortOrder = dto.SortOrder,
+            DisplayOrder = dto.SortOrder,
             IsActive = dto.IsActive,
             CreatedBy = userId,
-            CreatedDate = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
 
         _context.SuggestionCategories.Add(category);
@@ -111,10 +114,10 @@ public class QuerySuggestionService : IQuerySuggestionService
         {
             Id = category.Id,
             CategoryKey = category.CategoryKey,
-            Title = category.Title,
+            Title = category.Name,
             Icon = category.Icon,
             Description = category.Description,
-            SortOrder = category.SortOrder,
+            SortOrder = category.DisplayOrder,
             IsActive = category.IsActive,
             SuggestionCount = 0
         };
@@ -126,13 +129,13 @@ public class QuerySuggestionService : IQuerySuggestionService
         if (category == null) return null;
 
         category.CategoryKey = dto.CategoryKey;
-        category.Title = dto.Title;
+        category.Name = dto.Title;
         category.Icon = dto.Icon;
         category.Description = dto.Description;
-        category.SortOrder = dto.SortOrder;
+        category.DisplayOrder = dto.SortOrder;
         category.IsActive = dto.IsActive;
         category.UpdatedBy = userId;
-        category.UpdatedDate = DateTime.UtcNow;
+        category.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -140,10 +143,10 @@ public class QuerySuggestionService : IQuerySuggestionService
         {
             Id = category.Id,
             CategoryKey = category.CategoryKey,
-            Title = category.Title,
+            Title = category.Name,
             Icon = category.Icon,
             Description = category.Description,
-            SortOrder = category.SortOrder,
+            SortOrder = category.DisplayOrder,
             IsActive = category.IsActive,
             SuggestionCount = category.Suggestions.Count(s => s.IsActive)
         };
@@ -170,12 +173,15 @@ public class QuerySuggestionService : IQuerySuggestionService
             query = query.Where(s => s.IsActive);
 
         var suggestions = await query
-            .OrderBy(s => s.Category.SortOrder)
+            .ToListAsync(); // Force client evaluation
+
+        var result = suggestions
+            .OrderBy(s => s.Category.DisplayOrder)
             .ThenBy(s => s.SortOrder)
             .Select(s => MapToDto(s))
-            .ToListAsync();
+            .ToList();
 
-        return suggestions;
+        return result;
     }
 
     public async Task<List<QuerySuggestionDto>> GetSuggestionsByCategoryAsync(string categoryKey, bool includeInactive = false)
@@ -197,14 +203,21 @@ public class QuerySuggestionService : IQuerySuggestionService
 
     public async Task<List<GroupedSuggestionsDto>> GetGroupedSuggestionsAsync(bool includeInactive = false)
     {
+        _logger.LogInformation("🔍 GetGroupedSuggestionsAsync called with includeInactive: {IncludeInactive}", includeInactive);
+
         var categoriesQuery = _context.SuggestionCategories.AsQueryable();
         if (!includeInactive)
             categoriesQuery = categoriesQuery.Where(c => c.IsActive);
 
+        _logger.LogInformation("📊 Querying categories from database...");
         var categories = await categoriesQuery
             .Include(c => c.Suggestions.Where(s => includeInactive || s.IsActive))
-            .OrderBy(c => c.SortOrder)
-            .ToListAsync();
+            .ToListAsync(); // Force client evaluation
+
+        // Sort in memory
+        categories = categories.OrderBy(c => c.DisplayOrder).ToList();
+
+        _logger.LogInformation("📊 Found {CategoryCount} categories", categories.Count);
 
         var grouped = categories.Select(c => new GroupedSuggestionsDto
         {
@@ -212,10 +225,10 @@ public class QuerySuggestionService : IQuerySuggestionService
             {
                 Id = c.Id,
                 CategoryKey = c.CategoryKey,
-                Title = c.Title,
+                Title = c.Name,
                 Icon = c.Icon,
                 Description = c.Description,
-                SortOrder = c.SortOrder,
+                SortOrder = c.DisplayOrder,
                 IsActive = c.IsActive,
                 SuggestionCount = c.Suggestions.Count
             },
@@ -225,6 +238,7 @@ public class QuerySuggestionService : IQuerySuggestionService
                 .ToList()
         }).ToList();
 
+        _logger.LogInformation("✅ Returning {GroupCount} grouped suggestions", grouped.Count);
         return grouped;
     }
 
@@ -235,8 +249,8 @@ public class QuerySuggestionService : IQuerySuggestionService
             Id = suggestion.Id,
             CategoryId = suggestion.CategoryId,
             CategoryKey = suggestion.Category?.CategoryKey ?? "",
-            CategoryTitle = suggestion.Category?.Title ?? "",
-            QueryText = suggestion.QueryText,
+            CategoryTitle = suggestion.Category?.Name ?? "",
+            QueryText = suggestion.Text, // Use Text field which contains the natural language question
             Description = suggestion.Description,
             DefaultTimeFrame = suggestion.DefaultTimeFrame,
             SortOrder = suggestion.SortOrder,
@@ -355,7 +369,8 @@ public class QuerySuggestionService : IQuerySuggestionService
         var suggestion = new QuerySuggestion
         {
             CategoryId = dto.CategoryId,
-            QueryText = dto.QueryText,
+            QueryText = dto.QueryText, // This will be the SQL query when generated
+            Text = dto.QueryText, // This is the natural language question from the user
             Description = dto.Description,
             DefaultTimeFrame = dto.DefaultTimeFrame,
             SortOrder = dto.SortOrder,
@@ -389,7 +404,8 @@ public class QuerySuggestionService : IQuerySuggestionService
         if (suggestion == null) return null;
 
         suggestion.CategoryId = dto.CategoryId;
-        suggestion.QueryText = dto.QueryText;
+        suggestion.QueryText = dto.QueryText; // This will be the SQL query when generated
+        suggestion.Text = dto.QueryText; // This is the natural language question from the user
         suggestion.Description = dto.Description;
         suggestion.DefaultTimeFrame = dto.DefaultTimeFrame;
         suggestion.SortOrder = dto.SortOrder;
@@ -433,7 +449,7 @@ public class QuerySuggestionService : IQuerySuggestionService
             query = query.Where(s =>
                 s.QueryText.ToLower().Contains(searchTerm) ||
                 s.Description.ToLower().Contains(searchTerm) ||
-                s.Category.Title.ToLower().Contains(searchTerm));
+                s.Category.Name.ToLower().Contains(searchTerm));
         }
 
         if (!string.IsNullOrEmpty(searchDto.CategoryKey))
@@ -468,16 +484,18 @@ public class QuerySuggestionService : IQuerySuggestionService
             _ => searchDto.SortDescending ? query.OrderByDescending(s => s.SortOrder) : query.OrderBy(s => s.SortOrder)
         };
 
-        // Apply pagination
+        // Apply pagination and force client evaluation
         var suggestions = await query
             .Skip(searchDto.Skip)
             .Take(searchDto.Take)
-            .Select(s => MapToDto(s))
-            .ToListAsync();
+            .ToListAsync(); // Force client evaluation
+
+        // Map to DTOs in memory
+        var mappedSuggestions = suggestions.Select(MapToDto).ToList();
 
         return new SuggestionSearchResultDto
         {
-            Suggestions = suggestions,
+            Suggestions = mappedSuggestions,
             TotalCount = totalCount,
             Skip = searchDto.Skip,
             Take = searchDto.Take
@@ -493,10 +511,12 @@ public class QuerySuggestionService : IQuerySuggestionService
             .OrderByDescending(s => s.UsageCount)
             .ThenByDescending(s => s.LastUsed)
             .Take(count)
-            .Select(s => MapToDto(s))
-            .ToListAsync();
+            .ToListAsync(); // Force client evaluation
 
-        return suggestions;
+        // Map to DTOs in memory
+        var mappedSuggestions = suggestions.Select(MapToDto).ToList();
+
+        return mappedSuggestions;
     }
 
     public async Task<List<QuerySuggestionDto>> GetRecentSuggestionsAsync(int count = 10)
@@ -506,10 +526,12 @@ public class QuerySuggestionService : IQuerySuggestionService
             .Where(s => s.IsActive && s.LastUsed.HasValue)
             .OrderByDescending(s => s.LastUsed)
             .Take(count)
-            .Select(s => MapToDto(s))
-            .ToListAsync();
+            .ToListAsync(); // Force client evaluation
 
-        return suggestions;
+        // Map to DTOs in memory
+        var mappedSuggestions = suggestions.Select(MapToDto).ToList();
+
+        return mappedSuggestions;
     }
 
     // Analytics Methods - Basic implementations

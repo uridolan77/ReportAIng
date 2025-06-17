@@ -87,18 +87,34 @@ const SuggestionsPageContent: React.FC = () => {
         setLoadingAI(true);
         setAiError(null);
 
-        // TODO: Replace with actual AI service API calls
-        // const response = await aiSuggestionsApi.getPersonalizedSuggestions();
-        // setAiSuggestions(response.suggestions);
+        console.log('Loading real AI suggestions from API...');
 
-        console.log('Loading real AI suggestions...');
+        // Call the actual API endpoint
+        const groupedSuggestions = await querySuggestionService.getGroupedSuggestions();
 
-        // For now, show empty state until real AI service is connected
-        setAiSuggestions([]);
+        // Transform grouped suggestions into the format expected by the UI
+        const transformedSuggestions = groupedSuggestions.flatMap(group =>
+          group.suggestions.map(suggestion => ({
+            id: suggestion.id,
+            title: suggestion.description,
+            description: suggestion.description,
+            query: suggestion.queryText,
+            category: group.category.title,
+            type: 'personalized',
+            confidence: 0.85,
+            icon: '🤖',
+            color: '#1890ff',
+            reasoning: `Based on ${group.category.title} patterns and your query history`
+          }))
+        );
+
+        setAiSuggestions(transformedSuggestions);
 
       } catch (err) {
         console.error('Failed to load AI suggestions:', err);
         setAiError('Failed to load AI suggestions. Please check your connection.');
+        // Set empty array on error
+        setAiSuggestions([]);
       } finally {
         setLoadingAI(false);
       }

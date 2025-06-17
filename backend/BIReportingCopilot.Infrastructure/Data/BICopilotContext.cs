@@ -480,25 +480,24 @@ Return only the SQL query without any explanation or markdown formatting.",
         {
             entity.ToTable("SuggestionCategories");
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.CategoryKey).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.CreatedBy).HasMaxLength(256);
             entity.Property(e => e.UpdatedBy).HasMaxLength(256);
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
-            entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
 
-            // Map the SortOrder property to the DisplayOrder column
+            // Map SortOrder property to DisplayOrder column for backward compatibility
             entity.Property(e => e.SortOrder).HasColumnName("DisplayOrder").HasDefaultValue(0);
 
-            entity.HasIndex(e => new { e.IsActive, e.DisplayOrder });
+            entity.HasIndex(e => new { e.IsActive, e.SortOrder });
 
-            // Ignore computed properties
-            entity.Ignore(e => e.CategoryKey);
+            // Ignore computed properties that are not stored in database
             entity.Ignore(e => e.Title);
             entity.Ignore(e => e.Icon);
-            entity.Ignore(e => e.SortOrder);
+            entity.Ignore(e => e.DisplayOrder); // Ignore since SortOrder maps to DisplayOrder column
             entity.Ignore(e => e.CreatedDate);
             entity.Ignore(e => e.UpdatedDate);
         });

@@ -52,14 +52,16 @@ public class QuerySuggestionsController : ControllerBase
     public async Task<ActionResult<List<GroupedSuggestionsDto>>> GetGroupedSuggestions(
         [FromQuery] bool includeInactive = false)
     {
+        _logger.LogInformation("🔍 GetGroupedSuggestions endpoint called with includeInactive: {IncludeInactive}", includeInactive);
         try
         {
             var groupedSuggestions = await _suggestionService.GetGroupedSuggestionsAsync(includeInactive);
+            _logger.LogInformation("✅ Retrieved {Count} grouped suggestions", groupedSuggestions.Count);
             return Ok(groupedSuggestions);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving grouped suggestions");
+            _logger.LogError(ex, "❌ Error retrieving grouped suggestions");
             return StatusCode(500, "An error occurred while retrieving suggestions");
         }
     }

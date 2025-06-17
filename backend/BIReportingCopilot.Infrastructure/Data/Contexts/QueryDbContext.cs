@@ -115,20 +115,8 @@ public class QueryDbContext : DbContext
 
     private static void ConfigureQuerySuggestions(ModelBuilder modelBuilder)
     {
-        // SuggestionCategory configuration
-        modelBuilder.Entity<SuggestionCategory>(entity =>
-        {
-            entity.ToTable("SuggestionCategories");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.CategoryKey).IsRequired().HasMaxLength(50);
-            entity.Property(e => e.Title).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Icon).HasMaxLength(10);
-            entity.Property(e => e.Description).HasMaxLength(200);
-            entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(256);
-            entity.Property(e => e.UpdatedBy).HasMaxLength(256);
-            entity.HasIndex(e => e.CategoryKey).IsUnique();
-            entity.HasIndex(e => new { e.IsActive, e.SortOrder });
-        });
+        // SuggestionCategory configuration - removed to avoid conflict with BICopilotContext
+        // Configuration is now handled in BICopilotContext
 
         // QuerySuggestion configuration
         modelBuilder.Entity<Core.Models.QuerySuggestions.QuerySuggestion>(entity =>

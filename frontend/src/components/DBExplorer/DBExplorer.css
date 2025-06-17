@@ -2,93 +2,102 @@
 
 .db-explorer {
   height: 100%;
-  min-height: calc(100vh - 200px);
+  min-height: calc(100vh - 160px);
   display: flex;
   flex-direction: column;
+  font-size: 12px;
 }
 
 .db-explorer-header {
-  padding: 16px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e8e8e8;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .db-explorer-content {
   flex: 1;
   display: flex;
   overflow: hidden;
-  min-height: calc(100vh - 300px);
+  min-height: calc(100vh - 200px);
 }
 
 .db-explorer-sidebar {
-  width: 300px;
-  border-right: 1px solid #f0f0f0;
+  width: 280px;
+  border-right: 1px solid #e8e8e8;
   background: #fff;
   overflow-y: auto;
   height: 100%;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.02);
 }
 
 .db-explorer-main {
   flex: 1;
-  padding: 16px;
+  padding: 8px;
   overflow-y: auto;
   height: 100%;
 }
 
 .schema-tree {
-  padding: 8px;
+  padding: 4px;
 }
 
 .schema-tree .ant-tree-node-content-wrapper {
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  transition: all 0.2s ease;
 }
 
 .schema-tree .ant-tree-node-content-wrapper:hover {
-  background-color: #f5f5f5;
+  background-color: #f0f8ff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .schema-tree .ant-tree-node-selected .ant-tree-node-content-wrapper {
   background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.1);
 }
 
 .table-info {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .table-info-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .table-info-stats {
   display: flex;
-  gap: 16px;
-  margin-bottom: 8px;
+  gap: 12px;
+  margin-bottom: 6px;
 }
 
 .table-info-stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px;
-  background: #f9f9f9;
-  border-radius: 4px;
-  min-width: 80px;
+  padding: 6px;
+  background: linear-gradient(135deg, #f9f9f9 0%, #f0f0f0 100%);
+  border-radius: 6px;
+  min-width: 70px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .table-info-stat-value {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: #1890ff;
 }
 
 .table-info-stat-label {
-  font-size: 12px;
+  font-size: 10px;
   color: #666;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .column-list {
@@ -217,19 +226,230 @@
   border: 1px solid #91d5ff;
 }
 
+/* Resizable handle styling */
+.db-explorer-resizable .react-resizable-handle {
+  background: linear-gradient(90deg, transparent 30%, #1890ff 50%, transparent 70%);
+  width: 6px;
+  cursor: col-resize;
+  transition: all 0.2s ease;
+  z-index: 15;
+  opacity: 0;
+}
+
+.db-explorer-resizable .react-resizable-handle:hover,
+.db-explorer-resizable:hover .react-resizable-handle {
+  opacity: 1;
+  background: linear-gradient(90deg, transparent 20%, #1890ff 50%, transparent 80%);
+  box-shadow: 0 0 4px rgba(24, 144, 255, 0.3);
+}
+
+.db-explorer-resizable .react-resizable-handle-e {
+  right: -3px;
+  top: 0;
+  bottom: 0;
+}
+
+/* Resize indicator enhancement */
+.resize-indicator {
+  position: relative;
+}
+
+.resize-indicator::before {
+  content: '⋮⋮';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #666;
+  font-size: 8px;
+  line-height: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.db-explorer-resizable:hover .resize-indicator::before {
+  opacity: 0.8;
+}
+
+/* Add a subtle border to indicate resizable area */
+.db-explorer-resizable {
+  position: relative;
+}
+
+.db-explorer-resizable::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #e8e8e8;
+  transition: background 0.2s ease;
+}
+
+.db-explorer-resizable:hover::after {
+  background: #1890ff;
+  box-shadow: 0 0 2px rgba(24, 144, 255, 0.3);
+}
+
+/* Enhanced card styling */
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e8e8e8;
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.ant-card-head {
+  border-bottom: 1px solid #e8e8e8;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  border-radius: 8px 8px 0 0;
+}
+
+.ant-card-body {
+  padding: 12px;
+}
+
+/* Smooth transitions for all interactive elements */
+.ant-btn, .ant-input, .ant-select, .ant-tree-node-content-wrapper {
+  transition: all 0.2s ease;
+}
+
+/* Enhanced button styling */
+.ant-btn-sm {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+}
+
+.ant-btn-primary:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Compact table styling */
+.ant-table-small .ant-table-tbody > tr > td {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.ant-table-small .ant-table-thead > tr > th {
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Compact descriptions */
+.ant-descriptions-small .ant-descriptions-item-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #666;
+}
+
+.ant-descriptions-small .ant-descriptions-item-content {
+  font-size: 11px;
+}
+
+/* Enhanced search input */
+.ant-input-affix-wrapper {
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.2s ease;
+}
+
+.ant-input-affix-wrapper:hover {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.ant-input-affix-wrapper-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Loading animation enhancement */
+.ant-spin-dot {
+  font-size: 16px;
+}
+
+.ant-spin-dot-item {
+  background-color: #1890ff;
+}
+
+/* Tag styling improvements */
+.ant-tag {
+  border-radius: 3px;
+  font-size: 9px;
+  line-height: 14px;
+  padding: 0 4px;
+  border: none;
+  font-weight: 500;
+}
+
+/* Tree node improvements */
+.ant-tree-node-content-wrapper {
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px !important;
+}
+
+.ant-tree-title {
+  font-size: 11px !important;
+}
+
+.ant-tree-node-content-wrapper .ant-typography {
+  font-size: 11px !important;
+}
+
+.ant-tree-switcher {
+  width: 14px;
+  height: 14px;
+  line-height: 14px;
+}
+
+.ant-tree-switcher-icon {
+  font-size: 10px !important;
+}
+
+/* Ensure all tree text is consistently sized */
+.schema-tree-container .ant-tree .ant-tree-node-content-wrapper {
+  font-size: 11px !important;
+}
+
+.schema-tree-container .ant-tree .ant-tree-title {
+  font-size: 11px !important;
+}
+
+.schema-tree-container .ant-typography {
+  font-size: inherit !important;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .db-explorer-content {
     flex-direction: column;
   }
-  
+
   .db-explorer-sidebar {
     width: 100%;
-    height: 300px;
+    height: 250px;
     border-right: none;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #e8e8e8;
   }
-  
+
   .table-info-stats {
     flex-wrap: wrap;
   }

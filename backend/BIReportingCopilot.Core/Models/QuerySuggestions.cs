@@ -11,6 +11,10 @@ public class SuggestionCategory
     public long Id { get; set; }
 
     [Required]
+    [StringLength(50)]
+    public string CategoryKey { get; set; } = string.Empty;
+
+    [Required]
     [StringLength(100)]
     public string Name { get; set; } = string.Empty;
 
@@ -35,11 +39,6 @@ public class SuggestionCategory
     public virtual ICollection<QuerySuggestion> Suggestions { get; set; } = new List<QuerySuggestion>();
 
     // Compatibility properties for existing code
-    public string CategoryKey
-    {
-        get => Name.Replace(" ", "-").ToLowerInvariant();
-        set => Name = value.Replace("-", " ").ToTitleCase();
-    }
     public string Title
     {
         get => Name;
