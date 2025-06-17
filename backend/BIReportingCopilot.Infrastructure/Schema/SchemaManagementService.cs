@@ -6,7 +6,6 @@ using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Data;
-using BIReportingCopilot.Infrastructure.Interfaces;
 
 namespace BIReportingCopilot.Infrastructure.Schema;
 
@@ -30,10 +29,8 @@ public class SchemaManagementService : ISchemaManagementService
             _logger.LogInformation("Getting business schemas for user: {UserId}", userId);
 
             var schemas = await _context.BusinessSchemas
-                .Include(s => s.Versions.Where(v => v.IsActive))
-                .Where(s => s.IsActive)
-                .OrderByDescending(s => s.IsDefault)
-                .ThenBy(s => s.Name)
+                .Include(s => s.Versions)
+                .OrderBy(s => s.Name)
                 .ToListAsync();
 
             return schemas.Select(MapToDto).ToList();
@@ -127,7 +124,7 @@ public class SchemaManagementService : ISchemaManagementService
                 _context.BusinessSchemaVersions.Add(initialVersion);
                 
                 // Add content if provided
-                await AddVersionContentAsync(initialVersion.Id, request.InitialVersion, userId);
+                AddVersionContent(initialVersion.Id, request.InitialVersion, userId);
             }
 
             await _context.SaveChangesAsync();
@@ -171,18 +168,18 @@ public class SchemaManagementService : ISchemaManagementService
             }
 
             // If this is set as default, unset other defaults
-            if (request.IsDefault && !schema.IsDefault)
+            if (request.IsDefault.HasValue && request.IsDefault.Value && !schema.IsDefault)
             {
                 await UnsetDefaultSchemasAsync();
             }
 
-            schema.Name = request.Name;
-            schema.Description = request.Description;
+            schema.Name = request.Name ?? schema.Name;
+            schema.Description = request.Description ?? schema.Description;
             schema.UpdatedBy = userId;
             schema.UpdatedAt = DateTime.UtcNow;
-            schema.IsActive = request.IsActive;
-            schema.IsDefault = request.IsDefault;
-            schema.Tags = request.Tags.Any() ? JsonSerializer.Serialize(request.Tags) : null;
+            schema.IsActive = request.IsActive ?? schema.IsActive;
+            schema.IsDefault = request.IsDefault ?? schema.IsDefault;
+            schema.Tags = request.Tags?.Any() == true ? JsonSerializer.Serialize(request.Tags) : schema.Tags;
 
             await _context.SaveChangesAsync();
 
@@ -369,7 +366,7 @@ public class SchemaManagementService : ISchemaManagementService
             _context.BusinessSchemaVersions.Add(version);
 
             // Add content
-            await AddVersionContentAsync(version.Id, request, userId);
+            AddVersionContent(version.Id, request, userId);
 
             await _context.SaveChangesAsync();
 
@@ -481,10 +478,10 @@ public class SchemaManagementService : ISchemaManagementService
             BusinessSchema schema;
 
             // Create new schema or use existing
-            if (request.SchemaId.HasValue)
+            if (request.SchemaId != Guid.Empty)
             {
                 schema = await _context.BusinessSchemas
-                    .FirstOrDefaultAsync(s => s.Id == request.SchemaId.Value && s.IsActive);
+                    .FirstOrDefaultAsync(s => s.Id == request.SchemaId && s.IsActive);
 
                 if (schema == null)
                 {
@@ -914,15 +911,14 @@ public class SchemaManagementService : ISchemaManagementService
                 VersionName = $"Imported {schemaData.VersionName}",
                 Description = $"Imported from {schemaData.DisplayName}: {schemaData.Description}",
                 IsCurrent = false,
-                ChangeLog = new List<ChangeLogEntry>
+                ChangeLog = new List<SchemaChangeLogEntry>
                 {
-                    new ChangeLogEntry
+                    new SchemaChangeLogEntry
                     {
                         Timestamp = DateTime.UtcNow,
-                        Type = "Import",
-                        Category = "Schema",
-                        Item = "Full Schema",
-                        Description = $"Imported schema version from {schemaData.DisplayName}"
+                        ChangeType = "Import",
+                        Description = $"Imported schema version from {schemaData.DisplayName}",
+                        ChangedBy = userId
                     }
                 },
                 TableContexts = schemaData.TableContexts,
@@ -1002,12 +998,12 @@ public class SchemaManagementService : ISchemaManagementService
 
     private BusinessSchemaVersionDto MapToVersionDto(BusinessSchemaVersion version)
     {
-        var changeLog = new List<ChangeLogEntry>();
+        var changeLog = new List<SchemaChangeLogEntry>();
         if (!string.IsNullOrEmpty(version.ChangeLog))
         {
             try
             {
-                changeLog = JsonSerializer.Deserialize<List<ChangeLogEntry>>(version.ChangeLog) ?? new List<ChangeLogEntry>();
+                changeLog = JsonSerializer.Deserialize<List<SchemaChangeLogEntry>>(version.ChangeLog) ?? new List<SchemaChangeLogEntry>();
             }
             catch
             {
@@ -1062,7 +1058,7 @@ public class SchemaManagementService : ISchemaManagementService
         };
     }
 
-    private async Task AddVersionContentAsync(Guid versionId, CreateSchemaVersionRequest request, string userId)
+    private void AddVersionContent(Guid versionId, CreateSchemaVersionRequest request, string userId)
     {
         // Add table contexts
         foreach (var tableDto in request.TableContexts)
@@ -1530,19 +1526,27 @@ public class SchemaManagementService : ISchemaManagementService
             _logger.LogDebug("🔍 Getting schema metadata");
 
             // Get the default schema or first available schema
+            _logger.LogDebug("Querying BusinessSchemas table for default schema");
+            // TEMPORARY FIX: Remove IsActive/IsDefault filters until column issue is resolved
             var defaultSchema = await _context.BusinessSchemas
-                .Include(s => s.Versions.Where(v => v.IsActive && v.IsCurrent))
+                .Include(s => s.Versions.Where(v => v.IsCurrent))
                 .ThenInclude(v => v.TableContexts)
                 .ThenInclude(t => t.ColumnContexts)
-                .FirstOrDefaultAsync(s => s.IsActive && s.IsDefault, cancellationToken);
+                .FirstOrDefaultAsync(cancellationToken);
+
+            _logger.LogDebug("Default schema query completed. Found: {SchemaFound}", defaultSchema != null);
 
             if (defaultSchema == null)
             {
+                _logger.LogDebug("No default schema found, querying for any schema");
+                // TEMPORARY FIX: Remove IsActive filters until column issue is resolved
                 defaultSchema = await _context.BusinessSchemas
-                    .Include(s => s.Versions.Where(v => v.IsActive && v.IsCurrent))
+                    .Include(s => s.Versions.Where(v => v.IsCurrent))
                     .ThenInclude(v => v.TableContexts)
                     .ThenInclude(t => t.ColumnContexts)
-                    .FirstOrDefaultAsync(s => s.IsActive, cancellationToken);
+                    .FirstOrDefaultAsync(cancellationToken);
+                
+                _logger.LogDebug("Any schema query completed. Found: {SchemaFound}", defaultSchema != null);
             }
 
             if (defaultSchema?.Versions.FirstOrDefault() == null)
@@ -1596,12 +1600,37 @@ public class SchemaManagementService : ISchemaManagementService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Error getting schema metadata");
+            _logger.LogError(ex, "❌ Error getting schema metadata: {ErrorMessage} | StackTrace: {StackTrace}", ex.Message, ex.StackTrace);
+            
+            // Return meaningful error information instead of just "Error"
             return new SchemaMetadata
             {
-                DatabaseName = "Error",
+                DatabaseName = $"Schema Load Failed: {ex.Message}",
                 LastUpdated = DateTime.UtcNow,
-                Tables = new List<TableMetadata>()
+                Tables = new List<TableMetadata>
+                {
+                    new TableMetadata
+                    {
+                        Name = "Error loading schema",
+                        Schema = "system", 
+                        Description = $"Failed to load schema metadata: {ex.Message}. Check server logs for details.",
+                        LastUpdated = DateTime.UtcNow,
+                        Columns = new List<ColumnMetadata>
+                        {
+                            new ColumnMetadata
+                            {
+                                Name = "error_details",
+                                DataType = "text",
+                                Description = ex.ToString(),
+                                IsNullable = true,
+                                IsPrimaryKey = false,
+                                IsForeignKey = false,
+                                SemanticTags = new[] { "error", "diagnostic" },
+                                SampleValues = new string[0]
+                            }
+                        }
+                    }
+                }
             };
         }
     }

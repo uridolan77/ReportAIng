@@ -11,7 +11,7 @@ using BIReportingCopilot.Infrastructure.Data.Contexts;
 using IContextManager = BIReportingCopilot.Core.Interfaces.IContextManager;
 using ContextType = BIReportingCopilot.Infrastructure.Data.Contexts.ContextType;
 
-namespace BIReportingCopilot.Infrastructure.Handlers;
+namespace BIReportingCopilot.Infrastructure.Handlers.Query;
 
 /// <summary>
 /// Query handler for retrieving user's query history with enhanced pagination and filtering

@@ -84,7 +84,7 @@ public class DashboardIntegrationTests : IDisposable
         // Create test audit logs
         var auditLogs = new[]
         {
-            new AuditLogEntity
+            new BIReportingCopilot.Infrastructure.Data.Entities.AuditLogEntity
             {
                 UserId = "test-user-id",
                 Action = "QUERY_EXECUTED",
@@ -97,7 +97,7 @@ public class DashboardIntegrationTests : IDisposable
                 }),
                 Severity = "Info"
             },
-            new AuditLogEntity
+            new BIReportingCopilot.Infrastructure.Data.Entities.AuditLogEntity
             {
                 UserId = "test-user-id",
                 Action = "QUERY_EXECUTED",
@@ -111,7 +111,7 @@ public class DashboardIntegrationTests : IDisposable
                 }),
                 Severity = "Warning"
             },
-            new AuditLogEntity
+            new BIReportingCopilot.Infrastructure.Data.Entities.AuditLogEntity
             {
                 UserId = "test-user-id",
                 Action = "LOGIN",
@@ -120,7 +120,10 @@ public class DashboardIntegrationTests : IDisposable
                 Severity = "Info"
             }
         };
-        _context.AuditLog.AddRange(auditLogs);
+        foreach (var log in auditLogs)
+        {
+            _context.AuditLog.Add(log);
+        }
 
         // Create test user sessions
         var sessions = new[]

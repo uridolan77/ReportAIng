@@ -6,7 +6,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Business;
 using BIReportingCopilot.Core.Interfaces.Query;
 
-namespace BIReportingCopilot.Infrastructure.Handlers;
+namespace BIReportingCopilot.Infrastructure.Handlers.Query;
 
 /// <summary>
 /// Enhanced command handler for processing natural language queries

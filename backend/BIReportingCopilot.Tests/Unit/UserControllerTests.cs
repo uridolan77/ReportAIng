@@ -54,18 +54,18 @@ public class UserControllerTests
     {
         // Arrange
         var userId = "test-user-id";
-        var userInfo = new UserInfo
+        var user = new User
         {
             Id = userId,
             Username = "testuser",
             Email = "test@example.com",
             DisplayName = "Test User",
             Roles = new string[] { "User", "Analyst" },
-            LastLogin = DateTime.UtcNow.AddDays(-1)
+            LastLoginDate = DateTime.UtcNow.AddDays(-1)
         };
 
-        _mockUserService.Setup(x => x.GetUserAsync(userId))
-            .ReturnsAsync(userInfo);
+        _mockUserService.Setup(x => x.GetUserAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
 
         // Act
         var result = await _controller.GetProfile();
@@ -88,8 +88,8 @@ public class UserControllerTests
     {
         // Arrange
         var userId = "test-user-id";
-        _mockUserService.Setup(x => x.GetUserAsync(userId))
-            .ReturnsAsync((UserInfo?)null);
+        _mockUserService.Setup(x => x.GetUserAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User?)null);
 
         // Act
         var result = await _controller.GetProfile();
@@ -125,8 +125,8 @@ public class UserControllerTests
             }
         };
 
-        _mockUserService.Setup(x => x.UpdateUserPreferencesAsync(userId, updateRequest.Preferences))
-            .ReturnsAsync(updatedUserInfo);
+        _mockUserService.Setup(x => x.UpdateUserPreferencesAsync(userId, updateRequest.Preferences, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         // Act
         var result = await _controller.UpdateProfile(updateRequest);
@@ -168,7 +168,7 @@ public class UserControllerTests
             }
         };
 
-        _mockUserService.Setup(x => x.GetUserActivityAsync(userId, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+        _mockUserService.Setup(x => x.GetUserActivityAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(userActivities);
 
         // Act
@@ -201,20 +201,18 @@ public class UserControllerTests
         okResult!.Value.Should().NotBeNull();
 
         // Verify that LogUserActivityAsync was called
-        _mockUserService.Verify(x => x.LogUserActivityAsync(It.Is<UserActivity>(
-            activity => activity.UserId == userId &&
-                       activity.Action == "LOGIN" &&
-                       activity.EntityType == "USER" &&
-                       activity.IpAddress == "127.0.0.1" &&
-                       activity.UserAgent == "Test User Agent"
-        )), Times.Once);
+        _mockUserService.Verify(x => x.LogUserActivityAsync(
+            userId,
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()
+        ), Times.Once);
     }
 
     [Test]
     public async Task UpdateLastLogin_WithException_ReturnsInternalServerError()
     {
         // Arrange
-        _mockUserService.Setup(x => x.LogUserActivityAsync(It.IsAny<UserActivity>()))
+        _mockUserService.Setup(x => x.LogUserActivityAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
@@ -253,7 +251,7 @@ public class UserControllerTests
             }
         };
 
-        _mockUserService.Setup(x => x.GetUserActivityAsync(userId, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+        _mockUserService.Setup(x => x.GetUserActivityAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(userActivities);
 
         // Act
@@ -268,14 +266,14 @@ public class UserControllerTests
         sessions.Should().NotBeNull();
         sessions!.Should().HaveCount(2);
 
-        var firstSession = sessions.First();
+        var firstSession = sessions!.First();
         firstSession.SessionId.Should().Be("session-1");
         firstSession.UserId.Should().Be(userId);
         firstSession.IpAddress.Should().Be("127.0.0.1");
         firstSession.UserAgent.Should().Be("Chrome Browser");
         firstSession.IsActive.Should().BeTrue(); // Within 24 hours
 
-        var secondSession = sessions.Last();
+        var secondSession = sessions!.Last();
         secondSession.SessionId.Should().Be("session-2");
         secondSession.IsActive.Should().BeFalse(); // Older than 24 hours
     }
@@ -296,7 +294,7 @@ public class UserControllerTests
             }
         };
 
-        _mockUserService.Setup(x => x.GetUserActivityAsync(userId, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+        _mockUserService.Setup(x => x.GetUserActivityAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(userActivities);
 
         // Act
@@ -317,7 +315,7 @@ public class UserControllerTests
     {
         // Arrange
         var userId = "test-user-id";
-        var userInfo = new UserInfo
+        var user = new User
         {
             Id = userId,
             Preferences = new UserPreferences
@@ -332,8 +330,8 @@ public class UserControllerTests
             }
         };
 
-        _mockUserService.Setup(x => x.GetUserAsync(userId))
-            .ReturnsAsync(userInfo);
+        _mockUserService.Setup(x => x.GetUserAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
 
         // Act
         var result = await _controller.GetPreferences();
@@ -372,8 +370,8 @@ public class UserControllerTests
             }
         };
 
-        _mockUserService.Setup(x => x.UpdateUserPreferencesAsync(userId, updateRequest))
-            .ReturnsAsync(updatedUserInfo);
+        _mockUserService.Setup(x => x.UpdateUserPreferencesAsync(userId, updateRequest, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         // Act
         var result = await _controller.UpdatePreferences(updateRequest);

@@ -38,9 +38,8 @@ public interface ISchemaManagementService
     Task<List<SchemaVersion>> GetSchemaVersionHistoryAsync(CancellationToken cancellationToken = default);
     Task<SchemaValidationResult> ValidateSchemaChangesAsync(List<SchemaChange> changes, CancellationToken cancellationToken = default);
     Task<List<BusinessSchema>> GetBusinessSchemasAsync(string userId, CancellationToken cancellationToken = default);
-    Task<BusinessSchema?> GetBusinessSchemaAsync(string schemaId, string userId, CancellationToken cancellationToken = default);
-    Task<BusinessSchema> CreateBusinessSchemaAsync(CreateBusinessSchemaRequest request, string userId, CancellationToken cancellationToken = default);
-    Task<bool> UpdateBusinessSchemaAsync(string schemaId, UpdateBusinessSchemaRequest request, string userId, CancellationToken cancellationToken = default);
+    Task<BusinessSchema?> GetBusinessSchemaAsync(string schemaId, string userId, CancellationToken cancellationToken = default);    Task<BusinessSchema> CreateBusinessSchemaAsync(BIReportingCopilot.Core.DTOs.CreateBusinessSchemaRequest request, string userId, CancellationToken cancellationToken = default);
+    Task<bool> UpdateBusinessSchemaAsync(string schemaId, BIReportingCopilot.Core.DTOs.UpdateBusinessSchemaRequest request, string userId, CancellationToken cancellationToken = default);
     Task<bool> DeleteBusinessSchemaAsync(string schemaId, string userId, CancellationToken cancellationToken = default);
 }
 
@@ -56,32 +55,7 @@ public interface ISchemaOptimizationService
     Task<SchemaOptimizationMetrics> GetOptimizationMetricsAsync(CancellationToken cancellationToken = default);
     Task<SqlOptimizationResult> OptimizeSqlAsync(string sql, CancellationToken cancellationToken = default);
     Task<List<IndexSuggestion>> SuggestIndexesAsync(string tableName, CancellationToken cancellationToken = default);
-    Task<PerformanceAnalysisResult> AnalyzeTablePerformanceAsync(string tableName, CancellationToken cancellationToken = default);
-    Task<List<PartitioningRecommendation>> GetPartitioningRecommendationsAsync(string tableName, CancellationToken cancellationToken = default);
-}
-
-/// <summary>
-/// Create business schema request
-/// </summary>
-public class CreateBusinessSchemaRequest
-{
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public List<string> TableNames { get; set; } = new();
-    public Dictionary<string, object> Metadata { get; set; } = new();
-    public bool IsPublic { get; set; }
-}
-
-/// <summary>
-/// Update business schema request
-/// </summary>
-public class UpdateBusinessSchemaRequest
-{
-    public string? Name { get; set; }
-    public string? Description { get; set; }
-    public List<string>? TableNames { get; set; }
-    public Dictionary<string, object>? Metadata { get; set; }
-    public bool? IsPublic { get; set; }
+    Task<PerformanceAnalysisResult> AnalyzeTablePerformanceAsync(string tableName, CancellationToken cancellationToken = default);    Task<List<PartitioningRecommendation>> GetPartitioningRecommendationsAsync(string tableName, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

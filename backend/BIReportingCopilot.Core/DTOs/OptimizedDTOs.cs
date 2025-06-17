@@ -1,23 +1,6 @@
 namespace BIReportingCopilot.Core.DTOs;
 
 /// <summary>
-/// Optimized DTO for business table info with projection to avoid loading unnecessary data
-/// </summary>
-public class BusinessTableInfoOptimizedDto
-{
-    public long Id { get; set; }
-    public string TableName { get; set; } = string.Empty;
-    public string SchemaName { get; set; } = string.Empty;
-    public string BusinessPurpose { get; set; } = string.Empty;
-    public string BusinessContext { get; set; } = string.Empty;
-    public bool IsActive { get; set; }
-    public DateTime? UpdatedDate { get; set; }
-    public string? UpdatedBy { get; set; }
-    public int ColumnCount { get; set; }
-    public DateTime CreatedDate { get; set; }
-}
-
-/// <summary>
 /// Optimized DTO for query patterns with minimal data loading
 /// </summary>
 public class QueryPatternOptimizedDto

@@ -7,7 +7,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Query;
 
-namespace BIReportingCopilot.Infrastructure.Handlers;
+namespace BIReportingCopilot.Infrastructure.Handlers.Query;
 
 public class ExecuteQueryCommandHandler : IRequestHandler<ExecuteQueryCommand, QueryResponse>
 {

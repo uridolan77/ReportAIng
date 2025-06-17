@@ -34,11 +34,11 @@ public class EnhancementIntegrationTests : IClassFixture<WebApplicationFactory<P
         var services = scope.ServiceProvider;
 
         // Act & Assert - Verify all our new services are registered
-        Assert.NotNull(services.GetService<IPasswordHasher>());
-        Assert.IsType<PasswordHasher>(services.GetService<IPasswordHasher>());
+        Assert.NotNull(services.GetService<BIReportingCopilot.Core.Interfaces.Security.IPasswordHasher>());
+        Assert.IsType<PasswordHasher>(services.GetService<BIReportingCopilot.Core.Interfaces.Security.IPasswordHasher>());
 
         Assert.NotNull(services.GetService<ISqlQueryValidator>());
-        Assert.IsType<EnhancedSqlQueryValidator>(services.GetService<ISqlQueryValidator>());
+        Assert.IsType<SqlQueryValidator>(services.GetService<ISqlQueryValidator>());
 
         Assert.NotNull(services.GetService<IRateLimitingService>());
         Assert.IsType<SecurityManagementService>(services.GetService<IRateLimitingService>());
@@ -46,8 +46,8 @@ public class EnhancementIntegrationTests : IClassFixture<WebApplicationFactory<P
         Assert.NotNull(services.GetService<IMediator>());
 
         // Verify cache service is the unified version
-        Assert.NotNull(services.GetService<ICacheService>());
-        Assert.IsType<CacheService>(services.GetService<ICacheService>());
+        Assert.NotNull(services.GetService<BIReportingCopilot.Core.Interfaces.Cache.ICacheService>());
+        Assert.IsType<CacheService>(services.GetService<BIReportingCopilot.Core.Interfaces.Cache.ICacheService>());
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class EnhancementIntegrationTests : IClassFixture<WebApplicationFactory<P
         logger.LogInformation("🧪 Testing enhanced services registration in DI container");
 
         // Assert - Enhanced Semantic Caching (Enhancement #1)
-        var semanticCacheService = services.GetService<ISemanticCacheService>();
+        var semanticCacheService = services.GetService<BIReportingCopilot.Core.Interfaces.Cache.ISemanticCacheService>();
         Assert.NotNull(semanticCacheService);
         logger.LogInformation("✅ ISemanticCacheService registered successfully");
 
@@ -71,17 +71,17 @@ public class EnhancementIntegrationTests : IClassFixture<WebApplicationFactory<P
         logger.LogInformation("✅ IAdvancedNLUService registered successfully");
 
         // Assert - Schema Optimization (Enhancement #2)
-        var schemaOptimizationService = services.GetService<ISchemaOptimizationService>();
+        var schemaOptimizationService = services.GetService<BIReportingCopilot.Core.Interfaces.Query.ISchemaOptimizationService>();
         Assert.NotNull(schemaOptimizationService);
         logger.LogInformation("✅ ISchemaOptimizationService registered successfully");
 
         // Assert - Query Intelligence (Enhancement #2)
-        var queryIntelligenceService = services.GetService<IQueryIntelligenceService>();
+        var queryIntelligenceService = services.GetService<BIReportingCopilot.Core.Interfaces.Query.IQueryIntelligenceService>();
         Assert.NotNull(queryIntelligenceService);
         logger.LogInformation("✅ IQueryIntelligenceService registered successfully");
 
         // Assert - Real-time Streaming (Enhancement #3)
-        var realTimeStreamingService = services.GetService<IRealTimeStreamingService>();
+        var realTimeStreamingService = services.GetService<BIReportingCopilot.Core.Interfaces.Streaming.IRealTimeStreamingService>();
         Assert.NotNull(realTimeStreamingService);
         logger.LogInformation("✅ IRealTimeStreamingService registered successfully");
 
@@ -98,7 +98,7 @@ public class EnhancementIntegrationTests : IClassFixture<WebApplicationFactory<P
     {
         // Arrange
         using var scope = _factory.Services.CreateScope();
-        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<BIReportingCopilot.Core.Interfaces.Security.IPasswordHasher>();
         const string password = "TestPassword123!";
 
         // Act

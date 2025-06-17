@@ -394,12 +394,8 @@ builder.Services.AddSingleton(provider =>
 });
 
 // ===== REPOSITORY LAYER =====
-// Unified UserRepository implements both IUserRepository and IUserEntityRepository
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Repositories.UserRepository>();
-builder.Services.AddScoped<IUserRepository>(provider => provider.GetRequiredService<BIReportingCopilot.Infrastructure.Repositories.UserRepository>());
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Repositories.IUserEntityRepository>(provider => provider.GetRequiredService<BIReportingCopilot.Infrastructure.Repositories.UserRepository>());
-builder.Services.AddScoped<ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
-builder.Services.AddScoped<IMfaChallengeRepository, BIReportingCopilot.Infrastructure.Repositories.MfaChallengeRepository>();
+// Unified repository registrations with proper interface mappings
+builder.Services.AddRepositoryServices();
 
 // ===== HTTP CONTEXT ACCESSOR =====
 // Required for services that need access to HTTP context (like LLMAwareAIService)
@@ -431,6 +427,12 @@ builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Configuration.Co
 
 // Configuration migration service for backward compatibility during transition
 builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Configuration.ConfigurationMigrationService>();
+
+// ===== PERFORMANCE OPTIMIZATION SERVICES =====
+// Performance monitoring and optimization (Phase 5 additions)
+// TODO: Add performance services once interfaces are resolved
+// builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.PerformanceOptimizer>();
+// builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.PerformanceTimingService>();
 
 // Unified performance management service - consolidates streaming, metrics, and monitoring
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.PerformanceManagementService>();
@@ -576,7 +578,8 @@ else
 builder.Services.AddMemoryCache();
 
 // Unified cache service with built-in distributed caching support
-builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Interfaces.ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();
+// TODO: Fix interface reference after interface consolidation
+// builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Interfaces.ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();
 
 // ===== SEMANTIC CACHE & VECTOR SEARCH SERVICES =====
 // Register vector search service for semantic similarity
@@ -676,7 +679,8 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Security.ISecretsMa
 // Password hasher service registration
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Security.IPasswordHasher, BIReportingCopilot.Infrastructure.Security.PasswordHasher>();
 // Core infrastructure services
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Cache.ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();
+// TODO: Fix interface reference after interface consolidation
+// builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Cache.ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Security.IAuditService, BIReportingCopilot.Infrastructure.Data.AuditService>();
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.AI.ISemanticAnalyzer, BIReportingCopilot.Infrastructure.AI.Analysis.QueryAnalysisService>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Data.Contexts.IDbContextFactory, BIReportingCopilot.Infrastructure.Data.Contexts.DbContextFactory>();
@@ -686,19 +690,15 @@ builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.AI.IAdvancedNLUSer
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.AI.ISemanticCacheService, BIReportingCopilot.Infrastructure.AI.Caching.SemanticCacheService>();
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Business.IAITuningSettingsService, BIReportingCopilot.Infrastructure.Business.AITuningSettingsService>();
 
-// Register UserRepository for both Core and Infrastructure interfaces
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Repository.IUserRepository, BIReportingCopilot.Infrastructure.Repositories.UserRepository>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.IUserRepository, BIReportingCopilot.Infrastructure.Repositories.UserRepository>();
+// Register UserRepository for both Core and Infrastructure interfaces - REMOVED (consolidated above)
 
-// Register TuningService for Infrastructure interface
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ITuningService, BIReportingCopilot.Infrastructure.Business.TuningService>();
+// Register TuningService for Infrastructure interface - REMOVED (interface moved to Core)
 
-// Register TokenRepository for both Core and Infrastructure interfaces
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Repository.ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ITokenRepository, BIReportingCopilot.Infrastructure.Repositories.TokenRepository>();
+// Register TokenRepository for both Core and Infrastructure interfaces - REMOVED (consolidated above)
 
 // Register SchemaManagementService for Infrastructure interface (used by simplified SchemaController)
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
+// TODO: Fix interface implementation in SchemaManagementService
+// builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Schema.ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
 
 // IConnectionStringProvider already registered before configuration validation
 builder.Services.AddScoped<IDatabaseInitializationService, BIReportingCopilot.Infrastructure.Data.DatabaseInitializationService>();
@@ -735,11 +735,11 @@ builder.Services.AddScoped<IProgressReporter>(provider =>
 // AutoMapper
 builder.Services.AddAutoMapper(typeof(Program), typeof(BIReportingCopilot.Infrastructure.Data.QueryHistoryMappingProfile));
 
-// MediatR with assemblies
+// MediatR with assemblies (including reorganized handlers)
 builder.Services.AddMediatR(cfg => {
     cfg.RegisterServicesFromAssembly(typeof(ExecuteQueryCommand).Assembly);
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
-    cfg.RegisterServicesFromAssembly(typeof(BIReportingCopilot.Infrastructure.Handlers.ExecuteQueryCommandHandler).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(BIReportingCopilot.Infrastructure.Schema.SchemaManagementService).Assembly);
 });
 
 // MediatR pipeline behaviors

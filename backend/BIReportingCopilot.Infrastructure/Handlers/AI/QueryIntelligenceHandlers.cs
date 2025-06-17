@@ -6,7 +6,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
 
-namespace BIReportingCopilot.Infrastructure.Handlers;
+namespace BIReportingCopilot.Infrastructure.Handlers.AI;
 
 /// <summary>
 /// Command handler for advanced NLU analysis

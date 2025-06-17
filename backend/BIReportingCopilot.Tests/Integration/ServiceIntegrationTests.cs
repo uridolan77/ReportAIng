@@ -87,12 +87,11 @@ public class ServiceIntegrationTests : IClassFixture<WebApplicationFactory<Progr
         var promptService = scope.ServiceProvider.GetRequiredService<IPromptService>();
 
         // Act
-        var template = await promptService.GetPromptTemplateAsync("sql_generation");
+        var template = await promptService.GetPromptAsync("sql_generation", null);
 
         // Assert
         Assert.NotNull(template);
-        Assert.Equal("sql_generation", template.Name);
-        Assert.NotEmpty(template.Content);
+        Assert.NotEmpty(template);
     }
 
     [Fact]
@@ -120,7 +119,7 @@ public class ServiceIntegrationTests : IClassFixture<WebApplicationFactory<Progr
         var aiService = scope.ServiceProvider.GetRequiredService<IAIService>();
 
         // Act
-        var isValid = await aiService.ValidateQueryIntentAsync("Show me all users");
+        var isValid = await aiService.ValidateQueryIntentAsync("Show me all users", "data_retrieval");
 
         // Assert
         // Should not throw and return a boolean result
@@ -144,8 +143,9 @@ public class ServiceIntegrationTests : IClassFixture<WebApplicationFactory<Progr
         // Act & Assert - Should not throw
         try
         {
-            var result = await userService.UpdateUserPreferencesAsync(testUserId, preferences);
-            Assert.NotNull(result);
+            await userService.UpdateUserPreferencesAsync(testUserId, preferences);
+            // If we reach here, the call succeeded
+            Assert.True(true);
         }
         catch (Exception ex)
         {

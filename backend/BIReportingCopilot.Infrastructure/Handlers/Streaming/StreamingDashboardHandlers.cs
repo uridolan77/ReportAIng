@@ -7,7 +7,7 @@ using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Streaming;
 using DashboardModel = BIReportingCopilot.Core.Models.Dashboard;
 
-namespace BIReportingCopilot.Infrastructure.Handlers;
+namespace BIReportingCopilot.Infrastructure.Handlers.Streaming;
 
 // Real-time Streaming Command Handlers
 

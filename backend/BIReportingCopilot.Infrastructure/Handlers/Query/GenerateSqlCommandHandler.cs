@@ -8,7 +8,7 @@ using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
 using SqlQueryResult = BIReportingCopilot.Core.Models.SqlQueryResult;
 
-namespace BIReportingCopilot.Infrastructure.Handlers;
+namespace BIReportingCopilot.Infrastructure.Handlers.Query;
 
 /// <summary>
 /// Command handler for generating SQL from natural language using AI

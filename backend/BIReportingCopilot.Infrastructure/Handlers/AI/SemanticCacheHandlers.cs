@@ -5,7 +5,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 
-namespace BIReportingCopilot.Infrastructure.Handlers;
+namespace BIReportingCopilot.Infrastructure.Handlers.AI;
 
 /// <summary>
 /// Command handler for enhanced semantic cache lookup using vector embeddings

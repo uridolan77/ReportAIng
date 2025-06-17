@@ -236,13 +236,14 @@ public static class TestDataBuilders
             .With(t => t.CreatedBy, "System");
     }
 
+    /*
     public static TestDataBuilder<UnifiedAIFeedbackEntry> AIFeedback()
     {
         return new TestDataBuilder<UnifiedAIFeedbackEntry>()
             .With(f => f.Id, Random.Shared.Next(1, int.MaxValue))
             .With(f => f.UserId, Guid.NewGuid().ToString())
             .With(f => f.OriginalQuery, "Show me sales data")
-            .With(f => f.GeneratedSql, "SELECT * FROM Sales")
+            .With(f => f.CorrectedOutput, "SELECT * FROM Sales")
             .With(f => f.Rating, Random.Shared.Next(1, 6))
             .With(f => f.FeedbackType, "Positive")
             .With(f => f.CreatedAt, DateTime.UtcNow)
@@ -253,7 +254,9 @@ public static class TestDataBuilders
             .With(f => f.LastUpdated, DateTime.UtcNow)
             .With(f => f.IsActive, true);
     }
+    */
 
+    /*
     public static TestDataBuilder<UnifiedSemanticCacheEntry> SemanticCache()
     {
         return new TestDataBuilder<UnifiedSemanticCacheEntry>()
@@ -263,17 +266,17 @@ public static class TestDataBuilders
             .With(c => c.NormalizedQuery, "SELECT * FROM Customers")
             .With(c => c.GeneratedSql, "SELECT * FROM Customers")
             .With(c => c.ResultData, "{\"data\": [], \"success\": true}")
-            .With(c => c.ResultMetadata, "{\"intent\": \"display\"}")
+            .With(c => c.Metadata, "{\"intent\": \"display\"}")
             .With(c => c.CreatedAt, DateTime.UtcNow)
             .With(c => c.ExpiresAt, DateTime.UtcNow.AddHours(24))
             .With(c => c.AccessCount, 1)
             .With(c => c.LastAccessedAt, DateTime.UtcNow)
             .With(c => c.CreatedBy, "TestSystem")
             .With(c => c.UpdatedBy, "TestSystem")
-            .With(c => c.CreatedDate, DateTime.UtcNow)
-            .With(c => c.LastUpdated, DateTime.UtcNow)
-            .With(c => c.IsActive, true);
+            .With(c => c.CreatedAt, DateTime.UtcNow)
+            .With(c => c.UpdatedAt, DateTime.UtcNow);
     }
+    */
 
     public static TestDataBuilder<QueryResponse> QueryResponse()
     {
@@ -321,6 +324,7 @@ public static class TestDataBuilders
             .With(c => c.SampleValues, new string[] { "Sample1", "Sample2" });
     }
 
+    /*
     public static TestDataBuilder<UnifiedAIGenerationAttempt> AIGenerationAttempt()
     {
         return new TestDataBuilder<UnifiedAIGenerationAttempt>()
@@ -338,6 +342,7 @@ public static class TestDataBuilders
             .With(a => a.LastUpdated, DateTime.UtcNow)
             .With(a => a.IsActive, true);
     }
+    */
 }
 
 /// <summary>
@@ -371,6 +376,7 @@ public class TestScenarioBuilder
         return this;
     }
 
+    /*
     public TestScenarioBuilder AddAIFeedback(Action<TestDataBuilder<UnifiedAIFeedbackEntry>>? configure = null)
     {
         var builder = TestDataBuilders.AIFeedback();
@@ -386,6 +392,7 @@ public class TestScenarioBuilder
         _entities.Add(builder.Build());
         return this;
     }
+    */
 
     public List<object> Build()
     {

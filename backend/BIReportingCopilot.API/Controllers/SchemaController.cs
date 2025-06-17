@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Schema;
 using BIReportingCopilot.Infrastructure.Interfaces;
+using BIReportingCopilot.Infrastructure.Schema;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.DTOs;
 using System.Security.Claims;
@@ -16,100 +17,182 @@ namespace BIReportingCopilot.API.Controllers;
 [Route("api/schema")]
 [Authorize]
 public class SchemaController : ControllerBase
-{
-    private readonly ILogger<SchemaController> _logger;
+{    private readonly ILogger<SchemaController> _logger;
     private readonly BIReportingCopilot.Core.Interfaces.Schema.ISchemaService _schemaService;
     private readonly BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService _schemaManagementService;
-
-    public SchemaController(
+    private readonly DatabaseSchemaDiscoveryService _discoveryService;    public SchemaController(
         ILogger<SchemaController> logger,
         BIReportingCopilot.Core.Interfaces.Schema.ISchemaService schemaService,
-        BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService schemaManagementService)
+        BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService schemaManagementService,
+        DatabaseSchemaDiscoveryService discoveryService)
     {
         _logger = logger;
         _schemaService = schemaService;
         _schemaManagementService = schemaManagementService;
-    }
-
-    /// <summary>
-    /// Get database schema metadata
+        _discoveryService = discoveryService;
+    }    /// <summary>
+    /// Get database schema metadata - now uses live discovery from BI database
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<SchemaMetadata>> GetSchema()
     {
         try
         {
-            _logger.LogInformation("Getting schema metadata");
-            var schema = await _schemaManagementService.GetSchemaMetadataAsync();
+            _logger.LogInformation("🔍 Getting schema metadata from BI database via discovery service");
+            
+            // Use the discovery service to get live schema from BI database
+            var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
+            
+            // Convert discovery result to SchemaMetadata format expected by frontend
+            var schema = new SchemaMetadata
+            {
+                DatabaseName = discoveryResult.DatabaseName,
+                LastUpdated = DateTime.UtcNow,
+                Tables = discoveryResult.Tables.Select(t => new TableMetadata
+                {
+                    Name = t.TableName,
+                    Schema = t.SchemaName,
+                    Description = $"Table with {t.Columns.Count} columns",
+                    RowCount = 0, // Discovery service doesn't count rows for performance
+                    LastUpdated = DateTime.UtcNow,
+                    Columns = t.Columns.Select(c => new ColumnMetadata
+                    {
+                        Name = c.ColumnName,
+                        DataType = c.DataType,
+                        Description = $"{c.DataType} column" + (c.IsPrimaryKey ? " (Primary Key)" : "") + (c.IsForeignKey ? " (Foreign Key)" : ""),
+                        IsNullable = c.IsNullable,
+                        IsPrimaryKey = c.IsPrimaryKey,
+                        IsForeignKey = c.IsForeignKey,
+                        SemanticTags = new[] { c.DataType.ToLower() },
+                        SampleValues = new string[0] // Could be populated later if needed
+                    }).ToList()
+                }).ToList()
+            };
+            
+            _logger.LogInformation("✅ Schema discovery completed: {TableCount} tables found", schema.Tables.Count);
             return Ok(schema);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting schema metadata");
-            return StatusCode(500, new { error = "Failed to retrieve schema metadata", details = ex.Message });
+            _logger.LogError(ex, "❌ Error getting schema metadata from BI database");
+            return StatusCode(500, new { error = "Failed to retrieve schema metadata from BI database", details = ex.Message });
         }
-    }
-
-    /// <summary>
-    /// Get all tables in the database
+    }    /// <summary>
+    /// Get all tables in the database - now uses live discovery from BI database
     /// </summary>
     [HttpGet("tables")]
     public async Task<ActionResult<List<TableMetadata>>> GetTables()
     {
         try
         {
-            _logger.LogInformation("Getting database tables");
-            var tables = await _schemaManagementService.GetTablesAsync();
+            _logger.LogInformation("🔍 Getting database tables from BI database via discovery service");
+            
+            var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
+            
+            var tables = discoveryResult.Tables.Select(t => new TableMetadata
+            {
+                Name = t.TableName,
+                Schema = t.SchemaName,
+                Description = $"Table with {t.Columns.Count} columns",
+                RowCount = 0, // Discovery service doesn't count rows for performance
+                LastUpdated = DateTime.UtcNow,
+                Columns = t.Columns.Select(c => new ColumnMetadata
+                {
+                    Name = c.ColumnName,
+                    DataType = c.DataType,
+                    Description = $"{c.DataType} column" + (c.IsPrimaryKey ? " (Primary Key)" : "") + (c.IsForeignKey ? " (Foreign Key)" : ""),
+                    IsNullable = c.IsNullable,
+                    IsPrimaryKey = c.IsPrimaryKey,
+                    IsForeignKey = c.IsForeignKey,
+                    SemanticTags = new[] { c.DataType.ToLower() },
+                    SampleValues = new string[0]
+                }).ToList()
+            }).ToList();
+            
+            _logger.LogInformation("✅ Tables discovery completed: {TableCount} tables found", tables.Count);
             return Ok(tables);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting database tables");
-            return StatusCode(500, new { error = "Failed to retrieve tables", details = ex.Message });
+            _logger.LogError(ex, "❌ Error getting database tables from BI database");
+            return StatusCode(500, new { error = "Failed to retrieve tables from BI database", details = ex.Message });
         }
-    }
-
-    /// <summary>
-    /// Get metadata for a specific table
+    }    /// <summary>
+    /// Get metadata for a specific table - now uses live discovery from BI database
     /// </summary>
     [HttpGet("tables/{tableName}")]
     public async Task<ActionResult<TableMetadata>> GetTableMetadata(string tableName)
     {
         try
         {
-            _logger.LogInformation("Getting metadata for table: {TableName}", tableName);
-            var tableMetadata = await _schemaManagementService.GetTableMetadataAsync(tableName);
+            _logger.LogInformation("🔍 Getting metadata for table: {TableName} from BI database", tableName);
             
-            if (tableMetadata == null)
+            var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
+            
+            var discoveredTable = discoveryResult.Tables.FirstOrDefault(t => 
+                t.TableName.Equals(tableName, StringComparison.OrdinalIgnoreCase) ||
+                $"{t.SchemaName}.{t.TableName}".Equals(tableName, StringComparison.OrdinalIgnoreCase));
+            
+            if (discoveredTable == null)
             {
-                return NotFound(new { error = $"Table '{tableName}' not found" });
+                _logger.LogWarning("Table '{TableName}' not found in BI database", tableName);
+                return NotFound(new { error = $"Table '{tableName}' not found in BI database" });
             }
             
+            var tableMetadata = new TableMetadata
+            {
+                Name = discoveredTable.TableName,
+                Schema = discoveredTable.SchemaName,
+                Description = $"Table with {discoveredTable.Columns.Count} columns",
+                RowCount = 0, // Discovery service doesn't count rows for performance
+                LastUpdated = DateTime.UtcNow,
+                Columns = discoveredTable.Columns.Select(c => new ColumnMetadata
+                {
+                    Name = c.ColumnName,
+                    DataType = c.DataType,
+                    Description = $"{c.DataType} column" + (c.IsPrimaryKey ? " (Primary Key)" : "") + (c.IsForeignKey ? " (Foreign Key)" : ""),
+                    IsNullable = c.IsNullable,
+                    IsPrimaryKey = c.IsPrimaryKey,
+                    IsForeignKey = c.IsForeignKey,
+                    SemanticTags = new[] { c.DataType.ToLower() },
+                    SampleValues = new string[0]
+                }).ToList()
+            };
+            
+            _logger.LogInformation("✅ Table metadata discovery completed for: {TableName}", tableName);
             return Ok(tableMetadata);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting table metadata for: {TableName}", tableName);
-            return StatusCode(500, new { error = $"Failed to retrieve metadata for table '{tableName}'", details = ex.Message });
+            _logger.LogError(ex, "❌ Error getting table metadata for: {TableName} from BI database", tableName);
+            return StatusCode(500, new { error = $"Failed to retrieve metadata for table '{tableName}' from BI database", details = ex.Message });
         }
-    }
-
-    /// <summary>
-    /// Refresh schema metadata
+    }    /// <summary>
+    /// Refresh schema metadata - now triggers fresh discovery from BI database
     /// </summary>
     [HttpPost("refresh")]
     public async Task<ActionResult> RefreshSchema()
     {
         try
         {
-            _logger.LogInformation("Refreshing schema metadata");
-            await _schemaManagementService.RefreshSchemaAsync();
-            return Ok(new { message = "Schema refreshed successfully" });
+            _logger.LogInformation("🔄 Refreshing schema metadata by triggering fresh discovery from BI database");
+            
+            // Trigger a fresh discovery from the BI database
+            var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
+            
+            _logger.LogInformation("✅ Schema refresh completed: {TableCount} tables discovered from BI database", 
+                discoveryResult.Tables.Count);
+            
+            return Ok(new { 
+                message = "Schema refreshed successfully from BI database", 
+                tablesDiscovered = discoveryResult.Tables.Count,
+                databaseName = discoveryResult.DatabaseName
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error refreshing schema");
-            return StatusCode(500, new { error = "Failed to refresh schema", details = ex.Message });
+            _logger.LogError(ex, "❌ Error refreshing schema from BI database");
+            return StatusCode(500, new { error = "Failed to refresh schema from BI database", details = ex.Message });
         }
     }
 
@@ -130,33 +213,36 @@ public class SchemaController : ControllerBase
             _logger.LogError(ex, "Error getting databases");
             return StatusCode(500, new { error = "Failed to retrieve databases", details = ex.Message });
         }
-    }
-
-    /// <summary>
-    /// Get data sources for schema exploration
+    }    /// <summary>
+    /// Get data sources for schema exploration - now uses live discovery from BI database
     /// </summary>
     [HttpGet("datasources")]
     public async Task<ActionResult> GetDataSources()
     {
         try
         {
-            _logger.LogInformation("Getting data sources");
-            var tables = await _schemaManagementService.GetTablesAsync();            // Transform to simple format expected by frontend
-            var dataSources = tables.Select(t => new
+            _logger.LogInformation("🔍 Getting data sources from BI database via discovery service");
+            
+            var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
+            
+            // Transform to simple format expected by frontend
+            var dataSources = discoveryResult.Tables.Select(t => new
             {
-                name = t.Name,
-                schema = t.Schema ?? "dbo",
+                name = t.TableName,
+                schema = t.SchemaName ?? "dbo",
                 type = "table",
-                rowCount = (int)t.RowCount,
-                columns = t.Columns?.Count ?? 0
+                rowCount = 0, // Discovery service doesn't count rows for performance
+                columns = t.Columns?.Count ?? 0,
+                fullName = $"{t.SchemaName}.{t.TableName}"
             }).ToList();
             
+            _logger.LogInformation("✅ Data sources discovery completed: {TableCount} tables found", dataSources.Count);
             return Ok(dataSources);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting data sources");
-            return StatusCode(500, new { error = "Failed to retrieve data sources", details = ex.Message });
+            _logger.LogError(ex, "❌ Error getting data sources from BI database");
+            return StatusCode(500, new { error = "Failed to retrieve data sources from BI database", details = ex.Message });
         }
     }
 }
