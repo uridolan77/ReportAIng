@@ -14,7 +14,7 @@ import {
 } from './testing-providers';
 
 // API Base URL for testing
-export const TEST_API_BASE_URL = 'http://localhost:55243/api';
+export const TEST_API_BASE_URL = 'http://localhost:55244/api';
 
 // Mock API Responses
 export const mockApiResponses = {

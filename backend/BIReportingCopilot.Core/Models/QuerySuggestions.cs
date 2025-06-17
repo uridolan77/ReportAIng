@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 
 namespace BIReportingCopilot.Core.Models.QuerySuggestions;
 
@@ -10,36 +11,68 @@ public class SuggestionCategory
     public long Id { get; set; }
 
     [Required]
-    [StringLength(50)]
-    public string CategoryKey { get; set; } = string.Empty;
-
-    [Required]
     [StringLength(100)]
-    public string Title { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
 
-    [StringLength(10)]
-    public string? Icon { get; set; }
-
-    [StringLength(200)]
+    [StringLength(500)]
     public string? Description { get; set; }
-
-    public int SortOrder { get; set; } = 0;
 
     public bool IsActive { get; set; } = true;
 
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    public int DisplayOrder { get; set; } = 0;
 
-    [Required]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
     [StringLength(256)]
-    public string CreatedBy { get; set; } = string.Empty;
-
-    public DateTime? UpdatedDate { get; set; }
+    public string? CreatedBy { get; set; }
 
     [StringLength(256)]
     public string? UpdatedBy { get; set; }
 
     // Navigation properties
     public virtual ICollection<QuerySuggestion> Suggestions { get; set; } = new List<QuerySuggestion>();
+
+    // Compatibility properties for existing code
+    public string CategoryKey
+    {
+        get => Name.Replace(" ", "-").ToLowerInvariant();
+        set => Name = value.Replace("-", " ").ToTitleCase();
+    }
+    public string Title
+    {
+        get => Name;
+        set => Name = value;
+    }
+    public string? Icon { get; set; } // Compatibility property, not stored in database
+    public int SortOrder
+    {
+        get => DisplayOrder;
+        set => DisplayOrder = value;
+    }
+    public DateTime CreatedDate
+    {
+        get => CreatedAt;
+        set => CreatedAt = value;
+    }
+    public DateTime? UpdatedDate
+    {
+        get => UpdatedAt;
+        set => UpdatedAt = value ?? DateTime.UtcNow;
+    }
+}
+
+// Extension method for string manipulation
+public static class StringExtensions
+{
+    public static string ToTitleCase(this string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(input.ToLower());
+    }
 }
 
 /// <summary>

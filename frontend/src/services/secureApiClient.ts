@@ -40,7 +40,7 @@ export class SecureApiClient {
 
   private constructor(config: SecureApiConfig = {}) {
     this.config = {
-      baseURL: config.baseURL || process.env.REACT_APP_API_URL || 'https://localhost:55243',
+      baseURL: config.baseURL || process.env.REACT_APP_API_URL || 'http://localhost:55244',
       timeout: config.timeout || 30000,
       enableSigning: config.enableSigning ?? true,
       enableEncryption: config.enableEncryption ?? false,

@@ -6,7 +6,7 @@
 module.exports = async () => {
   // Set test environment variables
   process.env.NODE_ENV = 'test';
-  process.env.REACT_APP_API_BASE_URL = 'http://localhost:55243/api';
+  process.env.REACT_APP_API_BASE_URL = 'http://localhost:55244/api';
   process.env.REACT_APP_ENVIRONMENT = 'test';
   
   // Suppress console output during tests

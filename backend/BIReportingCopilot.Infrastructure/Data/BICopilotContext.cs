@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Data.Configurations;
@@ -45,8 +46,8 @@ public class BICopilotContext : DbContext
     public DbSet<QueryPerformanceEntity> QueryPerformance { get; set; }
     public DbSet<SystemMetricsEntity> SystemMetrics { get; set; }
 
-    // AI Learning and Semantic Cache
-    public DbSet<Core.Models.AIGenerationAttempt> AIGenerationAttempts { get; set; }
+    // AI Learning and Semantic Cache (Unified Models)
+    public DbSet<Core.Models.UnifiedAIGenerationAttempt> AIGenerationAttempts { get; set; }
     public DbSet<Core.Models.UnifiedAIFeedbackEntry> AIFeedbackEntries { get; set; }
     public DbSet<Core.Models.UnifiedSemanticCacheEntry> SemanticCacheEntries { get; set; }
 
@@ -292,18 +293,23 @@ public class BICopilotContext : DbContext
             .HasForeignKey(c => c.TableInfoId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure AI Learning entities
+        // Configure AI Learning entities (Unified Models)
         modelBuilder.Entity<Core.Models.UnifiedAIGenerationAttempt>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.AttemptedAt);
-            entity.Property(e => e.UserId).HasMaxLength(500);
+            entity.HasIndex(e => e.Status);
+            entity.Property(e => e.UserId).HasMaxLength(256);  // Standardized UserId length
             entity.Property(e => e.AIProvider).HasMaxLength(100);
             entity.Property(e => e.ModelVersion).HasMaxLength(100);
             entity.Property(e => e.CreatedBy).HasMaxLength(500);
             entity.Property(e => e.UpdatedBy).HasMaxLength(500);
+            // Fix decimal precision warning for Cost property
+            entity.Property(e => e.Cost).HasPrecision(18, 8);
         });
+
+        // Old AIGenerationAttempt configuration removed - now using UnifiedAIGenerationAttempt only
 
         modelBuilder.Entity<Core.Models.UnifiedAIFeedbackEntry>(entity =>
         {
@@ -474,14 +480,27 @@ Return only the SQL query without any explanation or markdown formatting.",
         {
             entity.ToTable("SuggestionCategories");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.CategoryKey).IsRequired().HasMaxLength(50);
-            entity.Property(e => e.Title).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Icon).HasMaxLength(10);
-            entity.Property(e => e.Description).HasMaxLength(200);
-            entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.CreatedBy).HasMaxLength(256);
             entity.Property(e => e.UpdatedBy).HasMaxLength(256);
-            entity.HasIndex(e => e.CategoryKey).IsUnique();
-            entity.HasIndex(e => new { e.IsActive, e.SortOrder });
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+            entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+            // Map the SortOrder property to the DisplayOrder column
+            entity.Property(e => e.SortOrder).HasColumnName("DisplayOrder").HasDefaultValue(0);
+
+            entity.HasIndex(e => new { e.IsActive, e.DisplayOrder });
+
+            // Ignore computed properties
+            entity.Ignore(e => e.CategoryKey);
+            entity.Ignore(e => e.Title);
+            entity.Ignore(e => e.Icon);
+            entity.Ignore(e => e.SortOrder);
+            entity.Ignore(e => e.CreatedDate);
+            entity.Ignore(e => e.UpdatedDate);
         });
 
         // QuerySuggestion configuration
@@ -554,7 +573,11 @@ Return only the SQL query without any explanation or markdown formatting.",
             entity.Property(e => e.Organization).HasMaxLength(100);
             entity.Property(e => e.Settings).HasConversion(
                 v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>());
+                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>())
+                .Metadata.SetValueComparer(new ValueComparer<Dictionary<string, object>>(
+                    (c1, c2) => c1.SequenceEqual(c2),
+                    c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                    c => c.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)));
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => new { e.IsEnabled, e.IsDefault });
         });
@@ -571,7 +594,11 @@ Return only the SQL query without any explanation or markdown formatting.",
             entity.Property(e => e.CostPerToken).HasPrecision(18, 8);
             entity.Property(e => e.Capabilities).HasConversion(
                 v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>());
+                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>())
+                .Metadata.SetValueComparer(new ValueComparer<Dictionary<string, object>>(
+                    (c1, c2) => c1.SequenceEqual(c2),
+                    c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                    c => c.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)));
             entity.HasIndex(e => e.ProviderId);
             entity.HasIndex(e => new { e.IsEnabled, e.UseCase });
         });
@@ -591,7 +618,11 @@ Return only the SQL query without any explanation or markdown formatting.",
             entity.Property(e => e.ErrorMessage).HasMaxLength(1000);
             entity.Property(e => e.Metadata).HasConversion(
                 v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>());
+                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>())
+                .Metadata.SetValueComparer(new ValueComparer<Dictionary<string, object>>(
+                    (c1, c2) => c1.SequenceEqual(c2),
+                    c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                    c => c.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)));
             entity.HasIndex(e => e.RequestId);
             entity.HasIndex(e => new { e.UserId, e.Timestamp }).IsDescending();
             entity.HasIndex(e => new { e.ProviderId, e.Timestamp }).IsDescending();

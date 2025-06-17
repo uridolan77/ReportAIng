@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { QueryRequest as TypedQueryRequest, QueryResponse as FrontendQueryResponse } from '../types/query';
 
 // API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:55243';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:55244';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

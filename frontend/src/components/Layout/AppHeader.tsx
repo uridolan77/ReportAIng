@@ -56,7 +56,7 @@ export const CornerStatusPanel: React.FC<CornerStatusPanelProps> = ({ onLogout }
       setDbStatus(prev => ({ ...prev, loading: true }));
 
       // Try to fetch the health endpoint
-      const response = await fetch('http://localhost:55243/health');
+      const response = await fetch('http://localhost:55244/health');
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -81,7 +81,7 @@ export const CornerStatusPanel: React.FC<CornerStatusPanelProps> = ({ onLogout }
       let errorMessage = 'Unknown error';
 
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        errorMessage = 'Backend server not reachable (check if running on port 55243)';
+        errorMessage = 'Backend server not reachable (check if running on port 55244)';
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }

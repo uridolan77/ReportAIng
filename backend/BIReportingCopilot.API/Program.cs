@@ -578,8 +578,7 @@ else
 builder.Services.AddMemoryCache();
 
 // Unified cache service with built-in distributed caching support
-// TODO: Fix interface reference after interface consolidation
-// builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Interfaces.ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();
+builder.Services.AddSingleton<BIReportingCopilot.Core.Interfaces.Cache.ICacheService, BIReportingCopilot.Infrastructure.Performance.CacheService>();
 
 // ===== SEMANTIC CACHE & VECTOR SEARCH SERVICES =====
 // Register vector search service for semantic similarity

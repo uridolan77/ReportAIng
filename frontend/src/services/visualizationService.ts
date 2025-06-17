@@ -8,7 +8,7 @@ import {
   VisualizationConfig
 } from '../types/visualization';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:55243';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:55244';
 
 class VisualizationService {
   private async makeRequest<T>(

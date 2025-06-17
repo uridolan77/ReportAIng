@@ -21,7 +21,7 @@ export const DatabaseConnectionBanner: React.FC<DatabaseConnectionBannerProps> =
   const checkConnection = async () => {
     setIsChecking(true);
     try {
-      const response = await fetch('http://localhost:55243/health');
+      const response = await fetch('http://localhost:55244/health');
       const data = await response.json();
 
       if (response.ok) {

@@ -136,7 +136,7 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
               }
             }
 
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://localhost:55243'}/api/query/natural-language`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:55244'}/api/query/natural-language`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -216,7 +216,7 @@ export const useAdvancedQueryStore = create<AdvancedQueryState>()(
           });
 
           try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://localhost:55243'}/api/query/execute-sql`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:55244'}/api/query/execute-sql`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

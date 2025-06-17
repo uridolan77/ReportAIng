@@ -54,12 +54,11 @@ public static class CacheServiceExtensions
 
             // Use in-memory distributed cache when Redis is disabled
             services.AddDistributedMemoryCache();
-        }
+        }        // Always register IMemoryCache for local caching needs
+        services.AddMemoryCache();
 
-        // Always register IMemoryCache for local caching needs
-        services.AddMemoryCache();        // Unified cache service with built-in distributed caching support
+        // Unified cache service with built-in distributed caching support
         services.AddSingleton<ICacheService, CacheService>();
-        services.AddScoped<ICacheService, CacheService>();
 
         return services;
     }
