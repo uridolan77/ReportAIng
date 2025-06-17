@@ -14,5 +14,8 @@ namespace BIReportingCopilot.Core.Interfaces.Repository
         Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default);
         Task<bool> ExistsByUsernameAsync(string username, CancellationToken cancellationToken = default);
         Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default);
+        Task<User?> ValidateCredentialsAsync(string username, string password);
+        Task<List<string>> GetUserPermissionsAsync(string userId);
+        Task<User> UpdateUserAsync(User user);
     }
 }

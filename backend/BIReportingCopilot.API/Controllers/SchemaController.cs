@@ -26,11 +26,21 @@ public class SchemaController : ControllerBase
         BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService schemaManagementService,
         DatabaseSchemaDiscoveryService discoveryService)
     {
-        _logger = logger;
-        _schemaService = schemaService;
+        _logger = logger;        _schemaService = schemaService;
         _schemaManagementService = schemaManagementService;
         _discoveryService = discoveryService;
-    }    /// <summary>
+    }
+
+    private string GetCurrentUserId()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var subClaim = User.FindFirst("sub")?.Value;
+        var nameClaim = User.FindFirst(ClaimTypes.Name)?.Value;
+        var emailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
+
+        var result = userId ?? subClaim ?? nameClaim ?? emailClaim ?? "unknown";
+        return result;
+    }/// <summary>
     /// Get database schema metadata - now uses live discovery from BI database
     /// </summary>
     [HttpGet]
@@ -201,11 +211,11 @@ public class SchemaController : ControllerBase
     /// </summary>
     [HttpGet("databases")]
     public async Task<ActionResult<List<string>>> GetDatabases()
-    {
-        try
+    {        try
         {
             _logger.LogInformation("Getting available databases");
-            var databases = await _schemaManagementService.GetDatabasesAsync();
+            var userId = GetCurrentUserId();
+            var databases = await _schemaManagementService.GetDatabasesAsync(userId);
             return Ok(databases);
         }
         catch (Exception ex)

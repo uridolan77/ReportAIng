@@ -23,6 +23,7 @@ using BIReportingCopilot.Infrastructure.Performance;
 using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Repositories;
 using BIReportingCopilot.Infrastructure.Data;
+using BIReportingCopilot.Infrastructure.Configuration;
 using Microsoft.AspNetCore.SignalR;
 using BIReportingCopilot.API.Hubs;
 
@@ -43,10 +44,12 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IUserRepository>(provider => provider.GetRequiredService<UserRepository>());
         services.AddScoped<BIReportingCopilot.Infrastructure.Repositories.IUserEntityRepository>(provider => provider.GetRequiredService<UserRepository>());
         services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.IUserRepository>(provider => provider.GetRequiredService<UserRepository>());
-        
-        services.AddScoped<ITokenRepository, TokenRepository>();
+          services.AddScoped<ITokenRepository, TokenRepository>();
         services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ITokenRepository, TokenRepository>();
         services.AddScoped<IMfaChallengeRepository, MfaChallengeRepository>();
+
+        // Configuration services
+        services.AddScoped<IConnectionStringProvider, SecureConnectionStringProvider>();
 
         // Core Business Services
         services.AddScoped<IQueryService, BIReportingCopilot.Infrastructure.Query.QueryService>();

@@ -1,11 +1,12 @@
-using BIReportingCopilot.Core.Interfaces.Tuning;
-
 namespace BIReportingCopilot.Infrastructure.Interfaces;
 
 /// <summary>
 /// Infrastructure-specific tuning service interface
 /// </summary>
-public interface ITuningService : BIReportingCopilot.Core.Interfaces.Tuning.ITuningService
+public interface ITuningService
 {
-    // Infrastructure-specific tuning operations can be added here if needed
+    Task<string> GetRecommendationsAsync(CancellationToken cancellationToken = default);
+    Task<bool> ApplyRecommendationsAsync(List<string> recommendationIds, CancellationToken cancellationToken = default);
+    Task<string> AnalyzePerformanceAsync(string request, CancellationToken cancellationToken = default);
+    Task<string> OptimizeQueryAsync(string query, CancellationToken cancellationToken = default);
 }

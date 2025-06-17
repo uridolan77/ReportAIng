@@ -47,12 +47,12 @@ public class VisualizationService : IVisualizationService
 {
     private readonly IAIService _aiService;
     private readonly ILogger<VisualizationService> _logger;
-    private readonly BIReportingCopilot.Infrastructure.Interfaces.ICacheService _cacheService;
+    private readonly BIReportingCopilot.Core.Interfaces.Cache.ICacheService _cacheService;
 
     public VisualizationService(
         IAIService aiService,
         ILogger<VisualizationService> logger,
-        BIReportingCopilot.Infrastructure.Interfaces.ICacheService cacheService)
+        BIReportingCopilot.Core.Interfaces.Cache.ICacheService cacheService)
     {
         _aiService = aiService;
         _logger = logger;

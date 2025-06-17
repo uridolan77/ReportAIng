@@ -20,8 +20,7 @@ namespace BIReportingCopilot.Infrastructure.Performance;
 /// Provides automatic fallback from distributed to memory cache with advanced features
 /// </summary>
 public class CacheService : 
-    BIReportingCopilot.Core.Interfaces.Cache.ICacheService,
-    BIReportingCopilot.Infrastructure.Interfaces.ICacheService
+    BIReportingCopilot.Core.Interfaces.Cache.ICacheService
 {
     private readonly IMemoryCache _memoryCache;
     private readonly IDistributedCache? _distributedCache;
@@ -655,12 +654,14 @@ public class CacheService :
     #endregion
 
     #region Infrastructure Interface Implementation
-
+    // Note: Infrastructure interface implementation temporarily commented out due to interface consolidation
+    // TODO: Re-enable after interface consolidation is complete
+    /*
     async Task BIReportingCopilot.Infrastructure.Interfaces.ICacheService.ClearAsync()
     {
         await ClearAsync(CancellationToken.None);
     }
-
+    */
     #endregion
 }
 

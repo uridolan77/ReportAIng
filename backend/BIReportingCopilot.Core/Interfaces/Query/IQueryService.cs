@@ -63,7 +63,7 @@ public interface IQueryCacheService
     // Additional methods expected by Infrastructure services
     Task InvalidateByPatternAsync(string pattern, CancellationToken cancellationToken = default);
     Task CacheQueryAsync(string key, object result, TimeSpan? expiration = null, CancellationToken cancellationToken = default);
-    Task<T?> GetCachedQueryAsync<T>(string key, CancellationToken cancellationToken = default);
+    Task<T?> GetCachedQueryAsync<T>(string key, CancellationToken cancellationToken = default) where T : class;
 }
 
 /// <summary>

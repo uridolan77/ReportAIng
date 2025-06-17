@@ -1,3 +1,5 @@
+using BIReportingCopilot.Core.Interfaces.Cache;
+
 namespace BIReportingCopilot.Infrastructure.Interfaces;
 
 /// <summary>

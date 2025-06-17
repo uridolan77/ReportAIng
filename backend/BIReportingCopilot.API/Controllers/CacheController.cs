@@ -6,6 +6,7 @@ using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core;
 using BIReportingCopilot.Core.Commands;
 using BIReportingCopilot.Infrastructure.Handlers;
+using BIReportingCopilot.Infrastructure.Handlers.AI;
 using BIReportingCopilot.Infrastructure.AI.Intelligence;
 using MediatR;
 using System.Security.Cryptography;

@@ -11,8 +11,11 @@ public interface ISchemaManagementService
     // Schema metadata operations
     Task<List<SchemaMetadata>> GetSchemasAsync(string userId, CancellationToken cancellationToken = default);
     Task<SchemaMetadata?> GetSchemaMetadataAsync(string schemaId, string userId, CancellationToken cancellationToken = default);
-    Task<List<TableInfo>> GetTablesAsync(string schemaId, string userId, CancellationToken cancellationToken = default);
-    Task<TableInfo?> GetTableMetadataAsync(string tableId, string userId, CancellationToken cancellationToken = default);
+    Task<List<TableMetadata>> GetTablesAsync(string schemaId, string userId, CancellationToken cancellationToken = default);
+    Task<TableMetadata?> GetTableMetadataAsync(string tableId, string userId, CancellationToken cancellationToken = default);
     Task RefreshSchemaAsync(string schemaId, string userId, CancellationToken cancellationToken = default);
     Task<List<string>> GetDatabasesAsync(string userId, CancellationToken cancellationToken = default);
+    
+    // Schema application operations
+    Task<BusinessSchemaVersionDto> ApplyToSchemaAsync(ApplyToSchemaRequest request, string userId);
 }

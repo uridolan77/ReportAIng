@@ -57,10 +57,8 @@ public static class CacheServiceExtensions
         }
 
         // Always register IMemoryCache for local caching needs
-        services.AddMemoryCache();
-
-        // Unified cache service with built-in distributed caching support
-        services.AddSingleton<BIReportingCopilot.Infrastructure.Interfaces.ICacheService, CacheService>();
+        services.AddMemoryCache();        // Unified cache service with built-in distributed caching support
+        services.AddSingleton<ICacheService, CacheService>();
         services.AddScoped<ICacheService, CacheService>();
 
         return services;

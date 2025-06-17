@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Interfaces.Repository;
+using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Infrastructure.Repositories;
 
 namespace BIReportingCopilot.API.Extensions;

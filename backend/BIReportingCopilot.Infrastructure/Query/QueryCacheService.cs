@@ -13,13 +13,13 @@ namespace BIReportingCopilot.Infrastructure.Query;
 /// </summary>
 public class QueryCacheService : IQueryCacheService
 {
-    private readonly BIReportingCopilot.Infrastructure.Interfaces.ICacheService _cacheService;
+    private readonly BIReportingCopilot.Core.Interfaces.Cache.ICacheService _cacheService;
     private readonly BIReportingCopilot.Core.Interfaces.AI.ISemanticCacheService _semanticCacheService;
     private readonly ILogger<QueryCacheService> _logger;
     private readonly QueryCacheConfiguration _config;
 
     public QueryCacheService(
-        BIReportingCopilot.Infrastructure.Interfaces.ICacheService cacheService,
+        BIReportingCopilot.Core.Interfaces.Cache.ICacheService cacheService,
         BIReportingCopilot.Core.Interfaces.AI.ISemanticCacheService semanticCacheService,
         ILogger<QueryCacheService> logger)
     {
@@ -389,7 +389,7 @@ public class QueryCacheService : IQueryCacheService
     /// <summary>
     /// Get cached query result (IQueryCacheService interface)
     /// </summary>
-    public async Task<T?> GetCachedQueryAsync<T>(string key, CancellationToken cancellationToken = default)
+    public async Task<T?> GetCachedQueryAsync<T>(string key, CancellationToken cancellationToken = default) where T : class
     {
         try
         {

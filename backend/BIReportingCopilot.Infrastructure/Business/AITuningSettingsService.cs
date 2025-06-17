@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
-using BIReportingCopilot.Infrastructure.Interfaces;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Business;
 using BIReportingCopilot.Core.DTOs;
@@ -16,19 +15,16 @@ public class AITuningSettingsService : IAITuningSettingsService
 {
     private readonly BICopilotContext _context;
     private readonly ILogger<AITuningSettingsService> _logger;
-    private readonly ITuningService _tuningService;
     private readonly Dictionary<string, string> _settingsCache = new();
     private DateTime _lastCacheUpdate = DateTime.MinValue;
     private readonly TimeSpan _cacheExpiry = TimeSpan.FromMinutes(5);
 
     public AITuningSettingsService(
         BICopilotContext context,
-        ILogger<AITuningSettingsService> logger,
-        ITuningService tuningService)
+        ILogger<AITuningSettingsService> logger)
     {
         _context = context;
         _logger = logger;
-        _tuningService = tuningService;
     }
 
     #region Core Interface Implementation
@@ -136,11 +132,29 @@ public class AITuningSettingsService : IAITuningSettingsService
         {
             if (long.TryParse(settingsId, out var id))
             {
-                // Use tuning service for database updates
-                var userId = "system"; // Default user
-                // Cast to the business interface to access the correct method
-                var businessTuningService = _tuningService as BIReportingCopilot.Infrastructure.Business.TuningService;
-                return await businessTuningService.UpdateAISettingAsync(id, settings, userId);
+                // Direct database update without tuning service dependency
+                var entity = await _context.AITuningSettings
+                    .FirstOrDefaultAsync(s => s.Id == id && s.IsActive);
+
+                if (entity == null)
+                    return null;
+
+                entity.SettingValue = settings.SettingValue;
+                entity.Description = settings.Description;
+                entity.UpdatedBy = "system";
+                entity.UpdatedDate = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                return new AITuningSettingsDto
+                {
+                    Id = entity.Id,
+                    SettingKey = entity.SettingKey,
+                    SettingValue = entity.SettingValue,
+                    Description = entity.Description,
+                    Category = entity.Category,
+                    DataType = entity.DataType,
+                    IsActive = entity.IsActive
+                };
             }
             else
             {
@@ -227,9 +241,18 @@ public class AITuningSettingsService : IAITuningSettingsService
     {
         try
         {
-            // Cast to the business interface to access the correct method
-            var businessTuningService = _tuningService as BIReportingCopilot.Infrastructure.Business.TuningService;
-            return await businessTuningService.GetDashboardDataAsync();
+            // Return a default dashboard data since TuningService dependency was removed
+            return new TuningDashboardData
+            {
+                TotalTables = 0,
+                TotalColumns = 0,
+                TotalPatterns = 0,
+                TotalGlossaryTerms = 0,
+                ActivePromptTemplates = 0,
+                RecentlyUpdatedTables = new List<string>(),
+                MostUsedPatterns = new List<string>(),
+                PatternUsageStats = new Dictionary<string, int>()
+            };
         }
         catch (Exception ex)
         {

@@ -8,6 +8,9 @@ using BIReportingCopilot.Core.Configuration;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
+// Use alias to avoid conflict with local PerformanceMetrics class in PerformanceOptimizer
+using CorePerformanceMetrics = BIReportingCopilot.Core.Models.PerformanceMetrics;
+
 namespace BIReportingCopilot.Infrastructure.Performance;
 
 /// <summary>
@@ -20,7 +23,7 @@ public class PerformanceManagementService
     private readonly ConfigurationService _configurationService;
     private readonly ILogger<PerformanceManagementService> _logger;
     private readonly PerformanceConfiguration _performanceConfig;
-    private readonly Dictionary<string, PerformanceMetrics> _metricsCache;
+    private readonly Dictionary<string, CorePerformanceMetrics> _metricsCache;
     private readonly object _metricsLock = new();
 
     public PerformanceManagementService(
@@ -32,7 +35,7 @@ public class PerformanceManagementService
         _configurationService = configurationService;
         _logger = logger;
         _performanceConfig = configurationService.GetPerformanceSettings();
-        _metricsCache = new Dictionary<string, PerformanceMetrics>();
+        _metricsCache = new Dictionary<string, CorePerformanceMetrics>();
     }
 
     #region Streaming Operations
@@ -250,7 +253,7 @@ public class PerformanceManagementService
             var key = $"query_{queryType}";
             if (!_metricsCache.TryGetValue(key, out var metrics))
             {
-                metrics = new PerformanceMetrics { OperationType = queryType };
+                metrics = new CorePerformanceMetrics { OperationType = queryType };
                 _metricsCache[key] = metrics;
             }
 
@@ -318,7 +321,7 @@ public class PerformanceManagementService
     /// <summary>
     /// Get performance metrics for a date range
     /// </summary>
-    public async Task<List<PerformanceMetrics>> GetPerformanceMetricsAsync(DateTime from, DateTime to, string? category = null)
+    public async Task<List<CorePerformanceMetrics>> GetPerformanceMetricsAsync(DateTime from, DateTime to, string? category = null)
     {
         await Task.CompletedTask; // For async signature compatibility
 
@@ -379,7 +382,7 @@ public class PerformanceManagementService
             var key = $"streaming_{dataType}";
             if (!_metricsCache.TryGetValue(key, out var metrics))
             {
-                metrics = new PerformanceMetrics { OperationType = $"Streaming_{dataType}" };
+                metrics = new CorePerformanceMetrics { OperationType = $"Streaming_{dataType}" };
                 _metricsCache[key] = metrics;
             }
 
@@ -399,7 +402,7 @@ public class PerformanceManagementService
             var key = $"batch_{inputType}";
             if (!_metricsCache.TryGetValue(key, out var metrics))
             {
-                metrics = new PerformanceMetrics { OperationType = $"Batch_{inputType}" };
+                metrics = new CorePerformanceMetrics { OperationType = $"Batch_{inputType}" };
                 _metricsCache[key] = metrics;
             }
 
@@ -429,7 +432,7 @@ public class PerformanceMetricsSummary
     public int TotalErrorCount { get; set; }
     public double SuccessRate { get; set; }
     public TimeSpan AverageExecutionTime { get; set; }
-    public Dictionary<string, PerformanceMetrics> MetricsByType { get; set; } = new();
+    public Dictionary<string, CorePerformanceMetrics> MetricsByType { get; set; } = new();
 }
 
 /// <summary>
