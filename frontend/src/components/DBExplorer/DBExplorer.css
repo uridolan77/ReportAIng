@@ -23,12 +23,12 @@
 }
 
 .db-explorer-sidebar {
-  width: 280px;
+  width: 350px;
   border-right: 1px solid #e8e8e8;
   background: #fff;
   overflow-y: auto;
   height: 100%;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.02);
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.03);
 }
 
 .db-explorer-main {
@@ -39,25 +39,65 @@
 }
 
 .schema-tree {
-  padding: 4px;
+  padding: 12px;
 }
 
 .schema-tree .ant-tree-node-content-wrapper {
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 11px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  transition: all 0.25s ease;
+  margin: 4px 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  border: 1px solid transparent;
+}
+
+/* Tree indentation improvements */
+.schema-tree .ant-tree-indent-unit {
+  width: 28px;
+}
+
+.schema-tree .ant-tree-switcher {
+  width: 28px;
+  height: 44px;
+  line-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c8c8c;
+  font-size: 16px;
+  border-radius: 6px;
   transition: all 0.2s ease;
 }
 
-.schema-tree .ant-tree-node-content-wrapper:hover {
+.schema-tree .ant-tree-switcher:hover {
+  color: #1890ff;
   background-color: #f0f8ff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Tree title styling */
+.schema-tree .ant-tree-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.schema-tree .ant-tree-node-content-wrapper:hover {
+  background-color: #f8fbff;
+  border-color: #d6e4ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
+  transform: translateY(-1px);
 }
 
 .schema-tree .ant-tree-node-selected .ant-tree-node-content-wrapper {
   background-color: #e6f7ff;
-  border: 1px solid #91d5ff;
-  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.1);
+  border-color: #91d5ff;
+  box-shadow: 0 3px 12px rgba(24, 144, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .table-info {
@@ -293,6 +333,78 @@
   box-shadow: 0 0 2px rgba(24, 144, 255, 0.3);
 }
 
+/* Resizable component styles */
+.db-explorer-resizable {
+  border-right: 2px solid #f0f0f0;
+  position: relative;
+}
+
+.db-explorer-resizable .react-resizable-handle {
+  position: absolute;
+  right: -5px;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 10;
+}
+
+.db-explorer-resizable .react-resizable-handle:hover {
+  background: linear-gradient(90deg, transparent 30%, #1890ff 50%, transparent 70%);
+  opacity: 0.8;
+}
+
+/* Enhanced tree spacing and typography */
+.schema-tree .ant-tree-list-holder-inner {
+  padding: 8px 0;
+}
+
+.schema-tree .ant-tree-treenode {
+  padding: 2px 0;
+  margin: 4px 0;
+}
+
+.schema-tree .ant-tree-node-content-wrapper {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+/* Better visual hierarchy for tables */
+.schema-tree .ant-tree-node-content-wrapper[aria-level="1"] {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1890ff;
+  background: linear-gradient(90deg, #f6ffed 0%, #f6ffed 100%);
+  border-left: 4px solid #1890ff;
+  margin: 6px 0;
+  min-height: 44px;
+}
+
+.schema-tree .ant-tree-node-content-wrapper[aria-level="2"] {
+  font-weight: 500;
+  font-size: 14px;
+  color: #262626;
+  margin-left: 12px;
+  min-height: 36px;
+}
+
+/* Tree expansion indicators with better sizing */
+.schema-tree .ant-tree-switcher {
+  color: #8c8c8c;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schema-tree .ant-tree-switcher:hover {
+  color: #1890ff;
+  background-color: #f0f8ff;
+  border-radius: 4px;
+}
+
 /* Enhanced card styling */
 .ant-card {
   border-radius: 8px;
@@ -399,42 +511,30 @@
   font-weight: 500;
 }
 
-/* Tree node improvements */
-.ant-tree-node-content-wrapper {
-  border-radius: 4px;
-  padding: 2px 6px;
-  font-size: 11px !important;
+/* Simplified and clean tree styling */
+.schema-tree .ant-tree-treenode {
+  padding: 1px 0;
+  margin: 2px 0;
 }
 
-.ant-tree-title {
-  font-size: 11px !important;
+/* Table nodes - clean and prominent */
+.schema-tree .ant-tree-node-content-wrapper[aria-level="1"] {
+  background: linear-gradient(90deg, #f6ffed 0%, #fff 100%);
+  border-left: 3px solid #1890ff;
+  margin: 3px 0;
+  font-weight: 600;
 }
 
-.ant-tree-node-content-wrapper .ant-typography {
-  font-size: 11px !important;
+/* Column nodes - subtle and clean */
+.schema-tree .ant-tree-node-content-wrapper[aria-level="2"] {
+  background: #fafafa;
+  margin-left: 8px;
+  font-weight: 400;
+  color: #595959;
 }
 
-.ant-tree-switcher {
-  width: 14px;
-  height: 14px;
-  line-height: 14px;
-}
-
-.ant-tree-switcher-icon {
-  font-size: 10px !important;
-}
-
-/* Ensure all tree text is consistently sized */
-.schema-tree-container .ant-tree .ant-tree-node-content-wrapper {
-  font-size: 11px !important;
-}
-
-.schema-tree-container .ant-tree .ant-tree-title {
-  font-size: 11px !important;
-}
-
-.schema-tree-container .ant-typography {
-  font-size: inherit !important;
+.schema-tree .ant-tree-node-content-wrapper[aria-level="2"]:hover {
+  background: #f0f8ff;
 }
 
 /* Responsive design */
