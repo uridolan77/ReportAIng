@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { 
-  Card, 
-  Typography, 
-  Space, 
-  Descriptions, 
-  Table, 
-  Tag, 
+import {
+  Card,
+  Typography,
+  Space,
+  Descriptions,
+  Table,
+  Tag,
   Button,
   Tabs,
   Tooltip,
-  message
+  message,
+  Checkbox
 } from 'antd';
 import {
   TableOutlined,
@@ -27,17 +28,37 @@ interface TableExplorerProps {
   table: DatabaseTable;
   onPreviewData?: () => void;
   onGenerateQuery?: (query: string) => void;
+  // Selection mode props
+  selectionMode?: boolean;
+  selectedFields?: Set<string>;
+  onFieldSelectionChange?: (fieldName: string, selected: boolean) => void;
 }
 
 export const TableExplorer: React.FC<TableExplorerProps> = ({
   table,
   onPreviewData,
-  onGenerateQuery
+  onGenerateQuery,
+  selectionMode = false,
+  selectedFields = new Set(),
+  onFieldSelectionChange
 }) => {
   const [activeTab, setActiveTab] = useState('columns');
 
   // Column definitions for the columns table
   const columnTableColumns = [
+    ...(selectionMode ? [{
+      title: 'Select',
+      key: 'select',
+      width: 60,
+      render: (_: any, record: DatabaseColumn) => (
+        <Checkbox
+          checked={selectedFields.has(record.name)}
+          onChange={(e) => {
+            onFieldSelectionChange?.(record.name, e.target.checked);
+          }}
+        />
+      )
+    }] : []),
     {
       title: 'Column Name',
       dataIndex: 'name',

@@ -69,6 +69,71 @@ export interface DBExplorerState {
   expandedTables: Set<string>;
   loading: boolean;
   error?: string;
+  // Selection state for auto-generation
+  selectedTables: Set<string>;
+  selectedFields: Map<string, Set<string>>; // tableName -> Set of field names
+  selectionMode: boolean;
+  autoGenerationInProgress: boolean;
+}
+
+// Auto-generation related types
+export interface AutoGenerationRequest {
+  generateTableContexts: boolean;
+  generateGlossaryTerms: boolean;
+  analyzeRelationships: boolean;
+  specificTables?: string[];
+  specificSchemas?: string[];
+  overwriteExisting: boolean;
+  minimumConfidenceThreshold: number;
+  mockMode: boolean;
+}
+
+export interface AutoGenerationProgress {
+  currentTask: string;
+  completedItems: number;
+  totalItems: number;
+  progressPercentage: number;
+  currentTable?: string;
+  recentlyCompleted: string[];
+  elapsedTime: string;
+  estimatedTimeRemaining?: string;
+}
+
+export interface SelectionSummary {
+  totalTablesSelected: number;
+  totalFieldsSelected: number;
+  selectedTableNames: string[];
+  fieldsByTable: Map<string, string[]>;
+}
+
+// Content versioning types
+export interface ContentVersion {
+  id: string;
+  timestamp: string;
+  author: string;
+  changes: ContentChange[];
+  comment?: string;
+}
+
+export interface ContentChange {
+  type: 'table_context' | 'glossary_term';
+  action: 'created' | 'updated' | 'deleted';
+  itemId: string;
+  itemName: string;
+  fieldChanges?: FieldChange[];
+}
+
+export interface FieldChange {
+  field: string;
+  oldValue: string;
+  newValue: string;
+}
+
+export interface VersionedContent {
+  currentVersion: any;
+  versions: ContentVersion[];
+  lastModified: string;
+  modifiedBy: string;
 }
 
 export interface TableSearchResult {

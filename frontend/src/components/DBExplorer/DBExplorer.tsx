@@ -7,7 +7,10 @@ import {
   Alert,
   Spin,
   message,
-  Drawer
+  Drawer,
+  Modal,
+  Progress,
+  List
 } from 'antd';
 import { Resizable } from 'react-resizable';
 import './DBExplorer.css';
@@ -15,14 +18,20 @@ import {
   DatabaseOutlined,
   ReloadOutlined,
   QuestionCircleOutlined,
-  FullscreenOutlined
+  FullscreenOutlined,
+  CheckSquareOutlined,
+  ClearOutlined,
+  PlayCircleOutlined,
+  SelectOutlined
 } from '@ant-design/icons';
 import { SchemaTree } from './SchemaTree';
 import { TableExplorer } from './TableExplorer';
 import { TableDataPreview } from './TableDataPreview';
-import { DatabaseTable, DatabaseSchema, DBExplorerState } from '../../types/dbExplorer';
+import { ContentManagementModal } from './ContentManagementModal';
+import { DatabaseTable, DatabaseSchema, DBExplorerState, AutoGenerationRequest } from '../../types/dbExplorer';
 import DBExplorerAPI from '../../services/dbExplorerApi';
 import { ApiService } from '../../services/api';
+import { tuningApi } from '../../services/tuningApi';
 import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
@@ -38,13 +47,20 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
     searchTerm: '',
     showDataPreview: false,
     expandedTables: new Set(),
-    loading: false
+    loading: false,
+    selectedTables: new Set(),
+    selectedFields: new Map(),
+    selectionMode: false,
+    autoGenerationInProgress: false
   });
 
   const [schema, setSchema] = useState<DatabaseSchema | null>(null);
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [previewDrawerVisible, setPreviewDrawerVisible] = useState(false);
   const [siderWidth, setSiderWidth] = useState(350);
+  const [progressModalVisible, setProgressModalVisible] = useState(false);
+  const [generationResults, setGenerationResults] = useState<any>(null);
+  const [contentModalVisible, setContentModalVisible] = useState(false);
 
 
 
@@ -122,11 +138,163 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
 
   // Handle expanded keys change
   const handleExpandedKeysChange = useCallback((keys: string[]) => {
-    setState(prev => ({ 
-      ...prev, 
-      expandedTables: new Set(keys) 
+    setState(prev => ({
+      ...prev,
+      expandedTables: new Set(keys)
     }));
   }, []);
+
+  // Handle table selection for auto-generation
+  const handleTableSelectionChange = useCallback((tableName: string, selected: boolean) => {
+    setState(prev => {
+      const newSelectedTables = new Set(prev.selectedTables);
+      const newSelectedFields = new Map(prev.selectedFields);
+
+      if (selected) {
+        newSelectedTables.add(tableName);
+      } else {
+        newSelectedTables.delete(tableName);
+        newSelectedFields.delete(tableName);
+      }
+
+      return {
+        ...prev,
+        selectedTables: newSelectedTables,
+        selectedFields: newSelectedFields
+      };
+    });
+  }, []);
+
+  // Handle field selection for auto-generation
+  const handleFieldSelectionChange = useCallback((tableName: string, fieldName: string, selected: boolean) => {
+    setState(prev => {
+      const newSelectedFields = new Map(prev.selectedFields);
+      const tableFields = newSelectedFields.get(tableName) || new Set();
+
+      if (selected) {
+        tableFields.add(fieldName);
+      } else {
+        tableFields.delete(fieldName);
+      }
+
+      if (tableFields.size > 0) {
+        newSelectedFields.set(tableName, tableFields);
+      } else {
+        newSelectedFields.delete(tableName);
+      }
+
+      return {
+        ...prev,
+        selectedFields: newSelectedFields
+      };
+    });
+  }, []);
+
+  // Toggle selection mode
+  const handleToggleSelectionMode = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      selectionMode: !prev.selectionMode,
+      selectedTables: new Set(),
+      selectedFields: new Map()
+    }));
+  }, []);
+
+  // Select all tables
+  const handleSelectAllTables = useCallback(() => {
+    const currentTables = schema?.tables || [];
+    setState(prev => ({
+      ...prev,
+      selectedTables: new Set(currentTables.map(t => t.name)),
+      selectedFields: new Map()
+    }));
+  }, [schema]);
+
+  // Clear all selections
+  const handleClearSelections = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      selectedTables: new Set(),
+      selectedFields: new Map()
+    }));
+  }, []);
+
+  // Get selection summary
+  const getSelectionSummary = useCallback(() => {
+    const totalTablesSelected = state.selectedTables.size;
+    const totalFieldsSelected = Array.from(state.selectedFields.values())
+      .reduce((sum, fields) => sum + fields.size, 0);
+
+    return {
+      totalTablesSelected,
+      totalFieldsSelected,
+      selectedTableNames: Array.from(state.selectedTables),
+      fieldsByTable: state.selectedFields
+    };
+  }, [state.selectedTables, state.selectedFields]);
+
+  // Handle auto-generation
+  const handleAutoGeneration = useCallback(async () => {
+    if (state.selectedTables.size === 0 && state.selectedFields.size === 0) {
+      message.warning('Please select tables or fields to generate business context for.');
+      return;
+    }
+
+    setState(prev => ({ ...prev, autoGenerationInProgress: true }));
+    setProgressModalVisible(true);
+    setGenerationResults(null);
+
+    try {
+      const selectedTableNames = Array.from(state.selectedTables);
+
+      // Add tables that have selected fields
+      const tablesWithSelectedFields = Array.from(state.selectedFields.keys());
+      const allSelectedTables = [...new Set([...selectedTableNames, ...tablesWithSelectedFields])];
+
+      const request: AutoGenerationRequest = {
+        generateTableContexts: true,
+        generateGlossaryTerms: true,
+        analyzeRelationships: true,
+        specificTables: allSelectedTables,
+        overwriteExisting: false,
+        minimumConfidenceThreshold: 0.6,
+        mockMode: false
+      };
+
+      const response = await tuningApi.autoGenerateBusinessContext(request);
+
+      setGenerationResults(response);
+
+      if (response.success) {
+        message.success(`Auto-generation completed! Generated contexts for ${response.totalTablesProcessed} tables and ${response.totalTermsGenerated} terms.`);
+
+        // Show content management modal
+        setContentModalVisible(true);
+
+        // Clear selections after successful generation
+        setState(prev => ({
+          ...prev,
+          selectedTables: new Set(),
+          selectedFields: new Map(),
+          selectionMode: false
+        }));
+      } else {
+        message.error('Auto-generation completed with errors. Check the results for details.');
+      }
+    } catch (error) {
+      console.error('Auto-generation failed:', error);
+      message.error('Failed to generate business context. Please try again.');
+      setGenerationResults({
+        success: false,
+        errors: [error instanceof Error ? error.message : 'Unknown error occurred'],
+        warnings: [],
+        totalTablesProcessed: 0,
+        totalTermsGenerated: 0
+      });
+    } finally {
+      setState(prev => ({ ...prev, autoGenerationInProgress: false }));
+    }
+  }, [state.selectedTables, state.selectedFields]);
 
   // Refresh schema
   const handleRefresh = useCallback(async () => {
@@ -169,6 +337,50 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
           )}
         </Space>
         <Space size="small">
+          {/* Selection Mode Controls */}
+          <Button
+            icon={<SelectOutlined />}
+            size="middle"
+            type={state.selectionMode ? 'primary' : 'default'}
+            onClick={handleToggleSelectionMode}
+            style={{ fontSize: '14px', padding: '6px 16px' }}
+          >
+            {state.selectionMode ? 'Exit Selection' : 'Select Mode'}
+          </Button>
+
+          {state.selectionMode && (
+            <>
+              <Button
+                icon={<CheckSquareOutlined />}
+                size="middle"
+                onClick={handleSelectAllTables}
+                style={{ fontSize: '14px', padding: '6px 16px' }}
+              >
+                Select All
+              </Button>
+              <Button
+                icon={<ClearOutlined />}
+                size="middle"
+                onClick={handleClearSelections}
+                style={{ fontSize: '14px', padding: '6px 16px' }}
+              >
+                Clear
+              </Button>
+              {(state.selectedTables.size > 0 || state.selectedFields.size > 0) && (
+                <Button
+                  icon={<PlayCircleOutlined />}
+                  size="middle"
+                  type="primary"
+                  loading={state.autoGenerationInProgress}
+                  onClick={handleAutoGeneration}
+                  style={{ fontSize: '14px', padding: '6px 16px' }}
+                >
+                  Generate ({state.selectedTables.size} tables, {Array.from(state.selectedFields.values()).reduce((sum, fields) => sum + fields.size, 0)} fields)
+                </Button>
+              )}
+            </>
+          )}
+
           <Button
             icon={<QuestionCircleOutlined />}
             size="middle"
@@ -247,6 +459,11 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
                   selectedTableName={state.selectedTable?.name || ''}
                   expandedKeys={Array.from(state.expandedTables)}
                   onExpandedKeysChange={handleExpandedKeysChange}
+                  selectionMode={state.selectionMode}
+                  selectedTables={state.selectedTables}
+                  selectedFields={state.selectedFields}
+                  onTableSelectionChange={handleTableSelectionChange}
+                  onFieldSelectionChange={handleFieldSelectionChange}
                 />
                 {/* Resize indicator */}
                 <div
@@ -295,6 +512,11 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
                 table={state.selectedTable}
                 onPreviewData={() => handleTablePreview(state.selectedTable!)}
                 onGenerateQuery={handleQueryGenerated}
+                selectionMode={state.selectionMode}
+                selectedFields={state.selectedFields.get(state.selectedTable.name) || new Set()}
+                onFieldSelectionChange={(fieldName, selected) =>
+                  handleFieldSelectionChange(state.selectedTable!.name, fieldName, selected)
+                }
               />
             ) : (
               <Card style={{ height: '100%', textAlign: 'center' }} bodyStyle={{ padding: '60px 30px' }}>
@@ -337,6 +559,102 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
           />
         )}
       </Drawer>
+
+      {/* Auto-Generation Progress Modal */}
+      <Modal
+        title="Auto-Generation Progress"
+        open={progressModalVisible}
+        onCancel={() => setProgressModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setProgressModalVisible(false)}>
+            Close
+          </Button>,
+          ...(generationResults && generationResults.success ? [
+            <Button
+              key="manage"
+              type="primary"
+              onClick={() => {
+                setProgressModalVisible(false);
+                setContentModalVisible(true);
+              }}
+            >
+              Manage Generated Content
+            </Button>
+          ] : [])
+        ]}
+        width={600}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          {state.autoGenerationInProgress ? (
+            <>
+              <div style={{ textAlign: 'center' }}>
+                <Spin size="large" />
+                <div style={{ marginTop: '16px' }}>
+                  <Text>Generating business context and schema data...</Text>
+                </div>
+              </div>
+              <Progress percent={50} status="active" />
+              <Text type="secondary">
+                Processing selected tables and fields. This may take a few minutes.
+              </Text>
+            </>
+          ) : generationResults ? (
+            <>
+              <div style={{ textAlign: 'center' }}>
+                <Title level={4} type={generationResults.success ? 'success' : 'danger'}>
+                  {generationResults.success ? '✅ Generation Completed' : '❌ Generation Failed'}
+                </Title>
+              </div>
+
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Text><strong>Tables Processed:</strong> {generationResults.totalTablesProcessed}</Text>
+                <Text><strong>Terms Generated:</strong> {generationResults.totalTermsGenerated}</Text>
+
+                {generationResults.warnings?.length > 0 && (
+                  <div>
+                    <Text strong>Warnings:</Text>
+                    <List
+                      size="small"
+                      dataSource={generationResults.warnings}
+                      renderItem={(warning: string) => (
+                        <List.Item>
+                          <Text type="warning">⚠️ {warning}</Text>
+                        </List.Item>
+                      )}
+                    />
+                  </div>
+                )}
+
+                {generationResults.errors?.length > 0 && (
+                  <div>
+                    <Text strong>Errors:</Text>
+                    <List
+                      size="small"
+                      dataSource={generationResults.errors}
+                      renderItem={(error: string) => (
+                        <List.Item>
+                          <Text type="danger">❌ {error}</Text>
+                        </List.Item>
+                      )}
+                    />
+                  </div>
+                )}
+              </Space>
+            </>
+          ) : null}
+        </Space>
+      </Modal>
+
+      {/* Content Management Modal */}
+      <ContentManagementModal
+        visible={contentModalVisible}
+        onClose={() => setContentModalVisible(false)}
+        generationResults={generationResults}
+        onContentSaved={(savedContent) => {
+          console.log('Content saved:', savedContent);
+          message.success('Content saved to database successfully');
+        }}
+      />
     </div>
   );
 };

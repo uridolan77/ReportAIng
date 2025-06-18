@@ -1,15 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Tree, 
-  Input, 
-  Card, 
-  Typography, 
-  Space, 
-  Tag, 
-  Tooltip, 
+import {
+  Tree,
+  Input,
+  Card,
+  Typography,
+  Space,
+  Tag,
+  Tooltip,
   Button,
   Spin,
-  Empty
+  Empty,
+  Checkbox
 } from 'antd';
 import {
   DatabaseOutlined,
@@ -35,6 +36,12 @@ interface SchemaTreeProps {
   selectedTableName?: string;
   expandedKeys?: string[];
   onExpandedKeysChange?: (keys: string[]) => void;
+  // Selection mode props
+  selectionMode?: boolean;
+  selectedTables?: Set<string>;
+  selectedFields?: Map<string, Set<string>>;
+  onTableSelectionChange?: (tableName: string, selected: boolean) => void;
+  onFieldSelectionChange?: (tableName: string, fieldName: string, selected: boolean) => void;
 }
 
 export const SchemaTree: React.FC<SchemaTreeProps> = ({
@@ -46,7 +53,12 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
   onRefresh,
   selectedTableName,
   expandedKeys = [],
-  onExpandedKeysChange
+  onExpandedKeysChange,
+  selectionMode = false,
+  selectedTables = new Set(),
+  selectedFields = new Map(),
+  onTableSelectionChange,
+  onFieldSelectionChange
 }) => {
   const [searchValue, setSearchValue] = useState('');
   const [autoExpandParent, setAutoExpandParent] = useState(true);
@@ -69,11 +81,22 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
 
     return filteredTables.map(table => {
       const tableKey = `table-${table.name}`;
-      
+      const isTableSelected = selectedTables.has(table.name);
+
       return {
         title: (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '2px 0' }}>
             <Space size="small" style={{ flex: 1 }}>
+              {selectionMode && (
+                <Checkbox
+                  checked={isTableSelected}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onTableSelectionChange?.(table.name, e.target.checked);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
               <TableOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
               <Text strong style={{ fontSize: '14px', fontWeight: 600 }}>{table.name}</Text>
               {table.type === 'view' && <Tag color="purple" style={{ fontSize: '11px', padding: '2px 6px', lineHeight: '16px', borderRadius: '4px' }}>VIEW</Tag>}
@@ -97,40 +120,55 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
         ),
         key: tableKey,
         icon: <TableOutlined style={{ fontSize: '16px', color: '#1890ff' }} />,
-        children: table.columns.map(column => ({
-          title: (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '1px 0' }}>
-              <Space size={4} style={{ flex: 1 }}>
-                <Text style={{ fontSize: '13px', fontWeight: 500 }}>{column.name}</Text>
-                <Text type="secondary" style={{ fontSize: '12px', fontFamily: 'Monaco, Consolas, monospace', color: '#722ed1' }}>
-                  {column.dataType}
-                  {column.maxLength && `(${column.maxLength})`}
-                </Text>
-                {column.isPrimaryKey && (
-                  <Tooltip title="Primary Key">
-                    <KeyOutlined style={{ color: '#faad14', fontSize: '12px' }} />
-                  </Tooltip>
-                )}
-                {column.isForeignKey && (
-                  <Tooltip title={`Foreign Key → ${column.referencedTable}.${column.referencedColumn}`}>
-                    <KeyOutlined style={{ color: '#52c41a', fontSize: '12px' }} />
-                  </Tooltip>
-                )}
-                {!column.isNullable && (
-                  <Tag color="red" style={{ fontSize: '10px', padding: '0 4px', lineHeight: '14px', borderRadius: '3px' }}>
-                    NN
-                  </Tag>
-                )}
-              </Space>
-            </div>
-          ),
-          key: `column-${table.name}-${column.name}`,
-          icon: column.isPrimaryKey ?
-            <KeyOutlined style={{ color: '#faad14', fontSize: '12px' }} /> :
-            <div style={{ width: '8px', height: '8px', backgroundColor: '#d9d9d9', borderRadius: '2px', margin: '0 2px' }} />,
-          isLeaf: true,
-          data: { table, column }
-        })),
+        children: table.columns.map(column => {
+          const tableFields = selectedFields.get(table.name) || new Set();
+          const isFieldSelected = tableFields.has(column.name);
+
+          return {
+            title: (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '1px 0' }}>
+                <Space size={4} style={{ flex: 1 }}>
+                  {selectionMode && (
+                    <Checkbox
+                      checked={isFieldSelected}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onFieldSelectionChange?.(table.name, column.name, e.target.checked);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  )}
+                  <Text style={{ fontSize: '13px', fontWeight: 500 }}>{column.name}</Text>
+                  <Text type="secondary" style={{ fontSize: '12px', fontFamily: 'Monaco, Consolas, monospace', color: '#722ed1' }}>
+                    {column.dataType}
+                    {column.maxLength && `(${column.maxLength})`}
+                  </Text>
+                  {column.isPrimaryKey && (
+                    <Tooltip title="Primary Key">
+                      <KeyOutlined style={{ color: '#faad14', fontSize: '12px' }} />
+                    </Tooltip>
+                  )}
+                  {column.isForeignKey && (
+                    <Tooltip title={`Foreign Key → ${column.referencedTable}.${column.referencedColumn}`}>
+                      <KeyOutlined style={{ color: '#52c41a', fontSize: '12px' }} />
+                    </Tooltip>
+                  )}
+                  {!column.isNullable && (
+                    <Tag color="red" style={{ fontSize: '10px', padding: '0 4px', lineHeight: '14px', borderRadius: '3px' }}>
+                      NN
+                    </Tag>
+                  )}
+                </Space>
+              </div>
+            ),
+            key: `column-${table.name}-${column.name}`,
+            icon: column.isPrimaryKey ?
+              <KeyOutlined style={{ color: '#faad14', fontSize: '12px' }} /> :
+              <div style={{ width: '8px', height: '8px', backgroundColor: '#d9d9d9', borderRadius: '2px', margin: '0 2px' }} />,
+            isLeaf: true,
+            data: { table, column }
+          };
+        }),
         data: { table }
       } as DataNode;
     });
