@@ -3,6 +3,10 @@ export { DBExplorer } from './DBExplorer';
 export { SchemaTree } from './SchemaTree';
 export { TableExplorer } from './TableExplorer';
 export { TableDataPreview } from './TableDataPreview';
+export { ContentManagementModal } from './ContentManagementModal';
+export { GlossaryTermsManager } from './GlossaryTermsManager';
+export { ContentVersionHistory } from './ContentVersionHistory';
+export { AutoGenerationProgressPanel } from './AutoGenerationProgressPanel';
 
 // Re-export types
 export type {

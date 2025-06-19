@@ -7,10 +7,7 @@ import {
   Alert,
   Spin,
   message,
-  Drawer,
-  Modal,
-  Progress,
-  List
+  Drawer
 } from 'antd';
 import { Resizable } from 'react-resizable';
 import './DBExplorer.css';
@@ -28,10 +25,12 @@ import { SchemaTree } from './SchemaTree';
 import { TableExplorer } from './TableExplorer';
 import { TableDataPreview } from './TableDataPreview';
 import { ContentManagementModal } from './ContentManagementModal';
-import { DatabaseTable, DatabaseSchema, DBExplorerState, AutoGenerationRequest } from '../../types/dbExplorer';
+import { AutoGenerationProgressPanel } from './AutoGenerationProgressPanel';
+import { useAutoGenerationProgress, createPhaseUpdate } from '../../hooks/useAutoGenerationProgress';
+import { DatabaseTable, DatabaseSchema, DBExplorerState } from '../../types/dbExplorer';
 import DBExplorerAPI from '../../services/dbExplorerApi';
 import { ApiService } from '../../services/api';
-import { tuningApi } from '../../services/tuningApi';
+import { tuningApi, AutoGenerationRequest } from '../../services/tuningApi';
 import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
@@ -61,6 +60,9 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
   const [progressModalVisible, setProgressModalVisible] = useState(false);
   const [generationResults, setGenerationResults] = useState<any>(null);
   const [contentModalVisible, setContentModalVisible] = useState(false);
+
+  // Progress tracking for auto-generation
+  const [progressState, progressActions] = useAutoGenerationProgress();
 
 
 
@@ -288,6 +290,9 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
     setProgressModalVisible(true);
     setGenerationResults(null);
 
+    // Start progress tracking
+    progressActions.startGeneration();
+
     try {
       const selectedTableNames = Array.from(state.selectedTables);
 
@@ -316,7 +321,82 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
       console.log('🤖 Selected tables:', allSelectedTables);
       console.log('🤖 Selected fields by table:', specificFields);
 
-      const response = await tuningApi.autoGenerateBusinessContext(request);
+      // Update progress to schema analysis phase
+      progressActions.updatePhase('Initialization', createPhaseUpdate('completed', 100, 'Request prepared successfully'));
+      progressActions.updatePhase('Schema Analysis', createPhaseUpdate('active', 20, 'Analyzing selected tables and fields...', {
+        currentOperation: 'Schema validation',
+        tablesProcessed: 0,
+        totalTables: allSelectedTables.length
+      }));
+
+      // Progress callback for real-time updates
+      const handleProgress = (progressData: any) => {
+        console.log('📡 Progress update received:', progressData);
+
+        // Handle backend progress data structure
+        if (progressData.OperationId === 'auto-generation' || progressData.operationId === 'auto-generation') {
+          const progress = progressData.Progress || progressData.progress || 0;
+          const message = progressData.Message || progressData.message || 'Processing...';
+
+          // Map progress percentage to phases
+          let phaseName = 'Initialization';
+          if (progress >= 70) {
+            phaseName = 'Completion';
+          } else if (progress >= 60) {
+            phaseName = 'Validation';
+          } else if (progress >= 20) {
+            phaseName = 'AI Processing';
+          } else if (progress >= 10) {
+            phaseName = 'Schema Analysis';
+          }
+
+          progressActions.updatePhase(phaseName, createPhaseUpdate(
+            'active',
+            progress,
+            message,
+            {
+              currentTable: progressData.currentTable,
+              tablesProcessed: progressData.tablesProcessed,
+              totalTables: progressData.totalTables,
+              currentOperation: progressData.currentOperation,
+              prompt: progressData.aiPrompt,
+              response: progressData.aiResponse,
+              errors: progressData.errors,
+              warnings: progressData.warnings
+            }
+          ));
+        }
+
+        // Also handle legacy stage-based progress data
+        if (progressData.stage) {
+          const phaseMap: { [key: string]: string } = {
+            'schema_analysis': 'Schema Analysis',
+            'ai_processing': 'AI Processing',
+            'content_generation': 'Content Generation',
+            'validation': 'Validation'
+          };
+
+          const phaseName = phaseMap[progressData.stage] || progressData.stage;
+
+          progressActions.updatePhase(phaseName, createPhaseUpdate(
+            'active',
+            progressData.progress || 0,
+            progressData.message || 'Processing...',
+            {
+              currentTable: progressData.currentTable,
+              tablesProcessed: progressData.tablesProcessed,
+              totalTables: progressData.totalTables,
+              currentOperation: progressData.currentOperation,
+              prompt: progressData.aiPrompt,
+              response: progressData.aiResponse,
+              errors: progressData.errors,
+              warnings: progressData.warnings
+            }
+          ));
+        }
+      };
+
+      const response = await tuningApi.autoGenerateBusinessContext(request, handleProgress);
 
       console.log('🤖 Auto-generation response:', response);
       console.log('🤖 Generated table contexts:', response.GeneratedTableContexts);
@@ -324,7 +404,15 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
 
       setGenerationResults(response);
 
+      // Complete progress tracking
+      progressActions.completeGeneration(response.success);
+
       if (response.success) {
+        // Update final phases
+        progressActions.updatePhase('Content Generation', createPhaseUpdate('completed', 100, 'Content generated successfully'));
+        progressActions.updatePhase('Validation', createPhaseUpdate('completed', 100, 'Content validated'));
+        progressActions.updatePhase('Completion', createPhaseUpdate('completed', 100, 'Auto-generation completed successfully'));
+
         message.success(`Auto-generation completed! Generated contexts for ${response.totalTablesProcessed} tables and ${response.totalTermsGenerated} terms. Selections preserved for review.`);
 
         // Show content management modal
@@ -348,6 +436,10 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
     } catch (error) {
       console.error('Auto-generation failed:', error);
       message.error('Failed to generate business context. Please try again.');
+
+      // Mark generation as failed
+      progressActions.completeGeneration(false);
+
       setGenerationResults({
         success: false,
         errors: [error instanceof Error ? error.message : 'Unknown error occurred'],
@@ -673,7 +765,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
         width="75%"
         open={previewDrawerVisible}
         onClose={() => setPreviewDrawerVisible(false)}
-        destroyOnClose={true}
+        destroyOnClose
         styles={{ body: { padding: 0 } }}
       >
         {state.selectedTable && (
@@ -684,90 +776,32 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
         )}
       </Drawer>
 
-      {/* Auto-Generation Progress Modal */}
-      <Modal
-        title="Auto-Generation Progress"
-        open={progressModalVisible}
-        onCancel={() => setProgressModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setProgressModalVisible(false)}>
-            Close
-          </Button>,
-          ...(generationResults && generationResults.success ? [
-            <Button
-              key="manage"
-              type="primary"
-              onClick={() => {
-                setProgressModalVisible(false);
-                setContentModalVisible(true);
-              }}
-            >
-              Manage Generated Content
-            </Button>
-          ] : [])
-        ]}
-        width={600}
-      >
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
-          {state.autoGenerationInProgress ? (
-            <>
-              <div style={{ textAlign: 'center' }}>
-                <Spin size="large" />
-                <div style={{ marginTop: '16px' }}>
-                  <Text>Generating business context and schema data...</Text>
-                </div>
-              </div>
-              <Progress percent={50} status="active" />
-              <Text type="secondary">
-                Processing selected tables and fields. This may take a few minutes.
-              </Text>
-            </>
-          ) : generationResults ? (
-            <>
-              <div style={{ textAlign: 'center' }}>
-                <Title level={4} type={generationResults.success ? 'success' : 'danger'}>
-                  {generationResults.success ? '✅ Generation Completed' : '❌ Generation Failed'}
-                </Title>
-              </div>
-
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Text><strong>Tables Processed:</strong> {generationResults.totalTablesProcessed}</Text>
-                <Text><strong>Terms Generated:</strong> {generationResults.totalTermsGenerated}</Text>
-
-                {generationResults.warnings?.length > 0 && (
-                  <div>
-                    <Text strong>Warnings:</Text>
-                    <List
-                      size="small"
-                      dataSource={generationResults.warnings}
-                      renderItem={(warning: string) => (
-                        <List.Item>
-                          <Text type="warning">⚠️ {warning}</Text>
-                        </List.Item>
-                      )}
-                    />
-                  </div>
-                )}
-
-                {generationResults.errors?.length > 0 && (
-                  <div>
-                    <Text strong>Errors:</Text>
-                    <List
-                      size="small"
-                      dataSource={generationResults.errors}
-                      renderItem={(error: string) => (
-                        <List.Item>
-                          <Text type="danger">❌ {error}</Text>
-                        </List.Item>
-                      )}
-                    />
-                  </div>
-                )}
-              </Space>
-            </>
-          ) : null}
-        </Space>
-      </Modal>
+      {/* Auto-Generation Progress Panel */}
+      <AutoGenerationProgressPanel
+        visible={progressModalVisible}
+        onClose={() => {
+          if (progressState.isCompleted || progressState.hasErrors) {
+            setProgressModalVisible(false);
+            progressActions.reset();
+          }
+        }}
+        phases={progressState.phases}
+        overallProgress={progressState.overallProgress}
+        isCompleted={progressState.isCompleted}
+        hasErrors={progressState.hasErrors}
+        onViewResults={generationResults?.success ? () => {
+          setProgressModalVisible(false);
+          setContentModalVisible(true);
+        } : undefined}
+        onRetry={progressState.hasErrors ? () => {
+          progressActions.reset();
+          handleAutoGeneration();
+        } : undefined}
+        onCancel={progressState.isActive ? () => {
+          progressActions.completeGeneration(false);
+          setState(prev => ({ ...prev, autoGenerationInProgress: false }));
+        } : undefined}
+      />
 
       {/* Content Management Modal */}
       <ContentManagementModal

@@ -240,7 +240,7 @@ export interface AutoGenerationRequest {
   analyzeRelationships: boolean;
   specificTables?: string[];
   specificSchemas?: string[];
-  specificFields?: { [tableName: string]: string[] }; // Map of table name to selected field names
+  specificFields?: { [tableName: string]: string[] } | undefined; // Map of table name to selected field names
   overwriteExisting: boolean;
   minimumConfidenceThreshold: number;
   mockMode?: boolean;
@@ -574,32 +574,82 @@ class TuningApiService {
   }
 
   // Auto-Generation
-  async autoGenerateBusinessContext(request: AutoGenerationRequest): Promise<AutoGenerationResponse> {
+  async autoGenerateBusinessContext(
+    request: AutoGenerationRequest,
+    onProgress?: (progress: any) => void
+  ): Promise<AutoGenerationResponse> {
     console.log('🤖 TuningAPI: Making auto-generation request:', request);
 
-    const response = await fetch(`${this.baseUrl}/api/tuning/auto-generate`, {
-      method: 'POST',
-      headers: {
-        ...(await getAuthHeaders()),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
+    // Set up SignalR connection for progress updates if callback provided
+    let signalRConnection: any = null;
 
-    console.log('🤖 TuningAPI: Response status:', response.status, response.statusText);
+    if (onProgress) {
+      try {
+        const { HubConnectionBuilder, LogLevel } = await import('@microsoft/signalr');
+        const authHeaders = await getAuthHeaders();
 
-    if (!response.ok) {
-      throw new Error(`Failed to auto-generate business context: ${response.statusText}`);
+        signalRConnection = new HubConnectionBuilder()
+          .withUrl(`${this.baseUrl}/hubs/query-status`, {
+            accessTokenFactory: () => authHeaders.Authorization?.replace('Bearer ', '') || ''
+          })
+          .withAutomaticReconnect()
+          .configureLogging(LogLevel.Information)
+          .build();
+
+        // Listen for auto-generation progress - backend sends "ProgressUpdate" events
+        signalRConnection.on('ProgressUpdate', (progressData: any) => {
+          console.log('📡 Received progress update:', progressData);
+          onProgress(progressData);
+        });
+
+        // Also listen for the specific auto-generation progress events (if backend sends them)
+        signalRConnection.on('AutoGenerationProgress', (progressData: any) => {
+          console.log('📡 Received auto-generation progress:', progressData);
+          onProgress(progressData);
+        });
+
+        await signalRConnection.start();
+        console.log('📡 SignalR connection established for auto-generation progress');
+      } catch (error) {
+        console.warn('Failed to establish SignalR connection for progress tracking:', error);
+      }
     }
 
-    const result = await response.json();
-    console.log('🤖 TuningAPI: Received response:', result);
+    try {
+      const response = await fetch(`${this.baseUrl}/api/tuning/auto-generate`, {
+        method: 'POST',
+        headers: {
+          ...(await getAuthHeaders()),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
 
-    // Handle backend response structure mismatch
-    const adaptedResult = this.adaptBackendResponse(result);
-    console.log('🤖 TuningAPI: Adapted response:', adaptedResult);
+      console.log('🤖 TuningAPI: Response status:', response.status, response.statusText);
 
-    return adaptedResult;
+      if (!response.ok) {
+        throw new Error(`Failed to auto-generate business context: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('🤖 TuningAPI: Received response:', result);
+
+      // Handle backend response structure mismatch
+      const adaptedResult = this.adaptBackendResponse(result);
+      console.log('🤖 TuningAPI: Adapted response:', adaptedResult);
+
+      return adaptedResult;
+    } finally {
+      // Clean up SignalR connection
+      if (signalRConnection) {
+        try {
+          await signalRConnection.stop();
+          console.log('📡 SignalR connection closed');
+        } catch (error) {
+          console.warn('Error closing SignalR connection:', error);
+        }
+      }
+    }
   }
 
   private adaptBackendResponse(backendResponse: any): AutoGenerationResponse {
@@ -736,11 +786,11 @@ class TuningApiService {
       businessRules: context.businessRules || '',
       columns: context.columns?.map(col => ({
         columnName: col.columnName,
-        businessMeaning: col.businessMeaning,
-        businessContext: col.businessContext,
-        dataExamples: col.dataExamples || [],
-        validationRules: col.validationRules || '',
-        isKeyColumn: col.isKeyColumn || false
+        businessMeaning: col.businessName,
+        businessContext: col.businessDescription,
+        dataExamples: col.sampleValues || [],
+        validationRules: col.businessRules?.join('; ') || '',
+        isKeyColumn: col.isPrimaryKey || false
       })) || []
     };
 

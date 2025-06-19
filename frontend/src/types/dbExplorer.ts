@@ -83,6 +83,7 @@ export interface AutoGenerationRequest {
   analyzeRelationships: boolean;
   specificTables?: string[];
   specificSchemas?: string[];
+  specificFields?: { [tableName: string]: string[] } | undefined; // Map of table name to selected field names
   overwriteExisting: boolean;
   minimumConfidenceThreshold: number;
   mockMode: boolean;
