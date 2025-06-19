@@ -133,6 +133,7 @@ public class AutoGenerationRequest
     public bool AnalyzeRelationships { get; set; } = true;
     public List<string>? SpecificTables { get; set; }
     public List<string>? SpecificSchemas { get; set; }
+    public Dictionary<string, List<string>>? SpecificFields { get; set; } // Map of table name to selected field names
     public bool OverwriteExisting { get; set; } = false;
     public double MinimumConfidenceThreshold { get; set; } = 0.6;
     public bool MockMode { get; set; } = false;

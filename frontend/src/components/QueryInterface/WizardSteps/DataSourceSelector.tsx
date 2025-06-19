@@ -35,90 +35,12 @@ export const DataSourceSelector: React.FC<DataSourceSelectorProps> = ({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data sources - in real app, this would come from API
+  // TODO: Replace with actual API call to get data sources from database
   useEffect(() => {
-    const mockDataSources: DataSource[] = [
-      {
-        table: 'tbl_Daily_actions',
-        description: 'Main statistics table containing all player gaming activities by day',
-        category: 'Gaming Analytics',
-        recordCount: 1250000,
-        lastUpdated: '2024-01-15',
-        columns: [
-          { name: 'WhiteLabelID', type: 'int', description: 'White label identifier' },
-          { name: 'PlayerID', type: 'int', description: 'Unique player identifier' },
-          { name: 'ActionDate', type: 'date', description: 'Date of the gaming activity' },
-          { name: 'Deposits', type: 'decimal', description: 'Total deposits amount' },
-          { name: 'Bets', type: 'decimal', description: 'Total bets placed' },
-          { name: 'Wins', type: 'decimal', description: 'Total winnings' },
-          { name: 'SportBets', type: 'decimal', description: 'Sports betting amounts' },
-          { name: 'CasinoBets', type: 'decimal', description: 'Casino game bets' },
-          { name: 'LiveBets', type: 'decimal', description: 'Live casino bets' },
-          { name: 'BingoBets', type: 'decimal', description: 'Bingo game bets' }
-        ]
-      },
-      {
-        table: 'tbl_Daily_actions_players',
-        description: 'Player profile and demographic information',
-        category: 'Player Management',
-        recordCount: 45000,
-        lastUpdated: '2024-01-14',
-        columns: [
-          { name: 'PlayerID', type: 'int', description: 'Unique player identifier' },
-          { name: 'Username', type: 'varchar', description: 'Player username' },
-          { name: 'Email', type: 'varchar', description: 'Player email address' },
-          { name: 'RegistrationDate', type: 'date', description: 'Account registration date' },
-          { name: 'CountryID', type: 'int', description: 'Player country identifier' },
-          { name: 'CurrencyID', type: 'int', description: 'Player currency identifier' },
-          { name: 'Status', type: 'varchar', description: 'Account status (Active, Suspended, etc.)' }
-        ]
-      },
-      {
-        table: 'tbl_Countries',
-        description: 'Country reference data with regional information',
-        category: 'Reference Data',
-        recordCount: 195,
-        lastUpdated: '2024-01-01',
-        columns: [
-          { name: 'CountryID', type: 'int', description: 'Unique country identifier' },
-          { name: 'CountryName', type: 'varchar', description: 'Country name' },
-          { name: 'CountryCode', type: 'varchar', description: 'ISO country code' },
-          { name: 'Region', type: 'varchar', description: 'Geographic region' }
-        ]
-      },
-      {
-        table: 'tbl_Currencies',
-        description: 'Currency reference data with exchange rates',
-        category: 'Reference Data',
-        recordCount: 25,
-        lastUpdated: '2024-01-15',
-        columns: [
-          { name: 'CurrencyID', type: 'int', description: 'Unique currency identifier' },
-          { name: 'CurrencyCode', type: 'varchar', description: 'Currency code (USD, EUR, etc.)' },
-          { name: 'CurrencyName', type: 'varchar', description: 'Currency name' },
-          { name: 'ExchangeRate', type: 'decimal', description: 'Exchange rate to base currency' }
-        ]
-      },
-      {
-        table: 'tbl_Whitelabels',
-        description: 'White label partner configuration and branding information',
-        category: 'Partner Management',
-        recordCount: 12,
-        lastUpdated: '2024-01-10',
-        columns: [
-          { name: 'WhiteLabelID', type: 'int', description: 'Unique white label identifier' },
-          { name: 'WhiteLabelName', type: 'varchar', description: 'White label partner name' },
-          { name: 'BrandName', type: 'varchar', description: 'Brand display name' },
-          { name: 'Status', type: 'varchar', description: 'Partner status' }
-        ]
-      }
-    ];
-
-    setTimeout(() => {
-      setDataSources(mockDataSources);
-      setFilteredSources(mockDataSources);
-      setLoading(false);
-    }, 500);
+    // This should call the actual DB Explorer API to get table metadata
+    setLoading(false);
+    setDataSources([]);
+    setFilteredSources([]);
   }, []);
 
   useEffect(() => {

@@ -237,7 +237,7 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
         >
           <Descriptions.Item label="Schema">{table.schema}</Descriptions.Item>
           <Descriptions.Item label="Type">{table.type}</Descriptions.Item>
-          <Descriptions.Item label="Columns">{table.columns.length}</Descriptions.Item>
+          <Descriptions.Item label="Columns">{table.columns?.length || 0}</Descriptions.Item>
           <Descriptions.Item label="Row Count">
             {table.rowCount !== undefined ? table.rowCount.toLocaleString() : 'Unknown'}
           </Descriptions.Item>
@@ -270,7 +270,7 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
         >
           <TabPane tab={<span style={{ fontSize: '11px' }}>Columns</span>} key="columns">
             <Table
-              dataSource={table.columns}
+              dataSource={table.columns || []}
               columns={columnTableColumns}
               rowKey="name"
               size="small"

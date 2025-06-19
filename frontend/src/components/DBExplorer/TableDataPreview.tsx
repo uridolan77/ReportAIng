@@ -68,7 +68,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
 
   // Convert database columns to DataTable columns
   const getDataTableColumns = (): DataTableColumn[] => {
-    if (!previewData) return [];
+    if (!previewData || !table.columns) return [];
 
     return table.columns.map(column => ({
       key: column.name,
@@ -181,7 +181,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
               type="text"
               icon={<InfoCircleOutlined />}
               onClick={() => {
-                message.info(`Table: ${table.name}\nColumns: ${table.columns.length}\nType: ${table.type}`);
+                message.info(`Table: ${table.name}\nColumns: ${table.columns?.length || 0}\nType: ${table.type}`);
               }}
             />
           </Tooltip>
@@ -236,7 +236,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
           <DataTable
             data={previewData.data}
             columns={getDataTableColumns()}
-            keyField={table.primaryKeys?.[0] || table.columns[0]?.name || 'id'}
+            keyField={table.primaryKeys?.[0] || table.columns?.[0]?.name || 'id'}
             features={{
               pagination: true,
               sorting: true,

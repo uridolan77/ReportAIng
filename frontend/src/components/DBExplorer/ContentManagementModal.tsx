@@ -78,8 +78,10 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
   // Initialize data when modal opens
   useEffect(() => {
     if (visible && generationResults) {
-      setTableContexts(generationResults.generatedTableContexts.map(ctx => ({ ...ctx, isEditing: false, isSaved: false })));
-      setGlossaryTerms(generationResults.generatedGlossaryTerms.map(term => ({ ...term, isEditing: false, isSaved: false })));
+      console.log('📋 ContentManagementModal: Initializing with generation results');
+
+      setTableContexts((generationResults.GeneratedTableContexts || []).map(ctx => ({ ...ctx, isEditing: false, isSaved: false })));
+      setGlossaryTerms((generationResults.GeneratedGlossaryTerms || []).map(term => ({ ...term, isEditing: false, isSaved: false })));
     }
   }, [visible, generationResults]);
 

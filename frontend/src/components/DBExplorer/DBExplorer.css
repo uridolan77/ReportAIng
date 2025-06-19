@@ -21,7 +21,7 @@
 }
 
 .db-explorer-sidebar {
-  width: 350px;
+  /* width: 350px; - Removed fixed width to allow resizing */
   border-right: 1px solid #e8e8e8;
   background: #fff;
   overflow-y: auto;

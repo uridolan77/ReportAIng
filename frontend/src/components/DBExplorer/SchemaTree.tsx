@@ -65,14 +65,14 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
 
   // Generate tree data from tables
   const treeData = useMemo(() => {
-    const filteredTables = tables.filter(table => {
+    const filteredTables = (tables || []).filter(table => {
       if (!searchValue) return true;
       const searchLower = searchValue.toLowerCase();
       
       return (
         table.name.toLowerCase().includes(searchLower) ||
         table.description?.toLowerCase().includes(searchLower) ||
-        table.columns.some(col => 
+        (table.columns || []).some(col =>
           col.name.toLowerCase().includes(searchLower) ||
           col.description?.toLowerCase().includes(searchLower)
         )
@@ -162,7 +162,7 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
         ),
         key: tableKey,
         icon: <TableOutlined style={{ fontSize: '16px', color: '#1890ff' }} />,
-        children: table.columns.map(column => {
+        children: (table.columns || []).map(column => {
           const tableFields = selectedFields.get(table.name) || new Set();
           const isFieldSelected = tableFields.has(column.name);
 
@@ -309,7 +309,7 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
         <Space size="small" style={{ alignItems: 'center' }}>
           <DatabaseOutlined style={{ fontSize: '15px', color: '#1890ff' }} />
           <span style={{ fontSize: '15px', fontWeight: 600 }}>Database Schema</span>
-          <Text type="secondary" style={{ fontSize: '13px' }}>({tables.length} tables)</Text>
+          <Text type="secondary" style={{ fontSize: '13px' }}>({(tables || []).length} tables)</Text>
         </Space>
       }
       extra={

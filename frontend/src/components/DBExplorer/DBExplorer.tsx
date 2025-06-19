@@ -57,7 +57,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
   const [schema, setSchema] = useState<DatabaseSchema | null>(null);
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [previewDrawerVisible, setPreviewDrawerVisible] = useState(false);
-  const [siderWidth, setSiderWidth] = useState(350);
+  const [siderWidth, setSiderWidth] = useState(550);
   const [progressModalVisible, setProgressModalVisible] = useState(false);
   const [generationResults, setGenerationResults] = useState<any>(null);
   const [contentModalVisible, setContentModalVisible] = useState(false);
@@ -221,14 +221,18 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
 
   // Get selection summary
   const getSelectionSummary = useCallback(() => {
-    const totalTablesSelected = state.selectedTables.size;
+    const selectedTableNames = Array.from(state.selectedTables);
+    const tablesWithSelectedFields = Array.from(state.selectedFields.keys());
+    const allSelectedTables = [...new Set([...selectedTableNames, ...tablesWithSelectedFields])];
+
+    const totalTablesSelected = allSelectedTables.length;
     const totalFieldsSelected = Array.from(state.selectedFields.values())
       .reduce((sum, fields) => sum + fields.size, 0);
 
     return {
       totalTablesSelected,
       totalFieldsSelected,
-      selectedTableNames: Array.from(state.selectedTables),
+      selectedTableNames: allSelectedTables,
       fieldsByTable: state.selectedFields
     };
   }, [state.selectedTables, state.selectedFields]);
@@ -251,33 +255,43 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
       const tablesWithSelectedFields = Array.from(state.selectedFields.keys());
       const allSelectedTables = [...new Set([...selectedTableNames, ...tablesWithSelectedFields])];
 
+      // Build specific fields map
+      const specificFields: { [tableName: string]: string[] } = {};
+      state.selectedFields.forEach((fieldSet, tableName) => {
+        specificFields[tableName] = Array.from(fieldSet);
+      });
+
       const request: AutoGenerationRequest = {
         generateTableContexts: true,
         generateGlossaryTerms: true,
         analyzeRelationships: true,
         specificTables: allSelectedTables,
+        specificFields: Object.keys(specificFields).length > 0 ? specificFields : undefined,
         overwriteExisting: false,
         minimumConfidenceThreshold: 0.6,
         mockMode: false
       };
 
+      console.log('🤖 Auto-generation request:', request);
+      console.log('🤖 Selected tables:', allSelectedTables);
+      console.log('🤖 Selected fields by table:', specificFields);
+
       const response = await tuningApi.autoGenerateBusinessContext(request);
+
+      console.log('🤖 Auto-generation response:', response);
+      console.log('🤖 Generated table contexts:', response.GeneratedTableContexts);
+      console.log('🤖 Generated glossary terms:', response.GeneratedGlossaryTerms);
 
       setGenerationResults(response);
 
       if (response.success) {
-        message.success(`Auto-generation completed! Generated contexts for ${response.totalTablesProcessed} tables and ${response.totalTermsGenerated} terms.`);
+        message.success(`Auto-generation completed! Generated contexts for ${response.totalTablesProcessed} tables and ${response.totalTermsGenerated} terms. Selections preserved for review.`);
 
         // Show content management modal
         setContentModalVisible(true);
 
-        // Clear selections after successful generation
-        setState(prev => ({
-          ...prev,
-          selectedTables: new Set(),
-          selectedFields: new Map(),
-          selectionMode: false
-        }));
+        // Keep selections after successful generation so user can see what was processed
+        // and potentially run generation again if needed
       } else {
         message.error('Auto-generation completed with errors. Check the results for details.');
       }
@@ -389,25 +403,28 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
               >
                 Clear
               </Button>
-              {(state.selectedTables.size > 0 || state.selectedFields.size > 0) && (
-                <Button
-                  icon={<PlayCircleOutlined />}
-                  size="large"
-                  type="primary"
-                  loading={state.autoGenerationInProgress}
-                  onClick={handleAutoGeneration}
-                  style={{
-                    fontSize: '14px',
-                    padding: '8px 20px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    fontWeight: 600,
-                    boxShadow: '0 2px 8px rgba(24, 144, 255, 0.3)'
-                  }}
-                >
-                  🚀 Generate ({state.selectedTables.size} tables, {Array.from(state.selectedFields.values()).reduce((sum, fields) => sum + fields.size, 0)} fields)
-                </Button>
-              )}
+              {(state.selectedTables.size > 0 || state.selectedFields.size > 0) && (() => {
+                const summary = getSelectionSummary();
+                return (
+                  <Button
+                    icon={<PlayCircleOutlined />}
+                    size="large"
+                    type="primary"
+                    loading={state.autoGenerationInProgress}
+                    onClick={handleAutoGeneration}
+                    style={{
+                      fontSize: '14px',
+                      padding: '8px 20px',
+                      height: '40px',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      boxShadow: '0 2px 8px rgba(24, 144, 255, 0.3)'
+                    }}
+                  >
+                    🚀 Generate ({summary.totalTablesSelected} tables, {summary.totalFieldsSelected} fields)
+                  </Button>
+                );
+              })()}
             </>
           )}
 
@@ -469,7 +486,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
                 setSiderWidth(size.width);
               }}
               minConstraints={[250, 0]}
-              maxConstraints={[600, 0]}
+              maxConstraints={[800, 0]}
               resizeHandles={['e']}
               className="db-explorer-resizable"
             >

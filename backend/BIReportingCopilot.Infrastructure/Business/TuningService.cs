@@ -361,14 +361,17 @@ public class TuningService : ITuningService
     public async Task<AutoGenerateBusinessContextResponse> AutoGenerateBusinessContextAsync(AutoGenerateBusinessContextRequest request, string userId, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Starting auto-generation for user {UserId} with {TableCount} tables", userId, request.TableNames.Count);
+        _logger.LogInformation("Table names: {Tables}", string.Join(", ", request.TableNames));
 
-        await Task.Delay(1000, cancellationToken); // Simulate processing time
+        // TODO: Implement actual auto-generation logic using AI services
+        // For now, return empty response to indicate the feature is not yet implemented
+        _logger.LogWarning("Auto-generation feature is not yet implemented. Returning empty response.");
 
         return new AutoGenerateBusinessContextResponse
         {
-            Success = true,
+            Success = false,
             GeneratedTables = new List<BusinessTable>(),
-            Message = $"Successfully generated business context for {request.TableNames.Count} tables"
+            Message = "Auto-generation feature is not yet implemented. Please implement the actual logic."
         };
     }
 

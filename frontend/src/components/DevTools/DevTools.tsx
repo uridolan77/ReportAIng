@@ -116,24 +116,8 @@ export const DevTools: React.FC<DevToolsProps> = ({
   const queryClient = useQueryClient();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Mock data for demonstration
-  const mockQueryHistory: QueryHistoryItem[] = [
-    {
-      id: '1',
-      question: 'Show me player statistics for last week',
-      sql: 'SELECT player_id, SUM(deposit_amount) as total_deposits FROM tbl_Daily_actions WHERE action_date >= DATEADD(day, -7, GETDATE()) GROUP BY player_id',
-      successful: true,
-      executionTimeMs: 245,
-      timestamp: '2024-01-15 14:30:00'
-    },
-    {
-      id: '2',
-      question: 'Revenue by country',
-      sql: 'SELECT c.country_name, SUM(da.deposit_amount) as revenue FROM tbl_Daily_actions da JOIN tbl_Countries c ON da.country_id = c.country_id GROUP BY c.country_name',
-      successful: true,
-      executionTimeMs: 189,
-      timestamp: '2024-01-15 14:25:00'
-    },
+  // TODO: Replace with actual query history from database
+  const mockQueryHistory: QueryHistoryItem[] = [];
     {
       id: '3',
       question: 'Invalid query test',

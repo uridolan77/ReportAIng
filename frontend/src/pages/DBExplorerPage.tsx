@@ -12,6 +12,7 @@ import {
 import { DatabaseOutlined } from '@ant-design/icons';
 import { DBExplorer } from '../components/DBExplorer/DBExplorer';
 import { SchemaManagementDashboard } from '../components/SchemaManagement/SchemaManagementDashboard';
+import './DBExplorerPage.css';
 
 const DBExplorerPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('database-explorer');
@@ -25,7 +26,7 @@ const DBExplorerPage: React.FC = () => {
       key: 'database-explorer',
       label: '📊 Database Explorer',
       children: (
-        <div style={{ height: '100%', width: '100%', overflow: 'hidden' }}>
+        <div style={{ height: 'calc(100vh - 200px)', width: '100%', overflow: 'hidden' }}>
           <DBExplorer />
         </div>
       ),
@@ -53,14 +54,15 @@ const DBExplorerPage: React.FC = () => {
         </p>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0 }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <Tabs
           variant="line"
           size="large"
           activeKey={activeTab}
           onChange={handleTabChange}
           items={tabItems}
-          style={{ height: '100%' }}
+          style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+          className="full-height-tabs"
         />
       </div>
     </div>

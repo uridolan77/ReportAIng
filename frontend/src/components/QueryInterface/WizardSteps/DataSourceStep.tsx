@@ -9,43 +9,8 @@ import { WizardStepProps, DataSource } from './types';
 
 const { Search } = Input;
 
-const mockDataSources: DataSource[] = [
-  {
-    id: 'tbl_Daily_actions',
-    name: 'Daily Actions',
-    type: 'table',
-    schema: 'dbo',
-    description: 'Main table containing all player actions and transactions'
-  },
-  {
-    id: 'tbl_Daily_actions_players',
-    name: 'Players',
-    type: 'table',
-    schema: 'dbo',
-    description: 'Player information and demographics'
-  },
-  {
-    id: 'tbl_Countries',
-    name: 'Countries',
-    type: 'table',
-    schema: 'dbo',
-    description: 'Country reference data'
-  },
-  {
-    id: 'tbl_Currencies',
-    name: 'Currencies',
-    type: 'table',
-    schema: 'dbo',
-    description: 'Currency reference data'
-  },
-  {
-    id: 'tbl_White_labels',
-    name: 'White Labels',
-    type: 'table',
-    schema: 'dbo',
-    description: 'White label configuration'
-  }
-];
+// TODO: Replace with actual API call to get data sources from database
+const mockDataSources: DataSource[] = [];
 
 const DataSourceStep: React.FC<WizardStepProps> = ({
   onNext,

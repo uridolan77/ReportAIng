@@ -232,37 +232,13 @@ export const InteractiveVisualization: React.FC<InteractiveVisualizationProps> =
       }
     }
 
-    // Priority 3: Add sample data if no stored data
-    if (sources.length === 0) {
-      sources.push(...generateSampleData());
-    }
+    // TODO: Load actual data from database instead of sample data
 
     setAvailableData(sources);
     initializeFilters(sources);
   };
 
-  const generateSampleData = () => {
-    const data: any[] = [];
-    const regions = ['North', 'South', 'East', 'West'];
-    const products = ['Product A', 'Product B', 'Product C'];
-    
-    for (let i = 0; i < 90; i++) {
-      const date = dayjs().subtract(90 - i, 'day').format('YYYY-MM-DD');
-      for (const region of regions) {
-        for (const product of products) {
-          data.push({
-            date,
-            revenue: Math.floor(Math.random() * 50000) + 10000,
-            users: Math.floor(Math.random() * 1000) + 200,
-            conversion_rate: Math.random() * 10 + 2,
-            region,
-            product
-          });
-        }
-      }
-    }
-    return data;
-  };
+  // TODO: Replace with actual data from database
 
   // Initialize filters based on data
   const initializeFilters = (data: any[]) => {

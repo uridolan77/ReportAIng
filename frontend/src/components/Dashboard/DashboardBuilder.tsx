@@ -148,13 +148,7 @@ const DashboardBuilder: React.FC = () => {
         }
       }
 
-      // Add sample data sources
-      sources.push({
-        data: generateSampleData('sales'),
-        columns: ['month', 'revenue', 'customers', 'region'],
-        query: 'Sample Sales Data',
-        timestamp: Date.now() - 86400000
-      });
+      // TODO: Replace with actual data sources from database
 
       sources.push({
         data: generateSampleData('users'),
@@ -169,36 +163,7 @@ const DashboardBuilder: React.FC = () => {
     loadDataSources();
   }, [hasResult, result]);
 
-  // Generate sample data
-  const generateSampleData = (type: string) => {
-    const data: any[] = [];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    
-    if (type === 'sales') {
-      const regions = ['North', 'South', 'East', 'West'];
-      for (let i = 0; i < 6; i++) {
-        for (const region of regions) {
-          data.push({
-            month: months[i],
-            revenue: Math.floor(Math.random() * 100000) + 50000,
-            customers: Math.floor(Math.random() * 1000) + 500,
-            region
-          });
-        }
-      }
-    } else if (type === 'users') {
-      for (let i = 0; i < 30; i++) {
-        data.push({
-          date: `2024-01-${String(i + 1).padStart(2, '0')}`,
-          active_users: Math.floor(Math.random() * 10000) + 5000,
-          new_signups: Math.floor(Math.random() * 500) + 100,
-          churn_rate: Math.random() * 5 + 1
-        });
-      }
-    }
-    
-    return data;
-  };
+  // TODO: Replace with actual data loading from database
 
   // Add new chart
   const handleAddChart = (values: any) => {

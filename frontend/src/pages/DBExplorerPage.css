@@ -1,0 +1,32 @@
+/* DB Explorer Page Styles */
+
+/* Ensure full height for tabs */
+.full-height-tabs {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Ensure tab content gets full height */
+.full-height-tabs .ant-tabs-content-holder {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.full-height-tabs .ant-tabs-content {
+  height: 100% !important;
+  flex: 1 !important;
+}
+
+.full-height-tabs .ant-tabs-tabpane {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Ensure the tab content fills available space */
+.full-height-tabs .ant-tabs-tabpane > div {
+  height: 100% !important;
+  flex: 1 !important;
+}
