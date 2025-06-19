@@ -257,6 +257,7 @@ export interface AutoGenerationResponse {
   warnings: string[];
   errors: string[];
   success: boolean;
+  message?: string;
 }
 
 export interface AutoGenerationProgress {
@@ -621,7 +622,8 @@ class TuningApiService {
       processingTime: backendResponse.processingTime || 'Unknown',
       warnings: backendResponse.warnings || [],
       errors: backendResponse.errors || [],
-      success: backendResponse.success || false
+      success: backendResponse.success || false,
+      message: backendResponse.message || 'No message provided'
     };
 
     console.log('🤖 TuningAPI: Adapted response structure:', adapted);

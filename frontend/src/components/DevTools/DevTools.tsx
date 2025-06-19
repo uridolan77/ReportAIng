@@ -118,16 +118,6 @@ export const DevTools: React.FC<DevToolsProps> = ({
 
   // TODO: Replace with actual query history from database
   const mockQueryHistory: QueryHistoryItem[] = [];
-    {
-      id: '3',
-      question: 'Invalid query test',
-      sql: 'SELECT * FROM non_existent_table',
-      successful: false,
-      executionTimeMs: 0,
-      timestamp: '2024-01-15 14:20:00',
-      error: 'Table "non_existent_table" does not exist'
-    }
-  ];
 
   const collectPerformanceMetrics = useCallback(() => {
     const now = new Date().toISOString();

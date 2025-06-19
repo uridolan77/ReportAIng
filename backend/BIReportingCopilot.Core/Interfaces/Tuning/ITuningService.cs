@@ -369,6 +369,7 @@ public class UpdateAISettingRequest
 public class AutoGenerateBusinessContextRequest
 {
     public List<string> TableNames { get; set; } = new();
+    public Dictionary<string, List<string>>? SpecificFields { get; set; } // Map of table name to selected field names
     public bool IncludeRelationships { get; set; } = true;
     public bool GenerateDescriptions { get; set; } = true;
 }

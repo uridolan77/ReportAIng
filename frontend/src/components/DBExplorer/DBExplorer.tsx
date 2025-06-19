@@ -293,7 +293,17 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
         // Keep selections after successful generation so user can see what was processed
         // and potentially run generation again if needed
       } else {
-        message.error('Auto-generation completed with errors. Check the results for details.');
+        // Show the actual backend message instead of generic error
+        const backendMessage = response.message || 'Auto-generation completed with errors. Check the results for details.';
+
+        if (backendMessage.includes('not yet implemented') || backendMessage.includes('not implemented')) {
+          message.warning(`⚠️ Feature Not Implemented: ${backendMessage}`);
+        } else {
+          message.error(`❌ Generation Error: ${backendMessage}`);
+        }
+
+        // Still show the progress modal so user can see the details
+        setProgressModalVisible(true);
       }
     } catch (error) {
       console.error('Auto-generation failed:', error);
