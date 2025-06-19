@@ -605,13 +605,35 @@ class TuningApiService {
   private adaptBackendResponse(backendResponse: any): AutoGenerationResponse {
     // Handle different response structures from backend
     console.log('🤖 TuningAPI: Adapting backend response structure');
+    console.log('🤖 TuningAPI: Backend response keys:', Object.keys(backendResponse));
 
     // If backend returns the expected structure, use it as-is
     if (backendResponse.GeneratedTableContexts !== undefined || backendResponse.GeneratedGlossaryTerms !== undefined) {
+      console.log('🤖 TuningAPI: Using backend response as-is (PascalCase)');
       return backendResponse;
     }
 
-    // If backend returns different structure, adapt it
+    // Handle camelCase response from backend (current actual structure)
+    if (backendResponse.generatedTableContexts !== undefined || backendResponse.generatedGlossaryTerms !== undefined) {
+      console.log('🤖 TuningAPI: Converting camelCase to PascalCase');
+      const adapted: AutoGenerationResponse = {
+        GeneratedTableContexts: backendResponse.generatedTableContexts || [],
+        GeneratedGlossaryTerms: backendResponse.generatedGlossaryTerms || [],
+        relationshipAnalysis: backendResponse.relationshipAnalysis,
+        totalTablesProcessed: backendResponse.totalTablesProcessed || 0,
+        totalColumnsProcessed: backendResponse.totalColumnsProcessed || 0,
+        totalTermsGenerated: backendResponse.totalTermsGenerated || 0,
+        processingTime: backendResponse.processingTime || 'Unknown',
+        warnings: backendResponse.warnings || [],
+        errors: backendResponse.errors || [],
+        success: backendResponse.success || false,
+        message: backendResponse.message || ''
+      };
+      console.log('🤖 TuningAPI: Adapted response:', adapted);
+      return adapted;
+    }
+
+    // Legacy fallback for old structure
     const adapted: AutoGenerationResponse = {
       GeneratedTableContexts: backendResponse.generatedTables || [],
       GeneratedGlossaryTerms: backendResponse.generatedTerms || [],
