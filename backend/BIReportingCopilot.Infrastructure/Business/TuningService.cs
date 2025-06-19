@@ -2,6 +2,7 @@ using BIReportingCopilot.Core.Interfaces.Tuning;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Infrastructure.AI.Management;
 using Microsoft.Extensions.Logging;
 
 namespace BIReportingCopilot.Infrastructure.Business;
@@ -12,12 +13,12 @@ namespace BIReportingCopilot.Infrastructure.Business;
 public class TuningService : ITuningService
 {
     private readonly ILogger<TuningService> _logger;
-    private readonly IBusinessContextAutoGenerator _businessContextAutoGenerator;
+    private readonly BusinessContextAutoGenerator _businessContextAutoGenerator;
 
     public TuningService(ILogger<TuningService> logger, IBusinessContextAutoGenerator businessContextAutoGenerator)
     {
         _logger = logger;
-        _businessContextAutoGenerator = businessContextAutoGenerator;
+        _businessContextAutoGenerator = (BusinessContextAutoGenerator)businessContextAutoGenerator;
     }
 
     #region Core Tuning Methods

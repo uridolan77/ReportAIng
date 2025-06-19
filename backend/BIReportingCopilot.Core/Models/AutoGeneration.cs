@@ -164,6 +164,7 @@ public class AutoGenerationResponse
     public List<string> Warnings { get; set; } = new();
     public List<string> Errors { get; set; } = new();
     public bool Success { get; set; } = true;
+    public string Message { get; set; } = string.Empty;
 }
 
 /// <summary>
