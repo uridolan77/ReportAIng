@@ -160,8 +160,7 @@ public static class ServiceRegistrationExtensions
         // AI Context
         services.AddScoped<IBusinessContextAutoGenerator, BIReportingCopilot.Infrastructure.AI.Management.BusinessContextAutoGenerator>();
 
-        // Tuning Services
-        services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ITuningService, TuningService>();
+        // Tuning Services - Registered in Program.cs
 
         return services;
     }

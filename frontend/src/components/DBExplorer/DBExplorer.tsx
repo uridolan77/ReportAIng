@@ -317,12 +317,15 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
       {/* Top Action Bar */}
       <div style={{
         padding: '16px 20px',
-        borderBottom: '1px solid #e8e8e8',
-        background: '#fafafa',
+        borderBottom: '2px solid #e8e8e8',
+        background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        minHeight: '60px'
+        minHeight: '70px',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+        zIndex: 10,
+        position: 'relative'
       }}>
         <Space size={20}>
           <DatabaseOutlined style={{ fontSize: '18px', color: '#1890ff' }} />
@@ -336,46 +339,73 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
             </Text>
           )}
         </Space>
-        <Space size="small">
+        <Space size={16}>
           {/* Selection Mode Controls */}
           <Button
             icon={<SelectOutlined />}
-            size="middle"
+            size="large"
             type={state.selectionMode ? 'primary' : 'default'}
             onClick={handleToggleSelectionMode}
-            style={{ fontSize: '14px', padding: '6px 16px' }}
+            style={{
+              fontSize: '14px',
+              padding: '8px 20px',
+              fontWeight: 600,
+              height: '40px',
+              borderRadius: '8px',
+              boxShadow: state.selectionMode ? '0 2px 8px rgba(24, 144, 255, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
+              border: state.selectionMode ? '2px solid #1890ff' : '2px solid #d9d9d9'
+            }}
           >
-            {state.selectionMode ? 'Exit Selection' : 'Select Mode'}
+            {state.selectionMode ? '✓ Exit Selection' : '📋 Select Mode'}
           </Button>
 
           {state.selectionMode && (
             <>
               <Button
                 icon={<CheckSquareOutlined />}
-                size="middle"
+                size="large"
                 onClick={handleSelectAllTables}
-                style={{ fontSize: '14px', padding: '6px 16px' }}
+                style={{
+                  fontSize: '14px',
+                  padding: '8px 16px',
+                  height: '40px',
+                  borderRadius: '8px',
+                  fontWeight: 500
+                }}
               >
                 Select All
               </Button>
               <Button
                 icon={<ClearOutlined />}
-                size="middle"
+                size="large"
                 onClick={handleClearSelections}
-                style={{ fontSize: '14px', padding: '6px 16px' }}
+                style={{
+                  fontSize: '14px',
+                  padding: '8px 16px',
+                  height: '40px',
+                  borderRadius: '8px',
+                  fontWeight: 500
+                }}
               >
                 Clear
               </Button>
               {(state.selectedTables.size > 0 || state.selectedFields.size > 0) && (
                 <Button
                   icon={<PlayCircleOutlined />}
-                  size="middle"
+                  size="large"
                   type="primary"
                   loading={state.autoGenerationInProgress}
                   onClick={handleAutoGeneration}
-                  style={{ fontSize: '14px', padding: '6px 16px' }}
+                  style={{
+                    fontSize: '14px',
+                    padding: '8px 20px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 8px rgba(24, 144, 255, 0.3)'
+                  }}
                 >
-                  Generate ({state.selectedTables.size} tables, {Array.from(state.selectedFields.values()).reduce((sum, fields) => sum + fields.size, 0)} fields)
+                  🚀 Generate ({state.selectedTables.size} tables, {Array.from(state.selectedFields.values()).reduce((sum, fields) => sum + fields.size, 0)} fields)
                 </Button>
               )}
             </>
@@ -428,7 +458,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
       )}
 
       {/* Main Content */}
-      <div style={{ flex: 1, margin: '0 12px 12px 12px', display: 'flex', minHeight: 0 }}>
+      <div style={{ flex: 1, padding: '0 16px 16px 16px', display: 'flex', minHeight: 0 }}>
         <div style={{ display: 'flex', height: '100%', width: '100%', gap: '12px' }}>
           {/* Resizable Schema Tree Sidebar */}
           {!siderCollapsed && (

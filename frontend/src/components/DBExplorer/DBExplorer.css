@@ -1,11 +1,9 @@
-/* DBExplorer Component Styles */
-
+/* DB Explorer Styles */
 .db-explorer {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   height: 100%;
-  min-height: calc(100vh - 160px);
   display: flex;
   flex-direction: column;
-  font-size: 12px;
 }
 
 .db-explorer-header {
@@ -38,22 +36,76 @@
   height: 100%;
 }
 
-.schema-tree {
-  padding: 12px;
+/* Schema Tree Container */
+.schema-tree-container .ant-card-head {
+  border-bottom: 1px solid #e8e8e8;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
 }
 
+.schema-tree-container .ant-card-body {
+  padding: 12px;
+  height: calc(100% - 55px);
+  overflow: hidden;
+}
+
+/* Schema Tree Scroll Area - Hide scrollbar */
+.schema-tree-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.schema-tree-scroll::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+/* Additional scrollbar hiding for tree container */
+.schema-tree .ant-tree {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.schema-tree .ant-tree::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+/* Hide scrollbars in tree list holder */
+.schema-tree .ant-tree-list-holder {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.schema-tree .ant-tree-list-holder::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+/* Tree Node Styling */
 .schema-tree .ant-tree-node-content-wrapper {
-  padding: 10px 16px;
+  padding: 8px 12px;
   border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.5;
-  font-weight: 500;
-  transition: all 0.25s ease;
-  margin: 4px 0;
-  min-height: 44px;
+  transition: all 0.2s ease;
+  min-height: 40px;
   display: flex;
   align-items: center;
+  margin: 3px 0;
   border: 1px solid transparent;
+  background: #fafafa;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.schema-tree .ant-tree-node-content-wrapper:hover {
+  background-color: #f0f8ff;
+  border-color: #d6e4ff;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.schema-tree .ant-tree-node-content-wrapper.ant-tree-node-selected {
+  background-color: #e6f7ff;
+  border: 2px solid #1890ff;
+  box-shadow: 0 3px 8px rgba(24, 144, 255, 0.2);
 }
 
 /* Tree indentation improvements */
@@ -535,6 +587,73 @@
 
 .schema-tree .ant-tree-node-content-wrapper[aria-level="2"]:hover {
   background: #f0f8ff;
+}
+
+/* Improved Tree Node Styling - Override defaults */
+.schema-tree .ant-tree-treenode[data-key^="table-"] > .ant-tree-node-content-wrapper {
+  background: linear-gradient(135deg, #f6ffed 0%, #f0f9ff 100%) !important;
+  border: 2px solid #e6f7ff !important;
+  border-left: 4px solid #1890ff !important;
+  margin: 6px 0 !important;
+  min-height: 48px !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  padding: 10px 16px !important;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.1) !important;
+}
+
+.schema-tree .ant-tree-treenode[data-key^="table-"] > .ant-tree-node-content-wrapper:hover {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%) !important;
+  border-color: #91d5ff !important;
+  border-left-color: #1890ff !important;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2) !important;
+  transform: translateY(-2px) !important;
+}
+
+.schema-tree .ant-tree-treenode[data-key^="column-"] > .ant-tree-node-content-wrapper {
+  background: #ffffff !important;
+  border: 1px solid #f0f0f0 !important;
+  margin: 2px 0 2px 20px !important;
+  min-height: 36px !important;
+  font-weight: 400 !important;
+  font-size: 13px !important;
+  padding: 6px 12px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+.schema-tree .ant-tree-treenode[data-key^="column-"] > .ant-tree-node-content-wrapper:hover {
+  background: #f9f9f9 !important;
+  border-color: #d9d9d9 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Tree spacing improvements */
+.schema-tree .ant-tree-list-holder-inner {
+  padding: 12px 8px !important;
+}
+
+.schema-tree .ant-tree-treenode {
+  padding: 3px 0 !important;
+  margin: 0 !important;
+}
+
+/* Tree switcher improvements */
+.schema-tree .ant-tree-switcher {
+  width: 24px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #8c8c8c !important;
+  font-size: 14px !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.schema-tree .ant-tree-switcher:hover {
+  color: #1890ff !important;
+  background-color: #f0f8ff !important;
 }
 
 /* Responsive design */

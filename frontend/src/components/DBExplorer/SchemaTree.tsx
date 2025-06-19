@@ -85,8 +85,19 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
 
       return {
         title: (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '2px 0' }}>
-            <Space size="small" style={{ flex: 1 }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            padding: '6px 8px',
+            borderRadius: '6px',
+            background: isTableSelected ? '#e6f7ff' : 'transparent',
+            border: isTableSelected ? '1px solid #91d5ff' : '1px solid transparent',
+            transition: 'all 0.2s ease',
+            minHeight: '32px'
+          }}>
+            <Space size="small" style={{ flex: 1, alignItems: 'center' }}>
               {selectionMode && (
                 <Checkbox
                   checked={isTableSelected}
@@ -95,13 +106,29 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
                     onTableSelectionChange?.(table.name, e.target.checked);
                   }}
                   onClick={(e) => e.stopPropagation()}
+                  style={{ marginRight: '4px' }}
                 />
               )}
-              <TableOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
-              <Text strong style={{ fontSize: '14px', fontWeight: 600 }}>{table.name}</Text>
-              {table.type === 'view' && <Tag color="purple" style={{ fontSize: '11px', padding: '2px 6px', lineHeight: '16px', borderRadius: '4px' }}>VIEW</Tag>}
+              <TableOutlined style={{ color: '#1890ff', fontSize: '16px', marginRight: '4px' }} />
+              <Text strong style={{ fontSize: '14px', fontWeight: 600, color: '#262626' }}>{table.name}</Text>
+              {table.type === 'view' && (
+                <Tag color="purple" style={{
+                  fontSize: '10px',
+                  padding: '1px 6px',
+                  lineHeight: '16px',
+                  borderRadius: '4px',
+                  marginLeft: '6px'
+                }}>
+                  VIEW
+                </Tag>
+              )}
               {table.rowCount !== undefined && (
-                <Text type="secondary" style={{ fontSize: '12px', fontWeight: 400 }}>
+                <Text type="secondary" style={{
+                  fontSize: '12px',
+                  fontWeight: 400,
+                  marginLeft: '6px',
+                  color: '#8c8c8c'
+                }}>
                   ({table.rowCount.toLocaleString()} rows)
                 </Text>
               )}
@@ -114,7 +141,22 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
                 e.stopPropagation();
                 onPreviewTable?.(table);
               }}
-              style={{ opacity: 0.7, padding: '4px 6px', height: '24px', borderRadius: '4px', fontSize: '11px' }}
+              style={{
+                opacity: 0.7,
+                padding: '4px 6px',
+                height: '24px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                marginLeft: '8px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.background = '#f0f0f0';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '0.7';
+                e.currentTarget.style.background = 'transparent';
+              }}
             />
           </div>
         ),
@@ -126,8 +168,20 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
 
           return {
             title: (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '1px 0' }}>
-                <Space size={4} style={{ flex: 1 }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                background: isFieldSelected ? '#f6ffed' : 'transparent',
+                border: isFieldSelected ? '1px solid #b7eb8f' : '1px solid transparent',
+                transition: 'all 0.2s ease',
+                minHeight: '28px',
+                marginLeft: '8px'
+              }}>
+                <Space size={6} style={{ flex: 1, alignItems: 'center' }}>
                   {selectionMode && (
                     <Checkbox
                       checked={isFieldSelected}
@@ -136,25 +190,61 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
                         onFieldSelectionChange?.(table.name, column.name, e.target.checked);
                       }}
                       onClick={(e) => e.stopPropagation()}
+                      style={{ marginRight: '2px' }}
                     />
                   )}
-                  <Text style={{ fontSize: '13px', fontWeight: 500 }}>{column.name}</Text>
-                  <Text type="secondary" style={{ fontSize: '12px', fontFamily: 'Monaco, Consolas, monospace', color: '#722ed1' }}>
+                  <Text style={{
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: '#262626',
+                    minWidth: '80px'
+                  }}>
+                    {column.name}
+                  </Text>
+                  <Text type="secondary" style={{
+                    fontSize: '11px',
+                    fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                    color: '#722ed1',
+                    background: '#f9f0ff',
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                    border: '1px solid #d3adf7'
+                  }}>
                     {column.dataType}
                     {column.maxLength && `(${column.maxLength})`}
                   </Text>
                   {column.isPrimaryKey && (
                     <Tooltip title="Primary Key">
-                      <KeyOutlined style={{ color: '#faad14', fontSize: '12px' }} />
+                      <KeyOutlined style={{
+                        color: '#faad14',
+                        fontSize: '12px',
+                        background: '#fff7e6',
+                        padding: '2px',
+                        borderRadius: '2px',
+                        border: '1px solid #ffd591'
+                      }} />
                     </Tooltip>
                   )}
                   {column.isForeignKey && (
                     <Tooltip title={`Foreign Key → ${column.referencedTable}.${column.referencedColumn}`}>
-                      <KeyOutlined style={{ color: '#52c41a', fontSize: '12px' }} />
+                      <KeyOutlined style={{
+                        color: '#52c41a',
+                        fontSize: '12px',
+                        background: '#f6ffed',
+                        padding: '2px',
+                        borderRadius: '2px',
+                        border: '1px solid #b7eb8f'
+                      }} />
                     </Tooltip>
                   )}
                   {!column.isNullable && (
-                    <Tag color="red" style={{ fontSize: '10px', padding: '0 4px', lineHeight: '14px', borderRadius: '3px' }}>
+                    <Tag color="red" style={{
+                      fontSize: '9px',
+                      padding: '1px 4px',
+                      lineHeight: '14px',
+                      borderRadius: '3px',
+                      fontWeight: 500
+                    }}>
                       NN
                     </Tag>
                   )}
@@ -233,9 +323,24 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
         />
       }
       size="small"
-      style={{ height: '100%', borderRadius: '8px' }}
-      bodyStyle={{ padding: '12px', height: 'calc(100% - 55px)' }}
-      headStyle={{ padding: '10px 16px', minHeight: '55px', background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)' }}
+      style={{
+        height: '100%',
+        borderRadius: '8px',
+        border: '1px solid #e8e8e8'
+      }}
+      styles={{
+        body: {
+          padding: '12px',
+          height: 'calc(100% - 55px)',
+          overflow: 'hidden'
+        },
+        header: {
+          padding: '10px 16px',
+          minHeight: '55px',
+          background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+          borderBottom: '1px solid #e8e8e8'
+        }
+      }}
       className="schema-tree-container"
     >
       <Space direction="vertical" style={{ width: '100%', height: '100%' }} size={12}>

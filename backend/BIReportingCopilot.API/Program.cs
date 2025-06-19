@@ -710,8 +710,7 @@ builder.Services.AddScoped<IGlossaryManagementService, BIReportingCopilot.Infras
 builder.Services.AddScoped<IQueryCacheService, BIReportingCopilot.Infrastructure.Query.QueryCacheService>();
 
 // Main tuning service (now delegates to focused services and uses bounded contexts)
-// TODO: Fix missing interface
-// builder.Services.AddScoped<ITuningService, BIReportingCopilot.Infrastructure.Business.TuningService>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Tuning.ITuningService, BIReportingCopilot.Infrastructure.Business.TuningService>();
 
 // Register AI tuning settings service (implements Core interface directly)
 // TODO: Fix missing interface

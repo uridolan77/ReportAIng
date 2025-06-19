@@ -461,3 +461,31 @@ public enum PerformanceSeverity
     High,
     Critical
 }
+
+/// <summary>
+/// Query optimization result
+/// </summary>
+public class QueryOptimizationResult
+{
+    public bool Success { get; set; }
+    public string OptimizedQuery { get; set; } = string.Empty;
+    public double EstimatedImprovement { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public List<string> Warnings { get; set; } = new();
+}
+
+/// <summary>
+/// Query pattern model
+/// </summary>
+public class QueryPattern
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Name { get; set; } = string.Empty;
+    public string Pattern { get; set; } = string.Empty;
+    public string SqlTemplate { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string CreatedBy { get; set; } = string.Empty;
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
+}
