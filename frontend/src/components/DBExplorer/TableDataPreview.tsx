@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Card, 
   Typography, 
@@ -21,6 +21,7 @@ import DataTable from '../DataTable';
 import type { DataTableColumn } from '../DataTable/types';
 import { DatabaseTable, DatabaseColumn, TableDataPreview as TableDataPreviewType } from '../../types/dbExplorer';
 import DBExplorerAPI from '../../services/dbExplorerApi';
+import '../styles/data-table.css';
 
 const { Title, Text } = Typography;
 
@@ -40,7 +41,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // Load table data preview
-  const loadPreviewData = async () => {
+  const loadPreviewData = useCallback(async () => {
     console.log(`🔍 TableDataPreview: Loading data for table: ${table.name}, maxRows: ${maxRows}`);
     setLoading(true);
     setError(null);
@@ -59,12 +60,12 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [table.name, maxRows]);
 
   // Load data when component mounts or table changes
   useEffect(() => {
     loadPreviewData();
-  }, [table.name, maxRows, loadPreviewData]);
+  }, [loadPreviewData]);
 
   // Convert database columns to DataTable columns
   const getDataTableColumns = (): DataTableColumn[] => {
@@ -159,54 +160,55 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
   };
 
   return (
-    <Card
-      title={
-        <Space>
-          <TableOutlined />
-          <Title level={4} style={{ margin: 0 }}>
-            {table.name}
-          </Title>
-          {table.type === 'view' && <Tag color="purple">VIEW</Tag>}
-          {previewData && (
-            <Text type="secondary">
-              Showing {previewData.data.length} of {previewData.totalRows.toLocaleString()} rows
-            </Text>
-          )}
-        </Space>
-      }
-      extra={
-        <Space>
-          <Tooltip title="Table Information">
+    <div style={{ height: '80vh', width: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Card
+        title={
+          <Space>
+            <TableOutlined />
+            <Title level={4} style={{ margin: 0 }}>
+              {table.name}
+            </Title>
+            {table.type === 'view' && <Tag color="purple">VIEW</Tag>}
+            {previewData && (
+              <Text type="secondary">
+                Showing {previewData.data.length} of {previewData.totalRows.toLocaleString()} rows
+              </Text>
+            )}
+          </Space>
+        }
+        extra={
+          <Space>
+            <Tooltip title="Table Information">
+              <Button
+                type="text"
+                icon={<InfoCircleOutlined />}
+                onClick={() => {
+                  message.info(`Table: ${table.name}\nColumns: ${table.columns?.length || 0}\nType: ${table.type}`);
+                }}
+              />
+            </Tooltip>
             <Button
               type="text"
-              icon={<InfoCircleOutlined />}
-              onClick={() => {
-                message.info(`Table: ${table.name}\nColumns: ${table.columns?.length || 0}\nType: ${table.type}`);
-              }}
+              icon={<ReloadOutlined />}
+              onClick={loadPreviewData}
+              loading={loading}
             />
-          </Tooltip>
-          <Button
-            type="text"
-            icon={<ReloadOutlined />}
-            onClick={loadPreviewData}
-            loading={loading}
-          />
-          <Button
-            type="text"
-            icon={<DownloadOutlined />}
-            onClick={handleExport}
-            disabled={!previewData}
-          />
-          {onClose && (
-            <Button type="primary" onClick={onClose}>
-              Close
-            </Button>
-          )}
-        </Space>
-      }
-      style={{ height: '100vh', border: 'none' }}
-      bodyStyle={{ padding: '16px', height: 'calc(100vh - 57px)', overflow: 'auto' }}
-    >
+            <Button
+              type="text"
+              icon={<DownloadOutlined />}
+              onClick={handleExport}
+              disabled={!previewData}
+            />
+            {onClose && (
+              <Button type="primary" onClick={onClose}>
+                Close
+              </Button>
+            )}
+          </Space>
+        }
+        style={{ height: '100%', width: '100%', border: 'none', display: 'flex', flexDirection: 'column' }}
+        bodyStyle={{ padding: '16px', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+      >
       {loading && (
         <div style={{ textAlign: 'center', padding: '40px' }}>
           <Spin size="large" />
@@ -232,7 +234,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
       )}
 
       {previewData && !loading && (
-        <div style={{ height: '100%' }}>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <DataTable
             data={previewData.data}
             columns={getDataTableColumns()}
@@ -244,15 +246,15 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
               searching: true,
               export: true,
               columnChooser: true,
-              virtualScroll: previewData.data.length > 100
+              virtualScroll: false
             }}
             config={{
               pageSize: 25,
               pageSizeOptions: [10, 25, 50, 100],
-              maxHeight: 'calc(100vh - 180px)',
+              maxHeight: '100%',
               exportFileName: `${table.name}_preview`
             }}
-            style={{ height: '100%' }}
+            style={{ height: '100%', flex: 1 }}
           />
         </div>
       )}
@@ -265,6 +267,7 @@ export const TableDataPreview: React.FC<TableDataPreviewProps> = ({
           </div>
         </div>
       )}
-    </Card>
+      </Card>
+    </div>
   );
 };

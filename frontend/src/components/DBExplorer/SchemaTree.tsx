@@ -9,8 +9,7 @@ import {
   Tooltip,
   Button,
   Spin,
-  Empty,
-  Checkbox
+  Empty
 } from 'antd';
 import {
   DatabaseOutlined,
@@ -82,6 +81,8 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
     return filteredTables.map(table => {
       const tableKey = `table-${table.name}`;
       const isTableSelected = selectedTables.has(table.name);
+      const tableFields = selectedFields.get(table.name) || new Set();
+      const someColumnsSelected = table.columns.some(col => tableFields.has(col.name));
 
       return {
         title: (
@@ -99,15 +100,33 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
           }}>
             <Space size="small" style={{ flex: 1, alignItems: 'center' }}>
               {selectionMode && (
-                <Checkbox
-                  checked={isTableSelected}
-                  onChange={(e) => {
+                <div
+                  className={`selection-indicator table-indicator ${
+                    isTableSelected ? 'selected' : someColumnsSelected ? 'partial' : 'unselected'
+                  }`}
+                  style={{ marginRight: '8px' }}
+                  onClick={(e) => {
                     e.stopPropagation();
-                    onTableSelectionChange?.(table.name, e.target.checked);
+                    onTableSelectionChange?.(table.name, !isTableSelected);
                   }}
-                  onClick={(e) => e.stopPropagation()}
-                  style={{ marginRight: '4px' }}
-                />
+                >
+                  {isTableSelected && (
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      backgroundColor: 'white',
+                      borderRadius: '1px'
+                    }} />
+                  )}
+                  {!isTableSelected && someColumnsSelected && (
+                    <div style={{
+                      width: '6px',
+                      height: '2px',
+                      backgroundColor: '#faad14',
+                      borderRadius: '1px'
+                    }} />
+                  )}
+                </div>
               )}
               <TableOutlined style={{ color: '#1890ff', fontSize: '16px', marginRight: '4px' }} />
               <Text strong style={{ fontSize: '14px', fontWeight: 600, color: '#262626' }}>{table.name}</Text>
@@ -120,6 +139,17 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
                   marginLeft: '6px'
                 }}>
                   VIEW
+                </Tag>
+              )}
+              {selectionMode && tableFields.size > 0 && (
+                <Tag color="blue" style={{
+                  fontSize: '10px',
+                  padding: '1px 6px',
+                  lineHeight: '16px',
+                  borderRadius: '4px',
+                  marginLeft: '6px'
+                }}>
+                  {tableFields.size}/{table.columns.length} cols
                 </Tag>
               )}
               {table.rowCount !== undefined && (
@@ -183,15 +213,25 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
               }}>
                 <Space size={6} style={{ flex: 1, alignItems: 'center' }}>
                   {selectionMode && (
-                    <Checkbox
-                      checked={isFieldSelected}
-                      onChange={(e) => {
+                    <div
+                      className={`selection-indicator field-indicator ${
+                        isFieldSelected ? 'field-selected' : 'unselected'
+                      }`}
+                      style={{ marginRight: '6px' }}
+                      onClick={(e) => {
                         e.stopPropagation();
-                        onFieldSelectionChange?.(table.name, column.name, e.target.checked);
+                        onFieldSelectionChange?.(table.name, column.name, !isFieldSelected);
                       }}
-                      onClick={(e) => e.stopPropagation()}
-                      style={{ marginRight: '2px' }}
-                    />
+                    >
+                      {isFieldSelected && (
+                        <div style={{
+                          width: '6px',
+                          height: '6px',
+                          backgroundColor: 'white',
+                          borderRadius: '1px'
+                        }} />
+                      )}
+                    </div>
                   )}
                   <Text style={{
                     fontSize: '13px',
@@ -262,7 +302,7 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
         data: { table }
       } as DataNode;
     });
-  }, [tables, searchValue, onPreviewTable]);
+  }, [tables, searchValue, onPreviewTable, selectionMode, selectedTables, selectedFields, onTableSelectionChange, onFieldSelectionChange]);
 
   // Handle search
   const handleSearch = (value: string) => {
@@ -343,17 +383,17 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
       }}
       className="schema-tree-container"
     >
-      <Space direction="vertical" style={{ width: '100%', height: '100%' }} size={12}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
         <Search
           placeholder="Search tables and columns..."
           allowClear
           onChange={(e) => handleSearch(e.target.value)}
-          style={{ marginBottom: '8px' }}
+          style={{ marginBottom: '12px', flexShrink: 0 }}
           prefix={<SearchOutlined />}
           size="middle"
         />
 
-        <div style={{ flex: 1, overflow: 'auto', paddingRight: '4px' }} className="schema-tree-scroll">
+        <div style={{ flex: 1, overflow: 'auto', paddingRight: '4px', minHeight: 0 }} className="schema-tree-scroll">
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px 20px' }}>
               <Spin size="large" />
@@ -386,7 +426,7 @@ export const SchemaTree: React.FC<SchemaTreeProps> = ({
             />
           )}
         </div>
-      </Space>
+      </div>
     </Card>
   );
 };

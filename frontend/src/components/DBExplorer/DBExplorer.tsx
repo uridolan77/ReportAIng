@@ -152,6 +152,12 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
 
       if (selected) {
         newSelectedTables.add(tableName);
+        // Auto-select all columns when table is selected
+        const table = schema?.tables.find(t => t.name === tableName);
+        if (table) {
+          const allColumnNames = new Set(table.columns.map(col => col.name));
+          newSelectedFields.set(tableName, allColumnNames);
+        }
       } else {
         newSelectedTables.delete(tableName);
         newSelectedFields.delete(tableName);
@@ -163,7 +169,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
         selectedFields: newSelectedFields
       };
     });
-  }, []);
+  }, [schema]);
 
   // Handle field selection for auto-generation
   const handleFieldSelectionChange = useCallback((tableName: string, fieldName: string, selected: boolean) => {
@@ -192,12 +198,16 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
 
   // Toggle selection mode
   const handleToggleSelectionMode = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      selectionMode: !prev.selectionMode,
-      selectedTables: new Set(),
-      selectedFields: new Map()
-    }));
+    setState(prev => {
+      const newSelectionMode = !prev.selectionMode;
+      console.log('Toggling selection mode:', prev.selectionMode, '->', newSelectionMode);
+      return {
+        ...prev,
+        selectionMode: newSelectionMode,
+        selectedTables: new Set(),
+        selectedFields: new Map()
+      };
+    });
   }, []);
 
   // Select all tables
@@ -217,6 +227,36 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
       selectedTables: new Set(),
       selectedFields: new Map()
     }));
+  }, []);
+
+  // Select all columns for a specific table
+  const handleSelectAllColumns = useCallback((tableName: string) => {
+    const table = schema?.tables.find(t => t.name === tableName);
+    if (!table) return;
+
+    setState(prev => {
+      const newSelectedFields = new Map(prev.selectedFields);
+      const allColumnNames = new Set(table.columns.map(col => col.name));
+      newSelectedFields.set(tableName, allColumnNames);
+
+      return {
+        ...prev,
+        selectedFields: newSelectedFields
+      };
+    });
+  }, [schema]);
+
+  // Clear all columns for a specific table
+  const handleClearAllColumns = useCallback((tableName: string) => {
+    setState(prev => {
+      const newSelectedFields = new Map(prev.selectedFields);
+      newSelectedFields.delete(tableName);
+
+      return {
+        ...prev,
+        selectedFields: newSelectedFields
+      };
+    });
   }, []);
 
   // Get selection summary
@@ -337,7 +377,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
   const tables = schema?.tables || [];
 
   return (
-    <div className="db-explorer" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="db-explorer" style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Top Action Bar */}
       <div style={{
         padding: '16px 20px',
@@ -347,9 +387,11 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
         justifyContent: 'space-between',
         alignItems: 'center',
         minHeight: '70px',
+        maxHeight: '70px',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
         zIndex: 10,
-        position: 'relative'
+        position: 'relative',
+        flexShrink: 0
       }}>
         <Space size={20}>
           <DatabaseOutlined style={{ fontSize: '18px', color: '#1890ff' }} />
@@ -470,7 +512,7 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
       {/* Error Alert */}
       {state.error && (
         <Alert
-          style={{ margin: '0 16px 16px 16px' }}
+          style={{ margin: '0 16px 16px 16px', flexShrink: 0 }}
           message="Error Loading Database Schema"
           description={state.error}
           type="error"
@@ -485,8 +527,20 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
       )}
 
       {/* Main Content */}
-      <div style={{ flex: 1, padding: '0 16px 16px 16px', display: 'flex', minHeight: 0 }}>
-        <div style={{ display: 'flex', height: '100%', width: '100%', gap: '12px' }}>
+      <div style={{
+        flex: 1,
+        padding: '0 16px 16px 16px',
+        display: 'flex',
+        minHeight: 0,
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          display: 'flex',
+          height: '100%',
+          width: '100%',
+          gap: '12px',
+          overflow: 'hidden'
+        }}>
           {/* Resizable Schema Tree Sidebar */}
           {!siderCollapsed && (
             <Resizable
@@ -554,7 +608,13 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
           )}
 
           {/* Main Content Area */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            flex: 1,
+            minWidth: 0,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
             {state.loading && !schema ? (
               <Card style={{ height: '100%', textAlign: 'center' }}>
                 <div style={{ padding: '100px 0' }}>
@@ -574,9 +634,16 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
                 onFieldSelectionChange={(fieldName, selected) =>
                   handleFieldSelectionChange(state.selectedTable!.name, fieldName, selected)
                 }
+                onSelectAllColumns={() => handleSelectAllColumns(state.selectedTable!.name)}
+                onClearAllColumns={() => handleClearAllColumns(state.selectedTable!.name)}
+                isTableSelected={state.selectedTables.has(state.selectedTable.name)}
+                onTableSelectionChange={(selected) => handleTableSelectionChange(state.selectedTable!.name, selected)}
               />
             ) : (
-              <Card style={{ height: '100%', textAlign: 'center' }} bodyStyle={{ padding: '60px 30px' }}>
+              <Card
+                style={{ height: '100%', textAlign: 'center' }}
+                styles={{ body: { padding: '60px 30px' } }}
+              >
                 <div>
                   <DatabaseOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
                   <Title level={3} type="secondary" style={{ marginTop: '24px', fontSize: '18px', fontWeight: 500 }}>
@@ -603,11 +670,11 @@ export const DBExplorer: React.FC<DBExplorerProps> = ({ onQueryGenerated }) => {
       <Drawer
         title={`Data Preview: ${state.selectedTable?.name}`}
         placement="right"
-        width="85%"
+        width="75%"
         open={previewDrawerVisible}
         onClose={() => setPreviewDrawerVisible(false)}
-        destroyOnClose
-        bodyStyle={{ padding: 0 }}
+        destroyOnClose={true}
+        styles={{ body: { padding: 0 } }}
       >
         {state.selectedTable && (
           <TableDataPreview

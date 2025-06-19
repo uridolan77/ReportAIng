@@ -26,7 +26,7 @@ const DBExplorerPage: React.FC = () => {
       key: 'database-explorer',
       label: '📊 Database Explorer',
       children: (
-        <div style={{ height: 'calc(100vh - 200px)', width: '100%', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: '100%', overflow: 'hidden' }}>
           <DBExplorer />
         </div>
       ),

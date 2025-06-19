@@ -33,6 +33,8 @@ import { GlossaryTermsManager } from './GlossaryTermsManager';
 import { ContentVersionHistory } from './ContentVersionHistory';
 import { ContentVersion } from '../../types/dbExplorer';
 import { useNavigate } from 'react-router-dom';
+import { BusinessTableManager } from '../Tuning/BusinessTableManager';
+import { BusinessGlossaryManager } from '../Tuning/BusinessGlossaryManager';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -79,9 +81,38 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
   useEffect(() => {
     if (visible && generationResults) {
       console.log('📋 ContentManagementModal: Initializing with generation results');
+      console.log('📋 ContentManagementModal: Full generation results object:', generationResults);
+      console.log('📋 ContentManagementModal: GeneratedTableContexts:', generationResults.GeneratedTableContexts);
+      console.log('📋 ContentManagementModal: GeneratedGlossaryTerms:', generationResults.GeneratedGlossaryTerms);
+      console.log('📋 ContentManagementModal: Success:', generationResults.success);
+      console.log('📋 ContentManagementModal: Message:', generationResults.message);
+      console.log('📋 ContentManagementModal: All keys in generationResults:', Object.keys(generationResults));
 
-      setTableContexts((generationResults.GeneratedTableContexts || []).map(ctx => ({ ...ctx, isEditing: false, isSaved: false })));
-      setGlossaryTerms((generationResults.GeneratedGlossaryTerms || []).map(term => ({ ...term, isEditing: false, isSaved: false })));
+      // Check if we have any data at all
+      const tableContexts = generationResults.GeneratedTableContexts || [];
+      const glossaryTerms = generationResults.GeneratedGlossaryTerms || [];
+
+      console.log('📋 ContentManagementModal: Table contexts count:', tableContexts.length);
+      console.log('📋 ContentManagementModal: Glossary terms count:', glossaryTerms.length);
+
+      if (tableContexts.length === 0 && glossaryTerms.length === 0) {
+        console.warn('⚠️ ContentManagementModal: No data received from auto-generation!');
+        console.log('📋 ContentManagementModal: Checking for alternative property names...');
+
+        // Check for alternative property names
+        const altTableContexts = (generationResults as any).generatedTableContexts ||
+                                (generationResults as any).tableContexts ||
+                                (generationResults as any).tables || [];
+        const altGlossaryTerms = (generationResults as any).generatedGlossaryTerms ||
+                               (generationResults as any).glossaryTerms ||
+                               (generationResults as any).terms || [];
+
+        console.log('📋 ContentManagementModal: Alternative table contexts:', altTableContexts);
+        console.log('📋 ContentManagementModal: Alternative glossary terms:', altGlossaryTerms);
+      }
+
+      setTableContexts(tableContexts.map(ctx => ({ ...ctx, isEditing: false, isSaved: false })));
+      setGlossaryTerms(glossaryTerms.map(term => ({ ...term, isEditing: false, isSaved: false })));
     }
   }, [visible, generationResults]);
 
@@ -91,6 +122,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
       title: 'Table Name',
       dataIndex: 'tableName',
       key: 'tableName',
+      width: 180,
       render: (text: string, record: EditableTableContext) => (
         <Space>
           <Text strong>{text}</Text>
@@ -129,14 +161,15 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
     {
       title: 'Actions',
       key: 'actions',
-      width: 150,
+      width: 280,
       render: (_: any, record: EditableTableContext, index: number) => (
-        <Space>
+        <Space size="small" wrap>
           <Button
             type="text"
             icon={<EyeOutlined />}
             size="small"
             onClick={() => handleViewTableContext(record)}
+            title="View details"
           />
           <Button
             type="text"
@@ -180,6 +213,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
       title: 'Term',
       dataIndex: 'term',
       key: 'term',
+      width: 200,
       render: (text: string, record: EditableGlossaryTerm) => (
         <Space>
           <Text strong>{text}</Text>
@@ -208,19 +242,21 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
       title: 'Category',
       dataIndex: 'category',
       key: 'category',
+      width: 120,
       render: (text: string) => <Tag>{text || 'General'}</Tag>
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 150,
+      width: 180,
       render: (_: any, record: EditableGlossaryTerm, index: number) => (
-        <Space>
+        <Space size="small">
           <Button
             type="text"
             icon={<EditOutlined />}
             size="small"
             onClick={() => handleEditGlossaryTerm(index)}
+            title="Edit term"
           />
           <Button
             type="primary"
@@ -470,18 +506,17 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
   };
 
   const handleNavigateToTuning = () => {
-    navigate('/tuning');
-    onClose();
+    // This will be handled by tab switching now
+    console.log('Switching to Tuning Interface tab');
   };
 
   const handleNavigateToBusinessContext = () => {
-    navigate('/tuning/business-context');
-    onClose();
+    // This will be handled by tab switching now
+    console.log('Switching to Business Context tab');
   };
 
   const handleNavigateToGlossary = () => {
-    navigate('/tuning/glossary');
-    onClose();
+    window.open('/tuning/glossary', '_blank');
   };
 
   if (!generationResults) {
@@ -493,24 +528,12 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
       title="Manage Generated Content"
       open={visible}
       onCancel={onClose}
-      width={1200}
+      width="90vw"
+      style={{ top: 20 }}
+      bodyStyle={{ height: '80vh', overflow: 'auto' }}
       footer={[
         <Button key="close" onClick={onClose}>
           Close
-        </Button>,
-        <Button
-          key="tuning"
-          icon={<SettingOutlined />}
-          onClick={handleNavigateToTuning}
-        >
-          Open Tuning Interface
-        </Button>,
-        <Button
-          key="business-context"
-          icon={<LinkOutlined />}
-          onClick={handleNavigateToBusinessContext}
-        >
-          Manage Business Context
         </Button>,
         <Button
           key="save-all"
@@ -556,9 +579,10 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
             rowKey="tableName"
             size="small"
             pagination={{ pageSize: 10 }}
+            scroll={{ x: 'max-content' }}
           />
         </TabPane>
-        
+
         <TabPane tab={`Glossary Terms (${glossaryTerms.length})`} key="glossary">
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -577,8 +601,35 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
               rowKey="term"
               size="small"
               pagination={{ pageSize: 10 }}
+              scroll={{ x: 'max-content' }}
             />
           </Space>
+        </TabPane>
+
+        <TabPane tab={<span><LinkOutlined /> Business Context</span>} key="business-context">
+          <div style={{ padding: '16px', height: '100%' }}>
+            <Alert
+              message="Business Context Management"
+              description="Manage business contexts for your database tables. Create, edit, and organize table purposes, business rules, and relationships."
+              type="info"
+              showIcon
+              style={{ marginBottom: '16px' }}
+            />
+            <BusinessTableManager />
+          </div>
+        </TabPane>
+
+        <TabPane tab={<span><SettingOutlined /> Business Glossary</span>} key="tuning">
+          <div style={{ padding: '16px', height: '100%' }}>
+            <Alert
+              message="Business Glossary Management"
+              description="Manage your business glossary terms. Define, categorize, and maintain business terminology and definitions."
+              type="success"
+              showIcon
+              style={{ marginBottom: '16px' }}
+            />
+            <BusinessGlossaryManager />
+          </div>
         </TabPane>
       </Tabs>
 

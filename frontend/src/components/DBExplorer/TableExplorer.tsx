@@ -9,8 +9,7 @@ import {
   Button,
   Tabs,
   Tooltip,
-  message,
-  Checkbox
+  message
 } from 'antd';
 import {
   TableOutlined,
@@ -32,6 +31,11 @@ interface TableExplorerProps {
   selectionMode?: boolean;
   selectedFields?: Set<string>;
   onFieldSelectionChange?: (fieldName: string, selected: boolean) => void;
+  onSelectAllColumns?: () => void;
+  onClearAllColumns?: () => void;
+  // Table selection props
+  isTableSelected?: boolean;
+  onTableSelectionChange?: (selected: boolean) => void;
 }
 
 export const TableExplorer: React.FC<TableExplorerProps> = ({
@@ -40,24 +44,106 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
   onGenerateQuery,
   selectionMode = false,
   selectedFields = new Set(),
-  onFieldSelectionChange
+  onFieldSelectionChange,
+  onSelectAllColumns,
+  onClearAllColumns,
+  isTableSelected = false,
+  onTableSelectionChange
 }) => {
   const [activeTab, setActiveTab] = useState('columns');
+
+  // Debug logging
+  console.log('TableExplorer render:', {
+    tableName: table.name,
+    selectionMode,
+    selectedFieldsCount: selectedFields.size,
+    selectedFieldsArray: Array.from(selectedFields),
+    isTableSelected
+  });
+
+  // Check if all columns are selected
+  const allColumnsSelected = table.columns.length > 0 && table.columns.every(col => selectedFields.has(col.name));
+  const someColumnsSelected = table.columns.some(col => selectedFields.has(col.name));
+
+  // Handle select all columns
+  const handleSelectAllChange = (checked: boolean) => {
+    if (checked) {
+      onSelectAllColumns?.();
+    } else {
+      onClearAllColumns?.();
+    }
+  };
 
   // Column definitions for the columns table
   const columnTableColumns = [
     ...(selectionMode ? [{
-      title: 'Select',
+      title: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div
+            className={`selection-indicator table-indicator ${
+              allColumnsSelected ? 'field-selected' : someColumnsSelected ? 'partial' : 'unselected'
+            }`}
+            onClick={() => handleSelectAllChange(!allColumnsSelected)}
+          >
+            {allColumnsSelected && (
+              <div style={{
+                width: '6px',
+                height: '6px',
+                backgroundColor: 'white',
+                borderRadius: '1px'
+              }} />
+            )}
+            {!allColumnsSelected && someColumnsSelected && (
+              <div style={{
+                width: '4px',
+                height: '2px',
+                backgroundColor: '#faad14',
+                borderRadius: '1px'
+              }} />
+            )}
+          </div>
+          <span>Select All</span>
+        </div>
+      ),
       key: 'select',
-      width: 60,
-      render: (_: any, record: DatabaseColumn) => (
-        <Checkbox
-          checked={selectedFields.has(record.name)}
-          onChange={(e) => {
-            onFieldSelectionChange?.(record.name, e.target.checked);
-          }}
-        />
-      )
+      width: 100,
+      render: (_: any, record: DatabaseColumn) => {
+        const isSelected = selectedFields.has(record.name);
+        console.log(`Column ${record.name} selected:`, isSelected, 'selectedFields:', Array.from(selectedFields));
+        return (
+          <div
+            className={`selection-indicator field-indicator ${
+              isSelected ? 'field-selected' : 'unselected'
+            }`}
+            style={{
+              width: '12px',
+              height: '12px',
+              border: '1px solid',
+              borderColor: isSelected ? '#52c41a' : '#d9d9d9',
+              backgroundColor: isSelected ? '#52c41a' : 'transparent',
+              borderRadius: '2px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onClick={() => {
+              console.log(`Clicking column ${record.name}, current state:`, isSelected);
+              onFieldSelectionChange?.(record.name, !isSelected);
+            }}
+          >
+            {isSelected && (
+              <div style={{
+                width: '6px',
+                height: '6px',
+                backgroundColor: 'white',
+                borderRadius: '1px'
+              }} />
+            )}
+          </div>
+        );
+      }
     }] : []),
     {
       title: 'Column Name',
@@ -195,12 +281,43 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
   return (
     <Card
       title={
-        <Space size="small">
+        <Space size="small" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+          {selectionMode && (
+            <div
+              className={`selection-indicator table-indicator ${
+                isTableSelected ? 'selected' : selectedFields.size > 0 ? 'partial' : 'unselected'
+              }`}
+              style={{ marginRight: '6px' }}
+              onClick={() => onTableSelectionChange?.(!isTableSelected)}
+            >
+              {isTableSelected && (
+                <div style={{
+                  width: '6px',
+                  height: '6px',
+                  backgroundColor: 'white',
+                  borderRadius: '1px'
+                }} />
+              )}
+              {!isTableSelected && selectedFields.size > 0 && (
+                <div style={{
+                  width: '4px',
+                  height: '2px',
+                  backgroundColor: '#faad14',
+                  borderRadius: '1px'
+                }} />
+              )}
+            </div>
+          )}
           <TableOutlined style={{ fontSize: '12px' }} />
           <span style={{ fontSize: '12px', fontWeight: 500 }}>
             {table.name}
           </span>
           {table.type === 'view' && <Tag color="purple" style={{ fontSize: '9px', padding: '0 4px' }}>VIEW</Tag>}
+          {selectionMode && selectedFields.size > 0 && (
+            <Tag color="blue" style={{ fontSize: '9px', padding: '1px 6px', marginLeft: '6px' }}>
+              {selectedFields.size}/{table.columns.length} columns
+            </Tag>
+          )}
         </Space>
       }
       headStyle={{
@@ -222,11 +339,11 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
           </Button>
         </Space>
       }
-      style={{ height: '100%' }}
-      bodyStyle={{ padding: '12px', height: 'calc(100% - 40px)' }}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+      styles={{ body: { padding: '12px', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } }}
       className="table-info-container"
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="small">
+      <Space direction="vertical" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }} size="small">
         {/* Table Information */}
         <Descriptions
           title={<span style={{ fontSize: '11px', fontWeight: 500 }}>Table Information</span>}
@@ -265,16 +382,35 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
-          style={{ fontSize: '11px' }}
+          style={{
+            fontSize: '11px',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}
           size="small"
         >
-          <TabPane tab={<span style={{ fontSize: '11px' }}>Columns</span>} key="columns">
+          <TabPane
+            tab={
+              <span style={{ fontSize: '11px' }}>
+                Columns
+                {selectionMode && selectedFields.size > 0 && (
+                  <Tag color="blue" style={{ marginLeft: '4px', fontSize: '9px' }}>
+                    {selectedFields.size} selected
+                  </Tag>
+                )}
+              </span>
+            }
+            key="columns"
+          >
             <Table
               dataSource={table.columns || []}
               columns={columnTableColumns}
               rowKey="name"
               size="small"
               pagination={false}
+              scroll={{ y: 'calc(100vh - 300px)' }}
               style={{ fontSize: '11px' }}
             />
           </TabPane>
@@ -287,6 +423,7 @@ export const TableExplorer: React.FC<TableExplorerProps> = ({
                 rowKey="name"
                 size="small"
                 pagination={false}
+                scroll={{ y: 'calc(100vh - 300px)' }}
                 style={{ fontSize: '11px' }}
               />
             </TabPane>

@@ -213,7 +213,8 @@ const DataTable: React.FC<DataTableProps> = (props) => {
             className={`data-table-container ${className || ''}`}
             style={{
               ...style,
-              height: config.maxHeight,
+              height: '100%',
+              width: '100%',
               overflow: 'hidden',
               position: 'relative'
             }}
@@ -278,8 +279,8 @@ const DataTable: React.FC<DataTableProps> = (props) => {
                   data={finalData}
                   columns={visibleColumns}
                   keyField={keyField}
-                  height={typeof config.maxHeight === 'number' ? config.maxHeight - 100 : 400}
-                  width={800}
+                  height={tableRef.current?.clientHeight || 600}
+                  width={tableRef.current?.clientWidth || 1200}
                   onRowClick={props.onRowClick}
                   onContextMenu={handleTableContextMenu}
                   rowSelection={enabledFeatures.selection ? {
@@ -295,7 +296,7 @@ const DataTable: React.FC<DataTableProps> = (props) => {
                 <VirtualList
                   items={finalData}
                   itemHeight={50}
-                  containerHeight={typeof config.maxHeight === 'number' ? config.maxHeight - 100 : 400}
+                  containerHeight={tableRef.current?.clientHeight || 600}
                   renderItem={(item, index) => (
                     <div
                       key={item[keyField]}
@@ -337,6 +338,7 @@ const DataTable: React.FC<DataTableProps> = (props) => {
                   onDoubleClick: () => props.onRowDoubleClick?.(record, index || 0),
                   onContextMenu: (e) => handleTableContextMenu(e, { type: 'row', record, column: undefined })
                 })}
+                style={{ height: '100%', width: '100%' }}
                 loading={loading}
               />
             )}

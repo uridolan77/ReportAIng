@@ -73,6 +73,10 @@
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border-secondary);
   overflow: hidden;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .data-table-header {
@@ -100,11 +104,63 @@
 /* Table wrapper */
 .data-table-wrapper {
   overflow: auto;
-  max-height: 600px;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
 }
 
 .data-table-wrapper .ant-table {
   font-size: var(--font-size-sm);
+  height: 100%;
+  width: 100%;
+}
+
+.data-table-wrapper .ant-table-container {
+  height: 100%;
+  width: 100%;
+}
+
+.data-table-wrapper .ant-table-body {
+  height: 100%;
+  overflow: auto;
+}
+
+/* Ensure Ant Design table takes full dimensions */
+.data-table-container .ant-table-wrapper {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.data-table-container .ant-table {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.data-table-container .ant-table-container {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.data-table-container .ant-table-content {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Override any fixed dimensions that might be applied */
+.data-table-container .ant-table-tbody {
+  height: auto !important;
+  max-height: none !important;
+}
+
+.data-table-container .ant-table-scroll {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Ensure table takes full space in drawer */
+.ant-drawer-body .data-table-container {
+  height: 100% !important;
+  width: 100% !important;
 }
 
 .data-table-wrapper .ant-table-thead > tr > th {

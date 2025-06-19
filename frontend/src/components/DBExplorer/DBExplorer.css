@@ -1,9 +1,10 @@
 /* DB Explorer Styles */
 .db-explorer {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  height: 100%;
+  height: 100% !important;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .db-explorer-header {
@@ -17,7 +18,7 @@
   flex: 1;
   display: flex;
   overflow: hidden;
-  min-height: calc(100vh - 200px);
+  height: 100%;
 }
 
 .db-explorer-sidebar {
@@ -37,24 +38,81 @@
 }
 
 /* Schema Tree Container */
+.schema-tree-container {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
 .schema-tree-container .ant-card-head {
   border-bottom: 1px solid #e8e8e8;
   background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  flex-shrink: 0 !important;
 }
 
 .schema-tree-container .ant-card-body {
   padding: 12px;
-  height: calc(100% - 55px);
-  overflow: hidden;
+  height: calc(100% - 55px) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
 }
 
 /* Schema Tree Scroll Area - Hide scrollbar */
 .schema-tree-scroll {
-  overflow-y: auto;
-  overflow-x: hidden;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   padding-right: 4px;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+/* Selection Indicators */
+.selection-indicator {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #d9d9d9;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.selection-indicator:hover {
+  border-color: #40a9ff;
+  background: #f0f8ff;
+}
+
+.selection-indicator.selected {
+  border-color: #52c41a;
+  background: #52c41a;
+}
+
+.selection-indicator.partial {
+  border-color: #faad14;
+  background: transparent;
+}
+
+.selection-indicator.field-selected {
+  border-color: #52c41a;
+  background: #52c41a;
+}
+
+.selection-indicator.table-indicator {
+  width: 16px;
+  height: 16px;
+}
+
+.selection-indicator.field-indicator {
+  width: 12px;
+  height: 12px;
 }
 
 .schema-tree-scroll::-webkit-scrollbar {
@@ -654,6 +712,106 @@
 .schema-tree .ant-tree-switcher:hover {
   color: #1890ff !important;
   background-color: #f0f8ff !important;
+}
+
+/* Table Explorer Height Fixes */
+.table-info-container {
+  height: 100% !important;
+}
+
+.table-info-container .ant-card-body {
+  height: calc(100% - 40px) !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-info-container .ant-space.ant-space-vertical {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-info-container .ant-tabs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.table-info-container .ant-tabs-content-holder {
+  flex: 1;
+  overflow: hidden;
+}
+
+.table-info-container .ant-tabs-tabpane {
+  height: 100%;
+  overflow: auto;
+}
+
+/* General Space component fixes for flex layouts */
+.ant-space.ant-space-vertical {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Custom selection indicators */
+.selection-indicator {
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  border-radius: 3px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.selection-indicator:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.selection-indicator.table-indicator {
+  width: 16px !important;
+  height: 16px !important;
+  border: 2px solid !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+}
+
+.selection-indicator.field-indicator {
+  width: 12px !important;
+  height: 12px !important;
+  border: 1px solid !important;
+  border-radius: 2px !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+}
+
+.selection-indicator.selected {
+  border-color: #1890ff !important;
+  background-color: #1890ff !important;
+}
+
+.selection-indicator.field-selected {
+  border-color: #52c41a !important;
+  background-color: #52c41a !important;
+}
+
+.selection-indicator.partial {
+  border-color: #faad14 !important;
+  background-color: #fff7e6 !important;
+}
+
+.selection-indicator.unselected {
+  border-color: #d9d9d9 !important;
+  background-color: transparent !important;
+}
+
+/* Ensure indicators are visible in table cells */
+.ant-table-tbody .selection-indicator {
+  margin: 0 auto !important;
 }
 
 /* Responsive design */
