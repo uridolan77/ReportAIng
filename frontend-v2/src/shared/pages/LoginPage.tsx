@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { Form, Input, Button, Card, Typography, Alert, Space, Divider } from 'antd'
-import { UserOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons'
+import { Form, Input, Button, Card, Typography, Alert, Space, Divider, Tag } from 'antd'
+import { UserOutlined, LockOutlined, SafetyOutlined, ApiOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import { useAppSelector, useAppDispatch } from '../hooks'
 import { selectIsAuthenticated, selectRequiresMfa, selectMfaChallenge, authActions } from '../store/auth'
 import { useLoginMutation, useLoginWithMfaMutation } from '../store/api/authApi'
+import { useEnhancedLogin, useQuickLogin } from '../hooks/useEnhancedApi'
+import { useApiToggle } from '../services/apiToggleService'
 
 const { Title, Text } = Typography
 
@@ -28,6 +30,37 @@ export default function LoginPage() {
   const [login, { isLoading: isLoginLoading, error: loginError }] = useLoginMutation()
   const [loginWithMfa, { isLoading: isMfaLoading, error: mfaError }] = useLoginWithMfaMutation()
 
+  // Enhanced login with automatic fallback to mock data
+  const { mutate: enhancedLogin, isLoading: isEnhancedLoading, error: enhancedError } = useEnhancedLogin({
+    onSuccess: (result) => {
+      if (result.success && result.user) {
+        dispatch(authActions.loginSuccess({
+          user: result.user,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+        }))
+      }
+    },
+    onError: (error) => {
+      dispatch(authActions.setError(error.message || 'Login failed'))
+    }
+  })
+
+  // Quick login for development
+  const { mutate: quickLogin, isLoading: isQuickLoading } = useQuickLogin({
+    onSuccess: (result) => {
+      if (result.success && result.user) {
+        dispatch(authActions.loginSuccess({
+          user: result.user,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+        }))
+      }
+    }
+  })
+
+  const { isUsingMockData, toggleMockData } = useApiToggle()
+
   const from = (location.state as any)?.from?.pathname || '/chat'
 
   useEffect(() => {
@@ -44,7 +77,7 @@ export default function LoginPage() {
   const handleLogin = async (values: LoginFormData) => {
     try {
       dispatch(authActions.setError(null))
-      
+
       if (showMfa && credentials) {
         // MFA login
         const result = await loginWithMfa({
@@ -52,7 +85,7 @@ export default function LoginPage() {
           mfaCode: values.mfaCode!,
           challengeId: mfaChallenge || undefined,
         }).unwrap()
-        
+
         if (result.success && result.user) {
           dispatch(authActions.loginSuccess({
             user: result.user,
@@ -61,29 +94,20 @@ export default function LoginPage() {
           }))
         }
       } else {
-        // Regular login
-        setCredentials({ username: values.username, password: values.password })
-        
-        const result = await login({
+        // Use enhanced login with automatic fallback to mock data
+        enhancedLogin({
           username: values.username,
-          password: values.password,
-        }).unwrap()
-        
-        if (result.success && result.user) {
-          dispatch(authActions.loginSuccess({
-            user: result.user,
-            accessToken: result.accessToken,
-            refreshToken: result.refreshToken,
-          }))
-        } else if (result.requiresMfa && result.mfaChallenge) {
-          dispatch(authActions.loginMfaRequired({
-            challengeId: result.mfaChallenge.challengeId,
-          }))
-        }
+          password: values.password
+        })
+        setCredentials({ username: values.username, password: values.password })
       }
     } catch (error: any) {
       dispatch(authActions.setError(error.data?.message || 'Login failed'))
     }
+  }
+
+  const handleQuickLogin = () => {
+    quickLogin()
   }
 
   const handleBackToLogin = () => {
@@ -93,8 +117,8 @@ export default function LoginPage() {
     form.resetFields(['mfaCode'])
   }
 
-  const currentError = loginError || mfaError
-  const isLoading = isLoginLoading || isMfaLoading
+  const currentError = loginError || mfaError || enhancedError
+  const isLoading = isLoginLoading || isMfaLoading || isEnhancedLoading || isQuickLoading
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-secondary p-lg">
@@ -106,6 +130,25 @@ export default function LoginPage() {
           <Text type="secondary">
             {showMfa ? 'Enter your authentication code' : 'Sign in to your account'}
           </Text>
+
+          {/* API Status and Mock Mode Indicator */}
+          <div style={{ marginTop: 16 }}>
+            <Space>
+              <Tag
+                color={isUsingMockData ? 'blue' : 'green'}
+                icon={<ApiOutlined />}
+              >
+                {isUsingMockData ? 'Mock Mode' : 'API Mode'}
+              </Tag>
+              <Button
+                size="small"
+                onClick={toggleMockData}
+                type="link"
+              >
+                Switch to {isUsingMockData ? 'Real API' : 'Mock Mode'}
+              </Button>
+            </Space>
+          </div>
         </div>
 
         {currentError && (
@@ -117,6 +160,36 @@ export default function LoginPage() {
                 : 'An error occurred'
             }
             type="error"
+            showIcon
+            className="mb-lg"
+          />
+        )}
+
+        {/* Mock Mode Information */}
+        {isUsingMockData && !showMfa && (
+          <Alert
+            message="Development Mode Active"
+            description={
+              <div>
+                <p>You're in mock mode. You can:</p>
+                <ul style={{ marginBottom: 8, paddingLeft: 20 }}>
+                  <li>Use any username (try: admin, analyst, user)</li>
+                  <li>Use any password (try: password, admin, demo)</li>
+                  <li>Or click Quick Login below</li>
+                </ul>
+                <Button
+                  size="small"
+                  type="primary"
+                  icon={<ThunderboltOutlined />}
+                  onClick={handleQuickLogin}
+                  loading={isQuickLoading}
+                  style={{ marginTop: 8 }}
+                >
+                  Quick Login (admin)
+                </Button>
+              </div>
+            }
+            type="info"
             showIcon
             className="mb-lg"
           />
@@ -140,7 +213,7 @@ export default function LoginPage() {
               >
                 <Input
                   prefix={<UserOutlined />}
-                  placeholder="Enter your username"
+                  placeholder={isUsingMockData ? "Try: admin, analyst, or any username" : "Enter your username"}
                   autoComplete="username"
                 />
               </Form.Item>
@@ -154,7 +227,7 @@ export default function LoginPage() {
               >
                 <Input.Password
                   prefix={<LockOutlined />}
-                  placeholder="Enter your password"
+                  placeholder={isUsingMockData ? "Try: password, admin, demo, or any 3+ chars" : "Enter your password"}
                   autoComplete="current-password"
                 />
               </Form.Item>

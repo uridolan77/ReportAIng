@@ -1,8 +1,10 @@
 import { FC, useState } from 'react'
-import { Card, Table, Button, Space, Tag, Typography, Tabs, Modal, message } from 'antd'
-import { EditOutlined, DeleteOutlined, PlusOutlined, TableOutlined, BookOutlined } from '@ant-design/icons'
+import { Card, Table, Button, Space, Tag, Typography, Tabs, Modal, message, Alert, Spin } from 'antd'
+import { EditOutlined, DeleteOutlined, PlusOutlined, TableOutlined, BookOutlined, SettingOutlined, ReloadOutlined, ApiOutlined } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
 import { useGetBusinessTablesQuery, useDeleteBusinessTableMutation } from '@shared/store/api/businessApi'
+import { useEnhancedBusinessTables } from '@shared/hooks/useEnhancedApi'
+import { useApiToggle } from '@shared/services/apiToggleService'
 import { BusinessTableEditor } from '../components/BusinessTableEditor'
 import { BusinessGlossaryManager } from '../components/BusinessGlossaryManager'
 import { MetadataValidationReport } from '../components/MetadataValidationReport'
@@ -12,8 +14,10 @@ const { Text } = Typography
 const { TabPane } = Tabs
 
 export default function BusinessMetadata() {
-  const { data: businessTables, isLoading } = useGetBusinessTablesQuery()
+  // Enhanced API with automatic fallback to mock data
+  const { data: businessTables, isLoading, error, refetch } = useEnhancedBusinessTables()
   const [deleteTable] = useDeleteBusinessTableMutation()
+  const { isUsingMockData, toggleMockData, status } = useApiToggle()
 
   const [selectedTable, setSelectedTable] = useState<BusinessTableInfoDto | null>(null)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
@@ -165,6 +169,17 @@ export default function BusinessMetadata() {
       subtitle="Comprehensive management of table metadata, column definitions, and business glossary"
       extra={
         <Space>
+          <Button
+            icon={<ApiOutlined />}
+            onClick={toggleMockData}
+            type={isUsingMockData ? 'default' : 'primary'}
+            size="small"
+          >
+            {isUsingMockData ? 'Using Mock Data' : 'Using Real API'}
+          </Button>
+          <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isLoading}>
+            Refresh
+          </Button>
           <Button icon={<SettingOutlined />}>
             Validation Settings
           </Button>
@@ -174,6 +189,43 @@ export default function BusinessMetadata() {
         </Space>
       }
     >
+      {/* API Status Alert */}
+      {isUsingMockData && (
+        <Alert
+          message="Development Mode"
+          description="Currently using mock data. Toggle to real API when backend is available."
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          action={
+            <Button size="small" onClick={toggleMockData}>
+              Switch to Real API
+            </Button>
+          }
+        />
+      )}
+
+      {error && (
+        <Alert
+          message="API Error"
+          description={`Failed to load data: ${error instanceof Error ? error.message : 'Unknown error'}`}
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          action={
+            <Button size="small" onClick={() => refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      )}
+
+      {isLoading && (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 8 }}>Loading business metadata...</div>
+        </div>
+      )}
       <Tabs activeKey={activeTab} onChange={setActiveTab}>
         <TabPane
           tab={

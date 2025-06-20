@@ -51,7 +51,7 @@ export const store = configureStore({
     }).concat(
       baseApi.middleware,
     ),
-  devTools: process.env.NODE_ENV !== 'production',
+  devTools: import.meta.env.DEV,
 })
 
 // Enable listener behavior for the store

@@ -67,6 +67,30 @@ export interface StreamingQueryRequest {
   sessionId?: string
 }
 
+export interface QueryDetailsResponse {
+  id: string
+  question: string
+  sql: string
+  executedAt: string
+  executionTime: number
+  status: 'completed' | 'running' | 'failed'
+  rowCount: number
+  columnCount: number
+  complexity: string
+  cost: number
+  user: string
+}
+
+export interface QueryResultsResponse {
+  data: any[]
+  columns: Array<{
+    key: string
+    title: string
+    type: string
+  }>
+  metadata: QueryMetadata
+}
+
 export const queryApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Standard Query Processing
@@ -112,6 +136,18 @@ export const queryApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+
+    // Query Details
+    getQueryDetails: builder.query<QueryDetailsResponse, string>({
+      query: (queryId) => `/query/${queryId}/details`,
+      providesTags: (result, error, queryId) => [{ type: 'Query', id: queryId }],
+    }),
+
+    // Query Results
+    getQueryResults: builder.query<QueryResultsResponse, string>({
+      query: (queryId) => `/query/${queryId}/results`,
+      providesTags: (result, error, queryId) => [{ type: 'Query', id: queryId }],
+    }),
   }),
 })
 
@@ -121,4 +157,6 @@ export const {
   useGetQueryHistoryQuery,
   useRefreshSchemaCacheMutation,
   useStartStreamingQueryMutation,
+  useGetQueryDetailsQuery,
+  useGetQueryResultsQuery,
 } = queryApi

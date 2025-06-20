@@ -85,6 +85,68 @@ export interface SecuritySettings {
   allowedDomains: string[]
 }
 
+// User Management Types
+export interface User {
+  id: string
+  username: string
+  email: string
+  firstName: string
+  lastName: string
+  role: 'Admin' | 'Analyst' | 'Viewer'
+  isActive: boolean
+  lastLogin: string
+  createdAt: string
+  permissions: string[]
+  department?: string
+  phone?: string
+  avatar?: string
+}
+
+export interface CreateUserRequest {
+  username: string
+  email: string
+  firstName: string
+  lastName: string
+  role: string
+  department?: string
+  phone?: string
+  isActive?: boolean
+}
+
+export interface UpdateUserRequest {
+  id: string
+  username?: string
+  email?: string
+  firstName?: string
+  lastName?: string
+  role?: string
+  department?: string
+  phone?: string
+  isActive?: boolean
+}
+
+export interface GetUsersRequest {
+  search?: string
+  role?: string
+  status?: string
+  page?: number
+  limit?: number
+}
+
+export interface AnalyticsRequest {
+  timeRange?: string
+  metric?: string
+}
+
+export interface SystemMetricsResponse {
+  activeUsers: number
+  activeQueries: number
+  systemLoad: number
+  memoryUsage: number
+  responseTime: number
+  timestamp: string
+}
+
 export const adminApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Dashboard & Analytics
@@ -92,15 +154,64 @@ export const adminApi = baseApi.injectEndpoints({
       query: ({ days = 30 }) => `/dashboard/system-stats?days=${days}`,
       providesTags: ['Analytics'],
     }),
-    
+
     getQueryAnalytics: builder.query<QueryAnalytics, { period?: 'day' | 'week' | 'month' }>({
       query: ({ period = 'week' }) => `/dashboard/analytics?period=${period}`,
       providesTags: ['Analytics'],
     }),
-    
+
     getPerformanceMetrics: builder.query<PerformanceMetrics, { days?: number }>({
       query: ({ days = 7 }) => `/dashboard/performance?days=${days}`,
       providesTags: ['Analytics'],
+    }),
+
+    // Analytics endpoints
+    getAnalytics: builder.query<any, AnalyticsRequest>({
+      query: (params) => ({
+        url: '/admin/analytics',
+        params
+      }),
+      providesTags: ['Analytics'],
+    }),
+
+    getSystemMetrics: builder.query<SystemMetricsResponse, void>({
+      query: () => '/admin/system-metrics',
+      providesTags: ['Analytics'],
+    }),
+
+    // User Management
+    getUsers: builder.query<{ users: User[]; total: number }, GetUsersRequest>({
+      query: (params) => ({
+        url: '/admin/users',
+        params
+      }),
+      providesTags: ['User'],
+    }),
+
+    createUser: builder.mutation<User, CreateUserRequest>({
+      query: (body) => ({
+        url: '/admin/users',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['User'],
+    }),
+
+    updateUser: builder.mutation<User, UpdateUserRequest>({
+      query: ({ id, ...body }) => ({
+        url: `/admin/users/${id}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['User'],
+    }),
+
+    deleteUser: builder.mutation<{ success: boolean }, string>({
+      query: (id) => ({
+        url: `/admin/users/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['User'],
     }),
     
     // System Configuration
@@ -215,48 +326,7 @@ export const adminApi = baseApi.injectEndpoints({
       query: ({ query }) => `/semantic-layer/test?query=${encodeURIComponent(query)}`,
     }),
 
-    // Configuration Management (Admin Only)
-    getSystemConfiguration: builder.query<any, void>({
-      query: () => '/configuration/system',
-      providesTags: ['SystemConfig'],
-    }),
 
-    updateSystemConfiguration: builder.mutation<{ success: boolean }, any>({
-      query: (body) => ({
-        url: '/configuration/system',
-        method: 'PUT',
-        body,
-      }),
-      invalidatesTags: ['SystemConfig'],
-    }),
-
-    getAIProviders: builder.query<any[], void>({
-      query: () => '/configuration/ai-providers',
-      providesTags: ['AIProvider'],
-    }),
-
-    updateAIProvider: builder.mutation<{ success: boolean }, { providerId: string; config: any }>({
-      query: ({ providerId, config }) => ({
-        url: `/configuration/ai-providers/${providerId}`,
-        method: 'PUT',
-        body: config,
-      }),
-      invalidatesTags: ['AIProvider'],
-    }),
-
-    getSecuritySettings: builder.query<any, void>({
-      query: () => '/configuration/security',
-      providesTags: ['SecuritySettings'],
-    }),
-
-    updateSecuritySettings: builder.mutation<{ success: boolean }, any>({
-      query: (body) => ({
-        url: '/configuration/security',
-        method: 'PUT',
-        body,
-      }),
-      invalidatesTags: ['SecuritySettings'],
-    }),
   }),
 })
 
@@ -264,6 +334,16 @@ export const {
   useGetSystemStatisticsQuery,
   useGetQueryAnalyticsQuery,
   useGetPerformanceMetricsQuery,
+
+  // Analytics
+  useGetAnalyticsQuery,
+  useGetSystemMetricsQuery,
+
+  // User Management
+  useGetUsersQuery,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
 
   // Schema Management
   useRefreshSchemaCacheMutation,

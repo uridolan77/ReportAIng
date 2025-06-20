@@ -74,7 +74,7 @@ export const antdTheme: ThemeConfig = {
     motionDurationSlow: '0.3s',
     motionEaseInOut: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
     motionEaseOut: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
-    motionEaseInOut: 'cubic-bezier(0.55, 0.055, 0.675, 0.19)',
+    motionEaseIn: 'cubic-bezier(0.55, 0.055, 0.675, 0.19)',
     
     // Z-index
     zIndexBase: 0,

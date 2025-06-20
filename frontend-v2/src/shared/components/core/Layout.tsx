@@ -1,10 +1,27 @@
 import React from 'react'
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Space, Typography, Button } from 'antd'
-import { UserOutlined, LogoutOutlined, SettingOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons'
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Space, Typography, Button, Divider } from 'antd'
+import {
+  UserOutlined,
+  LogoutOutlined,
+  SettingOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  MessageOutlined,
+  HistoryOutlined,
+  FileSearchOutlined,
+  DashboardOutlined,
+  DatabaseOutlined,
+  BarChartOutlined,
+  DollarOutlined,
+  ThunderboltOutlined,
+  TeamOutlined,
+  ToolOutlined
+} from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppSelector, useAppDispatch } from '../../hooks'
 import { selectUser, selectIsAdmin, authActions } from '../../store/auth'
 import { selectSidebarCollapsed, uiActions } from '../../store/ui'
+import { ApiModeToggle } from './ApiModeToggle'
 
 const { Header, Sider, Content } = AntLayout
 const { Text } = Typography
@@ -57,24 +74,90 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   const getSelectedKeys = () => {
     const path = location.pathname
-    if (path.startsWith('/chat')) return ['chat']
-    if (path.startsWith('/admin')) return ['admin']
+    if (path === '/chat' || path === '/chat/') return ['chat']
+    if (path === '/chat/history') return ['chat-history']
+    if (path.startsWith('/chat/results')) return ['chat-results']
+    if (path === '/admin' || path === '/admin/') return ['admin-dashboard']
+    if (path === '/admin/business-metadata') return ['admin-metadata']
+    if (path === '/admin/analytics') return ['admin-analytics']
+    if (path === '/admin/cost-management') return ['admin-cost']
+    if (path === '/admin/performance') return ['admin-performance']
+    if (path === '/admin/users') return ['admin-users']
+    if (path === '/admin/system-config') return ['admin-config']
     return []
   }
 
   const menuItems = [
     {
+      key: 'chat-section',
+      label: 'Chat & Queries',
+      type: 'group',
+    },
+    {
       key: 'chat',
-      icon: <UserOutlined />,
+      icon: <MessageOutlined />,
       label: 'Chat Interface',
       onClick: () => navigate('/chat'),
     },
+    {
+      key: 'chat-history',
+      icon: <HistoryOutlined />,
+      label: 'Query History',
+      onClick: () => navigate('/chat/history'),
+    },
+    {
+      key: 'chat-results',
+      icon: <FileSearchOutlined />,
+      label: 'Query Results',
+      onClick: () => navigate('/chat/results'),
+    },
     ...(isAdmin ? [
       {
-        key: 'admin',
-        icon: <SettingOutlined />,
-        label: 'Admin Dashboard',
+        key: 'admin-section',
+        label: 'Administration',
+        type: 'group',
+      },
+      {
+        key: 'admin-dashboard',
+        icon: <DashboardOutlined />,
+        label: 'Dashboard',
         onClick: () => navigate('/admin'),
+      },
+      {
+        key: 'admin-metadata',
+        icon: <DatabaseOutlined />,
+        label: 'Business Metadata',
+        onClick: () => navigate('/admin/business-metadata'),
+      },
+      {
+        key: 'admin-analytics',
+        icon: <BarChartOutlined />,
+        label: 'Analytics',
+        onClick: () => navigate('/admin/analytics'),
+      },
+      {
+        key: 'admin-cost',
+        icon: <DollarOutlined />,
+        label: 'Cost Management',
+        onClick: () => navigate('/admin/cost-management'),
+      },
+      {
+        key: 'admin-performance',
+        icon: <ThunderboltOutlined />,
+        label: 'Performance',
+        onClick: () => navigate('/admin/performance'),
+      },
+      {
+        key: 'admin-users',
+        icon: <TeamOutlined />,
+        label: 'User Management',
+        onClick: () => navigate('/admin/users'),
+      },
+      {
+        key: 'admin-config',
+        icon: <ToolOutlined />,
+        label: 'System Config',
+        onClick: () => navigate('/admin/system-config'),
       },
     ] : []),
   ]
@@ -136,18 +219,26 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             }}
           />
           
-          <Space>
-            <Text>Welcome, {user?.displayName || user?.username}</Text>
-            <Dropdown
-              menu={{ items: userMenuItems }}
-              placement="bottomRight"
-              arrow
-            >
-              <Avatar
-                style={{ cursor: 'pointer' }}
-                icon={<UserOutlined />}
-              />
-            </Dropdown>
+          <Space size="large">
+            {/* API Mode Toggle */}
+            <ApiModeToggle />
+
+            <Divider type="vertical" style={{ height: '24px' }} />
+
+            {/* User Info and Menu */}
+            <Space>
+              <Text>Welcome, {user?.displayName || user?.username}</Text>
+              <Dropdown
+                menu={{ items: userMenuItems }}
+                placement="bottomRight"
+                arrow
+              >
+                <Avatar
+                  style={{ cursor: 'pointer' }}
+                  icon={<UserOutlined />}
+                />
+              </Dropdown>
+            </Space>
           </Space>
         </Header>
         

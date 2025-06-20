@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('ErrorBoundary caught an error:', error, errorInfo)
     
     // In production, you would send this to your error reporting service
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       // Example: Sentry.captureException(error, { extra: errorInfo })
     }
   }
@@ -76,7 +76,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </Button>,
             ]}
           >
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <div className="mt-lg p-md bg-secondary rounded">
                 <details>
                   <summary className="cursor-pointer font-medium text-error">

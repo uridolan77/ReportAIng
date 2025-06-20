@@ -621,6 +621,15 @@ builder.Services.AddScoped<IQueryIntelligenceService, BIReportingCopilot.Infrast
 // Real-Time Streaming Service - ENABLED for feature development
 builder.Services.AddScoped<IRealTimeStreamingService, BIReportingCopilot.Infrastructure.AI.Streaming.StreamingService>();
 
+// ===== PHASE 2A: ENHANCED MULTI-AGENT ARCHITECTURE =====
+// Specialized agents for intelligent query processing
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Agents.IQueryUnderstandingAgent, BIReportingCopilot.Infrastructure.AI.Agents.QueryUnderstandingAgent>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Agents.ISchemaNavigationAgent, BIReportingCopilot.Infrastructure.AI.Agents.SchemaNavigationAgent>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Agents.ISqlGenerationAgent, BIReportingCopilot.Infrastructure.AI.Agents.SqlGenerationAgent>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Agents.IIntelligentAgentOrchestrator, BIReportingCopilot.Infrastructure.AI.Agents.IntelligentAgentOrchestrator>();
+// Agent-to-Agent communication protocol
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Agents.IAgentCommunicationProtocol, BIReportingCopilot.Infrastructure.AI.Agents.AgentCommunicationProtocol>();
+
 // ===== MODULAR DASHBOARD SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Dashboard.DashboardCreationService>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Dashboard.DashboardTemplateService>();

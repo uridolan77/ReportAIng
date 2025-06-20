@@ -1,12 +1,23 @@
 import React, { useState } from 'react'
 import { Button, Dropdown, Modal, Form, Input, Select, Space, message, Progress } from 'antd'
-import { 
-  DownloadOutlined, 
-  FileExcelOutlined, 
+import {
+  DownloadOutlined,
+  FileExcelOutlined,
   FilePdfOutlined,
   FileTextOutlined,
   SettingOutlined
 } from '@ant-design/icons'
+import * as XLSX from 'xlsx'
+import jsPDF from 'jspdf'
+import 'jspdf-autotable'
+import { saveAs } from 'file-saver'
+
+// Extend jsPDF type to include autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF
+  }
+}
 
 interface ExportData {
   headers: string[]
@@ -78,99 +89,154 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
   }
 
   const exportToExcel = async (options: ExportOptions): Promise<void> => {
-    // In a real implementation, you would use a library like xlsx
-    // import * as XLSX from 'xlsx'
-    
     const { headers, rows } = data
-    const { filename = 'export.xlsx', includeHeaders = true } = options
+    const { filename = 'export.xlsx', includeHeaders = true, includeMetadata = false } = options
 
     try {
-      // Simulate Excel export process
-      setExportProgress(25)
-      
+      setExportProgress(10)
+
       // Create workbook data
       const worksheetData = []
       if (includeHeaders) {
         worksheetData.push(headers)
       }
       worksheetData.push(...rows)
-      
+
+      setExportProgress(30)
+
+      // Create worksheet
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData)
+
+      // Set column widths
+      const columnWidths = headers.map(() => ({ wch: 15 }))
+      worksheet['!cols'] = columnWidths
+
       setExportProgress(50)
-      
-      // Simulate file creation
-      await new Promise(resolve => setTimeout(resolve, 500))
-      setExportProgress(75)
-      
-      // For now, fall back to CSV export
-      // In real implementation:
-      // const worksheet = XLSX.utils.aoa_to_sheet(worksheetData)
-      // const workbook = XLSX.utils.book_new()
-      // XLSX.utils.book_append_sheet(workbook, worksheet, 'Data')
-      // XLSX.writeFile(workbook, filename)
-      
-      await exportToCSV({ ...options, filename: filename.replace('.xlsx', '.csv') })
+
+      // Create workbook
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Data')
+
+      setExportProgress(70)
+
+      // Add metadata sheet if requested
+      if (includeMetadata && data.metadata) {
+        const metadataData = Object.entries(data.metadata).map(([key, value]) => [key, value])
+        metadataData.unshift(['Property', 'Value'])
+        const metadataSheet = XLSX.utils.aoa_to_sheet(metadataData)
+        XLSX.utils.book_append_sheet(workbook, metadataSheet, 'Metadata')
+      }
+
+      setExportProgress(90)
+
+      // Generate Excel file
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+
+      // Save file
+      saveAs(blob, filename)
       setExportProgress(100)
-      
-      message.success('Excel export completed (exported as CSV)')
+
     } catch (error) {
+      console.error('Excel export error:', error)
       message.error('Excel export failed')
       throw error
     }
   }
 
   const exportToPDF = async (options: ExportOptions): Promise<void> => {
-    // In a real implementation, you would use a library like jsPDF
-    // import jsPDF from 'jspdf'
-    // import 'jspdf-autotable'
-    
     const { headers, rows } = data
-    const { 
-      filename = 'export.pdf', 
+    const {
+      filename = 'export.pdf',
       includeHeaders = true,
       pageSize = 'A4',
-      orientation = 'portrait'
+      orientation = 'portrait',
+      includeMetadata = false
     } = options
 
     try {
+      setExportProgress(10)
+
+      // Create PDF document
+      const doc = new jsPDF({
+        orientation,
+        unit: 'mm',
+        format: pageSize.toLowerCase() as any
+      })
+
       setExportProgress(20)
-      
-      // Simulate PDF creation process
-      await new Promise(resolve => setTimeout(resolve, 300))
-      setExportProgress(40)
-      
-      // In real implementation:
-      // const doc = new jsPDF({
-      //   orientation,
-      //   unit: 'mm',
-      //   format: pageSize.toLowerCase()
-      // })
-      
-      setExportProgress(60)
-      
+
+      let currentY = 20
+
       // Add title
       if (data.title) {
-        // doc.setFontSize(16)
-        // doc.text(data.title, 20, 20)
+        doc.setFontSize(16)
+        doc.setFont('helvetica', 'bold')
+        doc.text(data.title, 20, currentY)
+        currentY += 15
       }
-      
-      setExportProgress(80)
-      
+
+      setExportProgress(40)
+
+      // Add metadata if requested
+      if (includeMetadata && data.metadata) {
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        doc.text('Export Information:', 20, currentY)
+        currentY += 8
+
+        Object.entries(data.metadata).forEach(([key, value]) => {
+          doc.text(`${key}: ${value}`, 25, currentY)
+          currentY += 5
+        })
+
+        currentY += 10
+      }
+
+      setExportProgress(60)
+
       // Add table
-      // doc.autoTable({
-      //   head: includeHeaders ? [headers] : undefined,
-      //   body: rows,
-      //   startY: data.title ? 30 : 20,
-      //   styles: { fontSize: 8 },
-      //   headStyles: { fillColor: [66, 139, 202] }
-      // })
-      
-      // doc.save(filename)
-      
+      doc.autoTable({
+        head: includeHeaders ? [headers] : undefined,
+        body: rows,
+        startY: currentY,
+        styles: {
+          fontSize: 8,
+          cellPadding: 2
+        },
+        headStyles: {
+          fillColor: [66, 139, 202],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245]
+        },
+        margin: { top: 20, right: 20, bottom: 20, left: 20 },
+        theme: 'striped'
+      })
+
+      setExportProgress(90)
+
+      // Add footer
+      const pageCount = doc.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i)
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'normal')
+        doc.text(
+          `Page ${i} of ${pageCount} - Generated on ${new Date().toLocaleString()}`,
+          20,
+          doc.internal.pageSize.height - 10
+        )
+      }
+
+      // Save file
+      doc.save(filename)
       setExportProgress(100)
-      
-      // For now, show success message
-      message.success('PDF export completed (feature in development)')
+
     } catch (error) {
+      console.error('PDF export error:', error)
       message.error('PDF export failed')
       throw error
     }

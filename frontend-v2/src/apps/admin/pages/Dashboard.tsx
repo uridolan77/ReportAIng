@@ -1,5 +1,5 @@
 import { FC } from 'react'
-import { Card, Row, Col, Statistic, Typography, Space, Button, Alert, Tag } from 'antd'
+import { Card, Row, Col, Statistic, Typography, Space, Button, Alert, Tag, Spin } from 'antd'
 import {
   UserOutlined,
   DatabaseOutlined,
@@ -7,22 +7,30 @@ import {
   SettingOutlined,
   DollarOutlined,
   ThunderboltOutlined,
-  WarningOutlined
+  WarningOutlined,
+  ApiOutlined,
+  ReloadOutlined
 } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
 import { Chart } from '@shared/components/core'
 import { useGetSystemStatisticsQuery, useGetQueryAnalyticsQuery } from '@shared/store/api/adminApi'
+import { useEnhancedSystemStatistics, useEnhancedCostMetrics } from '@shared/hooks/useEnhancedApi'
+import { useApiToggle } from '@shared/services/apiToggleService'
 import { useCostMetrics, useCostAlerts } from '@shared/hooks/useCostMetrics'
 import { usePerformanceAlerts } from '@shared/hooks/usePerformanceMonitoring'
 
 const { Title } = Typography
 
 export default function Dashboard() {
-  const { data: systemStats, isLoading: statsLoading } = useGetSystemStatisticsQuery({ days: 30 })
+  // Enhanced API calls with automatic fallback
+  const { data: systemStats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useEnhancedSystemStatistics()
   const { data: queryAnalytics, isLoading: analyticsLoading } = useGetQueryAnalyticsQuery({ period: 'week' })
+  const { data: costData, isLoading: costLoading, refetch: refetchCost } = useEnhancedCostMetrics('7d')
+  const { isUsingMockData, toggleMockData, status } = useApiToggle()
 
   // Cost and Performance Metrics
-  const { analytics: costAnalytics, realTime: costRealTime } = useCostMetrics('7d')
+  const costAnalytics = costData?.analytics
+  const costRealTime = costData?.realTime
   const { alerts: costAlerts, criticalCount: costCriticalCount } = useCostAlerts()
   const { criticalAlerts: perfCriticalAlerts, highAlerts: perfHighAlerts } = usePerformanceAlerts()
 
@@ -43,6 +51,17 @@ export default function Dashboard() {
       subtitle="System overview and management"
       extra={
         <Space>
+          <Button
+            icon={<ApiOutlined />}
+            onClick={toggleMockData}
+            type={isUsingMockData ? 'default' : 'primary'}
+            size="small"
+          >
+            {isUsingMockData ? 'Mock Data' : 'Real API'}
+          </Button>
+          <Button icon={<ReloadOutlined />} onClick={() => { refetchStats(); refetchCost(); }}>
+            Refresh
+          </Button>
           {(costCriticalCount > 0 || perfCriticalAlerts.length > 0) && (
             <Alert
               message={`${costCriticalCount + perfCriticalAlerts.length} Critical Alert${costCriticalCount + perfCriticalAlerts.length > 1 ? 's' : ''}`}

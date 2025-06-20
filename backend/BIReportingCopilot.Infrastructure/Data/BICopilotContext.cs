@@ -4,6 +4,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Data.Configurations;
 using System.Text.Json;
+using BIReportingCopilot.Infrastructure.AI.Agents;
 using InfraUserPreferencesEntity = BIReportingCopilot.Infrastructure.Data.Entities.UserPreferencesEntity;
 using InfraAuditLogEntity = BIReportingCopilot.Infrastructure.Data.Entities.AuditLogEntity;
 using InfraUserEntity = BIReportingCopilot.Infrastructure.Data.Entities.UserEntity;
@@ -89,6 +90,9 @@ public class BICopilotContext : DbContext
     public DbSet<LLMProviderConfig> LLMProviderConfigs { get; set; }
     public DbSet<LLMModelConfig> LLMModelConfigs { get; set; }
     public DbSet<LLMUsageLog> LLMUsageLogs { get; set; }
+
+    // Phase 2A: Enhanced Multi-Agent Architecture
+    public DbSet<AgentCommunicationLogEntity> AgentCommunicationLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -372,6 +376,41 @@ public class BICopilotContext : DbContext
 
         // Configure CachePerformanceMetrics as keyless entity (it's used for metrics, not persistence)
         modelBuilder.Entity<Core.Models.CachePerformanceMetrics>().HasNoKey();
+
+        // Configure Phase 2A: Agent Communication Logs
+        modelBuilder.Entity<AgentCommunicationLogEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.CorrelationId);
+            entity.HasIndex(e => new { e.SourceAgent, e.TargetAgent });
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => new { e.Success, e.CreatedAt });
+            entity.Property(e => e.Id).HasMaxLength(50);
+            entity.Property(e => e.CorrelationId).HasMaxLength(50);
+            entity.Property(e => e.SourceAgent).HasMaxLength(100);
+            entity.Property(e => e.TargetAgent).HasMaxLength(100);
+            entity.Property(e => e.MessageType).HasMaxLength(100);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(2000);
+            entity.Property(e => e.MetadataJson).HasMaxLength(4000);
+        });
+
+        // Configure Phase 2: Enhanced Semantic Layer entities
+        modelBuilder.Entity<SemanticSchemaMappingEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.QueryCategory);
+            entity.HasIndex(e => e.ConfidenceScore).IsDescending();
+            entity.HasIndex(e => e.UsageCount).IsDescending();
+            entity.Property(e => e.ConfidenceScore).HasPrecision(5, 4); // Fix decimal precision warning
+        });
+
+        modelBuilder.Entity<BusinessDomainEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.DomainName);
+            entity.HasIndex(e => e.ImportanceScore).IsDescending();
+            entity.Property(e => e.ImportanceScore).HasPrecision(5, 4);
+        });
 
         // Apply schema management configurations
         modelBuilder.ApplyConfiguration(new BusinessSchemaConfiguration());
