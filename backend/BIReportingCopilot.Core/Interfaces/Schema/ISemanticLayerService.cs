@@ -1,6 +1,5 @@
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Models;
-using BIReportingCopilot.Core.Models;
 
 namespace BIReportingCopilot.Core.Interfaces.Schema;
 

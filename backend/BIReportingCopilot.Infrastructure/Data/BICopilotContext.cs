@@ -59,6 +59,17 @@ public class BICopilotContext : DbContext
     public DbSet<SystemMetricsEntity> PerformanceMetrics { get; set; }
     public DbSet<Core.Models.TempFile> TempFiles { get; set; }
 
+    // Cost Control and Optimization entities
+    public DbSet<Entities.CostTrackingEntity> CostTracking { get; set; }
+    public DbSet<Entities.BudgetManagementEntity> BudgetManagement { get; set; }
+    public DbSet<Entities.ResourceUsageEntity> ResourceUsage { get; set; }
+    public DbSet<Entities.PerformanceMetricsEntity> PerformanceMetricsEntries { get; set; }
+    public DbSet<Entities.CacheStatisticsEntity> CacheStatistics { get; set; }
+    public DbSet<Entities.CacheConfigurationEntity> CacheConfigurations { get; set; }
+    public DbSet<Entities.ResourceQuotaEntity> ResourceQuotas { get; set; }
+    public DbSet<Entities.CostPredictionEntity> CostPredictions { get; set; }
+    public DbSet<Entities.CostOptimizationRecommendationEntity> CostOptimizationRecommendations { get; set; }
+
     // Query Suggestions System
     public DbSet<Core.Models.QuerySuggestions.SuggestionCategory> SuggestionCategories { get; set; }
     public DbSet<Core.Models.QuerySuggestions.QuerySuggestion> QuerySuggestions { get; set; }

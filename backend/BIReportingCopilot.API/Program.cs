@@ -21,6 +21,7 @@ using BIReportingCopilot.Core.Interfaces.Messaging;
 using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Interfaces.Schema;
 using BIReportingCopilot.Core.Interfaces.Tuning;
+using BIReportingCopilot.Core.Interfaces.Review;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Infrastructure.Data;
 // Import all the reorganized service namespaces
@@ -33,6 +34,7 @@ using BIReportingCopilot.Infrastructure.Jobs;
 using BIReportingCopilot.Infrastructure.Messaging;
 using BIReportingCopilot.Infrastructure.AI.Management;
 using BIReportingCopilot.Infrastructure.Monitoring;
+using BIReportingCopilot.Infrastructure.Review;
 using SignalRProgressReporter = BIReportingCopilot.Infrastructure.Messaging.SignalRProgressReporter;
 using BIReportingCopilot.API.Middleware;
 using BIReportingCopilot.API.Hubs;
@@ -718,6 +720,25 @@ builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.IDryRun
 
 // SQL self-correction service with LLM feedback loops
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.ISqlSelfCorrectionService, BIReportingCopilot.Infrastructure.AI.SqlSelfCorrectionService>();
+
+// ===== PHASE 4: HUMAN-IN-LOOP REVIEW SERVICES =====
+// Human review workflow management
+builder.Services.AddScoped<IHumanReviewService, HumanReviewService>();
+
+// Approval workflow management
+builder.Services.AddScoped<IApprovalWorkflowService, ApprovalWorkflowService>();
+
+// Human feedback collection and learning
+builder.Services.AddScoped<IHumanFeedbackService, HumanFeedbackService>();
+
+// Review notifications
+builder.Services.AddScoped<IReviewNotificationService, ReviewNotificationService>();
+
+// Review configuration management
+builder.Services.AddScoped<IReviewConfigurationService, ReviewConfigurationService>();
+
+// AI Learning Service for human feedback processing
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.AI.IAILearningService, BIReportingCopilot.Infrastructure.AI.AILearningService>();
 
 // IConnectionStringProvider already registered before configuration validation
 builder.Services.AddScoped<IDatabaseInitializationService, BIReportingCopilot.Infrastructure.Data.DatabaseInitializationService>();
