@@ -8,14 +8,13 @@ import {
   DollarOutlined,
   ThunderboltOutlined,
   WarningOutlined,
-  ApiOutlined,
   ReloadOutlined
 } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
 import { Chart } from '@shared/components/core'
 import { useGetSystemStatisticsQuery, useGetQueryAnalyticsQuery } from '@shared/store/api/adminApi'
 import { useEnhancedSystemStatistics, useEnhancedCostMetrics } from '@shared/hooks/useEnhancedApi'
-import { useApiToggle } from '@shared/services/apiToggleService'
+import { useApiMode } from '@shared/components/core/ApiModeToggle'
 import { useCostMetrics, useCostAlerts } from '@shared/hooks/useCostMetrics'
 import { usePerformanceAlerts } from '@shared/hooks/usePerformanceMonitoring'
 
@@ -26,7 +25,7 @@ export default function Dashboard() {
   const { data: systemStats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useEnhancedSystemStatistics()
   const { data: queryAnalytics, isLoading: analyticsLoading } = useGetQueryAnalyticsQuery({ period: 'week' })
   const { data: costData, isLoading: costLoading, refetch: refetchCost } = useEnhancedCostMetrics('7d')
-  const { isUsingMockData, toggleMockData, status } = useApiToggle()
+  const { useMockData } = useApiMode()
 
   // Cost and Performance Metrics
   const costAnalytics = costData?.analytics
@@ -51,14 +50,6 @@ export default function Dashboard() {
       subtitle="System overview and management"
       extra={
         <Space>
-          <Button
-            icon={<ApiOutlined />}
-            onClick={toggleMockData}
-            type={isUsingMockData ? 'default' : 'primary'}
-            size="small"
-          >
-            {isUsingMockData ? 'Mock Data' : 'Real API'}
-          </Button>
           <Button icon={<ReloadOutlined />} onClick={() => { refetchStats(); refetchCost(); }}>
             Refresh
           </Button>

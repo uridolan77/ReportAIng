@@ -22,14 +22,22 @@ export const ApiModeToggle: React.FC = () => {
   )
   const [isConnected, setIsConnected] = React.useState(false)
 
+  // Listen to service config changes
+  React.useEffect(() => {
+    const unsubscribe = ApiToggleService.addListener((config) => {
+      setUseMockData(config.useMockData)
+    })
+    return unsubscribe
+  }, [])
+
   // Check API connectivity status
   React.useEffect(() => {
     const checkConnectivity = async () => {
       try {
         // Try to ping the health endpoint
-        const response = await fetch('/api/health', { 
+        const response = await fetch('/api/health', {
           method: 'GET',
-          timeout: 3000 
+          timeout: 3000
         } as any)
         setIsConnected(response.ok)
       } catch {
@@ -44,8 +52,6 @@ export const ApiModeToggle: React.FC = () => {
   }, [])
 
   const handleToggle = (checked: boolean) => {
-    setUseMockData(checked)
-    
     // Update the global API toggle service
     ApiToggleService.updateConfig({
       useMockData: checked,
@@ -55,9 +61,9 @@ export const ApiModeToggle: React.FC = () => {
 
     // Store preference in localStorage
     localStorage.setItem('apiMode', checked ? 'mock' : 'real')
-    
-    // Reload the page to ensure all components use the new mode
-    window.location.reload()
+
+    // Note: No page reload needed - components will react to the service change
+    console.log(`🔄 API Mode switched to: ${checked ? 'Mock Data' : 'Real API'}`)
   }
 
   const getModeInfo = () => {
@@ -152,15 +158,24 @@ export const useApiMode = () => {
   const [config, setConfig] = React.useState(ApiToggleService.getConfig())
 
   React.useEffect(() => {
-    // Listen for config changes
+    // Listen for service config changes
+    const unsubscribe = ApiToggleService.addListener(setConfig)
+
+    // Also listen for localStorage changes (for cross-tab sync)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'apiMode') {
-        setConfig(ApiToggleService.getConfig())
+        const savedMode = e.newValue
+        const useMockData = savedMode === 'mock'
+        ApiToggleService.updateConfig({ useMockData })
       }
     }
 
     window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
+
+    return () => {
+      unsubscribe()
+      window.removeEventListener('storage', handleStorageChange)
+    }
   }, [])
 
   return {
@@ -169,7 +184,6 @@ export const useApiMode = () => {
     debugMode: config.debugMode,
     toggleMode: (useMock: boolean) => {
       ApiToggleService.updateConfig({
-        ...config,
         useMockData: useMock
       })
       localStorage.setItem('apiMode', useMock ? 'mock' : 'real')

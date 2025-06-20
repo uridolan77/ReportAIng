@@ -105,6 +105,19 @@ export const businessApi = baseApi.injectEndpoints({
     getBusinessTables: builder.query<BusinessTableInfoDto[], void>({
       query: () => '/business/tables',
       providesTags: ['BusinessTable'],
+      transformResponse: (response: any) => {
+        // Handle both direct array response and wrapped response
+        if (Array.isArray(response)) {
+          return response
+        }
+        if (response?.data && Array.isArray(response.data)) {
+          return response.data
+        }
+        if (response?.tables && Array.isArray(response.tables)) {
+          return response.tables
+        }
+        return []
+      },
     }),
     
     getBusinessTable: builder.query<BusinessTableInfoDto, number>({
@@ -207,17 +220,67 @@ export const businessApi = baseApi.injectEndpoints({
       invalidatesTags: ['BusinessMetadata', 'BusinessTable'],
     }),
 
+    populateRelevantBusinessMetadata: builder.mutation<{
+      success: boolean
+      message: string
+      summary: {
+        totalProcessed: number
+        successful: number
+        errors: number
+        skipped: number
+        relevantTablesOnly: boolean
+      }
+      details: Array<{
+        schema: string
+        table: string
+        success: boolean
+        skipped: boolean
+        error?: string
+      }>
+      processedAt: string
+    }, { useAI?: boolean; overwriteExisting?: boolean }>({
+      query: ({ useAI = true, overwriteExisting = false }) => ({
+        url: `/business-metadata/populate-relevant?useAI=${useAI}&overwriteExisting=${overwriteExisting}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['BusinessMetadata', 'BusinessTable'],
+    }),
+
     populateTableBusinessMetadata: builder.mutation<{ success: boolean; message: string }, {
       schemaName: string
       tableName: string
       useAI?: boolean
-      overwrite?: boolean
+      overwriteExisting?: boolean
     }>({
-      query: ({ schemaName, tableName, useAI = true, overwrite = false }) => ({
-        url: `/business-metadata/populate/${schemaName}/${tableName}?useAI=${useAI}&overwrite=${overwrite}`,
+      query: ({ schemaName, tableName, useAI = true, overwriteExisting = false }) => ({
+        url: `/business-metadata/populate-table/${schemaName}/${tableName}?useAI=${useAI}&overwriteExisting=${overwriteExisting}`,
         method: 'POST',
       }),
       invalidatesTags: ['BusinessMetadata', 'BusinessTable'],
+    }),
+
+    previewTableBusinessMetadata: builder.mutation<{
+      success: boolean
+      message: string
+      preview: {
+        schema: string
+        table: string
+        generationMethod: string
+        estimatedBusinessPurpose: string
+        estimatedDomain: string
+        estimatedImportance: number
+        note: string
+      }
+      generatedAt: string
+    }, {
+      schemaName: string
+      tableName: string
+      useAI?: boolean
+    }>({
+      query: ({ schemaName, tableName, useAI = true }) => ({
+        url: `/business-metadata/preview-table/${schemaName}/${tableName}?useAI=${useAI}`,
+        method: 'POST',
+      }),
     }),
 
     validateBusinessMetadata: builder.query<{
@@ -307,7 +370,9 @@ export const {
   // Business Metadata Management
   useGetBusinessMetadataStatusQuery,
   usePopulateAllBusinessMetadataMutation,
+  usePopulateRelevantBusinessMetadataMutation,
   usePopulateTableBusinessMetadataMutation,
+  usePreviewTableBusinessMetadataMutation,
   useValidateBusinessMetadataQuery,
 
   // Schema Discovery & Management

@@ -7,6 +7,7 @@ import { useEnhancedBusinessTables } from '@shared/hooks/useEnhancedApi'
 import { useApiMode } from '@shared/components/core/ApiModeToggle'
 import { BusinessTableEditor } from '../components/BusinessTableEditor'
 import { BusinessGlossaryManager } from '../components/BusinessGlossaryManager'
+import { RealApiTester } from '../components/RealApiTester'
 import { MetadataValidationReport } from '../components/MetadataValidationReport'
 import type { BusinessTableInfoDto } from '@shared/store/api/businessApi'
 
@@ -286,6 +287,18 @@ export default function BusinessMetadata() {
           key="validation"
         >
           <MetadataValidationReport />
+        </TabPane>
+
+        <TabPane
+          tab={
+            <span>
+              <ReloadOutlined />
+              API Connection Test
+            </span>
+          }
+          key="api-test"
+        >
+          <RealApiTester />
         </TabPane>
       </Tabs>
 

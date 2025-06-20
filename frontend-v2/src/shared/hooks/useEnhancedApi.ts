@@ -5,9 +5,12 @@
  * fallback to mock data when real APIs are unavailable.
  */
 
-import { useQuery, useMutation, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query'
-import { apiCall } from '../services/apiToggleService'
+import { useQuery, useMutation, UseQueryOptions, UseMutationOptions, useQueryClient } from '@tanstack/react-query'
+import { apiCall, ApiToggleService } from '../services/apiToggleService'
 import { MockDataService } from '../services/mockDataService'
+import { useEffect, useState } from 'react'
+import { useAppSelector } from '../hooks'
+import { selectAccessToken } from '../store/auth'
 import type { 
   BusinessTableInfoDto, 
   BusinessGlossaryDto 
@@ -21,39 +24,149 @@ import type {
   QueryHistoryItem 
 } from '../store/api/queryApi'
 
+// Helper function for authenticated API calls
+function createAuthenticatedFetch(token?: string) {
+  return async (url: string, options: RequestInit = {}) => {
+    const headers = new Headers(options.headers)
+    headers.set('Content-Type', 'application/json')
+
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`)
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers
+    })
+
+    if (!response.ok) {
+      throw new Error(`API call failed: ${response.status} ${response.statusText}`)
+    }
+
+    return response.json()
+  }
+}
+
+// Hook to manage API mode changes and query invalidation
+function useApiModeSync() {
+  const queryClient = useQueryClient()
+  const [currentMode, setCurrentMode] = useState(ApiToggleService.getConfig().useMockData)
+
+  useEffect(() => {
+    const unsubscribe = ApiToggleService.addListener((config) => {
+      if (config.useMockData !== currentMode) {
+        setCurrentMode(config.useMockData)
+        // Invalidate all queries when API mode changes
+        queryClient.invalidateQueries()
+        console.log(`🔄 API mode changed to ${config.useMockData ? 'Mock' : 'Real'}, invalidating all queries`)
+      }
+    })
+
+    return unsubscribe
+  }, [queryClient, currentMode])
+
+  return currentMode
+}
+
 // Enhanced Business API Hooks
 export function useEnhancedBusinessTables(options?: UseQueryOptions<BusinessTableInfoDto[]>) {
+  const apiMode = useApiModeSync() // This will trigger query invalidation on mode change
+  const token = useAppSelector(selectAccessToken)
+
   return useQuery({
     queryKey: ['businessTables'],
-    queryFn: () => apiCall(
-      // Real API call (would use RTK Query)
-      async () => {
-        const response = await fetch('/api/business/tables')
-        if (!response.ok) throw new Error('Failed to fetch business tables')
-        return response.json()
-      },
-      // Mock data fallback
-      () => MockDataService.getBusinessTables(),
-      'business/tables'
-    ),
+    queryFn: async () => {
+      console.log(`🔍 Fetching business tables in ${apiMode ? 'Mock' : 'Real API'} mode`)
+      const authenticatedFetch = createAuthenticatedFetch(token)
+
+      return apiCall(
+        // Real API call with authentication
+        async () => {
+          console.log('📡 Making authenticated API call to /api/business/tables')
+          const data = await authenticatedFetch('/api/business/tables')
+          console.log('📡 Real API response:', data)
+          return data
+        },
+        // Mock data fallback
+        async () => {
+          console.log('🎭 Using mock data for business tables')
+          const data = await MockDataService.getBusinessTables()
+          console.log('🎭 Mock data:', data)
+          return data
+        },
+        'business/tables'
+      )
+    },
     ...options
   })
 }
 
 export function useEnhancedBusinessGlossary(options?: UseQueryOptions<{ terms: BusinessGlossaryDto[]; total: number }>) {
+  useApiModeSync() // Sync with API mode changes
+  const token = useAppSelector(selectAccessToken)
+
   return useQuery({
     queryKey: ['businessGlossary'],
-    queryFn: () => apiCall(
-      // Real API call
-      async () => {
-        const response = await fetch('/api/business/glossary')
-        if (!response.ok) throw new Error('Failed to fetch business glossary')
-        return response.json()
-      },
-      // Mock data fallback
-      () => MockDataService.getBusinessGlossary(),
-      'business/glossary'
-    ),
+    queryFn: () => {
+      const authenticatedFetch = createAuthenticatedFetch(token)
+
+      return apiCall(
+        // Real API call with authentication
+        async () => {
+          return await authenticatedFetch('/api/business/glossary')
+        },
+        // Mock data fallback
+        () => MockDataService.getBusinessGlossary(),
+        'business/glossary'
+      )
+    },
+    ...options
+  })
+}
+
+// Enhanced Business Metadata Management Hooks
+export function useEnhancedBusinessMetadataStatus(options?: UseQueryOptions<any>) {
+  useApiModeSync() // Sync with API mode changes
+  const token = useAppSelector(selectAccessToken)
+
+  return useQuery({
+    queryKey: ['businessMetadataStatus'],
+    queryFn: () => {
+      const authenticatedFetch = createAuthenticatedFetch(token)
+
+      return apiCall(
+        // Real API call with authentication
+        async () => {
+          return await authenticatedFetch('/api/business-metadata/status')
+        },
+        // Mock data fallback
+        () => MockDataService.getBusinessMetadataStatus(),
+        'business-metadata/status'
+      )
+    },
+    ...options
+  })
+}
+
+export function useEnhancedSchemaTables(options?: UseQueryOptions<any[]>) {
+  useApiModeSync() // Sync with API mode changes
+  const token = useAppSelector(selectAccessToken)
+
+  return useQuery({
+    queryKey: ['schemaTables'],
+    queryFn: () => {
+      const authenticatedFetch = createAuthenticatedFetch(token)
+
+      return apiCall(
+        // Real API call with authentication
+        async () => {
+          return await authenticatedFetch('/api/schema/tables')
+        },
+        // Mock data fallback
+        () => MockDataService.getAllSchemaTables(),
+        'schema/tables'
+      )
+    },
     ...options
   })
 }
@@ -107,24 +220,6 @@ export function useEnhancedCostMetrics(timeRange: string, options?: UseQueryOpti
       // Mock data fallback
       () => MockDataService.getCostMetrics(timeRange),
       `cost/metrics?timeRange=${timeRange}`
-    ),
-    ...options
-  })
-}
-
-export function useEnhancedSchemaTables(options?: UseQueryOptions<any[]>) {
-  return useQuery({
-    queryKey: ['schemaTables'],
-    queryFn: () => apiCall(
-      // Real API call
-      async () => {
-        const response = await fetch('/api/schema/tables')
-        if (!response.ok) throw new Error('Failed to fetch schema tables')
-        return response.json()
-      },
-      // Mock data fallback
-      () => MockDataService.getAllSchemaTables(),
-      'schema/tables'
     ),
     ...options
   })

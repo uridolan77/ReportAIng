@@ -494,6 +494,17 @@ export class MockDataService {
     ])
   }
 
+  static async getBusinessMetadataStatus() {
+    return this.simulateApiCall({
+      totalTables: 4,
+      populatedTables: 2,
+      lastUpdate: '2024-06-20T09:15:00Z',
+      coverage: 50,
+      missingTables: ['Products', 'Employees'],
+      issues: ['Missing business purpose for Products table', 'No domain classification for Employees']
+    })
+  }
+
   static async getSchemaSummary() {
     return this.simulateApiCall({
       databaseName: 'BIReportingCopilot_dev',
