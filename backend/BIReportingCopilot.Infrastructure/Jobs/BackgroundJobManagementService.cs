@@ -101,7 +101,7 @@ public class BackgroundJobManagementService
         var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
 
         var oldQueryHistory = await context.QueryHistory
-            .Where(q => q.QueryTimestamp < cutoffDate)
+            .Where(q => q.ExecutedAt < cutoffDate)
             .ToListAsync();
 
         if (oldQueryHistory.Any())
@@ -246,13 +246,13 @@ public class BackgroundJobManagementService
 
             // Clean up old performance metrics (keep last 30 days)
             var metricsCutoff = DateTime.UtcNow.AddDays(-30);
-            var oldMetrics = await context.PerformanceMetrics
+            var oldMetrics = await context.SystemMetrics
                 .Where(m => m.Timestamp < metricsCutoff)
                 .ToListAsync();
 
             if (oldMetrics.Any())
             {
-                context.PerformanceMetrics.RemoveRange(oldMetrics);
+                context.SystemMetrics.RemoveRange(oldMetrics);
                 await context.SaveChangesAsync();
                 _logger.LogInformation("Deleted {Count} old performance metrics", oldMetrics.Count);
             }

@@ -172,7 +172,7 @@ public class ConfigurationController : ControllerBase
     /// Get cache configuration
     /// </summary>
     [HttpGet("cache")]
-    public ActionResult<CacheConfiguration> GetCacheSettings()
+    public ActionResult<BIReportingCopilot.Core.Configuration.CacheConfiguration> GetCacheSettings()
     {
         try
         {

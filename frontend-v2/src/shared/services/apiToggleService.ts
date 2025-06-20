@@ -65,19 +65,21 @@ class ApiToggleServiceClass {
     mockDataCall: () => Promise<T>,
     endpoint?: string
   ): Promise<T> {
+    console.log(`🔧 ApiToggleService.executeWithFallback called for ${endpoint}`)
+    console.log(`🔧 Current config:`, this.config)
+
     if (this.config.useMockData) {
-      if (this.config.debugMode) {
-        console.log(`🎭 Using mock data for: ${endpoint || 'unknown endpoint'}`)
-      }
+      console.log(`🎭 Using mock data for: ${endpoint || 'unknown endpoint'}`)
       return mockDataCall()
     }
 
     try {
-      if (this.config.debugMode) {
-        console.log(`🌐 Using real API for: ${endpoint || 'unknown endpoint'}`)
-      }
-      return await realApiCall()
+      console.log(`🌐 Using real API for: ${endpoint || 'unknown endpoint'}`)
+      const result = await realApiCall()
+      console.log(`✅ Real API success for ${endpoint}:`, result)
+      return result
     } catch (error) {
+      console.error(`❌ Real API failed for ${endpoint}:`, error)
       if (this.config.fallbackToMock) {
         console.warn(`⚠️ Real API failed for ${endpoint}, falling back to mock data:`, error)
         return mockDataCall()

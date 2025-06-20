@@ -70,13 +70,14 @@ function useApiModeSync() {
 
 // Enhanced Business API Hooks
 export function useEnhancedBusinessTables(options?: UseQueryOptions<BusinessTableInfoDto[]>) {
-  const apiMode = useApiModeSync() // This will trigger query invalidation on mode change
+  const useMockData = useApiModeSync() // This will trigger query invalidation on mode change
   const token = useAppSelector(selectAccessToken)
 
   return useQuery({
     queryKey: ['businessTables'],
     queryFn: async () => {
-      console.log(`🔍 Fetching business tables in ${apiMode ? 'Mock' : 'Real API'} mode`)
+      console.log(`🔍 Fetching business tables in ${useMockData ? 'Mock' : 'Real API'} mode`)
+      console.log(`🔧 API Config: useMockData=${useMockData}, token=${token ? 'present' : 'missing'}`)
       const authenticatedFetch = createAuthenticatedFetch(token)
 
       return apiCall(
@@ -228,24 +229,20 @@ export function useEnhancedCostMetrics(timeRange: string, options?: UseQueryOpti
 // Enhanced Mutation Hooks
 export function useEnhancedLogin(options?: UseMutationOptions<AuthenticationResult, Error, { username: string; password: string }>) {
   return useMutation({
-    mutationFn: ({ username, password }) => apiCall(
-      // Real API call
-      async () => {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        })
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.message || `Login failed with status ${response.status}`)
-        }
-        return response.json()
-      },
-      // Mock data fallback - always succeeds for development
-      () => MockDataService.login(username, password),
-      'auth/login'
-    ),
+    mutationFn: async ({ username, password }) => {
+      // Real API call ONLY - no fallback to mock data for authentication
+      console.log('🔐 Attempting real API login (no fallback)')
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      })
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Login failed with status ${response.status}`)
+      }
+      return response.json()
+    },
     ...options
   })
 }

@@ -172,6 +172,24 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 
+    // Custom schema ID generator to handle duplicate class names
+    options.CustomSchemaIds(type =>
+    {
+        // Use full type name including namespace to avoid conflicts
+        var fullName = type.FullName ?? type.Name;
+
+        // Handle generic types
+        if (type.IsGenericType)
+        {
+            var genericTypeName = type.GetGenericTypeDefinition().Name;
+            var genericArgs = string.Join("", type.GetGenericArguments().Select(t => t.Name));
+            return $"{genericTypeName.Split('`')[0]}Of{genericArgs}";
+        }
+
+        // Replace dots with underscores for cleaner schema names
+        return fullName.Replace(".", "_").Replace("+", "_");
+    });
+
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "BI Reporting Copilot API",

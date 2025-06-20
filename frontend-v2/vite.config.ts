@@ -17,12 +17,27 @@ export default defineConfig({
     port: 3001,
     proxy: {
       '/api': {
-        target: 'http://localhost:55244',
+        target: 'http://localhost:3002',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => {
+          console.log(`🔄 Proxying ${path} to http://localhost:3002${path}`)
+          return path
+        },
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('❌ Proxy error:', err)
+          })
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log(`📡 Proxying ${req.method} ${req.url} to backend`)
+          })
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log(`📨 Backend response: ${proxyRes.statusCode} for ${req.url}`)
+          })
+        },
       },
       '/hub': {
-        target: 'http://localhost:55244',
+        target: 'http://localhost:3002',
         changeOrigin: true,
         secure: false,
         ws: true,
