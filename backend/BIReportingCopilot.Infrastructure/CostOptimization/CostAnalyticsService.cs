@@ -42,9 +42,9 @@ public class CostAnalyticsService : ICostAnalyticsService
             var summary = await _costManagementService.GetCostAnalyticsAsync(userId, startDate, endDate, cancellationToken);
             
             // Enhance with additional analytics
-            summary.CostEfficiency = await CalculateCostEfficiencyAsync(userId, startDate, endDate, cancellationToken);
+            summary.CostEfficiency = (double)await CalculateCostEfficiencyAsync(userId, startDate, endDate, cancellationToken);
             summary.PredictedMonthlyCost = await PredictMonthlyCostAsync(userId, cancellationToken);
-            summary.CostSavingsOpportunities = await IdentifyCostSavingsOpportunitiesAsync(userId, cancellationToken);
+            summary.CostSavingsOpportunities = await GenerateOptimizationRecommendationsAsync(userId, cancellationToken);
             summary.ROIMetrics = await CalculateROIMetricsAsync(userId, startDate, endDate, cancellationToken);
 
             _logger.LogInformation("Generated cost analytics summary for user {UserId}: Total cost {TotalCost:C}", 

@@ -346,7 +346,7 @@ class SocketService {
   getConnectionState(): 'connected' | 'connecting' | 'disconnected' | 'error' {
     if (!this.socket) return 'disconnected'
     if (this.socket.connected) return 'connected'
-    if (this.socket.connecting) return 'connecting'
+    if (this.socket.connected === false && this.socket.disconnected === false) return 'connecting'
     return 'disconnected'
   }
 }

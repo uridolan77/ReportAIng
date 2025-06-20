@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using BIReportingCopilot.API.Hubs;
 using BIReportingCopilot.Core.Interfaces.CostOptimization;
 using BIReportingCopilot.Core.Models;
 
@@ -9,25 +8,20 @@ namespace BIReportingCopilot.Infrastructure.RealTime;
 
 /// <summary>
 /// Service for coordinating real-time notifications across all monitoring hubs
+/// Note: This service uses generic hub contexts to avoid circular dependencies with API project
 /// </summary>
 public class RealTimeNotificationService : IRealTimeNotificationService
 {
-    private readonly IHubContext<CostMonitoringHub> _costHubContext;
-    private readonly IHubContext<PerformanceMonitoringHub> _performanceHubContext;
-    private readonly IHubContext<ResourceMonitoringHub> _resourceHubContext;
+    private readonly IHubContext<Hub> _hubContext;
     private readonly ILogger<RealTimeNotificationService> _logger;
     private readonly IServiceProvider _serviceProvider;
 
     public RealTimeNotificationService(
-        IHubContext<CostMonitoringHub> costHubContext,
-        IHubContext<PerformanceMonitoringHub> performanceHubContext,
-        IHubContext<ResourceMonitoringHub> resourceHubContext,
+        IHubContext<Hub> hubContext,
         ILogger<RealTimeNotificationService> logger,
         IServiceProvider serviceProvider)
     {
-        _costHubContext = costHubContext;
-        _performanceHubContext = performanceHubContext;
-        _resourceHubContext = resourceHubContext;
+        _hubContext = hubContext;
         _logger = logger;
         _serviceProvider = serviceProvider;
     }
@@ -47,10 +41,10 @@ public class RealTimeNotificationService : IRealTimeNotificationService
             };
 
             // Send to all cost monitoring clients
-            await _costHubContext.Clients.Group("CostMonitoring").SendAsync("CostUpdate", costUpdate, cancellationToken);
-            
+            await _hubContext.Clients.Group("CostMonitoring").SendAsync("CostUpdate", costUpdate, cancellationToken);
+
             // Send to specific user
-            await _costHubContext.Clients.Group($"CostUser_{userId}").SendAsync("UserCostUpdate", costUpdate, cancellationToken);
+            await _hubContext.Clients.Group($"CostUser_{userId}").SendAsync("UserCostUpdate", costUpdate, cancellationToken);
 
             _logger.LogInformation("💰 Cost update notification sent: ${NewCost} for user {UserId}", newCost, userId);
         }
@@ -74,10 +68,10 @@ public class RealTimeNotificationService : IRealTimeNotificationService
             };
 
             // Send to budget alerts subscribers
-            await _costHubContext.Clients.Group("BudgetAlerts").SendAsync("BudgetAlert", budgetAlert, cancellationToken);
-            
+            await _hubContext.Clients.Group("BudgetAlerts").SendAsync("BudgetAlert", budgetAlert, cancellationToken);
+
             // Send to specific user
-            await _costHubContext.Clients.Group($"CostUser_{userId}").SendAsync("UserBudgetAlert", budgetAlert, cancellationToken);
+            await _hubContext.Clients.Group($"CostUser_{userId}").SendAsync("UserBudgetAlert", budgetAlert, cancellationToken);
 
             _logger.LogInformation("💰 Budget alert sent: {AlertType} for budget {BudgetName} (user {UserId})", 
                 alertType, budget.Name, userId);
@@ -100,10 +94,10 @@ public class RealTimeNotificationService : IRealTimeNotificationService
             };
 
             // Send to optimization subscribers
-            await _costHubContext.Clients.Group("OptimizationRecommendations").SendAsync("NewOptimizationRecommendation", recommendationNotification, cancellationToken);
-            
+            await _hubContext.Clients.Group("OptimizationRecommendations").SendAsync("NewOptimizationRecommendation", recommendationNotification, cancellationToken);
+
             // Send to specific user
-            await _costHubContext.Clients.Group($"CostUser_{userId}").SendAsync("UserOptimizationRecommendation", recommendationNotification, cancellationToken);
+            await _hubContext.Clients.Group($"CostUser_{userId}").SendAsync("UserOptimizationRecommendation", recommendationNotification, cancellationToken);
 
             _logger.LogInformation("💰 Optimization recommendation sent: {Title} for user {UserId}", 
                 recommendation.Title, userId);
@@ -131,13 +125,13 @@ public class RealTimeNotificationService : IRealTimeNotificationService
             };
 
             // Send to performance alerts subscribers
-            await _performanceHubContext.Clients.Group("PerformanceAlerts").SendAsync("PerformanceAlert", performanceAlert, cancellationToken);
-            
-            // Send to entity-specific group
-            await _performanceHubContext.Clients.Group($"Entity_{entityType}_{entityId}").SendAsync("EntityPerformanceAlert", performanceAlert, cancellationToken);
+            await _hubContext.Clients.Group("PerformanceAlerts").SendAsync("PerformanceAlert", performanceAlert, cancellationToken);
 
-            _logger.LogInformation("⚡ Performance alert sent: {AlertType} for {EntityType}:{EntityId}", 
-                alert.Type, entityType, entityId);
+            // Send to entity-specific group
+            await _hubContext.Clients.Group($"Entity_{entityType}_{entityId}").SendAsync("EntityPerformanceAlert", performanceAlert, cancellationToken);
+
+            _logger.LogInformation("⚡ Performance alert sent: {AlertType} for {EntityType}:{EntityId}",
+                alert.AlertType, entityType, entityId);
         }
         catch (Exception ex)
         {
@@ -158,10 +152,10 @@ public class RealTimeNotificationService : IRealTimeNotificationService
             };
 
             // Send to performance metrics subscribers
-            await _performanceHubContext.Clients.Group("PerformanceMetrics").SendAsync("PerformanceMetricUpdate", metricUpdate, cancellationToken);
-            
+            await _hubContext.Clients.Group("PerformanceMetrics").SendAsync("PerformanceMetricUpdate", metricUpdate, cancellationToken);
+
             // Send to entity-specific group
-            await _performanceHubContext.Clients.Group($"Entity_{entityType}_{entityId}").SendAsync("EntityMetricUpdate", metricUpdate, cancellationToken);
+            await _hubContext.Clients.Group($"Entity_{entityType}_{entityId}").SendAsync("EntityMetricUpdate", metricUpdate, cancellationToken);
 
             _logger.LogDebug("⚡ Performance metric update sent: {MetricName} = {Value} for {EntityType}:{EntityId}", 
                 metric.MetricName, metric.Value, entityType, entityId);
@@ -185,7 +179,7 @@ public class RealTimeNotificationService : IRealTimeNotificationService
             };
 
             // Send to performance monitoring subscribers
-            await _performanceHubContext.Clients.Group("PerformanceMonitoring").SendAsync("OptimizationCompleted", optimizationResult, cancellationToken);
+            await _hubContext.Clients.Group("PerformanceMonitoring").SendAsync("OptimizationCompleted", optimizationResult, cancellationToken);
 
             _logger.LogInformation("⚡ Optimization completed notification sent for {EntityType}:{EntityId}", entityType, entityId);
         }
@@ -213,10 +207,10 @@ public class RealTimeNotificationService : IRealTimeNotificationService
             };
 
             // Send to quota updates subscribers
-            await _resourceHubContext.Clients.Group("QuotaUpdates").SendAsync("QuotaExceeded", quotaAlert, cancellationToken);
-            
+            await _hubContext.Clients.Group("QuotaUpdates").SendAsync("QuotaExceeded", quotaAlert, cancellationToken);
+
             // Send to specific user
-            await _resourceHubContext.Clients.Group($"ResourceUser_{userId}").SendAsync("UserQuotaExceeded", quotaAlert, cancellationToken);
+            await _hubContext.Clients.Group($"ResourceUser_{userId}").SendAsync("UserQuotaExceeded", quotaAlert, cancellationToken);
 
             _logger.LogWarning("🔧 Quota exceeded notification sent: {ResourceType} for user {UserId}", resourceType, userId);
         }
@@ -238,7 +232,7 @@ public class RealTimeNotificationService : IRealTimeNotificationService
             };
 
             // Send to circuit breaker subscribers
-            await _resourceHubContext.Clients.Group("CircuitBreakerUpdates").SendAsync("CircuitBreakerStateChanged", stateChange, cancellationToken);
+            await _hubContext.Clients.Group("CircuitBreakerUpdates").SendAsync("CircuitBreakerStateChanged", stateChange, cancellationToken);
 
             _logger.LogInformation("🔧 Circuit breaker state change notification sent: {ServiceName} -> {State}", 
                 serviceName, newState.State);
@@ -261,7 +255,7 @@ public class RealTimeNotificationService : IRealTimeNotificationService
             };
 
             // Send to load balancing subscribers
-            await _resourceHubContext.Clients.Group("LoadBalancing").SendAsync("ResourceLoadUpdate", loadUpdate, cancellationToken);
+            await _hubContext.Clients.Group("LoadBalancing").SendAsync("ResourceLoadUpdate", loadUpdate, cancellationToken);
 
             _logger.LogDebug("🔧 Resource load update notification sent: {ResourceId} = {LoadPercentage:P}", 
                 resourceId, loadPercentage);
@@ -296,8 +290,9 @@ public class RealTimeNotificationService : IRealTimeNotificationService
         switch (notification.Type)
         {
             case "CostUpdate":
-                await NotifyCostUpdateAsync(notification.UserId, notification.Data.GetValueOrDefault("cost", 0m), 
-                    notification.Data.GetValueOrDefault("category", ""), cancellationToken);
+                var cost = notification.Data.TryGetValue("cost", out var costValue) ? Convert.ToDecimal(costValue) : 0m;
+                var category = notification.Data.TryGetValue("category", out var categoryValue) ? categoryValue?.ToString() ?? "" : "";
+                await NotifyCostUpdateAsync(notification.UserId, cost, category, cancellationToken);
                 break;
             case "PerformanceAlert":
                 // Handle performance alert

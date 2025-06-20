@@ -764,8 +764,8 @@ public class CostManagementService : ICostManagementService
                     {
                         ProviderId = "budget-system",
                         AlertType = utilizationRate >= budget.BlockThreshold ? "BUDGET_EXCEEDED" : "BUDGET_WARNING",
-                        Threshold = budget.AlertThreshold,
-                        ThresholdAmount = budget.BudgetAmount * budget.AlertThreshold,
+                        Threshold = (double)budget.AlertThreshold,
+                        ThresholdAmount = (double)(budget.BudgetAmount * budget.AlertThreshold),
                         CurrentValue = (double)utilizationRate,
                         Message = $"Budget '{budget.Name}' is at {utilizationRate:P} utilization",
                         CreatedAt = DateTime.UtcNow,

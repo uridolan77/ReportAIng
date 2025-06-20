@@ -575,3 +575,605 @@ public class PerformanceAlertingSettings
     [Range(1, 1440, ErrorMessage = "Escalation threshold must be between 1 and 1440 minutes")]
     public int EscalationThresholdMinutes { get; set; } = 30;
 }
+
+/// <summary>
+/// Cache optimization configuration
+/// </summary>
+public class CacheOptimizationConfiguration
+{
+    /// <summary>
+    /// Enable cache optimization
+    /// </summary>
+    public bool EnableCacheOptimization { get; set; } = true;
+
+    /// <summary>
+    /// Enable multi-layer caching
+    /// </summary>
+    public bool EnableMultiLayerCaching { get; set; } = true;
+
+    /// <summary>
+    /// Enable intelligent cache warming
+    /// </summary>
+    public bool EnableIntelligentWarming { get; set; } = true;
+
+    /// <summary>
+    /// Cache warming configuration
+    /// </summary>
+    public CacheWarmingConfiguration Warming { get; set; } = new();
+
+    /// <summary>
+    /// Cache invalidation configuration
+    /// </summary>
+    public CacheInvalidationConfiguration Invalidation { get; set; } = new();
+
+    /// <summary>
+    /// Cache performance configuration
+    /// </summary>
+    public CachePerformanceConfiguration Performance { get; set; } = new();
+
+    /// <summary>
+    /// Cache analytics configuration
+    /// </summary>
+    public CacheAnalyticsConfiguration Analytics { get; set; } = new();
+}
+
+/// <summary>
+/// Cache warming configuration
+/// </summary>
+public class CacheWarmingConfiguration
+{
+    /// <summary>
+    /// Enable cache warming
+    /// </summary>
+    public bool EnableWarming { get; set; } = true;
+
+    /// <summary>
+    /// Warming schedule (cron expression)
+    /// </summary>
+    public string WarmingSchedule { get; set; } = "0 */6 * * *"; // Every 6 hours
+
+    /// <summary>
+    /// Maximum warming operations per batch
+    /// </summary>
+    [Range(1, 1000, ErrorMessage = "Max warming operations must be between 1 and 1000")]
+    public int MaxWarmingOperationsPerBatch { get; set; } = 100;
+
+    /// <summary>
+    /// Warming timeout in seconds
+    /// </summary>
+    [Range(1, 3600, ErrorMessage = "Warming timeout must be between 1 and 3600 seconds")]
+    public int WarmingTimeoutSeconds { get; set; } = 300;
+
+    /// <summary>
+    /// Enable predictive warming based on usage patterns
+    /// </summary>
+    public bool EnablePredictiveWarming { get; set; } = true;
+
+    /// <summary>
+    /// Warming priority levels
+    /// </summary>
+    public List<string> WarmingPriorities { get; set; } = new() { "High", "Medium", "Low" };
+}
+
+/// <summary>
+/// Cache invalidation configuration
+/// </summary>
+public class CacheInvalidationConfiguration
+{
+    /// <summary>
+    /// Enable intelligent invalidation
+    /// </summary>
+    public bool EnableIntelligentInvalidation { get; set; } = true;
+
+    /// <summary>
+    /// Default TTL for cache entries
+    /// </summary>
+    public TimeSpan DefaultTtl { get; set; } = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// Enable dependency-based invalidation
+    /// </summary>
+    public bool EnableDependencyInvalidation { get; set; } = true;
+
+    /// <summary>
+    /// Enable time-based invalidation
+    /// </summary>
+    public bool EnableTimeBasedInvalidation { get; set; } = true;
+
+    /// <summary>
+    /// Enable event-based invalidation
+    /// </summary>
+    public bool EnableEventBasedInvalidation { get; set; } = true;
+
+    /// <summary>
+    /// Invalidation batch size
+    /// </summary>
+    [Range(1, 1000, ErrorMessage = "Invalidation batch size must be between 1 and 1000")]
+    public int InvalidationBatchSize { get; set; } = 50;
+}
+
+/// <summary>
+/// Cache performance configuration
+/// </summary>
+public class CachePerformanceConfiguration
+{
+    /// <summary>
+    /// Enable performance monitoring
+    /// </summary>
+    public bool EnablePerformanceMonitoring { get; set; } = true;
+
+    /// <summary>
+    /// Target cache hit rate (0.0 - 1.0)
+    /// </summary>
+    [Range(0.0, 1.0, ErrorMessage = "Target hit rate must be between 0 and 1")]
+    public double TargetHitRate { get; set; } = 0.85; // 85%
+
+    /// <summary>
+    /// Maximum cache response time in milliseconds
+    /// </summary>
+    [Range(1, 10000, ErrorMessage = "Max response time must be between 1 and 10000 ms")]
+    public int MaxResponseTimeMs { get; set; } = 100;
+
+    /// <summary>
+    /// Enable cache compression
+    /// </summary>
+    public bool EnableCompression { get; set; } = true;
+
+    /// <summary>
+    /// Compression threshold in bytes
+    /// </summary>
+    [Range(1, int.MaxValue, ErrorMessage = "Compression threshold must be positive")]
+    public int CompressionThresholdBytes { get; set; } = 1024; // 1KB
+
+    /// <summary>
+    /// Enable cache encryption for sensitive data
+    /// </summary>
+    public bool EnableEncryption { get; set; } = false;
+}
+
+/// <summary>
+/// Cache analytics configuration
+/// </summary>
+public class CacheAnalyticsConfiguration
+{
+    /// <summary>
+    /// Enable cache analytics
+    /// </summary>
+    public bool EnableAnalytics { get; set; } = true;
+
+    /// <summary>
+    /// Analytics data retention period
+    /// </summary>
+    public TimeSpan DataRetentionPeriod { get; set; } = TimeSpan.FromDays(30);
+
+    /// <summary>
+    /// Enable hit rate analysis
+    /// </summary>
+    public bool EnableHitRateAnalysis { get; set; } = true;
+
+    /// <summary>
+    /// Enable performance trend analysis
+    /// </summary>
+    public bool EnablePerformanceTrendAnalysis { get; set; } = true;
+
+    /// <summary>
+    /// Enable cache usage pattern analysis
+    /// </summary>
+    public bool EnableUsagePatternAnalysis { get; set; } = true;
+
+    /// <summary>
+    /// Analytics aggregation interval
+    /// </summary>
+    public TimeSpan AggregationInterval { get; set; } = TimeSpan.FromMinutes(5);
+}
+
+/// <summary>
+/// Resource management configuration
+/// </summary>
+public class ResourceManagementConfiguration
+{
+    /// <summary>
+    /// Enable resource management
+    /// </summary>
+    public bool EnableResourceManagement { get; set; } = true;
+
+    /// <summary>
+    /// Enable resource quotas
+    /// </summary>
+    public bool EnableResourceQuotas { get; set; } = true;
+
+    /// <summary>
+    /// Enable priority-based processing
+    /// </summary>
+    public bool EnablePriorityProcessing { get; set; } = true;
+
+    /// <summary>
+    /// Resource quota configuration
+    /// </summary>
+    public ResourceQuotaConfiguration Quotas { get; set; } = new();
+
+    /// <summary>
+    /// Resource throttling configuration
+    /// </summary>
+    public ResourceThrottlingConfiguration Throttling { get; set; } = new();
+
+    /// <summary>
+    /// Resource monitoring configuration
+    /// </summary>
+    public ResourceMonitoringConfiguration Monitoring { get; set; } = new();
+
+    /// <summary>
+    /// Resource allocation configuration
+    /// </summary>
+    public ResourceAllocationConfiguration Allocation { get; set; } = new();
+}
+
+/// <summary>
+/// Resource quota configuration
+/// </summary>
+public class ResourceQuotaConfiguration
+{
+    /// <summary>
+    /// Default quotas for new users
+    /// </summary>
+    public Dictionary<string, int> DefaultQuotas { get; set; } = new()
+    {
+        { "ai-requests", 1000 },
+        { "database-queries", 5000 },
+        { "cache-operations", 10000 },
+        { "report-generations", 100 },
+        { "data-exports", 50 },
+        { "api-calls", 2000 }
+    };
+
+    /// <summary>
+    /// Quota reset period
+    /// </summary>
+    public TimeSpan QuotaResetPeriod { get; set; } = TimeSpan.FromDays(1);
+
+    /// <summary>
+    /// Enable quota warnings
+    /// </summary>
+    public bool EnableQuotaWarnings { get; set; } = true;
+
+    /// <summary>
+    /// Quota warning threshold (0.0 - 1.0)
+    /// </summary>
+    [Range(0.0, 1.0, ErrorMessage = "Quota warning threshold must be between 0 and 1")]
+    public double QuotaWarningThreshold { get; set; } = 0.8; // 80%
+
+    /// <summary>
+    /// Enable quota enforcement
+    /// </summary>
+    public bool EnableQuotaEnforcement { get; set; } = true;
+}
+
+/// <summary>
+/// Resource throttling configuration
+/// </summary>
+public class ResourceThrottlingConfiguration
+{
+    /// <summary>
+    /// Enable resource throttling
+    /// </summary>
+    public bool EnableThrottling { get; set; } = true;
+
+    /// <summary>
+    /// Throttling algorithm
+    /// </summary>
+    public string ThrottlingAlgorithm { get; set; } = "TokenBucket";
+
+    /// <summary>
+    /// Default rate limits
+    /// </summary>
+    public Dictionary<string, RateLimitConfiguration> DefaultRateLimits { get; set; } = new()
+    {
+        { "ai-requests", new RateLimitConfiguration { RequestsPerMinute = 60, RequestsPerHour = 1000 } },
+        { "database-queries", new RateLimitConfiguration { RequestsPerMinute = 300, RequestsPerHour = 5000 } },
+        { "api-calls", new RateLimitConfiguration { RequestsPerMinute = 100, RequestsPerHour = 2000 } }
+    };
+
+    /// <summary>
+    /// Enable adaptive throttling
+    /// </summary>
+    public bool EnableAdaptiveThrottling { get; set; } = true;
+
+    /// <summary>
+    /// Throttling response strategy
+    /// </summary>
+    public string ThrottlingResponseStrategy { get; set; } = "Queue"; // Queue, Reject, Delay
+}
+
+/// <summary>
+/// Rate limit configuration
+/// </summary>
+public class RateLimitConfiguration
+{
+    /// <summary>
+    /// Requests per minute
+    /// </summary>
+    public int RequestsPerMinute { get; set; } = 60;
+
+    /// <summary>
+    /// Requests per hour
+    /// </summary>
+    public int RequestsPerHour { get; set; } = 1000;
+
+    /// <summary>
+    /// Requests per day
+    /// </summary>
+    public int RequestsPerDay { get; set; } = 10000;
+
+    /// <summary>
+    /// Burst allowance
+    /// </summary>
+    public int BurstAllowance { get; set; } = 10;
+}
+
+/// <summary>
+/// Resource monitoring configuration
+/// </summary>
+public class ResourceMonitoringConfiguration
+{
+    /// <summary>
+    /// Enable resource monitoring
+    /// </summary>
+    public bool EnableMonitoring { get; set; } = true;
+
+    /// <summary>
+    /// Monitoring interval in seconds
+    /// </summary>
+    [Range(1, 3600, ErrorMessage = "Monitoring interval must be between 1 and 3600 seconds")]
+    public int MonitoringIntervalSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// Enable real-time monitoring
+    /// </summary>
+    public bool EnableRealTimeMonitoring { get; set; } = true;
+
+    /// <summary>
+    /// Resource usage retention period
+    /// </summary>
+    public TimeSpan UsageRetentionPeriod { get; set; } = TimeSpan.FromDays(30);
+
+    /// <summary>
+    /// Enable resource usage alerts
+    /// </summary>
+    public bool EnableUsageAlerts { get; set; } = true;
+
+    /// <summary>
+    /// Resource usage alert threshold (0.0 - 1.0)
+    /// </summary>
+    [Range(0.0, 1.0, ErrorMessage = "Usage alert threshold must be between 0 and 1")]
+    public double UsageAlertThreshold { get; set; } = 0.9; // 90%
+}
+
+/// <summary>
+/// Resource allocation configuration
+/// </summary>
+public class ResourceAllocationConfiguration
+{
+    /// <summary>
+    /// Enable dynamic resource allocation
+    /// </summary>
+    public bool EnableDynamicAllocation { get; set; } = true;
+
+    /// <summary>
+    /// Resource allocation strategy
+    /// </summary>
+    public string AllocationStrategy { get; set; } = "Priority"; // Priority, RoundRobin, Weighted
+
+    /// <summary>
+    /// Enable resource pooling
+    /// </summary>
+    public bool EnableResourcePooling { get; set; } = true;
+
+    /// <summary>
+    /// Resource pool sizes
+    /// </summary>
+    public Dictionary<string, int> ResourcePoolSizes { get; set; } = new()
+    {
+        { "ai-processing", 10 },
+        { "database-connections", 50 },
+        { "cache-connections", 20 }
+    };
+
+    /// <summary>
+    /// Enable resource preallocation
+    /// </summary>
+    public bool EnablePreallocation { get; set; } = true;
+}
+
+/// <summary>
+/// Real-time monitoring configuration
+/// </summary>
+public class RealTimeMonitoringConfiguration
+{
+    /// <summary>
+    /// Enable real-time monitoring
+    /// </summary>
+    public bool EnableRealTimeMonitoring { get; set; } = true;
+
+    /// <summary>
+    /// Enable SignalR hubs for real-time updates
+    /// </summary>
+    public bool EnableSignalRHubs { get; set; } = true;
+
+    /// <summary>
+    /// Real-time monitoring settings
+    /// </summary>
+    public RealTimeMonitoringSettings Monitoring { get; set; } = new();
+
+    /// <summary>
+    /// Real-time notification settings
+    /// </summary>
+    public RealTimeNotificationSettings Notifications { get; set; } = new();
+
+    /// <summary>
+    /// Real-time dashboard settings
+    /// </summary>
+    public RealTimeDashboardSettings Dashboard { get; set; } = new();
+
+    /// <summary>
+    /// Real-time alerting settings
+    /// </summary>
+    public RealTimeAlertingSettings Alerting { get; set; } = new();
+}
+
+/// <summary>
+/// Real-time monitoring settings
+/// </summary>
+public class RealTimeMonitoringSettings
+{
+    /// <summary>
+    /// Update interval in seconds
+    /// </summary>
+    [Range(1, 300, ErrorMessage = "Update interval must be between 1 and 300 seconds")]
+    public int UpdateIntervalSeconds { get; set; } = 5;
+
+    /// <summary>
+    /// Enable cost monitoring
+    /// </summary>
+    public bool EnableCostMonitoring { get; set; } = true;
+
+    /// <summary>
+    /// Enable performance monitoring
+    /// </summary>
+    public bool EnablePerformanceMonitoring { get; set; } = true;
+
+    /// <summary>
+    /// Enable resource monitoring
+    /// </summary>
+    public bool EnableResourceMonitoring { get; set; } = true;
+
+    /// <summary>
+    /// Maximum concurrent connections
+    /// </summary>
+    [Range(1, 10000, ErrorMessage = "Max connections must be between 1 and 10000")]
+    public int MaxConcurrentConnections { get; set; } = 1000;
+
+    /// <summary>
+    /// Connection timeout in seconds
+    /// </summary>
+    [Range(1, 3600, ErrorMessage = "Connection timeout must be between 1 and 3600 seconds")]
+    public int ConnectionTimeoutSeconds { get; set; } = 300;
+}
+
+/// <summary>
+/// Real-time notification settings
+/// </summary>
+public class RealTimeNotificationSettings
+{
+    /// <summary>
+    /// Enable real-time notifications
+    /// </summary>
+    public bool EnableNotifications { get; set; } = true;
+
+    /// <summary>
+    /// Enable cost alerts
+    /// </summary>
+    public bool EnableCostAlerts { get; set; } = true;
+
+    /// <summary>
+    /// Enable performance alerts
+    /// </summary>
+    public bool EnablePerformanceAlerts { get; set; } = true;
+
+    /// <summary>
+    /// Enable resource alerts
+    /// </summary>
+    public bool EnableResourceAlerts { get; set; } = true;
+
+    /// <summary>
+    /// Notification delivery methods
+    /// </summary>
+    public List<string> DeliveryMethods { get; set; } = new() { "SignalR", "Email", "SMS" };
+
+    /// <summary>
+    /// Notification priority levels
+    /// </summary>
+    public List<string> PriorityLevels { get; set; } = new() { "Low", "Medium", "High", "Critical" };
+}
+
+/// <summary>
+/// Real-time dashboard settings
+/// </summary>
+public class RealTimeDashboardSettings
+{
+    /// <summary>
+    /// Enable real-time dashboards
+    /// </summary>
+    public bool EnableDashboards { get; set; } = true;
+
+    /// <summary>
+    /// Dashboard refresh interval in seconds
+    /// </summary>
+    [Range(1, 300, ErrorMessage = "Dashboard refresh interval must be between 1 and 300 seconds")]
+    public int RefreshIntervalSeconds { get; set; } = 10;
+
+    /// <summary>
+    /// Enable cost dashboard
+    /// </summary>
+    public bool EnableCostDashboard { get; set; } = true;
+
+    /// <summary>
+    /// Enable performance dashboard
+    /// </summary>
+    public bool EnablePerformanceDashboard { get; set; } = true;
+
+    /// <summary>
+    /// Enable resource dashboard
+    /// </summary>
+    public bool EnableResourceDashboard { get; set; } = true;
+
+    /// <summary>
+    /// Dashboard data retention period
+    /// </summary>
+    public TimeSpan DataRetentionPeriod { get; set; } = TimeSpan.FromHours(24);
+
+    /// <summary>
+    /// Maximum data points per chart
+    /// </summary>
+    [Range(10, 10000, ErrorMessage = "Max data points must be between 10 and 10000")]
+    public int MaxDataPointsPerChart { get; set; } = 1000;
+}
+
+/// <summary>
+/// Real-time alerting settings
+/// </summary>
+public class RealTimeAlertingSettings
+{
+    /// <summary>
+    /// Enable real-time alerting
+    /// </summary>
+    public bool EnableAlerting { get; set; } = true;
+
+    /// <summary>
+    /// Alert evaluation interval in seconds
+    /// </summary>
+    [Range(1, 300, ErrorMessage = "Alert evaluation interval must be between 1 and 300 seconds")]
+    public int EvaluationIntervalSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// Enable alert escalation
+    /// </summary>
+    public bool EnableEscalation { get; set; } = true;
+
+    /// <summary>
+    /// Alert escalation timeout in minutes
+    /// </summary>
+    [Range(1, 1440, ErrorMessage = "Escalation timeout must be between 1 and 1440 minutes")]
+    public int EscalationTimeoutMinutes { get; set; } = 15;
+
+    /// <summary>
+    /// Maximum alerts per minute
+    /// </summary>
+    [Range(1, 1000, ErrorMessage = "Max alerts per minute must be between 1 and 1000")]
+    public int MaxAlertsPerMinute { get; set; } = 10;
+
+    /// <summary>
+    /// Alert suppression window in minutes
+    /// </summary>
+    [Range(1, 1440, ErrorMessage = "Suppression window must be between 1 and 1440 minutes")]
+    public int SuppressionWindowMinutes { get; set; } = 5;
+}

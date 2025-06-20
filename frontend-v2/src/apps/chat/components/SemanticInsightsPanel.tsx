@@ -26,7 +26,7 @@ import {
   ThunderboltOutlined,
   EyeOutlined,
   BranchesOutlined,
-  TargetOutlined,
+  TagOutlined,
   ClockCircleOutlined
 } from '@ant-design/icons'
 import type { SemanticAnalysis } from '@shared/types/chat'

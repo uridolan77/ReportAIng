@@ -160,12 +160,12 @@ public class ResourceMonitoringHub : BaseHub
         
         try
         {
-            var stopped = await _monitoringService.StopResourceMonitoringAsync(monitoringId);
-            
+            await _monitoringService.StopResourceMonitoringAsync(monitoringId);
+
             await Clients.Caller.SendAsync("ResourceMonitoringStopped", new
             {
                 monitoringId = monitoringId,
-                stopped = stopped,
+                stopped = true,
                 stoppedAt = DateTime.UtcNow
             });
 

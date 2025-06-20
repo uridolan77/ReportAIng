@@ -477,14 +477,14 @@ export const UserProfile: React.FC = () => {
               <Card title="Multi-Factor Authentication">
                 <div style={{ marginBottom: '16px' }}>
                   <Text>
-                    {user?.mfaEnabled ? 'MFA is enabled' : 'MFA is disabled'}
+                    {user?.isMfaEnabled ? 'MFA is enabled' : 'MFA is disabled'}
                   </Text>
-                  <Tag color={user?.mfaEnabled ? 'green' : 'orange'} style={{ marginLeft: '8px' }}>
-                    {user?.mfaEnabled ? 'Enabled' : 'Disabled'}
+                  <Tag color={user?.isMfaEnabled ? 'green' : 'orange'} style={{ marginLeft: '8px' }}>
+                    {user?.isMfaEnabled ? 'Enabled' : 'Disabled'}
                   </Tag>
                 </div>
                 
-                {user?.mfaEnabled ? (
+                {user?.isMfaEnabled ? (
                   <Button
                     danger
                     onClick={() => setShowMfaModal(true)}

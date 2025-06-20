@@ -14,7 +14,7 @@ import {
 } from 'antd'
 import {
   SendOutlined,
-  MicrophoneOutlined,
+  PhoneOutlined,
   PaperClipOutlined,
   HistoryOutlined,
   BulbOutlined,
@@ -163,12 +163,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         {suggestion.metadata && (
           <Space size="small">
             {suggestion.metadata.tablesUsed?.map(table => (
-              <Tag key={table} size="small" icon={<DatabaseOutlined />}>
+              <Tag key={table} icon={<DatabaseOutlined />}>
                 {table}
               </Tag>
             ))}
             {suggestion.metadata.complexity && (
-              <Tag size="small" color={
+              <Tag color={
                 suggestion.metadata.complexity === 'Simple' ? 'green' :
                 suggestion.metadata.complexity === 'Medium' ? 'orange' : 'red'
               }>
@@ -332,7 +332,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           {/* Voice Input */}
           <Tooltip title="Voice input">
             <Button
-              icon={<MicrophoneOutlined />}
+              icon={<PhoneOutlined />}
               onClick={handleVoiceInput}
               type={isRecording ? 'primary' : 'default'}
               danger={isRecording}

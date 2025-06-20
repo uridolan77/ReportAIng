@@ -16,7 +16,7 @@ import {
   MenuOutlined,
   HistoryOutlined,
   SettingOutlined,
-  MicrophoneOutlined,
+  PhoneOutlined,
   PlusOutlined,
   ArrowUpOutlined,
   CloseOutlined
@@ -295,7 +295,7 @@ export const MobileChatInterface: React.FC<MobileChatInterfaceProps> = ({
           <Space direction="vertical" size="small">
             <Tooltip title="Voice input">
               <Button
-                icon={<MicrophoneOutlined />}
+                icon={<PhoneOutlined />}
                 onClick={() => setIsRecording(!isRecording)}
                 style={{
                   height: '40px',

@@ -95,6 +95,7 @@ public interface IAIProviderFactory
     IAIProvider CreateProvider(string providerType);
     Task<IAIProvider> CreateProviderAsync(string providerType, CancellationToken cancellationToken = default);
     List<string> GetSupportedProviders();
+    IEnumerable<string> GetAvailableProviders();
 }
 
 /// <summary>

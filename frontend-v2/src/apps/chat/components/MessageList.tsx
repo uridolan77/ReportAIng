@@ -1,12 +1,86 @@
 import React, { useEffect, useRef } from 'react'
 import { List, Typography, Empty, Spin } from 'antd'
 import { MessageItem } from './MessageItem'
-import { TypingIndicator } from './TypingIndicator'
 import { useAppSelector } from '@shared/hooks'
 import { selectIsTyping } from '@shared/store/chat'
 import type { ChatMessage } from '@shared/types/chat'
 
 const { Text } = Typography
+
+// Typing Indicator Component
+const TypingIndicator: React.FC = () => {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '12px',
+      maxWidth: '85%'
+    }}>
+      <div style={{
+        width: '32px',
+        height: '32px',
+        borderRadius: '50%',
+        background: '#722ed1',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontSize: '14px'
+      }}>
+        🤖
+      </div>
+
+      <div style={{
+        background: '#f9f0ff',
+        border: '1px solid #d3adf7',
+        borderRadius: '12px',
+        padding: '12px 16px',
+        minWidth: '60px'
+      }}>
+        <div style={{
+          display: 'flex',
+          gap: '4px',
+          alignItems: 'center'
+        }}>
+          <div className="typing-dot" style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            background: '#722ed1',
+            animation: 'typing 1.4s infinite ease-in-out'
+          }} />
+          <div className="typing-dot" style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            background: '#722ed1',
+            animation: 'typing 1.4s infinite ease-in-out 0.2s'
+          }} />
+          <div className="typing-dot" style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            background: '#722ed1',
+            animation: 'typing 1.4s infinite ease-in-out 0.4s'
+          }} />
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes typing {
+          0%, 60%, 100% {
+            transform: translateY(0);
+            opacity: 0.5;
+          }
+          30% {
+            transform: translateY(-10px);
+            opacity: 1;
+          }
+        }
+      `}</style>
+    </div>
+  )
+}
 
 interface MessageListProps {
   messages: ChatMessage[]
@@ -162,81 +236,6 @@ export const MessageList: React.FC<MessageListProps> = ({
 
       {/* Scroll anchor */}
       <div ref={messagesEndRef} />
-    </div>
-  )
-}
-
-// Typing Indicator Component
-const TypingIndicator: React.FC = () => {
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: '12px',
-      maxWidth: '85%'
-    }}>
-      <div style={{
-        width: '32px',
-        height: '32px',
-        borderRadius: '50%',
-        background: '#722ed1',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white',
-        fontSize: '14px'
-      }}>
-        🤖
-      </div>
-      
-      <div style={{
-        background: '#f9f0ff',
-        border: '1px solid #d3adf7',
-        borderRadius: '12px',
-        padding: '12px 16px',
-        minWidth: '60px'
-      }}>
-        <div style={{
-          display: 'flex',
-          gap: '4px',
-          alignItems: 'center'
-        }}>
-          <div className="typing-dot" style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            background: '#722ed1',
-            animation: 'typing 1.4s infinite ease-in-out'
-          }} />
-          <div className="typing-dot" style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            background: '#722ed1',
-            animation: 'typing 1.4s infinite ease-in-out 0.2s'
-          }} />
-          <div className="typing-dot" style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            background: '#722ed1',
-            animation: 'typing 1.4s infinite ease-in-out 0.4s'
-          }} />
-        </div>
-      </div>
-
-      <style jsx>{`
-        @keyframes typing {
-          0%, 60%, 100% {
-            transform: translateY(0);
-            opacity: 0.5;
-          }
-          30% {
-            transform: translateY(-10px);
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   )
 }

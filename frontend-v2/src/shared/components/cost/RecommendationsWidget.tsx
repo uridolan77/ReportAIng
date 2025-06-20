@@ -131,13 +131,13 @@ export const RecommendationsWidget: React.FC<RecommendationsWidgetProps> = ({
                     </div>
                     
                     <Space size="small" wrap>
-                      <Tag color={getImpactColor(recommendation.impact)} size="small">
+                      <Tag color={getImpactColor(recommendation.impact)}>
                         {recommendation.impact} Impact
                       </Tag>
-                      <Tag color={getEffortColor(recommendation.effort)} size="small">
+                      <Tag color={getEffortColor(recommendation.effort)}>
                         {recommendation.effort} Effort
                       </Tag>
-                      <Tag color="blue" size="small">
+                      <Tag color="blue">
                         {recommendation.category}
                       </Tag>
                     </Space>

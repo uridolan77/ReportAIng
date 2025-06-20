@@ -146,7 +146,7 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
     mouseWheelZoom: true,
     smoothScrolling: true,
     cursorBlinking: 'blink',
-    cursorSmoothCaretAnimation: true,
+    cursorSmoothCaretAnimation: 'on',
     renderLineHighlight: 'line',
     selectOnLineNumbers: true,
     roundedSelection: false,

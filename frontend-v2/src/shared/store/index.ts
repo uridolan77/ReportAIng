@@ -3,16 +3,19 @@ import { setupListeners } from '@reduxjs/toolkit/query'
 import { authSlice } from './auth'
 import { uiSlice } from './ui'
 import { chatSlice } from './chat'
-import { authApi } from './api/authApi'
-import { queryApi } from './api/queryApi'
-import { businessApi } from './api/businessApi'
-import { semanticApi } from './api/semanticApi'
-import { adminApi } from './api/adminApi'
-import { chatApi } from './api/chatApi'
-import { featuresApi } from './api/featuresApi'
-import { tuningApi } from './api/tuningApi'
-import { costApi } from './api/costApi'
-import { performanceApi } from './api/performanceApi'
+import { baseApi } from './api/baseApi'
+
+// Import API files to ensure endpoints are injected
+import './api/authApi'
+import './api/queryApi'
+import './api/businessApi'
+import './api/semanticApi'
+import './api/adminApi'
+import './api/chatApi'
+import './api/featuresApi'
+import './api/tuningApi'
+import './api/costApi'
+import './api/performanceApi'
 
 export const store = configureStore({
   reducer: {
@@ -21,17 +24,8 @@ export const store = configureStore({
     ui: uiSlice.reducer,
     chat: chatSlice.reducer,
 
-    // API slices
-    [authApi.reducerPath]: authApi.reducer,
-    [queryApi.reducerPath]: queryApi.reducer,
-    [businessApi.reducerPath]: businessApi.reducer,
-    [semanticApi.reducerPath]: semanticApi.reducer,
-    [adminApi.reducerPath]: adminApi.reducer,
-    [chatApi.reducerPath]: chatApi.reducer,
-    [featuresApi.reducerPath]: featuresApi.reducer,
-    [tuningApi.reducerPath]: tuningApi.reducer,
-    [costApi.reducerPath]: costApi.reducer,
-    [performanceApi.reducerPath]: performanceApi.reducer,
+    // Single API slice (all endpoints are injected into baseApi)
+    [baseApi.reducerPath]: baseApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -44,16 +38,7 @@ export const store = configureStore({
         ],
       },
     }).concat(
-      authApi.middleware,
-      queryApi.middleware,
-      businessApi.middleware,
-      semanticApi.middleware,
-      adminApi.middleware,
-      chatApi.middleware,
-      featuresApi.middleware,
-      tuningApi.middleware,
-      costApi.middleware,
-      performanceApi.middleware,
+      baseApi.middleware,
     ),
   devTools: process.env.NODE_ENV !== 'production',
 })

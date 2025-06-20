@@ -103,7 +103,7 @@ public class PerformanceMonitoringHub : BaseHub
         
         try
         {
-            var monitoringId = await _monitoringService.StartMonitoringAsync(entityType, entityId, TimeSpan.FromSeconds(intervalSeconds));
+            var monitoringId = await _monitoringService.StartMonitoringAsync();
             
             await Clients.Caller.SendAsync("MonitoringStarted", new
             {
@@ -133,12 +133,12 @@ public class PerformanceMonitoringHub : BaseHub
         
         try
         {
-            var stopped = await _monitoringService.StopMonitoringAsync(monitoringId);
+            await _monitoringService.StopMonitoringAsync(monitoringId);
             
             await Clients.Caller.SendAsync("MonitoringStopped", new
             {
                 monitoringId = monitoringId,
-                stopped = stopped,
+                stopped = true,
                 stoppedAt = DateTime.UtcNow
             });
 

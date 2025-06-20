@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Button, Input, Typography, Space, Avatar, Card, Tooltip } from 'antd'
 import {
   SendOutlined,
-  MicrophoneOutlined,
+  PhoneOutlined,
   PaperClipOutlined,
   SmileOutlined,
   ThunderboltOutlined,
@@ -248,7 +248,7 @@ export const CreativeChatInterface: React.FC<CreativeChatInterfaceProps> = ({
                 <Tooltip title="Voice input">
                   <Button
                     type="text"
-                    icon={<MicrophoneOutlined />}
+                    icon={<PhoneOutlined />}
                     onClick={() => setIsRecording(!isRecording)}
                     style={{
                       width: '40px',

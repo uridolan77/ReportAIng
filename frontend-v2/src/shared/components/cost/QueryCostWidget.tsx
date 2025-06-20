@@ -1,6 +1,6 @@
 import React from 'react'
 import { Card, Statistic, Space, Tag, Tooltip, Typography } from 'antd'
-import { DollarOutlined, InfoCircleOutlined, TrendingUpOutlined, TrendingDownOutlined } from '@ant-design/icons'
+import { DollarOutlined, InfoCircleOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons'
 import { useGetRealTimeCostMetricsQuery } from '../../store/api/costApi'
 
 const { Text } = Typography
@@ -44,7 +44,7 @@ export const QueryCostWidget: React.FC<QueryCostWidgetProps> = ({
           {formatCost(currentCost)}
         </Text>
         {isEstimate && (
-          <Tag size="small" color="blue">Est.</Tag>
+          <Tag color="blue">Est.</Tag>
         )}
         {showTrend && realTimeMetrics && (
           <Tooltip title={`Efficiency: ${(realTimeMetrics.efficiency * 100).toFixed(1)}%`}>
@@ -84,7 +84,7 @@ export const QueryCostWidget: React.FC<QueryCostWidgetProps> = ({
           />
           
           {isEstimate && (
-            <Tag color="blue" size="small" style={{ marginTop: '4px' }}>
+            <Tag color="blue" style={{ marginTop: '4px' }}>
               Estimated
             </Tag>
           )}
@@ -163,7 +163,7 @@ export const InlineQueryCost: React.FC<{ cost?: number; isEstimate?: boolean }> 
       <Text style={{ color: getCostColor(cost), fontWeight: 'bold' }}>
         {formatCost(cost)}
       </Text>
-      {isEstimate && <Tag size="small" color="blue">Est.</Tag>}
+      {isEstimate && <Tag color="blue">Est.</Tag>}
     </Space>
   )
 }

@@ -128,7 +128,7 @@ export const BudgetStatusWidget: React.FC<BudgetStatusWidgetProps> = ({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ color, fontSize: '16px' }}>{icon}</span>
                     <Text strong>{budget.name}</Text>
-                    <Tag color={color} size="small">
+                    <Tag color={color}>
                       {budget.period}
                     </Tag>
                   </div>

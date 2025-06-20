@@ -145,4 +145,10 @@ public interface IResourceMonitoringService
     Task<Dictionary<string, object>> GetCapacityForecastAsync(string resourceType, int forecastDays = 30, CancellationToken cancellationToken = default);
     Task<Dictionary<string, double>> GetResourceUtilizationTrendsAsync(string resourceType, int days = 30, CancellationToken cancellationToken = default);
     Task<List<Dictionary<string, object>>> GetCapacityRecommendationsAsync(CancellationToken cancellationToken = default);
+
+    // Monitoring Control (for Hubs)
+    Task<string> StartMonitoringAsync(CancellationToken cancellationToken = default);
+    Task StopMonitoringAsync(string monitoringId, CancellationToken cancellationToken = default);
+    Task<string> StartResourceMonitoringAsync(string resourceType, TimeSpan interval, CancellationToken cancellationToken = default);
+    Task StopResourceMonitoringAsync(string monitoringId, CancellationToken cancellationToken = default);
 }

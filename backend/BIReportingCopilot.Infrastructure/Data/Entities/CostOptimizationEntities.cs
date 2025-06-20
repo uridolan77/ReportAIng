@@ -103,31 +103,43 @@ public class ResourceUsageEntity : BaseEntity
 {
     [Key]
     public long Id { get; set; }
-    
+
     [Required]
     [MaxLength(256)]
     public string UserId { get; set; } = string.Empty;
-    
+
     [Required]
     [MaxLength(50)]
     public string ResourceType { get; set; } = string.Empty;
-    
+
     [MaxLength(256)]
     public string ResourceId { get; set; } = string.Empty;
-    
+
     public int Quantity { get; set; }
     public long DurationMs { get; set; }
-    
+
     [Column(TypeName = "decimal(18,8)")]
     public decimal Cost { get; set; }
-    
+
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-    
+
     [MaxLength(256)]
     public string? RequestId { get; set; }
-    
+
     [Column(TypeName = "nvarchar(max)")]
     public string? Metadata { get; set; } // JSON
+
+    // Additional properties expected by MonitoringDbContext
+    [MaxLength(100)]
+    public string? ResourceName { get; set; }
+
+    [MaxLength(20)]
+    public string? Unit { get; set; }
+
+    [MaxLength(500)]
+    public string? Tags { get; set; } // JSON
+
+    public DateTime? RetentionDate { get; set; }
 }
 
 /// <summary>
@@ -137,29 +149,50 @@ public class PerformanceMetricsEntity : BaseEntity
 {
     [Key]
     public long Id { get; set; }
-    
+
     [Required]
     [MaxLength(100)]
     public string MetricName { get; set; } = string.Empty;
-    
+
     [MaxLength(50)]
     public string Category { get; set; } = string.Empty;
-    
+
     public double Value { get; set; }
-    
+
     [MaxLength(20)]
     public string Unit { get; set; } = string.Empty;
-    
+
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-    
+
     [MaxLength(256)]
     public string? EntityId { get; set; }
-    
+
     [MaxLength(50)]
     public string? EntityType { get; set; }
-    
+
     [Column(TypeName = "nvarchar(max)")]
     public string? Tags { get; set; } // JSON
+
+    // Additional properties expected by MonitoringDbContext
+    [MaxLength(50)]
+    public string? OperationType { get; set; }
+
+    [MaxLength(100)]
+    public string? OperationName { get; set; }
+
+    [MaxLength(256)]
+    public string? UserId { get; set; }
+
+    [MaxLength(50)]
+    public string? SessionId { get; set; }
+
+    [MaxLength(50)]
+    public string? CorrelationId { get; set; }
+
+    [MaxLength(2000)]
+    public string? AdditionalData { get; set; }
+
+    public DateTime? RetentionDate { get; set; }
 }
 
 /// <summary>

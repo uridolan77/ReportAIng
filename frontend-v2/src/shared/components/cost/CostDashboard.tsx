@@ -15,8 +15,8 @@ import {
 } from 'antd'
 import {
   DollarOutlined,
-  TrendingUpOutlined,
-  TrendingDownOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
   WarningOutlined,
   BulbOutlined,
   ReloadOutlined

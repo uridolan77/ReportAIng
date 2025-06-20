@@ -2,23 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BIReportingCopilot.Infrastructure.Data.Entities;
 
-/// <summary>
-/// Enhanced performance metrics entity for detailed monitoring
-/// </summary>
-public class PerformanceMetricsEntity
-{
-    public int Id { get; set; }
-    public DateTime Timestamp { get; set; }
-    public string OperationType { get; set; } = string.Empty;
-    public string OperationName { get; set; } = string.Empty;
-    public long DurationMs { get; set; }
-    public string? UserId { get; set; }
-    public string? SessionId { get; set; }
-    public string? CorrelationId { get; set; }
-    public bool IsSuccessful { get; set; }
-    public string? AdditionalData { get; set; }
-    public DateTime? RetentionDate { get; set; }
-}
+// Note: PerformanceMetricsEntity moved to CostOptimizationEntities.cs to avoid duplication
 
 /// <summary>
 /// Error logging entity for centralized error tracking
@@ -108,22 +92,7 @@ public class ApiUsageEntity
     public DateTime? RetentionDate { get; set; }
 }
 
-/// <summary>
-/// Resource usage monitoring entity
-/// </summary>
-public class ResourceUsageEntity
-{
-    public int Id { get; set; }
-    public DateTime Timestamp { get; set; }
-    public string ResourceType { get; set; } = string.Empty;
-    public string ResourceName { get; set; } = string.Empty;
-    public double UsageValue { get; set; }
-    public double MaxValue { get; set; }
-    public double PercentageUsed { get; set; }
-    public string Unit { get; set; } = string.Empty;
-    public string? Tags { get; set; }
-    public DateTime? RetentionDate { get; set; }
-}
+// Note: ResourceUsageEntity moved to CostOptimizationEntities.cs to avoid duplication
 
 /// <summary>
 /// Database connection monitoring entity

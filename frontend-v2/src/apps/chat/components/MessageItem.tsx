@@ -199,7 +199,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         <span>•</span>
         <span>{columnCount} columns</span>
         <span>•</span>
-        <Tag size="small" color={queryComplexity === 'Simple' ? 'green' : queryComplexity === 'Medium' ? 'orange' : 'red'}>
+        <Tag color={queryComplexity === 'Simple' ? 'green' : queryComplexity === 'Medium' ? 'orange' : 'red'}>
           {queryComplexity}
         </Tag>
       </Space>

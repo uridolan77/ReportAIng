@@ -71,24 +71,17 @@ public class PerformanceMetrics
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
     [NotMapped]
     public Dictionary<string, double> CustomMetrics { get; set; } = new();
+
+    // Additional properties expected by PerformanceOptimizationService
+    public double PerformanceScore { get; set; }
+    public double P99ResponseTime { get; set; }
+    public int TotalRequests { get; set; }
+    public int SuccessfulRequests { get; set; }
+    public int FailedRequests { get; set; }
+    public DateTime LastAnalyzed { get; set; } = DateTime.UtcNow;
 }
 
-/// <summary>
-/// Cache statistics for monitoring
-/// </summary>
-public class CacheStatistics
-{
-    public int TotalEntries { get; set; }
-    public long TotalSizeBytes { get; set; }
-    public int HitCount { get; set; }
-    public int MissCount { get; set; }
-    public double HitRate => TotalRequests > 0 ? (double)HitCount / TotalRequests : 0.0;
-    public int TotalRequests => HitCount + MissCount;
-    public TimeSpan AverageRetrievalTime { get; set; }
-    public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
-    [NotMapped]
-    public Dictionary<string, object> AdditionalStats { get; set; } = new();
-}
+// Note: CacheStatistics moved to CostOptimizationModels.cs to avoid duplication
 
 /// <summary>
 /// SQL query result with metadata
@@ -649,11 +642,18 @@ public class ExecutionStep
 /// </summary>
 public class PerformanceBottleneck
 {
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     public string BottleneckId { get; set; } = string.Empty;
+    public string EntityId { get; set; } = string.Empty;
+    public string EntityType { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string Severity { get; set; } = "Medium";
     public double Impact { get; set; }
+    public double ImpactScore { get; set; }
     public List<string> Solutions { get; set; } = new();
+    public List<string> Recommendations { get; set; } = new();
+    public DateTime DetectedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
@@ -826,24 +826,7 @@ public class CostAlert
 // MISSING MODELS FOR INFRASTRUCTURE SERVICES
 // =============================================================================
 
-/// <summary>
-/// Tuning result
-/// </summary>
-public class TuningResult
-{
-    public string TuningId { get; set; } = Guid.NewGuid().ToString();
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
-    public Dictionary<string, object> Results { get; set; } = new();
-    public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
-
-    // Properties expected by Infrastructure services
-    public string Status { get; set; } = "Pending";
-    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
-    public List<TuningImprovement> Improvements { get; set; } = new();
-    public TuningMetrics Metrics { get; set; } = new();
-    public string? ErrorMessage { get; set; }
-}
+// Note: TuningResult moved to CostOptimizationModels.cs to avoid duplication
 
 /// <summary>
 /// Tuning request

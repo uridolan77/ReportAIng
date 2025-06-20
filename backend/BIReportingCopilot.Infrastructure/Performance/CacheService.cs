@@ -26,7 +26,7 @@ public class CacheService :
     private readonly IDistributedCache? _distributedCache;
     private readonly ILogger<CacheService> _logger;
     private readonly IConfiguration _configuration;
-    private readonly CacheConfiguration _config;
+    private readonly BIReportingCopilot.Core.Configuration.CacheConfiguration _config;
     private readonly ConcurrentDictionary<string, DateTime> _keyTimestamps;
     private readonly ModelsCacheStatistics _statistics;
     private readonly object _statsLock = new();
@@ -46,7 +46,7 @@ public class CacheService :
         _statistics = new ModelsCacheStatistics();
 
         // Load cache configuration
-        _config = new CacheConfiguration();
+        _config = new BIReportingCopilot.Core.Configuration.CacheConfiguration();
         configuration.GetSection("Cache").Bind(_config);
 
         _logger.LogDebug("Cache service initialized with memory cache and {DistributedCache}",

@@ -16,9 +16,9 @@ import {
 } from 'antd'
 import {
   UserOutlined,
-  QueryDatabaseOutlined,
+  DatabaseOutlined,
   ClockCircleOutlined,
-  ServerOutlined,
+  SaveOutlined,
   ReloadOutlined,
   PlayCircleOutlined,
   PauseCircleOutlined,
@@ -160,7 +160,7 @@ export const RealTimeDashboard: React.FC = () => {
             <Statistic
               title="Active Queries"
               value={dashboardData?.activeQueries || 0}
-              prefix={<QueryDatabaseOutlined />}
+              prefix={<DatabaseOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
           </Card>
@@ -195,7 +195,7 @@ export const RealTimeDashboard: React.FC = () => {
               title="System Load"
               value={dashboardData?.systemLoad || 0}
               suffix="%"
-              prefix={<ServerOutlined />}
+              prefix={<SaveOutlined />}
               valueStyle={{ 
                 color: (dashboardData?.systemLoad || 0) > 80 ? '#ff4d4f' : '#52c41a' 
               }}
@@ -284,7 +284,7 @@ export const RealTimeDashboard: React.FC = () => {
           <Card
             title={
               <Space>
-                <ServerOutlined />
+                <SaveOutlined />
                 <span>System Services</span>
                 <Tag color={getHealthStatusColor(systemHealth?.status || 'unknown')}>
                   {systemHealth?.status || 'Unknown'}

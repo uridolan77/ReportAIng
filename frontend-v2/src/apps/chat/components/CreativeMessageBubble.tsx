@@ -112,7 +112,7 @@ export const CreativeMessageBubble: React.FC<CreativeMessageBubbleProps> = ({
         )
       case 'error':
         return (
-          <Tag color="red" size="small" style={{ marginTop: '4px' }}>
+          <Tag color="red" style={{ marginTop: '4px' }}>
             Failed
           </Tag>
         )
@@ -211,13 +211,13 @@ export const CreativeMessageBubble: React.FC<CreativeMessageBubbleProps> = ({
         fontSize: '12px'
       }}>
         <Space size="small">
-          <Tag size="small" color="blue">
+          <Tag color="blue">
             <ClockCircleOutlined /> {executionTime}ms
           </Tag>
-          <Tag size="small" color="green">
+          <Tag color="green">
             {rowCount} rows
           </Tag>
-          <Tag size="small" color={queryComplexity === 'Simple' ? 'green' : queryComplexity === 'Medium' ? 'orange' : 'red'}>
+          <Tag color={queryComplexity === 'Simple' ? 'green' : queryComplexity === 'Medium' ? 'orange' : 'red'}>
             {queryComplexity}
           </Tag>
         </Space>
