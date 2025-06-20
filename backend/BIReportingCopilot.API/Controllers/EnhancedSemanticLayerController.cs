@@ -305,9 +305,9 @@ public class EnhancedSemanticLayerController : ControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Validation result with issues and recommendations</returns>
     [HttpGet("validate")]
-    [ProducesResponseType(typeof(SemanticValidationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BIReportingCopilot.Core.Interfaces.Schema.SemanticValidationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<SemanticValidationResult>> ValidateSemanticMetadata(
+    public async Task<ActionResult<BIReportingCopilot.Core.Interfaces.Schema.SemanticValidationResult>> ValidateSemanticMetadata(
         CancellationToken cancellationToken = default)
     {
         try

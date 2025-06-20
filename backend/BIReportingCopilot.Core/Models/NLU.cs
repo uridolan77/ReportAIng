@@ -554,18 +554,7 @@ public class QueryPerformanceAnalysis
     public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
 }
 
-/// <summary>
-/// Query semantic analysis
-/// </summary>
-public class QuerySemanticAnalysis
-{
-    public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
-    public List<string> ExtractedEntities { get; set; } = new();
-    public List<string> Keywords { get; set; } = new();
-    public string Intent { get; set; } = string.Empty;
-    public double Confidence { get; set; } = 0.8;
-    public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
-}
+// QuerySemanticAnalysis moved to EnhancedSemanticModels.cs to avoid duplication
 
 /// <summary>
 /// Intelligent query suggestion with AI insights

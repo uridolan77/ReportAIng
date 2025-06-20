@@ -35,9 +35,7 @@ public class SchemaMetadataEntity : BaseEntity
     public string? QueryIntents { get; set; } // JSON array of query intents this element supports
     public string? SemanticSynonyms { get; set; } // JSON array of semantic synonyms for better matching
 
-    // Enhanced business context fields
-    public string? BusinessFriendlyName { get; set; } // Human-readable alias
-    public string? NaturalLanguageDescription { get; set; } // Detailed business explanation
+    // Enhanced business context fields (BusinessFriendlyName and NaturalLanguageDescription already defined above)
     public string? BusinessRules { get; set; } // JSON - governance and business rules
     public decimal ImportanceScore { get; set; } = 0.5m; // 0-1 scale for dynamic prioritization
     public decimal UsageFrequency { get; set; } = 0.0m; // How often used in queries

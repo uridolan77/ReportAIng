@@ -40,9 +40,11 @@ public enum QueryIntent
     Aggregation,
     Comparison,
     TrendAnalysis,
+    Trend, // Alias for TrendAnalysis for backward compatibility
     Filtering,
     Ranking,
-    Forecasting
+    Forecasting,
+    Unknown // Default fallback value
 }
 
 /// <summary>

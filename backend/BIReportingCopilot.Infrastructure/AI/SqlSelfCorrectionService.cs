@@ -70,7 +70,7 @@ public class SqlSelfCorrectionService : ISqlSelfCorrectionService
                 sql, originalQuery, validationIssues, schemaContext, strategy, cancellationToken);
 
             // Step 4: Generate corrected SQL using LLM
-            var correctedSql = await _aiService.GenerateSQLAsync(correctionPrompt, cancellationToken);
+            var correctedSql = await _aiService.GenerateSQLAsync(correctionPrompt, null, cancellationToken);
 
             if (string.IsNullOrWhiteSpace(correctedSql) || correctedSql.Equals(sql, StringComparison.OrdinalIgnoreCase))
             {

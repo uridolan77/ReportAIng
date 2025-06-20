@@ -207,15 +207,7 @@ public enum QueryCategory
     Export
 }
 
-public enum QueryIntent
-{
-    General,
-    Aggregation,
-    Trend,
-    Comparison,
-    Filtering,
-    Unknown
-}
+// QueryIntent enum moved to EnhancedSemanticModels.cs to avoid duplication
 
 public enum QueryComplexity
 {

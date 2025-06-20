@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using BIReportingCopilot.Infrastructure.Security;
 
 namespace BIReportingCopilot.Core.Models;
 
@@ -19,7 +18,7 @@ public class EnhancedSemanticValidationResult
     public DateTime ValidationTimestamp { get; set; } = DateTime.UtcNow;
 
     // Detailed validation results
-    public EnhancedSqlValidationResult? SecurityValidation { get; set; }
+    public object? SecurityValidation { get; set; } // Will be EnhancedSqlValidationResult from Infrastructure
     public SemanticValidationResult? SemanticValidation { get; set; }
     public SchemaComplianceResult? SchemaCompliance { get; set; }
     public BusinessLogicValidationResult? BusinessLogicValidation { get; set; }
