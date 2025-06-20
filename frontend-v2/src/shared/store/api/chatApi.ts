@@ -248,7 +248,7 @@ export const chatApi = baseApi.injectEndpoints({
       columns: Array<{ name: string; table: string; description: string }>
       glossaryTerms: Array<{ term: string; definition: string }>
     }, { query: string }>({
-      query: ({ query }) => `/chat/context?q=${encodeURIComponent(query)}`,
+      query: ({ query }) => `/semantic-layer/business-schema?query=${encodeURIComponent(query)}`,
     }),
 
     updateConversationContext: builder.mutation<{ success: boolean }, { conversationId: string; context: any }>({
@@ -258,6 +258,43 @@ export const chatApi = baseApi.injectEndpoints({
         body: { context },
       }),
       invalidatesTags: (result, error, { conversationId }) => [{ type: 'Conversation', id: conversationId }],
+    }),
+
+    // Semantic Analysis
+    analyzeQuerySemantics: builder.mutation<any, { query: string; intent?: string }>({
+      query: (body) => ({
+        url: '/semantic/analyze',
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    getRelevantGlossaryTerms: builder.query<Array<{ term: string; definition: string; confidence: number }>, { query: string; maxTerms?: number }>({
+      query: ({ query, maxTerms = 10 }) => `/semantic/glossary/relevant?query=${encodeURIComponent(query)}&maxTerms=${maxTerms}`,
+    }),
+
+    generateLLMContext: builder.mutation<any, { query: string; intent: string }>({
+      query: (body) => ({
+        url: '/semantic/llm-context',
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    findSimilarSchemaElements: builder.mutation<any[], { element: any; threshold?: number; maxResults?: number }>({
+      query: ({ element, threshold = 0.7, maxResults = 10 }) => ({
+        url: '/semantic/similarity/find',
+        method: 'POST',
+        body: { element, threshold, maxResults },
+      }),
+    }),
+
+    // Query History and Management
+    refreshSchemaCache: builder.mutation<{ message: string; timestamp: string }, void>({
+      query: () => ({
+        url: '/query/refresh-schema',
+        method: 'POST',
+      }),
     }),
   }),
 })
@@ -300,4 +337,13 @@ export const {
   // Context hooks
   useGetBusinessContextQuery,
   useUpdateConversationContextMutation,
+
+  // Semantic Analysis hooks
+  useAnalyzeQuerySemanticsMutation,
+  useGetRelevantGlossaryTermsQuery,
+  useGenerateLLMContextMutation,
+  useFindSimilarSchemaElementsMutation,
+
+  // Admin hooks
+  useRefreshSchemaCacheMutation,
 } = chatApi

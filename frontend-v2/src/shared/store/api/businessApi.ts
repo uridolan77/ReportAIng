@@ -182,6 +182,113 @@ export const businessApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['GlossaryTerm'],
     }),
+
+    // Business Metadata Management
+    getBusinessMetadataStatus: builder.query<{
+      totalTables: number
+      populatedTables: number
+      lastUpdate: string
+    }, void>({
+      query: () => '/business-metadata/status',
+      providesTags: ['BusinessMetadata'],
+    }),
+
+    populateAllBusinessMetadata: builder.mutation<{
+      success: boolean
+      tablesProcessed: number
+      tablesUpdated: number
+      errors: string[]
+      duration: number
+    }, { useAI?: boolean; overwriteExisting?: boolean }>({
+      query: ({ useAI = true, overwriteExisting = false }) => ({
+        url: `/business-metadata/populate-all?useAI=${useAI}&overwriteExisting=${overwriteExisting}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['BusinessMetadata', 'BusinessTable'],
+    }),
+
+    populateTableBusinessMetadata: builder.mutation<{ success: boolean; message: string }, {
+      schemaName: string
+      tableName: string
+      useAI?: boolean
+      overwrite?: boolean
+    }>({
+      query: ({ schemaName, tableName, useAI = true, overwrite = false }) => ({
+        url: `/business-metadata/populate/${schemaName}/${tableName}?useAI=${useAI}&overwrite=${overwrite}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['BusinessMetadata', 'BusinessTable'],
+    }),
+
+    validateBusinessMetadata: builder.query<{
+      coverage: number
+      missingTables: string[]
+      issues: string[]
+    }, void>({
+      query: () => '/business-metadata/validate',
+      providesTags: ['BusinessMetadata'],
+    }),
+
+    // Schema Discovery & Management
+    getAllSchemaTables: builder.query<Array<{
+      schemaName: string
+      tableName: string
+      businessPurpose?: string
+      domainClassification?: string
+      estimatedRowCount?: number
+      lastUpdated?: string
+    }>, void>({
+      query: () => '/schema/tables',
+      providesTags: ['Schema'],
+    }),
+
+    getSchemaTableDetails: builder.query<{
+      schemaName: string
+      tableName: string
+      businessPurpose?: string
+      domainClassification?: string
+      estimatedRowCount?: number
+      lastUpdated?: string
+      columns?: Array<{
+        columnName: string
+        businessMeaning?: string
+        businessDataType?: string
+        isNullable?: boolean
+        sampleValues?: string[]
+      }>
+    }, { schemaName: string; tableName: string }>({
+      query: ({ schemaName, tableName }) => `/schema/tables/${schemaName}/${tableName}`,
+      providesTags: (result, error, { schemaName, tableName }) => [
+        { type: 'Schema', id: `${schemaName}.${tableName}` }
+      ],
+    }),
+
+    getSchemaSummary: builder.query<{
+      databaseName: string
+      tableCount: number
+      lastUpdated: string
+    }, void>({
+      query: () => '/schema/summary',
+      providesTags: ['Schema'],
+    }),
+
+    getDataSources: builder.query<Array<{
+      name: string
+      schema: string
+      type: string
+      rowCount: number
+    }>, void>({
+      query: () => '/schema/datasources',
+      providesTags: ['Schema'],
+    }),
+
+    refreshSchema: builder.mutation<{ message: string; tablesDiscovered: number }, void>({
+      query: () => ({
+        url: '/schema/refresh',
+        method: 'POST',
+      }),
+      invalidatesTags: ['Schema', 'BusinessMetadata'],
+    }),
   }),
 })
 
@@ -196,4 +303,17 @@ export const {
   useCreateGlossaryTermMutation,
   useUpdateGlossaryTermMutation,
   useDeleteGlossaryTermMutation,
+
+  // Business Metadata Management
+  useGetBusinessMetadataStatusQuery,
+  usePopulateAllBusinessMetadataMutation,
+  usePopulateTableBusinessMetadataMutation,
+  useValidateBusinessMetadataQuery,
+
+  // Schema Discovery & Management
+  useGetAllSchemaTablesQuery,
+  useGetSchemaTableDetailsQuery,
+  useGetSchemaSummaryQuery,
+  useGetDataSourcesQuery,
+  useRefreshSchemaMutation,
 } = businessApi

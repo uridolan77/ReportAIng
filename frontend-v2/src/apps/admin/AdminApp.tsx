@@ -6,6 +6,8 @@ import BusinessMetadata from './pages/BusinessMetadata'
 import SystemConfiguration from './pages/SystemConfiguration'
 import UserManagement from './pages/UserManagement'
 import Analytics from './pages/Analytics'
+import CostManagement from './pages/CostManagement'
+import PerformanceMonitoring from './pages/PerformanceMonitoring'
 
 export default function AdminApp() {
   return (
@@ -25,7 +27,13 @@ export default function AdminApp() {
         
         {/* Analytics and monitoring */}
         <Route path="/analytics" element={<Analytics />} />
-        
+
+        {/* Cost management */}
+        <Route path="/cost-management" element={<CostManagement />} />
+
+        {/* Performance monitoring */}
+        <Route path="/performance" element={<PerformanceMonitoring />} />
+
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>

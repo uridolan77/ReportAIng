@@ -198,50 +198,118 @@ export const EnhancedSqlEditor: React.FC<EnhancedSqlEditorProps> = ({
         }
 
         const suggestions: any[] = []
+        const lineText = model.getLineContent(position.lineNumber)
+        const beforeCursor = lineText.substring(0, position.column - 1)
 
-        // SQL Keywords
+        // Context-aware suggestions based on SQL structure
+        const isAfterSelect = /\bSELECT\s+$/i.test(beforeCursor)
+        const isAfterFrom = /\bFROM\s+$/i.test(beforeCursor)
+        const isAfterWhere = /\bWHERE\s+$/i.test(beforeCursor)
+        const isAfterJoin = /\b(JOIN|INNER\s+JOIN|LEFT\s+JOIN|RIGHT\s+JOIN)\s+$/i.test(beforeCursor)
+
+        // SQL Keywords with context awareness
         const sqlKeywords = [
-          'SELECT', 'FROM', 'WHERE', 'JOIN', 'INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN',
-          'GROUP BY', 'ORDER BY', 'HAVING', 'UNION', 'INSERT', 'UPDATE', 'DELETE',
-          'CREATE', 'ALTER', 'DROP', 'TABLE', 'INDEX', 'VIEW', 'DATABASE'
+          { keyword: 'SELECT', contexts: ['start'] },
+          { keyword: 'FROM', contexts: ['after_select'] },
+          { keyword: 'WHERE', contexts: ['after_from'] },
+          { keyword: 'JOIN', contexts: ['after_from'] },
+          { keyword: 'INNER JOIN', contexts: ['after_from'] },
+          { keyword: 'LEFT JOIN', contexts: ['after_from'] },
+          { keyword: 'RIGHT JOIN', contexts: ['after_from'] },
+          { keyword: 'GROUP BY', contexts: ['after_where'] },
+          { keyword: 'ORDER BY', contexts: ['after_where'] },
+          { keyword: 'HAVING', contexts: ['after_group'] },
+          { keyword: 'LIMIT', contexts: ['after_order'] },
+          { keyword: 'UNION', contexts: ['after_complete'] },
+          { keyword: 'DISTINCT', contexts: ['after_select'] },
+          { keyword: 'COUNT', contexts: ['after_select'] },
+          { keyword: 'SUM', contexts: ['after_select'] },
+          { keyword: 'AVG', contexts: ['after_select'] },
+          { keyword: 'MIN', contexts: ['after_select'] },
+          { keyword: 'MAX', contexts: ['after_select'] }
         ]
 
-        sqlKeywords.forEach(keyword => {
+        sqlKeywords.forEach(({ keyword }) => {
           suggestions.push({
             label: keyword,
             kind: monaco.languages.CompletionItemKind.Keyword,
             insertText: keyword,
             range,
+            sortText: '0' + keyword, // Prioritize keywords
           })
         })
 
-        // Business tables and columns
+        // Business tables and columns with enhanced context
         if (businessTables) {
           businessTables.forEach(table => {
-            // Table suggestions
-            suggestions.push({
-              label: `${table.schemaName}.${table.tableName}`,
-              kind: monaco.languages.CompletionItemKind.Class,
-              insertText: `${table.schemaName}.${table.tableName}`,
-              detail: table.businessPurpose,
-              documentation: {
-                value: `**Business Purpose:** ${table.businessPurpose}\n\n**Domain:** ${table.domainClassification}`,
-              },
-              range,
-            })
+            const tableFullName = `${table.schemaName}.${table.tableName}`
 
-            // Column suggestions
+            // Table suggestions (prioritize after FROM/JOIN)
+            if (isAfterFrom || isAfterJoin || !isAfterSelect) {
+              suggestions.push({
+                label: tableFullName,
+                kind: monaco.languages.CompletionItemKind.Class,
+                insertText: tableFullName,
+                detail: `Table: ${table.businessPurpose}`,
+                documentation: {
+                  value: `**Business Purpose:** ${table.businessPurpose}\n\n**Domain:** ${table.domainClassification}\n\n**Row Count:** ${table.estimatedRowCount || 'Unknown'}\n\n**Last Updated:** ${table.lastUpdated || 'Unknown'}`,
+                },
+                range,
+                sortText: isAfterFrom || isAfterJoin ? '1' + tableFullName : '3' + tableFullName,
+              })
+
+              // Table alias suggestion
+              suggestions.push({
+                label: `${tableFullName} AS ${table.tableName.toLowerCase()}`,
+                kind: monaco.languages.CompletionItemKind.Class,
+                insertText: `${tableFullName} AS ${table.tableName.toLowerCase()}`,
+                detail: `Table with alias`,
+                range,
+                sortText: '2' + tableFullName,
+              })
+            }
+
+            // Column suggestions (prioritize after SELECT/WHERE)
             table.columns?.forEach(column => {
+              const columnDetail = `${table.tableName}.${column.columnName} (${column.businessDataType})`
+
               suggestions.push({
                 label: column.columnName,
                 kind: monaco.languages.CompletionItemKind.Field,
                 insertText: column.columnName,
-                detail: `${table.tableName}.${column.columnName}`,
+                detail: columnDetail,
                 documentation: {
-                  value: `**Business Meaning:** ${column.businessMeaning}\n\n**Data Type:** ${column.businessDataType}`,
+                  value: `**Business Meaning:** ${column.businessMeaning}\n\n**Data Type:** ${column.businessDataType}\n\n**Nullable:** ${column.isNullable ? 'Yes' : 'No'}\n\n**Sample Values:** ${column.sampleValues?.join(', ') || 'N/A'}`,
                 },
                 range,
+                sortText: isAfterSelect ? '1' + column.columnName : '2' + column.columnName,
               })
+
+              // Qualified column name
+              suggestions.push({
+                label: `${table.tableName}.${column.columnName}`,
+                kind: monaco.languages.CompletionItemKind.Field,
+                insertText: `${table.tableName}.${column.columnName}`,
+                detail: columnDetail,
+                range,
+                sortText: '3' + column.columnName,
+              })
+
+              // Common aggregations for numeric columns
+              if (column.businessDataType?.toLowerCase().includes('number') ||
+                  column.businessDataType?.toLowerCase().includes('decimal') ||
+                  column.businessDataType?.toLowerCase().includes('int')) {
+                ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'].forEach(func => {
+                  suggestions.push({
+                    label: `${func}(${column.columnName})`,
+                    kind: monaco.languages.CompletionItemKind.Function,
+                    insertText: `${func}(${column.columnName})`,
+                    detail: `${func} of ${column.columnName}`,
+                    range,
+                    sortText: '4' + func + column.columnName,
+                  })
+                })
+              }
             })
           })
         }
@@ -252,18 +320,124 @@ export const EnhancedSqlEditor: React.FC<EnhancedSqlEditorProps> = ({
             suggestions.push({
               label: term.term,
               kind: monaco.languages.CompletionItemKind.Reference,
-              insertText: term.term,
+              insertText: `'${term.term}'`,
               detail: 'Business Term',
               documentation: {
                 value: `**Definition:** ${term.definition}`,
               },
               range,
+              sortText: '5' + term.term,
             })
           })
         }
 
+        // SQL Functions and operators
+        const sqlFunctions = [
+          'COALESCE', 'ISNULL', 'NULLIF', 'CAST', 'CONVERT', 'SUBSTRING', 'TRIM',
+          'UPPER', 'LOWER', 'LENGTH', 'ROUND', 'FLOOR', 'CEIL', 'ABS', 'POWER',
+          'SQRT', 'NOW', 'GETDATE', 'DATEADD', 'DATEDIFF', 'YEAR', 'MONTH', 'DAY'
+        ]
+
+        sqlFunctions.forEach(func => {
+          suggestions.push({
+            label: func,
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: `${func}($1)`,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            detail: `SQL Function`,
+            range,
+            sortText: '6' + func,
+          })
+        })
+
+        // Common SQL patterns as snippets
+        const sqlSnippets = [
+          {
+            label: 'SELECT with JOIN',
+            insertText: 'SELECT $1\nFROM $2\nJOIN $3 ON $4 = $5',
+            detail: 'SELECT statement with JOIN',
+          },
+          {
+            label: 'GROUP BY with COUNT',
+            insertText: 'SELECT $1, COUNT(*) as count\nFROM $2\nGROUP BY $1\nORDER BY count DESC',
+            detail: 'GROUP BY with count',
+          },
+          {
+            label: 'Date range filter',
+            insertText: "WHERE $1 BETWEEN '$2' AND '$3'",
+            detail: 'Date range WHERE clause',
+          }
+        ]
+
+        sqlSnippets.forEach(snippet => {
+          suggestions.push({
+            label: snippet.label,
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: snippet.insertText,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            detail: snippet.detail,
+            range,
+            sortText: '7' + snippet.label,
+          })
+        })
+
         return { suggestions }
       },
+    })
+
+    // Register hover provider for business context
+    monaco.languages.registerHoverProvider('sql', {
+      provideHover: (model, position) => {
+        const word = model.getWordAtPosition(position)
+        if (!word) return null
+
+        // Find business context for the word
+        const table = businessTables?.find(t =>
+          t.tableName.toLowerCase() === word.word.toLowerCase() ||
+          t.columns?.some(c => c.columnName.toLowerCase() === word.word.toLowerCase())
+        )
+
+        if (table) {
+          const column = table.columns?.find(c =>
+            c.columnName.toLowerCase() === word.word.toLowerCase()
+          )
+
+          if (column) {
+            return {
+              range: new monaco.Range(
+                position.lineNumber,
+                word.startColumn,
+                position.lineNumber,
+                word.endColumn
+              ),
+              contents: [
+                { value: `**${table.tableName}.${column.columnName}**` },
+                { value: `**Business Meaning:** ${column.businessMeaning}` },
+                { value: `**Data Type:** ${column.businessDataType}` },
+                { value: `**Nullable:** ${column.isNullable ? 'Yes' : 'No'}` },
+                ...(column.sampleValues ? [{ value: `**Sample Values:** ${column.sampleValues.join(', ')}` }] : [])
+              ]
+            }
+          } else if (table.tableName.toLowerCase() === word.word.toLowerCase()) {
+            return {
+              range: new monaco.Range(
+                position.lineNumber,
+                word.startColumn,
+                position.lineNumber,
+                word.endColumn
+              ),
+              contents: [
+                { value: `**${table.schemaName}.${table.tableName}**` },
+                { value: `**Business Purpose:** ${table.businessPurpose}` },
+                { value: `**Domain:** ${table.domainClassification}` },
+                { value: `**Estimated Rows:** ${table.estimatedRowCount || 'Unknown'}` }
+              ]
+            }
+          }
+        }
+
+        return null
+      }
     })
   }
 

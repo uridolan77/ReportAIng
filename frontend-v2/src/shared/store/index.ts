@@ -9,6 +9,10 @@ import { businessApi } from './api/businessApi'
 import { semanticApi } from './api/semanticApi'
 import { adminApi } from './api/adminApi'
 import { chatApi } from './api/chatApi'
+import { featuresApi } from './api/featuresApi'
+import { tuningApi } from './api/tuningApi'
+import { costApi } from './api/costApi'
+import { performanceApi } from './api/performanceApi'
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +28,10 @@ export const store = configureStore({
     [semanticApi.reducerPath]: semanticApi.reducer,
     [adminApi.reducerPath]: adminApi.reducer,
     [chatApi.reducerPath]: chatApi.reducer,
+    [featuresApi.reducerPath]: featuresApi.reducer,
+    [tuningApi.reducerPath]: tuningApi.reducer,
+    [costApi.reducerPath]: costApi.reducer,
+    [performanceApi.reducerPath]: performanceApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -42,6 +50,10 @@ export const store = configureStore({
       semanticApi.middleware,
       adminApi.middleware,
       chatApi.middleware,
+      featuresApi.middleware,
+      tuningApi.middleware,
+      costApi.middleware,
+      performanceApi.middleware,
     ),
   devTools: process.env.NODE_ENV !== 'production',
 })

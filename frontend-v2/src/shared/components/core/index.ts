@@ -12,6 +12,11 @@ export { Chart } from './Chart'
 export { SqlEditor } from './SqlEditor'
 export { AppLayout, PageLayout } from './Layout'
 
+// Advanced Components
+export { MonacoSQLEditor, useMonacoSQL } from './MonacoSQLEditor'
+export { ExportManager, useExport } from './ExportManager'
+export { VirtualTable, VirtualList, useVirtualScroll } from './VirtualTable'
+
 // Design System
 export { designTokens, generateCSSVariables } from './design-system'
 export type { ColorKey, SpacingKey, FontSizeKey, BorderRadiusKey, ShadowKey, ComponentSize } from './design-system'

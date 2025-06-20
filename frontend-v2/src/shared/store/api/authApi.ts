@@ -135,19 +135,168 @@ export const authApi = baseApi.injectEndpoints({
       query: ({ days = 30 }) => `/user/activity?days=${days}`,
       providesTags: ['User'],
     }),
+
+    // Additional Authentication Features
+    changePassword: builder.mutation<{ success: boolean }, {
+      currentPassword: string
+      newPassword: string
+    }>({
+      query: (body) => ({
+        url: '/auth/change-password',
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    forgotPassword: builder.mutation<{ success: boolean }, { email: string }>({
+      query: (body) => ({
+        url: '/auth/forgot-password',
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    resetPassword: builder.mutation<{ success: boolean }, {
+      token: string
+      newPassword: string
+    }>({
+      query: (body) => ({
+        url: '/auth/reset-password',
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    disableMfa: builder.mutation<{ success: boolean }, { code: string }>({
+      query: (body) => ({
+        url: '/auth/mfa/disable',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['User'],
+    }),
+
+    // Avatar Management
+    uploadAvatar: builder.mutation<{ success: boolean; avatarUrl: string }, FormData>({
+      query: (formData) => ({
+        url: '/user/avatar',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['User'],
+    }),
+
+    deleteAvatar: builder.mutation<{ success: boolean }, void>({
+      query: () => ({
+        url: '/user/avatar',
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['User'],
+    }),
+
+    // Session Management
+    getActiveSessions: builder.query<Array<{
+      id: string
+      deviceInfo: string
+      ipAddress: string
+      location: string
+      lastActivity: string
+      isCurrent: boolean
+    }>, void>({
+      query: () => '/user/sessions',
+      providesTags: ['UserSessions'],
+    }),
+
+    revokeSession: builder.mutation<{ success: boolean }, string>({
+      query: (sessionId) => ({
+        url: `/user/sessions/${sessionId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['UserSessions'],
+    }),
+
+    revokeAllSessions: builder.mutation<{ success: boolean }, void>({
+      query: () => ({
+        url: '/user/sessions/revoke-all',
+        method: 'POST',
+      }),
+      invalidatesTags: ['UserSessions'],
+    }),
+
+    // Email Verification
+    sendVerificationEmail: builder.mutation<{ success: boolean }, void>({
+      query: () => ({
+        url: '/user/verify-email/send',
+        method: 'POST',
+      }),
+    }),
+
+    verifyEmail: builder.mutation<{ success: boolean }, { token: string }>({
+      query: (body) => ({
+        url: '/user/verify-email',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['User'],
+    }),
+
+    // Account Management
+    deleteAccount: builder.mutation<{ success: boolean }, { password: string }>({
+      query: (body) => ({
+        url: '/user/account',
+        method: 'DELETE',
+        body,
+      }),
+    }),
+
+    exportUserData: builder.mutation<Blob, void>({
+      query: () => ({
+        url: '/user/export',
+        method: 'POST',
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
   }),
 })
 
 export const {
+  // Authentication
   useLoginMutation,
   useLoginWithMfaMutation,
   useRefreshTokenMutation,
   useLogoutMutation,
+
+  // MFA
   useSetupMfaMutation,
   useVerifyMfaMutation,
+  useDisableMfaMutation,
+
+  // Password Management
+  useChangePasswordMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
+
+  // User Profile
   useGetCurrentUserQuery,
   useUpdateUserProfileMutation,
   useGetUserPreferencesQuery,
   useUpdateUserPreferencesMutation,
   useGetUserActivityQuery,
+
+  // Avatar Management
+  useUploadAvatarMutation,
+  useDeleteAvatarMutation,
+
+  // Session Management
+  useGetActiveSessionsQuery,
+  useRevokeSessionMutation,
+  useRevokeAllSessionsMutation,
+
+  // Email Verification
+  useSendVerificationEmailMutation,
+  useVerifyEmailMutation,
+
+  // Account Management
+  useDeleteAccountMutation,
+  useExportUserDataMutation,
 } = authApi

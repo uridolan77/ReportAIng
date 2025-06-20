@@ -65,6 +65,13 @@ export const baseApi = createApi({
     'Schema',
     'SystemConfig',
     'Analytics',
+    'CostAnalytics',
+    'CostHistory',
+    'Budget',
+    'CostRecommendations',
+    'Performance',
+    'PerformanceMetrics',
+    'Benchmarks',
   ],
   endpoints: () => ({}),
 })

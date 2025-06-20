@@ -276,6 +276,50 @@ class SocketService {
     this.socket?.emit('cancelStreamingQuery', { sessionId })
   }
 
+  // Streaming session management
+  startStreamingSession(data: {
+    query: string
+    sessionId?: string
+    options?: {
+      enableProgress: boolean
+      enableSemanticAnalysis: boolean
+      maxExecutionTime: number
+    }
+  }) {
+    this.socket?.emit('startStreamingSession', data)
+  }
+
+  stopStreamingSession(sessionId: string) {
+    this.socket?.emit('stopStreamingSession', { sessionId })
+  }
+
+  // Real-time dashboard subscriptions
+  subscribeToDashboard() {
+    this.socket?.emit('subscribeToDashboard')
+  }
+
+  unsubscribeFromDashboard() {
+    this.socket?.emit('unsubscribeFromDashboard')
+  }
+
+  // Live chart subscriptions
+  subscribeToLiveCharts(chartIds: string[]) {
+    this.socket?.emit('subscribeToLiveCharts', { chartIds })
+  }
+
+  unsubscribeFromLiveCharts(chartIds: string[]) {
+    this.socket?.emit('unsubscribeFromLiveCharts', { chartIds })
+  }
+
+  // System monitoring
+  subscribeToSystemHealth() {
+    this.socket?.emit('subscribeToSystemHealth')
+  }
+
+  unsubscribeFromSystemHealth() {
+    this.socket?.emit('unsubscribeFromSystemHealth')
+  }
+
   // Typing indicators
   sendTypingIndicator(isTyping: boolean, conversationId?: string) {
     this.socket?.emit('typing', { isTyping, conversationId })

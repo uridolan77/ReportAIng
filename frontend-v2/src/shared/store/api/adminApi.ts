@@ -147,6 +147,116 @@ export const adminApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['SystemConfig'],
     }),
+
+    // Schema Management
+    refreshSchemaCache: builder.mutation<{ message: string; timestamp: string }, void>({
+      query: () => ({
+        url: '/query/refresh-schema',
+        method: 'POST',
+      }),
+    }),
+
+    // Semantic Metadata Management
+    updateTableSemanticMetadata: builder.mutation<{ success: boolean }, {
+      schemaName: string;
+      tableName: string;
+      metadata: any
+    }>({
+      query: ({ schemaName, tableName, metadata }) => ({
+        url: `/semantic/tables/${schemaName}/${tableName}/metadata`,
+        method: 'PUT',
+        body: metadata,
+      }),
+    }),
+
+    updateColumnSemanticMetadata: builder.mutation<{ success: boolean }, {
+      tableName: string;
+      columnName: string;
+      metadata: any
+    }>({
+      query: ({ tableName, columnName, metadata }) => ({
+        url: `/semantic/columns/${tableName}/${columnName}/metadata`,
+        method: 'PUT',
+        body: metadata,
+      }),
+    }),
+
+    // Semantic Embeddings
+    generateSemanticEmbeddings: builder.mutation<number, { forceRegeneration?: boolean }>({
+      query: ({ forceRegeneration = false }) => ({
+        url: `/semantic/embeddings/generate?forceRegeneration=${forceRegeneration}`,
+        method: 'POST',
+      }),
+    }),
+
+    // Semantic Validation
+    validateSemanticMetadata: builder.query<any, void>({
+      query: () => '/semantic/validate',
+    }),
+
+    // Semantic Enrichment
+    enrichSchemaMetadata: builder.mutation<any, {
+      tables?: string[];
+      forceRegeneration?: boolean
+    }>({
+      query: (body) => ({
+        url: '/semantic/enrich',
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    // Testing
+    testSemanticLayer: builder.query<{
+      businessFriendlySchema: string;
+      relevantSchema: object;
+      summary: object;
+    }, { query: string }>({
+      query: ({ query }) => `/semantic-layer/test?query=${encodeURIComponent(query)}`,
+    }),
+
+    // Configuration Management (Admin Only)
+    getSystemConfiguration: builder.query<any, void>({
+      query: () => '/configuration/system',
+      providesTags: ['SystemConfig'],
+    }),
+
+    updateSystemConfiguration: builder.mutation<{ success: boolean }, any>({
+      query: (body) => ({
+        url: '/configuration/system',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['SystemConfig'],
+    }),
+
+    getAIProviders: builder.query<any[], void>({
+      query: () => '/configuration/ai-providers',
+      providesTags: ['AIProvider'],
+    }),
+
+    updateAIProvider: builder.mutation<{ success: boolean }, { providerId: string; config: any }>({
+      query: ({ providerId, config }) => ({
+        url: `/configuration/ai-providers/${providerId}`,
+        method: 'PUT',
+        body: config,
+      }),
+      invalidatesTags: ['AIProvider'],
+    }),
+
+    getSecuritySettings: builder.query<any, void>({
+      query: () => '/configuration/security',
+      providesTags: ['SecuritySettings'],
+    }),
+
+    updateSecuritySettings: builder.mutation<{ success: boolean }, any>({
+      query: (body) => ({
+        url: '/configuration/security',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['SecuritySettings'],
+    }),
   }),
 })
 
@@ -154,6 +264,19 @@ export const {
   useGetSystemStatisticsQuery,
   useGetQueryAnalyticsQuery,
   useGetPerformanceMetricsQuery,
+
+  // Schema Management
+  useRefreshSchemaCacheMutation,
+
+  // Semantic Management
+  useUpdateTableSemanticMetadataMutation,
+  useUpdateColumnSemanticMetadataMutation,
+  useGenerateSemanticEmbeddingsMutation,
+  useValidateSemanticMetadataQuery,
+  useEnrichSchemaMetadataMutation,
+  useTestSemanticLayerQuery,
+
+  // Configuration Management
   useGetSystemConfigurationQuery,
   useUpdateSystemConfigurationMutation,
   useGetAIProvidersQuery,

@@ -530,6 +530,9 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.IEventBus
 builder.Services.Configure<BIReportingCopilot.Infrastructure.Messaging.EventBusConfiguration>(
     builder.Configuration.GetSection("EventBus"));
 
+// ===== REAL-TIME NOTIFICATIONS =====
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.RealTime.IRealTimeNotificationService, BIReportingCopilot.Infrastructure.RealTime.RealTimeNotificationService>();
+
 // ===== CACHING & REDIS =====
 // Configure Cache settings (includes Redis configuration)
 builder.Services.Configure<BIReportingCopilot.Core.Configuration.CacheConfiguration>(
@@ -873,6 +876,10 @@ app.MapHub<QueryStatusHub>("/hubs/query-status");
 app.MapHub<QueryHub>("/hubs/query");
 // Real-time streaming hub for streaming features
 app.MapHub<BIReportingCopilot.Infrastructure.AI.Streaming.StreamingHub>("/hubs/streaming");
+// Phase 5: Cost Control & Performance Optimization hubs
+app.MapHub<CostMonitoringHub>("/hubs/cost-monitoring");
+app.MapHub<PerformanceMonitoringHub>("/hubs/performance-monitoring");
+app.MapHub<ResourceMonitoringHub>("/hubs/resource-monitoring");
 
 // Configure health checks
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
