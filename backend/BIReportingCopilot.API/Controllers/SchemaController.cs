@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Schema;
+using BIReportingCopilot.Core.Interfaces.Business;
 using BIReportingCopilot.Infrastructure.Interfaces;
 using BIReportingCopilot.Infrastructure.Schema;
 using BIReportingCopilot.Core.Models;
@@ -17,18 +18,25 @@ namespace BIReportingCopilot.API.Controllers;
 [Route("api/schema")]
 [Authorize]
 public class SchemaController : ControllerBase
-{    private readonly ILogger<SchemaController> _logger;
+{
+    private readonly ILogger<SchemaController> _logger;
     private readonly BIReportingCopilot.Core.Interfaces.Schema.ISchemaService _schemaService;
     private readonly BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService _schemaManagementService;
-    private readonly DatabaseSchemaDiscoveryService _discoveryService;    public SchemaController(
+    private readonly DatabaseSchemaDiscoveryService _discoveryService;
+    private readonly IBusinessTableManagementService _businessTableService;
+
+    public SchemaController(
         ILogger<SchemaController> logger,
         BIReportingCopilot.Core.Interfaces.Schema.ISchemaService schemaService,
         BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService schemaManagementService,
-        DatabaseSchemaDiscoveryService discoveryService)
+        DatabaseSchemaDiscoveryService discoveryService,
+        IBusinessTableManagementService businessTableService)
     {
-        _logger = logger;        _schemaService = schemaService;
+        _logger = logger;
+        _schemaService = schemaService;
         _schemaManagementService = schemaManagementService;
         _discoveryService = discoveryService;
+        _businessTableService = businessTableService;
     }
 
     private string GetCurrentUserId()
@@ -87,47 +95,108 @@ public class SchemaController : ControllerBase
             _logger.LogError(ex, "❌ Error getting schema metadata from BI database");
             return StatusCode(500, new { error = "Failed to retrieve schema metadata from BI database", details = ex.Message });
         }
-    }    /// <summary>
-    /// Get all tables in the database - now uses live discovery from BI database
+    }
+
+    /// <summary>
+    /// Get test data for frontend debugging
+    /// </summary>
+    [HttpGet("tables/test")]
+    [ProducesResponseType(typeof(IEnumerable<object>), 200)]
+    public IActionResult GetTestTables()
+    {
+        var testData = new[]
+        {
+            new
+            {
+                tableInformation = "common.tbl_Daily_actions",
+                domainUseCase = "Gaming Analytics",
+                businessContext = "Daily player actions tracking",
+                qualityUsage = "High",
+                ruleGovernance = "GDPR compliant",
+                lastUpdated = "2024-01-15",
+                actions = "Edit"
+            },
+            new
+            {
+                tableInformation = "common.tbl_Daily_actions_players",
+                domainUseCase = "Player Analytics",
+                businessContext = "Player behavior analysis",
+                qualityUsage = "Medium",
+                ruleGovernance = "Data retention 7 years",
+                lastUpdated = "2024-01-14",
+                actions = "Edit"
+            }
+        };
+
+        return Ok(testData);
+    }
+
+    /// <summary>
+    /// Get all tables in the database - now returns business metadata when available
     /// </summary>
     [HttpGet("tables")]
-    public async Task<ActionResult<List<TableMetadata>>> GetTables()
+    public async Task<ActionResult<List<object>>> GetTables()
     {
         try
         {
-            _logger.LogInformation("🔍 Getting database tables from BI database via discovery service");
-            
-            var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
-            
-            var tables = discoveryResult.Tables.Select(t => new TableMetadata
+            _logger.LogInformation("🔍 Getting business tables with metadata");
+
+            // First try to get business metadata
+            var businessTables = await _businessTableService.GetBusinessTablesAsync();
+
+            if (businessTables.Any())
             {
-                Name = t.TableName,
-                Schema = t.SchemaName,
-                Description = $"Table with {t.Columns.Count} columns",
-                RowCount = 0, // Discovery service doesn't count rows for performance
-                LastUpdated = DateTime.UtcNow,
-                Columns = t.Columns.Select(c => new ColumnMetadata
+                _logger.LogInformation("✅ Returning {Count} business tables with metadata", businessTables.Count);
+
+                // Log first table for debugging
+                var firstTable = businessTables.First();
+                _logger.LogInformation("🔍 Sample table data: Name={TableName}, Schema={SchemaName}, Purpose={BusinessPurpose}, Context={BusinessContext}",
+                    firstTable.TableName, firstTable.SchemaName, firstTable.BusinessPurpose, firstTable.BusinessContext);
+
+                // Transform business tables to match the EXACT frontend format
+                var result = businessTables.Select(bt => new
                 {
-                    Name = c.ColumnName,
-                    DataType = c.DataType,
-                    Description = $"{c.DataType} column" + (c.IsPrimaryKey ? " (Primary Key)" : "") + (c.IsForeignKey ? " (Foreign Key)" : ""),
-                    IsNullable = c.IsNullable,
-                    IsPrimaryKey = c.IsPrimaryKey,
-                    IsForeignKey = c.IsForeignKey,
-                    SemanticTags = new[] { c.DataType.ToLower() },
-                    SampleValues = new string[0]
-                }).ToList()
-            }).ToList();
-            
-            _logger.LogInformation("✅ Tables discovery completed: {TableCount} tables found", tables.Count);
-            return Ok(tables);
+                    // Frontend expects these exact field names based on the table columns
+                    tableInformation = $"{bt.SchemaName}.{bt.TableName}",
+                    domainUseCase = bt.PrimaryUseCase ?? "General Business Use",
+                    businessContext = bt.BusinessContext ?? "No context provided",
+                    qualityUsage = DetermineQualityUsageFromDto(bt),
+                    ruleGovernance = bt.BusinessRules ?? "No specific rules defined",
+                    lastUpdated = bt.UpdatedDate?.ToString("yyyy-MM-dd") ?? "Never",
+                    actions = "Edit"
+                }).ToList();
+
+                return Ok(result);
+            }
+            else
+            {
+                _logger.LogInformation("No business metadata found, falling back to schema discovery");
+
+                // Fallback to schema discovery if no business metadata exists
+                var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
+
+                var tables = discoveryResult.Tables.Select(t => new
+                {
+                    name = t.TableName,
+                    schema = t.SchemaName,
+                    description = $"Table with {t.Columns.Count} columns",
+                    rowCount = 0,
+                    lastUpdated = DateTime.UtcNow,
+                    columnCount = t.Columns.Count
+                }).ToList();
+
+                _logger.LogInformation("✅ Schema discovery completed: {TableCount} tables found", tables.Count);
+                return Ok(tables);
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Error getting database tables from BI database");
-            return StatusCode(500, new { error = "Failed to retrieve tables from BI database", details = ex.Message });
+            _logger.LogError(ex, "❌ Error getting tables");
+            return StatusCode(500, new { error = "Failed to retrieve tables", details = ex.Message });
         }
-    }    /// <summary>
+    }
+
+    /// <summary>
     /// Get metadata for a specific table - now uses live discovery from BI database
     /// </summary>
     [HttpGet("tables/{tableName}")]
@@ -177,7 +246,9 @@ public class SchemaController : ControllerBase
             _logger.LogError(ex, "❌ Error getting table metadata for: {TableName} from BI database", tableName);
             return StatusCode(500, new { error = $"Failed to retrieve metadata for table '{tableName}' from BI database", details = ex.Message });
         }
-    }    /// <summary>
+    }
+
+    /// <summary>
     /// Refresh schema metadata - now triggers fresh discovery from BI database
     /// </summary>
     [HttpPost("refresh")]
@@ -211,7 +282,8 @@ public class SchemaController : ControllerBase
     /// </summary>
     [HttpGet("databases")]
     public async Task<ActionResult<List<string>>> GetDatabases()
-    {        try
+    {
+        try
         {
             _logger.LogInformation("Getting available databases");
             var userId = GetCurrentUserId();
@@ -223,7 +295,9 @@ public class SchemaController : ControllerBase
             _logger.LogError(ex, "Error getting databases");
             return StatusCode(500, new { error = "Failed to retrieve databases", details = ex.Message });
         }
-    }    /// <summary>
+    }
+
+    /// <summary>
     /// Get data sources for schema exploration - now uses live discovery from BI database
     /// </summary>
     [HttpGet("datasources")]
@@ -254,5 +328,27 @@ public class SchemaController : ControllerBase
             _logger.LogError(ex, "❌ Error getting data sources from BI database");
             return StatusCode(500, new { error = "Failed to retrieve data sources from BI database", details = ex.Message });
         }
+    }
+
+    private static string DetermineQualityUsage(BusinessTableInfoEntity table)
+    {
+        // Determine quality/usage level based on table characteristics
+        if (table.TableName.Contains("Daily_actions") || table.TableName.Contains("transaction"))
+            return "High";
+        if (table.TableName.Contains("reference") || table.TableName.Contains("master") ||
+            table.TableName.Contains("Countries") || table.TableName.Contains("Currencies"))
+            return "Medium";
+        return "Low";
+    }
+
+    private static string DetermineQualityUsageFromDto(BusinessTableInfoDto table)
+    {
+        // Determine quality/usage level based on table characteristics
+        if (table.TableName.Contains("Daily_actions") || table.TableName.Contains("transaction"))
+            return "Importance: High, Usage: High";
+        if (table.TableName.Contains("reference") || table.TableName.Contains("master") ||
+            table.TableName.Contains("Countries") || table.TableName.Contains("Currencies"))
+            return "Importance: Medium, Usage: Medium";
+        return "Importance: Low, Usage: Low";
     }
 }

@@ -63,7 +63,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
 
   const getTrendIcon = () => {
     if (trend === undefined) return null
-    return trend > 0 ? <TrendingUpOutlined /> : <TrendingDownOutlined />
+    return trend > 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />
   }
 
   const getTrendColor = () => {

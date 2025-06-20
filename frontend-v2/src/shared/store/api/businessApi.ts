@@ -135,12 +135,12 @@ export const businessApi = baseApi.injectEndpoints({
         return []
       },
     }),
-    
+
     getBusinessTable: builder.query<BusinessTableInfoDto, number>({
       query: (id) => `/business/tables/${id}`,
       providesTags: (result, error, id) => [{ type: 'BusinessTable', id }],
     }),
-    
+
     createBusinessTable: builder.mutation<BusinessTableInfoDto, CreateBusinessTableRequest>({
       query: (body) => ({
         url: '/business/tables',
@@ -149,7 +149,7 @@ export const businessApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['BusinessTable'],
     }),
-    
+
     updateBusinessTable: builder.mutation<BusinessTableInfoDto, UpdateBusinessTableRequest>({
       query: ({ id, ...body }) => ({
         url: `/business/tables/${id}`,
@@ -158,7 +158,7 @@ export const businessApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'BusinessTable', id }],
     }),
-    
+
     deleteBusinessTable: builder.mutation<{ success: boolean }, number>({
       query: (id) => ({
         url: `/business/tables/${id}`,
@@ -166,13 +166,13 @@ export const businessApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['BusinessTable'],
     }),
-    
+
     // Business Columns
     getBusinessColumns: builder.query<BusinessColumnInfoDto[], number>({
       query: (tableId) => `/business/tables/${tableId}/columns`,
       providesTags: ['BusinessColumn'],
     }),
-    
+
     // Business Glossary
     getBusinessGlossary: builder.query<{ terms: BusinessGlossaryDto[]; total: number }, { page?: number; limit?: number; category?: string }>({
       query: ({ page = 1, limit = 50, category }) => {
@@ -185,7 +185,7 @@ export const businessApi = baseApi.injectEndpoints({
       },
       providesTags: ['GlossaryTerm'],
     }),
-    
+
     createGlossaryTerm: builder.mutation<BusinessGlossaryDto, CreateGlossaryTermRequest>({
       query: (body) => ({
         url: '/business/glossary',
@@ -194,7 +194,7 @@ export const businessApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['GlossaryTerm'],
     }),
-    
+
     updateGlossaryTerm: builder.mutation<BusinessGlossaryDto, UpdateGlossaryTermRequest>({
       query: ({ id, ...body }) => ({
         url: `/business/glossary/${id}`,
@@ -203,7 +203,7 @@ export const businessApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: 'GlossaryTerm', id }],
     }),
-    
+
     deleteGlossaryTerm: builder.mutation<{ success: boolean }, number>({
       query: (id) => ({
         url: `/business/glossary/${id}`,

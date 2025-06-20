@@ -2,8 +2,7 @@ import { FC, useState } from 'react'
 import { Card, Table, Button, Space, Tag, Typography, Tabs, Modal, message, Alert, Spin } from 'antd'
 import { EditOutlined, DeleteOutlined, PlusOutlined, TableOutlined, BookOutlined, SettingOutlined, ReloadOutlined } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
-import { useGetBusinessTablesQuery, useDeleteBusinessTableMutation } from '@shared/store/api/businessApi'
-import { useEnhancedBusinessTables } from '@shared/hooks/useEnhancedApi'
+import { useGetAllSchemaTablesQuery, useDeleteBusinessTableMutation } from '@shared/store/api/businessApi'
 import { useApiMode } from '@shared/components/core/ApiModeToggle'
 import { BusinessTableEditor } from '../components/BusinessTableEditor'
 import { BusinessGlossaryManager } from '../components/BusinessGlossaryManager'
@@ -15,10 +14,29 @@ const { Text } = Typography
 const { TabPane } = Tabs
 
 export default function BusinessMetadata() {
-  // Enhanced API with automatic fallback to mock data
-  const { data: businessTables, isLoading, error, refetch } = useEnhancedBusinessTables()
+  // Use schema tables to get actual database tables
+  const { data: schemaTables, isLoading, error, refetch } = useGetAllSchemaTablesQuery()
   const [deleteTable] = useDeleteBusinessTableMutation()
   const { useMockData } = useApiMode()
+
+  // Convert schema tables to business table format for display
+  const businessTables = schemaTables?.map(table => ({
+    id: `${table.schemaName}.${table.tableName}`,
+    schemaName: table.schemaName,
+    tableName: table.tableName,
+    businessPurpose: table.businessPurpose || '',
+    domainClassification: table.domainClassification || 'Unclassified',
+    businessOwner: '',
+    primaryUseCase: '',
+    businessContext: '',
+    importanceScore: 0,
+    usageFrequency: 0,
+    semanticCoverageScore: 0,
+    isActive: true,
+    dataGovernancePolicies: [],
+    updatedDate: table.lastUpdated || '',
+    createdBy: '',
+  } as BusinessTableInfoDto)) || []
 
   const [selectedTable, setSelectedTable] = useState<BusinessTableInfoDto | null>(null)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
