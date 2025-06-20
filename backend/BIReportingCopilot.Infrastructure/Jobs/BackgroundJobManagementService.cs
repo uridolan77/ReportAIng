@@ -100,11 +100,16 @@ public class BackgroundJobManagementService
         var retentionDays = _performanceConfig.RetentionDays;
         var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
 
-        var deletedCount = await context.QueryHistory
+        var oldQueryHistory = await context.QueryHistory
             .Where(q => q.QueryTimestamp < cutoffDate)
-            .ExecuteDeleteAsync();
+            .ToListAsync();
 
-        _logger.LogInformation("Deleted {Count} old query history records", deletedCount);
+        if (oldQueryHistory.Any())
+        {
+            context.QueryHistory.RemoveRange(oldQueryHistory);
+            await context.SaveChangesAsync();
+            _logger.LogInformation("Deleted {Count} old query history records", oldQueryHistory.Count);
+        }
     }
 
     private async Task CleanupExpiredCacheAsync()
@@ -119,11 +124,13 @@ public class BackgroundJobManagementService
 
         if (expiredCacheEntries.Any())
         {
-            await context.QueryCache
+            var expiredEntities = await context.QueryCache
                 .Where(c => expiredCacheEntries.Contains(c.Id))
-                .ExecuteDeleteAsync();
+                .ToListAsync();
 
-            _logger.LogInformation("Deleted {Count} expired cache entries", expiredCacheEntries.Count);
+            context.QueryCache.RemoveRange(expiredEntities);
+            await context.SaveChangesAsync();
+            _logger.LogInformation("Deleted {Count} expired cache entries", expiredEntities.Count);
         }
     }
 
@@ -135,11 +142,16 @@ public class BackgroundJobManagementService
         var retentionDays = _performanceConfig.RetentionDays * 12; // Keep audit logs longer
         var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
 
-        var deletedCount = await context.AuditLog
+        var oldAuditLogs = await context.AuditLog
             .Where(a => a.Timestamp < cutoffDate && a.Severity != "Critical")
-            .ExecuteDeleteAsync();
+            .ToListAsync();
 
-        _logger.LogInformation("Deleted {Count} old audit log entries", deletedCount);
+        if (oldAuditLogs.Any())
+        {
+            context.AuditLog.RemoveRange(oldAuditLogs);
+            await context.SaveChangesAsync();
+            _logger.LogInformation("Deleted {Count} old audit log entries", oldAuditLogs.Count);
+        }
     }
 
     private async Task CleanupInactiveSessionsAsync()
@@ -182,13 +194,15 @@ public class BackgroundJobManagementService
 
             // Delete very old inactive sessions
             var oldSessionCutoff = DateTime.UtcNow.AddDays(-30);
-            var deletedSessionCount = await context.UserSessions
+            var oldSessions = await context.UserSessions
                 .Where(s => !s.IsActive && s.LastActivity < oldSessionCutoff)
-                .ExecuteDeleteAsync();
+                .ToListAsync();
 
-            if (deletedSessionCount > 0)
+            if (oldSessions.Any())
             {
-                _logger.LogInformation("Deleted {Count} old inactive sessions", deletedSessionCount);
+                context.UserSessions.RemoveRange(oldSessions);
+                await context.SaveChangesAsync();
+                _logger.LogInformation("Deleted {Count} old inactive sessions", oldSessions.Count);
             }
         }
         catch (Exception ex)
@@ -232,13 +246,15 @@ public class BackgroundJobManagementService
 
             // Clean up old performance metrics (keep last 30 days)
             var metricsCutoff = DateTime.UtcNow.AddDays(-30);
-            var deletedMetrics = await context.PerformanceMetrics
+            var oldMetrics = await context.PerformanceMetrics
                 .Where(m => m.Timestamp < metricsCutoff)
-                .ExecuteDeleteAsync();
+                .ToListAsync();
 
-            if (deletedMetrics > 0)
+            if (oldMetrics.Any())
             {
-                _logger.LogInformation("Deleted {Count} old performance metrics", deletedMetrics);
+                context.PerformanceMetrics.RemoveRange(oldMetrics);
+                await context.SaveChangesAsync();
+                _logger.LogInformation("Deleted {Count} old performance metrics", oldMetrics.Count);
             }
         }
         catch (Exception ex)
