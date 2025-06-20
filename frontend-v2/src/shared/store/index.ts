@@ -1,5 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { setupListeners } from '@reduxjs/toolkit/query'
+import { persistStore, persistReducer } from 'redux-persist'
+import storage from 'redux-persist/lib/storage'
 import { authSlice } from './auth'
 import { uiSlice } from './ui'
 import { chatSlice } from './chat'
@@ -17,10 +19,19 @@ import './api/tuningApi'
 import './api/costApi'
 import './api/performanceApi'
 
+// Configure persistence for auth slice
+const authPersistConfig = {
+  key: 'auth',
+  storage,
+  whitelist: ['isAuthenticated', 'user', 'accessToken', 'refreshToken', 'preferences']
+}
+
+const persistedAuthReducer = persistReducer(authPersistConfig, authSlice.reducer)
+
 export const store = configureStore({
   reducer: {
     // Feature slices
-    auth: authSlice.reducer,
+    auth: persistedAuthReducer,
     ui: uiSlice.reducer,
     chat: chatSlice.reducer,
 
@@ -45,6 +56,9 @@ export const store = configureStore({
 
 // Enable listener behavior for the store
 setupListeners(store.dispatch)
+
+// Create persistor
+export const persistor = persistStore(store)
 
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
