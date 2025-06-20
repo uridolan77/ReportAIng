@@ -22,6 +22,8 @@ import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import {
   useCreateBusinessTableMutation,
   useUpdateBusinessTableMutation,
+  useGetBusinessTableQuery,
+  useGetBusinessTablesQuery,
   useGetBusinessColumnsQuery,
   type BusinessTableInfoDto,
   type BusinessColumnInfoDto
@@ -51,42 +53,104 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
 
   const [createTable, { isLoading: isCreating }] = useCreateBusinessTableMutation()
   const [updateTable, { isLoading: isUpdating }] = useUpdateBusinessTableMutation()
-  
+
+  // Fetch all business tables to find matching one for schema tables
+  const { data: allBusinessTables } = useGetBusinessTablesQuery()
+
+  // Determine table type:
+  // - Real business tables: numeric ID > 0
+  // - Schema tables with business context: string ID with business data
+  // - New table templates: ID = 0
+  const hasNumericId = table?.id && !isNaN(Number(table.id))
+  const hasBusinessData = table?.businessPurpose || table?.businessContext || table?.domainClassification
+
+  const isBusinessTable = hasNumericId && Number(table.id) > 0
+  const isSchemaWithBusinessData = !hasNumericId && hasBusinessData
+  const isNewTemplate = table?.id === 0
+
+  // For schema tables, try to find matching business table
+  const matchingBusinessTable = isSchemaWithBusinessData && allBusinessTables
+    ? allBusinessTables.find(bt =>
+        bt.schemaName === table?.schemaName && bt.tableName === table?.tableName
+      )
+    : null
+
+  const tableIdAsNumber = isBusinessTable ? Number(table.id) : (matchingBusinessTable?.id || 0)
+
+  console.log('🔍 Table analysis:', {
+    id: table?.id,
+    hasNumericId,
+    hasBusinessData,
+    isBusinessTable,
+    isSchemaWithBusinessData,
+    isNewTemplate,
+    matchingBusinessTable: matchingBusinessTable?.id
+  })
+
+  // Fetch the actual business table data if we found a matching one
+  const { data: actualBusinessTableData, isLoading: businessTableLoading } = useGetBusinessTableQuery(
+    matchingBusinessTable?.id || 0,
+    { skip: !matchingBusinessTable?.id }
+  )
+
   const { data: columns, refetch: refetchColumns, error: columnsError, isLoading: columnsLoading } = useGetBusinessColumnsQuery(
-    table?.id || 0,
-    { skip: !table?.id }
+    tableIdAsNumber,
+    { skip: !isBusinessTable }
   )
 
   // Debug logging for columns
   useEffect(() => {
     if (table?.id) {
-      console.log('🔍 Fetching columns for table ID:', table.id)
-      console.log('📊 Columns data:', columns)
-      console.log('❌ Columns error:', columnsError)
-      console.log('⏳ Columns loading:', columnsLoading)
+      console.log('🔍 Table ID:', table.id, 'Is Business Table:', isBusinessTable)
+      console.log('🔢 Table ID as Number:', tableIdAsNumber)
+      if (isBusinessTable) {
+        console.log('📊 Columns data:', columns)
+        console.log('❌ Columns error:', columnsError)
+        console.log('⏳ Columns loading:', columnsLoading)
+      } else {
+        console.log('ℹ️ Schema table - columns not available via business API')
+      }
     }
-  }, [table?.id, columns, columnsError, columnsLoading])
+  }, [table?.id, isBusinessTable, tableIdAsNumber, columns, columnsError, columnsLoading])
 
-  const isEditing = !!table
+  // We're "editing" if we have a table with business data (either real business table or schema with business context)
+  const isEditing = isBusinessTable || isSchemaWithBusinessData
   const isLoading = isCreating || isUpdating
 
   useEffect(() => {
+    console.log('🔄 BusinessTableEditor useEffect triggered:', { open, table, isEditing })
+
     if (open && table) {
       console.log('🔍 BusinessTableEditor received table data:', table)
+      console.log('🔍 Table type analysis:', {
+        isEditing,
+        isBusinessTable,
+        isSchemaWithBusinessData,
+        isNewTemplate,
+        tableId: table.id,
+        tableIdType: typeof table.id,
+        matchingBusinessTable: matchingBusinessTable?.id,
+        actualBusinessTableData: actualBusinessTableData?.id,
+        businessTableLoading
+      })
+
+      // Use actual business table data if available, otherwise use passed table data
+      const tableDataToUse = actualBusinessTableData || table
+      console.log('📊 Using table data:', tableDataToUse)
 
       // Helper function to convert arrays/objects to strings for form display
       const convertToString = (value: any) => {
         if (Array.isArray(value)) {
-          return JSON.stringify(value, null, 2)
+          return value.length > 0 ? JSON.stringify(value, null, 2) : ''
         }
         if (typeof value === 'object' && value !== null) {
-          return JSON.stringify(value, null, 2)
+          return Object.keys(value).length > 0 ? JSON.stringify(value, null, 2) : ''
         }
         return value || ''
       }
 
       const formValues = {
-        ...table,
+        ...tableDataToUse,
         // Convert complex fields to strings for form editing
         naturalLanguageAliases: convertToString(table.naturalLanguageAliases),
         businessProcesses: convertToString(table.businessProcesses),
@@ -108,8 +172,17 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
       }
 
       console.log('📝 Setting form values:', formValues)
+      console.log('📝 Form instance:', form)
       form.setFieldsValue(formValues)
+
+      // Verify the values were set
+      setTimeout(() => {
+        const currentValues = form.getFieldsValue()
+        console.log('✅ Form values after setting:', currentValues)
+      }, 100)
     } else if (open) {
+      // New table creation
+      console.log('🆕 Creating new table - no table data provided')
       form.resetFields()
       form.setFieldsValue({
         isActive: true,
@@ -117,8 +190,10 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
         usageFrequency: 0.5,
         semanticCoverageScore: 0.0,
       })
+    } else if (!open) {
+      console.log('🔒 Modal closed - not setting form values')
     }
-  }, [open, table, form])
+  }, [open, table, form, isEditing, actualBusinessTableData, businessTableLoading])
 
   const handleSubmit = async () => {
     try {
@@ -263,7 +338,13 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
   return (
     <>
       <Modal
-        title={isEditing ? 'Edit Business Table' : 'Add Business Table'}
+        title={
+          isEditing
+            ? `Edit Business Table: ${table?.schemaName}.${table?.tableName}`
+            : table?.schemaName && table?.tableName
+              ? `Create Business Metadata: ${table.schemaName}.${table.tableName}`
+              : 'Add Business Table'
+        }
         open={open}
         onCancel={onClose}
         width={1000}
@@ -276,9 +357,9 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
           </Button>,
         ]}
       >
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane tab="Basic Information" key="basic">
-            <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical">
+          <Tabs activeKey={activeTab} onChange={setActiveTab}>
+            <TabPane tab="Basic Information" key="basic">
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
@@ -349,12 +430,9 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                 </Col>
               </Row>
 
+            </TabPane>
 
-            </Form>
-          </TabPane>
-
-          <TabPane tab="Advanced Metadata" key="advanced">
-            <Form form={form} layout="vertical">
+            <TabPane tab="Advanced Metadata" key="advanced">
               <Form.Item
                 name="semanticDescription"
                 label="Semantic Description"
@@ -473,11 +551,9 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                   </Form.Item>
                 </Col>
               </Row>
-            </Form>
-          </TabPane>
+            </TabPane>
 
-          <TabPane tab="AI & Search Metadata" key="ai-metadata">
-            <Form form={form} layout="vertical">
+            <TabPane tab="AI & Search Metadata" key="ai-metadata">
               <Form.Item
                 name="vectorSearchKeywords"
                 label="Vector Search Keywords"
@@ -546,11 +622,9 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                   </Form.Item>
                 </Col>
               </Row>
-            </Form>
-          </TabPane>
+            </TabPane>
 
-          <TabPane tab="Data Governance" key="governance">
-            <Form form={form} layout="vertical">
+            <TabPane tab="Data Governance" key="governance">
               <Form.Item
                 name="dataQualityIndicators"
                 label="Data Quality Indicators"
@@ -616,47 +690,70 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
               >
                 <Switch />
               </Form.Item>
-            </Form>
-          </TabPane>
+            </TabPane>
 
-          {isEditing && (
-            <TabPane tab={`Columns (${columns?.length || 0})`} key="columns">
-              <div style={{ marginBottom: 16 }}>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleAddColumn}
-                >
-                  Add Column
-                </Button>
-                {columnsLoading && (
-                  <Text style={{ marginLeft: 16, color: '#1890ff' }}>Loading columns...</Text>
-                )}
-                {columnsError && (
-                  <Text style={{ marginLeft: 16, color: '#ff4d4f' }}>
-                    Error loading columns: {JSON.stringify(columnsError)}
-                  </Text>
-                )}
-              </div>
+            {isEditing && (
+            <TabPane tab={`Columns (${isBusinessTable ? columns?.length || 0 : 'Schema Only'})`} key="columns">
+              {isBusinessTable ? (
+                <>
+                  <div style={{ marginBottom: 16 }}>
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={handleAddColumn}
+                    >
+                      Add Column
+                    </Button>
+                    {columnsLoading && (
+                      <Text style={{ marginLeft: 16, color: '#1890ff' }}>Loading columns...</Text>
+                    )}
+                    {columnsError && (
+                      <Text style={{ marginLeft: 16, color: '#ff4d4f' }}>
+                        Error loading columns: {JSON.stringify(columnsError)}
+                      </Text>
+                    )}
+                  </div>
 
-              <Table
-                columns={columnTableColumns}
-                dataSource={columns || []}
-                rowKey="id"
-                size="small"
-                pagination={false}
-                scroll={{ y: 400 }}
-                loading={columnsLoading}
-              />
+                  <Table
+                    columns={columnTableColumns}
+                    dataSource={columns || []}
+                    rowKey="id"
+                    size="small"
+                    pagination={false}
+                    scroll={{ y: 400 }}
+                    loading={columnsLoading}
+                  />
+                </>
+              ) : (
+                <Card style={{ textAlign: 'center', padding: '40px' }}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <Text type="secondary" style={{ fontSize: '16px' }}>
+                      📋 Schema Table - Business Columns Not Available
+                    </Text>
+                  </div>
+                  <div style={{ marginBottom: '16px' }}>
+                    <Text type="secondary">
+                      This is a schema-discovered table. To manage business column metadata,
+                      you need to first convert it to a business table by saving the business metadata.
+                    </Text>
+                  </div>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                      💡 Tip: Fill out the business information in the other tabs and save to enable column management.
+                    </Text>
+                  </div>
+                </Card>
+              )}
             </TabPane>
           )}
-        </Tabs>
+          </Tabs>
+        </Form>
       </Modal>
 
       <BusinessColumnEditor
         open={isColumnEditorOpen}
         column={selectedColumn}
-        tableId={table?.id || 0}
+        tableId={tableIdAsNumber}
         onClose={handleColumnEditorClose}
       />
     </>

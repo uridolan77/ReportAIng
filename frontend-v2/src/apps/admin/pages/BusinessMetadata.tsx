@@ -19,31 +19,141 @@ export default function BusinessMetadata() {
   const [deleteTable] = useDeleteBusinessTableMutation()
   const { useMockData } = useApiMode()
 
+  // Debug logging
+  console.log('🔍 Schema tables data:', schemaTables)
+
+  // Add custom styles for table rows
+  const tableStyles = `
+    .table-row-light {
+      background-color: #fafafa !important;
+    }
+    .table-row-dark {
+      background-color: #ffffff !important;
+    }
+    .table-row-light:hover,
+    .table-row-dark:hover {
+      background-color: #e6f7ff !important;
+    }
+    .low-coverage-row {
+      background-color: #fff2e8 !important;
+    }
+    .low-coverage-row:hover {
+      background-color: #ffe7ba !important;
+    }
+    .ant-table-thead > tr > th {
+      background-color: #f0f2f5 !important;
+      font-weight: 600 !important;
+      color: #262626 !important;
+      border-bottom: 2px solid #d9d9d9 !important;
+    }
+    .ant-table-tbody > tr > td {
+      border-bottom: 1px solid #f0f0f0 !important;
+      vertical-align: top !important;
+      padding: 12px 16px !important;
+    }
+  `
+
   // Convert schema tables to business table format for display
-  const businessTables = schemaTables?.map(table => ({
-    id: `${table.schemaName}.${table.tableName}`,
-    schemaName: table.schemaName,
-    tableName: table.tableName,
-    businessPurpose: table.businessPurpose || '',
-    domainClassification: table.domainClassification || 'Unclassified',
-    businessOwner: '',
-    primaryUseCase: '',
-    businessContext: '',
-    importanceScore: 0,
-    usageFrequency: 0,
-    semanticCoverageScore: 0,
-    isActive: true,
-    dataGovernancePolicies: [],
-    updatedDate: table.lastUpdated || '',
-    createdBy: '',
-  } as BusinessTableInfoDto)) || []
+  const businessTables = schemaTables?.map((table: any) => {
+    // Handle both business metadata format and schema discovery format
+    if (table.tableInformation) {
+      // Business metadata format from backend
+      const [schemaName, tableName] = table.tableInformation.split('.')
+      return {
+        id: table.tableInformation,
+        schemaName: schemaName || 'dbo',
+        tableName: tableName || table.tableInformation,
+        businessPurpose: table.businessContext || 'No business purpose defined',
+        domainClassification: table.domainUseCase || 'Unclassified',
+        businessOwner: 'Not specified',
+        primaryUseCase: table.domainUseCase || 'No primary use case defined',
+        businessContext: table.businessContext || 'No context provided',
+        importanceScore: table.qualityUsage?.includes('High') ? 0.9 : table.qualityUsage?.includes('Medium') ? 0.6 : 0.3,
+        usageFrequency: table.qualityUsage?.includes('High') ? 0.8 : table.qualityUsage?.includes('Medium') ? 0.5 : 0.2,
+        semanticCoverageScore: 0.7,
+        isActive: true,
+        dataGovernancePolicies: table.ruleGovernance ? [table.ruleGovernance] : [],
+        updatedDate: table.lastUpdated || '',
+        createdBy: 'System',
+      } as BusinessTableInfoDto
+    } else {
+      // Schema discovery format from backend
+      return {
+        id: `${table.schema}.${table.name}`,
+        schemaName: table.schema || 'dbo',
+        tableName: table.name,
+        businessPurpose: table.description || 'No business purpose defined',
+        domainClassification: 'Unclassified',
+        businessOwner: 'Not specified',
+        primaryUseCase: 'No primary use case defined',
+        businessContext: table.description || 'No context provided',
+        importanceScore: 0.5,
+        usageFrequency: 0.3,
+        semanticCoverageScore: 0.2,
+        isActive: true,
+        dataGovernancePolicies: [],
+        updatedDate: table.lastUpdated ? new Date(table.lastUpdated).toISOString() : '',
+        createdBy: 'System',
+      } as BusinessTableInfoDto
+    }
+  }) || []
 
   const [selectedTable, setSelectedTable] = useState<BusinessTableInfoDto | null>(null)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('tables')
 
   const handleEdit = (record: BusinessTableInfoDto) => {
-    setSelectedTable(record)
+    console.log('🔍 Editing table:', record)
+
+    // Check if this table has business data (regardless of ID type)
+    const hasBusinessData = record.businessPurpose || record.businessContext || record.domainClassification
+    const isRealBusinessTable = !isNaN(Number(record.id))
+
+    if (hasBusinessData) {
+      // This table has business data - use it directly for editing
+      console.log('📊 Table with business data - using existing data')
+      setSelectedTable(record)
+    } else {
+      // This is a schema-only table - create a new business table template with schema info pre-filled
+      console.log('🏗️ Schema-only table - creating new business table template')
+      const newTableTemplate: BusinessTableInfoDto = {
+        id: 0, // New table
+        schemaName: record.schemaName,
+        tableName: record.tableName,
+        businessPurpose: '',
+        businessContext: '',
+        primaryUseCase: '',
+        domainClassification: '',
+        businessOwner: '',
+        semanticDescription: '',
+        commonQueryPatterns: '',
+        businessRules: '',
+        naturalLanguageAliases: [],
+        businessProcesses: [],
+        analyticalUseCases: [],
+        reportingCategories: [],
+        vectorSearchKeywords: [],
+        businessGlossaryTerms: [],
+        llmContextHints: [],
+        queryComplexityHints: [],
+        semanticRelationships: '',
+        usagePatterns: '',
+        dataQualityIndicators: {},
+        relationshipSemantics: '',
+        dataGovernancePolicies: [],
+        importanceScore: 0.5,
+        usageFrequency: 0.5,
+        semanticCoverageScore: 0.0,
+        isActive: true,
+        createdBy: '',
+        createdDate: '',
+        updatedDate: '',
+        lastAnalyzed: ''
+      }
+      console.log('📝 Created new table template:', newTableTemplate)
+      setSelectedTable(newTableTemplate)
+    }
+
     setIsEditorOpen(true)
   }
 
@@ -79,32 +189,51 @@ export default function BusinessMetadata() {
       title: 'Table Information',
       dataIndex: 'tableName',
       key: 'tableName',
-      width: 250,
+      width: 280,
+      fixed: 'left' as const,
       render: (text: string, record: BusinessTableInfoDto) => (
-        <div>
-          <Text strong>{record.schemaName}.{text}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: '12px' }}>
-            {record.businessPurpose || 'No business purpose defined'}
-          </Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: '11px' }}>
-            Owner: {record.businessOwner || 'Not specified'}
-          </Text>
+        <div style={{ padding: '8px 0' }}>
+          <div style={{ marginBottom: '6px' }}>
+            <Text strong style={{ fontSize: '14px', color: '#1890ff' }}>
+              {record.schemaName}.{text}
+            </Text>
+          </div>
+          <div style={{ marginBottom: '4px' }}>
+            <Text type="secondary" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+              {record.businessPurpose && record.businessPurpose !== 'No business purpose defined'
+                ? (record.businessPurpose.length > 80 ? `${record.businessPurpose.substring(0, 80)}...` : record.businessPurpose)
+                : 'No business purpose defined'}
+            </Text>
+          </div>
+          <div>
+            <Text type="secondary" style={{ fontSize: '11px', color: '#8c8c8c' }}>
+              Owner: {record.businessOwner || 'Not specified'}
+            </Text>
+          </div>
         </div>
       ),
     },
     {
-      title: 'Domain & Use Case',
+      title: 'Domain & Classification',
       key: 'domain',
-      width: 180,
+      width: 200,
       render: (record: BusinessTableInfoDto) => (
-        <div>
-          <Tag color="blue">{record.domainClassification || 'Unclassified'}</Tag>
-          <br />
-          <Text style={{ fontSize: '11px', marginTop: 4 }}>
-            {record.primaryUseCase || 'No primary use case defined'}
-          </Text>
+        <div style={{ padding: '8px 0' }}>
+          <div style={{ marginBottom: '8px' }}>
+            <Tag
+              color={record.domainClassification === 'Unclassified' ? 'default' : 'blue'}
+              style={{ fontSize: '11px', padding: '2px 8px' }}
+            >
+              {record.domainClassification || 'Unclassified'}
+            </Tag>
+          </div>
+          <div>
+            <Text style={{ fontSize: '11px', color: '#666', lineHeight: '1.3' }}>
+              {record.primaryUseCase && record.primaryUseCase !== 'No primary use case defined'
+                ? (record.primaryUseCase.length > 60 ? `${record.primaryUseCase.substring(0, 60)}...` : record.primaryUseCase)
+                : 'No primary use case defined'}
+            </Text>
+          </div>
         </div>
       ),
     },
@@ -112,33 +241,55 @@ export default function BusinessMetadata() {
       title: 'Business Context',
       dataIndex: 'businessContext',
       key: 'context',
-      width: 200,
+      width: 250,
       render: (context: string) => (
-        <Text style={{ fontSize: '12px' }}>
-          {context ? (context.length > 100 ? `${context.substring(0, 100)}...` : context) : 'No context provided'}
-        </Text>
+        <div style={{ padding: '8px 0' }}>
+          <Text style={{ fontSize: '12px', lineHeight: '1.4', color: '#595959' }}>
+            {context && context !== 'No context provided'
+              ? (context.length > 120 ? `${context.substring(0, 120)}...` : context)
+              : 'No context provided'}
+          </Text>
+        </div>
       ),
     },
     {
       title: 'Quality & Usage',
       key: 'metrics',
-      width: 140,
+      width: 160,
+      align: 'center' as const,
       render: (record: BusinessTableInfoDto) => (
-        <div>
-          <div style={{ marginBottom: 4 }}>
-            <Text style={{ fontSize: '11px' }}>Importance: </Text>
-            <Tag color={record.importanceScore > 0.8 ? 'red' : record.importanceScore > 0.6 ? 'orange' : 'green'}>
+        <div style={{ padding: '8px 0', textAlign: 'center' }}>
+          <div style={{ marginBottom: '6px' }}>
+            <Text style={{ fontSize: '10px', color: '#8c8c8c', display: 'block', marginBottom: '2px' }}>
+              Importance
+            </Text>
+            <Tag
+              color={record.importanceScore > 0.8 ? 'red' : record.importanceScore > 0.6 ? 'orange' : 'green'}
+              style={{ fontSize: '11px', minWidth: '45px' }}
+            >
               {record.importanceScore ? (record.importanceScore * 10).toFixed(1) : 'N/A'}
             </Tag>
           </div>
-          <div style={{ marginBottom: 4 }}>
-            <Text style={{ fontSize: '11px' }}>Usage: </Text>
-            <Tag color="cyan">{record.usageFrequency ? (record.usageFrequency * 100).toFixed(0) + '%' : 'N/A'}</Tag>
+          <div style={{ marginBottom: '6px' }}>
+            <Text style={{ fontSize: '10px', color: '#8c8c8c', display: 'block', marginBottom: '2px' }}>
+              Usage
+            </Text>
+            <Tag
+              color="cyan"
+              style={{ fontSize: '11px', minWidth: '45px' }}
+            >
+              {record.usageFrequency ? (record.usageFrequency * 100).toFixed(0) + '%' : 'N/A'}
+            </Tag>
           </div>
-          {record.semanticCoverageScore && (
+          {record.semanticCoverageScore > 0 && (
             <div>
-              <Text style={{ fontSize: '11px' }}>Coverage: </Text>
-              <Tag color={record.semanticCoverageScore > 0.8 ? 'green' : 'orange'}>
+              <Text style={{ fontSize: '10px', color: '#8c8c8c', display: 'block', marginBottom: '2px' }}>
+                Coverage
+              </Text>
+              <Tag
+                color={record.semanticCoverageScore > 0.8 ? 'green' : 'orange'}
+                style={{ fontSize: '11px', minWidth: '45px' }}
+              >
                 {(record.semanticCoverageScore * 100).toFixed(0)}%
               </Tag>
             </div>
@@ -147,21 +298,25 @@ export default function BusinessMetadata() {
       ),
     },
     {
-      title: 'Data Governance',
+      title: 'Governance',
       key: 'governance',
-      width: 120,
+      width: 140,
+      align: 'center' as const,
       render: (record: BusinessTableInfoDto) => (
-        <div>
-          <div style={{ marginBottom: 4 }}>
-            <Tag color={record.isActive ? 'green' : 'red'}>
+        <div style={{ padding: '8px 0', textAlign: 'center' }}>
+          <div style={{ marginBottom: '8px' }}>
+            <Tag
+              color={record.isActive ? 'green' : 'red'}
+              style={{ fontSize: '11px', fontWeight: '500' }}
+            >
               {record.isActive ? 'Active' : 'Inactive'}
             </Tag>
           </div>
-          {record.dataGovernancePolicies && (
+          {record.dataGovernancePolicies && record.dataGovernancePolicies.length > 0 && (
             <div>
               <Text style={{ fontSize: '10px', color: '#666' }}>
                 {Array.isArray(record.dataGovernancePolicies)
-                  ? record.dataGovernancePolicies.length + ' policies'
+                  ? `${record.dataGovernancePolicies.length} policies`
                   : 'Policies defined'}
               </Text>
             </div>
@@ -173,15 +328,18 @@ export default function BusinessMetadata() {
       title: 'Last Updated',
       dataIndex: 'updatedDate',
       key: 'updated',
-      width: 100,
+      width: 120,
+      align: 'center' as const,
       render: (date: string, record: BusinessTableInfoDto) => (
-        <div>
-          <Text style={{ fontSize: '11px' }}>
-            {date ? new Date(date).toLocaleDateString() : 'Never'}
-          </Text>
+        <div style={{ padding: '8px 0', textAlign: 'center' }}>
+          <div style={{ marginBottom: '4px' }}>
+            <Text style={{ fontSize: '11px', color: '#595959' }}>
+              {date ? new Date(date).toLocaleDateString() : 'Never'}
+            </Text>
+          </div>
           {record.createdBy && (
             <div>
-              <Text style={{ fontSize: '10px', color: '#666' }}>
+              <Text style={{ fontSize: '10px', color: '#8c8c8c' }}>
                 by {record.createdBy}
               </Text>
             </div>
@@ -194,20 +352,26 @@ export default function BusinessMetadata() {
       key: 'actions',
       width: 100,
       fixed: 'right' as const,
+      align: 'center' as const,
       render: (record: BusinessTableInfoDto) => (
-        <Space>
+        <Space size="small">
           <Button
             size="small"
+            type="primary"
+            ghost
             icon={<EditOutlined />}
             title="View/Edit Details"
             onClick={() => handleEdit(record)}
+            style={{ borderRadius: '4px' }}
           />
           <Button
             size="small"
-            icon={<DeleteOutlined />}
             danger
+            ghost
+            icon={<DeleteOutlined />}
             title="Delete"
             onClick={() => handleDelete(record)}
+            style={{ borderRadius: '4px' }}
           />
         </Space>
       ),
@@ -217,14 +381,7 @@ export default function BusinessMetadata() {
   return (
     <>
       <style>
-        {`
-          .low-coverage-row {
-            background-color: #fff2e8 !important;
-          }
-          .low-coverage-row:hover {
-            background-color: #ffe7ba !important;
-          }
-        `}
+        {tableStyles}
       </style>
       <PageLayout
       title="Business Metadata Management"
@@ -285,27 +442,41 @@ export default function BusinessMetadata() {
           }
           key="tables"
         >
-          <Card>
+          <Card
+            style={{
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              overflow: 'hidden'
+            }}
+          >
             <Table
               columns={tableColumns}
               dataSource={businessTables || []}
               loading={isLoading}
               rowKey="id"
-              size="small"
-              scroll={{ x: 1200 }}
+              size="middle"
+              bordered
+              scroll={{ x: 1400, y: 'calc(100vh - 320px)' }}
               pagination={{
-                pageSize: 15,
+                pageSize: 12,
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) =>
                   `${range[0]}-${range[1]} of ${total} business tables`,
-                pageSizeOptions: ['10', '15', '25', '50']
+                pageSizeOptions: ['10', '12', '20', '50'],
+                size: 'default',
+                style: { marginTop: '16px' }
               }}
-              rowClassName={(record) =>
-                record.semanticCoverageScore && record.semanticCoverageScore < 0.5
-                  ? 'low-coverage-row'
-                  : ''
-              }
+              rowClassName={(record, index) => {
+                let className = index % 2 === 0 ? 'table-row-light' : 'table-row-dark'
+                if (record.semanticCoverageScore && record.semanticCoverageScore < 0.5) {
+                  className += ' low-coverage-row'
+                }
+                return className
+              }}
+              style={{
+                backgroundColor: '#fff',
+              }}
             />
           </Card>
         </TabPane>

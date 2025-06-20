@@ -7,6 +7,7 @@ using BIReportingCopilot.Infrastructure.Interfaces;
 using BIReportingCopilot.Infrastructure.Schema;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.DTOs;
+using BIReportingCopilot.Infrastructure.Data.Entities;
 using System.Security.Claims;
 
 namespace BIReportingCopilot.API.Controllers;
@@ -141,8 +142,8 @@ public class SchemaController : ControllerBase
         {
             _logger.LogInformation("🔍 Getting business tables with metadata");
 
-            // First try to get business metadata
-            var businessTables = await _businessTableService.GetBusinessTablesAsync();
+            // First try to get business metadata (using optimized version for better performance)
+            var businessTables = await _businessTableService.GetBusinessTablesOptimizedAsync();
 
             if (businessTables.Any())
             {
@@ -158,10 +159,10 @@ public class SchemaController : ControllerBase
                 {
                     // Frontend expects these exact field names based on the table columns
                     tableInformation = $"{bt.SchemaName}.{bt.TableName}",
-                    domainUseCase = bt.PrimaryUseCase ?? "General Business Use",
+                    domainUseCase = "General Business Use", // Optimized DTO doesn't have PrimaryUseCase
                     businessContext = bt.BusinessContext ?? "No context provided",
-                    qualityUsage = DetermineQualityUsageFromDto(bt),
-                    ruleGovernance = bt.BusinessRules ?? "No specific rules defined",
+                    qualityUsage = DetermineQualityUsageFromOptimizedDto(bt),
+                    ruleGovernance = "Business rules available", // Optimized DTO doesn't have BusinessRules
                     lastUpdated = bt.UpdatedDate?.ToString("yyyy-MM-dd") ?? "Never",
                     actions = "Edit"
                 }).ToList();
@@ -342,6 +343,17 @@ public class SchemaController : ControllerBase
     }
 
     private static string DetermineQualityUsageFromDto(BusinessTableInfoDto table)
+    {
+        // Determine quality/usage level based on table characteristics
+        if (table.TableName.Contains("Daily_actions") || table.TableName.Contains("transaction"))
+            return "Importance: High, Usage: High";
+        if (table.TableName.Contains("reference") || table.TableName.Contains("master") ||
+            table.TableName.Contains("Countries") || table.TableName.Contains("Currencies"))
+            return "Importance: Medium, Usage: Medium";
+        return "Importance: Low, Usage: Low";
+    }
+
+    private static string DetermineQualityUsageFromOptimizedDto(BusinessTableInfoOptimizedDto table)
     {
         // Determine quality/usage level based on table characteristics
         if (table.TableName.Contains("Daily_actions") || table.TableName.Contains("transaction"))

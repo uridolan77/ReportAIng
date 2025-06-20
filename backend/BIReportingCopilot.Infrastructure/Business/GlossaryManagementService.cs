@@ -277,8 +277,8 @@ public class GlossaryManagementService : IGlossaryManagementService
 
     private static BusinessGlossaryDto MapGlossaryToDto(BusinessGlossaryEntity entity)
     {
-        var synonyms = JsonSerializer.Deserialize<List<string>>(entity.Synonyms) ?? new List<string>();
-        var relatedTerms = JsonSerializer.Deserialize<List<string>>(entity.RelatedTerms) ?? new List<string>();
+        var synonyms = SafeDeserializeStringList(entity.Synonyms);
+        var relatedTerms = SafeDeserializeStringList(entity.RelatedTerms);
 
         return new BusinessGlossaryDto
         {
@@ -293,6 +293,50 @@ public class GlossaryManagementService : IGlossaryManagementService
             UsageCount = entity.UsageCount,
             LastUsedDate = entity.LastUsedDate
         };
+    }
+
+    private static List<string> SafeDeserializeStringList(string? jsonString)
+    {
+        if (string.IsNullOrWhiteSpace(jsonString))
+        {
+            return new List<string>();
+        }
+
+        try
+        {
+            // Check if it's valid JSON
+            if (jsonString.StartsWith("[") && jsonString.EndsWith("]"))
+            {
+                return JsonSerializer.Deserialize<List<string>>(jsonString) ?? new List<string>();
+            }
+
+            // If it's not JSON, treat it as a single string or comma-separated values
+            if (jsonString.Contains(","))
+            {
+                return jsonString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(s => s.Trim())
+                                .ToList();
+            }
+
+            // Single value
+            return new List<string> { jsonString.Trim() };
+        }
+        catch (JsonException ex)
+        {
+            // Log the error and return empty list
+            Console.WriteLine($"Failed to deserialize JSON: {jsonString}. Error: {ex.Message}");
+
+            // Try to handle as comma-separated values
+            if (jsonString.Contains(","))
+            {
+                return jsonString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(s => s.Trim())
+                                .ToList();
+            }
+
+            // Return as single item if all else fails
+            return new List<string> { jsonString };
+        }
     }
 
     #endregion
