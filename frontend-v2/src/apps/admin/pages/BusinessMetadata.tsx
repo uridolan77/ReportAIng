@@ -61,19 +61,18 @@ export default function BusinessMetadata() {
 
   // Convert schema tables to business table format for display
   const displayTables = schemaTables?.map((table: any) => {
-    // Handle both business metadata format and schema discovery format
-    if (table.tableInformation) {
-      // Business metadata format from backend
-      const [schemaName, tableName] = table.tableInformation.split('.')
+    // Handle both new API format and old business metadata format
+    if (table.schemaName && table.tableName) {
+      // New API format from /api/schema/tables
       return {
-        id: table.tableInformation,
-        schemaName: schemaName || 'dbo',
-        tableName: tableName || table.tableInformation,
-        businessPurpose: table.businessContext || 'No business purpose defined',
-        domainClassification: table.domainUseCase || 'Unclassified',
+        id: `${table.schemaName}.${table.tableName}`,
+        schemaName: table.schemaName,
+        tableName: table.tableName,
+        businessPurpose: table.businessPurpose || 'No business purpose defined',
+        domainClassification: table.domainClassification || 'Unclassified',
         businessOwner: 'Not specified',
-        primaryUseCase: table.domainUseCase || 'No primary use case defined',
-        businessContext: table.businessContext || 'No context provided',
+        primaryUseCase: table.domainClassification || 'No primary use case defined',
+        businessContext: table.businessPurpose || 'No context provided',
         importanceScore: table.qualityUsage?.includes('High') ? 0.9 : table.qualityUsage?.includes('Medium') ? 0.6 : 0.3,
         usageFrequency: table.qualityUsage?.includes('High') ? 0.8 : table.qualityUsage?.includes('Medium') ? 0.5 : 0.2,
         semanticCoverageScore: 0.7,

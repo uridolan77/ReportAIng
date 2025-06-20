@@ -22,6 +22,7 @@ import { CornerStatusPanel } from './components/Layout/AppHeader';
 // Using public folder for background image
 const mainBgImage = '/main-bg.jpg';
 import './App.css';
+import './styles/components/ui-components.css';
 
 // Enhanced lazy loading with webpack chunk names for better caching
 const SimpleQueryInterface = lazy(() =>

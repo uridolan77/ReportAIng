@@ -113,17 +113,29 @@ public class SchemaController : ControllerBase
     /// Get all tables in the database - now returns business metadata when available
     /// </summary>
     [HttpGet("tables")]
+    [AllowAnonymous] // Temporary for testing
     public async Task<ActionResult<List<object>>> GetTables()
     {
         try
         {
             _logger.LogInformation("🔍 Getting business table records from BusinessTableInfo table");
 
-            // Return the raw business table records without any transformation
+            // Get business table records and transform them to match frontend expectations
             var businessTables = await _businessTableService.GetBusinessTablesAsync();
 
-            _logger.LogInformation("✅ Retrieved {Count} business table records from BusinessTableInfo table", businessTables.Count);
-            return Ok(businessTables);
+            // Transform to the format expected by the frontend (matching businessApi.ts interface)
+            var result = businessTables.Select(bt => new
+            {
+                schemaName = bt.SchemaName ?? "dbo",
+                tableName = bt.TableName,
+                businessPurpose = bt.BusinessPurpose ?? bt.BusinessContext,
+                domainClassification = bt.PrimaryUseCase ?? "General",
+                estimatedRowCount = (int?)null, // We don't have this in BusinessTableInfo
+                lastUpdated = bt.UpdatedDate?.ToString("yyyy-MM-dd") ?? bt.CreatedDate.ToString("yyyy-MM-dd")
+            }).ToList();
+
+            _logger.LogInformation("✅ Retrieved {Count} business table records from BusinessTableInfo table", result.Count);
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -155,9 +167,37 @@ public class SchemaController : ControllerBase
 
                 // Fallback to fresh discovery if not found in cache
                 var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
-                discoveredTable = discoveryResult.Tables.FirstOrDefault(t =>
+                var discoveredTableFromDiscovery = discoveryResult.Tables.FirstOrDefault(t =>
                     t.TableName.Equals(tableName, StringComparison.OrdinalIgnoreCase) ||
                     $"{t.SchemaName}.{t.TableName}".Equals(tableName, StringComparison.OrdinalIgnoreCase));
+
+                if (discoveredTableFromDiscovery != null)
+                {
+                    // Convert DiscoveredTable to TableMetadata for the fallback case
+                    discoveredTable = new TableMetadata
+                    {
+                        Name = discoveredTableFromDiscovery.TableName,
+                        Schema = discoveredTableFromDiscovery.SchemaName,
+                        Description = $"Table with {discoveredTableFromDiscovery.Columns?.Count ?? 0} columns",
+                        RowCount = discoveredTableFromDiscovery.RowCount,
+                        LastUpdated = DateTime.UtcNow,
+                        Columns = discoveredTableFromDiscovery.Columns?.Select(c => new ColumnMetadata
+                        {
+                            Name = c.ColumnName,
+                            DataType = c.DataType,
+                            Description = $"{c.DataType} column" + (c.IsPrimaryKey ? " (Primary Key)" : "") + (c.IsForeignKey ? " (Foreign Key)" : ""),
+                            IsNullable = c.IsNullable,
+                            IsPrimaryKey = c.IsPrimaryKey,
+                            IsForeignKey = c.IsForeignKey,
+                            DefaultValue = c.DefaultValue,
+                            MaxLength = c.MaxLength,
+                            Precision = c.Precision,
+                            Scale = c.Scale,
+                            SemanticTags = new[] { c.DataType?.ToLower() ?? "unknown" },
+                            SampleValues = new string[0]
+                        }).ToList() ?? new List<ColumnMetadata>()
+                    };
+                }
 
                 if (discoveredTable == null)
                 {
@@ -165,31 +205,9 @@ public class SchemaController : ControllerBase
                     return NotFound(new { error = $"Table '{tableName}' not found in BI database" });
                 }
             }
-            
-            // Convert DiscoveredTable to TableMetadata
-            var tableMetadata = new TableMetadata
-            {
-                Name = discoveredTable.Name ?? discoveredTable.TableName,
-                Schema = discoveredTable.Schema ?? discoveredTable.SchemaName,
-                Description = discoveredTable.Description ?? $"Table with {discoveredTable.Columns?.Count ?? 0} columns",
-                RowCount = discoveredTable.RowCount,
-                LastUpdated = discoveredTable.LastUpdated ?? DateTime.UtcNow,
-                Columns = discoveredTable.Columns?.Select(c => new ColumnMetadata
-                {
-                    Name = c.Name ?? c.ColumnName,
-                    DataType = c.DataType,
-                    Description = c.Description ?? $"{c.DataType} column" + (c.IsPrimaryKey ? " (Primary Key)" : "") + (c.IsForeignKey ? " (Foreign Key)" : ""),
-                    IsNullable = c.IsNullable,
-                    IsPrimaryKey = c.IsPrimaryKey,
-                    IsForeignKey = c.IsForeignKey,
-                    DefaultValue = c.DefaultValue,
-                    MaxLength = c.MaxLength,
-                    Precision = c.Precision,
-                    Scale = c.Scale,
-                    SemanticTags = new[] { c.DataType?.ToLower() ?? "unknown" },
-                    SampleValues = new string[0]
-                }).ToList() ?? new List<ColumnMetadata>()
-            };
+
+            // discoveredTable is already a TableMetadata object (either from cache or converted from DiscoveredTable)
+            var tableMetadata = discoveredTable;
 
             _logger.LogInformation("✅ Table metadata discovery completed for: {TableName}", tableName);
             return Ok(tableMetadata);

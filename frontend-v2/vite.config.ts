@@ -47,17 +47,37 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    target: 'es2022',
     rollupOptions: {
       output: {
         manualChunks: {
+          // Core React
           vendor: ['react', 'react-dom'],
+
+          // UI Framework
           antd: ['antd', '@ant-design/icons'],
-          redux: ['@reduxjs/toolkit', 'react-redux'],
+
+          // State Management
+          redux: ['@reduxjs/toolkit', 'react-redux', 'redux-persist'],
+
+          // Data Fetching
+          query: ['@tanstack/react-query'],
+
+          // Charts and Visualization
           charts: ['recharts', 'd3'],
+
+          // Code Editor
           editor: ['monaco-editor', '@monaco-editor/react'],
+
+          // Utilities
+          utils: ['lodash', 'date-fns', 'dayjs'],
+
+          // Dashboard (new consolidated components)
+          dashboard: ['./src/shared/components/dashboard'],
         },
       },
     },
+    chunkSizeWarningLimit: 1000,
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'antd', '@reduxjs/toolkit'],

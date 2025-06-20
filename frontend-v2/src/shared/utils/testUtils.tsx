@@ -102,7 +102,7 @@ export const renderWithProviders = (
 }
 
 // API mocking utilities
-export const createMockApiResponse = <T>(data: T, delay = 0) => {
+export const createMockApiResponse = <T,>(data: T, delay = 0) => {
   return new Promise<T>((resolve) => {
     setTimeout(() => resolve(data), delay)
   })

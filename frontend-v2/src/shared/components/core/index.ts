@@ -12,6 +12,55 @@ export { Chart } from './Chart'
 export { SqlEditor } from './SqlEditor'
 export { AppLayout, PageLayout } from './Layout'
 
+// Dashboard Components (NEW - Consolidated from multiple dashboard implementations)
+export {
+  Dashboard,
+  DashboardLayout,
+  DashboardWidget,
+  MetricGrid,
+  ChartSection,
+  MetricWidget,
+  KPIWidget,
+  useDashboardRefresh,
+  useDashboardAlerts,
+  useDashboardMetrics,
+} from '../dashboard'
+export type {
+  DashboardLayoutProps,
+  DashboardWidgetProps,
+  MetricGridProps,
+  ChartSectionProps,
+  DashboardMetric,
+} from '../dashboard'
+
+// Performance Components (NEW - High-performance components for large datasets)
+export {
+  VirtualDataTable,
+  PerformantChart,
+  EnhancedErrorBoundary,
+  useThrottledData,
+  useChartResize,
+  useChartAnimation,
+  useDataSampling,
+  useChartPerformance,
+  useChartDataManager,
+  useChartZoom,
+  useChartColors,
+  useDataProcessor,
+  createBIQueryClient,
+  BackgroundSync,
+  queryKeys,
+  performanceMonitor,
+} from '../performance'
+export type {
+  VirtualDataTableProps,
+  VirtualDataTableColumn,
+  PerformantChartProps,
+  ChartDataPoint,
+  CacheTier,
+  CacheConfig,
+} from '../performance'
+
 // Advanced Components
 export { MonacoSQLEditor, useMonacoSQL } from './MonacoSQLEditor'
 export { ExportManager, useExport } from './ExportManager'
