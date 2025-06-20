@@ -103,7 +103,7 @@ public class PerformanceMonitoringHub : BaseHub
         
         try
         {
-            var monitoringId = await _monitoringService.StartMonitoringAsync();
+            var monitoringId = await _monitoringService.StartResourceMonitoringAsync(entityType, TimeSpan.FromSeconds(intervalSeconds));
             
             await Clients.Caller.SendAsync("MonitoringStarted", new
             {

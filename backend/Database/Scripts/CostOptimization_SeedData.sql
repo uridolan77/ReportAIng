@@ -6,6 +6,11 @@
 USE [BIReportingCopilot_Dev]
 GO
 
+-- Set proper options for indexed views and computed columns
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+
 PRINT '============================================='
 PRINT 'Starting Cost Optimization Seed Data Insert'
 PRINT '============================================='
