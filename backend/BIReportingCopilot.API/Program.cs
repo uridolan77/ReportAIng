@@ -699,6 +699,13 @@ builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Business.IAITuning
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Schema.DatabaseSchemaDiscoveryService>();
 
+// Register enhanced semantic layer services
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Schema.ISemanticLayerService, BIReportingCopilot.Infrastructure.Schema.SemanticLayerService>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Schema.IDynamicSchemaContextualizationService, BIReportingCopilot.Infrastructure.Schema.DynamicSchemaContextualizationService>();
+
+// Register business metadata population service
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Schema.BusinessMetadataPopulationService>();
+
 // IConnectionStringProvider already registered before configuration validation
 builder.Services.AddScoped<IDatabaseInitializationService, BIReportingCopilot.Infrastructure.Data.DatabaseInitializationService>();
 // Focused tuning services (Enhancement #1: Refactor "God" Services)

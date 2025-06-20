@@ -22,6 +22,10 @@ public class TuningDbContext : DbContext
     public DbSet<PromptTemplateEntity> PromptTemplates { get; set; }
     public DbSet<PromptLogEntity> PromptLogs { get; set; }
 
+    // Enhanced semantic layer entities
+    public DbSet<SemanticSchemaMappingEntity> SemanticSchemaMappings { get; set; }
+    public DbSet<BusinessDomainEntity> BusinessDomains { get; set; }
+
     // AI Learning and feedback (Unified Models)
     public DbSet<UnifiedAIGenerationAttempt> AIGenerationAttempts { get; set; }
     public DbSet<UnifiedAIFeedbackEntry> AIFeedbackEntries { get; set; }

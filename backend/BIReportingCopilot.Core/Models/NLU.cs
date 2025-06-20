@@ -642,10 +642,17 @@ public class QueryAnalysisResult
 {
     public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
     public string Query { get; set; } = string.Empty;
+    public string OriginalQuery { get; set; } = string.Empty;
     public double Complexity { get; set; }
     public List<string> Issues { get; set; } = new();
     public List<string> Recommendations { get; set; } = new();
     public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
+
+    // Additional properties for schema contextualization
+    public List<string> BusinessTerms { get; set; } = new();
+    public string QueryCategory { get; set; } = string.Empty;
+    public List<string> ExtractedEntities { get; set; } = new();
+    public string Intent { get; set; } = string.Empty;
 }
 
 

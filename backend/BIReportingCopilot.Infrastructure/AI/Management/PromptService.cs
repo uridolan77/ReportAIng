@@ -1,5 +1,6 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.Schema;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
@@ -17,12 +18,18 @@ public class PromptService : IPromptService
     private readonly ILogger<PromptService> _logger;
     private readonly BICopilotContext _context;
     private readonly ISecretsManagementService _secretsService;
+    private readonly ISemanticLayerService? _semanticLayerService;
 
-    public PromptService(ILogger<PromptService> logger, BICopilotContext context, ISecretsManagementService secretsService)
+    public PromptService(
+        ILogger<PromptService> logger,
+        BICopilotContext context,
+        ISecretsManagementService secretsService,
+        ISemanticLayerService? semanticLayerService = null)
     {
         _logger = logger;
         _context = context;
         _secretsService = secretsService;
+        _semanticLayerService = semanticLayerService;
     }
 
     public async Task<string> BuildQueryPromptAsync(string naturalLanguageQuery, SchemaMetadata schema, string? context = null)
@@ -31,7 +38,27 @@ public class PromptService : IPromptService
         {
             var template = await GetPromptTemplateAsync("sql_generation");
 
-            var schemaDescription = await BuildEnhancedSchemaDescriptionAsync(schema);
+            // Try to use semantic layer for enhanced schema description
+            string schemaDescription;
+            if (_semanticLayerService != null)
+            {
+                try
+                {
+                    _logger.LogInformation("🧠 Using semantic layer for schema description");
+                    schemaDescription = await _semanticLayerService.GetBusinessFriendlySchemaAsync(naturalLanguageQuery, 1500);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "⚠️ Semantic layer failed, falling back to traditional schema description");
+                    schemaDescription = await BuildEnhancedSchemaDescriptionAsync(schema);
+                }
+            }
+            else
+            {
+                _logger.LogDebug("📋 Using traditional schema description (semantic layer not available)");
+                schemaDescription = await BuildEnhancedSchemaDescriptionAsync(schema);
+            }
+
             var businessRules = GetBusinessRulesForQuery(naturalLanguageQuery);
             var exampleQueries = GetRelevantExampleQueries(naturalLanguageQuery);
             var contextInfo = !string.IsNullOrEmpty(context) ? $"\nAdditional context: {context}" : "";
@@ -51,7 +78,8 @@ public class PromptService : IPromptService
                 SchemaTablesCount = schema.Tables?.Count ?? 0,
                 BusinessRulesApplied = businessRules,
                 ExampleQueriesIncluded = exampleQueries,
-                ContextProvided = !string.IsNullOrEmpty(context)
+                ContextProvided = !string.IsNullOrEmpty(context),
+                SemanticLayerUsed = _semanticLayerService != null
             });
 
             return prompt;

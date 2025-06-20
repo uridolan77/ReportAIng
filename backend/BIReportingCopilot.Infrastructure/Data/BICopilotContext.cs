@@ -36,6 +36,10 @@ public class BICopilotContext : DbContext
     public DbSet<QueryPatternEntity> QueryPatterns { get; set; }
     public DbSet<BusinessGlossaryEntity> BusinessGlossary { get; set; }
 
+    // Enhanced semantic layer entities
+    public DbSet<SemanticSchemaMappingEntity> SemanticSchemaMappings { get; set; }
+    public DbSet<BusinessDomainEntity> BusinessDomains { get; set; }
+
     // User and session management
     public DbSet<InfraUserEntity> Users { get; set; }
     public DbSet<InfraUserSessionEntity> UserSessions { get; set; }

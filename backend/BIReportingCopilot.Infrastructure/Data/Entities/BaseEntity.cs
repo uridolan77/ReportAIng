@@ -22,7 +22,18 @@ public class SchemaMetadataEntity : BaseEntity
     public string? BusinessDescription { get; set; }
     public string? SemanticTags { get; set; }
     public string? SampleValues { get; set; }
+
+    // Enhanced business context fields
+    public string? BusinessFriendlyName { get; set; } // Human-readable alias
+    public string? NaturalLanguageDescription { get; set; } // Detailed business explanation
+    public string? BusinessRules { get; set; } // JSON - governance and business rules
+    public decimal ImportanceScore { get; set; } = 0.5m; // 0-1 scale for dynamic prioritization
+    public decimal UsageFrequency { get; set; } = 0.0m; // How often used in queries
+    public string? RelationshipContext { get; set; } // JSON - business meaning of relationships
+    public string? DataGovernanceLevel { get; set; } // Public, Internal, Confidential, Restricted
+
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    public DateTime? LastBusinessReview { get; set; } // When business context was last validated
     public bool IsActive { get; set; } = true;
 }
 

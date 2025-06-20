@@ -32,6 +32,34 @@ public class BusinessTableInfoEntity : BaseEntity
     [MaxLength(2000)]
     public string BusinessRules { get; set; } = string.Empty;
 
+    // Enhanced semantic metadata fields
+    [MaxLength(1000)]
+    public string DomainClassification { get; set; } = string.Empty; // e.g., "Financial", "Customer", "Product"
+
+    [MaxLength(2000)]
+    public string NaturalLanguageAliases { get; set; } = string.Empty; // JSON array of business-friendly names
+
+    [MaxLength(4000)]
+    public string UsagePatterns { get; set; } = string.Empty; // JSON - frequency, common joins, etc.
+
+    [MaxLength(1000)]
+    public string DataQualityIndicators { get; set; } = string.Empty; // JSON - completeness, accuracy scores
+
+    [MaxLength(2000)]
+    public string RelationshipSemantics { get; set; } = string.Empty; // JSON - business meaning of relationships
+
+    public decimal ImportanceScore { get; set; } = 0.5m; // 0-1 scale for prioritization
+
+    public decimal UsageFrequency { get; set; } = 0.0m; // How often this table is queried
+
+    public DateTime? LastAnalyzed { get; set; } // When semantic analysis was last performed
+
+    [MaxLength(500)]
+    public string BusinessOwner { get; set; } = string.Empty; // Who owns this data from business perspective
+
+    [MaxLength(1000)]
+    public string DataGovernancePolicies { get; set; } = string.Empty; // JSON - access rules, retention policies
+
     public bool IsActive { get; set; } = true;
 
     // Navigation properties
@@ -63,7 +91,41 @@ public class BusinessColumnInfoEntity : BaseEntity
     [MaxLength(1000)]
     public string ValidationRules { get; set; } = string.Empty;
 
+    // Enhanced semantic metadata fields
+    [MaxLength(1000)]
+    public string NaturalLanguageAliases { get; set; } = string.Empty; // JSON array of business-friendly names
+
+    [MaxLength(2000)]
+    public string ValueExamples { get; set; } = string.Empty; // JSON - representative values with business context
+
+    [MaxLength(1000)]
+    public string DataLineage { get; set; } = string.Empty; // JSON - source systems, transformations
+
+    [MaxLength(2000)]
+    public string CalculationRules { get; set; } = string.Empty; // How derived/calculated fields are computed
+
+    [MaxLength(1000)]
+    public string SemanticTags { get; set; } = string.Empty; // JSON - PII, Financial, Metric, Dimension, etc.
+
+    [MaxLength(500)]
+    public string BusinessDataType { get; set; } = string.Empty; // Currency, Percentage, Count, etc.
+
+    [MaxLength(1000)]
+    public string ConstraintsAndRules { get; set; } = string.Empty; // JSON - business constraints
+
+    public decimal DataQualityScore { get; set; } = 0.0m; // 0-1 completeness/accuracy score
+
+    public decimal UsageFrequency { get; set; } = 0.0m; // How often this column is used in queries
+
+    [MaxLength(500)]
+    public string PreferredAggregation { get; set; } = string.Empty; // SUM, AVG, COUNT, etc.
+
+    [MaxLength(1000)]
+    public string RelatedBusinessTerms { get; set; } = string.Empty; // JSON - links to business glossary
+
     public bool IsKeyColumn { get; set; }
+    public bool IsSensitiveData { get; set; } = false; // PII or confidential data flag
+    public bool IsCalculatedField { get; set; } = false; // Whether this is a derived/calculated field
     public bool IsActive { get; set; } = true;
 
     // Navigation properties
@@ -141,9 +203,45 @@ public class BusinessGlossaryEntity : BaseEntity
     [MaxLength(100)]
     public string Category { get; set; } = string.Empty;
 
+    // Enhanced semantic metadata fields
+    [MaxLength(200)]
+    public string Domain { get; set; } = string.Empty; // Business domain (Finance, Marketing, Operations)
+
+    [MaxLength(2000)]
+    public string Examples { get; set; } = string.Empty; // JSON - real-world examples of the term
+
+    [MaxLength(1000)]
+    public string MappedTables { get; set; } = string.Empty; // JSON - which tables contain this concept
+
+    [MaxLength(1000)]
+    public string MappedColumns { get; set; } = string.Empty; // JSON - which columns represent this term
+
+    [MaxLength(1000)]
+    public string HierarchicalRelations { get; set; } = string.Empty; // JSON - parent/child term relationships
+
+    [MaxLength(500)]
+    public string PreferredCalculation { get; set; } = string.Empty; // How to calculate this metric
+
+    [MaxLength(1000)]
+    public string DisambiguationRules { get; set; } = string.Empty; // JSON - rules for resolving ambiguity
+
+    [MaxLength(500)]
+    public string BusinessOwner { get; set; } = string.Empty; // Who defines this term
+
+    [MaxLength(1000)]
+    public string RegulationReferences { get; set; } = string.Empty; // JSON - regulatory or compliance context
+
+    public decimal ConfidenceScore { get; set; } = 1.0m; // How confident we are in this definition
+
+    public decimal AmbiguityScore { get; set; } = 0.0m; // How ambiguous this term is (0 = clear, 1 = very ambiguous)
+
+    [MaxLength(1000)]
+    public string ContextualVariations { get; set; } = string.Empty; // JSON - how meaning changes by context
+
     public bool IsActive { get; set; } = true;
     public int UsageCount { get; set; } = 0;
     public DateTime? LastUsed { get; set; }
+    public DateTime? LastValidated { get; set; } // When this definition was last reviewed
 
     // Alias property for compatibility
     [NotMapped]
@@ -176,6 +274,80 @@ public class AITuningSettingsEntity : BaseEntity
 
     [MaxLength(50)]
     public string DataType { get; set; } = "string";
+
+    public bool IsActive { get; set; } = true;
+}
+
+/// <summary>
+/// Entity for storing semantic query-to-schema mappings for dynamic contextualization
+/// </summary>
+[Table("SemanticSchemaMapping")]
+public class SemanticSchemaMappingEntity : BaseEntity
+{
+    [Key]
+    public long Id { get; set; }
+
+    [Required]
+    [MaxLength(1000)]
+    public string QueryIntent { get; set; } = string.Empty; // Natural language description of query intent
+
+    [Required]
+    [MaxLength(4000)]
+    public string RelevantTables { get; set; } = string.Empty; // JSON array of table names with relevance scores
+
+    [MaxLength(4000)]
+    public string RelevantColumns { get; set; } = string.Empty; // JSON array of column names with relevance scores
+
+    [MaxLength(2000)]
+    public string BusinessTerms { get; set; } = string.Empty; // JSON array of business terms mentioned
+
+    [MaxLength(1000)]
+    public string QueryCategory { get; set; } = string.Empty; // Reporting, Analytics, Lookup, etc.
+
+    public decimal ConfidenceScore { get; set; } = 0.0m; // How confident we are in this mapping
+
+    [MaxLength(4000)]
+    public string SemanticVector { get; set; } = string.Empty; // JSON - embedding vector for similarity search
+
+    public int UsageCount { get; set; } = 0; // How many times this mapping was used
+
+    public DateTime? LastUsed { get; set; }
+
+    public bool IsActive { get; set; } = true;
+}
+
+/// <summary>
+/// Entity for storing business domain classifications and relationships
+/// </summary>
+[Table("BusinessDomain")]
+public class BusinessDomainEntity : BaseEntity
+{
+    [Key]
+    public long Id { get; set; }
+
+    [Required]
+    [MaxLength(200)]
+    public string DomainName { get; set; } = string.Empty; // Finance, Marketing, Operations, etc.
+
+    [MaxLength(1000)]
+    public string Description { get; set; } = string.Empty;
+
+    [MaxLength(2000)]
+    public string RelatedTables { get; set; } = string.Empty; // JSON array of tables in this domain
+
+    [MaxLength(2000)]
+    public string KeyConcepts { get; set; } = string.Empty; // JSON array of important business concepts
+
+    [MaxLength(1000)]
+    public string CommonQueries { get; set; } = string.Empty; // JSON array of typical query patterns
+
+    [MaxLength(500)]
+    public string BusinessOwner { get; set; } = string.Empty;
+
+    [MaxLength(1000)]
+    public string RelatedDomains { get; set; } = string.Empty; // JSON array of related business domains
+
+    public decimal ImportanceScore { get; set; } = 0.5m; // Relative importance of this domain
 
     public bool IsActive { get; set; } = true;
 }
