@@ -17,11 +17,11 @@ export default defineConfig({
     port: 3001,
     proxy: {
       '/api': {
-        target: 'http://localhost:3002',
+        target: 'http://localhost:55244',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => {
-          console.log(`🔄 Proxying ${path} to http://localhost:3002${path}`)
+          console.log(`🔄 Proxying ${path} to http://localhost:55244${path}`)
           return path
         },
         configure: (proxy, _options) => {
@@ -37,7 +37,7 @@ export default defineConfig({
         },
       },
       '/hub': {
-        target: 'http://localhost:3002',
+        target: 'http://localhost:55244',
         changeOrigin: true,
         secure: false,
         ws: true,
