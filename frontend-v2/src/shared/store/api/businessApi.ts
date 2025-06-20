@@ -7,21 +7,37 @@ export interface BusinessTableInfoDto {
   businessPurpose: string
   businessContext: string
   primaryUseCase: string
-  commonQueryPatterns: string
+  commonQueryPatterns: string | string[]
   businessRules: string
   domainClassification: string
-  naturalLanguageAliases: string
-  usagePatterns: string
-  dataQualityIndicators: string
-  relationshipSemantics: string
+  naturalLanguageAliases: string | string[]
+  usagePatterns: string | object
+  dataQualityIndicators: string | object
+  relationshipSemantics: string | object[]
   importanceScore: number
   usageFrequency: number
   businessOwner: string
-  dataGovernancePolicies: string
+  dataGovernancePolicies: string | string[]
   isActive: boolean
   createdDate: string
   updatedDate?: string
-  columns: BusinessColumnInfoDto[]
+  createdBy?: string
+  updatedBy?: string
+
+  // Additional semantic and AI-related fields
+  semanticDescription?: string
+  businessProcesses?: string | string[]
+  analyticalUseCases?: string | string[]
+  reportingCategories?: string | string[]
+  semanticRelationships?: string | object
+  queryComplexityHints?: string | string[]
+  businessGlossaryTerms?: string | string[]
+  semanticCoverageScore?: number
+  llmContextHints?: string | string[]
+  vectorSearchKeywords?: string | string[]
+  lastAnalyzed?: string
+
+  columns?: BusinessColumnInfoDto[]
 }
 
 export interface BusinessColumnInfoDto {

@@ -22,6 +22,7 @@ using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Interfaces.Schema;
 using BIReportingCopilot.Core.Interfaces.Tuning;
 using BIReportingCopilot.Core.Interfaces.Review;
+using BIReportingCopilot.Core.Interfaces.CostOptimization;
 using BIReportingCopilot.Core.Configuration;
 using BIReportingCopilot.Infrastructure.Data;
 // Import all the reorganized service namespaces
@@ -432,9 +433,12 @@ builder.Services.AddSingleton<BIReportingCopilot.Infrastructure.Configuration.Co
 
 // ===== PERFORMANCE OPTIMIZATION SERVICES =====
 // Performance monitoring and optimization (Phase 5 additions)
-// TODO: Add performance services once interfaces are resolved
-// builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.PerformanceOptimizer>();
-// builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.PerformanceTimingService>();
+builder.Services.AddScoped<IPerformanceOptimizationService, BIReportingCopilot.Infrastructure.CostOptimization.PerformanceOptimizationService>();
+builder.Services.AddScoped<ICacheOptimizationService, BIReportingCopilot.Infrastructure.CostOptimization.CacheOptimizationService>();
+
+// Use MonitoringManagementService as IResourceMonitoringService implementation
+builder.Services.AddScoped<IResourceMonitoringService>(provider =>
+    provider.GetRequiredService<BIReportingCopilot.Infrastructure.Monitoring.MonitoringManagementService>());
 
 // Unified performance management service - consolidates streaming, metrics, and monitoring
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Performance.PerformanceManagementService>();

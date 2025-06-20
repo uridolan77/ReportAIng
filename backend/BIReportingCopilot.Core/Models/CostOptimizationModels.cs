@@ -383,6 +383,8 @@ public class ResourceMonitoringAlert
     public bool IsResolved { get; set; } = false;
     public DateTime? ResolvedAt { get; set; }
     public string? Resolution { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
     public List<string> Actions { get; set; } = new();
 }

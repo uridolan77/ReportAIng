@@ -61,12 +61,13 @@ export default function BusinessMetadata() {
       title: 'Table Information',
       dataIndex: 'tableName',
       key: 'tableName',
+      width: 250,
       render: (text: string, record: BusinessTableInfoDto) => (
         <div>
           <Text strong>{record.schemaName}.{text}</Text>
           <br />
           <Text type="secondary" style={{ fontSize: '12px' }}>
-            {record.businessPurpose}
+            {record.businessPurpose || 'No business purpose defined'}
           </Text>
           <br />
           <Text type="secondary" style={{ fontSize: '11px' }}>
@@ -76,80 +77,111 @@ export default function BusinessMetadata() {
       ),
     },
     {
-      title: 'Classification',
-      dataIndex: 'domainClassification',
+      title: 'Domain & Use Case',
       key: 'domain',
-      width: 140,
-      render: (domain: string, record: BusinessTableInfoDto) => (
+      width: 180,
+      render: (record: BusinessTableInfoDto) => (
         <div>
-          <Tag color="blue">{domain}</Tag>
+          <Tag color="blue">{record.domainClassification || 'Unclassified'}</Tag>
           <br />
-          <Text style={{ fontSize: '11px' }}>
-            Use Case: {record.primaryUseCase}
+          <Text style={{ fontSize: '11px', marginTop: 4 }}>
+            {record.primaryUseCase || 'No primary use case defined'}
           </Text>
         </div>
       ),
     },
     {
-      title: 'Metrics',
+      title: 'Business Context',
+      dataIndex: 'businessContext',
+      key: 'context',
+      width: 200,
+      render: (context: string) => (
+        <Text style={{ fontSize: '12px' }}>
+          {context ? (context.length > 100 ? `${context.substring(0, 100)}...` : context) : 'No context provided'}
+        </Text>
+      ),
+    },
+    {
+      title: 'Quality & Usage',
       key: 'metrics',
-      width: 120,
+      width: 140,
       render: (record: BusinessTableInfoDto) => (
         <div>
-          <div>
+          <div style={{ marginBottom: 4 }}>
             <Text style={{ fontSize: '11px' }}>Importance: </Text>
-            <Tag color={record.importanceScore > 8 ? 'red' : record.importanceScore > 6 ? 'orange' : 'green'}>
-              {record.importanceScore}/10
+            <Tag color={record.importanceScore > 0.8 ? 'red' : record.importanceScore > 0.6 ? 'orange' : 'green'}>
+              {record.importanceScore ? (record.importanceScore * 10).toFixed(1) : 'N/A'}
             </Tag>
           </div>
-          <div style={{ marginTop: 4 }}>
-            <Text style={{ fontSize: '11px' }}>Usage: {record.usageFrequency}</Text>
+          <div style={{ marginBottom: 4 }}>
+            <Text style={{ fontSize: '11px' }}>Usage: </Text>
+            <Tag color="cyan">{record.usageFrequency ? (record.usageFrequency * 100).toFixed(0) + '%' : 'N/A'}</Tag>
           </div>
+          {record.semanticCoverageScore && (
+            <div>
+              <Text style={{ fontSize: '11px' }}>Coverage: </Text>
+              <Tag color={record.semanticCoverageScore > 0.8 ? 'green' : 'orange'}>
+                {(record.semanticCoverageScore * 100).toFixed(0)}%
+              </Tag>
+            </div>
+          )}
         </div>
       ),
     },
     {
-      title: 'Columns',
-      key: 'columns',
-      width: 80,
+      title: 'Data Governance',
+      key: 'governance',
+      width: 120,
       render: (record: BusinessTableInfoDto) => (
-        <Tag color="purple">
-          {record.columns?.length || 0} cols
-        </Tag>
-      ),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'isActive',
-      key: 'status',
-      width: 80,
-      render: (isActive: boolean) => (
-        <Tag color={isActive ? 'green' : 'red'}>
-          {isActive ? 'Active' : 'Inactive'}
-        </Tag>
+        <div>
+          <div style={{ marginBottom: 4 }}>
+            <Tag color={record.isActive ? 'green' : 'red'}>
+              {record.isActive ? 'Active' : 'Inactive'}
+            </Tag>
+          </div>
+          {record.dataGovernancePolicies && (
+            <div>
+              <Text style={{ fontSize: '10px', color: '#666' }}>
+                {Array.isArray(record.dataGovernancePolicies)
+                  ? record.dataGovernancePolicies.length + ' policies'
+                  : 'Policies defined'}
+              </Text>
+            </div>
+          )}
+        </div>
       ),
     },
     {
       title: 'Last Updated',
       dataIndex: 'updatedDate',
       key: 'updated',
-      width: 120,
-      render: (date: string) => (
-        <Text style={{ fontSize: '11px' }}>
-          {date ? new Date(date).toLocaleDateString() : 'Never'}
-        </Text>
+      width: 100,
+      render: (date: string, record: BusinessTableInfoDto) => (
+        <div>
+          <Text style={{ fontSize: '11px' }}>
+            {date ? new Date(date).toLocaleDateString() : 'Never'}
+          </Text>
+          {record.createdBy && (
+            <div>
+              <Text style={{ fontSize: '10px', color: '#666' }}>
+                by {record.createdBy}
+              </Text>
+            </div>
+          )}
+        </div>
       ),
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 120,
+      width: 100,
+      fixed: 'right' as const,
       render: (record: BusinessTableInfoDto) => (
         <Space>
           <Button
             size="small"
             icon={<EditOutlined />}
-            title="Edit"
+            title="View/Edit Details"
             onClick={() => handleEdit(record)}
           />
           <Button
@@ -165,7 +197,18 @@ export default function BusinessMetadata() {
   ]
 
   return (
-    <PageLayout
+    <>
+      <style>
+        {`
+          .low-coverage-row {
+            background-color: #fff2e8 !important;
+          }
+          .low-coverage-row:hover {
+            background-color: #ffe7ba !important;
+          }
+        `}
+      </style>
+      <PageLayout
       title="Business Metadata Management"
       subtitle="Comprehensive management of table metadata, column definitions, and business glossary"
       extra={
@@ -231,36 +274,20 @@ export default function BusinessMetadata() {
               loading={isLoading}
               rowKey="id"
               size="small"
-              expandable={{
-                expandedRowRender: (record) => (
-                  <div style={{ padding: '12px 0' }}>
-                    <div style={{ marginBottom: 8 }}>
-                      <Text strong>Business Context: </Text>
-                      <Text>{record.businessContext || 'Not specified'}</Text>
-                    </div>
-                    <div style={{ marginBottom: 8 }}>
-                      <Text strong>Common Query Patterns: </Text>
-                      <Text>{record.commonQueryPatterns || 'Not specified'}</Text>
-                    </div>
-                    <div style={{ marginBottom: 8 }}>
-                      <Text strong>Business Rules: </Text>
-                      <Text>{record.businessRules || 'Not specified'}</Text>
-                    </div>
-                    <div>
-                      <Text strong>Natural Language Aliases: </Text>
-                      <Text>{record.naturalLanguageAliases || 'Not specified'}</Text>
-                    </div>
-                  </div>
-                ),
-                rowExpandable: (record) => true,
-              }}
+              scroll={{ x: 1200 }}
               pagination={{
-                pageSize: 20,
+                pageSize: 15,
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total} tables`,
+                  `${range[0]}-${range[1]} of ${total} business tables`,
+                pageSizeOptions: ['10', '15', '25', '50']
               }}
+              rowClassName={(record) =>
+                record.semanticCoverageScore && record.semanticCoverageScore < 0.5
+                  ? 'low-coverage-row'
+                  : ''
+              }
             />
           </Card>
         </TabPane>
@@ -308,5 +335,6 @@ export default function BusinessMetadata() {
         onClose={handleEditorClose}
       />
     </PageLayout>
+    </>
   )
 }
