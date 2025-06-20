@@ -16,7 +16,9 @@ import {
   Col,
   Collapse,
   Divider,
-  Switch
+  Switch,
+  Alert,
+  Tooltip
 } from 'antd';
 import {
   PlusOutlined,
@@ -25,9 +27,13 @@ import {
   TableOutlined,
   ColumnHeightOutlined,
   KeyOutlined,
-  MinusCircleOutlined
+  MinusCircleOutlined,
+  SyncOutlined,
+  DatabaseOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import { tuningApi, BusinessTableInfo, CreateTableRequest } from '../../services/tuningApi';
+import { DBExplorerAPI } from '../../services/dbExplorerApi';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -43,6 +49,8 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTable, setEditingTable] = useState<BusinessTableInfo | null>(null);
   const [form] = Form.useForm();
+  const [populatingFromSchema, setPopulatingFromSchema] = useState(false);
+  const [schemaPopulationModalVisible, setSchemaPopulationModalVisible] = useState(false);
 
   useEffect(() => {
     loadTables();
@@ -51,11 +59,17 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
   const loadTables = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading business tables from API...');
       const data = await tuningApi.getBusinessTables();
+      console.log('📊 Received business tables data:', data);
+      console.log('📊 Number of tables:', data?.length || 0);
+      if (data && data.length > 0) {
+        console.log('📊 First table sample:', data[0]);
+      }
       setTables(data);
     } catch (error) {
       message.error('Failed to load business tables');
-      console.error('Error loading tables:', error);
+      console.error('❌ Error loading tables:', error);
     } finally {
       setLoading(false);
     }
@@ -82,6 +96,10 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
       primaryUseCase: table.primaryUseCase,
       commonQueryPatterns: table.commonQueryPatterns,
       businessRules: table.businessRules,
+      businessOwner: table.businessOwner,
+      domainClassification: table.domainClassification,
+      naturalLanguageDescription: table.naturalLanguageDescription,
+      naturalLanguageAliases: table.naturalLanguageAliases,
       columns: table.columns
     });
     setModalVisible(true);
@@ -109,6 +127,10 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
         primaryUseCase: values.primaryUseCase || '',
         commonQueryPatterns: values.commonQueryPatterns || [],
         businessRules: values.businessRules || '',
+        businessOwner: values.businessOwner || '',
+        domainClassification: values.domainClassification || '',
+        naturalLanguageDescription: values.naturalLanguageDescription || '',
+        naturalLanguageAliases: values.naturalLanguageAliases || [],
         columns: values.columns || []
       };
 
@@ -131,15 +153,30 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
 
   const columns = [
     {
-      title: 'Table Name',
+      title: 'Table Information',
       dataIndex: 'tableName',
       key: 'tableName',
+      width: 250,
       render: (text: string, record: BusinessTableInfo) => (
         <Space direction="vertical" size="small">
           <Text strong>{record.schemaName}.{text}</Text>
-          <Text type="secondary" style={{ fontSize: '12px' }}>
-            {record.columns.length} columns documented
-          </Text>
+          {record.businessFriendlyName && (
+            <Text type="secondary" style={{ fontSize: '12px', fontStyle: 'italic' }}>
+              {record.businessFriendlyName}
+            </Text>
+          )}
+          <Space size="small">
+            {record.domainClassification && (
+              <Tag color="blue" style={{ fontSize: '10px' }}>
+                {record.domainClassification}
+              </Tag>
+            )}
+            {record.importanceScore && (
+              <Tag color={record.importanceScore > 0.7 ? 'green' : record.importanceScore > 0.4 ? 'orange' : 'red'} style={{ fontSize: '10px' }}>
+                Score: {(record.importanceScore * 100).toFixed(0)}%
+              </Tag>
+            )}
+          </Space>
         </Space>
       ),
     },
@@ -148,26 +185,53 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
       dataIndex: 'businessPurpose',
       key: 'businessPurpose',
       ellipsis: true,
+      width: 300,
     },
     {
-      title: 'Primary Use Case',
-      dataIndex: 'primaryUseCase',
-      key: 'primaryUseCase',
-      ellipsis: true,
-    },
-    {
-      title: 'Query Patterns',
-      dataIndex: 'commonQueryPatterns',
-      key: 'commonQueryPatterns',
-      render: (patterns: string[]) => (
-        <Space wrap>
-          {patterns.slice(0, 3).map((pattern, index) => (
-            <Tag key={index} color="blue" style={{ fontSize: '11px' }}>
-              {pattern}
+      title: 'Owner & Governance',
+      key: 'governance',
+      width: 200,
+      render: (record: BusinessTableInfo) => (
+        <Space direction="vertical" size="small">
+          {record.businessOwner && (
+            <Text style={{ fontSize: '12px' }}>
+              <strong>Owner:</strong> {record.businessOwner}
+            </Text>
+          )}
+          {record.dataGovernanceLevel && (
+            <Tag color="purple" style={{ fontSize: '10px' }}>
+              {record.dataGovernanceLevel}
             </Tag>
-          ))}
-          {patterns.length > 3 && (
-            <Tag color="default">+{patterns.length - 3} more</Tag>
+          )}
+          {record.lastBusinessReview && (
+            <Text type="secondary" style={{ fontSize: '11px' }}>
+              Last Review: {new Date(record.lastBusinessReview).toLocaleDateString()}
+            </Text>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: 'Usage & Quality',
+      key: 'metrics',
+      width: 150,
+      render: (record: BusinessTableInfo) => (
+        <Space direction="vertical" size="small">
+          {record.usageFrequency !== undefined && (
+            <div>
+              <Text style={{ fontSize: '11px' }}>Usage: </Text>
+              <Tag color={record.usageFrequency > 0.7 ? 'green' : record.usageFrequency > 0.4 ? 'orange' : 'red'} style={{ fontSize: '10px' }}>
+                {(record.usageFrequency * 100).toFixed(0)}%
+              </Tag>
+            </div>
+          )}
+          {record.semanticCoverageScore !== undefined && (
+            <div>
+              <Text style={{ fontSize: '11px' }}>Coverage: </Text>
+              <Tag color={record.semanticCoverageScore > 0.8 ? 'green' : record.semanticCoverageScore > 0.6 ? 'orange' : 'red'} style={{ fontSize: '10px' }}>
+                {(record.semanticCoverageScore * 100).toFixed(0)}%
+              </Tag>
+            </div>
           )}
         </Space>
       ),
@@ -206,6 +270,24 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
 
   return (
     <div>
+      <Alert
+        message="Business Table Metadata Management"
+        description={
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Text>
+              This interface manages business metadata stored in <code>[BIReportingCopilot_Dev].[dbo].[BusinessTableInfo]</code>
+            </Text>
+            <Text type="secondary">
+              View and edit business context, governance information, and semantic metadata for database tables.
+              Data includes business purpose, ownership, quality metrics, and natural language descriptions.
+            </Text>
+          </Space>
+        }
+        type="info"
+        showIcon
+        style={{ marginBottom: '16px' }}
+      />
+
       <Card
         title={
           <Space size="middle">
@@ -218,7 +300,6 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleCreate}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             Add Table
           </Button>
@@ -238,16 +319,94 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
             expandedRowRender: (record) => (
               <div style={{ padding: '16px', backgroundColor: '#fafafa' }}>
                 <Row gutter={[16, 16]}>
-                  <Col span={12}>
+                  <Col span={8}>
                     <Title level={5}>Business Context</Title>
                     <Text>{record.businessContext || 'No context provided'}</Text>
+
+                    {record.naturalLanguageDescription && (
+                      <>
+                        <Title level={5} style={{ marginTop: '16px' }}>Natural Language Description</Title>
+                        <Text>{record.naturalLanguageDescription}</Text>
+                      </>
+                    )}
                   </Col>
-                  <Col span={12}>
+                  <Col span={8}>
                     <Title level={5}>Business Rules</Title>
                     <Text>{record.businessRules || 'No rules defined'}</Text>
+
+                    {record.businessProcesses && record.businessProcesses.length > 0 && (
+                      <>
+                        <Title level={5} style={{ marginTop: '16px' }}>Business Processes</Title>
+                        <Space wrap>
+                          {record.businessProcesses.map((process, idx) => (
+                            <Tag key={idx} color="blue">{process}</Tag>
+                          ))}
+                        </Space>
+                      </>
+                    )}
+                  </Col>
+                  <Col span={8}>
+                    <Title level={5}>Governance & Quality</Title>
+                    {record.dataGovernancePolicies && record.dataGovernancePolicies.length > 0 && (
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text strong>Policies: </Text>
+                        <Space wrap>
+                          {record.dataGovernancePolicies.map((policy, idx) => (
+                            <Tag key={idx} color="purple">{policy}</Tag>
+                          ))}
+                        </Space>
+                      </div>
+                    )}
+
+                    {record.analyticalUseCases && record.analyticalUseCases.length > 0 && (
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text strong>Use Cases: </Text>
+                        <Space wrap>
+                          {record.analyticalUseCases.map((useCase, idx) => (
+                            <Tag key={idx} color="green">{useCase}</Tag>
+                          ))}
+                        </Space>
+                      </div>
+                    )}
+
+                    {record.reportingCategories && record.reportingCategories.length > 0 && (
+                      <div>
+                        <Text strong>Reporting: </Text>
+                        <Space wrap>
+                          {record.reportingCategories.map((category, idx) => (
+                            <Tag key={idx} color="orange">{category}</Tag>
+                          ))}
+                        </Space>
+                      </div>
+                    )}
                   </Col>
                 </Row>
-                {record.columns.length > 0 && (
+
+                {record.naturalLanguageAliases && record.naturalLanguageAliases.length > 0 && (
+                  <>
+                    <Divider />
+                    <Title level={5}>Natural Language Aliases</Title>
+                    <Space wrap>
+                      {record.naturalLanguageAliases.map((alias, idx) => (
+                        <Tag key={idx} color="cyan">{alias}</Tag>
+                      ))}
+                    </Space>
+                  </>
+                )}
+
+                {record.llmContextHints && record.llmContextHints.length > 0 && (
+                  <>
+                    <Divider />
+                    <Title level={5}>LLM Context Hints</Title>
+                    <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                      {record.llmContextHints.map((hint, idx) => (
+                        <li key={idx}><Text>{hint}</Text></li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {record.columns && record.columns.length > 0 && (
                   <>
                     <Divider />
                     <Title level={5}>Column Documentation</Title>
@@ -255,7 +414,7 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
                       {record.columns.map((column, index) => (
                         <Panel
                           header={
-                            <Space>
+                            <Space size="middle">
                               <Text strong>{column.columnName}</Text>
                               {column.isKeyColumn && <Tag color="gold">Key Column</Tag>}
                             </Space>
@@ -271,7 +430,7 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
                               <Text strong>Context: </Text>
                               <Text>{column.businessContext || 'Not provided'}</Text>
                             </div>
-                            {column.dataExamples.length > 0 && (
+                            {column.dataExamples && column.dataExamples.length > 0 && (
                               <div>
                                 <Text strong>Examples: </Text>
                                 <Space wrap>
@@ -378,6 +537,52 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
             />
           </Form.Item>
 
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="businessOwner"
+                label="Business Owner"
+              >
+                <Input placeholder="e.g., Data Analytics Team, Finance Department" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="domainClassification"
+                label="Domain Classification"
+              >
+                <Select placeholder="Select domain classification">
+                  <Select.Option value="Reference">Reference</Select.Option>
+                  <Select.Option value="Transactional">Transactional</Select.Option>
+                  <Select.Option value="Analytical">Analytical</Select.Option>
+                  <Select.Option value="Master">Master</Select.Option>
+                  <Select.Option value="Staging">Staging</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            name="naturalLanguageDescription"
+            label="Natural Language Description"
+          >
+            <TextArea
+              rows={2}
+              placeholder="Human-friendly description of what this table contains and how it's used..."
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="naturalLanguageAliases"
+            label="Natural Language Aliases"
+          >
+            <Select
+              mode="tags"
+              placeholder="Add alternative names (e.g., 'Countries', 'Jurisdictions', 'Geographic Data')"
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+
           <Divider orientation="left">
             <Space size="middle">
               <ColumnHeightOutlined />
@@ -406,7 +611,6 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
                         icon={<MinusCircleOutlined />}
                         onClick={() => remove(name)}
                         size="small"
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                       >
                         Remove
                       </Button>
@@ -478,7 +682,7 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
                       valuePropName="checked"
                     >
                       <Switch
-                        checkedChildren={<KeyOutlined />}
+                        checkedChildren={<span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><KeyOutlined /></span>}
                         unCheckedChildren="No"
                       />
                     </Form.Item>

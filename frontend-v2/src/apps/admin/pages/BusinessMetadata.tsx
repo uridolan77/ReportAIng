@@ -13,6 +13,8 @@ import { BusinessGlossaryManager } from '../components/BusinessGlossaryManager'
 import { RealApiTester } from '../components/RealApiTester'
 import { MetadataValidationReport } from '../components/MetadataValidationReport'
 import type { BusinessTableInfoDto } from '@shared/store/api/businessApi'
+import { useAppSelector } from '@shared/hooks'
+import { selectAccessToken } from '@shared/store/auth'
 
 const { Text } = Typography
 const { TabPane } = Tabs
@@ -110,8 +112,12 @@ export default function BusinessMetadata() {
   // Fetch business tables to check if table exists in business metadata
   const { data: businessTables } = useGetBusinessTablesQuery()
 
+  // Get authentication token for manual API calls
+  const accessToken = useAppSelector(selectAccessToken)
+
   // Debug business tables data
   console.log('🏢 Business tables from API:', businessTables)
+  console.log('🔑 Access token available:', !!accessToken)
 
   const handleEdit = async (record: BusinessTableInfoDto) => {
     console.log('🔍 Editing table:', record)
@@ -136,7 +142,16 @@ export default function BusinessMetadata() {
         console.log('📊 Found existing business table, fetching detailed data...')
 
         // Use the business API to get the full business table details
-        const response = await fetch(`/api/business/tables/${existingBusinessTable.id}`)
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        }
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`
+        }
+
+        const response = await fetch(`/api/business/tables/${existingBusinessTable.id}`, {
+          headers
+        })
         if (response.ok) {
           const detailedBusinessTable = await response.json()
           console.log('✅ Fetched detailed business table:', detailedBusinessTable)
@@ -152,7 +167,16 @@ export default function BusinessMetadata() {
         try {
           // Fetch detailed schema information
           const tableFullName = `${record.schemaName}.${record.tableName}`
-          const response = await fetch(`/api/schema/tables/${tableFullName}`)
+          const headers: HeadersInit = {
+            'Content-Type': 'application/json'
+          }
+          if (accessToken) {
+            headers['Authorization'] = `Bearer ${accessToken}`
+          }
+
+          const response = await fetch(`/api/schema/tables/${tableFullName}`, {
+            headers
+          })
           if (response.ok) {
             const schemaDetails = await response.json()
             console.log('✅ Fetched schema details:', schemaDetails)
@@ -160,37 +184,37 @@ export default function BusinessMetadata() {
             // Create a new business table template with enhanced schema info
             const newTableTemplate: BusinessTableInfoDto = {
               id: 0, // New table
-              schemaName: schemaDetails.schemaName || record.schemaName,
-              tableName: schemaDetails.tableName || record.tableName,
-              businessPurpose: schemaDetails.businessPurpose || '',
-              businessContext: schemaDetails.businessContext || '',
-              primaryUseCase: schemaDetails.primaryUseCase || '',
-              domainClassification: schemaDetails.domainClassification || '',
-              businessOwner: '',
-              semanticDescription: '',
-              commonQueryPatterns: '',
-              businessRules: '',
-              naturalLanguageAliases: [],
-              businessProcesses: [],
-              analyticalUseCases: [],
-              reportingCategories: [],
-              vectorSearchKeywords: [],
+              schemaName: schemaDetails.schema || record.schemaName,
+              tableName: schemaDetails.name || record.tableName,
+              businessPurpose: schemaDetails.businessPurpose || schemaDetails.description || `Table containing ${schemaDetails.columns?.length || 0} columns for ${schemaDetails.name || record.tableName} data`,
+              businessContext: schemaDetails.businessContext || schemaDetails.description || `Database table ${schemaDetails.schema || record.schemaName}.${schemaDetails.name || record.tableName} with ${schemaDetails.columns?.length || 0} columns`,
+              primaryUseCase: schemaDetails.primaryUseCase || 'Data storage and retrieval',
+              domainClassification: schemaDetails.domainClassification || 'Reference',
+              businessOwner: 'Not specified',
+              semanticDescription: `Database table with ${schemaDetails.columns?.length || 0} columns including: ${schemaDetails.columns?.slice(0, 3).map((col: any) => col.name).join(', ')}${schemaDetails.columns?.length > 3 ? '...' : ''}`,
+              commonQueryPatterns: 'Standard CRUD operations, filtering, and joins',
+              businessRules: 'Standard database constraints and business logic apply',
+              naturalLanguageAliases: [schemaDetails.name || record.tableName],
+              businessProcesses: ['Data Management'],
+              analyticalUseCases: ['Reporting', 'Analytics'],
+              reportingCategories: ['Operational Data'],
+              vectorSearchKeywords: [schemaDetails.name || record.tableName, schemaDetails.schema || record.schemaName],
               businessGlossaryTerms: [],
-              llmContextHints: [],
-              queryComplexityHints: [],
+              llmContextHints: [`This table contains ${schemaDetails.columns?.length || 0} columns`],
+              queryComplexityHints: ['Standard table operations'],
               semanticRelationships: '',
-              usagePatterns: '',
+              usagePatterns: 'Regular database operations',
               dataQualityIndicators: {},
               relationshipSemantics: '',
               dataGovernancePolicies: [],
               importanceScore: 0.5,
               usageFrequency: 0.5,
-              semanticCoverageScore: 0.0,
+              semanticCoverageScore: 0.2,
               isActive: true,
-              createdBy: '',
-              createdDate: '',
-              updatedDate: '',
-              lastAnalyzed: ''
+              createdBy: 'System',
+              createdDate: new Date().toISOString(),
+              updatedDate: new Date().toISOString(),
+              lastAnalyzed: new Date().toISOString()
             }
             console.log('📝 Created enhanced table template:', newTableTemplate)
             setSelectedTable(newTableTemplate)
@@ -201,24 +225,24 @@ export default function BusinessMetadata() {
               id: 0,
               schemaName: record.schemaName,
               tableName: record.tableName,
-              businessPurpose: '',
-              businessContext: '',
-              primaryUseCase: '',
-              domainClassification: '',
-              businessOwner: '',
-              semanticDescription: '',
-              commonQueryPatterns: '',
-              businessRules: '',
-              naturalLanguageAliases: [],
-              businessProcesses: [],
-              analyticalUseCases: [],
-              reportingCategories: [],
-              vectorSearchKeywords: [],
+              businessPurpose: `Table for ${record.tableName} data`,
+              businessContext: `Database table ${record.schemaName}.${record.tableName}`,
+              primaryUseCase: 'Data storage and retrieval',
+              domainClassification: 'Reference',
+              businessOwner: 'Not specified',
+              semanticDescription: `Database table ${record.schemaName}.${record.tableName}`,
+              commonQueryPatterns: 'Standard CRUD operations',
+              businessRules: 'Standard database constraints apply',
+              naturalLanguageAliases: [record.tableName],
+              businessProcesses: ['Data Management'],
+              analyticalUseCases: ['Reporting'],
+              reportingCategories: ['Operational Data'],
+              vectorSearchKeywords: [record.tableName, record.schemaName],
               businessGlossaryTerms: [],
-              llmContextHints: [],
-              queryComplexityHints: [],
+              llmContextHints: [`Table: ${record.tableName}`],
+              queryComplexityHints: ['Standard operations'],
               semanticRelationships: '',
-              usagePatterns: '',
+              usagePatterns: 'Regular database operations',
               dataQualityIndicators: {},
               relationshipSemantics: '',
               dataGovernancePolicies: [],
@@ -226,10 +250,10 @@ export default function BusinessMetadata() {
               usageFrequency: 0.5,
               semanticCoverageScore: 0.0,
               isActive: true,
-              createdBy: '',
-              createdDate: '',
-              updatedDate: '',
-              lastAnalyzed: ''
+              createdBy: 'System',
+              createdDate: new Date().toISOString(),
+              updatedDate: new Date().toISOString(),
+              lastAnalyzed: new Date().toISOString()
             })
           }
         } catch (error) {

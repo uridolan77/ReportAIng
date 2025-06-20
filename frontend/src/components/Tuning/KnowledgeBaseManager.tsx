@@ -82,7 +82,7 @@ export const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({ onDa
       <Tabs activeKey={activeTab} onChange={setActiveTab} size="large">
         <TabPane
           tab={
-            <span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <BookOutlined />
               Business Glossary
             </span>
@@ -91,7 +91,7 @@ export const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({ onDa
         >
           <Card
             title={
-              <Space>
+              <Space size="middle">
                 <BookOutlined />
                 <span>Business Terms & Definitions</span>
               </Space>
@@ -110,7 +110,7 @@ export const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({ onDa
 
         <TabPane
           tab={
-            <span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <TableOutlined />
               Database Tables
             </span>
@@ -119,7 +119,7 @@ export const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({ onDa
         >
           <Card
             title={
-              <Space>
+              <Space size="middle">
                 <DatabaseOutlined />
                 <span>Database Schema Management</span>
               </Space>

@@ -124,7 +124,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
       key: 'tableName',
       width: 180,
       render: (text: string, record: EditableTableContext) => (
-        <Space>
+        <Space size="middle">
           <Text strong>{text}</Text>
           {record.isSaved && <Tag color="green">Saved</Tag>}
         </Space>
@@ -163,7 +163,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
       key: 'actions',
       width: 280,
       render: (_: any, record: EditableTableContext, index: number) => (
-        <Space size="small" wrap>
+        <Space size="middle" wrap>
           <Button
             type="text"
             icon={<EyeOutlined />}
@@ -199,6 +199,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
             loading={saving}
             disabled={record.isSaved}
             onClick={() => handleSaveTableContext(record, index)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             {record.isSaved ? 'Saved' : 'Save'}
           </Button>
@@ -215,7 +216,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
       key: 'term',
       width: 200,
       render: (text: string, record: EditableGlossaryTerm) => (
-        <Space>
+        <Space size="middle">
           <Text strong>{text}</Text>
           {record.isSaved && <Tag color="green">Saved</Tag>}
         </Space>
@@ -250,7 +251,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
       key: 'actions',
       width: 180,
       render: (_: any, record: EditableGlossaryTerm, index: number) => (
-        <Space size="small">
+        <Space size="middle">
           <Button
             type="text"
             icon={<EditOutlined />}
@@ -265,6 +266,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
             loading={saving}
             disabled={record.isSaved}
             onClick={() => handleSaveGlossaryTerm(record, index)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             {record.isSaved ? 'Saved' : 'Save'}
           </Button>
@@ -541,6 +543,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
           loading={saving}
           onClick={handleSaveAll}
           icon={<SaveOutlined />}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
         >
           Save All to Database
         </Button>
@@ -591,6 +594,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
                 type="primary"
                 icon={<EditOutlined />}
                 onClick={() => setGlossaryManagerVisible(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
               >
                 Advanced Glossary Manager
               </Button>
@@ -606,7 +610,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
           </Space>
         </TabPane>
 
-        <TabPane tab={<span><LinkOutlined /> Business Context</span>} key="business-context">
+        <TabPane tab={<span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><LinkOutlined /> Business Context</span>} key="business-context">
           <div style={{ padding: '16px', height: '100%' }}>
             <Alert
               message="Business Context Management"
@@ -619,7 +623,7 @@ export const ContentManagementModal: React.FC<ContentManagementModalProps> = ({
           </div>
         </TabPane>
 
-        <TabPane tab={<span><SettingOutlined /> Business Glossary</span>} key="tuning">
+        <TabPane tab={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><SettingOutlined /> Business Glossary</span>} key="tuning">
           <div style={{ padding: '16px', height: '100%' }}>
             <Alert
               message="Business Glossary Management"

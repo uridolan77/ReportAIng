@@ -11,6 +11,36 @@ export interface BusinessTableInfo {
   commonQueryPatterns: string[];
   businessRules: string;
   isActive: boolean;
+  createdDate: string;
+  updatedDate?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  domainClassification?: string;
+  naturalLanguageAliases?: string[];
+  usagePatterns?: any;
+  dataQualityIndicators?: any;
+  relationshipSemantics?: any[];
+  importanceScore?: number;
+  usageFrequency?: number;
+  lastAnalyzed?: string;
+  businessOwner?: string;
+  dataGovernancePolicies?: string[];
+  semanticDescription?: string;
+  businessProcesses?: string[];
+  analyticalUseCases?: string[];
+  reportingCategories?: string[];
+  semanticRelationships?: any;
+  queryComplexityHints?: string[];
+  businessGlossaryTerms?: string[];
+  semanticCoverageScore?: number;
+  llmContextHints?: string[];
+  vectorSearchKeywords?: string[];
+  relatedBusinessTerms?: string[];
+  businessFriendlyName?: string;
+  naturalLanguageDescription?: string;
+  relationshipContext?: string;
+  dataGovernanceLevel?: string;
+  lastBusinessReview?: string;
   columns: BusinessColumnInfo[];
 }
 
@@ -119,6 +149,10 @@ export interface CreateTableRequest {
   primaryUseCase: string;
   commonQueryPatterns: string[];
   businessRules: string;
+  businessOwner?: string;
+  domainClassification?: string;
+  naturalLanguageDescription?: string;
+  naturalLanguageAliases?: string[];
   columns: CreateColumnRequest[];
 }
 
@@ -289,15 +323,22 @@ class TuningApiService {
 
   // Business Tables
   async getBusinessTables(): Promise<BusinessTableInfo[]> {
+    console.log('🌐 Making API request to:', `${this.baseUrl}/api/tuning/tables`);
     const response = await fetch(`${this.baseUrl}/api/tuning/tables`, {
       headers: await getAuthHeaders(),
     });
 
+    console.log('🌐 API Response status:', response.status);
+    console.log('🌐 API Response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
+      console.error('❌ API request failed:', response.status, response.statusText);
       throw new Error(`Failed to get business tables: ${response.statusText}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log('🌐 Raw API response data:', data);
+    return data;
   }
 
   async getBusinessTable(id: number): Promise<BusinessTableInfo> {

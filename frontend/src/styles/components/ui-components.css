@@ -307,6 +307,22 @@
   margin: var(--space-4) 0;
 }
 
+/* Simple icon spacing fix */
+.anticon {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  font-style: normal;
+  line-height: 0;
+  text-align: center;
+  text-transform: none;
+  vertical-align: -0.125em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  padding-right: 5px !important;
+}
+
 .ui-spacer {
   flex: 1;
 }

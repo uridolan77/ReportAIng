@@ -57,36 +57,13 @@ public class SchemaController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("🔍 Getting schema metadata from BI database via discovery service");
+            _logger.LogInformation("🔍 Getting schema metadata from cached schema service");
+
+            // Use cached schema service for performance instead of full discovery
+            var schemaMetadata = await _schemaService.GetSchemaMetadataAsync("BIDatabase");
             
-            // Use the discovery service to get live schema from BI database
-            var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
-            
-            // Convert discovery result to SchemaMetadata format expected by frontend
-            var schema = new SchemaMetadata
-            {
-                DatabaseName = discoveryResult.DatabaseName,
-                LastUpdated = DateTime.UtcNow,
-                Tables = discoveryResult.Tables.Select(t => new TableMetadata
-                {
-                    Name = t.TableName,
-                    Schema = t.SchemaName,
-                    Description = $"Table with {t.Columns.Count} columns",
-                    RowCount = 0, // Discovery service doesn't count rows for performance
-                    LastUpdated = DateTime.UtcNow,
-                    Columns = t.Columns.Select(c => new ColumnMetadata
-                    {
-                        Name = c.ColumnName,
-                        DataType = c.DataType,
-                        Description = $"{c.DataType} column" + (c.IsPrimaryKey ? " (Primary Key)" : "") + (c.IsForeignKey ? " (Foreign Key)" : ""),
-                        IsNullable = c.IsNullable,
-                        IsPrimaryKey = c.IsPrimaryKey,
-                        IsForeignKey = c.IsForeignKey,
-                        SemanticTags = new[] { c.DataType.ToLower() },
-                        SampleValues = new string[0] // Could be populated later if needed
-                    }).ToList()
-                }).ToList()
-            };
+            // Schema metadata is already in the correct format from cached service
+            var schema = schemaMetadata;
             
             _logger.LogInformation("✅ Schema discovery completed: {TableCount} tables found", schema.Tables.Count);
             return Ok(schema);
@@ -140,55 +117,13 @@ public class SchemaController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("🔍 Getting business tables with metadata");
+            _logger.LogInformation("🔍 Getting business table records from BusinessTableInfo table");
 
-            // First try to get business metadata (using optimized version for better performance)
-            var businessTables = await _businessTableService.GetBusinessTablesOptimizedAsync();
+            // Return the raw business table records without any transformation
+            var businessTables = await _businessTableService.GetBusinessTablesAsync();
 
-            if (businessTables.Any())
-            {
-                _logger.LogInformation("✅ Returning {Count} business tables with metadata", businessTables.Count);
-
-                // Log first table for debugging
-                var firstTable = businessTables.First();
-                _logger.LogInformation("🔍 Sample table data: Name={TableName}, Schema={SchemaName}, Purpose={BusinessPurpose}, Context={BusinessContext}",
-                    firstTable.TableName, firstTable.SchemaName, firstTable.BusinessPurpose, firstTable.BusinessContext);
-
-                // Transform business tables to match the EXACT frontend format
-                var result = businessTables.Select(bt => new
-                {
-                    // Frontend expects these exact field names based on the table columns
-                    tableInformation = $"{bt.SchemaName}.{bt.TableName}",
-                    domainUseCase = "General Business Use", // Optimized DTO doesn't have PrimaryUseCase
-                    businessContext = bt.BusinessContext ?? "No context provided",
-                    qualityUsage = DetermineQualityUsageFromOptimizedDto(bt),
-                    ruleGovernance = "Business rules available", // Optimized DTO doesn't have BusinessRules
-                    lastUpdated = bt.UpdatedDate?.ToString("yyyy-MM-dd") ?? "Never",
-                    actions = "Edit"
-                }).ToList();
-
-                return Ok(result);
-            }
-            else
-            {
-                _logger.LogInformation("No business metadata found, falling back to schema discovery");
-
-                // Fallback to schema discovery if no business metadata exists
-                var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
-
-                var tables = discoveryResult.Tables.Select(t => new
-                {
-                    name = t.TableName,
-                    schema = t.SchemaName,
-                    description = $"Table with {t.Columns.Count} columns",
-                    rowCount = 0,
-                    lastUpdated = DateTime.UtcNow,
-                    columnCount = t.Columns.Count
-                }).ToList();
-
-                _logger.LogInformation("✅ Schema discovery completed: {TableCount} tables found", tables.Count);
-                return Ok(tables);
-            }
+            _logger.LogInformation("✅ Retrieved {Count} business table records from BusinessTableInfo table", businessTables.Count);
+            return Ok(businessTables);
         }
         catch (Exception ex)
         {
@@ -198,46 +133,40 @@ public class SchemaController : ControllerBase
     }
 
     /// <summary>
-    /// Get metadata for a specific table - now uses live discovery from BI database
+    /// Get metadata for a specific table - uses cached schema for performance
     /// </summary>
     [HttpGet("tables/{tableName}")]
     public async Task<ActionResult<TableMetadata>> GetTableMetadata(string tableName)
     {
         try
         {
-            _logger.LogInformation("🔍 Getting metadata for table: {TableName} from BI database", tableName);
-            
-            var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
-            
-            var discoveredTable = discoveryResult.Tables.FirstOrDefault(t => 
-                t.TableName.Equals(tableName, StringComparison.OrdinalIgnoreCase) ||
-                $"{t.SchemaName}.{t.TableName}".Equals(tableName, StringComparison.OrdinalIgnoreCase));
-            
+            _logger.LogInformation("🔍 Getting metadata for table: {TableName} from cached schema", tableName);
+
+            // Use cached schema instead of full discovery for performance
+            var schemaMetadata = await _schemaService.GetSchemaMetadataAsync("BIDatabase");
+
+            var discoveredTable = schemaMetadata.Tables.FirstOrDefault(t =>
+                t.Name.Equals(tableName, StringComparison.OrdinalIgnoreCase) ||
+                $"{t.Schema}.{t.Name}".Equals(tableName, StringComparison.OrdinalIgnoreCase));
+
             if (discoveredTable == null)
             {
-                _logger.LogWarning("Table '{TableName}' not found in BI database", tableName);
-                return NotFound(new { error = $"Table '{tableName}' not found in BI database" });
+                _logger.LogWarning("Table '{TableName}' not found in cached schema, trying fresh discovery", tableName);
+
+                // Fallback to fresh discovery if not found in cache
+                var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
+                discoveredTable = discoveryResult.Tables.FirstOrDefault(t =>
+                    t.TableName.Equals(tableName, StringComparison.OrdinalIgnoreCase) ||
+                    $"{t.SchemaName}.{t.TableName}".Equals(tableName, StringComparison.OrdinalIgnoreCase));
+
+                if (discoveredTable == null)
+                {
+                    _logger.LogWarning("Table '{TableName}' not found in BI database", tableName);
+                    return NotFound(new { error = $"Table '{tableName}' not found in BI database" });
+                }
             }
             
-            var tableMetadata = new TableMetadata
-            {
-                Name = discoveredTable.TableName,
-                Schema = discoveredTable.SchemaName,
-                Description = $"Table with {discoveredTable.Columns.Count} columns",
-                RowCount = 0, // Discovery service doesn't count rows for performance
-                LastUpdated = DateTime.UtcNow,
-                Columns = discoveredTable.Columns.Select(c => new ColumnMetadata
-                {
-                    Name = c.ColumnName,
-                    DataType = c.DataType,
-                    Description = $"{c.DataType} column" + (c.IsPrimaryKey ? " (Primary Key)" : "") + (c.IsForeignKey ? " (Foreign Key)" : ""),
-                    IsNullable = c.IsNullable,
-                    IsPrimaryKey = c.IsPrimaryKey,
-                    IsForeignKey = c.IsForeignKey,
-                    SemanticTags = new[] { c.DataType.ToLower() },
-                    SampleValues = new string[0]
-                }).ToList()
-            };
+            var tableMetadata = discoveredTable;
             
             _logger.LogInformation("✅ Table metadata discovery completed for: {TableName}", tableName);
             return Ok(tableMetadata);
@@ -306,19 +235,19 @@ public class SchemaController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("🔍 Getting data sources from BI database via discovery service");
-            
-            var discoveryResult = await _discoveryService.DiscoverSchemaAsync("BIDatabase");
-            
+            _logger.LogInformation("🔍 Getting data sources from cached schema service");
+
+            var schemaMetadata = await _schemaService.GetSchemaMetadataAsync("BIDatabase");
+
             // Transform to simple format expected by frontend
-            var dataSources = discoveryResult.Tables.Select(t => new
+            var dataSources = schemaMetadata.Tables.Select(t => new
             {
-                name = t.TableName,
-                schema = t.SchemaName ?? "dbo",
+                name = t.Name,
+                schema = t.Schema ?? "dbo",
                 type = "table",
-                rowCount = 0, // Discovery service doesn't count rows for performance
+                rowCount = t.RowCount,
                 columns = t.Columns?.Count ?? 0,
-                fullName = $"{t.SchemaName}.{t.TableName}"
+                fullName = $"{t.Schema}.{t.Name}"
             }).ToList();
             
             _logger.LogInformation("✅ Data sources discovery completed: {TableCount} tables found", dataSources.Count);
@@ -331,36 +260,5 @@ public class SchemaController : ControllerBase
         }
     }
 
-    private static string DetermineQualityUsage(BusinessTableInfoEntity table)
-    {
-        // Determine quality/usage level based on table characteristics
-        if (table.TableName.Contains("Daily_actions") || table.TableName.Contains("transaction"))
-            return "High";
-        if (table.TableName.Contains("reference") || table.TableName.Contains("master") ||
-            table.TableName.Contains("Countries") || table.TableName.Contains("Currencies"))
-            return "Medium";
-        return "Low";
-    }
 
-    private static string DetermineQualityUsageFromDto(BusinessTableInfoDto table)
-    {
-        // Determine quality/usage level based on table characteristics
-        if (table.TableName.Contains("Daily_actions") || table.TableName.Contains("transaction"))
-            return "Importance: High, Usage: High";
-        if (table.TableName.Contains("reference") || table.TableName.Contains("master") ||
-            table.TableName.Contains("Countries") || table.TableName.Contains("Currencies"))
-            return "Importance: Medium, Usage: Medium";
-        return "Importance: Low, Usage: Low";
-    }
-
-    private static string DetermineQualityUsageFromOptimizedDto(BusinessTableInfoOptimizedDto table)
-    {
-        // Determine quality/usage level based on table characteristics
-        if (table.TableName.Contains("Daily_actions") || table.TableName.Contains("transaction"))
-            return "Importance: High, Usage: High";
-        if (table.TableName.Contains("reference") || table.TableName.Contains("master") ||
-            table.TableName.Contains("Countries") || table.TableName.Contains("Currencies"))
-            return "Importance: Medium, Usage: Medium";
-        return "Importance: Low, Usage: Low";
-    }
 }
