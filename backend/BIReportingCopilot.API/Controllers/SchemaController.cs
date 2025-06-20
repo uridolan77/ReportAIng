@@ -166,8 +166,31 @@ public class SchemaController : ControllerBase
                 }
             }
             
-            var tableMetadata = discoveredTable;
-            
+            // Convert DiscoveredTable to TableMetadata
+            var tableMetadata = new TableMetadata
+            {
+                Name = discoveredTable.Name ?? discoveredTable.TableName,
+                Schema = discoveredTable.Schema ?? discoveredTable.SchemaName,
+                Description = discoveredTable.Description ?? $"Table with {discoveredTable.Columns?.Count ?? 0} columns",
+                RowCount = discoveredTable.RowCount,
+                LastUpdated = discoveredTable.LastUpdated ?? DateTime.UtcNow,
+                Columns = discoveredTable.Columns?.Select(c => new ColumnMetadata
+                {
+                    Name = c.Name ?? c.ColumnName,
+                    DataType = c.DataType,
+                    Description = c.Description ?? $"{c.DataType} column" + (c.IsPrimaryKey ? " (Primary Key)" : "") + (c.IsForeignKey ? " (Foreign Key)" : ""),
+                    IsNullable = c.IsNullable,
+                    IsPrimaryKey = c.IsPrimaryKey,
+                    IsForeignKey = c.IsForeignKey,
+                    DefaultValue = c.DefaultValue,
+                    MaxLength = c.MaxLength,
+                    Precision = c.Precision,
+                    Scale = c.Scale,
+                    SemanticTags = new[] { c.DataType?.ToLower() ?? "unknown" },
+                    SampleValues = new string[0]
+                }).ToList() ?? new List<ColumnMetadata>()
+            };
+
             _logger.LogInformation("✅ Table metadata discovery completed for: {TableName}", tableName);
             return Ok(tableMetadata);
         }
