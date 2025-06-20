@@ -23,6 +23,18 @@ public class SchemaMetadataEntity : BaseEntity
     public string? SemanticTags { get; set; }
     public string? SampleValues { get; set; }
 
+    // Phase 2 Enhanced Business-Friendly Descriptions
+    public string? BusinessFriendlyName { get; set; } // Human-readable name for the schema element
+    public string? BusinessPurpose { get; set; } // What business purpose this element serves
+    public string? BusinessContext { get; set; } // Business context and usage scenarios
+    public string? NaturalLanguageDescription { get; set; } // Description in natural language for LLM
+    public string? BusinessDomain { get; set; } // Business domain (Finance, Marketing, Operations, etc.)
+    public string? UsageExamples { get; set; } // JSON array of usage examples
+    public string? RelatedBusinessTerms { get; set; } // JSON array of related business glossary terms
+    public decimal? BusinessImportance { get; set; } // Business importance score (0.0 to 1.0)
+    public string? QueryIntents { get; set; } // JSON array of query intents this element supports
+    public string? SemanticSynonyms { get; set; } // JSON array of semantic synonyms for better matching
+
     // Enhanced business context fields
     public string? BusinessFriendlyName { get; set; } // Human-readable alias
     public string? NaturalLanguageDescription { get; set; } // Detailed business explanation

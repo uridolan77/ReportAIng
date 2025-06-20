@@ -703,8 +703,21 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Schema.DatabaseSche
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Schema.ISemanticLayerService, BIReportingCopilot.Infrastructure.Schema.SemanticLayerService>();
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Schema.IDynamicSchemaContextualizationService, BIReportingCopilot.Infrastructure.Schema.DynamicSchemaContextualizationService>();
 
+// Phase 2: Enhanced Semantic Layer Services
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Schema.IEnhancedSemanticLayerService, BIReportingCopilot.Infrastructure.Schema.EnhancedSemanticLayerService>();
+
 // Register business metadata population service
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Schema.BusinessMetadataPopulationService>();
+
+// ===== PHASE 3: ENHANCED SQL VALIDATION PIPELINE =====
+// Enhanced semantic SQL validator with self-correction capabilities
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.IEnhancedSemanticSqlValidator, BIReportingCopilot.Infrastructure.Validation.EnhancedSemanticSqlValidator>();
+
+// Dry-run execution service for SQL validation without full execution
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.IDryRunExecutionService, BIReportingCopilot.Infrastructure.Query.DryRunExecutionService>();
+
+// SQL self-correction service with LLM feedback loops
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.ISqlSelfCorrectionService, BIReportingCopilot.Infrastructure.AI.SqlSelfCorrectionService>();
 
 // IConnectionStringProvider already registered before configuration validation
 builder.Services.AddScoped<IDatabaseInitializationService, BIReportingCopilot.Infrastructure.Data.DatabaseInitializationService>();

@@ -60,6 +60,36 @@ public class BusinessTableInfoEntity : BaseEntity
     [MaxLength(1000)]
     public string DataGovernancePolicies { get; set; } = string.Empty; // JSON - access rules, retention policies
 
+    // Phase 2 Enhanced Semantic Metadata for Tables
+    [MaxLength(2000)]
+    public string SemanticDescription { get; set; } = string.Empty; // Rich semantic description for LLM understanding
+
+    [MaxLength(1000)]
+    public string BusinessProcesses { get; set; } = string.Empty; // JSON array of business processes this table supports
+
+    [MaxLength(1000)]
+    public string AnalyticalUseCases { get; set; } = string.Empty; // JSON array of analytical use cases
+
+    [MaxLength(500)]
+    public string ReportingCategories { get; set; } = string.Empty; // JSON array of reporting categories
+
+    [MaxLength(1000)]
+    public string SemanticRelationships { get; set; } = string.Empty; // JSON mapping of semantic relationships to other tables
+
+    [MaxLength(500)]
+    public string QueryComplexityHints { get; set; } = string.Empty; // JSON hints for query complexity and optimization
+
+    [MaxLength(1000)]
+    public string BusinessGlossaryTerms { get; set; } = string.Empty; // JSON array of related business glossary terms
+
+    public decimal SemanticCoverageScore { get; set; } = 0.5m; // Coverage score for semantic completeness (0.0 to 1.0)
+
+    [MaxLength(500)]
+    public string LLMContextHints { get; set; } = string.Empty; // JSON array of context hints for LLM processing
+
+    [MaxLength(1000)]
+    public string VectorSearchKeywords { get; set; } = string.Empty; // JSON array of keywords for vector search optimization
+
     public bool IsActive { get; set; } = true;
 
     // Navigation properties
@@ -94,6 +124,39 @@ public class BusinessColumnInfoEntity : BaseEntity
     // Enhanced semantic metadata fields
     [MaxLength(1000)]
     public string NaturalLanguageAliases { get; set; } = string.Empty; // JSON array of business-friendly names
+
+    // Phase 2 Enhanced Semantic Metadata
+    [MaxLength(2000)]
+    public string SemanticContext { get; set; } = string.Empty; // Rich contextual information for LLM understanding
+
+    [MaxLength(1000)]
+    public string ConceptualRelationships { get; set; } = string.Empty; // JSON array of related business concepts
+
+    [MaxLength(500)]
+    public string DomainSpecificTerms { get; set; } = string.Empty; // JSON array of domain-specific terminology
+
+    [MaxLength(1000)]
+    public string QueryIntentMapping { get; set; } = string.Empty; // JSON mapping of query intents to this column
+
+    [MaxLength(500)]
+    public string BusinessQuestionTypes { get; set; } = string.Empty; // JSON array of business question types this column answers
+
+    [MaxLength(1000)]
+    public string SemanticSynonyms { get; set; } = string.Empty; // JSON array of semantic synonyms for vector search
+
+    [MaxLength(500)]
+    public string AnalyticalContext { get; set; } = string.Empty; // Context for analytical queries (aggregations, filters, etc.)
+
+    [MaxLength(500)]
+    public string BusinessMetrics { get; set; } = string.Empty; // JSON array of business metrics this column supports
+
+    public decimal SemanticRelevanceScore { get; set; } = 0.5m; // Relevance score for semantic search (0.0 to 1.0)
+
+    [MaxLength(1000)]
+    public string LLMPromptHints { get; set; } = string.Empty; // JSON array of hints for LLM prompt engineering
+
+    [MaxLength(500)]
+    public string VectorSearchTags { get; set; } = string.Empty; // JSON array of tags for vector search optimization
 
     [MaxLength(2000)]
     public string ValueExamples { get; set; } = string.Empty; // JSON - representative values with business context
@@ -237,6 +300,33 @@ public class BusinessGlossaryEntity : BaseEntity
 
     [MaxLength(1000)]
     public string ContextualVariations { get; set; } = string.Empty; // JSON - how meaning changes by context
+
+    // Phase 2 Enhanced Semantic Reasoning
+    [MaxLength(2000)]
+    public string SemanticEmbedding { get; set; } = string.Empty; // JSON - vector embedding for semantic search
+
+    [MaxLength(1000)]
+    public string QueryPatterns { get; set; } = string.Empty; // JSON - common query patterns that use this term
+
+    [MaxLength(1000)]
+    public string LLMPromptTemplates { get; set; } = string.Empty; // JSON - prompt templates for this term
+
+    [MaxLength(500)]
+    public string DisambiguationContext { get; set; } = string.Empty; // Context clues for disambiguation
+
+    [MaxLength(1000)]
+    public string SemanticRelationships { get; set; } = string.Empty; // JSON - semantic relationships (is-a, part-of, etc.)
+
+    [MaxLength(500)]
+    public string ConceptualLevel { get; set; } = string.Empty; // Abstract, Concrete, Operational, Strategic
+
+    [MaxLength(1000)]
+    public string CrossDomainMappings { get; set; } = string.Empty; // JSON - how this term maps across business domains
+
+    public decimal SemanticStability { get; set; } = 1.0m; // How stable this term's meaning is (0 = volatile, 1 = stable)
+
+    [MaxLength(1000)]
+    public string InferenceRules { get; set; } = string.Empty; // JSON - rules for semantic inference
 
     public bool IsActive { get; set; } = true;
     public int UsageCount { get; set; } = 0;

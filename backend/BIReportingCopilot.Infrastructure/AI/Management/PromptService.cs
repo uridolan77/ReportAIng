@@ -8,6 +8,7 @@ using BIReportingCopilot.Infrastructure.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Text;
 using Microsoft.Data.SqlClient;
 using CoreModels = BIReportingCopilot.Core.Models;
 
@@ -1717,6 +1718,147 @@ Provide a clear, structured explanation that matches the requested complexity le
             _logger.LogError(ex, "❌ Error getting prompt keys");
             return new List<string> { "sql_generation", "explanation", "validation" };
         }
+    }
+
+    #endregion
+
+    #region Phase 3: Enhanced Validation and Self-Correction Prompts
+
+    /// <summary>
+    /// Phase 3: Enhanced prompt engineering for semantic validation and self-correction
+    /// </summary>
+    public async Task<string> BuildSemanticValidationPromptAsync(
+        string sql,
+        string originalQuery,
+        EnhancedSchemaResult schemaContext,
+        CancellationToken cancellationToken = default)
+    {
+        var prompt = new StringBuilder();
+
+        prompt.AppendLine("You are an expert SQL semantic validator with deep understanding of business intelligence.");
+        prompt.AppendLine("Analyze the following SQL query for semantic alignment with the business intent.");
+        prompt.AppendLine();
+
+        prompt.AppendLine($"Business Question: {originalQuery}");
+        prompt.AppendLine();
+
+        prompt.AppendLine("Generated SQL:");
+        prompt.AppendLine("```sql");
+        prompt.AppendLine(sql);
+        prompt.AppendLine("```");
+        prompt.AppendLine();
+
+        // Add semantic context from enhanced schema
+        if (schemaContext.RelevantTables.Any())
+        {
+            prompt.AppendLine("Business Context:");
+            foreach (var table in schemaContext.RelevantTables.Take(3))
+            {
+                prompt.AppendLine($"- {table.TableName}: {table.BusinessPurpose}");
+
+                if (table.Columns.Any())
+                {
+                    var keyColumns = table.Columns.Where(c => c.RelevanceScore > 0.7).Take(3);
+                    foreach (var column in keyColumns)
+                    {
+                        prompt.AppendLine($"  • {column.ColumnName}: {column.BusinessMeaning}");
+                    }
+                }
+            }
+            prompt.AppendLine();
+        }
+
+        prompt.AppendLine("Validate the SQL for:");
+        prompt.AppendLine("1. Semantic alignment with business intent");
+        prompt.AppendLine("2. Correct use of business terminology");
+        prompt.AppendLine("3. Appropriate aggregations and calculations");
+        prompt.AppendLine("4. Missing business context or filters");
+        prompt.AppendLine();
+
+        prompt.AppendLine("Provide your analysis in JSON format:");
+        prompt.AppendLine("{");
+        prompt.AppendLine("  \"alignmentScore\": 0.0-1.0,");
+        prompt.AppendLine("  \"alignmentReason\": \"explanation\",");
+        prompt.AppendLine("  \"semanticIssues\": [\"issue1\", \"issue2\"],");
+        prompt.AppendLine("  \"businessTermValidation\": {");
+        prompt.AppendLine("    \"correctTerms\": [\"term1\"],");
+        prompt.AppendLine("    \"incorrectTerms\": [\"term2\"],");
+        prompt.AppendLine("    \"suggestions\": {\"incorrect\": \"correct\"}");
+        prompt.AppendLine("  }");
+        prompt.AppendLine("}");
+
+        return prompt.ToString();
+    }
+
+    /// <summary>
+    /// Build enhanced SQL correction prompt with semantic context
+    /// </summary>
+    public async Task<string> BuildSqlCorrectionPromptAsync(
+        string sql,
+        string originalQuery,
+        List<string> validationIssues,
+        EnhancedSchemaResult schemaContext,
+        CancellationToken cancellationToken = default)
+    {
+        var prompt = new StringBuilder();
+
+        prompt.AppendLine("You are an expert SQL developer specializing in business intelligence and data analytics.");
+        prompt.AppendLine("Your task is to correct the following SQL query based on validation issues.");
+        prompt.AppendLine();
+
+        prompt.AppendLine($"Original Business Question: {originalQuery}");
+        prompt.AppendLine();
+
+        prompt.AppendLine("SQL Query with Issues:");
+        prompt.AppendLine("```sql");
+        prompt.AppendLine(sql);
+        prompt.AppendLine("```");
+        prompt.AppendLine();
+
+        prompt.AppendLine("Validation Issues to Address:");
+        foreach (var issue in validationIssues)
+        {
+            prompt.AppendLine($"❌ {issue}");
+        }
+        prompt.AppendLine();
+
+        // Add enhanced schema context
+        if (schemaContext.RelevantTables.Any())
+        {
+            prompt.AppendLine("Available Schema and Business Context:");
+            foreach (var table in schemaContext.RelevantTables)
+            {
+                prompt.AppendLine($"📊 Table: {table.TableName}");
+                prompt.AppendLine($"   Purpose: {table.BusinessPurpose}");
+
+                if (table.Columns.Any())
+                {
+                    prompt.AppendLine("   Key Columns:");
+                    foreach (var column in table.Columns.Where(c => c.RelevanceScore > 0.6).Take(5))
+                    {
+                        prompt.AppendLine($"   • {column.ColumnName} ({column.DataType}): {column.BusinessMeaning}");
+
+                        if (column.NaturalLanguageAliases.Any())
+                        {
+                            prompt.AppendLine($"     Aliases: {string.Join(", ", column.NaturalLanguageAliases)}");
+                        }
+                    }
+                }
+                prompt.AppendLine();
+            }
+        }
+
+        prompt.AppendLine("Correction Guidelines:");
+        prompt.AppendLine("✅ Maintain the original business intent");
+        prompt.AppendLine("✅ Use correct table and column names from the schema");
+        prompt.AppendLine("✅ Apply appropriate business logic and filters");
+        prompt.AppendLine("✅ Follow SQL best practices and optimization");
+        prompt.AppendLine("✅ Ensure semantic alignment with business terminology");
+        prompt.AppendLine();
+
+        prompt.AppendLine("Provide the corrected SQL query:");
+
+        return prompt.ToString();
     }
 
     #endregion
