@@ -66,7 +66,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const settings = useAppSelector(selectChatSettings)
 
   const [isRecording, setIsRecording] = useState(false)
-  const [showTemplates, setShowTemplates] = useState(false)
 
   // API queries for suggestions
   const { data: querySuggestions } = useGetQuerySuggestionsQuery(
@@ -74,7 +73,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     { skip: inputValue.length < 2 }
   )
 
-  const { data: popularQueries } = useGetPopularQueriesQuery(
+  const { data: _popularQueries } = useGetPopularQueriesQuery(
     { limit: 10, timeframe: 'week' }
   )
 
@@ -214,7 +213,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     },
   ]
 
-  const autoCompleteOptions = [
+  const _autoCompleteOptions = [
     ...suggestions.map(s => ({ value: s.text, label: s.text })),
     ...recentQueries.slice(0, 3).map(q => ({ value: q, label: q })),
   ]

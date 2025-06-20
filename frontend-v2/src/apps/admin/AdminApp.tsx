@@ -1,4 +1,4 @@
-import React from 'react'
+import { FC } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AppLayout } from '@shared/components/core/Layout'
 import Dashboard from './pages/Dashboard'

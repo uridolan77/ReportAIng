@@ -1,6 +1,7 @@
 using Hangfire;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Cache;
@@ -20,7 +21,7 @@ namespace BIReportingCopilot.Infrastructure.Jobs;
 /// </summary>
 public class BackgroundJobManagementService
 {
-    private readonly BICopilotContext _context;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ISchemaService _schemaService;
     private readonly IAuditService _auditService;
     private readonly ICacheService _cacheService;
@@ -31,7 +32,7 @@ public class BackgroundJobManagementService
     private readonly PerformanceConfiguration _performanceConfig;
 
     public BackgroundJobManagementService(
-        BICopilotContext context,
+        IServiceScopeFactory scopeFactory,
         ISchemaService schemaService,
         IAuditService auditService,
         ICacheService cacheService,
@@ -40,7 +41,7 @@ public class BackgroundJobManagementService
         ILogger<BackgroundJobManagementService> logger,
         IHubContext<Hub> hubContext)
     {
-        _context = context;
+        _scopeFactory = scopeFactory;
         _schemaService = schemaService;
         _auditService = auditService;
         _cacheService = cacheService;
@@ -93,10 +94,13 @@ public class BackgroundJobManagementService
 
     private async Task CleanupQueryHistoryAsync()
     {
+        using var scope = _scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<BICopilotContext>();
+
         var retentionDays = _performanceConfig.RetentionDays;
         var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
 
-        var deletedCount = await _context.QueryHistory
+        var deletedCount = await context.QueryHistory
             .Where(q => q.QueryTimestamp < cutoffDate)
             .ExecuteDeleteAsync();
 
@@ -105,14 +109,17 @@ public class BackgroundJobManagementService
 
     private async Task CleanupExpiredCacheAsync()
     {
-        var expiredCacheEntries = await _context.QueryCache
+        using var scope = _scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<BICopilotContext>();
+
+        var expiredCacheEntries = await context.QueryCache
             .Where(c => c.ExpiryTimestamp < DateTime.UtcNow)
             .Select(c => c.Id)
             .ToListAsync();
 
         if (expiredCacheEntries.Any())
         {
-            await _context.QueryCache
+            await context.QueryCache
                 .Where(c => expiredCacheEntries.Contains(c.Id))
                 .ExecuteDeleteAsync();
 
@@ -122,10 +129,13 @@ public class BackgroundJobManagementService
 
     private async Task CleanupAuditLogsAsync()
     {
+        using var scope = _scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<BICopilotContext>();
+
         var retentionDays = _performanceConfig.RetentionDays * 12; // Keep audit logs longer
         var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
 
-        var deletedCount = await _context.AuditLog
+        var deletedCount = await context.AuditLog
             .Where(a => a.Timestamp < cutoffDate && a.Severity != "Critical")
             .ExecuteDeleteAsync();
 
@@ -134,13 +144,16 @@ public class BackgroundJobManagementService
 
     private async Task CleanupInactiveSessionsAsync()
     {
+        using var scope = _scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<BICopilotContext>();
+
         var sessionTimeout = TimeSpan.FromHours(24);
         var cutoffTime = DateTime.UtcNow.Subtract(sessionTimeout);
 
         try
         {
             // Mark inactive sessions
-            var inactiveSessions = await _context.UserSessions
+            var inactiveSessions = await context.UserSessions
                 .Where(s => s.LastActivity < cutoffTime && s.IsActive)
                 .ToListAsync();
 
@@ -151,25 +164,25 @@ public class BackgroundJobManagementService
 
             if (inactiveSessions.Any())
             {
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 _logger.LogInformation("Marked {Count} sessions as inactive", inactiveSessions.Count);
             }
 
             // Clean up expired refresh tokens
-            var expiredTokens = await _context.RefreshTokens
+            var expiredTokens = await context.RefreshTokens
                 .Where(t => t.ExpiresAt < DateTime.UtcNow || t.IsRevoked)
                 .ToListAsync();
 
             if (expiredTokens.Any())
             {
-                _context.RefreshTokens.RemoveRange(expiredTokens);
-                await _context.SaveChangesAsync();
+                context.RefreshTokens.RemoveRange(expiredTokens);
+                await context.SaveChangesAsync();
                 _logger.LogInformation("Deleted {Count} expired refresh tokens", expiredTokens.Count);
             }
 
             // Delete very old inactive sessions
             var oldSessionCutoff = DateTime.UtcNow.AddDays(-30);
-            var deletedSessionCount = await _context.UserSessions
+            var deletedSessionCount = await context.UserSessions
                 .Where(s => !s.IsActive && s.LastActivity < oldSessionCutoff)
                 .ExecuteDeleteAsync();
 
@@ -188,16 +201,19 @@ public class BackgroundJobManagementService
     {
         try
         {
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<BICopilotContext>();
+
             // Clean up temporary export files older than 1 day
             var tempFilesCutoff = DateTime.UtcNow.AddDays(-1);
-            var tempFiles = await _context.TempFiles
+            var tempFiles = await context.TempFiles
                 .Where(f => f.CreatedAt < tempFilesCutoff)
                 .ToListAsync();
 
             if (tempFiles.Any())
             {
-                _context.TempFiles.RemoveRange(tempFiles);
-                await _context.SaveChangesAsync();
+                context.TempFiles.RemoveRange(tempFiles);
+                await context.SaveChangesAsync();
                 _logger.LogInformation("Deleted {Count} temporary files", tempFiles.Count);
             }
         }
@@ -211,9 +227,12 @@ public class BackgroundJobManagementService
     {
         try
         {
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<BICopilotContext>();
+
             // Clean up old performance metrics (keep last 30 days)
             var metricsCutoff = DateTime.UtcNow.AddDays(-30);
-            var deletedMetrics = await _context.PerformanceMetrics
+            var deletedMetrics = await context.PerformanceMetrics
                 .Where(m => m.Timestamp < metricsCutoff)
                 .ExecuteDeleteAsync();
 

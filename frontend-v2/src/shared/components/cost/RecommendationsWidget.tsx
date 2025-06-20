@@ -11,12 +11,11 @@ import {
   Tooltip,
   Badge
 } from 'antd'
-import { 
-  BulbOutlined, 
-  DollarOutlined, 
+import {
+  BulbOutlined,
+  DollarOutlined,
   ThunderboltOutlined,
-  InfoCircleOutlined,
-  CheckOutlined
+  InfoCircleOutlined
 } from '@ant-design/icons'
 import type { CostRecommendation } from '../../types/cost'
 

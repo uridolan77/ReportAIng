@@ -1,4 +1,4 @@
-import React from 'react'
+import { FC } from 'react'
 import { Card, Row, Col, Statistic, Typography, Space, Button, Alert, Tag } from 'antd'
 import {
   UserOutlined,

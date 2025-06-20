@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { FC, useState } from 'react'
 import { Card, Table, Button, Space, Tag, Typography, Tabs, Modal, message } from 'antd'
-import { EditOutlined, DeleteOutlined, PlusOutlined, TableOutlined, BookOutlined, SettingOutlined } from '@ant-design/icons'
+import { EditOutlined, DeleteOutlined, PlusOutlined, TableOutlined, BookOutlined } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
 import { useGetBusinessTablesQuery, useDeleteBusinessTableMutation } from '@shared/store/api/businessApi'
 import { BusinessTableEditor } from '../components/BusinessTableEditor'

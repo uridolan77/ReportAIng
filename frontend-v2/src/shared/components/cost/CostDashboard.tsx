@@ -94,20 +94,20 @@ export const CostDashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('30d')
   const [breakdownDimension, setBreakdownDimension] = useState('provider')
 
-  const { 
-    analytics, 
-    trends, 
-    realTime, 
-    forecast, 
-    recommendations, 
-    isLoading, 
-    error, 
-    refetch 
+  const {
+    analytics,
+    trends,
+    realTime,
+    _forecast,
+    recommendations,
+    isLoading,
+    error,
+    refetch
   } = useCostMetrics(timeRange)
 
   const { breakdown } = useCostBreakdown(breakdownDimension, timeRange)
-  const { alerts, criticalCount, highCount, hasCritical } = useCostAlerts()
-  const { efficiency, savingsOpportunities, trendDirection, changePercentage } = useCostEfficiency(timeRange)
+  const { _alerts, criticalCount, _highCount, hasCritical } = useCostAlerts()
+  const { efficiency, savingsOpportunities, _trendDirection, changePercentage } = useCostEfficiency(timeRange)
 
   if (error) {
     return (

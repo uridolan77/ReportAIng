@@ -1,10 +1,9 @@
-import React, { useState } from 'react'
+import { FC } from 'react'
 import { Tabs, Card, Row, Col, Button, Space, Typography, Alert } from 'antd'
-import { 
-  DashboardOutlined, 
-  WalletOutlined, 
+import {
+  DashboardOutlined,
+  WalletOutlined,
   LineChartOutlined,
-  SettingOutlined,
   BulbOutlined,
   BarChartOutlined
 } from '@ant-design/icons'
@@ -16,7 +15,7 @@ import { useCostMetrics, useCostAlerts } from '@shared/hooks/useCostMetrics'
 const { Title, Text } = Typography
 
 const CostAnalyticsTab: React.FC = () => {
-  const { analytics, forecast, recommendations } = useCostMetrics('30d')
+  const { analytics, _forecast, recommendations } = useCostMetrics('30d')
   
   return (
     <div>
@@ -186,7 +185,7 @@ const CostForecastTab: React.FC = () => {
 }
 
 export default function CostManagement() {
-  const { alerts, criticalCount, highCount } = useCostAlerts()
+  const { _alerts, criticalCount, highCount } = useCostAlerts()
 
   const tabItems = [
     {

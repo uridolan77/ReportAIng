@@ -1,4 +1,4 @@
-import React from 'react'
+import { FC } from 'react'
 import { Card, Typography } from 'antd'
 import { PageLayout } from '@shared/components/core/Layout'
 
