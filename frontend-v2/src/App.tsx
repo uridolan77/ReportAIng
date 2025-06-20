@@ -1,10 +1,11 @@
-import React, { Suspense } from 'react'
+import React, { Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAppSelector } from '@shared/hooks'
 import { selectIsAuthenticated } from '@shared/store/auth'
 import { ErrorBoundary } from '@shared/components/ErrorBoundary'
 import { LoadingSpinner } from '@shared/components/LoadingSpinner'
 import { AuthGuard } from '@shared/components/AuthGuard'
+import { initializeApiMode } from '@shared/components/core/ApiModeToggle'
 
 // Lazy load applications
 const ChatApp = React.lazy(() => import('@chat/ChatApp'))
@@ -13,6 +14,11 @@ const LoginPage = React.lazy(() => import('@shared/pages/LoginPage'))
 
 function App() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated)
+
+  // Initialize API mode on app start
+  useEffect(() => {
+    initializeApiMode()
+  }, [])
 
   return (
     <ErrorBoundary>

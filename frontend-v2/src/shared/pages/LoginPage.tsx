@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { Form, Input, Button, Card, Typography, Alert, Space, Divider, Tag } from 'antd'
-import { UserOutlined, LockOutlined, SafetyOutlined, ApiOutlined, ThunderboltOutlined } from '@ant-design/icons'
+import { UserOutlined, LockOutlined, SafetyOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import { useAppSelector, useAppDispatch } from '../hooks'
 import { selectIsAuthenticated, selectRequiresMfa, selectMfaChallenge, authActions } from '../store/auth'
 import { useLoginMutation, useLoginWithMfaMutation } from '../store/api/authApi'
 import { useEnhancedLogin, useQuickLogin } from '../hooks/useEnhancedApi'
-import { useApiToggle } from '../services/apiToggleService'
+import { useApiMode } from '../components/core/ApiModeToggle'
 
 const { Title, Text } = Typography
 
@@ -59,7 +59,7 @@ export default function LoginPage() {
     }
   })
 
-  const { isUsingMockData, toggleMockData } = useApiToggle()
+  const { useMockData } = useApiMode()
 
   const from = (location.state as any)?.from?.pathname || '/chat'
 
@@ -131,24 +131,7 @@ export default function LoginPage() {
             {showMfa ? 'Enter your authentication code' : 'Sign in to your account'}
           </Text>
 
-          {/* API Status and Mock Mode Indicator */}
-          <div style={{ marginTop: 16 }}>
-            <Space>
-              <Tag
-                color={isUsingMockData ? 'blue' : 'green'}
-                icon={<ApiOutlined />}
-              >
-                {isUsingMockData ? 'Mock Mode' : 'API Mode'}
-              </Tag>
-              <Button
-                size="small"
-                onClick={toggleMockData}
-                type="link"
-              >
-                Switch to {isUsingMockData ? 'Real API' : 'Mock Mode'}
-              </Button>
-            </Space>
-          </div>
+
         </div>
 
         {currentError && (
@@ -166,7 +149,7 @@ export default function LoginPage() {
         )}
 
         {/* Mock Mode Information */}
-        {isUsingMockData && !showMfa && (
+        {useMockData && !showMfa && (
           <Alert
             message="Development Mode Active"
             description={
@@ -213,7 +196,7 @@ export default function LoginPage() {
               >
                 <Input
                   prefix={<UserOutlined />}
-                  placeholder={isUsingMockData ? "Try: admin, analyst, or any username" : "Enter your username"}
+                  placeholder={useMockData ? "Try: admin, analyst, or any username" : "Enter your username"}
                   autoComplete="username"
                 />
               </Form.Item>
@@ -227,7 +210,7 @@ export default function LoginPage() {
               >
                 <Input.Password
                   prefix={<LockOutlined />}
-                  placeholder={isUsingMockData ? "Try: password, admin, demo, or any 3+ chars" : "Enter your password"}
+                  placeholder={useMockData ? "Try: password, admin, demo, or any 3+ chars" : "Enter your password"}
                   autoComplete="current-password"
                 />
               </Form.Item>

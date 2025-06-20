@@ -12,13 +12,13 @@ import {
   ExperimentOutlined, 
   InfoCircleOutlined 
 } from '@ant-design/icons'
-import { apiToggleService } from '../../services/apiToggleService'
+import { ApiToggleService } from '../../services/apiToggleService'
 
 const { Text } = Typography
 
 export const ApiModeToggle: React.FC = () => {
   const [useMockData, setUseMockData] = React.useState(
-    apiToggleService.getConfig().useMockData
+    ApiToggleService.getConfig().useMockData
   )
   const [isConnected, setIsConnected] = React.useState(false)
 
@@ -47,7 +47,7 @@ export const ApiModeToggle: React.FC = () => {
     setUseMockData(checked)
     
     // Update the global API toggle service
-    apiToggleService.updateConfig({
+    ApiToggleService.updateConfig({
       useMockData: checked,
       fallbackToMock: true,
       debugMode: import.meta.env.DEV
@@ -149,13 +149,13 @@ export const ApiModeToggle: React.FC = () => {
 
 // Hook for components that need to know the current API mode
 export const useApiMode = () => {
-  const [config, setConfig] = React.useState(apiToggleService.getConfig())
+  const [config, setConfig] = React.useState(ApiToggleService.getConfig())
 
   React.useEffect(() => {
     // Listen for config changes
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'apiMode') {
-        setConfig(apiToggleService.getConfig())
+        setConfig(ApiToggleService.getConfig())
       }
     }
 
@@ -168,7 +168,7 @@ export const useApiMode = () => {
     fallbackToMock: config.fallbackToMock,
     debugMode: config.debugMode,
     toggleMode: (useMock: boolean) => {
-      apiToggleService.updateConfig({
+      ApiToggleService.updateConfig({
         ...config,
         useMockData: useMock
       })
@@ -180,10 +180,10 @@ export const useApiMode = () => {
 // Initialize API mode from localStorage on app start
 export const initializeApiMode = () => {
   const savedMode = localStorage.getItem('apiMode')
-  const useMockData = savedMode === 'mock' || 
+  const useMockData = savedMode === 'mock' ||
                      (savedMode === null && import.meta.env.DEV)
 
-  apiToggleService.updateConfig({
+  ApiToggleService.updateConfig({
     useMockData,
     fallbackToMock: true,
     debugMode: import.meta.env.DEV

@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Card, Input, Button, Space, Typography, List, Avatar, Spin, Alert } from 'antd'
-import { SendOutlined, UserOutlined, RobotOutlined, HistoryOutlined, ApiOutlined } from '@ant-design/icons'
+import { SendOutlined, UserOutlined, RobotOutlined, HistoryOutlined } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
 import { SqlEditor, Chart } from '@shared/components/core'
 import { useExecuteEnhancedQueryMutation } from '@shared/store/api/queryApi'
 import { useEnhancedQueryExecution } from '@shared/hooks/useEnhancedApi'
-import { useApiToggle } from '@shared/services/apiToggleService'
+import { useApiMode } from '@shared/components/core/ApiModeToggle'
 import { useSocket } from '@shared/services/socketService'
 
 const { Text, Title } = Typography
@@ -36,7 +36,7 @@ export default function ChatInterface() {
 
   const [executeQuery, { isLoading: isQueryLoading }] = useExecuteEnhancedQueryMutation()
   const { mutate: executeEnhancedQuery } = useEnhancedQueryExecution()
-  const { isUsingMockData, toggleMockData } = useApiToggle()
+  const { useMockData } = useApiMode()
   const socket = useSocket()
 
   useEffect(() => {
@@ -191,41 +191,26 @@ export default function ChatInterface() {
       title="Chat Interface"
       subtitle="Ask questions about your data in natural language"
       extra={
-        <Space>
-          <Button
-            icon={<ApiOutlined />}
-            onClick={toggleMockData}
-            type={isUsingMockData ? 'default' : 'primary'}
-            size="small"
-          >
-            {isUsingMockData ? 'Mock Data' : 'Real API'}
-          </Button>
-          <Button
-            icon={<HistoryOutlined />}
-            onClick={() => window.open('/chat/history', '_blank')}
-          >
-            Query History
-          </Button>
-        </Space>
+        <Button
+          icon={<HistoryOutlined />}
+          onClick={() => window.open('/chat/history', '_blank')}
+        >
+          Query History
+        </Button>
       }
     >
       {/* API Status Alert */}
-      {isUsingMockData && (
+      {useMockData && (
         <Alert
           message="Development Mode"
-          description="Using mock data for demonstration. Real AI query generation available when backend is connected."
+          description="Using mock data for demonstration. Real AI query generation available when backend is connected. Use the API toggle in the header to switch modes."
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          action={
-            <Button size="small" onClick={toggleMockData}>
-              Switch to Real API
-            </Button>
-          }
         />
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 400px)' }}>
         {/* Messages Area */}
         <Card
           style={{

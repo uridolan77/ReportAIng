@@ -1,10 +1,10 @@
 import { FC, useState } from 'react'
 import { Card, Table, Button, Space, Tag, Typography, Tabs, Modal, message, Alert, Spin } from 'antd'
-import { EditOutlined, DeleteOutlined, PlusOutlined, TableOutlined, BookOutlined, SettingOutlined, ReloadOutlined, ApiOutlined } from '@ant-design/icons'
+import { EditOutlined, DeleteOutlined, PlusOutlined, TableOutlined, BookOutlined, SettingOutlined, ReloadOutlined } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
 import { useGetBusinessTablesQuery, useDeleteBusinessTableMutation } from '@shared/store/api/businessApi'
 import { useEnhancedBusinessTables } from '@shared/hooks/useEnhancedApi'
-import { useApiToggle } from '@shared/services/apiToggleService'
+import { useApiMode } from '@shared/components/core/ApiModeToggle'
 import { BusinessTableEditor } from '../components/BusinessTableEditor'
 import { BusinessGlossaryManager } from '../components/BusinessGlossaryManager'
 import { MetadataValidationReport } from '../components/MetadataValidationReport'
@@ -17,7 +17,7 @@ export default function BusinessMetadata() {
   // Enhanced API with automatic fallback to mock data
   const { data: businessTables, isLoading, error, refetch } = useEnhancedBusinessTables()
   const [deleteTable] = useDeleteBusinessTableMutation()
-  const { isUsingMockData, toggleMockData, status } = useApiToggle()
+  const { useMockData } = useApiMode()
 
   const [selectedTable, setSelectedTable] = useState<BusinessTableInfoDto | null>(null)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
@@ -169,14 +169,6 @@ export default function BusinessMetadata() {
       subtitle="Comprehensive management of table metadata, column definitions, and business glossary"
       extra={
         <Space>
-          <Button
-            icon={<ApiOutlined />}
-            onClick={toggleMockData}
-            type={isUsingMockData ? 'default' : 'primary'}
-            size="small"
-          >
-            {isUsingMockData ? 'Using Mock Data' : 'Using Real API'}
-          </Button>
           <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isLoading}>
             Refresh
           </Button>
@@ -190,18 +182,13 @@ export default function BusinessMetadata() {
       }
     >
       {/* API Status Alert */}
-      {isUsingMockData && (
+      {useMockData && (
         <Alert
           message="Development Mode"
-          description="Currently using mock data. Toggle to real API when backend is available."
+          description="Currently using mock data. Use the API toggle in the header to switch to real API when backend is available."
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          action={
-            <Button size="small" onClick={toggleMockData}>
-              Switch to Real API
-            </Button>
-          }
         />
       )}
 
