@@ -177,12 +177,13 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
       key: 'actions',
       width: 120,
       render: (_: any, record: BusinessTableInfo) => (
-        <Space>
+        <Space size="middle">
           <Button
             type="link"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
             size="small"
+            title="Edit table"
           />
           <Popconfirm
             title="Are you sure you want to delete this table?"
@@ -195,6 +196,7 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
               danger
               icon={<DeleteOutlined />}
               size="small"
+              title="Delete table"
             />
           </Popconfirm>
         </Space>
@@ -206,7 +208,7 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
     <div>
       <Card
         title={
-          <Space>
+          <Space size="middle">
             <TableOutlined />
             <span>Business Table Documentation</span>
           </Space>
@@ -216,6 +218,7 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleCreate}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             Add Table
           </Button>
@@ -376,7 +379,7 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
           </Form.Item>
 
           <Divider orientation="left">
-            <Space>
+            <Space size="middle">
               <ColumnHeightOutlined />
               <span>Column Documentation</span>
             </Space>
@@ -391,7 +394,7 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
                     size="small"
                     style={{ marginBottom: 16 }}
                     title={
-                      <Space>
+                      <Space size="middle">
                         <ColumnHeightOutlined />
                         <span>Column {name + 1}</span>
                       </Space>
@@ -403,6 +406,7 @@ export const BusinessTableManager: React.FC<BusinessTableManagerProps> = ({ onDa
                         icon={<MinusCircleOutlined />}
                         onClick={() => remove(name)}
                         size="small"
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                       >
                         Remove
                       </Button>

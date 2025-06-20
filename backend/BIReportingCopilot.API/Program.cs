@@ -684,7 +684,7 @@ builder.Services.AddScoped<IStreamingSqlQueryService>(provider =>
 
 // ===== BUSINESS SERVICES =====
 builder.Services.AddScoped<IUserService, BIReportingCopilot.Infrastructure.Authentication.UserService>();
-builder.Services.AddScoped<IAuditService, BIReportingCopilot.Infrastructure.Data.AuditService>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Data.IAuditService, BIReportingCopilot.Infrastructure.Data.AuditService>();
 builder.Services.AddScoped<IAuthenticationService, BIReportingCopilot.Infrastructure.Authentication.AuthenticationService>();
 // MFA Service registration
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Security.IMfaService, BIReportingCopilot.Infrastructure.Authentication.MfaService>();

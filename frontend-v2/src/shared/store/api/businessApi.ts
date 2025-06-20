@@ -336,7 +336,7 @@ export const businessApi = baseApi.injectEndpoints({
         sampleValues?: string[]
       }>
     }, { schemaName: string; tableName: string }>({
-      query: ({ schemaName, tableName }) => `/schema/tables/${schemaName}/${tableName}`,
+      query: ({ schemaName, tableName }) => `/schema/tables/${schemaName}.${tableName}`,
       providesTags: (result, error, { schemaName, tableName }) => [
         { type: 'Schema', id: `${schemaName}.${tableName}` }
       ],

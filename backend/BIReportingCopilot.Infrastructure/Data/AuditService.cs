@@ -1,5 +1,6 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Security;
+using BIReportingCopilot.Core.Interfaces.Data;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
@@ -14,8 +15,9 @@ namespace BIReportingCopilot.Infrastructure.Data;
 /// <summary>
 /// Enhanced AuditService using bounded contexts for better performance and maintainability
 /// Uses SecurityDbContext for audit logs and QueryDbContext for query history
+/// Implements both Security.IAuditService and Data.IAuditService interfaces
 /// </summary>
-public class AuditService : IAuditService
+public class AuditService : BIReportingCopilot.Core.Interfaces.Security.IAuditService, BIReportingCopilot.Core.Interfaces.Data.IAuditService
 {
     private readonly ILogger<AuditService> _logger;
     private readonly IDbContextFactory _contextFactory;
@@ -382,11 +384,53 @@ public class AuditService : IAuditService
     }
 
     /// <summary>
-    /// Get audit logs with proper interface signature
+    /// Get audit logs with proper interface signature (Data.IAuditService)
+    /// </summary>
+    public async Task<IEnumerable<object>> GetAuditLogsAsync(string userId, DateTime? from = null, DateTime? to = null, int pageSize = 100, int page = 1)
+    {
+        var auditLogs = await GetAuditLogsAsync(userId, from, to, null); // Call the existing method
+
+        // Apply pagination
+        var pagedResults = auditLogs
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize);
+
+        return pagedResults.Cast<object>();
+    }
+
+    /// <summary>
+    /// Get audit logs with proper interface signature (Security.IAuditService)
     /// </summary>
     public async Task<IEnumerable<object>> GetAuditLogsAsync(string? userId = null, DateTime? from = null, DateTime? to = null)
     {
         var auditLogs = await GetAuditLogsAsync(userId, from, to, null); // Call the existing method
         return auditLogs.Cast<object>();
+    }
+
+    /// <summary>
+    /// Get query history for a user (Data.IAuditService)
+    /// </summary>
+    public async Task<IEnumerable<object>> GetQueryHistoryAsync(string userId, int pageSize = 10, int page = 1)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Query, async dbContext =>
+            {
+                var queryContext = (QueryDbContext)dbContext;
+                var queryHistory = await queryContext.QueryHistory
+                    .Where(q => q.UserId == userId)
+                    .OrderByDescending(q => q.ExecutedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                return queryHistory.Cast<object>();
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving query history for user: {UserId}", userId);
+            return new List<object>();
+        }
     }
 }

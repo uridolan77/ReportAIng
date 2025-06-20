@@ -2,7 +2,11 @@ import { FC, useState } from 'react'
 import { Card, Table, Button, Space, Tag, Typography, Tabs, Modal, message, Alert, Spin } from 'antd'
 import { EditOutlined, DeleteOutlined, PlusOutlined, TableOutlined, BookOutlined, SettingOutlined, ReloadOutlined } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
-import { useGetAllSchemaTablesQuery, useDeleteBusinessTableMutation } from '@shared/store/api/businessApi'
+import {
+  useGetAllSchemaTablesQuery,
+  useDeleteBusinessTableMutation,
+  useGetBusinessTablesQuery
+} from '@shared/store/api/businessApi'
 import { useApiMode } from '@shared/components/core/ApiModeToggle'
 import { BusinessTableEditor } from '../components/BusinessTableEditor'
 import { BusinessGlossaryManager } from '../components/BusinessGlossaryManager'
@@ -54,7 +58,7 @@ export default function BusinessMetadata() {
   `
 
   // Convert schema tables to business table format for display
-  const businessTables = schemaTables?.map((table: any) => {
+  const displayTables = schemaTables?.map((table: any) => {
     // Handle both business metadata format and schema discovery format
     if (table.tableInformation) {
       // Business metadata format from backend
@@ -101,60 +105,147 @@ export default function BusinessMetadata() {
   const [selectedTable, setSelectedTable] = useState<BusinessTableInfoDto | null>(null)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('tables')
+  const [loadingTableDetails, setLoadingTableDetails] = useState(false)
 
-  const handleEdit = (record: BusinessTableInfoDto) => {
+  // Fetch business tables to check if table exists in business metadata
+  const { data: businessTables } = useGetBusinessTablesQuery()
+
+  // Debug business tables data
+  console.log('🏢 Business tables from API:', businessTables)
+
+  const handleEdit = async (record: BusinessTableInfoDto) => {
     console.log('🔍 Editing table:', record)
+    console.log('🔍 Table properties:', {
+      id: record.id,
+      schemaName: record.schemaName,
+      tableName: record.tableName,
+      businessPurpose: record.businessPurpose,
+      businessContext: record.businessContext,
+      domainClassification: record.domainClassification
+    })
+    setLoadingTableDetails(true)
 
-    // Check if this table has business data (regardless of ID type)
-    const hasBusinessData = record.businessPurpose || record.businessContext || record.domainClassification
-    const isRealBusinessTable = !isNaN(Number(record.id))
+    try {
+      // Check if this table exists in business metadata (has numeric ID)
+      const existingBusinessTable = businessTables?.find(bt =>
+        bt.schemaName === record.schemaName && bt.tableName === record.tableName
+      )
 
-    if (hasBusinessData) {
-      // This table has business data - use it directly for editing
-      console.log('📊 Table with business data - using existing data')
-      setSelectedTable(record)
-    } else {
-      // This is a schema-only table - create a new business table template with schema info pre-filled
-      console.log('🏗️ Schema-only table - creating new business table template')
-      const newTableTemplate: BusinessTableInfoDto = {
-        id: 0, // New table
-        schemaName: record.schemaName,
-        tableName: record.tableName,
-        businessPurpose: '',
-        businessContext: '',
-        primaryUseCase: '',
-        domainClassification: '',
-        businessOwner: '',
-        semanticDescription: '',
-        commonQueryPatterns: '',
-        businessRules: '',
-        naturalLanguageAliases: [],
-        businessProcesses: [],
-        analyticalUseCases: [],
-        reportingCategories: [],
-        vectorSearchKeywords: [],
-        businessGlossaryTerms: [],
-        llmContextHints: [],
-        queryComplexityHints: [],
-        semanticRelationships: '',
-        usagePatterns: '',
-        dataQualityIndicators: {},
-        relationshipSemantics: '',
-        dataGovernancePolicies: [],
-        importanceScore: 0.5,
-        usageFrequency: 0.5,
-        semanticCoverageScore: 0.0,
-        isActive: true,
-        createdBy: '',
-        createdDate: '',
-        updatedDate: '',
-        lastAnalyzed: ''
+      if (existingBusinessTable) {
+        // Table exists in business metadata - fetch detailed business table data
+        console.log('📊 Found existing business table, fetching detailed data...')
+
+        // Use the business API to get the full business table details
+        const response = await fetch(`/api/business/tables/${existingBusinessTable.id}`)
+        if (response.ok) {
+          const detailedBusinessTable = await response.json()
+          console.log('✅ Fetched detailed business table:', detailedBusinessTable)
+          setSelectedTable(detailedBusinessTable)
+        } else {
+          console.warn('⚠️ Failed to fetch business table details, using existing data')
+          setSelectedTable(existingBusinessTable)
+        }
+      } else {
+        // Table doesn't exist in business metadata - fetch schema details and create template
+        console.log('🏗️ Table not in business metadata, fetching schema details...')
+
+        try {
+          // Fetch detailed schema information
+          const tableFullName = `${record.schemaName}.${record.tableName}`
+          const response = await fetch(`/api/schema/tables/${tableFullName}`)
+          if (response.ok) {
+            const schemaDetails = await response.json()
+            console.log('✅ Fetched schema details:', schemaDetails)
+
+            // Create a new business table template with enhanced schema info
+            const newTableTemplate: BusinessTableInfoDto = {
+              id: 0, // New table
+              schemaName: schemaDetails.schemaName || record.schemaName,
+              tableName: schemaDetails.tableName || record.tableName,
+              businessPurpose: schemaDetails.businessPurpose || '',
+              businessContext: schemaDetails.businessContext || '',
+              primaryUseCase: schemaDetails.primaryUseCase || '',
+              domainClassification: schemaDetails.domainClassification || '',
+              businessOwner: '',
+              semanticDescription: '',
+              commonQueryPatterns: '',
+              businessRules: '',
+              naturalLanguageAliases: [],
+              businessProcesses: [],
+              analyticalUseCases: [],
+              reportingCategories: [],
+              vectorSearchKeywords: [],
+              businessGlossaryTerms: [],
+              llmContextHints: [],
+              queryComplexityHints: [],
+              semanticRelationships: '',
+              usagePatterns: '',
+              dataQualityIndicators: {},
+              relationshipSemantics: '',
+              dataGovernancePolicies: [],
+              importanceScore: 0.5,
+              usageFrequency: 0.5,
+              semanticCoverageScore: 0.0,
+              isActive: true,
+              createdBy: '',
+              createdDate: '',
+              updatedDate: '',
+              lastAnalyzed: ''
+            }
+            console.log('📝 Created enhanced table template:', newTableTemplate)
+            setSelectedTable(newTableTemplate)
+          } else {
+            console.warn('⚠️ Failed to fetch schema details, using basic template')
+            // Fallback to basic template
+            setSelectedTable({
+              id: 0,
+              schemaName: record.schemaName,
+              tableName: record.tableName,
+              businessPurpose: '',
+              businessContext: '',
+              primaryUseCase: '',
+              domainClassification: '',
+              businessOwner: '',
+              semanticDescription: '',
+              commonQueryPatterns: '',
+              businessRules: '',
+              naturalLanguageAliases: [],
+              businessProcesses: [],
+              analyticalUseCases: [],
+              reportingCategories: [],
+              vectorSearchKeywords: [],
+              businessGlossaryTerms: [],
+              llmContextHints: [],
+              queryComplexityHints: [],
+              semanticRelationships: '',
+              usagePatterns: '',
+              dataQualityIndicators: {},
+              relationshipSemantics: '',
+              dataGovernancePolicies: [],
+              importanceScore: 0.5,
+              usageFrequency: 0.5,
+              semanticCoverageScore: 0.0,
+              isActive: true,
+              createdBy: '',
+              createdDate: '',
+              updatedDate: '',
+              lastAnalyzed: ''
+            })
+          }
+        } catch (error) {
+          console.error('❌ Error fetching schema details:', error)
+          message.error('Failed to fetch table details')
+          return
+        }
       }
-      console.log('📝 Created new table template:', newTableTemplate)
-      setSelectedTable(newTableTemplate)
-    }
 
-    setIsEditorOpen(true)
+      setIsEditorOpen(true)
+    } catch (error) {
+      console.error('❌ Error in handleEdit:', error)
+      message.error('Failed to load table information')
+    } finally {
+      setLoadingTableDetails(false)
+    }
   }
 
   const handleDelete = (record: BusinessTableInfoDto) => {
@@ -362,6 +453,7 @@ export default function BusinessMetadata() {
             icon={<EditOutlined />}
             title="View/Edit Details"
             onClick={() => handleEdit(record)}
+            loading={loadingTableDetails}
             style={{ borderRadius: '4px' }}
           />
           <Button
@@ -437,7 +529,7 @@ export default function BusinessMetadata() {
           tab={
             <span>
               <TableOutlined />
-              Business Tables ({businessTables?.length || 0})
+              Business Tables ({displayTables?.length || 0})
             </span>
           }
           key="tables"
@@ -451,7 +543,7 @@ export default function BusinessMetadata() {
           >
             <Table
               columns={tableColumns}
-              dataSource={businessTables || []}
+              dataSource={displayTables || []}
               loading={isLoading}
               rowKey="id"
               size="middle"
