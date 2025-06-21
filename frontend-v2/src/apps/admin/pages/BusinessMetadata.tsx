@@ -1,4 +1,5 @@
 import { FC, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, Table, Button, Space, Tag, Typography, Tabs, Modal, message, Alert, Spin } from 'antd'
 import { EditOutlined, DeleteOutlined, PlusOutlined, TableOutlined, BookOutlined, SettingOutlined, ReloadOutlined } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
@@ -8,7 +9,7 @@ import {
   useGetBusinessTablesQuery
 } from '@shared/store/api/businessApi'
 import { useApiMode } from '@shared/components/core/ApiModeToggle'
-import { BusinessTableEditor } from '../components/BusinessTableEditor'
+// BusinessTableEditor moved to dedicated page
 import { BusinessGlossaryManager } from '../components/BusinessGlossaryManager'
 import { RealApiTester } from '../components/RealApiTester'
 import { MetadataValidationReport } from '../components/MetadataValidationReport'
@@ -20,10 +21,19 @@ const { Text } = Typography
 const { TabPane } = Tabs
 
 export default function BusinessMetadata() {
+  const navigate = useNavigate()
+
   // Use schema tables to get actual database tables
   const { data: schemaTables, isLoading, error, refetch } = useGetAllSchemaTablesQuery()
   const [deleteTable] = useDeleteBusinessTableMutation()
   const { useMockData } = useApiMode()
+
+  // Fetch business tables to check if table exists in business metadata
+  const { data: businessTables } = useGetBusinessTablesQuery()
+
+  // State to store detailed business tables with metrics
+  const [detailedBusinessTables, setDetailedBusinessTables] = useState<BusinessTableInfoDto[]>([])
+  const [loadingDetailedTables, setLoadingDetailedTables] = useState(false)
 
   // Debug logging
   console.log('🔍 Schema tables data:', schemaTables)
@@ -55,7 +65,7 @@ export default function BusinessMetadata() {
     .ant-table-tbody > tr > td {
       border-bottom: 1px solid #f0f0f0 !important;
       vertical-align: top !important;
-      padding: 12px 16px !important;
+      padding: 8px 12px !important;
     }
   `
 
@@ -75,6 +85,10 @@ export default function BusinessMetadata() {
       semanticCoverageScore: table.semanticCoverageScore,
       hasMetrics: table.importanceScore !== undefined
     })))
+
+    // Log the complete structure of the first table
+    console.log('🔍 Complete first business table structure:', businessTables[0])
+    console.log('🔍 All field names in first table:', Object.keys(businessTables[0]))
   }
 
   // Use business tables if available, otherwise fall back to schema tables
@@ -132,13 +146,8 @@ export default function BusinessMetadata() {
     }
   }) || []
 
-  const [selectedTable, setSelectedTable] = useState<BusinessTableInfoDto | null>(null)
-  const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('tables')
-  const [loadingTableDetails, setLoadingTableDetails] = useState(false)
-
-  // Fetch business tables to check if table exists in business metadata
-  const { data: businessTables } = useGetBusinessTablesQuery()
+  // Removed modal state - using dedicated page now
 
   // Get authentication token for manual API calls
   const accessToken = useAppSelector(selectAccessToken)
@@ -147,157 +156,35 @@ export default function BusinessMetadata() {
   console.log('🏢 Business tables from API:', businessTables)
   console.log('🔑 Access token available:', !!accessToken)
 
-  const handleEdit = async (record: BusinessTableInfoDto) => {
-    console.log('🔍 Editing table:', record)
-    console.log('🔍 Table properties:', {
-      id: record.id,
-      schemaName: record.schemaName,
-      tableName: record.tableName,
-      businessPurpose: record.businessPurpose,
-      businessContext: record.businessContext,
-      domainClassification: record.domainClassification
-    })
-    setLoadingTableDetails(true)
+  // Debug specific table data
+  if (businessTables && businessTables.length > 0) {
+    const countriesTable = businessTables.find(t => t.tableName === 'tbl_Countries')
+    if (countriesTable) {
+      console.log('🌍 Countries table data:', {
+        tableName: countriesTable.tableName,
+        importanceScore: countriesTable.importanceScore,
+        usageFrequency: countriesTable.usageFrequency,
+        semanticCoverageScore: countriesTable.semanticCoverageScore,
+        allFields: Object.keys(countriesTable),
+        rawData: countriesTable
+      })
 
-    try {
-      // Check if this table exists in business metadata (has numeric ID)
-      const existingBusinessTable = businessTables?.find(bt =>
-        bt.schemaName === record.schemaName && bt.tableName === record.tableName
-      )
-
-      if (existingBusinessTable) {
-        // Table exists in business metadata - fetch detailed business table data
-        console.log('📊 Found existing business table, fetching detailed data...')
-
-        // Use the business API to get the full business table details
-        const headers: HeadersInit = {
-          'Content-Type': 'application/json'
-        }
-        if (accessToken) {
-          headers['Authorization'] = `Bearer ${accessToken}`
-        }
-
-        const response = await fetch(`/api/business/tables/${existingBusinessTable.id}`, {
-          headers
-        })
-        if (response.ok) {
-          const detailedBusinessTable = await response.json()
-          console.log('✅ Fetched detailed business table:', detailedBusinessTable)
-          setSelectedTable(detailedBusinessTable)
-        } else {
-          console.warn('⚠️ Failed to fetch business table details, using existing data')
-          setSelectedTable(existingBusinessTable)
-        }
-      } else {
-        // Table doesn't exist in business metadata - fetch schema details and create template
-        console.log('🏗️ Table not in business metadata, fetching schema details...')
-
-        try {
-          // Fetch detailed schema information
-          const tableFullName = `${record.schemaName}.${record.tableName}`
-          const headers: HeadersInit = {
-            'Content-Type': 'application/json'
-          }
-          if (accessToken) {
-            headers['Authorization'] = `Bearer ${accessToken}`
-          }
-
-          const response = await fetch(`/api/schema/tables/${tableFullName}`, {
-            headers
-          })
-          if (response.ok) {
-            const schemaDetails = await response.json()
-            console.log('✅ Fetched schema details:', schemaDetails)
-
-            // Create a new business table template with enhanced schema info
-            const newTableTemplate: BusinessTableInfoDto = {
-              id: 0, // New table
-              schemaName: schemaDetails.schema || record.schemaName,
-              tableName: schemaDetails.name || record.tableName,
-              businessPurpose: schemaDetails.businessPurpose || schemaDetails.description || `Table containing ${schemaDetails.columns?.length || 0} columns for ${schemaDetails.name || record.tableName} data`,
-              businessContext: schemaDetails.businessContext || schemaDetails.description || `Database table ${schemaDetails.schema || record.schemaName}.${schemaDetails.name || record.tableName} with ${schemaDetails.columns?.length || 0} columns`,
-              primaryUseCase: schemaDetails.primaryUseCase || 'Data storage and retrieval',
-              domainClassification: schemaDetails.domainClassification || 'Reference',
-              businessOwner: 'Not specified',
-              semanticDescription: `Database table with ${schemaDetails.columns?.length || 0} columns including: ${schemaDetails.columns?.slice(0, 3).map((col: any) => col.name).join(', ')}${schemaDetails.columns?.length > 3 ? '...' : ''}`,
-              commonQueryPatterns: 'Standard CRUD operations, filtering, and joins',
-              businessRules: 'Standard database constraints and business logic apply',
-              naturalLanguageAliases: [schemaDetails.name || record.tableName],
-              businessProcesses: ['Data Management'],
-              analyticalUseCases: ['Reporting', 'Analytics'],
-              reportingCategories: ['Operational Data'],
-              vectorSearchKeywords: [schemaDetails.name || record.tableName, schemaDetails.schema || record.schemaName],
-              businessGlossaryTerms: [],
-              llmContextHints: [`This table contains ${schemaDetails.columns?.length || 0} columns`],
-              queryComplexityHints: ['Standard table operations'],
-              semanticRelationships: '',
-              usagePatterns: 'Regular database operations',
-              dataQualityIndicators: {},
-              relationshipSemantics: '',
-              dataGovernancePolicies: [],
-              importanceScore: 0.5,
-              usageFrequency: 0.5,
-              semanticCoverageScore: 0.2,
-              isActive: true,
-              createdBy: 'System',
-              createdDate: new Date().toISOString(),
-              updatedDate: new Date().toISOString(),
-              lastAnalyzed: new Date().toISOString()
-            }
-            console.log('📝 Created enhanced table template:', newTableTemplate)
-            setSelectedTable(newTableTemplate)
-          } else {
-            console.warn('⚠️ Failed to fetch schema details, using basic template')
-            // Fallback to basic template
-            setSelectedTable({
-              id: 0,
-              schemaName: record.schemaName,
-              tableName: record.tableName,
-              businessPurpose: `Table for ${record.tableName} data`,
-              businessContext: `Database table ${record.schemaName}.${record.tableName}`,
-              primaryUseCase: 'Data storage and retrieval',
-              domainClassification: 'Reference',
-              businessOwner: 'Not specified',
-              semanticDescription: `Database table ${record.schemaName}.${record.tableName}`,
-              commonQueryPatterns: 'Standard CRUD operations',
-              businessRules: 'Standard database constraints apply',
-              naturalLanguageAliases: [record.tableName],
-              businessProcesses: ['Data Management'],
-              analyticalUseCases: ['Reporting'],
-              reportingCategories: ['Operational Data'],
-              vectorSearchKeywords: [record.tableName, record.schemaName],
-              businessGlossaryTerms: [],
-              llmContextHints: [`Table: ${record.tableName}`],
-              queryComplexityHints: ['Standard operations'],
-              semanticRelationships: '',
-              usagePatterns: 'Regular database operations',
-              dataQualityIndicators: {},
-              relationshipSemantics: '',
-              dataGovernancePolicies: [],
-              importanceScore: 0.5,
-              usageFrequency: 0.5,
-              semanticCoverageScore: 0.0,
-              isActive: true,
-              createdBy: 'System',
-              createdDate: new Date().toISOString(),
-              updatedDate: new Date().toISOString(),
-              lastAnalyzed: new Date().toISOString()
-            })
-          }
-        } catch (error) {
-          console.error('❌ Error fetching schema details:', error)
-          message.error('Failed to fetch table details')
-          return
-        }
-      }
-
-      setIsEditorOpen(true)
-    } catch (error) {
-      console.error('❌ Error in handleEdit:', error)
-      message.error('Failed to load table information')
-    } finally {
-      setLoadingTableDetails(false)
+      // Check for different possible field names
+      console.log('🔍 Checking alternative field names:', {
+        ImportanceScore: (countriesTable as any).ImportanceScore,
+        UsageFrequency: (countriesTable as any).UsageFrequency,
+        SemanticCoverageScore: (countriesTable as any).SemanticCoverageScore,
+        importance_score: (countriesTable as any).importance_score,
+        usage_frequency: (countriesTable as any).usage_frequency,
+        semantic_coverage_score: (countriesTable as any).semantic_coverage_score
+      })
     }
+  }
+
+  const handleEdit = (record: BusinessTableInfoDto) => {
+    // Navigate to dedicated edit page instead of opening modal
+    const tableId = typeof record.id === 'number' ? record.id : `${record.schemaName}.${record.tableName}`
+    navigate(`/admin/business-metadata/edit/${tableId}`)
   }
 
   const handleDelete = (record: BusinessTableInfoDto) => {
@@ -318,13 +205,8 @@ export default function BusinessMetadata() {
   }
 
   const handleAdd = () => {
-    setSelectedTable(null)
-    setIsEditorOpen(true)
-  }
-
-  const handleEditorClose = () => {
-    setIsEditorOpen(false)
-    setSelectedTable(null)
+    // Navigate to dedicated add page
+    navigate('/admin/business-metadata/add')
   }
 
   const tableColumns = [
@@ -335,21 +217,21 @@ export default function BusinessMetadata() {
       width: 280,
       fixed: 'left' as const,
       render: (text: string, record: BusinessTableInfoDto) => (
-        <div style={{ padding: '8px 0' }}>
-          <div style={{ marginBottom: '6px' }}>
-            <Text strong style={{ fontSize: '14px', color: '#1890ff' }}>
+        <div style={{ padding: '4px 0' }}>
+          <div style={{ marginBottom: '3px' }}>
+            <Text strong style={{ fontSize: '13px', color: '#1890ff' }}>
               {record.schemaName}.{text}
             </Text>
           </div>
-          <div style={{ marginBottom: '4px' }}>
-            <Text type="secondary" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+          <div style={{ marginBottom: '2px' }}>
+            <Text type="secondary" style={{ fontSize: '11px', lineHeight: '1.3' }}>
               {record.businessPurpose && record.businessPurpose !== 'No business purpose defined'
-                ? (record.businessPurpose.length > 80 ? `${record.businessPurpose.substring(0, 80)}...` : record.businessPurpose)
+                ? (record.businessPurpose.length > 70 ? `${record.businessPurpose.substring(0, 70)}...` : record.businessPurpose)
                 : 'No business purpose defined'}
             </Text>
           </div>
           <div>
-            <Text type="secondary" style={{ fontSize: '11px', color: '#8c8c8c' }}>
+            <Text type="secondary" style={{ fontSize: '10px', color: '#8c8c8c' }}>
               Owner: {record.businessOwner || 'Not specified'}
             </Text>
           </div>
@@ -359,21 +241,21 @@ export default function BusinessMetadata() {
     {
       title: 'Domain & Classification',
       key: 'domain',
-      width: 200,
+      width: 180,
       render: (record: BusinessTableInfoDto) => (
-        <div style={{ padding: '8px 0' }}>
-          <div style={{ marginBottom: '8px' }}>
+        <div style={{ padding: '4px 0' }}>
+          <div style={{ marginBottom: '4px' }}>
             <Tag
               color={record.domainClassification === 'Unclassified' ? 'default' : 'blue'}
-              style={{ fontSize: '11px', padding: '2px 8px' }}
+              style={{ fontSize: '10px', padding: '1px 6px' }}
             >
               {record.domainClassification || 'Unclassified'}
             </Tag>
           </div>
           <div>
-            <Text style={{ fontSize: '11px', color: '#666', lineHeight: '1.3' }}>
+            <Text style={{ fontSize: '10px', color: '#666', lineHeight: '1.2' }}>
               {record.primaryUseCase && record.primaryUseCase !== 'No primary use case defined'
-                ? (record.primaryUseCase.length > 60 ? `${record.primaryUseCase.substring(0, 60)}...` : record.primaryUseCase)
+                ? (record.primaryUseCase.length > 50 ? `${record.primaryUseCase.substring(0, 50)}...` : record.primaryUseCase)
                 : 'No primary use case defined'}
             </Text>
           </div>
@@ -384,12 +266,12 @@ export default function BusinessMetadata() {
       title: 'Business Context',
       dataIndex: 'businessContext',
       key: 'context',
-      width: 250,
+      width: 220,
       render: (context: string) => (
-        <div style={{ padding: '8px 0' }}>
-          <Text style={{ fontSize: '12px', lineHeight: '1.4', color: '#595959' }}>
+        <div style={{ padding: '4px 0' }}>
+          <Text style={{ fontSize: '11px', lineHeight: '1.3', color: '#595959' }}>
             {context && context !== 'No context provided'
-              ? (context.length > 120 ? `${context.substring(0, 120)}...` : context)
+              ? (context.length > 100 ? `${context.substring(0, 100)}...` : context)
               : 'No context provided'}
           </Text>
         </div>
@@ -398,20 +280,21 @@ export default function BusinessMetadata() {
     {
       title: 'Quality & Usage',
       key: 'metrics',
-      width: 160,
+      width: 200,
       align: 'center' as const,
       render: (record: BusinessTableInfoDto) => (
-        <div style={{ padding: '8px 0', textAlign: 'center' }}>
-          <div style={{ marginBottom: '6px' }}>
-            <Text style={{ fontSize: '10px', color: '#8c8c8c', display: 'block', marginBottom: '2px' }}>
-              Importance
+        <div style={{ padding: '4px 0', textAlign: 'center', lineHeight: '1.2' }}>
+          {/* Importance Score */}
+          <div style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+            <Text style={{ fontSize: '9px', color: '#8c8c8c', minWidth: '28px' }}>
+              Imp:
             </Text>
             <Tag
               color={
                 record.importanceScore > (record.importanceScore <= 1 ? 0.8 : 8) ? 'red' :
                 record.importanceScore > (record.importanceScore <= 1 ? 0.6 : 6) ? 'orange' : 'green'
               }
-              style={{ fontSize: '11px', minWidth: '45px' }}
+              style={{ fontSize: '10px', minWidth: '35px', margin: 0, padding: '1px 4px' }}
             >
               {record.importanceScore !== undefined && record.importanceScore !== null
                 ? (record.importanceScore <= 1
@@ -420,13 +303,15 @@ export default function BusinessMetadata() {
                 : 'N/A'}
             </Tag>
           </div>
-          <div style={{ marginBottom: '6px' }}>
-            <Text style={{ fontSize: '10px', color: '#8c8c8c', display: 'block', marginBottom: '2px' }}>
-              Usage
+
+          {/* Usage Frequency */}
+          <div style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+            <Text style={{ fontSize: '9px', color: '#8c8c8c', minWidth: '28px' }}>
+              Use:
             </Text>
             <Tag
               color="cyan"
-              style={{ fontSize: '11px', minWidth: '45px' }}
+              style={{ fontSize: '10px', minWidth: '35px', margin: 0, padding: '1px 4px' }}
             >
               {record.usageFrequency !== undefined && record.usageFrequency !== null
                 ? (record.usageFrequency <= 1
@@ -435,16 +320,18 @@ export default function BusinessMetadata() {
                 : 'N/A'}
             </Tag>
           </div>
+
+          {/* Coverage Score - only show if > 0 */}
           {record.semanticCoverageScore > 0 && (
-            <div>
-              <Text style={{ fontSize: '10px', color: '#8c8c8c', display: 'block', marginBottom: '2px' }}>
-                Coverage
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+              <Text style={{ fontSize: '9px', color: '#8c8c8c', minWidth: '28px' }}>
+                Cov:
               </Text>
               <Tag
                 color={
                   record.semanticCoverageScore > (record.semanticCoverageScore <= 1 ? 0.8 : 80) ? 'green' : 'orange'
                 }
-                style={{ fontSize: '11px', minWidth: '45px' }}
+                style={{ fontSize: '10px', minWidth: '35px', margin: 0, padding: '1px 4px' }}
               >
                 {record.semanticCoverageScore <= 1
                   ? (record.semanticCoverageScore * 100).toFixed(0) + '%'  // 0-1 scale, convert to percentage
@@ -458,24 +345,24 @@ export default function BusinessMetadata() {
     {
       title: 'Governance',
       key: 'governance',
-      width: 140,
+      width: 100,
       align: 'center' as const,
       render: (record: BusinessTableInfoDto) => (
-        <div style={{ padding: '8px 0', textAlign: 'center' }}>
-          <div style={{ marginBottom: '8px' }}>
+        <div style={{ padding: '4px 0', textAlign: 'center' }}>
+          <div style={{ marginBottom: '4px' }}>
             <Tag
               color={record.isActive ? 'green' : 'red'}
-              style={{ fontSize: '11px', fontWeight: '500' }}
+              style={{ fontSize: '10px', fontWeight: '500', padding: '1px 4px' }}
             >
               {record.isActive ? 'Active' : 'Inactive'}
             </Tag>
           </div>
           {record.dataGovernancePolicies && record.dataGovernancePolicies.length > 0 && (
             <div>
-              <Text style={{ fontSize: '10px', color: '#666' }}>
+              <Text style={{ fontSize: '9px', color: '#666' }}>
                 {Array.isArray(record.dataGovernancePolicies)
                   ? `${record.dataGovernancePolicies.length} policies`
-                  : 'Policies defined'}
+                  : 'Policies'}
               </Text>
             </div>
           )}
@@ -486,18 +373,18 @@ export default function BusinessMetadata() {
       title: 'Last Updated',
       dataIndex: 'updatedDate',
       key: 'updated',
-      width: 120,
+      width: 110,
       align: 'center' as const,
       render: (date: string, record: BusinessTableInfoDto) => (
-        <div style={{ padding: '8px 0', textAlign: 'center' }}>
-          <div style={{ marginBottom: '4px' }}>
-            <Text style={{ fontSize: '11px', color: '#595959' }}>
+        <div style={{ padding: '4px 0', textAlign: 'center' }}>
+          <div style={{ marginBottom: '2px' }}>
+            <Text style={{ fontSize: '10px', color: '#595959' }}>
               {date ? new Date(date).toLocaleDateString() : 'Never'}
             </Text>
           </div>
           {record.createdBy && (
             <div>
-              <Text style={{ fontSize: '10px', color: '#8c8c8c' }}>
+              <Text style={{ fontSize: '9px', color: '#8c8c8c' }}>
                 by {record.createdBy}
               </Text>
             </div>
@@ -520,7 +407,6 @@ export default function BusinessMetadata() {
             icon={<EditOutlined />}
             title="View/Edit Details"
             onClick={() => handleEdit(record)}
-            loading={loadingTableDetails}
             style={{ borderRadius: '4px' }}
           />
           <Button
@@ -695,11 +581,7 @@ export default function BusinessMetadata() {
         </TabPane>
       </Tabs>
 
-      <BusinessTableEditor
-        open={isEditorOpen}
-        table={selectedTable}
-        onClose={handleEditorClose}
-      />
+      {/* BusinessTableEditor moved to dedicated page */}
     </PageLayout>
     </>
   )

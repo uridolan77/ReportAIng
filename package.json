@@ -19,5 +19,8 @@
     "url": "https://github.com/uridolan77/ReportAIng.git"
   },
   "author": "uridolan77",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@microsoft/signalr": "^8.0.7"
+  }
 }

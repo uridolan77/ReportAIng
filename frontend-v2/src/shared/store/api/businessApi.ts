@@ -4,6 +4,7 @@ export interface BusinessTableInfoDto {
   id: number
   tableName: string
   schemaName: string
+  businessName?: string
   businessPurpose: string
   businessContext: string
   primaryUseCase: string

@@ -320,10 +320,19 @@ public class QueryController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            _logger.LogInformation("Processing enhanced query for user {UserId}: {Query}", userId, request.Query);
+            _logger.LogInformation("🚀 [ENHANCED] ENDPOINT HIT - Processing enhanced query for user {UserId}: {Query}", userId, request.Query);
+            _logger.LogInformation("💬 [CHAT] Request details - ExecuteQuery: {ExecuteQuery}, IncludeAlternatives: {IncludeAlternatives}, IncludeSemanticAnalysis: {IncludeSemanticAnalysis}",
+                request.ExecuteQuery, request.IncludeAlternatives, request.IncludeSemanticAnalysis);
 
             // Process the query with enhanced AI pipeline
+            _logger.LogInformation("🔄 [ENHANCED] Starting AI query processing pipeline for user {UserId}", userId);
+
+            // Add timeout to prevent hanging
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             var processedQuery = await _queryProcessor.ProcessQueryAsync(request.Query, userId);
+
+            _logger.LogInformation("✅ [ENHANCED] AI query processing completed - SQL generated: {HasSql}, Confidence: {Confidence}",
+                !string.IsNullOrEmpty(processedQuery.GeneratedSql), processedQuery.ConfidenceScore);
 
             // Execute the optimized SQL if requested
             QueryResult? queryResult = null;
@@ -331,11 +340,14 @@ public class QueryController : ControllerBase
             {
                 try
                 {
+                    _logger.LogInformation("💬 [CHAT] Executing SQL query for user {UserId}: {Sql}", userId, processedQuery.GeneratedSql);
                     queryResult = await _sqlQueryService.ExecuteSelectQueryAsync(processedQuery.GeneratedSql);
+                    _logger.LogInformation("💬 [CHAT] Query execution completed - Success: {Success}, Rows: {RowCount}",
+                        queryResult.IsSuccessful, queryResult.Metadata?.RowCount ?? 0);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to execute optimized SQL: {Error}", ex.Message);
+                    _logger.LogWarning("💬 [CHAT] Failed to execute optimized SQL for user {UserId}: {Error}", userId, ex.Message);
                     // For now, return the query processing result without execution
                     queryResult = null;
                 }

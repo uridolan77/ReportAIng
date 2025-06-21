@@ -1,4 +1,4 @@
-import { io, Socket } from 'socket.io-client'
+import * as signalR from '@microsoft/signalr'
 import { store } from '../store'
 import { selectAccessToken } from '../store/auth'
 import { chatActions } from '../store/chat'
@@ -62,79 +62,83 @@ export interface StreamingQueryError {
 }
 
 class SocketService {
-  private socket: Socket | null = null
+  private connection: signalR.HubConnection | null = null
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectDelay = 1000
 
-  connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
+  async connect(): Promise<void> {
+    try {
       const token = selectAccessToken(store.getState())
 
       if (!token) {
-        reject(new Error('No authentication token available'))
-        return
+        throw new Error('No authentication token available')
       }
 
-      this.socket = io('/hub/query-status', {
-        auth: {
-          token,
-        },
-        transports: ['websocket'],
-        upgrade: true,
-        rememberUpgrade: true,
-        timeout: 20000,
-        forceNew: true,
-      })
+      // Get the backend URL from environment or default
+      const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:55244'
 
-      this.socket.on('connect', () => {
-        console.log('✅ Socket connected')
-        this.reconnectAttempts = 0
-        store.dispatch(chatActions.setIsConnected(true))
-        store.dispatch(chatActions.setConnectionError(null))
-        resolve()
-      })
+      // Create SignalR connection to QueryStatusHub
+      this.connection = new signalR.HubConnectionBuilder()
+        .withUrl(`${backendUrl}/hubs/query-status`, {
+          accessTokenFactory: () => token,
+          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
+        })
+        .withAutomaticReconnect({
+          nextRetryDelayInMilliseconds: (retryContext) => {
+            if (retryContext.previousRetryCount < this.maxReconnectAttempts) {
+              return this.reconnectDelay * Math.pow(2, retryContext.previousRetryCount)
+            }
+            return null // Stop retrying
+          }
+        })
+        .configureLogging(signalR.LogLevel.Information)
+        .build()
 
-      this.socket.on('connect_error', (error) => {
-        console.error('❌ Socket connection error:', error)
-        store.dispatch(chatActions.setIsConnected(false))
-        store.dispatch(chatActions.setConnectionError(error.message))
-        reject(error)
-      })
-
-      this.socket.on('disconnect', (reason) => {
-        console.log('🔌 Socket disconnected:', reason)
-        store.dispatch(chatActions.setIsConnected(false))
-
-        if (reason === 'io server disconnect') {
-          // Server initiated disconnect, try to reconnect
-          this.handleReconnect()
-        }
-      })
-
-      this.socket.on('reconnect', (attemptNumber) => {
-        console.log(`🔄 Socket reconnected after ${attemptNumber} attempts`)
-        this.reconnectAttempts = 0
-        store.dispatch(chatActions.setIsConnected(true))
-        store.dispatch(chatActions.setConnectionError(null))
-      })
-
-      this.socket.on('reconnect_error', (error) => {
-        console.error('❌ Socket reconnection error:', error)
-        store.dispatch(chatActions.setConnectionError(error.message))
-        this.handleReconnect()
-      })
-
-      // Set up event handlers for streaming
+      // Set up event handlers
       this.setupEventHandlers()
-    })
+
+      // Start the connection
+      await this.connection.start()
+
+      console.log('✅ SignalR connected to QueryStatusHub')
+      this.reconnectAttempts = 0
+      store.dispatch(chatActions.setIsConnected(true))
+      store.dispatch(chatActions.setConnectionError(null))
+
+    } catch (error) {
+      console.error('❌ SignalR connection error:', error)
+      store.dispatch(chatActions.setIsConnected(false))
+      store.dispatch(chatActions.setConnectionError((error as Error).message))
+      throw error
+    }
   }
 
   private setupEventHandlers() {
-    if (!this.socket) return
+    if (!this.connection) return
+
+    // Connection state handlers
+    this.connection.onclose((error) => {
+      console.log('🔌 SignalR disconnected:', error)
+      store.dispatch(chatActions.setIsConnected(false))
+      if (error) {
+        store.dispatch(chatActions.setConnectionError(error.message))
+      }
+    })
+
+    this.connection.onreconnecting((error) => {
+      console.log('🔄 SignalR reconnecting:', error)
+      store.dispatch(chatActions.setIsConnected(false))
+    })
+
+    this.connection.onreconnected((connectionId) => {
+      console.log('✅ SignalR reconnected:', connectionId)
+      store.dispatch(chatActions.setIsConnected(true))
+      store.dispatch(chatActions.setConnectionError(null))
+    })
 
     // Streaming query progress
-    this.socket.on('StreamingQueryProgress', (data: StreamingQueryProgress) => {
+    this.connection.on('StreamingQueryProgress', (data: StreamingQueryProgress) => {
       console.log('📊 Streaming progress:', data)
 
       const progressData: StreamingProgress = {
@@ -150,7 +154,7 @@ class SocketService {
     })
 
     // Streaming query complete
-    this.socket.on('StreamingQueryComplete', (data: StreamingQueryComplete) => {
+    this.connection.on('StreamingQueryComplete', (data: StreamingQueryComplete) => {
       console.log('✅ Streaming complete:', data)
 
       // Update the message with results
@@ -170,7 +174,7 @@ class SocketService {
     })
 
     // Streaming query error
-    this.socket.on('StreamingQueryError', (data: StreamingQueryError) => {
+    this.connection.on('StreamingQueryError', (data: StreamingQueryError) => {
       console.error('❌ Streaming error:', data)
 
       if (data.messageId) {
@@ -190,94 +194,132 @@ class SocketService {
     })
 
     // Typing indicators
-    this.socket.on('UserTyping', (data: { userId: string; isTyping: boolean }) => {
+    this.connection.on('UserTyping', (data: { userId: string; isTyping: boolean }) => {
       if (data.userId !== 'current-user') { // Don't show typing for current user
         store.dispatch(chatActions.setIsTyping(data.isTyping))
       }
     })
 
     // Real-time notifications
-    this.socket.on('SystemNotification', (data: { type: string; message: string; data?: any }) => {
+    this.connection.on('SystemNotification', (data: { type: string; message: string; data?: any }) => {
       console.log('🔔 System notification:', data)
       // Handle system notifications (new features, maintenance, etc.)
     })
+
+    // Backend-specific events (matching QueryStatusHub events)
+    this.connection.on('QueryStarted', (data) => {
+      console.log('🚀 Query started (backend):', data)
+      // Convert to streaming progress format
+      store.dispatch(chatActions.setStreamingProgress({
+        sessionId: data.QueryId,
+        phase: 'starting',
+        progress: 0,
+        message: 'Query started...',
+        timestamp: new Date(data.Timestamp),
+      }))
+    })
+
+    this.connection.on('ProgressUpdate', (data) => {
+      console.log('📊 Progress update (backend):', data)
+      // Convert to streaming progress format
+      store.dispatch(chatActions.setStreamingProgress({
+        sessionId: data.OperationId,
+        phase: 'executing',
+        progress: data.Progress,
+        message: data.Message || 'Processing...',
+        timestamp: new Date(data.Timestamp),
+      }))
+    })
+
+    this.connection.on('JoinedQueryGroup', (queryId) => {
+      console.log('✅ Joined query group (backend):', queryId)
+    })
   }
 
-  private handleReconnect() {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++
-      const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
-      
-      console.log(`🔄 Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
-      
-      setTimeout(() => {
-        this.connect().catch((error) => {
-          console.error('❌ Reconnection failed:', error)
-        })
-      }, delay)
-    } else {
-      console.error('❌ Max reconnection attempts reached')
-    }
-  }
-
-  disconnect() {
-    if (this.socket) {
-      this.socket.disconnect()
-      this.socket = null
+  async disconnect() {
+    if (this.connection) {
+      try {
+        await this.connection.stop()
+        console.log('🔌 SignalR disconnected')
+      } catch (error) {
+        console.error('❌ Error disconnecting SignalR:', error)
+      }
+      this.connection = null
     }
   }
 
   // Event listeners
   onStreamingQueryProgress(callback: (data: StreamingQueryProgress) => void) {
-    this.socket?.on('StreamingQueryProgress', callback)
+    this.connection?.on('StreamingQueryProgress', callback)
   }
 
   onStreamingQueryComplete(callback: (data: StreamingQueryComplete) => void) {
-    this.socket?.on('StreamingQueryComplete', callback)
+    this.connection?.on('StreamingQueryComplete', callback)
   }
 
   onStreamingQueryError(callback: (data: StreamingQueryError) => void) {
-    this.socket?.on('StreamingQueryError', callback)
+    this.connection?.on('StreamingQueryError', callback)
   }
 
   // Remove event listeners
   offStreamingQueryProgress(callback?: (data: StreamingQueryProgress) => void) {
-    this.socket?.off('StreamingQueryProgress', callback)
+    this.connection?.off('StreamingQueryProgress', callback)
   }
 
   offStreamingQueryComplete(callback?: (data: StreamingQueryComplete) => void) {
-    this.socket?.off('StreamingQueryComplete', callback)
+    this.connection?.off('StreamingQueryComplete', callback)
   }
 
   offStreamingQueryError(callback?: (data: StreamingQueryError) => void) {
-    this.socket?.off('StreamingQueryError', callback)
+    this.connection?.off('StreamingQueryError', callback)
   }
 
-  // Emit events
-  joinQuerySession(sessionId: string) {
-    this.socket?.emit('joinQuerySession', { sessionId })
+  // Invoke SignalR methods (using correct backend method names)
+  async joinQuerySession(sessionId: string) {
+    try {
+      await this.connection?.invoke('JoinQueryGroup', sessionId)
+      console.log('✅ Joined query group:', sessionId)
+    } catch (error) {
+      console.error('❌ Error joining query group:', error)
+    }
   }
 
-  leaveQuerySession(sessionId: string) {
-    this.socket?.emit('leaveQuerySession', { sessionId })
+  async leaveQuerySession(sessionId: string) {
+    try {
+      await this.connection?.invoke('LeaveQueryGroup', sessionId)
+      console.log('✅ Left query group:', sessionId)
+    } catch (error) {
+      console.error('❌ Error leaving query group:', error)
+    }
   }
 
-  // Enhanced streaming methods
-  startStreamingQuery(data: {
+  // Enhanced streaming methods (using correct backend method names)
+  async startStreamingQuery(data: {
     query: string
     messageId: string
     conversationId?: string
     options?: any
   }) {
-    this.socket?.emit('startStreamingQuery', data)
+    try {
+      // Note: Backend doesn't have StartStreamingQuery method in SignalR hub
+      // This should be handled via REST API, not SignalR
+      console.log('⚠️ StartStreamingQuery should be called via REST API, not SignalR')
+    } catch (error) {
+      console.error('❌ Error starting streaming query:', error)
+    }
   }
 
-  cancelStreamingQuery(sessionId: string) {
-    this.socket?.emit('cancelStreamingQuery', { sessionId })
+  async cancelStreamingQuery(sessionId: string) {
+    try {
+      await this.connection?.invoke('RequestQueryCancellation', sessionId)
+      console.log('✅ Requested query cancellation:', sessionId)
+    } catch (error) {
+      console.error('❌ Error requesting query cancellation:', error)
+    }
   }
 
   // Streaming session management
-  startStreamingSession(data: {
+  async startStreamingSession(data: {
     query: string
     sessionId?: string
     options?: {
@@ -286,68 +328,126 @@ class SocketService {
       maxExecutionTime: number
     }
   }) {
-    this.socket?.emit('startStreamingSession', data)
+    try {
+      await this.connection?.invoke('StartStreamingSession', data)
+    } catch (error) {
+      console.error('❌ Error starting streaming session:', error)
+    }
   }
 
-  stopStreamingSession(sessionId: string) {
-    this.socket?.emit('stopStreamingSession', { sessionId })
+  async stopStreamingSession(sessionId: string) {
+    try {
+      await this.connection?.invoke('StopStreamingSession', sessionId)
+    } catch (error) {
+      console.error('❌ Error stopping streaming session:', error)
+    }
   }
 
   // Real-time dashboard subscriptions
-  subscribeToDashboard() {
-    this.socket?.emit('subscribeToDashboard')
+  async subscribeToDashboard() {
+    try {
+      await this.connection?.invoke('SubscribeToDashboard')
+    } catch (error) {
+      console.error('❌ Error subscribing to dashboard:', error)
+    }
   }
 
-  unsubscribeFromDashboard() {
-    this.socket?.emit('unsubscribeFromDashboard')
+  async unsubscribeFromDashboard() {
+    try {
+      await this.connection?.invoke('UnsubscribeFromDashboard')
+    } catch (error) {
+      console.error('❌ Error unsubscribing from dashboard:', error)
+    }
   }
 
   // Live chart subscriptions
-  subscribeToLiveCharts(chartIds: string[]) {
-    this.socket?.emit('subscribeToLiveCharts', { chartIds })
+  async subscribeToLiveCharts(chartIds: string[]) {
+    try {
+      await this.connection?.invoke('SubscribeToLiveCharts', chartIds)
+    } catch (error) {
+      console.error('❌ Error subscribing to live charts:', error)
+    }
   }
 
-  unsubscribeFromLiveCharts(chartIds: string[]) {
-    this.socket?.emit('unsubscribeFromLiveCharts', { chartIds })
+  async unsubscribeFromLiveCharts(chartIds: string[]) {
+    try {
+      await this.connection?.invoke('UnsubscribeFromLiveCharts', chartIds)
+    } catch (error) {
+      console.error('❌ Error unsubscribing from live charts:', error)
+    }
   }
 
   // System monitoring
-  subscribeToSystemHealth() {
-    this.socket?.emit('subscribeToSystemHealth')
+  async subscribeToSystemHealth() {
+    try {
+      await this.connection?.invoke('SubscribeToSystemHealth')
+    } catch (error) {
+      console.error('❌ Error subscribing to system health:', error)
+    }
   }
 
-  unsubscribeFromSystemHealth() {
-    this.socket?.emit('unsubscribeFromSystemHealth')
+  async unsubscribeFromSystemHealth() {
+    try {
+      await this.connection?.invoke('UnsubscribeFromSystemHealth')
+    } catch (error) {
+      console.error('❌ Error unsubscribing from system health:', error)
+    }
   }
 
-  // Typing indicators
-  sendTypingIndicator(isTyping: boolean, conversationId?: string) {
-    this.socket?.emit('typing', { isTyping, conversationId })
+  // Typing indicators (not available on backend)
+  async sendTypingIndicator(isTyping: boolean, conversationId?: string) {
+    try {
+      // Backend doesn't have SendTypingIndicator method
+      console.log('⚠️ Typing indicators not implemented on backend')
+    } catch (error) {
+      console.error('❌ Error sending typing indicator:', error)
+    }
   }
 
-  // Real-time collaboration
-  joinConversation(conversationId: string) {
-    this.socket?.emit('joinConversation', { conversationId })
+  // Real-time collaboration (using available backend methods)
+  async joinConversation(conversationId: string) {
+    try {
+      // Backend doesn't have JoinConversation method, using JoinQueryGroup instead
+      await this.connection?.invoke('JoinQueryGroup', conversationId)
+      console.log('✅ Joined conversation group:', conversationId)
+    } catch (error) {
+      console.error('❌ Error joining conversation:', error)
+    }
   }
 
-  leaveConversation(conversationId: string) {
-    this.socket?.emit('leaveConversation', { conversationId })
+  async leaveConversation(conversationId: string) {
+    try {
+      // Backend doesn't have LeaveConversation method, using LeaveQueryGroup instead
+      await this.connection?.invoke('LeaveQueryGroup', conversationId)
+      console.log('✅ Left conversation group:', conversationId)
+    } catch (error) {
+      console.error('❌ Error leaving conversation:', error)
+    }
   }
 
   // Utility methods
   isConnected(): boolean {
-    return this.socket?.connected ?? false
+    return this.connection?.state === signalR.HubConnectionState.Connected
   }
 
-  getSocket(): Socket | null {
-    return this.socket
+  getConnection(): signalR.HubConnection | null {
+    return this.connection
   }
 
   getConnectionState(): 'connected' | 'connecting' | 'disconnected' | 'error' {
-    if (!this.socket) return 'disconnected'
-    if (this.socket.connected) return 'connected'
-    if (this.socket.connected === false && this.socket.disconnected === false) return 'connecting'
-    return 'disconnected'
+    if (!this.connection) return 'disconnected'
+
+    switch (this.connection.state) {
+      case signalR.HubConnectionState.Connected:
+        return 'connected'
+      case signalR.HubConnectionState.Connecting:
+      case signalR.HubConnectionState.Reconnecting:
+        return 'connecting'
+      case signalR.HubConnectionState.Disconnected:
+        return 'disconnected'
+      default:
+        return 'error'
+    }
   }
 }
 
@@ -362,12 +462,12 @@ export const useSocket = () => {
     try {
       await socketService.connect()
     } catch (error) {
-      console.error('Failed to connect to socket:', error)
+      console.error('Failed to connect to SignalR:', error)
     }
   }, [])
 
-  const disconnect = useCallback(() => {
-    socketService.disconnect()
+  const disconnect = useCallback(async () => {
+    await socketService.disconnect()
   }, [])
 
   useEffect(() => {
@@ -381,7 +481,7 @@ export const useSocket = () => {
     connect,
     disconnect,
     isConnected: socketService.isConnected(),
-    socket: socketService.getSocket(),
+    connection: socketService.getConnection(),
     onStreamingQueryProgress: socketService.onStreamingQueryProgress.bind(socketService),
     onStreamingQueryComplete: socketService.onStreamingQueryComplete.bind(socketService),
     onStreamingQueryError: socketService.onStreamingQueryError.bind(socketService),

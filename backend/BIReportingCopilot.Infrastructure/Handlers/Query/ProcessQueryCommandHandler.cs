@@ -38,7 +38,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
 
         try
         {
-            _logger.LogInformation("🎯 CQRS ProcessQueryCommandHandler - Processing query {QueryId} for user {UserId}: {Question}",
+            _logger.LogInformation("💬 [CHAT-CQRS] ProcessQueryCommandHandler - Processing query {QueryId} for user {UserId}: {Question}",
                 queryId, request.UserId, request.Question);
 
             // Step 1: Check cache first

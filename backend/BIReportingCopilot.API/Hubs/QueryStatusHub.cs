@@ -17,15 +17,34 @@ public class QueryStatusHub : BaseHub, IProgressHub
 
     protected override async Task OnUserConnectedAsync(string userId, string connectionId)
     {
-        _logger.LogInformation("🔗 QueryStatusHub - User {UserId} connected with connection {ConnectionId}", userId, connectionId);
+        _logger.LogInformation("💬 [CHAT-HUB] User {UserId} connected with connection {ConnectionId}", userId, connectionId);
+        _logger.LogInformation("💬 [CHAT-HUB] User {UserId} added to group 'user_{UserId}' for real-time chat updates", userId, userId);
 
         // Log all claims for debugging in development
         if (Context.User?.Claims != null)
         {
+            _logger.LogDebug("💬 [CHAT-HUB] User {UserId} claims:", userId);
             foreach (var claim in Context.User.Claims)
             {
-                _logger.LogDebug("🔗 Claim: {Type} = {Value}", claim.Type, claim.Value);
+                _logger.LogDebug("💬 [CHAT-HUB]   Claim: {Type} = {Value}", claim.Type, claim.Value);
             }
+        }
+
+        // Send welcome message to confirm connection
+        try
+        {
+            await Clients.Caller.SendAsync("ConnectionConfirmed", new
+            {
+                UserId = userId,
+                ConnectionId = connectionId,
+                Timestamp = DateTime.UtcNow,
+                Message = "Successfully connected to chat hub"
+            });
+            _logger.LogInformation("💬 [CHAT-HUB] Welcome message sent to user {UserId}", userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "💬 [CHAT-HUB] Failed to send welcome message to user {UserId}", userId);
         }
 
         await Task.CompletedTask;
@@ -33,11 +52,15 @@ public class QueryStatusHub : BaseHub, IProgressHub
 
     protected override async Task OnUserDisconnectedAsync(string userId, string connectionId, Exception? exception)
     {
-        _logger.LogInformation("🔗 QueryStatusHub - User {UserId} disconnected with connection {ConnectionId}", userId, connectionId);
+        _logger.LogInformation("💬 [CHAT-HUB] User {UserId} disconnected with connection {ConnectionId}", userId, connectionId);
 
         if (exception != null)
         {
-            _logger.LogError(exception, "User {UserId} disconnected with error from QueryStatusHub", userId);
+            _logger.LogError(exception, "💬 [CHAT-HUB] User {UserId} disconnected with error from QueryStatusHub", userId);
+        }
+        else
+        {
+            _logger.LogInformation("💬 [CHAT-HUB] User {UserId} disconnected gracefully", userId);
         }
 
         await Task.CompletedTask;

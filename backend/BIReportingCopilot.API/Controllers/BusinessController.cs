@@ -36,15 +36,15 @@ public class BusinessController : ControllerBase
     #region Business Tables
 
     /// <summary>
-    /// Get all business tables with their metadata (optimized for performance)
+    /// Get all business tables with their complete metadata including metrics
     /// </summary>
     [HttpGet("tables")]
-    public async Task<ActionResult<List<BusinessTableInfoOptimizedDto>>> GetBusinessTables()
+    public async Task<ActionResult<List<BusinessTableInfoDto>>> GetBusinessTables()
     {
         try
         {
-            _logger.LogInformation("Getting all business tables (optimized)");
-            var tables = await _businessTableService.GetBusinessTablesOptimizedAsync();
+            _logger.LogInformation("Getting all business tables with complete metadata");
+            var tables = await _businessTableService.GetBusinessTablesAsync();
             return Ok(tables);
         }
         catch (Exception ex)

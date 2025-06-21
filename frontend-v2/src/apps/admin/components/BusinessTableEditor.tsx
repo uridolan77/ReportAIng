@@ -28,6 +28,7 @@ import {
   type BusinessColumnInfoDto
 } from '@shared/store/api/businessApi'
 import { BusinessColumnEditor } from './BusinessColumnEditor'
+import JsonEditor from './JsonEditor'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -38,12 +39,16 @@ interface BusinessTableEditorProps {
   open: boolean
   table: BusinessTableInfoDto | null
   onClose: () => void
+  onSave?: (table: BusinessTableInfoDto) => void
+  isFullPage?: boolean
 }
 
 export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
   open,
   table,
   onClose,
+  onSave,
+  isFullPage = false,
 }) => {
   const [form] = Form.useForm()
   const [activeTab, setActiveTab] = useState('basic')
@@ -256,18 +261,27 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
         semanticCoverageScore: Number(values.semanticCoverageScore) || 0,
       }
 
-      if (isEditing) {
-        await updateTable({
-          id: table.id,
+      if (onSave) {
+        // Use custom save handler (for full-page mode)
+        const tableData = {
+          id: table?.id || 0,
           ...processedValues,
-        }).unwrap()
-        message.success('Business table updated successfully')
+        } as BusinessTableInfoDto
+        onSave(tableData)
       } else {
-        await createTable(processedValues).unwrap()
-        message.success('Business table created successfully')
+        // Use default API calls (for modal mode)
+        if (isEditing) {
+          await updateTable({
+            id: table.id,
+            ...processedValues,
+          }).unwrap()
+          message.success('Business table updated successfully')
+        } else {
+          await createTable(processedValues).unwrap()
+          message.success('Business table created successfully')
+        }
+        onClose()
       }
-
-      onClose()
     } catch (error: any) {
       console.error('Form submission error:', error)
       message.error(error.data?.message || 'Failed to save business table')
@@ -295,33 +309,49 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
       title: 'Column Name',
       dataIndex: 'columnName',
       key: 'columnName',
+      width: 200,
       render: (text: string, record: BusinessColumnInfoDto) => (
         <div>
-          <Text strong>{text}</Text>
-          {record.isKeyColumn && <Tag color="gold" style={{ marginLeft: 8 }}>Key</Tag>}
-          {record.isSensitiveData && <Tag color="red" style={{ marginLeft: 4 }}>Sensitive</Tag>}
-          {record.isCalculatedField && <Tag color="blue" style={{ marginLeft: 4 }}>Calculated</Tag>}
-          <br />
-          <Text type="secondary" style={{ fontSize: '12px' }}>
-            {record.businessMeaning}
-          </Text>
+          <Text strong style={{ fontSize: '13px' }}>{text}</Text>
+          <div style={{ marginTop: 2 }}>
+            {record.isKeyColumn && <Tag color="gold" size="small">Key</Tag>}
+            {record.isSensitiveData && <Tag color="red" size="small">Sensitive</Tag>}
+            {record.isCalculatedField && <Tag color="blue" size="small">Calculated</Tag>}
+          </div>
         </div>
       ),
     },
     {
-      title: 'Business Data Type',
-      dataIndex: 'businessDataType',
-      key: 'businessDataType',
-      width: 120,
+      title: 'Business Meaning',
+      dataIndex: 'businessMeaning',
+      key: 'businessMeaning',
+      ellipsis: true,
+      render: (text: string) => (
+        <Text type="secondary" style={{ fontSize: '12px' }}>
+          {text || 'No business meaning defined'}
+        </Text>
+      ),
     },
     {
-      title: 'Quality Score',
+      title: 'Data Type',
+      dataIndex: 'businessDataType',
+      key: 'businessDataType',
+      width: 100,
+      render: (text: string) => (
+        <Text style={{ fontSize: '12px' }}>{text || 'N/A'}</Text>
+      ),
+    },
+    {
+      title: 'Quality',
       dataIndex: 'dataQualityScore',
       key: 'dataQualityScore',
-      width: 100,
+      width: 80,
       render: (score: number) => (
-        <Tag color={score > 8 ? 'green' : score > 6 ? 'orange' : 'red'}>
-          {score}/10
+        <Tag
+          color={score > 8 ? 'green' : score > 6 ? 'orange' : 'red'}
+          style={{ fontSize: '11px' }}
+        >
+          {score || 0}/10
         </Tag>
       ),
     },
@@ -329,54 +359,50 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
       title: 'Usage',
       dataIndex: 'usageFrequency',
       key: 'usageFrequency',
-      width: 80,
+      width: 70,
+      render: (frequency: number) => (
+        <Text style={{ fontSize: '11px' }}>
+          {frequency ? `${(frequency * 100).toFixed(0)}%` : '0%'}
+        </Text>
+      ),
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 100,
+      width: 80,
       render: (record: BusinessColumnInfoDto) => (
-        <Space>
-          <Button 
-            size="small" 
-            icon={<EditOutlined />} 
+        <Space size="small">
+          <Button
+            size="small"
+            icon={<EditOutlined />}
             onClick={() => handleEditColumn(record)}
+            type="text"
           />
-          <Button 
-            size="small" 
-            icon={<DeleteOutlined />} 
+          <Button
+            size="small"
+            icon={<DeleteOutlined />}
             danger
+            type="text"
           />
         </Space>
       ),
     },
   ]
 
-  return (
-    <>
-      <Modal
-        title={
-          isEditing
-            ? `Edit Business Table: ${table?.schemaName}.${table?.tableName}`
-            : table?.schemaName && table?.tableName
-              ? `Create Business Metadata: ${table.schemaName}.${table.tableName}`
-              : 'Add Business Table'
-        }
-        open={open}
-        onCancel={onClose}
-        width={1000}
-        footer={[
-          <Button key="cancel" onClick={onClose}>
-            Cancel
-          </Button>,
-          <Button key="submit" type="primary" loading={isLoading} onClick={handleSubmit}>
-            {isEditing ? 'Update' : 'Create'}
-          </Button>,
-        ]}
-      >
+  // Form content component
+  const formContent = (
         <Form form={form} layout="vertical">
           <Tabs activeKey={activeTab} onChange={setActiveTab}>
-            <TabPane tab="Basic Information" key="basic">
+            <TabPane tab="Business Information & Advanced Metadata" key="basic">
+              {/* Business Friendly Name - First Field */}
+              <Form.Item
+                name="businessName"
+                label="Business Friendly Name"
+                rules={[{ required: true, message: 'Business friendly name is required' }]}
+              >
+                <Input placeholder="e.g., Countries Master Data, Customer Information, Sales Orders" />
+              </Form.Item>
+
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
@@ -398,29 +424,34 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                 </Col>
               </Row>
 
-              <Form.Item
-                name="businessPurpose"
-                label="Business Purpose"
-                rules={[{ required: true, message: 'Business purpose is required' }]}
-              >
-                <TextArea 
-                  rows={3} 
-                  placeholder="Describe the main business purpose of this table..."
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="businessContext"
-                label="Business Context"
-              >
-                <TextArea 
-                  rows={3} 
-                  placeholder="Provide additional business context and background..."
-                />
-              </Form.Item>
-
               <Row gutter={16}>
                 <Col span={12}>
+                  <Form.Item
+                    name="businessPurpose"
+                    label="Business Purpose"
+                    rules={[{ required: true, message: 'Business purpose is required' }]}
+                  >
+                    <TextArea
+                      rows={2}
+                      placeholder="Describe the main business purpose of this table..."
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="businessContext"
+                    label="Business Context"
+                  >
+                    <TextArea
+                      rows={2}
+                      placeholder="Provide additional business context and background..."
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={8}>
                   <Form.Item
                     name="primaryUseCase"
                     label="Primary Use Case"
@@ -428,7 +459,7 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                     <Input placeholder="e.g., Customer Analytics, Sales Reporting" />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col span={8}>
                   <Form.Item
                     name="domainClassification"
                     label="Domain Classification"
@@ -445,50 +476,85 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                     </Select>
                   </Form.Item>
                 </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="businessOwner"
+                    label="Business Owner"
+                  >
+                    <Input placeholder="e.g., John Smith, Sales Team" />
+                  </Form.Item>
+                </Col>
               </Row>
 
-            </TabPane>
+              {/* Quality Metrics */}
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item
+                    name="importanceScore"
+                    label="Importance Score (0-1)"
+                  >
+                    <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="usageFrequency"
+                    label="Usage Frequency (0-1)"
+                  >
+                    <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="semanticCoverageScore"
+                    label="Semantic Coverage Score (0-1)"
+                  >
+                    <InputNumber min={0} max={1} step={0.01} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <TabPane tab="Advanced Metadata" key="advanced">
-              <Form.Item
-                name="semanticDescription"
-                label="Semantic Description"
-              >
-                <TextArea
-                  rows={3}
-                  placeholder="Detailed semantic description of the table's purpose and content..."
-                />
-              </Form.Item>
+              {/* Business Rules and Patterns */}
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="businessRules"
+                    label="Business Rules"
+                  >
+                    <JsonEditor
+                      placeholder="Document important business rules and constraints (JSON array or text)"
+                      allowArrays={true}
+                      allowObjects={false}
+                      allowInlineStringEdit={true}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="usagePatterns"
+                    label="Usage Patterns"
+                  >
+                    <JsonEditor
+                      placeholder="Describe how this table is typically used (JSON array or text)"
+                      allowArrays={true}
+                      allowObjects={false}
+                      allowInlineStringEdit={true}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-              <Form.Item
-                name="commonQueryPatterns"
-                label="Common Query Patterns"
-              >
-                <TextArea
-                  rows={3}
-                  placeholder="Describe common ways this table is queried..."
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="businessRules"
-                label="Business Rules"
-              >
-                <TextArea
-                  rows={3}
-                  placeholder="Document important business rules and constraints..."
-                />
-              </Form.Item>
-
+              {/* Advanced Metadata - Business Processes and Use Cases */}
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     name="businessProcesses"
                     label="Business Processes"
                   >
-                    <TextArea
-                      rows={3}
-                      placeholder="Business processes that use this table (JSON array or comma-separated)"
+                    <JsonEditor
+                      placeholder="Business processes that use this table"
+                      allowArrays={true}
+                      allowObjects={false}
                     />
                   </Form.Item>
                 </Col>
@@ -497,217 +563,79 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                     name="analyticalUseCases"
                     label="Analytical Use Cases"
                   >
-                    <TextArea
-                      rows={3}
-                      placeholder="Analytical use cases and reporting scenarios (JSON array or comma-separated)"
+                    <JsonEditor
+                      placeholder="Analytical use cases and reporting scenarios"
+                      allowArrays={true}
+                      allowObjects={false}
+                      allowInlineStringEdit={true}
                     />
                   </Form.Item>
                 </Col>
               </Row>
 
+              {/* Advanced Metadata - Semantic Information */}
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
-                    name="reportingCategories"
-                    label="Reporting Categories"
+                    name="semanticDescription"
+                    label="Semantic Description"
                   >
-                    <TextArea
-                      rows={2}
-                      placeholder="Categories for reporting and classification (JSON array or comma-separated)"
+                    <JsonEditor
+                      placeholder="Detailed semantic description of the table's purpose and content"
+                      allowArrays={true}
+                      allowObjects={true}
+                      allowInlineStringEdit={true}
                     />
                   </Form.Item>
                 </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="relationshipSemantics"
+                    label="Relationship Semantics"
+                  >
+                    <JsonEditor
+                      placeholder="Describe relationships with other tables"
+                      allowArrays={false}
+                      allowObjects={true}
+                      allowInlineStringEdit={true}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Advanced Metadata - Search and Classification */}
+              <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     name="naturalLanguageAliases"
                     label="Natural Language Aliases"
                   >
-                    <TextArea
-                      rows={2}
-                      placeholder="Alternative names users might use (JSON array or comma-separated)"
+                    <JsonEditor
+                      placeholder="Alternative names users might use"
+                      allowArrays={true}
+                      allowObjects={false}
+                      allowInlineStringEdit={true}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="reportingCategories"
+                    label="Reporting Categories"
+                  >
+                    <JsonEditor
+                      placeholder="Categories for reporting and classification"
+                      allowArrays={true}
+                      allowObjects={false}
+                      allowInlineStringEdit={true}
                     />
                   </Form.Item>
                 </Col>
               </Row>
 
-              <Form.Item
-                name="usagePatterns"
-                label="Usage Patterns"
-              >
-                <TextArea
-                  rows={2}
-                  placeholder="Describe how this table is typically used..."
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="relationshipSemantics"
-                label="Relationship Semantics"
-              >
-                <TextArea
-                  rows={2}
-                  placeholder="Describe relationships with other tables..."
-                />
-              </Form.Item>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="importanceScore"
-                    label="Importance Score (0-1)"
-                  >
-                    <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="usageFrequency"
-                    label="Usage Frequency (0-1)"
-                  >
-                    <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-              </Row>
             </TabPane>
 
-            <TabPane tab="AI & Search Metadata" key="ai-metadata">
-              <Form.Item
-                name="vectorSearchKeywords"
-                label="Vector Search Keywords"
-              >
-                <TextArea
-                  rows={3}
-                  placeholder="Keywords for vector search and semantic matching (JSON array or comma-separated)"
-                />
-              </Form.Item>
 
-              <Form.Item
-                name="businessGlossaryTerms"
-                label="Business Glossary Terms"
-              >
-                <TextArea
-                  rows={2}
-                  placeholder="Related business glossary terms (JSON array or comma-separated)"
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="llmContextHints"
-                label="LLM Context Hints"
-              >
-                <TextArea
-                  rows={3}
-                  placeholder="Hints and context for Large Language Models (JSON array or comma-separated)"
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="queryComplexityHints"
-                label="Query Complexity Hints"
-              >
-                <TextArea
-                  rows={2}
-                  placeholder="Hints about query complexity and optimization (JSON array or comma-separated)"
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="semanticRelationships"
-                label="Semantic Relationships"
-              >
-                <TextArea
-                  rows={3}
-                  placeholder="Semantic relationships with other entities (JSON object)"
-                />
-              </Form.Item>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="semanticCoverageScore"
-                    label="Semantic Coverage Score (0-1)"
-                  >
-                    <InputNumber min={0} max={1} step={0.01} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="lastAnalyzed"
-                    label="Last Analyzed Date"
-                  >
-                    <Input placeholder="YYYY-MM-DD format" />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </TabPane>
-
-            <TabPane tab="Data Governance" key="governance">
-              <Form.Item
-                name="dataQualityIndicators"
-                label="Data Quality Indicators"
-              >
-                <TextArea
-                  rows={3}
-                  placeholder="Notes about data quality, completeness, accuracy (JSON object or text)"
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="dataGovernancePolicies"
-                label="Data Governance Policies"
-              >
-                <TextArea
-                  rows={3}
-                  placeholder="Relevant data governance policies and compliance notes (JSON array or comma-separated)"
-                />
-              </Form.Item>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="businessOwner"
-                    label="Business Owner"
-                  >
-                    <Input placeholder="e.g., John Smith, Sales Team" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="createdBy"
-                    label="Created By"
-                  >
-                    <Input placeholder="System user who created this record" />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="createdDate"
-                    label="Created Date"
-                  >
-                    <Input placeholder="YYYY-MM-DD HH:mm:ss format" disabled />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="updatedDate"
-                    label="Updated Date"
-                  >
-                    <Input placeholder="YYYY-MM-DD HH:mm:ss format" disabled />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Form.Item
-                name="isActive"
-                label="Active Status"
-                valuePropName="checked"
-              >
-                <Switch />
-              </Form.Item>
-            </TabPane>
 
             {isEditing && (
             <TabPane tab={`Columns (${isBusinessTable ? columns?.length || 0 : 'Schema Only'})`} key="columns">
@@ -763,8 +691,204 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
               )}
             </TabPane>
           )}
+
+            <TabPane tab="AI, Search & Governance" key="ai-governance">
+              {/* Status and Dates - Top Section */}
+              <Row gutter={16} style={{ marginBottom: 16 }}>
+                <Col span={6}>
+                  <Form.Item
+                    name="isActive"
+                    label="Active Status"
+                    valuePropName="checked"
+                  >
+                    <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+                  </Form.Item>
+                </Col>
+                <Col span={6}>
+                  <Form.Item
+                    name="lastAnalyzed"
+                    label="Last Analyzed"
+                  >
+                    <Input placeholder="YYYY-MM-DD" />
+                  </Form.Item>
+                </Col>
+                <Col span={6}>
+                  <Form.Item
+                    name="createdDate"
+                    label="Created Date"
+                  >
+                    <Input placeholder="YYYY-MM-DD HH:mm:ss" disabled />
+                  </Form.Item>
+                </Col>
+                <Col span={6}>
+                  <Form.Item
+                    name="updatedDate"
+                    label="Updated Date"
+                  >
+                    <Input placeholder="YYYY-MM-DD HH:mm:ss" disabled />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Owner Information */}
+              <Row gutter={16} style={{ marginBottom: 16 }}>
+                <Col span={12}>
+                  <Form.Item
+                    name="createdBy"
+                    label="Created By"
+                  >
+                    <Input placeholder="System user who created this record" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Search Keywords and Terms */}
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="vectorSearchKeywords"
+                    label="Vector Search Keywords"
+                  >
+                    <JsonEditor
+                      placeholder="Keywords for vector search and semantic matching"
+                      allowArrays={true}
+                      allowObjects={false}
+                      allowInlineStringEdit={true}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="businessGlossaryTerms"
+                    label="Business Glossary Terms"
+                  >
+                    <JsonEditor
+                      placeholder="Related business glossary terms"
+                      allowArrays={true}
+                      allowObjects={false}
+                      allowInlineStringEdit={true}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* AI Context and Hints */}
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="llmContextHints"
+                    label="LLM Context Hints"
+                  >
+                    <JsonEditor
+                      placeholder="Hints and context for Large Language Models"
+                      allowArrays={true}
+                      allowObjects={false}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="queryComplexityHints"
+                    label="Query Complexity Hints"
+                  >
+                    <JsonEditor
+                      placeholder="Hints about query complexity and optimization"
+                      allowArrays={true}
+                      allowObjects={false}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Semantic Relationships */}
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Form.Item
+                    name="semanticRelationships"
+                    label="Semantic Relationships"
+                  >
+                    <JsonEditor
+                      placeholder="Semantic relationships with other entities"
+                      allowArrays={true}
+                      allowObjects={true}
+                      allowInlineStringEdit={true}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Governance - Quality and Policies */}
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="dataQualityIndicators"
+                    label="Data Quality Notes"
+                  >
+                    <JsonEditor
+                      placeholder="Notes about data quality, completeness, accuracy"
+                      allowArrays={true}
+                      allowObjects={true}
+                      allowInlineStringEdit={true}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="dataGovernancePolicies"
+                    label="Data Governance Policies"
+                  >
+                    <JsonEditor
+                      placeholder="Relevant data governance policies and compliance notes"
+                      allowArrays={true}
+                      allowObjects={true}
+                      allowInlineStringEdit={true}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </TabPane>
           </Tabs>
         </Form>
+  )
+
+  // Conditional rendering based on isFullPage
+  if (isFullPage) {
+    return (
+      <>
+        {formContent}
+        <BusinessColumnEditor
+          open={isColumnEditorOpen}
+          column={selectedColumn}
+          tableId={tableIdAsNumber}
+          onClose={handleColumnEditorClose}
+        />
+      </>
+    )
+  }
+
+  return (
+    <>
+      <Modal
+        title={
+          isEditing
+            ? `Edit Business Table: ${table?.schemaName}.${table?.tableName}`
+            : table?.schemaName && table?.tableName
+              ? `Create Business Metadata: ${table.schemaName}.${table.tableName}`
+              : 'Add Business Table'
+        }
+        open={open}
+        onCancel={onClose}
+        width={1000}
+        footer={[
+          <Button key="cancel" onClick={onClose}>
+            Cancel
+          </Button>,
+          <Button key="submit" type="primary" loading={isLoading} onClick={handleSubmit}>
+            {isEditing ? 'Update' : 'Create'}
+          </Button>,
+        ]}
+      >
+        {formContent}
       </Modal>
 
       <BusinessColumnEditor

@@ -50,11 +50,12 @@ public class QueryProcessor : IQueryProcessor
     {
         try
         {
-            _logger.LogInformation("Processing query for user {UserId}: {Query}", userId, naturalLanguageQuery);
+            _logger.LogInformation("💬 [CHAT-PROCESSOR] Processing query for user {UserId}: {Query}", userId, naturalLanguageQuery);
 
             // Step 1: Semantic Analysis
+            _logger.LogInformation("💬 [CHAT-PROCESSOR] Step 1: Starting semantic analysis");
             var semanticAnalysis = await _semanticAnalyzer.AnalyzeAsync(naturalLanguageQuery);
-            _logger.LogDebug("Semantic analysis completed with confidence: {Confidence}", semanticAnalysis.ConfidenceScore);
+            _logger.LogInformation("💬 [CHAT-PROCESSOR] Semantic analysis completed with confidence: {Confidence}", semanticAnalysis.ConfidenceScore);
 
             // Step 2: Get User Context
             var userContext = await _contextManager.GetUserContextAsync(userId);
@@ -107,7 +108,7 @@ public class QueryProcessor : IQueryProcessor
             // Step 8: Cache the result for similar queries
             await CacheProcessedQueryAsync(naturalLanguageQuery, processedQuery);
 
-            _logger.LogInformation("Query processing completed successfully with confidence: {Confidence}",
+            _logger.LogInformation("💬 [CHAT-PROCESSOR] Query processing completed successfully with confidence: {Confidence}",
                 processedQuery.Confidence);
 
             return processedQuery;

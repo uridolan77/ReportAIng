@@ -48,12 +48,15 @@ class RealTimeService {
   private eventListeners: Map<string, Set<Function>> = new Map()
 
   constructor() {
-    this.connect()
+    // Disabled auto-connect to avoid conflicts with SignalR socketService
+    // this.connect()
   }
 
   private connect() {
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'ws://localhost:55244'
-    
+    // Use the backend API URL for socket connection
+    const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:55244'
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || backendUrl
+
     this.socket = io(socketUrl, {
       transports: ['websocket'],
       autoConnect: true,

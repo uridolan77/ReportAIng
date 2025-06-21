@@ -95,7 +95,8 @@ public class AIService : IAIService
             activity?.SetTag("prompt.length", prompt.Length);
             activity?.SetTag("operation", "sql_generation");
 
-            _logger.LogInformation("Building prompt for SQL generation...");
+            _logger.LogInformation("💬 [CHAT-AI] Building prompt for SQL generation...");
+            _logger.LogInformation("💬 [CHAT-AI] User query: {UserQuery}", prompt);
 
             return await _combinedPolicy.ExecuteAsync(async () =>
             {
@@ -131,10 +132,10 @@ public class AIService : IAIService
                 };
 
                 // Log the full prompt being sent to AI
-                _logger.LogInformation("AI SQL Generation Request - System Message: {SystemMessage}", options.SystemMessage);
-                _logger.LogInformation("AI SQL Generation Request - User Prompt: {UserPrompt}",
+                _logger.LogInformation("💬 [CHAT-AI] AI SQL Generation Request - System Message: {SystemMessage}", options.SystemMessage);
+                _logger.LogInformation("💬 [CHAT-AI] AI SQL Generation Request - User Prompt: {UserPrompt}",
                     enhancedPrompt.Length > 2000 ? enhancedPrompt.Substring(0, 2000) + "..." : enhancedPrompt);
-                _logger.LogInformation("AI SQL Generation Request - Options: Temperature={Temperature}, MaxTokens={MaxTokens}, TimeoutSeconds={TimeoutSeconds}",
+                _logger.LogInformation("💬 [CHAT-AI] AI SQL Generation Request - Options: Temperature={Temperature}, MaxTokens={MaxTokens}, TimeoutSeconds={TimeoutSeconds}",
                     options.Temperature, options.MaxTokens, options.TimeoutSeconds);
 
                 var provider = await GetProviderAsync();
@@ -157,14 +158,14 @@ public class AIService : IAIService
                 }
 
                 // Log the AI response before cleaning
-                _logger.LogInformation("AI SQL Generation Response (raw): {RawResponse}",
+                _logger.LogInformation("💬 [CHAT-AI] AI SQL Generation Response (raw): {RawResponse}",
                     generatedSQL.Length > 1000 ? generatedSQL.Substring(0, 1000) + "..." : generatedSQL);
 
                 // Clean up the response
                 generatedSQL = CleanSQLResponse(generatedSQL);
 
                 // Log the cleaned response
-                _logger.LogInformation("AI SQL Generation Response (cleaned): {CleanedSQL}",
+                _logger.LogInformation("💬 [CHAT-AI] AI SQL Generation Response (cleaned): {CleanedSQL}",
                     generatedSQL.Length > 1000 ? generatedSQL.Substring(0, 1000) + "..." : generatedSQL);
 
                 stopwatch.Stop();
@@ -178,7 +179,7 @@ public class AIService : IAIService
                     _ = Task.Run(async () => await _metricsCollector.RecordQueryExecutionAsync("sql_generation", stopwatch.Elapsed, true));
                 }
 
-                _logger.LogInformation("Generated SQL successfully in {Duration}ms", stopwatch.ElapsedMilliseconds);
+                _logger.LogInformation("💬 [CHAT-AI] Generated SQL successfully in {Duration}ms", stopwatch.ElapsedMilliseconds);
                 return generatedSQL;
             });
         }
@@ -195,7 +196,7 @@ public class AIService : IAIService
                 _ = Task.Run(async () => await _metricsCollector.RecordErrorAsync("sql_generation_error", "AIService", ex.Message, ex.StackTrace));
             }
 
-            _logger.LogError(ex, "Failed to generate SQL after all retry attempts for prompt: {Prompt}", prompt);
+            _logger.LogError(ex, "💬 [CHAT-AI] Failed to generate SQL after all retry attempts for prompt: {Prompt}", prompt);
             throw;
         }
     }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Business;
@@ -18,13 +19,17 @@ public class BusinessTableManagementService : IBusinessTableManagementService
 {
     private readonly BICopilotContext _context;
     private readonly ILogger<BusinessTableManagementService> _logger;
+    private readonly IDistributedCache? _distributedCache;
+    private readonly TimeSpan _cacheExpiration = TimeSpan.FromMinutes(15); // Cache for 15 minutes
 
     public BusinessTableManagementService(
         BICopilotContext context,
-        ILogger<BusinessTableManagementService> logger)
+        ILogger<BusinessTableManagementService> logger,
+        IDistributedCache? distributedCache = null)
     {
         _context = context;
         _logger = logger;
+        _distributedCache = distributedCache;
     }
 
     #region Business Table Operations
@@ -33,14 +38,52 @@ public class BusinessTableManagementService : IBusinessTableManagementService
     {
         try
         {
+            // Try cache first
+            const string cacheKey = "business_tables_all";
+            if (_distributedCache != null)
+            {
+                var cachedData = await _distributedCache.GetStringAsync(cacheKey);
+                if (!string.IsNullOrEmpty(cachedData))
+                {
+                    _logger.LogDebug("✅ Business tables cache hit");
+                    var cachedTables = JsonSerializer.Deserialize<List<BusinessTableInfoDto>>(cachedData);
+                    if (cachedTables != null)
+                    {
+                        return cachedTables;
+                    }
+                }
+            }
+
+            _logger.LogDebug("🔍 Business tables cache miss, querying database");
             var tables = await _context.BusinessTableInfo
                 .Include(t => t.Columns.Where(c => c.IsActive))
                 .Where(t => t.IsActive)
                 .OrderBy(t => t.SchemaName)
                 .ThenBy(t => t.TableName)
+                .AsNoTracking() // Add AsNoTracking for better performance
                 .ToListAsync();
 
-            return tables.Select(MapToDto).ToList();
+            var result = tables.Select(MapToDto).ToList();
+
+            // Cache the result
+            if (_distributedCache != null && result.Any())
+            {
+                try
+                {
+                    var serialized = JsonSerializer.Serialize(result);
+                    await _distributedCache.SetStringAsync(cacheKey, serialized, new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = _cacheExpiration
+                    });
+                    _logger.LogDebug("💾 Cached {Count} business tables for {Minutes} minutes", result.Count, _cacheExpiration.TotalMinutes);
+                }
+                catch (Exception cacheEx)
+                {
+                    _logger.LogWarning(cacheEx, "Failed to cache business tables, continuing without cache");
+                }
+            }
+
+            return result;
         }
         catch (Exception ex)
         {
@@ -56,7 +99,24 @@ public class BusinessTableManagementService : IBusinessTableManagementService
     {
         try
         {
-            return await _context.BusinessTableInfo
+            // Try cache first
+            const string cacheKey = "business_tables_optimized";
+            if (_distributedCache != null)
+            {
+                var cachedData = await _distributedCache.GetStringAsync(cacheKey);
+                if (!string.IsNullOrEmpty(cachedData))
+                {
+                    _logger.LogDebug("✅ Optimized business tables cache hit");
+                    var cachedTables = JsonSerializer.Deserialize<List<BusinessTableInfoOptimizedDto>>(cachedData);
+                    if (cachedTables != null)
+                    {
+                        return cachedTables;
+                    }
+                }
+            }
+
+            _logger.LogDebug("🔍 Optimized business tables cache miss, querying database");
+            var result = await _context.BusinessTableInfo
                 .Where(t => t.IsActive)
                 .Select(t => new BusinessTableInfoOptimizedDto
                 {
@@ -75,6 +135,26 @@ public class BusinessTableManagementService : IBusinessTableManagementService
                 .OrderBy(t => t.SchemaName)
                 .ThenBy(t => t.TableName)
                 .ToListAsync();
+
+            // Cache the result
+            if (_distributedCache != null && result.Any())
+            {
+                try
+                {
+                    var serialized = JsonSerializer.Serialize(result);
+                    await _distributedCache.SetStringAsync(cacheKey, serialized, new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = _cacheExpiration
+                    });
+                    _logger.LogDebug("💾 Cached {Count} optimized business tables for {Minutes} minutes", result.Count, _cacheExpiration.TotalMinutes);
+                }
+                catch (Exception cacheEx)
+                {
+                    _logger.LogWarning(cacheEx, "Failed to cache optimized business tables, continuing without cache");
+                }
+            }
+
+            return result;
         }
         catch (Exception ex)
         {
@@ -143,6 +223,9 @@ public class BusinessTableManagementService : IBusinessTableManagementService
 
             await _context.SaveChangesAsync();
 
+            // Invalidate cache
+            await InvalidateBusinessTablesCache();
+
             // Reload with columns
             var createdTable = await GetBusinessTableAsync(entity.Id);
             _logger.LogInformation("Created business table: {SchemaName}.{TableName}", entity.SchemaName, entity.TableName);
@@ -201,6 +284,9 @@ public class BusinessTableManagementService : IBusinessTableManagementService
 
             await _context.SaveChangesAsync();
 
+            // Invalidate cache
+            await InvalidateBusinessTablesCache();
+
             _logger.LogInformation("Updated business table: {SchemaName}.{TableName}", entity.SchemaName, entity.TableName);
             return await GetBusinessTableAsync(id);
         }
@@ -234,6 +320,9 @@ public class BusinessTableManagementService : IBusinessTableManagementService
             }
 
             await _context.SaveChangesAsync();
+
+            // Invalidate cache
+            await InvalidateBusinessTablesCache();
 
             _logger.LogInformation("Deleted business table {TableId}", id);
             return true;
@@ -294,6 +383,31 @@ public class BusinessTableManagementService : IBusinessTableManagementService
         {
             _logger.LogError(ex, "Error getting table statistics");
             throw;
+        }
+    }
+
+    #endregion
+
+    #region Cache Management
+
+    /// <summary>
+    /// Invalidate business tables cache when data changes
+    /// </summary>
+    private async Task InvalidateBusinessTablesCache()
+    {
+        if (_distributedCache != null)
+        {
+            try
+            {
+                // Invalidate both full and optimized caches
+                await _distributedCache.RemoveAsync("business_tables_all");
+                await _distributedCache.RemoveAsync("business_tables_optimized");
+                _logger.LogDebug("🗑️ Invalidated business tables cache (both full and optimized)");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to invalidate business tables cache");
+            }
         }
     }
 

@@ -148,10 +148,33 @@ export const chatApi = baseApi.injectEndpoints({
       }
     }>({
       query: (body) => ({
-        url: '/chat/query/enhanced',
+        url: '/query/enhanced',
         method: 'POST',
-        body,
+        body: {
+          Query: body.query,
+          ExecuteQuery: true,
+          IncludeAlternatives: true,
+          IncludeSemanticAnalysis: body.options?.includeSemanticAnalysis ?? true
+        },
       }),
+      transformResponse: (response: any) => {
+        // Transform backend response to expected frontend format
+        return {
+          message: {
+            id: `msg-${Date.now()}`,
+            type: 'assistant' as const,
+            content: response.ProcessedQuery?.explanation || 'Query processed successfully',
+            timestamp: new Date().toISOString(),
+            sql: response.ProcessedQuery?.sql,
+            results: response.QueryResult?.data,
+            resultMetadata: response.QueryResult?.metadata,
+            semanticAnalysis: response.SemanticAnalysis,
+            status: 'delivered' as const
+          },
+          sessionId: undefined, // Backend doesn't provide sessionId for this endpoint
+          streamingEnabled: false
+        }
+      },
       invalidatesTags: ['QueryHistory', 'Message'],
     }),
 

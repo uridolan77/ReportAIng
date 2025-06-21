@@ -19,7 +19,7 @@ import {
   selectStreamingProgress,
   chatActions 
 } from '@shared/store/chat'
-import { useSendMessageMutation } from '@shared/store/api/chatApi'
+import { useSendMessageMutation, useExecuteEnhancedQueryMutation } from '@shared/store/api/chatApi'
 import { socketService } from '@shared/services/socketService'
 
 const { Title, Text } = Typography
@@ -44,6 +44,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const streamingProgress = useAppSelector(selectStreamingProgress)
   
   const [sendMessage] = useSendMessageMutation()
+  const [executeEnhancedQuery] = useExecuteEnhancedQueryMutation()
   const [isFirstVisit, setIsFirstVisit] = useState(false)
 
   // Example queries for first-time users
@@ -103,11 +104,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       dispatch(chatActions.addMessage(tempMessage))
 
-      // Send message via API
-      const result = await sendMessage({
-        content,
+      // Execute enhanced query with streaming support
+      const result = await executeEnhancedQuery({
+        query: content,
         conversationId: conversationId || currentConversation?.id,
-        type: 'user'
+        options: {
+          includeSemanticAnalysis: true,
+          enableStreaming: true,
+          maxResults: 100
+        }
       }).unwrap()
 
       // Update with real message
@@ -119,13 +124,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }
       }))
 
-      // Start streaming if enabled
+      // Add the AI response message
+      if (result.message.type === 'assistant') {
+        dispatch(chatActions.addMessage(result.message))
+      }
+
+      // Join query group to receive real-time updates if sessionId is provided
       if (result.sessionId) {
-        socketService.startStreamingQuery({
-          query: content,
-          messageId: result.message.id,
-          conversationId: conversationId || currentConversation?.id
-        })
+        console.log('🔗 Joining query group for real-time updates:', result.sessionId)
+        socketService.joinQuerySession(result.sessionId)
+      } else {
+        console.log('ℹ️ No sessionId provided - streaming not available for this query')
       }
 
     } catch (error: any) {
