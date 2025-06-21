@@ -16,9 +16,25 @@ public class BusinessGlossaryDto
     public List<string> Synonyms { get; set; } = new();
     public List<string> RelatedTerms { get; set; } = new();
     public List<string> Examples { get; set; } = new();
+
+    // Enhanced semantic metadata fields to match frontend interface
+    public string Domain { get; set; } = string.Empty;
+    public string MappedTables { get; set; } = string.Empty;
+    public string MappedColumns { get; set; } = string.Empty;
+    public string HierarchicalRelations { get; set; } = string.Empty;
+    public string PreferredCalculation { get; set; } = string.Empty;
+    public string DisambiguationRules { get; set; } = string.Empty;
+    public string BusinessOwner { get; set; } = string.Empty;
+    public string RegulationReferences { get; set; } = string.Empty;
+    public double ConfidenceScore { get; set; } = 1.0;
+    public double AmbiguityScore { get; set; } = 0.0;
+    public string ContextualVariations { get; set; } = string.Empty;
+
     public bool IsActive { get; set; } = true;
     public int UsageCount { get; set; } = 0;
     public DateTime? LastUsedDate { get; set; }
+    public string? LastUsed { get; set; }
+    public string? LastValidated { get; set; }
     public DateTime CreatedDate { get; set; }
     public string CreatedBy { get; set; } = string.Empty;
     public DateTime? UpdatedDate { get; set; }

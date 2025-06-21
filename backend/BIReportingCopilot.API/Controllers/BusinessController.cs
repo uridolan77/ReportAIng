@@ -36,15 +36,15 @@ public class BusinessController : ControllerBase
     #region Business Tables
 
     /// <summary>
-    /// Get all business tables with their metadata
+    /// Get all business tables with their metadata (optimized for performance)
     /// </summary>
     [HttpGet("tables")]
-    public async Task<ActionResult<List<BusinessTableInfoDto>>> GetBusinessTables()
+    public async Task<ActionResult<List<BusinessTableInfoOptimizedDto>>> GetBusinessTables()
     {
         try
         {
-            _logger.LogInformation("Getting all business tables");
-            var tables = await _businessTableService.GetBusinessTablesAsync();
+            _logger.LogInformation("Getting all business tables (optimized)");
+            var tables = await _businessTableService.GetBusinessTablesOptimizedAsync();
             return Ok(tables);
         }
         catch (Exception ex)
@@ -219,16 +219,34 @@ public class BusinessController : ControllerBase
     #region Business Glossary
 
     /// <summary>
-    /// Get all glossary terms
+    /// Get all glossary terms with pagination
     /// </summary>
     [HttpGet("glossary")]
-    public async Task<ActionResult<List<BusinessGlossaryDto>>> GetGlossaryTerms()
+    public async Task<ActionResult<object>> GetGlossaryTerms([FromQuery] int page = 1, [FromQuery] int limit = 50, [FromQuery] string? category = null)
     {
         try
         {
-            _logger.LogInformation("Getting all glossary terms");
-            var terms = await _glossaryService.GetGlossaryTermsAsync();
-            return Ok(terms);
+            _logger.LogInformation("Getting glossary terms - Page: {Page}, Limit: {Limit}, Category: {Category}", page, limit, category);
+            var allTerms = await _glossaryService.GetGlossaryTermsAsync();
+
+            // Filter by category if specified
+            if (!string.IsNullOrEmpty(category))
+            {
+                allTerms = allTerms.Where(t => t.Category?.Equals(category, StringComparison.OrdinalIgnoreCase) == true).ToList();
+            }
+
+            // Apply pagination
+            var totalCount = allTerms.Count;
+            var skip = (page - 1) * limit;
+            var paginatedTerms = allTerms.Skip(skip).Take(limit).ToList();
+
+            var response = new
+            {
+                terms = paginatedTerms,
+                total = totalCount
+            };
+
+            return Ok(response);
         }
         catch (Exception ex)
         {

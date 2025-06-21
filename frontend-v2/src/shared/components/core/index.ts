@@ -61,6 +61,47 @@ export type {
   CacheConfig,
 } from '../performance'
 
+// Accessibility Components (NEW - WCAG 2.1 AA compliant components)
+export {
+  AccessibilityProvider,
+  useAccessibility,
+  AccessibleChart,
+  AccessibleDataTable,
+  AccessibilitySettings,
+  useEnhancedRealTime,
+} from '../accessibility'
+export type {
+  AccessibilitySettings as AccessibilitySettingsType,
+  AccessibilityContextType,
+  AccessibleChartProps,
+  AccessibleDataTableProps,
+  RealTimeConfig,
+  ConnectionStatus,
+  RealTimeUpdate,
+} from '../accessibility'
+
+// Enterprise Components (NEW - Production-ready enterprise features)
+export {
+  SecurityProvider,
+  useSecurity,
+  SecurityDashboard,
+  PWAManager,
+  usePWA,
+  InstallButton,
+  OfflineStatus,
+  PerformanceMonitor,
+} from '../enterprise'
+export type {
+  SecurityConfig,
+  SecurityThreat,
+  SecurityContextType,
+  PWAContextType,
+  PerformanceMetric,
+  ErrorReport,
+  UserInteraction,
+  PerformanceReport,
+} from '../enterprise'
+
 // Advanced Components
 export { MonacoSQLEditor, useMonacoSQL } from './MonacoSQLEditor'
 export { ExportManager, useExport } from './ExportManager'

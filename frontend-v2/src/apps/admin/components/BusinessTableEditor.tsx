@@ -24,7 +24,6 @@ import {
   useUpdateBusinessTableMutation,
   useGetBusinessTableQuery,
   useGetBusinessTablesQuery,
-  useGetBusinessColumnsQuery,
   type BusinessTableInfoDto,
   type BusinessColumnInfoDto
 } from '@shared/store/api/businessApi'
@@ -93,10 +92,10 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
     { skip: !matchingBusinessTable?.id }
   )
 
-  const { data: columns, refetch: refetchColumns, error: columnsError, isLoading: columnsLoading } = useGetBusinessColumnsQuery(
-    tableIdAsNumber,
-    { skip: !isBusinessTable }
-  )
+  // Use columns from the table data instead of fetching separately
+  const columns = actualBusinessTableData?.columns || table?.columns || []
+  const columnsLoading = businessTableLoading
+  const columnsError = null
 
   // Debug logging for columns
   useEffect(() => {
@@ -150,25 +149,43 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
       }
 
       const formValues = {
-        ...tableDataToUse,
+        // Basic fields from API response
+        id: tableDataToUse.id,
+        tableId: tableDataToUse.tableId,
+        tableName: tableDataToUse.tableName,
+        schemaName: tableDataToUse.schemaName,
+        businessName: tableDataToUse.businessName,
+        businessPurpose: tableDataToUse.businessPurpose,
+        businessContext: tableDataToUse.businessContext,
+        primaryUseCase: tableDataToUse.primaryUseCase,
+        businessRules: tableDataToUse.businessRules,
+        isActive: tableDataToUse.isActive,
+
         // Convert complex fields to strings for form editing
-        naturalLanguageAliases: convertToString(table.naturalLanguageAliases),
-        businessProcesses: convertToString(table.businessProcesses),
-        analyticalUseCases: convertToString(table.analyticalUseCases),
-        reportingCategories: convertToString(table.reportingCategories),
-        vectorSearchKeywords: convertToString(table.vectorSearchKeywords),
-        businessGlossaryTerms: convertToString(table.businessGlossaryTerms),
-        llmContextHints: convertToString(table.llmContextHints),
-        queryComplexityHints: convertToString(table.queryComplexityHints),
-        semanticRelationships: convertToString(table.semanticRelationships),
-        usagePatterns: convertToString(table.usagePatterns),
-        dataQualityIndicators: convertToString(table.dataQualityIndicators),
-        relationshipSemantics: convertToString(table.relationshipSemantics),
-        dataGovernancePolicies: convertToString(table.dataGovernancePolicies),
+        commonQueryPatterns: convertToString(tableDataToUse.commonQueryPatterns),
+        naturalLanguageAliases: convertToString(tableDataToUse.naturalLanguageAliases || []),
+        businessProcesses: convertToString(tableDataToUse.businessProcesses || []),
+        analyticalUseCases: convertToString(tableDataToUse.analyticalUseCases || []),
+        reportingCategories: convertToString(tableDataToUse.reportingCategories || []),
+        vectorSearchKeywords: convertToString(tableDataToUse.vectorSearchKeywords || []),
+        businessGlossaryTerms: convertToString(tableDataToUse.businessGlossaryTerms || []),
+        llmContextHints: convertToString(tableDataToUse.llmContextHints || []),
+        queryComplexityHints: convertToString(tableDataToUse.queryComplexityHints || []),
+        semanticRelationships: convertToString(tableDataToUse.semanticRelationships || {}),
+        usagePatterns: convertToString(tableDataToUse.usagePatterns || []),
+        dataQualityIndicators: convertToString(tableDataToUse.dataQualityIndicators || {}),
+        relationshipSemantics: convertToString(tableDataToUse.relationshipSemantics || {}),
+        dataGovernancePolicies: convertToString(tableDataToUse.dataGovernancePolicies || {}),
+
+        // Numeric fields
+        importanceScore: tableDataToUse.importanceScore || 0.5,
+        usageFrequency: tableDataToUse.usageFrequency || 0.5,
+        semanticCoverageScore: tableDataToUse.semanticCoverageScore || 0.0,
+
         // Format dates for display
-        lastAnalyzed: table.lastAnalyzed ? table.lastAnalyzed.split('T')[0] : '',
-        createdDate: table.createdDate ? new Date(table.createdDate).toLocaleString() : '',
-        updatedDate: table.updatedDate ? new Date(table.updatedDate).toLocaleString() : '',
+        lastAnalyzed: tableDataToUse.lastAnalyzed ? tableDataToUse.lastAnalyzed.split('T')[0] : '',
+        createdDate: tableDataToUse.createdDate ? new Date(tableDataToUse.createdDate).toLocaleString() : '',
+        updatedDate: tableDataToUse.updatedDate ? new Date(tableDataToUse.updatedDate).toLocaleString() : '',
       }
 
       console.log('📝 Setting form values:', formValues)
@@ -270,7 +287,7 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
   const handleColumnEditorClose = () => {
     setIsColumnEditorOpen(false)
     setSelectedColumn(null)
-    refetchColumns()
+    // Note: Column data will be refreshed when the parent table is refetched
   }
 
   const columnTableColumns = [

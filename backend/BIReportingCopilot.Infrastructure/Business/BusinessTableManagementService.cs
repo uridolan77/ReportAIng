@@ -313,17 +313,66 @@ public class BusinessTableManagementService : IBusinessTableManagementService
             catch { /* Ignore deserialization errors */ }
         }
 
+        // Helper method to safely deserialize JSON arrays
+        List<string> DeserializeStringList(string? json)
+        {
+            if (string.IsNullOrEmpty(json)) return new List<string>();
+            try
+            {
+                return JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+            }
+            catch { return new List<string>(); }
+        }
+
+        // Helper method to safely deserialize JSON objects
+        object DeserializeObject(string? json)
+        {
+            if (string.IsNullOrEmpty(json)) return new object();
+            try
+            {
+                return JsonSerializer.Deserialize<object>(json) ?? new object();
+            }
+            catch { return new object(); }
+        }
+
         return new BusinessTableInfoDto
         {
             Id = entity.Id,
+            TableId = entity.Id.ToString(), // Use Id as TableId
             TableName = entity.TableName,
             SchemaName = entity.SchemaName,
+            BusinessName = !string.IsNullOrEmpty(entity.NaturalLanguageAliases)
+                ? DeserializeStringList(entity.NaturalLanguageAliases).FirstOrDefault() ?? entity.TableName
+                : entity.TableName, // Use first natural language alias or fallback to TableName
             BusinessPurpose = entity.BusinessPurpose,
             BusinessContext = entity.BusinessContext,
             PrimaryUseCase = entity.PrimaryUseCase,
             CommonQueryPatterns = commonQueryPatterns,
             BusinessRules = entity.BusinessRules,
             IsActive = entity.IsActive,
+            CreatedDate = entity.CreatedDate,
+            CreatedBy = entity.CreatedBy,
+            UpdatedDate = entity.UpdatedDate,
+            UpdatedBy = entity.UpdatedBy,
+            DomainClassification = entity.DomainClassification ?? string.Empty,
+            NaturalLanguageAliases = DeserializeStringList(entity.NaturalLanguageAliases),
+            BusinessProcesses = DeserializeStringList(entity.BusinessProcesses),
+            AnalyticalUseCases = DeserializeStringList(entity.AnalyticalUseCases),
+            ReportingCategories = DeserializeStringList(entity.ReportingCategories),
+            VectorSearchKeywords = DeserializeStringList(entity.VectorSearchKeywords),
+            BusinessGlossaryTerms = DeserializeStringList(entity.BusinessGlossaryTerms),
+            LLMContextHints = DeserializeStringList(entity.LLMContextHints),
+            QueryComplexityHints = DeserializeStringList(entity.QueryComplexityHints),
+            SemanticRelationships = DeserializeObject(entity.SemanticRelationships),
+            UsagePatterns = DeserializeObject(entity.UsagePatterns),
+            DataQualityIndicators = DeserializeObject(entity.DataQualityIndicators),
+            RelationshipSemantics = DeserializeObject(entity.RelationshipSemantics),
+            DataGovernancePolicies = DeserializeObject(entity.DataGovernancePolicies),
+            ImportanceScore = entity.ImportanceScore,
+            UsageFrequency = entity.UsageFrequency,
+            SemanticCoverageScore = entity.SemanticCoverageScore,
+            LastAnalyzed = entity.LastAnalyzed,
+            BusinessOwner = entity.BusinessOwner ?? string.Empty,
             Columns = entity.Columns?.Select(MapColumnToBusinessColumnInfo).ToList() ?? new List<BusinessColumnInfo>()
         };
     }

@@ -279,6 +279,7 @@ public class GlossaryManagementService : IGlossaryManagementService
     {
         var synonyms = SafeDeserializeStringList(entity.Synonyms);
         var relatedTerms = SafeDeserializeStringList(entity.RelatedTerms);
+        var examples = SafeDeserializeStringList(entity.Examples);
 
         return new BusinessGlossaryDto
         {
@@ -289,8 +290,22 @@ public class GlossaryManagementService : IGlossaryManagementService
             Synonyms = synonyms,
             RelatedTerms = relatedTerms,
             Category = entity.Category,
-            IsActive = entity.IsActive,
+            Domain = entity.Domain ?? string.Empty,
+            Examples = examples,
+            MappedTables = entity.MappedTables ?? string.Empty,
+            MappedColumns = entity.MappedColumns ?? string.Empty,
+            HierarchicalRelations = entity.HierarchicalRelations ?? string.Empty,
+            PreferredCalculation = entity.PreferredCalculation ?? string.Empty,
+            DisambiguationRules = entity.DisambiguationRules ?? string.Empty,
+            BusinessOwner = entity.BusinessOwner ?? string.Empty,
+            RegulationReferences = entity.RegulationReferences ?? string.Empty,
+            ConfidenceScore = (double)entity.ConfidenceScore,
+            AmbiguityScore = (double)entity.AmbiguityScore,
+            ContextualVariations = entity.ContextualVariations ?? string.Empty,
             UsageCount = entity.UsageCount,
+            LastUsed = entity.LastUsed?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+            LastValidated = entity.LastValidated?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+            IsActive = entity.IsActive,
             LastUsedDate = entity.LastUsedDate
         };
     }

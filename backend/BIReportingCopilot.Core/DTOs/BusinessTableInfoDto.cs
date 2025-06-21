@@ -23,6 +23,27 @@ public class BusinessTableInfoDto
     public string CreatedBy { get; set; } = string.Empty;
     public DateTime? UpdatedDate { get; set; }
     public string? UpdatedBy { get; set; }
+
+    // Additional business metadata fields
+    public string DomainClassification { get; set; } = string.Empty;
+    public List<string> NaturalLanguageAliases { get; set; } = new();
+    public List<string> BusinessProcesses { get; set; } = new();
+    public List<string> AnalyticalUseCases { get; set; } = new();
+    public List<string> ReportingCategories { get; set; } = new();
+    public List<string> VectorSearchKeywords { get; set; } = new();
+    public List<string> BusinessGlossaryTerms { get; set; } = new();
+    public List<string> LLMContextHints { get; set; } = new();
+    public List<string> QueryComplexityHints { get; set; } = new();
+    public object SemanticRelationships { get; set; } = new();
+    public object UsagePatterns { get; set; } = new();
+    public object DataQualityIndicators { get; set; } = new();
+    public object RelationshipSemantics { get; set; } = new();
+    public object DataGovernancePolicies { get; set; } = new();
+    public decimal ImportanceScore { get; set; }
+    public decimal UsageFrequency { get; set; }
+    public decimal SemanticCoverageScore { get; set; }
+    public DateTime? LastAnalyzed { get; set; }
+    public string BusinessOwner { get; set; } = string.Empty;
 }
 
 /// <summary>

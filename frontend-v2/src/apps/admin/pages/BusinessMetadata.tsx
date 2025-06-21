@@ -59,8 +59,34 @@ export default function BusinessMetadata() {
     }
   `
 
-  // Convert schema tables to business table format for display
-  const displayTables = schemaTables?.map((table: any) => {
+  // Debug: Log both data sources
+  console.log('🔍 Raw schemaTables data:', schemaTables)
+  console.log('🏢 Raw businessTables data:', businessTables)
+
+  // Debug: Show which data source is being used
+  const usingBusinessTables = businessTables && businessTables.length > 0
+  console.log(`📊 Using ${usingBusinessTables ? 'business tables' : 'schema tables'} for display`)
+
+  if (usingBusinessTables && businessTables) {
+    console.table(businessTables.map(table => ({
+      tableName: table.tableName,
+      importanceScore: table.importanceScore,
+      usageFrequency: table.usageFrequency,
+      semanticCoverageScore: table.semanticCoverageScore,
+      hasMetrics: table.importanceScore !== undefined
+    })))
+  }
+
+  // Use business tables if available, otherwise fall back to schema tables
+  const displayTables = businessTables && businessTables.length > 0
+    ? businessTables.map((table: BusinessTableInfoDto) => ({
+        ...table,
+        // Ensure proper data types for display
+        importanceScore: typeof table.importanceScore === 'number' ? table.importanceScore : 0.5,
+        usageFrequency: typeof table.usageFrequency === 'number' ? table.usageFrequency : 0.3,
+        semanticCoverageScore: typeof table.semanticCoverageScore === 'number' ? table.semanticCoverageScore : 0.2,
+      }))
+    : schemaTables?.map((table: any) => {
     // Handle both new API format and old business metadata format
     if (table.schemaName && table.tableName) {
       // New API format from /api/schema/tables
@@ -73,10 +99,12 @@ export default function BusinessMetadata() {
         businessOwner: 'Not specified',
         primaryUseCase: table.domainClassification || 'No primary use case defined',
         businessContext: table.businessPurpose || 'No context provided',
-        importanceScore: table.qualityUsage?.includes('High') ? 0.9 : table.qualityUsage?.includes('Medium') ? 0.6 : 0.3,
-        usageFrequency: table.qualityUsage?.includes('High') ? 0.8 : table.qualityUsage?.includes('Medium') ? 0.5 : 0.2,
-        semanticCoverageScore: 0.7,
-        isActive: true,
+        // Schema tables don't have business metrics, so we set reasonable defaults
+        // These will be overridden when the table is edited and saved as business metadata
+        importanceScore: 0.5, // Default medium importance
+        usageFrequency: 0.3,   // Default low usage
+        semanticCoverageScore: 0.2, // Default low coverage
+        isActive: table.isActive !== undefined ? table.isActive : true,
         dataGovernancePolicies: table.ruleGovernance ? [table.ruleGovernance] : [],
         updatedDate: table.lastUpdated || '',
         createdBy: 'System',
@@ -92,10 +120,11 @@ export default function BusinessMetadata() {
         businessOwner: 'Not specified',
         primaryUseCase: 'No primary use case defined',
         businessContext: table.description || 'No context provided',
+        // Schema discovery tables don't have business metrics, use defaults
         importanceScore: 0.5,
         usageFrequency: 0.3,
         semanticCoverageScore: 0.2,
-        isActive: true,
+        isActive: table.isActive !== undefined ? table.isActive : true,
         dataGovernancePolicies: [],
         updatedDate: table.lastUpdated ? new Date(table.lastUpdated).toISOString() : '',
         createdBy: 'System',
@@ -378,10 +407,17 @@ export default function BusinessMetadata() {
               Importance
             </Text>
             <Tag
-              color={record.importanceScore > 0.8 ? 'red' : record.importanceScore > 0.6 ? 'orange' : 'green'}
+              color={
+                record.importanceScore > (record.importanceScore <= 1 ? 0.8 : 8) ? 'red' :
+                record.importanceScore > (record.importanceScore <= 1 ? 0.6 : 6) ? 'orange' : 'green'
+              }
               style={{ fontSize: '11px', minWidth: '45px' }}
             >
-              {record.importanceScore ? (record.importanceScore * 10).toFixed(1) : 'N/A'}
+              {record.importanceScore !== undefined && record.importanceScore !== null
+                ? (record.importanceScore <= 1
+                   ? (record.importanceScore * 10).toFixed(1)  // 0-1 scale, multiply by 10
+                   : record.importanceScore.toFixed(1))        // 1-10 scale, use as is
+                : 'N/A'}
             </Tag>
           </div>
           <div style={{ marginBottom: '6px' }}>
@@ -392,7 +428,11 @@ export default function BusinessMetadata() {
               color="cyan"
               style={{ fontSize: '11px', minWidth: '45px' }}
             >
-              {record.usageFrequency ? (record.usageFrequency * 100).toFixed(0) + '%' : 'N/A'}
+              {record.usageFrequency !== undefined && record.usageFrequency !== null
+                ? (record.usageFrequency <= 1
+                   ? (record.usageFrequency * 100).toFixed(0) + '%'  // 0-1 scale, convert to percentage
+                   : record.usageFrequency.toFixed(0) + '%')         // Already percentage, use as is
+                : 'N/A'}
             </Tag>
           </div>
           {record.semanticCoverageScore > 0 && (
@@ -401,10 +441,14 @@ export default function BusinessMetadata() {
                 Coverage
               </Text>
               <Tag
-                color={record.semanticCoverageScore > 0.8 ? 'green' : 'orange'}
+                color={
+                  record.semanticCoverageScore > (record.semanticCoverageScore <= 1 ? 0.8 : 80) ? 'green' : 'orange'
+                }
                 style={{ fontSize: '11px', minWidth: '45px' }}
               >
-                {(record.semanticCoverageScore * 100).toFixed(0)}%
+                {record.semanticCoverageScore <= 1
+                  ? (record.semanticCoverageScore * 100).toFixed(0) + '%'  // 0-1 scale, convert to percentage
+                  : record.semanticCoverageScore.toFixed(0) + '%'}         // Already percentage, use as is
               </Tag>
             </div>
           )}
@@ -515,6 +559,24 @@ export default function BusinessMetadata() {
         </Space>
       }
     >
+      {/* Debug Info Alert */}
+      {displayTables && displayTables.length > 0 && (
+        <Alert
+          message={`Debug: Using ${businessTables && businessTables.length > 0 ? 'Business Tables' : 'Schema Tables'}`}
+          description={`Found ${displayTables.length} tables. First table sample: ${JSON.stringify({
+            tableName: displayTables[0]?.tableName,
+            importanceScore: displayTables[0]?.importanceScore,
+            usageFrequency: displayTables[0]?.usageFrequency,
+            semanticCoverageScore: displayTables[0]?.semanticCoverageScore,
+            hasMetrics: displayTables[0]?.importanceScore !== undefined,
+            dataSource: businessTables && businessTables.length > 0 ? 'business' : 'schema'
+          }, null, 2)}`}
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
       {/* API Status Alert */}
       {useMockData && (
         <Alert

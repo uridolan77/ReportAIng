@@ -5,6 +5,12 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // Define environment variables for browser
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    'process.env.REACT_APP_PERFORMANCE_ENDPOINT': JSON.stringify(process.env.REACT_APP_PERFORMANCE_ENDPOINT || ''),
+    'process.env.REACT_APP_VAPID_PUBLIC_KEY': JSON.stringify(process.env.REACT_APP_VAPID_PUBLIC_KEY || ''),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
