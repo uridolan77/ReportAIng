@@ -3,8 +3,7 @@ import { Card, Input, Button, Space, Typography, List, Avatar, Spin, Alert } fro
 import { SendOutlined, UserOutlined, RobotOutlined, HistoryOutlined } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
 import { SqlEditor, Chart } from '@shared/components/core'
-import { useExecuteEnhancedQueryMutation } from '@shared/store/api/queryApi'
-import { useEnhancedQueryExecution } from '@shared/hooks/useEnhancedApi'
+import { useExecuteEnhancedQueryMutation } from '@shared/store/api/chatApi'
 import { useApiMode } from '@shared/components/core/ApiModeToggle'
 import { useSocket } from '@shared/services/socketService'
 
@@ -35,7 +34,6 @@ export default function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const [executeQuery, { isLoading: isQueryLoading }] = useExecuteEnhancedQueryMutation()
-  const { mutate: executeEnhancedQuery } = useEnhancedQueryExecution()
   const { useMockData } = useApiMode()
   const socket = useSocket()
 
@@ -69,18 +67,21 @@ export default function ChatInterface() {
     try {
       const result = await executeQuery({
         query: inputValue,
-        includeExplanation: true,
-        optimizeForPerformance: true,
+        options: {
+          includeSemanticAnalysis: true,
+          enableStreaming: false,
+          maxResults: 100
+        }
       }).unwrap()
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: result.explanation || 'Query executed successfully',
+        content: result.message.content || 'Query executed successfully',
         timestamp: new Date(),
-        sql: result.sql,
-        results: result.results,
-        metadata: result.metadata,
+        sql: result.message.sql,
+        results: result.message.results,
+        metadata: result.message.resultMetadata,
       }
 
       setMessages(prev => [...prev, assistantMessage])

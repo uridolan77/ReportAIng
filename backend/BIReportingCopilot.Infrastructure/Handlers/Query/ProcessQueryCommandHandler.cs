@@ -43,7 +43,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
 
             // Step 1: Check cache first
             await NotifyProgress(request.UserId, queryId, "cache_check", "Checking query cache", 5);
-            var cachedResult = await CheckCacheAsync(request);
+            var cachedResult = await CheckCacheAsync(request, cancellationToken);
             if (cachedResult != null)
             {
                 cachedResult.QueryId = queryId;
@@ -78,6 +78,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
 
             // Step 5: Generate SQL with enhanced context
             await NotifyProgress(request.UserId, queryId, "ai_processing", "Generating optimized SQL with AI", 40);
+            _logger.LogInformation("🔍 [PROCESS-QUERY] About to send GenerateSqlCommand for question: {Question}", request.Question);
             var sqlResult = await _mediator.Send(new GenerateSqlCommand
             {
                 Question = request.Question,
@@ -87,6 +88,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
                 ProviderId = request.Options.ProviderId,
                 ModelId = request.Options.ModelId
             }, cancellationToken);
+            _logger.LogInformation("🔍 [PROCESS-QUERY] GenerateSqlCommand completed. Success: {Success}, SQL: {Sql}", sqlResult.Success, sqlResult.Sql?.Substring(0, Math.Min(100, sqlResult.Sql?.Length ?? 0)) + "...");
 
             if (!sqlResult.Success)
             {
@@ -194,7 +196,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
             }
 
             // Step 10: Cache result if enabled
-            await CacheResultIfEnabled(request, response);
+            await CacheResultIfEnabled(request, response, cancellationToken);
 
             // Step 11: Log successful query
             await LogQueryAsync(request, finalSql, true, totalExecutionTime);
@@ -218,7 +220,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
         }
     }
 
-    private async Task<QueryResponse?> CheckCacheAsync(ProcessQueryCommand request)
+    private async Task<QueryResponse?> CheckCacheAsync(ProcessQueryCommand request, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -246,7 +248,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
                     MaxResults = 5
                 };
 
-                var semanticResult = await _mediator.Send(semanticCacheCommand);
+                var semanticResult = await _mediator.Send(semanticCacheCommand, cancellationToken);
                 if (semanticResult?.IsHit == true)
                 {
                     _logger.LogInformation("🎯 Enhanced semantic cache hit - Similarity: {Similarity:P2} for query: {Question}",
@@ -263,7 +265,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
 
             // Fallback to traditional cache
             var cacheKey = GenerateQueryHash(request.Question);
-            var cachedResult = await _mediator.Send(new GetCachedQueryQuery { QueryHash = cacheKey });
+            var cachedResult = await _mediator.Send(new GetCachedQueryQuery { QueryHash = cacheKey }, cancellationToken);
 
             if (cachedResult != null)
             {
@@ -282,7 +284,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
         }
     }
 
-    private async Task CacheResultIfEnabled(ProcessQueryCommand request, QueryResponse response)
+    private async Task CacheResultIfEnabled(ProcessQueryCommand request, QueryResponse response, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -304,7 +306,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
                         Expiry = TimeSpan.FromHours(24)
                     };
 
-                    await _mediator.Send(storeSemanticCommand);
+                    await _mediator.Send(storeSemanticCommand, cancellationToken);
                     _logger.LogInformation("💾 Query stored in enhanced semantic cache: {Question}", request.Question);
                 }
 
@@ -315,7 +317,7 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
                     QueryHash = cacheKey,
                     Response = response,
                     Expiry = TimeSpan.FromHours(24)
-                });
+                }, cancellationToken);
                 _logger.LogInformation("💾 Query result cached (traditional): {Question}", request.Question);
             }
         }

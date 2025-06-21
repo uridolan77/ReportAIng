@@ -13,7 +13,7 @@ import {
 import { PageLayout } from '@shared/components/core/Layout'
 import { Chart } from '@shared/components/core'
 import { useGetSystemStatisticsQuery, useGetQueryAnalyticsQuery } from '@shared/store/api/adminApi'
-import { useEnhancedSystemStatistics, useEnhancedCostMetrics } from '@shared/hooks/useEnhancedApi'
+// Enhanced API hooks removed - using standard RTK Query hooks
 import { useApiMode } from '@shared/components/core/ApiModeToggle'
 import { useCostMetrics, useCostAlerts } from '@shared/hooks/useCostMetrics'
 import { usePerformanceAlerts } from '@shared/hooks/usePerformanceMonitoring'
@@ -21,15 +21,12 @@ import { usePerformanceAlerts } from '@shared/hooks/usePerformanceMonitoring'
 const { Title } = Typography
 
 export default function Dashboard() {
-  // Enhanced API calls with automatic fallback
-  const { data: systemStats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useEnhancedSystemStatistics()
+  // Standard API calls
+  const { data: systemStats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useGetSystemStatisticsQuery()
   const { data: queryAnalytics, isLoading: analyticsLoading } = useGetQueryAnalyticsQuery({ period: 'week' })
-  const { data: costData, isLoading: costLoading, refetch: refetchCost } = useEnhancedCostMetrics('7d')
   const { useMockData } = useApiMode()
 
-  // Cost and Performance Metrics
-  const costAnalytics = costData?.analytics
-  const costRealTime = costData?.realTime
+  // Cost and Performance Metrics - using standard hooks
   const { alerts: costAlerts, criticalCount: costCriticalCount } = useCostAlerts()
   const { criticalAlerts: perfCriticalAlerts, highAlerts: perfHighAlerts } = usePerformanceAlerts()
 

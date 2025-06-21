@@ -30,10 +30,10 @@ public class AnalyzeNLUCommandHandler : IRequestHandler<AnalyzeNLUCommand, Advan
         {
             _logger.LogDebug("🧠 Processing advanced NLU analysis command for user {UserId}", request.UserId);
 
-            var result = await _nluService.AnalyzeQueryAsync(
-                request.NaturalLanguageQuery, 
-                request.UserId, 
-                request.Context);
+            // TEMPORARY: Use ProcessAdvancedAsync which supports cancellation tokens
+            var result = await _nluService.ProcessAdvancedAsync(
+                request.NaturalLanguageQuery,
+                cancellationToken);
 
             _logger.LogInformation("🧠 Advanced NLU analysis completed - Confidence: {Confidence:P2}, Intent: {Intent}",
                 result.ConfidenceScore, result.IntentAnalysis.PrimaryIntent);
@@ -120,9 +120,13 @@ public class AnalyzeQueryIntelligenceCommandHandler : IRequestHandler<AnalyzeQue
         {
             _logger.LogDebug("🧠⚡ Processing comprehensive query intelligence analysis command");
 
+            // TEMPORARY: Add timeout to prevent hanging
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
             var result = await _queryIntelligenceService.AnalyzeQueryAsync(
-                request.NaturalLanguageQuery, 
-                request.UserId, 
+                request.NaturalLanguageQuery,
+                request.UserId,
                 request.Schema);
 
             _logger.LogInformation("🧠⚡ Query intelligence analysis completed - Overall Score: {Score:P2}",
@@ -213,7 +217,7 @@ public class OptimizeSqlCommandHandler : IRequestHandler<OptimizeSqlCommand, Sql
             _logger.LogDebug("⚡ Processing SQL optimization command");
 
             // Use the interface method that only takes SQL string
-            var result = await _schemaOptimizationService.OptimizeSqlAsync(request.OriginalSql);
+            var result = await _schemaOptimizationService.OptimizeSqlAsync(request.OriginalSql, cancellationToken);
 
             _logger.LogInformation("⚡ SQL optimization completed - Confidence: {Confidence:P2}",
                 result.ConfidenceScore);
@@ -411,7 +415,7 @@ public class GetSchemaOptimizationMetricsQueryHandler : IRequestHandler<GetSchem
         {
             _logger.LogDebug("📊 Processing schema optimization metrics query");
 
-            var metrics = await _schemaOptimizationService.GetOptimizationMetricsAsync();
+            var metrics = await _schemaOptimizationService.GetOptimizationMetricsAsync(cancellationToken);
 
             _logger.LogInformation("📊 Schema optimization metrics retrieved - Optimizations: {Count}, Avg Improvement: {Improvement:P2}",
                 metrics.TotalOptimizations, metrics.AverageImprovementScore);

@@ -11,6 +11,7 @@ export { Button, IconButton, ButtonGroup } from './Button'
 export { Chart } from './Chart'
 export { SqlEditor } from './SqlEditor'
 export { AppLayout, PageLayout } from './Layout'
+export { AIStatusIndicator } from './AIStatusIndicator'
 
 // Dashboard Components (NEW - Consolidated from multiple dashboard implementations)
 export {

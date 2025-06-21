@@ -22,8 +22,8 @@ import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import {
   useCreateBusinessTableMutation,
   useUpdateBusinessTableMutation,
-  useGetBusinessTableQuery,
   useGetBusinessTablesQuery,
+  useGetBusinessTableQuery,
   type BusinessTableInfoDto,
   type BusinessColumnInfoDto
 } from '@shared/store/api/businessApi'
@@ -81,15 +81,7 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
 
   const tableIdAsNumber = isBusinessTable ? Number(table.id) : (matchingBusinessTable?.id || 0)
 
-  console.log('🔍 Table analysis:', {
-    id: table?.id,
-    hasNumericId,
-    hasBusinessData,
-    isBusinessTable,
-    isSchemaWithBusinessData,
-    isNewTemplate,
-    matchingBusinessTable: matchingBusinessTable?.id
-  })
+
 
   // Fetch the actual business table data if we found a matching one
   const { data: actualBusinessTableData, isLoading: businessTableLoading } = useGetBusinessTableQuery(
@@ -97,50 +89,19 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
     { skip: !matchingBusinessTable?.id }
   )
 
-  // Use columns from the table data instead of fetching separately
+  // Use columns from table data directly (no separate API call needed)
   const columns = actualBusinessTableData?.columns || table?.columns || []
-  const columnsLoading = businessTableLoading
-  const columnsError = null
 
-  // Debug logging for columns
-  useEffect(() => {
-    if (table?.id) {
-      console.log('🔍 Table ID:', table.id, 'Is Business Table:', isBusinessTable)
-      console.log('🔢 Table ID as Number:', tableIdAsNumber)
-      if (isBusinessTable) {
-        console.log('📊 Columns data:', columns)
-        console.log('❌ Columns error:', columnsError)
-        console.log('⏳ Columns loading:', columnsLoading)
-      } else {
-        console.log('ℹ️ Schema table - columns not available via business API')
-      }
-    }
-  }, [table?.id, isBusinessTable, tableIdAsNumber, columns, columnsError, columnsLoading])
+
 
   // We're "editing" if we have a table with business data (either real business table or schema with business context)
   const isEditing = isBusinessTable || isSchemaWithBusinessData
   const isLoading = isCreating || isUpdating
 
   useEffect(() => {
-    console.log('🔄 BusinessTableEditor useEffect triggered:', { open, table, isEditing })
-
     if (open && table) {
-      console.log('🔍 BusinessTableEditor received table data:', table)
-      console.log('🔍 Table type analysis:', {
-        isEditing,
-        isBusinessTable,
-        isSchemaWithBusinessData,
-        isNewTemplate,
-        tableId: table.id,
-        tableIdType: typeof table.id,
-        matchingBusinessTable: matchingBusinessTable?.id,
-        actualBusinessTableData: actualBusinessTableData?.id,
-        businessTableLoading
-      })
-
       // Use actual business table data if available, otherwise use passed table data
       const tableDataToUse = actualBusinessTableData || table
-      console.log('📊 Using table data:', tableDataToUse)
 
       // Helper function to convert arrays/objects to strings for form display
       const convertToString = (value: any) => {
@@ -193,18 +154,9 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
         updatedDate: tableDataToUse.updatedDate ? new Date(tableDataToUse.updatedDate).toLocaleString() : '',
       }
 
-      console.log('📝 Setting form values:', formValues)
-      console.log('📝 Form instance:', form)
       form.setFieldsValue(formValues)
-
-      // Verify the values were set
-      setTimeout(() => {
-        const currentValues = form.getFieldsValue()
-        console.log('✅ Form values after setting:', currentValues)
-      }, 100)
     } else if (open) {
       // New table creation
-      console.log('🆕 Creating new table - no table data provided')
       form.resetFields()
       form.setFieldsValue({
         isActive: true,
@@ -212,8 +164,6 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
         usageFrequency: 0.5,
         semanticCoverageScore: 0.0,
       })
-    } else if (!open) {
-      console.log('🔒 Modal closed - not setting form values')
     }
   }, [open, table, form, isEditing, actualBusinessTableData, businessTableLoading])
 
@@ -535,9 +485,9 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                     label="Usage Patterns"
                   >
                     <JsonEditor
-                      placeholder="Describe how this table is typically used (JSON array or text)"
+                      placeholder="Describe how this table is typically used (JSON array or object)"
                       allowArrays={true}
-                      allowObjects={false}
+                      allowObjects={true}
                       allowInlineStringEdit={true}
                     />
                   </Form.Item>
@@ -555,6 +505,7 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                       placeholder="Business processes that use this table"
                       allowArrays={true}
                       allowObjects={false}
+                      allowInlineStringEdit={true}
                     />
                   </Form.Item>
                 </Col>
@@ -595,7 +546,7 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                   >
                     <JsonEditor
                       placeholder="Describe relationships with other tables"
-                      allowArrays={false}
+                      allowArrays={true}
                       allowObjects={true}
                       allowInlineStringEdit={true}
                     />
@@ -649,14 +600,6 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                     >
                       Add Column
                     </Button>
-                    {columnsLoading && (
-                      <Text style={{ marginLeft: 16, color: '#1890ff' }}>Loading columns...</Text>
-                    )}
-                    {columnsError && (
-                      <Text style={{ marginLeft: 16, color: '#ff4d4f' }}>
-                        Error loading columns: {JSON.stringify(columnsError)}
-                      </Text>
-                    )}
                   </div>
 
                   <Table
@@ -665,8 +608,6 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                     rowKey="id"
                     size="small"
                     pagination={false}
-                    scroll={{ y: 400 }}
-                    loading={columnsLoading}
                   />
                 </>
               ) : (
@@ -783,6 +724,7 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                       placeholder="Hints and context for Large Language Models"
                       allowArrays={true}
                       allowObjects={false}
+                      allowInlineStringEdit={true}
                     />
                   </Form.Item>
                 </Col>
@@ -795,6 +737,7 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
                       placeholder="Hints about query complexity and optimization"
                       allowArrays={true}
                       allowObjects={false}
+                      allowInlineStringEdit={true}
                     />
                   </Form.Item>
                 </Col>
@@ -871,7 +814,7 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
       <Modal
         title={
           isEditing
-            ? `Edit Business Table: ${table?.schemaName}.${table?.tableName}`
+            ? `Edit Business Table: ${table?.businessName || `${table?.schemaName}.${table?.tableName}`}`
             : table?.schemaName && table?.tableName
               ? `Create Business Metadata: ${table.schemaName}.${table.tableName}`
               : 'Add Business Table'

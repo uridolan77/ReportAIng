@@ -403,10 +403,23 @@ builder.Services.AddSingleton(provider =>
     var openAIConfig = configuration.GetSection("OpenAI");
     var openAIApiKey = openAIConfig["ApiKey"];
 
+    logger.LogInformation("🔍 DEBUG: OpenAI API Key value: '{ApiKey}' (Length: {Length})",
+        openAIApiKey?.Substring(0, Math.Min(20, openAIApiKey?.Length ?? 0)) + "...",
+        openAIApiKey?.Length ?? 0);
+
     if (!string.IsNullOrEmpty(openAIApiKey) && openAIApiKey != "your-openai-api-key-here")
     {
-        logger.LogInformation("Configuring OpenAI client");
-        return new Azure.AI.OpenAI.OpenAIClient(openAIApiKey);
+        // Check if it's still an Azure Key Vault placeholder
+        if (openAIApiKey.StartsWith("{azurevault:"))
+        {
+            logger.LogWarning("🚨 OpenAI API Key is still an Azure Key Vault placeholder: {ApiKey}", openAIApiKey);
+            logger.LogWarning("Azure Key Vault resolution is not working. Using fallback.");
+        }
+        else
+        {
+            logger.LogInformation("Configuring OpenAI client");
+            return new Azure.AI.OpenAI.OpenAIClient(openAIApiKey);
+        }
     }
 
     logger.LogWarning("No valid OpenAI configuration found. AI features will use fallback responses.");

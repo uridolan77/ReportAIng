@@ -3,10 +3,7 @@
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL: string
   readonly VITE_API_TIMEOUT: string
-  readonly VITE_USE_MOCK_DATA: string
-  readonly VITE_MOCK_DELAY: string
-  readonly VITE_FALLBACK_TO_MOCK: string
-  readonly VITE_MOCK_LOGIN_ENABLED: string
+  // Mock data environment variables removed
   readonly VITE_DEBUG_MODE: string
   readonly VITE_ENABLE_DEVTOOLS: string
   readonly VITE_BUILD_TIME: string

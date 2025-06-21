@@ -23,7 +23,7 @@ import {
   type DashboardMetric,
 } from '@shared/components/core'
 import { useGetSystemStatisticsQuery } from '@shared/store/api/adminApi'
-import { useEnhancedSystemStatistics, useEnhancedCostMetrics } from '@shared/hooks/useEnhancedApi'
+// Enhanced API hooks removed - using standard RTK Query hooks
 import { useCostAlerts } from '@shared/hooks/useCostMetrics'
 import { usePerformanceAlerts } from '@shared/hooks/usePerformanceAlerts'
 

@@ -12,23 +12,13 @@ import {
   ExperimentOutlined, 
   InfoCircleOutlined 
 } from '@ant-design/icons'
-import { ApiToggleService } from '../../services/apiToggleService'
+// Mock data functionality removed
 
 const { Text } = Typography
 
 export const ApiModeToggle: React.FC = () => {
-  const [useMockData, setUseMockData] = React.useState(
-    ApiToggleService.getConfig().useMockData
-  )
+  const [useMockData, setUseMockData] = React.useState(false)
   const [isConnected, setIsConnected] = React.useState(false)
-
-  // Listen to service config changes
-  React.useEffect(() => {
-    const unsubscribe = ApiToggleService.addListener((config) => {
-      setUseMockData(config.useMockData)
-    })
-    return unsubscribe
-  }, [])
 
   // Check API connectivity status
   React.useEffect(() => {
@@ -52,18 +42,8 @@ export const ApiModeToggle: React.FC = () => {
   }, [])
 
   const handleToggle = (checked: boolean) => {
-    // Update the global API toggle service
-    ApiToggleService.updateConfig({
-      useMockData: checked,
-      fallbackToMock: true,
-      debugMode: import.meta.env.DEV
-    })
-
-    // Store preference in localStorage
-    localStorage.setItem('apiMode', checked ? 'mock' : 'real')
-
-    // Note: No page reload needed - components will react to the service change
-    console.log(`🔄 API Mode switched to: ${checked ? 'Mock Data' : 'Real API'}`)
+    // Mock data functionality removed
+    console.log('Mock data functionality has been removed')
   }
 
   const getModeInfo = () => {
@@ -155,51 +135,17 @@ export const ApiModeToggle: React.FC = () => {
 
 // Hook for components that need to know the current API mode
 export const useApiMode = () => {
-  const [config, setConfig] = React.useState(ApiToggleService.getConfig())
-
-  React.useEffect(() => {
-    // Listen for service config changes
-    const unsubscribe = ApiToggleService.addListener(setConfig)
-
-    // Also listen for localStorage changes (for cross-tab sync)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'apiMode') {
-        const savedMode = e.newValue
-        const useMockData = savedMode === 'mock'
-        ApiToggleService.updateConfig({ useMockData })
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-
-    return () => {
-      unsubscribe()
-      window.removeEventListener('storage', handleStorageChange)
-    }
-  }, [])
-
   return {
-    useMockData: config.useMockData,
-    fallbackToMock: config.fallbackToMock,
-    debugMode: config.debugMode,
+    useMockData: false,
+    fallbackToMock: false,
+    debugMode: false,
     toggleMode: (useMock: boolean) => {
-      ApiToggleService.updateConfig({
-        useMockData: useMock
-      })
-      localStorage.setItem('apiMode', useMock ? 'mock' : 'real')
+      console.log('Mock data functionality has been removed')
     }
   }
 }
 
 // Initialize API mode from localStorage on app start
 export const initializeApiMode = () => {
-  const savedMode = localStorage.getItem('apiMode')
-  const useMockData = savedMode === 'mock' ||
-                     (savedMode === null && import.meta.env.DEV)
-
-  ApiToggleService.updateConfig({
-    useMockData,
-    fallbackToMock: true,
-    debugMode: import.meta.env.DEV
-  })
+  // Mock data functionality removed
 }

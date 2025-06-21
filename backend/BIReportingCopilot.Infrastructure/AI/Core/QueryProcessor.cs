@@ -591,13 +591,13 @@ public class QueryProcessor : IQueryProcessor
         }
     }
 
-    private async Task<ProcessedQuery> CreateFallbackProcessedQuery(string naturalLanguageQuery, string userId)
+    private async Task<ProcessedQuery> CreateFallbackProcessedQuery(string naturalLanguageQuery, string userId, CancellationToken cancellationToken = default)
     {
         try
         {
             // Use the basic OpenAI service as fallback
-            var fallbackSql = await _aiService.GenerateSQLAsync(naturalLanguageQuery);
-            var fallbackConfidence = await _aiService.CalculateConfidenceScoreAsync(naturalLanguageQuery, fallbackSql);
+            var fallbackSql = await _aiService.GenerateSQLAsync(naturalLanguageQuery, null, cancellationToken);
+            var fallbackConfidence = await _aiService.CalculateConfidenceScoreAsync(naturalLanguageQuery, fallbackSql, cancellationToken);
 
             return new ProcessedQuery
             {
@@ -664,17 +664,38 @@ public class QueryProcessor : IQueryProcessor
     {
         try
         {
+            _logger.LogInformation("🔍 [QUERY-PROCESSOR] ProcessQueryWithAnalysisAsync called: {Query}", naturalLanguageQuery);
             _logger.LogInformation("🔍 Processing query with analysis: {Query}", naturalLanguageQuery);
 
             // Semantic analysis
+            _logger.LogInformation("🔍 [QUERY-PROCESSOR] About to call semantic analyzer");
             var semanticAnalysis = await _semanticAnalyzer.AnalyzeAsync(naturalLanguageQuery, cancellationToken);
 
             // Query classification
-            var classification = await _queryClassifier.ClassifyQueryAsync(naturalLanguageQuery);            // Generate SQL
+            var classification = await _queryClassifier.ClassifyQueryAsync(naturalLanguageQuery);
+
+            // Convert QueryClassification to QueryClassificationResult for compatibility
+            var classificationResult = new QueryClassificationResult
+            {
+                QueryType = classification.Category.ToString(),
+                Intent = classification.Category.ToString(),
+                Confidence = classification.ConfidenceScore,
+                Categories = new List<string> { classification.Category.ToString() },
+                Scores = new Dictionary<string, double>
+                {
+                    [classification.Category.ToString()] = classification.ConfidenceScore
+                }
+            };
+
+            // Generate SQL
+            _logger.LogInformation("🔍 [QUERY-PROCESSOR] About to call _aiService.GenerateSQLAsync");
             var sql = await _aiService.GenerateSQLAsync(naturalLanguageQuery, null, cancellationToken);
+            _logger.LogInformation("🔍 [QUERY-PROCESSOR] _aiService.GenerateSQLAsync completed. SQL: {Sql}", sql?.Length > 100 ? sql.Substring(0, 100) + "..." : sql ?? "null");
 
             // Calculate confidence
-            var confidence = await _aiService.CalculateConfidenceScoreAsync(naturalLanguageQuery, sql);
+            _logger.LogInformation("🔍 [QUERY-PROCESSOR] About to calculate confidence score");
+            var confidence = await _aiService.CalculateConfidenceScoreAsync(naturalLanguageQuery, sql, cancellationToken);
+            _logger.LogInformation("🔍 [QUERY-PROCESSOR] Confidence calculation completed: {Confidence}", confidence);
 
             return new QueryProcessingResult
             {
@@ -690,17 +711,7 @@ public class QueryProcessor : IQueryProcessor
                     ProcessedQuery = naturalLanguageQuery,
                     Metadata = semanticAnalysis.Metadata
                 },
-                Classification = new QueryClassificationResult
-                {
-                    QueryType = classification.Category.ToString(),
-                    Intent = classification.Category.ToString(),
-                    Confidence = classification.ConfidenceScore,
-                    Categories = new List<string> { classification.Category.ToString() },
-                    Scores = new Dictionary<string, double>
-                    {
-                        [classification.Category.ToString()] = classification.ConfidenceScore
-                    }
-                },
+                Classification = classificationResult,
                 ProcessingTime = TimeSpan.FromMilliseconds(100), // Placeholder
                 Suggestions = (await GetQuerySuggestionsAsync(naturalLanguageQuery)).Select(s => s.Text).ToList(),
                 Warnings = new List<string>(), // TODO: Implement SQL warning extraction
@@ -818,12 +829,15 @@ public class QueryProcessor : IQueryProcessor
     {
         try
         {
+            _logger.LogInformation("🔍 [QUERY-PROCESSOR] ProcessQueryAsync called for user {UserId}: {Query}", userId, query);
             _logger.LogInformation("Processing query for user {UserId}: {Query}", userId, query);
-            
+
             // Use the existing ProcessQueryWithAnalysisAsync method with user context
             var context = $"user:{userId}";
+            _logger.LogInformation("🔍 [QUERY-PROCESSOR] About to call ProcessQueryWithAnalysisAsync");
             var result = await ProcessQueryWithAnalysisAsync(query, context, cancellationToken);
-            
+
+            _logger.LogInformation("🔍 [QUERY-PROCESSOR] ProcessQueryWithAnalysisAsync completed successfully");
             _logger.LogInformation("Query processed successfully for user {UserId}", userId);
             return result;
         }

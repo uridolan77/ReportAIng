@@ -220,40 +220,7 @@ class RealTimeService {
     this.eventListeners.clear()
   }
 
-  // Mock real-time data for development
-  public startMockUpdates() {
-    if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_DATA === 'true') {
-      console.log('🎭 Starting mock real-time updates')
-
-      // Mock system metrics
-      setInterval(() => {
-        const mockMetrics: SystemMetrics = {
-          activeUsers: Math.floor(Math.random() * 50) + 20,
-          activeQueries: Math.floor(Math.random() * 10) + 1,
-          systemLoad: Math.random() * 100,
-          memoryUsage: Math.random() * 80 + 20,
-          responseTime: Math.random() * 500 + 100,
-          timestamp: new Date().toISOString()
-        }
-        this.emit('systemMetrics', mockMetrics)
-      }, 5000)
-
-      // Mock cost alerts occasionally
-      setInterval(() => {
-        if (Math.random() < 0.1) { // 10% chance every interval
-          const mockAlert: CostAlert = {
-            id: `alert_${Date.now()}`,
-            type: ['budget_exceeded', 'unusual_spike', 'optimization_opportunity'][Math.floor(Math.random() * 3)] as any,
-            severity: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)] as any,
-            message: 'Mock cost alert for development',
-            timestamp: new Date().toISOString(),
-            acknowledged: false
-          }
-          this.emit('costAlert', mockAlert)
-        }
-      }, 30000)
-    }
-  }
+  // Mock functionality removed
 }
 
 // Singleton instance

@@ -5,7 +5,7 @@ import { UserOutlined, LockOutlined, SafetyOutlined, ThunderboltOutlined } from 
 import { useAppSelector, useAppDispatch } from '../hooks'
 import { selectIsAuthenticated, selectRequiresMfa, selectMfaChallenge, authActions } from '../store/auth'
 import { useLoginMutation, useLoginWithMfaMutation } from '../store/api/authApi'
-import { useEnhancedLogin, useQuickLogin } from '../hooks/useEnhancedApi'
+// Enhanced API hooks removed - using standard RTK Query hooks
 import { useApiMode } from '../components/core/ApiModeToggle'
 
 const { Title, Text } = Typography

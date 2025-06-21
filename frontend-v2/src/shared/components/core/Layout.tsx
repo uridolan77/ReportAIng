@@ -22,6 +22,7 @@ import { useAppSelector, useAppDispatch } from '../../hooks'
 import { selectUser, selectIsAdmin, authActions } from '../../store/auth'
 import { selectSidebarCollapsed, uiActions } from '../../store/ui'
 import { ApiModeToggle } from './ApiModeToggle'
+import { AIStatusIndicator } from './AIStatusIndicator'
 
 const { Header, Sider, Content } = AntLayout
 const { Text } = Typography
@@ -220,6 +221,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           />
           
           <Space size="large">
+            {/* AI Status Indicator */}
+            <AIStatusIndicator />
+
+            <Divider type="vertical" style={{ height: '24px' }} />
+
             {/* API Mode Toggle */}
             <ApiModeToggle />
 

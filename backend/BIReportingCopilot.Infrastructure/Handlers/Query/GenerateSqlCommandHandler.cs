@@ -36,11 +36,12 @@ public class GenerateSqlCommandHandler : IRequestHandler<GenerateSqlCommand, Gen
 
         try
         {
+            _logger.LogInformation("🔍 [SQL-HANDLER] GenerateSqlCommandHandler.Handle called for question: {Question}", request.Question);
             _logger.LogInformation("🤖 Generating SQL for question: {Question}", request.Question);
 
             // Build AI prompt with business context
             var prompt = await _promptService.BuildQueryPromptAsync(request.Question, request.Schema);
-            
+
             // Generate detailed prompt information for debugging
             var promptDetails = await _promptService.BuildDetailedQueryPromptAsync(request.Question, request.Schema);
             
@@ -74,7 +75,7 @@ public class GenerateSqlCommandHandler : IRequestHandler<GenerateSqlCommand, Gen
             }
 
             // Calculate confidence score
-            var confidence = await _aiService.CalculateConfidenceScoreAsync(request.Question, generatedSQL);
+            var confidence = await _aiService.CalculateConfidenceScoreAsync(request.Question, generatedSQL, cancellationToken);
 
             _logger.LogInformation("✅ SQL generated successfully - Length: {Length}, Confidence: {Confidence:P2}, Time: {Time}ms",
                 generatedSQL.Length, confidence, aiExecutionTime);

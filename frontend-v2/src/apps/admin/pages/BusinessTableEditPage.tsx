@@ -31,10 +31,10 @@ export const BusinessTableEditPage: React.FC = () => {
   const isNumericId = tableId && !isNaN(Number(tableId))
   
   // Fetch business table if it's an existing one
-  const { 
-    data: businessTable, 
+  const {
+    data: businessTable,
     isLoading: loadingBusinessTable,
-    error: businessTableError 
+    error: businessTableError
   } = useGetBusinessTableQuery(Number(tableId), {
     skip: !isNumericId || tableId === 'add'
   })
@@ -201,9 +201,9 @@ export const BusinessTableEditPage: React.FC = () => {
     )
   }
 
-  const pageTitle = isNewTable 
+  const pageTitle = isNewTable
     ? (tableId === 'add' ? 'Add New Business Table' : `Add Business Metadata: ${selectedTable?.schemaName}.${selectedTable?.tableName}`)
-    : `Edit Business Table: ${selectedTable?.schemaName}.${selectedTable?.tableName}`
+    : `Edit Business Table: ${selectedTable?.businessName || `${selectedTable?.schemaName}.${selectedTable?.tableName}`}`
 
   return (
     <PageLayout 

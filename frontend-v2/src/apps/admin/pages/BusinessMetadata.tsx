@@ -211,18 +211,33 @@ export default function BusinessMetadata() {
 
   const tableColumns = [
     {
-      title: 'Table Information',
-      dataIndex: 'tableName',
-      key: 'tableName',
-      width: 280,
+      title: 'Business Friendly Name',
+      dataIndex: 'businessName',
+      key: 'businessName',
+      width: 200,
       fixed: 'left' as const,
       render: (text: string, record: BusinessTableInfoDto) => (
         <div style={{ padding: '4px 0' }}>
           <div style={{ marginBottom: '3px' }}>
             <Text strong style={{ fontSize: '13px', color: '#1890ff' }}>
-              {record.schemaName}.{text}
+              {text || record.tableName}
             </Text>
           </div>
+          <div>
+            <Text type="secondary" style={{ fontSize: '10px', color: '#8c8c8c' }}>
+              {record.schemaName}.{record.tableName}
+            </Text>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Table Information',
+      dataIndex: 'tableName',
+      key: 'tableName',
+      width: 280,
+      render: (text: string, record: BusinessTableInfoDto) => (
+        <div style={{ padding: '4px 0' }}>
           <div style={{ marginBottom: '2px' }}>
             <Text type="secondary" style={{ fontSize: '11px', lineHeight: '1.3' }}>
               {record.businessPurpose && record.businessPurpose !== 'No business purpose defined'
@@ -280,65 +295,68 @@ export default function BusinessMetadata() {
     {
       title: 'Quality & Usage',
       key: 'metrics',
-      width: 200,
+      width: 280,
       align: 'center' as const,
       render: (record: BusinessTableInfoDto) => (
         <div style={{ padding: '4px 0', textAlign: 'center', lineHeight: '1.2' }}>
-          {/* Importance Score */}
-          <div style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-            <Text style={{ fontSize: '9px', color: '#8c8c8c', minWidth: '28px' }}>
-              Imp:
-            </Text>
-            <Tag
-              color={
-                record.importanceScore > (record.importanceScore <= 1 ? 0.8 : 8) ? 'red' :
-                record.importanceScore > (record.importanceScore <= 1 ? 0.6 : 6) ? 'orange' : 'green'
-              }
-              style={{ fontSize: '10px', minWidth: '35px', margin: 0, padding: '1px 4px' }}
-            >
-              {record.importanceScore !== undefined && record.importanceScore !== null
-                ? (record.importanceScore <= 1
-                   ? (record.importanceScore * 10).toFixed(1)  // 0-1 scale, multiply by 10
-                   : record.importanceScore.toFixed(1))        // 1-10 scale, use as is
-                : 'N/A'}
-            </Tag>
-          </div>
-
-          {/* Usage Frequency */}
-          <div style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-            <Text style={{ fontSize: '9px', color: '#8c8c8c', minWidth: '28px' }}>
-              Use:
-            </Text>
-            <Tag
-              color="cyan"
-              style={{ fontSize: '10px', minWidth: '35px', margin: 0, padding: '1px 4px' }}
-            >
-              {record.usageFrequency !== undefined && record.usageFrequency !== null
-                ? (record.usageFrequency <= 1
-                   ? (record.usageFrequency * 100).toFixed(0) + '%'  // 0-1 scale, convert to percentage
-                   : record.usageFrequency.toFixed(0) + '%')         // Already percentage, use as is
-                : 'N/A'}
-            </Tag>
-          </div>
-
-          {/* Coverage Score - only show if > 0 */}
-          {record.semanticCoverageScore > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-              <Text style={{ fontSize: '9px', color: '#8c8c8c', minWidth: '28px' }}>
-                Cov:
+          {/* Horizontal layout for all metrics */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {/* Importance Score */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <Text style={{ fontSize: '9px', color: '#8c8c8c' }}>
+                Imp:
               </Text>
               <Tag
                 color={
-                  record.semanticCoverageScore > (record.semanticCoverageScore <= 1 ? 0.8 : 80) ? 'green' : 'orange'
+                  record.importanceScore > (record.importanceScore <= 1 ? 0.8 : 8) ? 'red' :
+                  record.importanceScore > (record.importanceScore <= 1 ? 0.6 : 6) ? 'orange' : 'green'
                 }
                 style={{ fontSize: '10px', minWidth: '35px', margin: 0, padding: '1px 4px' }}
               >
-                {record.semanticCoverageScore <= 1
-                  ? (record.semanticCoverageScore * 100).toFixed(0) + '%'  // 0-1 scale, convert to percentage
-                  : record.semanticCoverageScore.toFixed(0) + '%'}         // Already percentage, use as is
+                {record.importanceScore !== undefined && record.importanceScore !== null
+                  ? (record.importanceScore <= 1
+                     ? (record.importanceScore * 10).toFixed(1)  // 0-1 scale, multiply by 10
+                     : record.importanceScore.toFixed(1))        // 1-10 scale, use as is
+                  : 'N/A'}
               </Tag>
             </div>
-          )}
+
+            {/* Usage Frequency */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <Text style={{ fontSize: '9px', color: '#8c8c8c' }}>
+                Use:
+              </Text>
+              <Tag
+                color="cyan"
+                style={{ fontSize: '10px', minWidth: '35px', margin: 0, padding: '1px 4px' }}
+              >
+                {record.usageFrequency !== undefined && record.usageFrequency !== null
+                  ? (record.usageFrequency <= 1
+                     ? (record.usageFrequency * 100).toFixed(0) + '%'  // 0-1 scale, convert to percentage
+                     : record.usageFrequency.toFixed(0) + '%')
+                  : 'N/A'}
+              </Tag>
+            </div>
+
+            {/* Coverage Score - only show if > 0 */}
+            {record.semanticCoverageScore > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                <Text style={{ fontSize: '9px', color: '#8c8c8c' }}>
+                  Cov:
+                </Text>
+                <Tag
+                  color={
+                    record.semanticCoverageScore > (record.semanticCoverageScore <= 1 ? 0.8 : 80) ? 'green' : 'orange'
+                  }
+                  style={{ fontSize: '10px', minWidth: '35px', margin: 0, padding: '1px 4px' }}
+                >
+                  {record.semanticCoverageScore <= 1
+                    ? (record.semanticCoverageScore * 100).toFixed(0) + '%'  // 0-1 scale, convert to percentage
+                    : record.semanticCoverageScore.toFixed(0) + '%'}
+                </Tag>
+              </div>
+            )}
+          </div>
         </div>
       ),
     },
@@ -519,7 +537,7 @@ export default function BusinessMetadata() {
               rowKey="id"
               size="middle"
               bordered
-              scroll={{ x: 1400, y: 'calc(100vh - 320px)' }}
+              scroll={{ x: 1600, y: 'calc(100vh - 320px)' }}
               pagination={{
                 pageSize: 12,
                 showSizeChanger: true,

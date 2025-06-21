@@ -81,7 +81,8 @@ export const BusinessColumnEditor: React.FC<BusinessColumnEditorProps> = ({
       title={isEditing ? 'Edit Business Column' : 'Add Business Column'}
       open={open}
       onCancel={onClose}
-      width={800}
+      width={1200}
+      style={{ top: 20 }}
       footer={[
         <Button key="cancel" onClick={onClose}>
           Cancel
@@ -126,92 +127,106 @@ export const BusinessColumnEditor: React.FC<BusinessColumnEditorProps> = ({
           </Col>
         </Row>
 
-        <Form.Item
-          name="businessMeaning"
-          label="Business Meaning"
-          rules={[{ required: true, message: 'Business meaning is required' }]}
-        >
-          <TextArea 
-            rows={3} 
-            placeholder="Describe what this column represents in business terms..."
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="businessContext"
-          label="Business Context"
-        >
-          <TextArea 
-            rows={2} 
-            placeholder="Additional context about how this column is used..."
-          />
-        </Form.Item>
-
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              name="dataExamples"
-              label="Data Examples"
+              name="businessMeaning"
+              label="Business Meaning"
+              rules={[{ required: true, message: 'Business meaning is required' }]}
             >
-              <TextArea 
-                rows={2} 
-                placeholder="Example values (comma-separated)"
+              <TextArea
+                rows={2}
+                placeholder="Describe what this column represents in business terms..."
               />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item
+              name="businessContext"
+              label="Business Context"
+            >
+              <TextArea
+                rows={2}
+                placeholder="Additional context about how this column is used..."
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item
+              name="dataExamples"
+              label="Data Examples"
+            >
+              <TextArea
+                rows={1}
+                placeholder="Example values (comma-separated)"
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
               name="valueExamples"
               label="Value Examples"
             >
-              <TextArea 
-                rows={2} 
+              <TextArea
+                rows={1}
                 placeholder="Typical value examples"
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="validationRules"
+              label="Validation Rules"
+            >
+              <TextArea
+                rows={1}
+                placeholder="Business validation rules..."
               />
             </Form.Item>
           </Col>
         </Row>
 
         <Form.Item
-          name="validationRules"
-          label="Validation Rules"
-        >
-          <TextArea 
-            rows={2} 
-            placeholder="Business validation rules and constraints..."
-          />
-        </Form.Item>
-
-        <Form.Item
           name="naturalLanguageAliases"
           label="Natural Language Aliases"
         >
-          <TextArea 
-            rows={2} 
-            placeholder="Alternative names users might use (comma-separated)"
-          />
+          <Input placeholder="Alternative names users might use (comma-separated)" />
         </Form.Item>
 
         <Row gutter={16}>
-          <Col span={12}>
+          <Col span={8}>
             <Form.Item
               name="dataLineage"
               label="Data Lineage"
             >
-              <TextArea 
-                rows={2} 
+              <TextArea
+                rows={1}
                 placeholder="Source systems and transformations..."
               />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col span={8}>
             <Form.Item
               name="calculationRules"
               label="Calculation Rules"
             >
-              <TextArea 
-                rows={2} 
+              <TextArea
+                rows={1}
                 placeholder="How calculated fields are derived..."
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="constraintsAndRules"
+              label="Constraints and Rules"
+            >
+              <TextArea
+                rows={1}
+                placeholder="Technical and business constraints..."
               />
             </Form.Item>
           </Col>
@@ -222,16 +237,6 @@ export const BusinessColumnEditor: React.FC<BusinessColumnEditorProps> = ({
           label="Semantic Tags"
         >
           <Input placeholder="Tags for semantic understanding (comma-separated)" />
-        </Form.Item>
-
-        <Form.Item
-          name="constraintsAndRules"
-          label="Constraints and Rules"
-        >
-          <TextArea 
-            rows={2} 
-            placeholder="Technical and business constraints..."
-          />
         </Form.Item>
 
         <Row gutter={16}>

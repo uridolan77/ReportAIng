@@ -63,6 +63,11 @@ public class AIProviderFactory : IAIProviderFactory
             return GetProvider("AzureOpenAI");
         }
 
+        _logger.LogInformation("🔍 DEBUG: Checking OpenAI configuration - IsConfigured: {IsConfigured}, ApiKey: '{ApiKey}' (Length: {Length})",
+            _config.OpenAI.IsConfigured,
+            _config.OpenAI.ApiKey?.Substring(0, Math.Min(20, _config.OpenAI.ApiKey?.Length ?? 0)) + "...",
+            _config.OpenAI.ApiKey?.Length ?? 0);
+
         if (_config.OpenAI.IsConfigured)
         {
             _logger.LogInformation("Using legacy OpenAI provider");

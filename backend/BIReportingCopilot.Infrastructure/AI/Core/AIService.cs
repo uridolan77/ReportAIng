@@ -95,6 +95,7 @@ public class AIService : IAIService
             activity?.SetTag("prompt.length", prompt.Length);
             activity?.SetTag("operation", "sql_generation");
 
+            _logger.LogInformation("🔍 [AI-SERVICE] GenerateSQLAsync called with prompt: {Prompt}", prompt.Length > 100 ? prompt.Substring(0, 100) + "..." : prompt);
             _logger.LogInformation("💬 [CHAT-AI] Building prompt for SQL generation...");
             _logger.LogInformation("💬 [CHAT-AI] User query: {UserQuery}", prompt);
 
@@ -550,7 +551,15 @@ Return only valid JSON.";
     {
         if (_provider == null)
         {
+            _logger.LogInformation("🔍 [AI-SERVICE] Creating AI provider via factory...");
+            _logger.LogInformation("🔍 [AI-SERVICE] About to call _providerFactory.CreateProviderAsync('openai')");
             _provider = await _providerFactory.CreateProviderAsync("openai");
+            _logger.LogInformation("🔍 [AI-SERVICE] AI provider created: {ProviderType}", _provider?.GetType().Name ?? "null");
+            _logger.LogInformation("🔍 [AI-SERVICE] Provider factory call completed successfully");
+        }
+        else
+        {
+            _logger.LogInformation("🔍 [AI-SERVICE] Using cached AI provider: {ProviderType}", _provider?.GetType().Name ?? "null");
         }
         return _provider;
     }
@@ -1020,8 +1029,8 @@ EXAMPLES:
     // Additional methods required by IAIService interface
     public async Task<string> GenerateSQLAsync(string prompt, SchemaMetadata? schema = null, CancellationToken cancellationToken = default)
     {
-        // Simple implementation that delegates to existing methods
-        return await GenerateQueryAsync(prompt, schema, cancellationToken);
+        // Call the actual implementation method to avoid circular dependency
+        return await GenerateSQLAsync(prompt, cancellationToken);
     }
 
     public async Task<string> GenerateVisualizationConfigAsync(string sql, SchemaMetadata? schema = null, CancellationToken cancellationToken = default)

@@ -173,11 +173,41 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 
       const newData = JSON.parse(JSON.stringify(parsedData))
 
-      // For simple object keys (no dots), just update directly
-      if (!inlineEditPath.includes('.') && !inlineEditPath.startsWith('[')) {
+      // Handle different path formats
+      if (inlineEditPath.includes('[') && inlineEditPath.includes(']')) {
+        // Handle object property arrays like "commonJoins[0]", "typicalFilters[1]", etc.
+        const match = inlineEditPath.match(/^([^[]+)\[(\d+)\]$/)
+        if (match) {
+          const propertyName = match[1]
+          const index = parseInt(match[2])
+          if (newData[propertyName] && Array.isArray(newData[propertyName]) &&
+              index >= 0 && index < newData[propertyName].length) {
+            newData[propertyName][index] = inlineEditValue
+          }
+        }
+      } else if (inlineEditPath.startsWith('[') && inlineEditPath.includes('].')) {
+        // Array object property like [0].key, [1].property, etc.
+        const match = inlineEditPath.match(/\[(\d+)\]\.(.+)/)
+        if (match) {
+          const index = parseInt(match[1])
+          const property = match[2]
+          if (Array.isArray(newData) && index >= 0 && index < newData.length) {
+            if (newData[index] && typeof newData[index] === 'object') {
+              newData[index][property] = inlineEditValue
+            }
+          }
+        }
+      } else if (inlineEditPath.startsWith('[') && inlineEditPath.endsWith(']')) {
+        // Simple array index like [0], [1], etc.
+        const index = parseInt(inlineEditPath.slice(1, -1))
+        if (Array.isArray(newData) && index >= 0 && index < newData.length) {
+          newData[index] = inlineEditValue
+        }
+      } else if (!inlineEditPath.includes('.')) {
+        // Simple object property
         newData[inlineEditPath] = inlineEditValue
       } else {
-        // Handle complex paths
+        // Handle complex nested paths
         const pathParts = inlineEditPath.split('.')
 
         let current = newData
@@ -258,10 +288,11 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
           <ul style={{ margin: '4px 0', paddingLeft: 16 }}>
             {parsedData.slice(0, 5).map((item, index) => {
               const isString = typeof item === 'string'
+              const isObject = typeof item === 'object' && item !== null && !Array.isArray(item)
               const isEditingThis = inlineEditPath === `[${index}]`
 
               return (
-                <li key={index} style={{ marginBottom: 2 }}>
+                <li key={index} style={{ marginBottom: 4 }}>
                   {isEditingThis ? (
                     <Space size="small" onClick={(e) => e.stopPropagation()}>
                       <Input
@@ -279,6 +310,85 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
                         ✕
                       </Button>
                     </Space>
+                  ) : isObject ? (
+                    // Render object properties inline
+                    <div style={{ marginLeft: 8 }}>
+                      <Text strong style={{ fontSize: '14px', color: '#666' }}>Object {index + 1}:</Text>
+                      <ul style={{ margin: '4px 0', paddingLeft: 16 }}>
+                        {Object.keys(item).slice(0, 5).map(key => {
+                          const value = item[key]
+                          const isStringValue = typeof value === 'string'
+                          const isEditingThisProperty = inlineEditPath === `[${index}].${key}`
+
+                          return (
+                            <li key={key} style={{ marginBottom: 3 }}>
+                              <Text code style={{ marginRight: 6, fontSize: '14px' }}>{key}:</Text>
+                              {isEditingThisProperty ? (
+                                <Space size="small" onClick={(e) => e.stopPropagation()}>
+                                  <Input
+                                    size="small"
+                                    value={inlineEditValue}
+                                    onChange={(e) => setInlineEditValue(e.target.value)}
+                                    onPressEnter={handleInlineStringSave}
+                                    style={{ width: '90%', minWidth: 150 }}
+                                    autoFocus
+                                  />
+                                  <Button size="small" type="primary" onClick={handleInlineStringSave}>
+                                    ✓
+                                  </Button>
+                                  <Button size="small" onClick={handleInlineStringCancel}>
+                                    ✕
+                                  </Button>
+                                </Space>
+                              ) : (
+                                <Text
+                                  code
+                                  style={{
+                                    cursor: isStringValue && allowInlineStringEdit ? 'pointer' : 'default',
+                                    padding: '2px 4px',
+                                    borderRadius: '2px',
+                                    background: isStringValue && allowInlineStringEdit ? '#f0f8ff' : 'transparent',
+                                    border: isStringValue && allowInlineStringEdit ? '1px solid #d9d9d9' : 'none',
+                                    display: 'inline-block',
+                                    transition: 'all 0.2s',
+                                    fontSize: '14px'
+                                  }}
+                                  className={isStringValue && allowInlineStringEdit ? 'editable-string' : ''}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (isStringValue && allowInlineStringEdit) {
+                                      handleInlineStringEdit(`[${index}].${key}`, value)
+                                    } else {
+                                      handleFullEdit()
+                                    }
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (isStringValue && allowInlineStringEdit) {
+                                      e.currentTarget.style.background = '#e6f7ff'
+                                      e.currentTarget.style.borderColor = '#1890ff'
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (isStringValue && allowInlineStringEdit) {
+                                      e.currentTarget.style.background = '#f0f8ff'
+                                      e.currentTarget.style.borderColor = '#d9d9d9'
+                                    }
+                                  }}
+                                >
+                                  {JSON.stringify(value)}
+                                  {isStringValue && allowInlineStringEdit && (
+                                    <span style={{ marginLeft: 4, fontSize: '10px', color: '#1890ff' }}>✏️</span>
+                                  )}
+                                </Text>
+                              )}
+                            </li>
+                          )
+                        })}
+                        {Object.keys(item).length > 5 && (
+                          <li><Text type="secondary" style={{ fontSize: '12px' }}>... and {Object.keys(item).length - 5} more</Text></li>
+                        )}
+                      </ul>
+                    </div>
                   ) : (
                     <Text
                       code
@@ -348,16 +458,19 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
       const keys = Object.keys(parsedData)
       return (
         <div style={containerStyle} onClick={handleContainerClick}>
-          <Text strong>Object ({keys.length} properties):</Text>
-          <ul style={{ margin: '4px 0', paddingLeft: 16 }}>
+          <Text strong style={{ fontSize: '14px' }}>Object ({keys.length} properties):</Text>
+          <ul style={{ margin: '6px 0', paddingLeft: 16 }}>
             {keys.slice(0, 8).map(key => {
               const value = parsedData[key]
               const isString = typeof value === 'string'
+              const isNumber = typeof value === 'number'
+              const isArray = Array.isArray(value)
+              const isEditable = (isString || isNumber) && allowInlineStringEdit
               const isEditingThis = inlineEditPath === key
 
               return (
-                <li key={key} style={{ marginBottom: 2 }}>
-                  <Text code style={{ marginRight: 4 }}>{key}:</Text>
+                <li key={key} style={{ marginBottom: 4 }}>
+                  <Text code style={{ marginRight: 6, fontSize: '14px' }}>{key}:</Text>
                   {isEditingThis ? (
                     <Space size="small" onClick={(e) => e.stopPropagation()}>
                       <Input
@@ -365,7 +478,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
                         value={inlineEditValue}
                         onChange={(e) => setInlineEditValue(e.target.value)}
                         onPressEnter={handleInlineStringSave}
-                        style={{ width: '90%', minWidth: 200 }}
+                        style={{ width: '300px', minWidth: 250 }}
                         autoFocus
                       />
                       <Button size="small" type="primary" onClick={handleInlineStringSave}>
@@ -375,43 +488,122 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
                         ✕
                       </Button>
                     </Space>
+                  ) : isArray ? (
+                    // Render array items inline with edit capability
+                    <div style={{ display: 'inline-block' }}>
+                      <Text code style={{ fontSize: '14px', marginRight: 4 }}>[</Text>
+                      {value.slice(0, 3).map((item, index) => {
+                        const isStringItem = typeof item === 'string'
+                        const isNumberItem = typeof item === 'number'
+                        const isEditableItem = (isStringItem || isNumberItem) && allowInlineStringEdit
+                        const isEditingThisItem = inlineEditPath === `${key}[${index}]`
+
+                        return (
+                          <span key={index}>
+                            {isEditingThisItem ? (
+                              <Space size="small" onClick={(e) => e.stopPropagation()}>
+                                <Input
+                                  size="small"
+                                  value={inlineEditValue}
+                                  onChange={(e) => setInlineEditValue(e.target.value)}
+                                  onPressEnter={handleInlineStringSave}
+                                  style={{ width: '200px' }}
+                                  autoFocus
+                                />
+                                <Button size="small" type="primary" onClick={handleInlineStringSave}>
+                                  ✓
+                                </Button>
+                                <Button size="small" onClick={handleInlineStringCancel}>
+                                  ✕
+                                </Button>
+                              </Space>
+                            ) : (
+                              <Text
+                                code
+                                style={{
+                                  cursor: isEditableItem ? 'pointer' : 'default',
+                                  padding: '1px 3px',
+                                  borderRadius: '2px',
+                                  background: isEditableItem ? '#f0f8ff' : 'transparent',
+                                  border: isEditableItem ? '1px solid #d9d9d9' : 'none',
+                                  display: 'inline-block',
+                                  transition: 'all 0.2s',
+                                  fontSize: '11px',
+                                  marginRight: index < value.length - 1 ? 4 : 0
+                                }}
+                                className={isEditableItem ? 'editable-string' : ''}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (isEditableItem) {
+                                    handleInlineStringEdit(`${key}[${index}]`, item)
+                                  } else {
+                                    handleFullEdit()
+                                  }
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (isEditableItem) {
+                                    e.currentTarget.style.background = '#e6f7ff'
+                                    e.currentTarget.style.borderColor = '#1890ff'
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (isEditableItem) {
+                                    e.currentTarget.style.background = '#f0f8ff'
+                                    e.currentTarget.style.borderColor = '#d9d9d9'
+                                  }
+                                }}
+                              >
+                                {isStringItem ? `"${item}"` : item}
+                                {isEditableItem && (
+                                  <span style={{ marginLeft: 2, fontSize: '9px', color: '#1890ff' }}>✏️</span>
+                                )}
+                              </Text>
+                            )}
+                            {index < Math.min(value.length, 3) - 1 && <Text code style={{ fontSize: '12px', margin: '0 2px' }}>,</Text>}
+                          </span>
+                        )
+                      })}
+                      {value.length > 3 && <Text type="secondary" style={{ fontSize: '11px', marginLeft: 4 }}>...+{value.length - 3}</Text>}
+                      <Text code style={{ fontSize: '12px', marginLeft: 4 }}>]</Text>
+                    </div>
+
                   ) : (
                     <Text
                       code
                       style={{
-                        cursor: isString && allowInlineStringEdit ? 'pointer' : 'default',
+                        cursor: isEditable ? 'pointer' : 'default',
                         padding: '2px 4px',
                         borderRadius: '2px',
-                        background: isString && allowInlineStringEdit ? '#f0f8ff' : 'transparent',
-                        border: isString && allowInlineStringEdit ? '1px solid #d9d9d9' : 'none',
+                        background: isEditable ? '#f0f8ff' : 'transparent',
+                        border: isEditable ? '1px solid #d9d9d9' : 'none',
                         display: 'inline-block',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        fontSize: '14px'
                       }}
-                      className={isString && allowInlineStringEdit ? 'editable-string' : ''}
+                      className={isEditable ? 'editable-string' : ''}
                       onClick={(e) => {
                         e.stopPropagation()
-                        console.log('Object property clicked:', { key, value, isString, allowInlineStringEdit })
-                        if (isString && allowInlineStringEdit) {
+                        if (isEditable) {
                           handleInlineStringEdit(key, value)
                         } else {
                           handleFullEdit()
                         }
                       }}
                       onMouseEnter={(e) => {
-                        if (isString && allowInlineStringEdit) {
+                        if (isEditable) {
                           e.currentTarget.style.background = '#e6f7ff'
                           e.currentTarget.style.borderColor = '#1890ff'
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (isString && allowInlineStringEdit) {
+                        if (isEditable) {
                           e.currentTarget.style.background = '#f0f8ff'
                           e.currentTarget.style.borderColor = '#d9d9d9'
                         }
                       }}
                     >
                       {JSON.stringify(value)}
-                      {isString && allowInlineStringEdit && (
+                      {isEditable && (
                         <span style={{ marginLeft: 4, fontSize: '10px', color: '#1890ff' }}>✏️</span>
                       )}
                     </Text>
@@ -420,7 +612,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
               )
             })}
             {keys.length > 8 && (
-              <li><Text type="secondary">... and {keys.length - 8} more</Text></li>
+              <li><Text type="secondary" style={{ fontSize: '12px' }}>... and {keys.length - 8} more</Text></li>
             )}
           </ul>
           {!allowInlineStringEdit && (
@@ -451,7 +643,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
               value={inlineEditValue}
               onChange={(e) => setInlineEditValue(e.target.value)}
               onPressEnter={handleInlineStringSave}
-              style={{ width: '90%', minWidth: 200 }}
+              style={{ width: '300px', minWidth: 250 }}
               autoFocus
             />
             <Button size="small" type="primary" onClick={handleInlineStringSave}>
@@ -465,38 +657,37 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
           <Text
             code
             style={{
-              cursor: allowInlineStringEdit && typeof parsedData === 'string' ? 'pointer' : 'default',
+              cursor: allowInlineStringEdit && (typeof parsedData === 'string' || typeof parsedData === 'number') ? 'pointer' : 'default',
               padding: '2px 4px',
               borderRadius: '2px',
-              background: allowInlineStringEdit && typeof parsedData === 'string' ? '#f0f8ff' : 'transparent',
-              border: allowInlineStringEdit && typeof parsedData === 'string' ? '1px solid #d9d9d9' : 'none',
+              background: allowInlineStringEdit && (typeof parsedData === 'string' || typeof parsedData === 'number') ? '#f0f8ff' : 'transparent',
+              border: allowInlineStringEdit && (typeof parsedData === 'string' || typeof parsedData === 'number') ? '1px solid #d9d9d9' : 'none',
               display: 'inline-block',
               transition: 'all 0.2s'
             }}
             onClick={(e) => {
               e.stopPropagation()
-              console.log('Fallback case clicked:', { allowInlineStringEdit, parsedDataType: typeof parsedData, parsedData })
-              if (allowInlineStringEdit && typeof parsedData === 'string') {
+              if (allowInlineStringEdit && (typeof parsedData === 'string' || typeof parsedData === 'number')) {
                 handleInlineStringEdit('value', parsedData)
               } else {
                 handleFullEdit()
               }
             }}
             onMouseEnter={(e) => {
-              if (allowInlineStringEdit && typeof parsedData === 'string') {
+              if (allowInlineStringEdit && (typeof parsedData === 'string' || typeof parsedData === 'number')) {
                 e.currentTarget.style.background = '#e6f7ff'
                 e.currentTarget.style.borderColor = '#1890ff'
               }
             }}
             onMouseLeave={(e) => {
-              if (allowInlineStringEdit && typeof parsedData === 'string') {
+              if (allowInlineStringEdit && (typeof parsedData === 'string' || typeof parsedData === 'number')) {
                 e.currentTarget.style.background = '#f0f8ff'
                 e.currentTarget.style.borderColor = '#d9d9d9'
               }
             }}
           >
             {JSON.stringify(parsedData)}
-            {allowInlineStringEdit && typeof parsedData === 'string' && (
+            {allowInlineStringEdit && (typeof parsedData === 'string' || typeof parsedData === 'number') && (
               <span style={{ marginLeft: 4, fontSize: '10px', color: '#1890ff' }}>✏️</span>
             )}
           </Text>
