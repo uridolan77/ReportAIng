@@ -92,6 +92,11 @@ export const baseApi = createApi({
     'LLMCost',
     'LLMPerformance',
     'LLMDashboard',
+    // Enhanced Business Metadata
+    'EnhancedBusinessTable',
+    'EnhancedBusinessMetadata',
+    'EnhancedGlossary',
+    'EnhancedDomain',
   ],
   endpoints: () => ({}),
 })

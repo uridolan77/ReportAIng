@@ -157,6 +157,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         onClick: () => navigate('/admin/business-metadata'),
       },
       {
+        key: 'admin-metadata-enhanced',
+        icon: <DatabaseOutlined />,
+        label: 'Enhanced Metadata',
+        onClick: () => navigate('/admin/business-metadata-enhanced'),
+      },
+      {
         key: 'admin-analytics',
         icon: <BarChartOutlined />,
         label: 'Analytics',

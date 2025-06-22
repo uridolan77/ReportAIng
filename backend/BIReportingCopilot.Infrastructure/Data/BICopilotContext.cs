@@ -24,6 +24,12 @@ public class BICopilotContext : DbContext
     public DbSet<SchemaMetadataEntity> SchemaMetadata { get; set; }
     public DbSet<Core.Models.UnifiedQueryHistoryEntity> QueryHistory { get; set; } // Query history
     public DbSet<PromptTemplateEntity> PromptTemplates { get; set; }
+
+    // Template Management entities
+    public DbSet<TemplatePerformanceMetricsEntity> TemplatePerformanceMetrics { get; set; }
+    public DbSet<TemplateABTestEntity> TemplateABTests { get; set; }
+    public DbSet<TemplateImprovementSuggestionEntity> TemplateImprovementSuggestions { get; set; }
+
     public DbSet<PromptLogEntity> PromptLogs { get; set; }
     public DbSet<AITuningSettingsEntity> AITuningSettings { get; set; }
     public DbSet<QueryCacheEntity> QueryCache { get; set; }
@@ -124,12 +130,97 @@ public class BICopilotContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.Name, e.Version }).IsUnique();
             entity.HasIndex(e => new { e.IsActive, e.Name });
+            entity.HasIndex(e => e.TemplateKey);
+            entity.HasIndex(e => e.IntentType);
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Version).HasMaxLength(20);
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.CreatedBy).HasMaxLength(256);
-            // Fix decimal precision warning
+            entity.Property(e => e.BusinessPurpose).HasMaxLength(1000);
+            entity.Property(e => e.RelatedBusinessTerms).HasMaxLength(1000);
+            entity.Property(e => e.BusinessFriendlyName).HasMaxLength(200);
+            entity.Property(e => e.NaturalLanguageDescription).HasMaxLength(1000);
+            entity.Property(e => e.BusinessRules).HasMaxLength(2000);
+            entity.Property(e => e.RelationshipContext).HasMaxLength(1000);
+            entity.Property(e => e.DataGovernanceLevel).HasMaxLength(50);
+            entity.Property(e => e.UsageFrequency).HasMaxLength(50);
+            entity.Property(e => e.TemplateKey).HasMaxLength(100);
+            entity.Property(e => e.IntentType).HasMaxLength(50);
+            entity.Property(e => e.Tags).HasMaxLength(1000);
+            // Fix decimal precision warnings
             entity.Property(e => e.SuccessRate).HasPrecision(5, 2);
+            entity.Property(e => e.ImportanceScore).HasPrecision(5, 2);
+        });
+
+        // Configure Template Management entities
+        modelBuilder.Entity<TemplatePerformanceMetricsEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.TemplateId).IsUnique();
+            entity.HasIndex(e => e.TemplateKey);
+            entity.HasIndex(e => e.IntentType);
+            entity.HasIndex(e => e.LastUsedDate);
+            entity.Property(e => e.TemplateKey).HasMaxLength(100);
+            entity.Property(e => e.IntentType).HasMaxLength(50);
+            entity.Property(e => e.CreatedBy).HasMaxLength(256);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(256);
+
+            // Configure relationships
+            entity.HasOne(e => e.Template)
+                .WithMany(t => t.PerformanceMetrics)
+                .HasForeignKey(e => e.TemplateId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TemplateABTestEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.TestName);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.StartDate);
+            entity.HasIndex(e => new { e.Status, e.StartDate });
+            entity.Property(e => e.TestName).HasMaxLength(100);
+            entity.Property(e => e.Status).HasMaxLength(20);
+            entity.Property(e => e.CreatedBy).HasMaxLength(256);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(256);
+
+            // Configure relationships
+            entity.HasOne(e => e.OriginalTemplate)
+                .WithMany(t => t.OriginalABTests)
+                .HasForeignKey(e => e.OriginalTemplateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.VariantTemplate)
+                .WithMany(t => t.VariantABTests)
+                .HasForeignKey(e => e.VariantTemplateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.WinnerTemplate)
+                .WithMany()
+                .HasForeignKey(e => e.WinnerTemplateId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<TemplateImprovementSuggestionEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.TemplateId);
+            entity.HasIndex(e => e.SuggestionType);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => new { e.Status, e.CreatedDate });
+            entity.Property(e => e.SuggestionType).HasMaxLength(50);
+            entity.Property(e => e.CurrentVersion).HasMaxLength(20);
+            entity.Property(e => e.Status).HasMaxLength(20);
+            entity.Property(e => e.ReviewedBy).HasMaxLength(512);
+            entity.Property(e => e.ReviewComments).HasMaxLength(1000);
+            entity.Property(e => e.CreatedBy).HasMaxLength(256);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(256);
+
+            // Configure relationships
+            entity.HasOne(e => e.Template)
+                .WithMany(t => t.ImprovementSuggestions)
+                .HasForeignKey(e => e.TemplateId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Configure QueryCache

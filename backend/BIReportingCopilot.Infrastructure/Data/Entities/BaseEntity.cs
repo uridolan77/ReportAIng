@@ -61,6 +61,29 @@ public class PromptTemplateEntity : BaseEntity
     public decimal? SuccessRate { get; set; }
     public int UsageCount { get; set; }
     public string? Parameters { get; set; }
+
+    // Additional fields from database schema
+    public string? BusinessPurpose { get; set; }
+    public string? RelatedBusinessTerms { get; set; }
+    public string? BusinessFriendlyName { get; set; }
+    public string? NaturalLanguageDescription { get; set; }
+    public string? BusinessRules { get; set; }
+    public string? RelationshipContext { get; set; }
+    public string? DataGovernanceLevel { get; set; }
+    public DateTime? LastBusinessReview { get; set; }
+    public decimal? ImportanceScore { get; set; }
+    public string? UsageFrequency { get; set; }
+    public string? TemplateKey { get; set; }
+    public string? IntentType { get; set; }
+    public int? Priority { get; set; }
+    public string? Tags { get; set; }
+    public string? UpdatedBy { get; set; }
+
+    // Navigation properties
+    public virtual ICollection<TemplatePerformanceMetricsEntity> PerformanceMetrics { get; set; } = new List<TemplatePerformanceMetricsEntity>();
+    public virtual ICollection<TemplateABTestEntity> OriginalABTests { get; set; } = new List<TemplateABTestEntity>();
+    public virtual ICollection<TemplateABTestEntity> VariantABTests { get; set; } = new List<TemplateABTestEntity>();
+    public virtual ICollection<TemplateImprovementSuggestionEntity> ImprovementSuggestions { get; set; } = new List<TemplateImprovementSuggestionEntity>();
 }
 
 public class QueryCacheEntity : BaseEntity

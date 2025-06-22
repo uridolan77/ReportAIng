@@ -6,6 +6,7 @@ using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Infrastructure.Extensions;
 using SqlQueryResult = BIReportingCopilot.Core.Models.SqlQueryResult;
 
 namespace BIReportingCopilot.Infrastructure.Handlers.Query;
@@ -19,15 +20,18 @@ public class GenerateSqlCommandHandler : IRequestHandler<GenerateSqlCommand, Gen
     private readonly ILogger<GenerateSqlCommandHandler> _logger;
     private readonly IAIService _aiService;
     private readonly IPromptService _promptService;
+    private readonly IServiceProvider _serviceProvider;
 
     public GenerateSqlCommandHandler(
         ILogger<GenerateSqlCommandHandler> logger,
         IAIService aiService,
-        IPromptService promptService)
+        IPromptService promptService,
+        IServiceProvider serviceProvider)
     {
         _logger = logger;
         _aiService = aiService;
         _promptService = promptService;
+        _serviceProvider = serviceProvider;
     }
 
     public async Task<GenerateSqlResponse> Handle(GenerateSqlCommand request, CancellationToken cancellationToken)
@@ -65,13 +69,26 @@ public class GenerateSqlCommandHandler : IRequestHandler<GenerateSqlCommand, Gen
             if (string.IsNullOrWhiteSpace(generatedSQL))
             {
                 _logger.LogError("❌ AI returned empty SQL for question: {Question}", request.Question);
-                return new GenerateSqlResponse
+
+                var failedResponse = new GenerateSqlResponse
                 {
                     Success = false,
                     Error = "AI service returned empty SQL",
                     AiExecutionTimeMs = aiExecutionTime,
                     PromptDetails = promptDetails
                 };
+
+                // Track failed template usage
+                try
+                {
+                    await _serviceProvider.TrackTemplateUsageFromSqlResultAsync(failedResponse, request.UserId);
+                }
+                catch (Exception trackingEx)
+                {
+                    _logger.LogWarning(trackingEx, "⚠️ Failed to track failed template usage");
+                }
+
+                return failedResponse;
             }
 
             // Calculate confidence score
@@ -80,7 +97,7 @@ public class GenerateSqlCommandHandler : IRequestHandler<GenerateSqlCommand, Gen
             _logger.LogInformation("✅ SQL generated successfully - Length: {Length}, Confidence: {Confidence:P2}, Time: {Time}ms",
                 generatedSQL.Length, confidence, aiExecutionTime);
 
-            return new GenerateSqlResponse
+            var response = new GenerateSqlResponse
             {
                 Sql = generatedSQL,
                 Success = true,
@@ -88,6 +105,18 @@ public class GenerateSqlCommandHandler : IRequestHandler<GenerateSqlCommand, Gen
                 PromptDetails = promptDetails,
                 AiExecutionTimeMs = aiExecutionTime
             };
+
+            // Track template usage for performance analytics
+            try
+            {
+                await _serviceProvider.TrackTemplateUsageFromSqlResultAsync(response, request.UserId);
+            }
+            catch (Exception trackingEx)
+            {
+                _logger.LogWarning(trackingEx, "⚠️ Failed to track template usage, continuing with response");
+            }
+
+            return response;
         }
         catch (Exception ex)
         {

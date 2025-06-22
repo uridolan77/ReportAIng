@@ -1,16 +1,14 @@
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Core.Interfaces.Repository;
 
 namespace BIReportingCopilot.Infrastructure.Repositories;
 
 /// <summary>
 /// Repository interface for entity-based user operations needed by MFA service
 /// </summary>
-public interface IUserEntityRepository
+public interface IUserEntityRepository : IGuidKeyRepository<UserEntity>
 {
-    Task<UserEntity?> GetByIdAsync(Guid userId);
-    Task UpdateAsync(UserEntity user);
+    // User entity-specific queries
     Task<UserEntity?> GetByEmailAsync(string email);
     Task<UserEntity?> GetByUsernameAsync(string username);
-    Task<UserEntity> CreateAsync(UserEntity user);
-    Task<bool> DeleteAsync(Guid userId);
 }

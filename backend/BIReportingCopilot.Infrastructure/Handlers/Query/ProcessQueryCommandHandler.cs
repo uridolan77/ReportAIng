@@ -5,6 +5,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Business;
 using BIReportingCopilot.Core.Interfaces.Query;
+using BIReportingCopilot.Infrastructure.Extensions;
 
 namespace BIReportingCopilot.Infrastructure.Handlers.Query;
 
@@ -18,16 +19,19 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
     private readonly IMediator _mediator;
     private readonly IAITuningSettingsService _settingsService;
     private readonly IQueryProgressNotifier? _progressNotifier;
+    private readonly IServiceProvider _serviceProvider;
 
     public ProcessQueryCommandHandler(
         ILogger<ProcessQueryCommandHandler> logger,
         IMediator mediator,
         IAITuningSettingsService settingsService,
+        IServiceProvider serviceProvider,
         IQueryProgressNotifier? progressNotifier = null)
     {
         _logger = logger;
         _mediator = mediator;
         _settingsService = settingsService;
+        _serviceProvider = serviceProvider;
         _progressNotifier = progressNotifier;
     }
 
@@ -200,6 +204,16 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
 
             // Step 11: Log successful query
             await LogQueryAsync(request, finalSql, true, totalExecutionTime);
+
+            // Step 12: Track template usage for analytics
+            try
+            {
+                await _serviceProvider.TrackTemplateUsageFromQueryResponseAsync(response, sqlResult.PromptDetails, request.UserId);
+            }
+            catch (Exception trackingEx)
+            {
+                _logger.LogWarning(trackingEx, "⚠️ Failed to track template usage from query response");
+            }
 
             await NotifyProgress(request.UserId, queryId, "completed", "Query completed successfully", 100);
 

@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AppLayout } from '@shared/components/core/Layout'
 import Dashboard from './pages/Dashboard'
 import BusinessMetadata from './pages/BusinessMetadata'
+import EnhancedBusinessMetadata from './pages/EnhancedBusinessMetadata'
 import BusinessTableEditPage from './pages/BusinessTableEditPage'
 import SystemConfiguration from './pages/SystemConfiguration'
 import UserManagement from './pages/UserManagement'
@@ -30,8 +31,10 @@ export default function AdminApp() {
         
         {/* Business metadata management */}
         <Route path="/business-metadata" element={<BusinessMetadata />} />
+        <Route path="/business-metadata-enhanced" element={<EnhancedBusinessMetadata />} />
         <Route path="/business-metadata/edit/:tableId" element={<BusinessTableEditPage />} />
         <Route path="/business-metadata/add" element={<BusinessTableEditPage />} />
+        <Route path="/business-metadata/view/:tableId" element={<BusinessTableEditPage />} />
         
         {/* System configuration */}
         <Route path="/system-config" element={<SystemConfiguration />} />
