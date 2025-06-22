@@ -555,4 +555,225 @@ public class BusinessController : ControllerBase
     }
 
     #endregion
+
+    #region Business Context Analysis
+
+    /// <summary>
+    /// Analyze business context from a natural language question
+    /// </summary>
+    [HttpPost("context/analyze")]
+    public async Task<ActionResult<object>> AnalyzeBusinessContext([FromBody] AnalyzeContextRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Analyzing business context for question: {Question}", request.UserQuestion);
+
+            // For now, return a mock response since we don't have the context analyzer service
+            var mockProfile = new
+            {
+                intent = new { type = "DataRetrieval", confidence = 0.85 },
+                entities = new[] { "sales", "revenue", "monthly" },
+                domain = "Sales",
+                confidenceScore = 0.85,
+                suggestedTables = new[] { "SalesData", "Revenue" }
+            };
+
+            return Ok(mockProfile);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error analyzing business context");
+            return StatusCode(500, new { error = "Failed to analyze business context", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get relevant business metadata for a context profile
+    /// </summary>
+    [HttpPost("context/metadata")]
+    public async Task<ActionResult<object>> GetRelevantMetadata([FromBody] GetMetadataRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving business metadata for context analysis");
+
+            // Mock response for now
+            var mockSchema = new
+            {
+                relevantTables = new[]
+                {
+                    new { tableName = "SalesData", relevanceScore = 0.9, columns = new[] { "SaleDate", "Amount", "ProductId" } },
+                    new { tableName = "Revenue", relevanceScore = 0.8, columns = new[] { "Month", "TotalRevenue", "Department" } }
+                },
+                complexity = "Medium",
+                confidence = 0.85
+            };
+
+            return Ok(mockSchema);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving business metadata");
+            return StatusCode(500, new { error = "Failed to retrieve business metadata", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Generate a business-aware prompt for LLM consumption
+    /// </summary>
+    [HttpPost("context/prompt")]
+    public async Task<ActionResult<object>> GenerateBusinessAwarePrompt([FromBody] BusinessPromptRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Generating business-aware prompt for: {Question}", request.UserQuestion);
+
+            // Mock response for now
+            var mockResponse = new
+            {
+                generatedPrompt = $"Based on the business context, generate a SQL query for: {request.UserQuestion}",
+                contextProfile = new { intent = "DataRetrieval", domain = "Sales" },
+                usedSchema = new { tables = new[] { "SalesData", "Revenue" } },
+                confidenceScore = 0.85,
+                warnings = new string[] { },
+                metadata = new { processingTimeMs = 150, tokensEstimate = 250 }
+            };
+
+            return Ok(mockResponse);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating business-aware prompt");
+            return StatusCode(500, new { error = "Failed to generate prompt", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Classify business intent of a question
+    /// </summary>
+    [HttpPost("context/intent")]
+    public async Task<ActionResult<object>> ClassifyIntent([FromBody] ClassifyIntentRequest request)
+    {
+        try
+        {
+            var query = request.Query ?? request.UserQuestion;
+            _logger.LogInformation("Classifying business intent for: {Query}", query);
+
+            // Mock intent classification
+            var mockIntent = new
+            {
+                type = "DataRetrieval",
+                confidence = 0.85,
+                subType = "Aggregation",
+                domain = "Sales"
+            };
+
+            return Ok(mockIntent);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error classifying business intent");
+            return StatusCode(500, new { error = "Failed to classify intent", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Extract business entities from a question
+    /// </summary>
+    [HttpPost("context/entities")]
+    public async Task<ActionResult<object>> ExtractEntities([FromBody] ExtractEntitiesRequest request)
+    {
+        try
+        {
+            var query = request.Query ?? request.UserQuestion;
+            _logger.LogInformation("Extracting business entities from: {Query}", query);
+
+            // Mock entity extraction
+            var mockEntities = new[]
+            {
+                new { name = "sales", type = "BusinessConcept", confidence = 0.9 },
+                new { name = "monthly", type = "TimeFrame", confidence = 0.8 },
+                new { name = "revenue", type = "Metric", confidence = 0.85 }
+            };
+
+            return Ok(mockEntities);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting business entities");
+            return StatusCode(500, new { error = "Failed to extract entities", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Find relevant tables based on business context
+    /// </summary>
+    [HttpPost("context/tables")]
+    public async Task<ActionResult<object>> FindRelevantTables([FromBody] FindTablesRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Finding relevant tables for business context");
+
+            // Mock relevant tables
+            var mockTables = new[]
+            {
+                new { tableName = "SalesData", relevanceScore = 0.9, description = "Sales transaction data" },
+                new { tableName = "Revenue", relevanceScore = 0.8, description = "Revenue aggregation data" },
+                new { tableName = "Products", relevanceScore = 0.7, description = "Product information" }
+            };
+
+            return Ok(mockTables);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error finding relevant tables");
+            return StatusCode(500, new { error = "Failed to find tables", details = ex.Message });
+        }
+    }
+
+    #endregion
+}
+
+// Request DTOs for Business Context endpoints
+public class AnalyzeContextRequest
+{
+    public string UserQuestion { get; set; } = string.Empty;
+    public string? UserId { get; set; }
+}
+
+public class GetMetadataRequest
+{
+    public object ContextProfile { get; set; } = new();
+    public int MaxTables { get; set; } = 5;
+}
+
+public class BusinessPromptRequest
+{
+    public string UserQuestion { get; set; } = string.Empty;
+    public string? UserId { get; set; }
+    public string? PreferredDomain { get; set; }
+    public string ComplexityLevel { get; set; } = "Standard";
+    public bool IncludeExamples { get; set; } = true;
+    public bool IncludeBusinessRules { get; set; } = true;
+    public int MaxTables { get; set; } = 5;
+    public int MaxTokens { get; set; } = 4000;
+}
+
+public class ClassifyIntentRequest
+{
+    public string Query { get; set; } = string.Empty;
+    public string UserQuestion { get; set; } = string.Empty; // For backward compatibility
+}
+
+public class ExtractEntitiesRequest
+{
+    public string Query { get; set; } = string.Empty;
+    public string UserQuestion { get; set; } = string.Empty; // For backward compatibility
+}
+
+public class FindTablesRequest
+{
+    public object ContextProfile { get; set; } = new();
+    public int MaxTables { get; set; } = 5;
 }

@@ -36,8 +36,16 @@ export interface RealTimeMonitorProps {
   autoStart?: boolean
   updateInterval?: number
   maxHistoryItems?: number
-  onStatusChange?: (status: 'connected' | 'disconnected' | 'error') => void
+  onStatusChange?: (status: 'connected' | 'disconnected' | 'error' | 'active') => void
   onDataReceived?: (data: RealTimeData) => void
+  data?: {
+    activeQueries: number
+    totalQueries: number
+    averageConfidence: number
+    averageProcessingTime: number
+    errorRate: number
+    lastUpdate: string
+  }
   className?: string
   testId?: string
 }
@@ -82,6 +90,7 @@ export const RealTimeMonitor: React.FC<RealTimeMonitorProps> = ({
   maxHistoryItems = 50,
   onStatusChange,
   onDataReceived,
+  data,
   className,
   testId = 'real-time-monitor'
 }) => {
@@ -95,15 +104,31 @@ export const RealTimeMonitor: React.FC<RealTimeMonitorProps> = ({
     errorRate: 0,
     lastUpdate: ''
   })
+
+  // Update state when real data is provided
+  useEffect(() => {
+    if (data) {
+      setState(prev => ({
+        ...prev,
+        status: 'connected',
+        activeQueries: data.activeQueries,
+        totalQueries: data.totalQueries,
+        averageConfidence: data.averageConfidence,
+        averageProcessingTime: data.averageProcessingTime,
+        errorRate: data.errorRate,
+        lastUpdate: data.lastUpdate
+      }))
+    }
+  }, [data])
   const [recentEvents, setRecentEvents] = useState<RealTimeData[]>([])
   const [connectionAttempts, setConnectionAttempts] = useState(0)
   
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // WebSocket connection management
+  // WebSocket connection management - only if no real data is provided
   useEffect(() => {
-    if (monitoring && isActive) {
+    if (monitoring && isActive && !data) {
       connectWebSocket()
     } else {
       disconnectWebSocket()
@@ -112,7 +137,7 @@ export const RealTimeMonitor: React.FC<RealTimeMonitorProps> = ({
     return () => {
       disconnectWebSocket()
     }
-  }, [monitoring, isActive])
+  }, [monitoring, isActive, data])
 
   const connectWebSocket = () => {
     try {

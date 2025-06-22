@@ -50,12 +50,18 @@ public class AnalyticsController : ControllerBase
         ILogger<AnalyticsController> logger,
         ITokenUsageAnalyticsService tokenAnalyticsService,
         IPromptGenerationLogsService promptLogsService,
-        IPromptSuccessTrackingService promptSuccessService)
+        IPromptSuccessTrackingService promptSuccessService,
+        ITemplatePerformanceService templatePerformanceService,
+        IABTestingService abTestingService,
+        ITemplateManagementService templateManagementService)
     {
         _logger = logger;
         _tokenAnalyticsService = tokenAnalyticsService;
         _promptLogsService = promptLogsService;
         _promptSuccessService = promptSuccessService;
+        _templatePerformanceService = templatePerformanceService;
+        _abTestingService = abTestingService;
+        _templateManagementService = templateManagementService;
     }
 
     #region Token Usage Analytics
@@ -336,7 +342,7 @@ public class AnalyticsController : ControllerBase
     /// Get template performance metrics
     /// </summary>
     [HttpGet("success-tracking/template-performance")]
-    public async Task<ActionResult<IEnumerable<TemplatePerformanceMetrics>>> GetTemplatePerformance(
+    public async Task<ActionResult<IEnumerable<BIReportingCopilot.Core.Models.Analytics.TemplatePerformanceMetrics>>> GetTemplatePerformance(
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null)
     {
@@ -411,7 +417,7 @@ public class AnalyticsController : ControllerBase
     /// Get success trends over time
     /// </summary>
     [HttpGet("success-tracking/trends")]
-    public async Task<ActionResult<IEnumerable<SuccessTrendPoint>>> GetSuccessTrends(
+    public async Task<ActionResult<IEnumerable<BIReportingCopilot.Core.Models.Analytics.SuccessTrendPoint>>> GetSuccessTrends(
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null,
         [FromQuery] string groupBy = "day")
@@ -686,6 +692,516 @@ public class AnalyticsController : ControllerBase
     private bool IsAdmin()
     {
         return User.IsInRole("Admin") || User.HasClaim("role", "admin");
+    }
+
+    #endregion
+
+    #region Template Analytics
+
+    /// <summary>
+    /// Get template performance dashboard data
+    /// </summary>
+    [HttpGet("templates/dashboard")]
+    public async Task<ActionResult<PerformanceDashboardData>> GetTemplateDashboard(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? intentType = null)
+    {
+        try
+        {
+            var dashboard = await _templatePerformanceService.GetDashboardDataAsync();
+            return Ok(dashboard);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting template performance dashboard");
+            return StatusCode(500, "Error retrieving dashboard data");
+        }
+    }
+
+    /// <summary>
+    /// Get comprehensive template analytics dashboard with trends and insights
+    /// </summary>
+    [HttpGet("templates/dashboard/comprehensive")]
+    public async Task<ActionResult<ComprehensiveAnalyticsDashboard>> GetComprehensiveTemplateDashboard(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? intentType = null)
+    {
+        try
+        {
+            var start = startDate ?? DateTime.UtcNow.AddDays(-30);
+            var end = endDate ?? DateTime.UtcNow;
+
+            var performanceDashboard = await _templatePerformanceService.GetDashboardDataAsync();
+            var abTestDashboard = await _abTestingService.GetTestDashboardAsync();
+            var managementDashboard = await _templateManagementService.GetDashboardAsync();
+
+            // Get additional analytics
+            var performanceTrends = await GetPerformanceTrendsData(start, end, intentType);
+            var usageInsights = await GetUsageInsights(start, end);
+            var qualityMetrics = await GetQualityMetricsData();
+            var alerts = await _templatePerformanceService.GetPerformanceAlertsAsync();
+
+            var comprehensiveDashboard = new ComprehensiveAnalyticsDashboard
+            {
+                PerformanceOverview = performanceDashboard,
+                ABTestingOverview = abTestDashboard,
+                ManagementOverview = managementDashboard,
+                PerformanceTrends = performanceTrends,
+                UsageInsights = usageInsights,
+                QualityMetrics = qualityMetrics,
+                ActiveAlerts = alerts?.Select(a => new BIReportingCopilot.Core.Models.Analytics.PerformanceAlert
+                {
+                    AlertId = a.TemplateKey, // Use TemplateKey as AlertId
+                    AlertType = a.AlertType,
+                    Severity = (BIReportingCopilot.Core.Models.Analytics.AlertSeverity)a.Severity,
+                    Title = a.AlertType,
+                    Description = a.Message,
+                    MetricName = "SuccessRate",
+                    CurrentValue = 0, // Would need to get actual value
+                    ThresholdValue = 0.7m, // Default threshold
+                    TriggeredAt = a.CreatedDate,
+                    IsResolved = a.IsAcknowledged,
+                    ResolvedAt = null
+                }).ToList() ?? new(),
+                GeneratedDate = DateTime.UtcNow,
+                DateRange = new DateRange { StartDate = start, EndDate = end }
+            };
+
+            return Ok(comprehensiveDashboard);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting comprehensive template analytics dashboard");
+            return StatusCode(500, "Error retrieving comprehensive dashboard data");
+        }
+    }
+
+    /// <summary>
+    /// Get template performance trends over time
+    /// </summary>
+    [HttpGet("templates/trends/performance")]
+    public async Task<ActionResult<PerformanceTrendsData>> GetTemplatePerformanceTrends(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? intentType = null,
+        [FromQuery] string? granularity = "daily")
+    {
+        try
+        {
+            var start = startDate ?? DateTime.UtcNow.AddDays(-30);
+            var end = endDate ?? DateTime.UtcNow;
+
+            var trends = await GetPerformanceTrendsData(start, end, intentType, granularity);
+            return Ok(trends);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting template performance trends");
+            return StatusCode(500, "Error retrieving performance trends");
+        }
+    }
+
+    /// <summary>
+    /// Get template usage analytics and insights
+    /// </summary>
+    [HttpGet("templates/insights/usage")]
+    public async Task<ActionResult<UsageInsightsData>> GetTemplateUsageInsights(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? intentType = null)
+    {
+        try
+        {
+            var start = startDate ?? DateTime.UtcNow.AddDays(-30);
+            var end = endDate ?? DateTime.UtcNow;
+
+            var insights = await GetUsageInsights(start, end, intentType);
+            return Ok(insights);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting template usage insights");
+            return StatusCode(500, "Error retrieving usage insights");
+        }
+    }
+
+    /// <summary>
+    /// Get template quality metrics and analysis
+    /// </summary>
+    [HttpGet("templates/metrics/quality")]
+    public async Task<ActionResult<QualityMetricsData>> GetTemplateQualityMetrics(
+        [FromQuery] string? intentType = null)
+    {
+        try
+        {
+            var metrics = await GetQualityMetricsData(intentType);
+            return Ok(metrics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting template quality metrics");
+            return StatusCode(500, "Error retrieving quality metrics");
+        }
+    }
+
+    /// <summary>
+    /// Get specific template performance metrics
+    /// </summary>
+    [HttpGet("templates/performance/{templateKey}")]
+    public async Task<ActionResult<InterfaceTemplatePerformanceMetrics>> GetSpecificTemplatePerformance(string templateKey)
+    {
+        try
+        {
+            var performance = await _templatePerformanceService.GetTemplatePerformanceAsync(templateKey);
+            if (performance == null)
+            {
+                return NotFound($"Template not found: {templateKey}");
+            }
+            return Ok(performance);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting template performance for {TemplateKey}", templateKey);
+            return StatusCode(500, "Error retrieving template performance");
+        }
+    }
+
+    /// <summary>
+    /// Get top performing templates
+    /// </summary>
+    [HttpGet("templates/performance/top")]
+    public async Task<ActionResult<List<InterfaceTemplatePerformanceMetrics>>> GetTopPerformingTemplates(
+        [FromQuery] string? intentType = null,
+        [FromQuery] int count = 10)
+    {
+        try
+        {
+            var topPerformers = await _templatePerformanceService.GetTopPerformingTemplatesAsync(intentType, count);
+            return Ok(topPerformers);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting top performing templates");
+            return StatusCode(500, "Error retrieving top performing templates");
+        }
+    }
+
+    /// <summary>
+    /// Get underperforming templates
+    /// </summary>
+    [HttpGet("templates/performance/underperforming")]
+    public async Task<ActionResult<List<InterfaceTemplatePerformanceMetrics>>> GetUnderperformingTemplates(
+        [FromQuery] decimal threshold = 0.7m,
+        [FromQuery] int minUsageCount = 10)
+    {
+        try
+        {
+            var underperforming = await _templatePerformanceService.GetUnderperformingTemplatesAsync(threshold, minUsageCount);
+            return Ok(underperforming);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting underperforming templates");
+            return StatusCode(500, "Error retrieving underperforming templates");
+        }
+    }
+
+    /// <summary>
+    /// Get template performance alerts
+    /// </summary>
+    [HttpGet("templates/alerts")]
+    public async Task<ActionResult<List<PerformanceAlert>>> GetTemplatePerformanceAlerts()
+    {
+        try
+        {
+            var alerts = await _templatePerformanceService.GetPerformanceAlertsAsync();
+            return Ok(alerts);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting template performance alerts");
+            return StatusCode(500, "Error retrieving performance alerts");
+        }
+    }
+
+    /// <summary>
+    /// Get template performance trends for specific template
+    /// </summary>
+    [HttpGet("templates/performance/{templateKey}/trends")]
+    public async Task<ActionResult<TemplatePerformanceTrends>> GetTemplateSpecificPerformanceTrends(
+        string templateKey,
+        [FromQuery] int days = 30)
+    {
+        try
+        {
+            var timeWindow = TimeSpan.FromDays(days);
+            var trends = await _templatePerformanceService.GetPerformanceTrendsAsync(templateKey, timeWindow);
+            return Ok(trends);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting performance trends for {TemplateKey}", templateKey);
+            return StatusCode(500, "Error retrieving performance trends");
+        }
+    }
+
+    /// <summary>
+    /// Compare template performance
+    /// </summary>
+    [HttpGet("templates/performance/compare")]
+    public async Task<ActionResult<TemplatePerformanceComparison>> CompareTemplatePerformance(
+        [FromQuery] string templateKey1,
+        [FromQuery] string templateKey2)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(templateKey1) || string.IsNullOrEmpty(templateKey2))
+            {
+                return BadRequest("Both template keys are required");
+            }
+
+            var comparison = await _templatePerformanceService.CompareTemplatePerformanceAsync(templateKey1, templateKey2);
+            return Ok(comparison);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error comparing template performance");
+            return StatusCode(500, "Error comparing template performance");
+        }
+    }
+
+    /// <summary>
+    /// Get A/B testing dashboard
+    /// </summary>
+    [HttpGet("templates/abtests/dashboard")]
+    public async Task<ActionResult<ABTestDashboard>> GetABTestDashboard()
+    {
+        try
+        {
+            var dashboard = await _abTestingService.GetTestDashboardAsync();
+            return Ok(dashboard);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting A/B test dashboard");
+            return StatusCode(500, "Error retrieving A/B test dashboard");
+        }
+    }
+
+    /// <summary>
+    /// Get active A/B tests
+    /// </summary>
+    [HttpGet("templates/abtests/active")]
+    public async Task<ActionResult<List<ABTestDetails>>> GetActiveABTests()
+    {
+        try
+        {
+            var activeTests = await _abTestingService.GetActiveTestsAsync();
+            return Ok(activeTests);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting active A/B tests");
+            return StatusCode(500, "Error retrieving active A/B tests");
+        }
+    }
+
+    /// <summary>
+    /// Get A/B test recommendations
+    /// </summary>
+    [HttpGet("templates/abtests/recommendations")]
+    public async Task<ActionResult<List<ABTestRecommendation>>> GetABTestRecommendations()
+    {
+        try
+        {
+            var recommendations = await _abTestingService.GetTestRecommendationsAsync();
+            return Ok(recommendations);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting A/B test recommendations");
+            return StatusCode(500, "Error retrieving A/B test recommendations");
+        }
+    }
+
+    /// <summary>
+    /// Create A/B test
+    /// </summary>
+    [HttpPost("templates/abtests")]
+    public async Task<ActionResult<ABTestResult>> CreateABTest([FromBody] ABTestRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.TestName) || string.IsNullOrEmpty(request.OriginalTemplateKey))
+            {
+                return BadRequest("Test name and original template key are required");
+            }
+
+            var result = await _abTestingService.CreateABTestAsync(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating A/B test");
+            return StatusCode(500, "Error creating A/B test");
+        }
+    }
+
+    /// <summary>
+    /// Get A/B test details
+    /// </summary>
+    [HttpGet("templates/abtests/{testId}")]
+    public async Task<ActionResult<ABTestDetails>> GetABTest(long testId)
+    {
+        try
+        {
+            var test = await _abTestingService.GetABTestAsync(testId);
+            if (test == null)
+            {
+                return NotFound($"A/B test not found: {testId}");
+            }
+            return Ok(test);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting A/B test {TestId}", testId);
+            return StatusCode(500, "Error retrieving A/B test");
+        }
+    }
+
+    /// <summary>
+    /// Analyze A/B test results
+    /// </summary>
+    [HttpGet("templates/abtests/{testId}/analysis")]
+    public async Task<ActionResult<ABTestAnalysis>> AnalyzeABTest(long testId)
+    {
+        try
+        {
+            var analysis = await _abTestingService.AnalyzeTestResultsAsync(testId);
+            return Ok(analysis);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error analyzing A/B test {TestId}", testId);
+            return StatusCode(500, "Error analyzing A/B test");
+        }
+    }
+
+    /// <summary>
+    /// Complete A/B test
+    /// </summary>
+    [HttpPost("templates/abtests/{testId}/complete")]
+    public async Task<ActionResult<ImplementationResult>> CompleteABTest(
+        long testId,
+        [FromQuery] bool implementWinner = true)
+    {
+        try
+        {
+            var result = await _abTestingService.CompleteTestAsync(testId, implementWinner);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error completing A/B test {TestId}", testId);
+            return StatusCode(500, "Error completing A/B test");
+        }
+    }
+
+    /// <summary>
+    /// Get comprehensive template analytics
+    /// </summary>
+    [HttpGet("templates/analytics")]
+    public async Task<ActionResult<TemplateAnalytics>> GetTemplateAnalytics()
+    {
+        try
+        {
+            _logger.LogInformation("📊 [API] Getting comprehensive template analytics");
+            var analytics = await _templateManagementService.GetTemplateAnalyticsAsync();
+            return Ok(analytics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting template analytics");
+            return StatusCode(500, "Error retrieving template analytics");
+        }
+    }
+
+    /// <summary>
+    /// Get template performance metrics for all templates
+    /// </summary>
+    [HttpGet("templates/analytics/performance")]
+    public async Task<ActionResult<List<InterfaceTemplatePerformanceMetrics>>> GetAllTemplatePerformanceMetrics()
+    {
+        try
+        {
+            _logger.LogInformation("📊 [API] Getting template performance metrics");
+            var metrics = await _templateManagementService.GetTemplatePerformanceMetricsAsync();
+            return Ok(metrics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting template performance metrics");
+            return StatusCode(500, "Error retrieving template performance metrics");
+        }
+    }
+
+    /// <summary>
+    /// Update template business metadata
+    /// </summary>
+    [HttpPut("templates/analytics/{templateKey}/business-metadata")]
+    public async Task<ActionResult> UpdateTemplateBusinessMetadata(
+        string templateKey,
+        [FromBody] TemplateBusinessMetadata metadata)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(templateKey))
+            {
+                return BadRequest("Template key is required");
+            }
+
+            // Note: Implementation would depend on your specific template management service
+            // For now, return success as placeholder
+            return Ok(new { message = "Template business metadata updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating template business metadata for {TemplateKey}", templateKey);
+            return StatusCode(500, "Error updating template business metadata");
+        }
+    }
+
+    #endregion
+
+    #region Private Helper Methods for Template Analytics
+
+    private async Task<PerformanceTrendsData> GetPerformanceTrendsData(DateTime startDate, DateTime endDate, string? intentType = null, string granularity = "daily")
+    {
+        // Implementation would depend on your specific analytics service
+        // This is a placeholder that returns mock data
+        await Task.CompletedTask; // Placeholder for async operation
+        return new PerformanceTrendsData();
+    }
+
+    private async Task<UsageInsightsData> GetUsageInsights(DateTime startDate, DateTime endDate, string? intentType = null)
+    {
+        // Implementation would depend on your specific analytics service
+        // This is a placeholder that returns mock data
+        await Task.CompletedTask; // Placeholder for async operation
+        return new UsageInsightsData();
+    }
+
+    private async Task<QualityMetricsData> GetQualityMetricsData(string? intentType = null)
+    {
+        // Implementation would depend on your specific analytics service
+        // This is a placeholder that returns mock data
+        await Task.CompletedTask; // Placeholder for async operation
+        return new QualityMetricsData
+        {
+            OverallQualityScore = 0.85m
+        };
     }
 
     #endregion

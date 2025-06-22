@@ -141,12 +141,24 @@ public class TuningDbContext : DbContext
             entity.HasIndex(e => new { e.Name, e.Version }).IsUnique();
             entity.HasIndex(e => new { e.IsActive, e.Name });
             entity.HasIndex(e => e.UsageCount);
+            entity.HasIndex(e => e.LastUsedDate);
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Version).HasMaxLength(20);
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.CreatedBy).HasMaxLength(256);
-            // Fix decimal precision warning
+            entity.Property(e => e.TemplateKey).HasMaxLength(100);
+            entity.Property(e => e.IntentType).HasMaxLength(50);
+            entity.Property(e => e.BusinessPurpose).HasMaxLength(1000);
+            entity.Property(e => e.RelatedBusinessTerms).HasMaxLength(1000);
+            entity.Property(e => e.BusinessFriendlyName).HasMaxLength(200);
+            entity.Property(e => e.NaturalLanguageDescription).HasMaxLength(1000);
+            entity.Property(e => e.BusinessRules).HasMaxLength(2000);
+            entity.Property(e => e.RelationshipContext).HasMaxLength(1000);
+            entity.Property(e => e.DataGovernanceLevel).HasMaxLength(50);
+            entity.Property(e => e.UsageFrequency).HasMaxLength(50);
+            // Fix decimal precision warnings
             entity.Property(e => e.SuccessRate).HasPrecision(5, 2);
+            entity.Property(e => e.ImportanceScore).HasPrecision(3, 2);
         });
 
         // Configure PromptLogs
@@ -260,6 +272,8 @@ public class TuningDbContext : DbContext
                 Id = 1,
                 Name = "BasicQueryGeneration",
                 Version = "1.0",
+                TemplateKey = "basic_query_generation",
+                IntentType = "QUERY_GENERATION",
                 Content = @"You are a SQL Server expert helping generate business intelligence reports.
 
 Database schema:
@@ -280,7 +294,14 @@ Return only the SQL query without any explanation or markdown formatting.",
                 IsActive = true,
                 CreatedBy = "System",
                 CreatedDate = DateTime.UtcNow,
-                UsageCount = 0
+                UsageCount = 0,
+                Priority = 1,
+                BusinessPurpose = "Generate SQL queries from natural language questions",
+                BusinessFriendlyName = "Basic Query Generator",
+                NaturalLanguageDescription = "Converts user questions into SQL SELECT statements",
+                DataGovernanceLevel = "Standard",
+                ImportanceScore = 0.8m,
+                UsageFrequency = "High"
             }
         );
     }

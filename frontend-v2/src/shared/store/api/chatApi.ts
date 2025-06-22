@@ -286,19 +286,19 @@ export const chatApi = baseApi.injectEndpoints({
     // Semantic Analysis
     analyzeQuerySemantics: builder.mutation<any, { query: string; intent?: string }>({
       query: (body) => ({
-        url: '/semantic/analyze',
+        url: '/semantic-layer/enhanced/analyze',
         method: 'POST',
         body,
       }),
     }),
 
     getRelevantGlossaryTerms: builder.query<Array<{ term: string; definition: string; confidence: number }>, { query: string; maxTerms?: number }>({
-      query: ({ query, maxTerms = 10 }) => `/semantic/glossary/relevant?query=${encodeURIComponent(query)}&maxTerms=${maxTerms}`,
+      query: ({ query, maxTerms = 10 }) => `/semantic-layer/enhanced/glossary/relevant?query=${encodeURIComponent(query)}&maxTerms=${maxTerms}`,
     }),
 
     generateLLMContext: builder.mutation<any, { query: string; intent: string }>({
       query: (body) => ({
-        url: '/semantic/llm-context',
+        url: '/semantic-layer/enhanced/llm-context',
         method: 'POST',
         body,
       }),
@@ -306,7 +306,7 @@ export const chatApi = baseApi.injectEndpoints({
 
     findSimilarSchemaElements: builder.mutation<any[], { element: any; threshold?: number; maxResults?: number }>({
       query: ({ element, threshold = 0.7, maxResults = 10 }) => ({
-        url: '/semantic/similarity/find',
+        url: '/semantic-layer/enhanced/similarity/find',
         method: 'POST',
         body: { element, threshold, maxResults },
       }),

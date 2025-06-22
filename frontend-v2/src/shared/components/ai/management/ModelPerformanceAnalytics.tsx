@@ -97,16 +97,20 @@ export const ModelPerformanceAnalytics: React.FC<ModelPerformanceAnalyticsProps>
     }))
   }, [capabilities])
 
-  // Mock trend data (replace with real data from API)
-  const trendData = [
-    { date: '2024-01-01', responseTime: 1200, successRate: 0.95, throughput: 45, cost: 25.50 },
-    { date: '2024-01-02', responseTime: 1150, successRate: 0.97, throughput: 52, cost: 28.75 },
-    { date: '2024-01-03', responseTime: 1300, successRate: 0.93, throughput: 38, cost: 21.20 },
-    { date: '2024-01-04', responseTime: 1100, successRate: 0.98, throughput: 61, cost: 34.80 },
-    { date: '2024-01-05', responseTime: 1250, successRate: 0.96, throughput: 55, cost: 31.25 },
-    { date: '2024-01-06', responseTime: 1080, successRate: 0.99, throughput: 68, cost: 39.60 },
-    { date: '2024-01-07', responseTime: 1180, successRate: 0.97, throughput: 63, cost: 36.45 }
-  ]
+  // Real trend data from API
+  const trendData = useMemo(() => {
+    if (!agentAnalytics?.data?.dailyMetrics) {
+      return []
+    }
+
+    return agentAnalytics.data.dailyMetrics.map((metric: any) => ({
+      date: metric.date,
+      responseTime: metric.averageResponseTime || 1200,
+      successRate: metric.successRate || 0.95,
+      throughput: metric.requestsPerMinute || 45,
+      cost: metric.estimatedCost || 25.50
+    }))
+  }, [agentAnalytics])
 
   // Performance comparison data
   const comparisonData = useMemo(() => {

@@ -83,67 +83,67 @@ export const semanticApi = baseApi.injectEndpoints({
     // Analyze Query Semantics
     analyzeQuerySemantics: builder.mutation<EnhancedSchemaResult, SemanticEnrichmentRequest>({
       query: (body) => ({
-        url: '/semantic/analyze',
+        url: '/semantic-layer/enhanced/analyze',
         method: 'POST',
         body,
       }),
     }),
-    
+
     // Enrich Schema Metadata
     enrichSchemaMetadata: builder.mutation<EnhancedSchemaResult, SemanticEnrichmentRequest>({
       query: (body) => ({
-        url: '/semantic/enrich',
+        url: '/semantic-layer/enhanced/enrich',
         method: 'POST',
         body,
       }),
     }),
-    
+
     // Get Relevant Glossary Terms
     getRelevantGlossaryTerms: builder.query<RelevantGlossaryTerm[], { query: string; maxTerms?: number }>({
-      query: ({ query, maxTerms = 10 }) => `/semantic/glossary/relevant?query=${encodeURIComponent(query)}&maxTerms=${maxTerms}`,
+      query: ({ query, maxTerms = 10 }) => `/semantic-layer/enhanced/glossary/relevant?query=${encodeURIComponent(query)}&maxTerms=${maxTerms}`,
     }),
     
     // Update Table Semantic Metadata
     updateTableSemanticMetadata: builder.mutation<{ success: boolean }, { schemaName: string; tableName: string; metadata: TableSemanticMetadata }>({
       query: ({ schemaName, tableName, metadata }) => ({
-        url: `/semantic/tables/${schemaName}/${tableName}/metadata`,
+        url: `/semantic-layer/enhanced/table/${schemaName}/${tableName}`,
         method: 'PUT',
         body: metadata,
       }),
       invalidatesTags: ['BusinessTable'],
     }),
-    
+
     // Update Column Semantic Metadata
     updateColumnSemanticMetadata: builder.mutation<{ success: boolean }, { tableName: string; columnName: string; metadata: ColumnSemanticMetadata }>({
       query: ({ tableName, columnName, metadata }) => ({
-        url: `/semantic/columns/${tableName}/${columnName}/metadata`,
+        url: `/semantic-layer/enhanced/column/${tableName}/${columnName}`,
         method: 'PUT',
         body: metadata,
       }),
       invalidatesTags: ['BusinessColumn'],
     }),
-    
+
     // Generate Semantic Embeddings
     generateSemanticEmbeddings: builder.mutation<number, { forceRegeneration?: boolean }>({
       query: ({ forceRegeneration = false }) => ({
-        url: `/semantic/embeddings/generate?forceRegeneration=${forceRegeneration}`,
+        url: `/semantic-layer/enhanced/embeddings/generate?forceRegeneration=${forceRegeneration}`,
         method: 'POST',
       }),
     }),
-    
+
     // Validate Semantic Metadata
     validateSemanticMetadata: builder.query<{
       isValid: boolean
       issues: Array<{ type: string; message: string; severity: 'error' | 'warning' }>
       coverage: number
     }, void>({
-      query: () => '/semantic/validate',
+      query: () => '/semantic-layer/enhanced/validate',
     }),
     
     // Generate LLM-Optimized Context
     generateLLMContext: builder.mutation<LLMOptimizedContext, { query: string; intent: string }>({
       query: (body) => ({
-        url: '/semantic/llm-context',
+        url: '/semantic-layer/enhanced/llm-context',
         method: 'POST',
         body,
       }),

@@ -1,14 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces.Schema;
+using BIReportingCopilot.Core.Interfaces.Business;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.Business;
 using BIReportingCopilot.Core.DTOs;
+using BIReportingCopilot.Infrastructure.Schema;
 using System.Security.Claims;
 
 namespace BIReportingCopilot.API.Controllers;
 
 /// <summary>
-/// Business schema management controller for versioned schema definitions
+/// Business schema management controller for versioned schema definitions and metadata management
 /// </summary>
 [ApiController]
 [Route("api/business-schemas")]
@@ -17,13 +20,22 @@ public class BusinessSchemaController : ControllerBase
 {
     private readonly ILogger<BusinessSchemaController> _logger;
     private readonly IBusinessSchemaService _businessSchemaService;
+    private readonly BusinessMetadataPopulationService _populationService;
+    private readonly IBusinessTableManagementService _businessTableService;
+    private readonly IGlossaryManagementService _glossaryService;
 
     public BusinessSchemaController(
         ILogger<BusinessSchemaController> logger,
-        IBusinessSchemaService businessSchemaService)
+        IBusinessSchemaService businessSchemaService,
+        BusinessMetadataPopulationService populationService,
+        IBusinessTableManagementService businessTableService,
+        IGlossaryManagementService glossaryService)
     {
         _logger = logger;
         _businessSchemaService = businessSchemaService;
+        _populationService = populationService;
+        _businessTableService = businessTableService;
+        _glossaryService = glossaryService;
     }
 
     #region Business Schemas
@@ -413,4 +425,313 @@ public class BusinessSchemaController : ControllerBase
     }
 
     #endregion
+
+    #region Business Metadata Population
+
+    /// <summary>
+    /// Populate business metadata for the specific relevant gaming tables only
+    /// </summary>
+    /// <param name="useAI">Whether to use AI for metadata generation</param>
+    /// <param name="overwriteExisting">Whether to overwrite existing metadata</param>
+    /// <returns>Population results</returns>
+    [HttpPost("metadata/populate-relevant")]
+    public async Task<ActionResult<object>> PopulateRelevantTablesAsync(
+        [FromQuery] bool useAI = true,
+        [FromQuery] bool overwriteExisting = false)
+    {
+        try
+        {
+            _logger.LogInformation("🎯 Starting targeted metadata population for relevant gaming tables - UseAI: {UseAI}, Overwrite: {Overwrite}",
+                useAI, overwriteExisting);
+
+            var result = await _populationService.PopulateRelevantTablesAsync(useAI, overwriteExisting);
+
+            if (result.Success)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Successfully processed {result.SuccessCount} relevant gaming tables with {result.ErrorCount} errors",
+                    summary = new
+                    {
+                        totalProcessed = result.ProcessedTables.Count,
+                        successful = result.SuccessCount,
+                        errors = result.ErrorCount,
+                        skipped = result.ProcessedTables.Count(t => t.Skipped),
+                        relevantTablesOnly = true
+                    },
+                    details = result.ProcessedTables.Select(t => new
+                    {
+                        schema = t.SchemaName,
+                        table = t.TableName,
+                        success = t.Success,
+                        skipped = t.Skipped,
+                        error = t.ErrorMessage
+                    }),
+                    processedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Relevant tables metadata population failed",
+                    error = result.ErrorMessage
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error during relevant tables metadata population");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Failed to populate relevant tables metadata",
+                error = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Automatically populate business metadata for all tables
+    /// </summary>
+    /// <param name="useAI">Whether to use AI for metadata generation</param>
+    /// <param name="overwriteExisting">Whether to overwrite existing metadata</param>
+    /// <returns>Population results</returns>
+    [HttpPost("metadata/populate-all")]
+    public async Task<ActionResult<object>> PopulateAllTablesAsync(
+        [FromQuery] bool useAI = true,
+        [FromQuery] bool overwriteExisting = false)
+    {
+        try
+        {
+            _logger.LogInformation("🚀 Starting automatic metadata population - UseAI: {UseAI}, Overwrite: {Overwrite}",
+                useAI, overwriteExisting);
+
+            var result = await _populationService.PopulateAllTablesAsync(useAI, overwriteExisting);
+
+            if (result.Success)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Successfully processed {result.SuccessCount} tables with {result.ErrorCount} errors",
+                    summary = new
+                    {
+                        totalProcessed = result.ProcessedTables.Count,
+                        successful = result.SuccessCount,
+                        errors = result.ErrorCount,
+                        skipped = result.ProcessedTables.Count(t => t.Skipped)
+                    },
+                    details = result.ProcessedTables.Select(t => new
+                    {
+                        schema = t.SchemaName,
+                        table = t.TableName,
+                        success = t.Success,
+                        skipped = t.Skipped,
+                        error = t.ErrorMessage
+                    }),
+                    processedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Metadata population failed",
+                    error = result.ErrorMessage
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error during metadata population");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Failed to populate metadata",
+                error = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Populate metadata for a specific table
+    /// </summary>
+    /// <param name="schemaName">Schema name</param>
+    /// <param name="tableName">Table name</param>
+    /// <param name="useAI">Whether to use AI for metadata generation</param>
+    /// <param name="overwriteExisting">Whether to overwrite existing metadata</param>
+    /// <returns>Table population result</returns>
+    [HttpPost("metadata/populate-table/{schemaName}/{tableName}")]
+    public async Task<ActionResult<object>> PopulateTableMetadataAsync(
+        string schemaName,
+        string tableName,
+        [FromQuery] bool useAI = true,
+        [FromQuery] bool overwriteExisting = false)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(schemaName) || string.IsNullOrWhiteSpace(tableName))
+            {
+                return BadRequest("Schema name and table name are required");
+            }
+
+            _logger.LogInformation("📊 Populating metadata for table: {Schema}.{Table}", schemaName, tableName);
+
+            var tableInfo = new DatabaseTableInfo
+            {
+                SchemaName = schemaName,
+                TableName = tableName
+            };
+
+            var result = await _populationService.PopulateTableMetadataAsync(tableInfo, useAI, overwriteExisting);
+
+            if (result.Success)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = result.Skipped
+                        ? $"Table {schemaName}.{tableName} already has metadata (skipped)"
+                        : $"Successfully populated metadata for {schemaName}.{tableName}",
+                    table = new
+                    {
+                        schema = result.SchemaName,
+                        name = result.TableName,
+                        skipped = result.Skipped,
+                        businessMetadata = result.BusinessMetadata
+                    },
+                    processedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = $"Failed to populate metadata for {schemaName}.{tableName}",
+                    error = result.ErrorMessage
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error populating metadata for table: {Schema}.{Table}", schemaName, tableName);
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Failed to populate table metadata",
+                error = ex.Message
+            });
+        }
+    }
+
+    #endregion
+
+    #region Business Metadata Management
+
+    /// <summary>
+    /// Get all business tables with optional filtering and pagination
+    /// </summary>
+    /// <param name="page">Page number (1-based)</param>
+    /// <param name="pageSize">Number of items per page</param>
+    /// <param name="search">Search term for table name or business purpose</param>
+    /// <param name="schema">Filter by schema name</param>
+    /// <param name="domain">Filter by business domain</param>
+    /// <returns>Paginated list of business tables</returns>
+    [HttpGet("metadata/tables")]
+    public async Task<ActionResult<object>> GetBusinessTables(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] string? schema = null,
+        [FromQuery] string? domain = null)
+    {
+        try
+        {
+            _logger.LogInformation("📊 Getting business tables - Page: {Page}, Size: {PageSize}, Search: {Search}",
+                page, pageSize, search);
+
+            // Mock implementation for now
+            var mockTables = new[]
+            {
+                new { id = 1, tableName = "SalesData", schemaName = "dbo", businessPurpose = "Track sales transactions", domain = "Sales" },
+                new { id = 2, tableName = "CustomerInfo", schemaName = "dbo", businessPurpose = "Store customer information", domain = "Customer" },
+                new { id = 3, tableName = "ProductCatalog", schemaName = "dbo", businessPurpose = "Product information and pricing", domain = "Product" }
+            };
+
+            return Ok(new
+            {
+                success = true,
+                data = mockTables,
+                pagination = new
+                {
+                    currentPage = page,
+                    pageSize = pageSize,
+                    totalItems = mockTables.Length,
+                    totalPages = 1,
+                    hasNextPage = false,
+                    hasPreviousPage = false
+                },
+                filters = new
+                {
+                    search = search,
+                    schema = schema,
+                    domain = domain
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting business tables");
+            return StatusCode(500, new { error = "Failed to retrieve business tables", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get population status and statistics
+    /// </summary>
+    /// <returns>Population status information</returns>
+    [HttpGet("metadata/status")]
+    public async Task<ActionResult> GetPopulationStatusAsync()
+    {
+        try
+        {
+            await Task.CompletedTask;
+
+            return Ok(new
+            {
+                status = "Ready",
+                message = "Business metadata population service is operational",
+                capabilities = new
+                {
+                    aiGeneration = true,
+                    ruleBasedGeneration = true,
+                    batchProcessing = true,
+                    individualTableProcessing = true
+                },
+                checkedAt = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error checking population status");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Failed to get population status",
+                error = ex.Message
+            });
+        }
+    }
+
+    #endregion
+
+    private string GetCurrentUserId()
+    {
+        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "system";
+    }
 }

@@ -11,6 +11,7 @@ import {
   InfoCircleOutlined
 } from '@ant-design/icons'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
+import { realTimeService } from '@shared/services/realTimeService'
 
 const { Text, Title } = Typography
 
@@ -99,23 +100,24 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
     }
   ]
 
-  // Simulate real-time updates
+  // Real-time updates from API
   useEffect(() => {
     if (!showRealTime) return
 
-    const interval = setInterval(() => {
-      setCurrentMetrics(prev => ({
-        responseTime: prev.responseTime + (Math.random() - 0.5) * 200,
-        tokenUsage: prev.tokenUsage + (Math.random() - 0.5) * 100,
-        confidence: Math.max(0.7, Math.min(1.0, prev.confidence + (Math.random() - 0.5) * 0.1)),
-        cost: prev.cost + (Math.random() - 0.5) * 0.01,
-        successRate: Math.max(0.8, Math.min(1.0, prev.successRate + (Math.random() - 0.5) * 0.05)),
-        throughput: prev.throughput + (Math.random() - 0.5) * 2
-      }))
-    }, 5000)
+    // Subscribe to real-time performance updates via WebSocket
+    const unsubscribe = realTimeService.subscribeToSystemMetrics((metrics) => {
+      setCurrentMetrics({
+        responseTime: metrics.averageResponseTime || currentMetrics.responseTime,
+        tokenUsage: metrics.totalTokensUsed || currentMetrics.tokenUsage,
+        confidence: metrics.averageConfidence || currentMetrics.confidence,
+        cost: metrics.estimatedCost || currentMetrics.cost,
+        successRate: metrics.successRate || currentMetrics.successRate,
+        throughput: metrics.requestsPerMinute || currentMetrics.throughput
+      })
+    })
 
-    return () => clearInterval(interval)
-  }, [showRealTime])
+    return unsubscribe
+  }, [showRealTime, currentMetrics])
 
   const getMetricStatus = (value: number, thresholds: { good: number; warning: number }) => {
     if (value >= thresholds.good) return 'success'

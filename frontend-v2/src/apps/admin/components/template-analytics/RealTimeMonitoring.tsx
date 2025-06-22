@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { 
   Card, 
   Row, 
@@ -35,6 +35,9 @@ import {
   EyeOutlined
 } from '@ant-design/icons'
 import { PerformanceLineChart } from '@shared/components/charts/PerformanceChart'
+import {
+  useGetRealTimeAnalyticsQuery
+} from '@shared/store/api/templateAnalyticsApi'
 
 const { Title, Text } = Typography
 
@@ -71,127 +74,90 @@ export const RealTimeMonitoring: React.FC = () => {
   const [selectedTimeWindow, setSelectedTimeWindow] = useState('5m')
   const [autoRefresh, setAutoRefresh] = useState(true)
 
-  // Real-time metrics state
-  const [metrics, setMetrics] = useState<RealTimeMetric[]>([
-    { name: 'Active Users', value: 47, unit: '', status: 'normal', trend: 'up', threshold: 100 },
-    { name: 'Requests/Min', value: 156, unit: '/min', status: 'normal', trend: 'stable', threshold: 200 },
-    { name: 'Avg Response Time', value: 0.85, unit: 's', status: 'normal', trend: 'down', threshold: 2.0 },
-    { name: 'Error Rate', value: 2.3, unit: '%', status: 'normal', trend: 'down', threshold: 5.0 },
-    { name: 'CPU Usage', value: 67, unit: '%', status: 'warning', trend: 'up', threshold: 80 },
-    { name: 'Memory Usage', value: 78, unit: '%', status: 'warning', trend: 'up', threshold: 85 }
-  ])
+  // Real API calls
+  const {
+    data: realTimeData,
+    isLoading: isRealTimeLoading,
+    refetch: refetchRealTime
+  } = useGetRealTimeAnalyticsQuery()
 
-  const [events, setEvents] = useState<SystemEvent[]>([
-    {
-      id: '1',
-      timestamp: new Date().toISOString(),
-      type: 'warning',
-      source: 'SQL Template',
-      message: 'High response time detected',
-      details: 'Average response time exceeded 2s threshold'
-    },
-    {
-      id: '2',
-      timestamp: new Date(Date.now() - 60000).toISOString(),
-      type: 'info',
-      source: 'System',
-      message: 'Auto-scaling triggered',
-      details: 'Additional processing capacity added'
-    },
-    {
-      id: '3',
-      timestamp: new Date(Date.now() - 120000).toISOString(),
-      type: 'success',
-      source: 'Optimization',
-      message: 'Template optimization completed',
-      details: 'Insight generation template improved by 12%'
+  // Real-time metrics from API
+  const metrics: RealTimeMetric[] = useMemo(() => {
+    if (!realTimeData) {
+      return [
+        { name: 'Active Users', value: 0, unit: '', status: 'normal', trend: 'stable', threshold: 100 },
+        { name: 'Requests/Min', value: 0, unit: '/min', status: 'normal', trend: 'stable', threshold: 200 }
+      ]
     }
-  ])
 
-  const [activeSessions] = useState<ActiveSession[]>([
-    {
-      id: 'session_1',
-      userId: 'john.doe@company.com',
-      templateKey: 'sql_generation',
-      startTime: new Date(Date.now() - 300000).toISOString(),
-      status: 'active',
-      requestCount: 15,
-      avgResponseTime: 1.2
-    },
-    {
-      id: 'session_2',
-      userId: 'jane.smith@company.com',
-      templateKey: 'insight_generation',
-      startTime: new Date(Date.now() - 180000).toISOString(),
-      status: 'active',
-      requestCount: 8,
-      avgResponseTime: 0.9
-    },
-    {
-      id: 'session_3',
-      userId: 'mike.wilson@company.com',
-      templateKey: 'explanation',
-      startTime: new Date(Date.now() - 600000).toISOString(),
-      status: 'idle',
-      requestCount: 23,
-      avgResponseTime: 1.5
+    return [
+      { name: 'Active Users', value: realTimeData.activeUsers || 0, unit: '', status: 'normal', trend: 'up', threshold: 100 },
+      { name: 'Requests/Min', value: realTimeData.throughput || 0, unit: '/min', status: 'normal', trend: 'stable', threshold: 200 },
+      { name: 'Avg Response Time', value: realTimeData.averageResponseTime || 0, unit: 's', status: 'normal', trend: 'down', threshold: 2.0 },
+      { name: 'Error Rate', value: realTimeData.errorRate || 0, unit: '%', status: 'normal', trend: 'down', threshold: 5.0 },
+      { name: 'Active Templates', value: realTimeData.activeTemplates || 0, unit: '', status: 'normal', trend: 'stable', threshold: 50 }
+    ]
+  }, [realTimeData])
+
+  // Real events from API
+  const events: SystemEvent[] = useMemo(() => {
+    if (!realTimeData?.recentEvents) {
+      return []
     }
-  ])
 
-  // Mock real-time data for charts
-  const [chartData, setChartData] = useState([
-    { time: '10:00', requests: 120, responseTime: 0.8, errors: 2 },
-    { time: '10:01', requests: 135, responseTime: 0.9, errors: 1 },
-    { time: '10:02', requests: 142, responseTime: 0.7, errors: 3 },
-    { time: '10:03', requests: 156, responseTime: 0.85, errors: 2 },
-    { time: '10:04', requests: 148, responseTime: 0.9, errors: 1 }
-  ])
+    return realTimeData.recentEvents.map((event, index) => ({
+      id: event.id || `event-${index}`,
+      timestamp: event.timestamp || new Date().toISOString(),
+      type: event.type as any || 'info',
+      source: event.source || 'System',
+      message: event.message,
+      details: event.details
+    }))
+  }, [realTimeData])
 
-  // Simulate real-time updates
+  // Real active sessions from API
+  const activeSessions: ActiveSession[] = useMemo(() => {
+    if (!realTimeData?.activeSessions) {
+      return []
+    }
+
+    return realTimeData.activeSessions.map((session, index) => ({
+      id: session.id || `session-${index}`,
+      userId: session.userId || 'Unknown User',
+      templateKey: session.templateKey || 'unknown',
+      startTime: session.startTime || new Date().toISOString(),
+      status: session.status as any || 'active',
+      requestCount: session.requestCount || 0,
+      avgResponseTime: session.avgResponseTime || 0
+    }))
+  }, [realTimeData])
+
+  // Real chart data from API
+  const chartData = useMemo(() => {
+    if (!realTimeData?.timeSeriesData) {
+      return [
+        { time: '10:00', requests: 0, responseTime: 0, errors: 0 }
+      ]
+    }
+
+    return realTimeData.timeSeriesData.map(point => ({
+      time: new Date(point.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      requests: point.requests || 0,
+      responseTime: point.responseTime || 0,
+      errors: point.errors || 0
+    }))
+  }, [realTimeData])
+
+  // Real-time data refresh
   useEffect(() => {
     if (!autoRefresh || !isMonitoringActive) return
 
     const interval = setInterval(() => {
-      // Update metrics
-      setMetrics(prev => prev.map(metric => ({
-        ...metric,
-        value: Math.max(0, metric.value + (Math.random() - 0.5) * (metric.value * 0.1))
-      })))
-
-      // Update chart data
-      setChartData(prev => {
-        const newData = [...prev.slice(1)]
-        const lastTime = prev[prev.length - 1].time
-        const [hours, minutes] = lastTime.split(':').map(Number)
-        const newMinutes = minutes + 1
-        const newTime = `${hours}:${newMinutes.toString().padStart(2, '0')}`
-        
-        newData.push({
-          time: newTime,
-          requests: Math.floor(Math.random() * 50) + 120,
-          responseTime: Math.random() * 0.5 + 0.5,
-          errors: Math.floor(Math.random() * 5)
-        })
-        
-        return newData
-      })
-
-      // Occasionally add new events
-      if (Math.random() < 0.1) {
-        const newEvent: SystemEvent = {
-          id: Date.now().toString(),
-          timestamp: new Date().toISOString(),
-          type: ['info', 'warning', 'success'][Math.floor(Math.random() * 3)] as any,
-          source: ['SQL Template', 'System', 'Optimization'][Math.floor(Math.random() * 3)],
-          message: 'Real-time event detected',
-          details: 'Simulated real-time monitoring event'
-        }
-        setEvents(prev => [newEvent, ...prev.slice(0, 9)])
-      }
-    }, 2000)
+      refetchRealTime()
+    }, 5000) // Refresh every 5 seconds
 
     return () => clearInterval(interval)
-  }, [autoRefresh, isMonitoringActive])
+  }, [autoRefresh, isMonitoringActive, refetchRealTime])
 
   const getMetricStatus = (metric: RealTimeMetric) => {
     if (metric.value > metric.threshold) return 'critical'
@@ -350,7 +316,7 @@ export const RealTimeMonitoring: React.FC = () => {
       {/* Real-time Charts */}
       <Row gutter={16} style={{ marginBottom: '24px' }}>
         <Col span={16}>
-          <Card title="Real-time Performance Metrics">
+          <Card title="Real-time Performance Metrics" loading={isRealTimeLoading}>
             <PerformanceLineChart
               data={chartData}
               xAxisKey="time"
@@ -364,7 +330,7 @@ export const RealTimeMonitoring: React.FC = () => {
           </Card>
         </Col>
         <Col span={8}>
-          <Card title="System Events" style={{ height: '350px' }}>
+          <Card title="System Events" loading={isRealTimeLoading} style={{ height: '350px' }}>
             <div style={{ height: '280px', overflow: 'auto' }}>
               <Timeline size="small">
                 {events.map((event) => (
@@ -392,7 +358,7 @@ export const RealTimeMonitoring: React.FC = () => {
       </Row>
 
       {/* Active Sessions */}
-      <Card 
+      <Card
         title={
           <Space>
             <UserOutlined />
@@ -400,6 +366,7 @@ export const RealTimeMonitoring: React.FC = () => {
             <Badge count={activeSessions.filter(s => s.status === 'active').length} />
           </Space>
         }
+        loading={isRealTimeLoading}
         extra={
           <Button size="small" icon={<EyeOutlined />}>
             View All Sessions

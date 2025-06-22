@@ -38,7 +38,7 @@ class TransparencyIntegrationTester {
       const metricsStatus = metricsResponse.status
       
       // Test health endpoint (should work)
-      const healthResponse = await fetch('/api/health')
+      const healthResponse = await fetch('/api/system/health')
       const healthStatus = healthResponse.status
       
       const result: TestResult = {

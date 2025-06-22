@@ -147,7 +147,7 @@ public class QueryController : ControllerBase
     /// <param name="pageSize">Items per page (default: 20)</param>
     /// <returns>Paginated list of query history items</returns>
     [HttpGet("history")]
-    public async Task<ActionResult<PagedResult<QueryHistoryItem>>> GetQueryHistory(
+    public async Task<ActionResult<BIReportingCopilot.Core.Commands.PagedResult<QueryHistoryItem>>> GetQueryHistory(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] DateTime? startDate = null,

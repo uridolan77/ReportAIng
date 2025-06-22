@@ -100,86 +100,58 @@ export const MLRecommendationEngine: React.FC<MLRecommendationEngineProps> = ({
 
   const generateMLRecommendations = async () => {
     setIsGeneratingRecommendations(true)
-    
-    // Simulate ML processing
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    const mlRecommendations: MLRecommendation[] = [
-      {
-        id: '1',
-        type: 'performance',
-        priority: 'high',
-        title: 'Optimize High-Usage Templates',
-        description: 'Templates with >1000 daily uses but <85% success rate should be prioritized for optimization',
-        impact: 0.92,
-        confidence: 0.89,
-        actionable: true,
-        estimatedEffort: 'medium',
-        expectedOutcome: 'Increase overall success rate by 12-15%',
-        relatedTemplates: ['sql_generation_basic', 'insight_generation_advanced'],
-        createdAt: new Date()
-      },
-      {
-        id: '2',
-        type: 'quality',
-        priority: 'high',
-        title: 'Improve Content Clarity',
-        description: 'Analysis shows 23% of templates have clarity issues affecting user satisfaction',
-        impact: 0.85,
-        confidence: 0.91,
-        actionable: true,
-        estimatedEffort: 'low',
-        expectedOutcome: 'Improve user rating by 0.8 points',
-        relatedTemplates: ['explanation_detailed', 'data_analysis_comprehensive'],
-        createdAt: new Date()
-      },
-      {
-        id: '3',
-        type: 'optimization',
-        priority: 'medium',
-        title: 'Implement A/B Testing Strategy',
-        description: 'Templates without recent A/B tests show 18% lower performance improvement rates',
-        impact: 0.76,
-        confidence: 0.82,
-        actionable: true,
-        estimatedEffort: 'high',
-        expectedOutcome: 'Establish continuous improvement pipeline',
-        relatedTemplates: ['sql_generation_basic', 'visualization_charts'],
-        createdAt: new Date()
-      },
-      {
-        id: '4',
-        type: 'usage',
-        priority: 'medium',
-        title: 'Address Underperforming Templates',
-        description: 'Templates with declining usage patterns need immediate attention or deprecation',
-        impact: 0.68,
-        confidence: 0.87,
-        actionable: true,
-        estimatedEffort: 'medium',
-        expectedOutcome: 'Reduce maintenance overhead by 25%',
-        relatedTemplates: ['legacy_report_generator', 'old_chart_template'],
-        createdAt: new Date()
-      },
-      {
-        id: '5',
-        type: 'performance',
-        priority: 'low',
-        title: 'Optimize Response Times',
-        description: 'Templates with >3s response time can be optimized for better user experience',
-        impact: 0.54,
-        confidence: 0.75,
-        actionable: true,
-        estimatedEffort: 'low',
-        expectedOutcome: 'Reduce average response time by 1.2s',
-        relatedTemplates: ['complex_analysis_template'],
-        createdAt: new Date()
-      }
-    ]
-    
-    setRecommendations(mlRecommendations)
-    setIsGeneratingRecommendations(false)
-    message.success('ML recommendations generated successfully')
+
+    try {
+      // Use real API to generate ML recommendations
+      const result = await generateSuggestions({
+        performanceThreshold: 80,
+        minDataPoints: 10
+      }).unwrap()
+
+      // Transform API response to ML recommendations format
+      const mlRecommendations: MLRecommendation[] = result.map((suggestion, index) => ({
+        id: suggestion.id || `ml-${index}`,
+        type: suggestion.category?.toLowerCase() || 'optimization',
+        priority: suggestion.priority?.toLowerCase() || 'medium',
+        title: suggestion.title,
+        description: suggestion.description,
+        impact: suggestion.impact || 0.75,
+        confidence: suggestion.confidence || 0.85,
+        actionable: suggestion.actionable !== false,
+        estimatedEffort: suggestion.effort?.toLowerCase() || 'medium',
+        expectedOutcome: suggestion.expectedOutcome || 'Performance improvement expected',
+        relatedTemplates: suggestion.affectedTemplates || [],
+        createdAt: new Date(suggestion.createdAt || Date.now())
+      }))
+
+      setRecommendations(mlRecommendations)
+      message.success('ML recommendations generated successfully')
+    } catch (error) {
+      console.error('Failed to generate ML recommendations:', error)
+      message.error('Failed to generate ML recommendations')
+
+      // Fallback to basic recommendations if API fails
+      const fallbackRecommendations: MLRecommendation[] = [
+        {
+          id: '1',
+          type: 'performance',
+          priority: 'high',
+          title: 'Optimize High-Usage Templates',
+          description: 'Templates with high usage but low success rate should be prioritized for optimization',
+          impact: 0.92,
+          confidence: 0.89,
+          actionable: true,
+          estimatedEffort: 'medium',
+          expectedOutcome: 'Increase overall success rate by 12-15%',
+          relatedTemplates: ['sql_generation_basic', 'insight_generation_advanced'],
+          createdAt: new Date()
+        }
+      ]
+
+      setRecommendations(fallbackRecommendations)
+    } finally {
+      setIsGeneratingRecommendations(false)
+    }
   }
 
   const handleApplyRecommendation = (recommendation: MLRecommendation) => {

@@ -1,4 +1,4 @@
-# Frontend Integration Summary - Performance Analytics Dashboard
+# Frontend Integration Summary - TemplatePerformance Analytics Dashboard
 
 ## 🚀 Quick Start
 

@@ -94,34 +94,69 @@ export const CostOptimizationPanel: React.FC<CostOptimizationPanelProps> = ({
   const { data: agentAnalytics, isLoading: analyticsLoading } = useGetTransparencyMetricsQuery({ days: selectedTimeRange, includeDetails: true })
   const { data: transparencyMetrics, isLoading: metricsLoading } = useGetTransparencyMetricsQuery({ days: selectedTimeRange })
 
-  // Mock cost data (replace with real API data)
-  const costData = {
-    totalCost: 1247.85,
-    monthlyBudget: 2000,
-    dailyAverage: 41.60,
-    projectedMonthly: 1456.20,
-    lastMonthCost: 1189.45,
-    trend: 'up' as const
-  }
+  // Real cost data from API
+  const costData = useMemo(() => {
+    if (!agentAnalytics?.data) {
+      return {
+        totalCost: 0,
+        monthlyBudget: 2000,
+        dailyAverage: 0,
+        projectedMonthly: 0,
+        lastMonthCost: 0,
+        trend: 'stable' as const
+      }
+    }
 
-  // Cost breakdown data
-  const costBreakdown: CostBreakdown[] = [
-    { category: 'GPT-4', amount: 567.23, percentage: 45.5, trend: 'up', color: '#1890ff' },
-    { category: 'Claude-3', amount: 324.67, percentage: 26.0, trend: 'stable', color: '#52c41a' },
-    { category: 'GPT-3.5', amount: 198.45, percentage: 15.9, trend: 'down', color: '#faad14' },
-    { category: 'Gemini', amount: 157.50, percentage: 12.6, trend: 'up', color: '#722ed1' }
-  ]
+    const analytics = agentAnalytics.data
+    const totalCost = analytics.totalCost || 0
+    const dailyAverage = analytics.averageDailyCost || 0
+    const projectedMonthly = dailyAverage * 30
+    const lastMonthCost = analytics.lastMonthCost || 0
+    const trend = totalCost > lastMonthCost ? 'up' : totalCost < lastMonthCost ? 'down' : 'stable'
 
-  // Cost trend data
-  const costTrendData = [
-    { date: '2024-01-01', cost: 38.50, budget: 66.67, savings: 0 },
-    { date: '2024-01-02', cost: 42.75, budget: 66.67, savings: 5.20 },
-    { date: '2024-01-03', cost: 35.20, budget: 66.67, savings: 8.15 },
-    { date: '2024-01-04', cost: 48.80, budget: 66.67, savings: 12.30 },
-    { date: '2024-01-05', cost: 41.25, budget: 66.67, savings: 15.45 },
-    { date: '2024-01-06', cost: 52.60, budget: 66.67, savings: 18.90 },
-    { date: '2024-01-07', cost: 45.45, budget: 66.67, savings: 22.15 }
-  ]
+    return {
+      totalCost,
+      monthlyBudget: 2000, // This could come from settings API
+      dailyAverage,
+      projectedMonthly,
+      lastMonthCost,
+      trend
+    }
+  }, [agentAnalytics])
+
+  // Real cost breakdown data from API
+  const costBreakdown: CostBreakdown[] = useMemo(() => {
+    if (!agentAnalytics?.data?.costByModel) {
+      return []
+    }
+
+    const costByModel = agentAnalytics.data.costByModel
+    const totalCost = Object.values(costByModel).reduce((sum: number, cost: any) => sum + (cost || 0), 0)
+    const colors = ['#1890ff', '#52c41a', '#faad14', '#722ed1', '#fa8c16', '#eb2f96']
+
+    return Object.entries(costByModel).map(([model, cost], index) => ({
+      category: model,
+      amount: cost as number,
+      percentage: totalCost > 0 ? ((cost as number) / totalCost) * 100 : 0,
+      trend: 'stable' as const, // Could be calculated from historical data
+      color: colors[index % colors.length]
+    }))
+  }, [agentAnalytics])
+
+  // Real cost trend data from API
+  const costTrendData = useMemo(() => {
+    if (!agentAnalytics?.data?.dailyMetrics) {
+      return []
+    }
+
+    const dailyBudget = costData.monthlyBudget / 30
+    return agentAnalytics.data.dailyMetrics.map((metric: any, index: number) => ({
+      date: metric.date,
+      cost: metric.estimatedCost || 0,
+      budget: dailyBudget,
+      savings: metric.estimatedSavings || 0
+    }))
+  }, [agentAnalytics, costData.monthlyBudget])
 
   // Optimization recommendations
   const optimizations: CostOptimization[] = [

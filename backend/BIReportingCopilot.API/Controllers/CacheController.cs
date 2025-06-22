@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Interfaces.AI;
+using BIReportingCopilot.Core.Interfaces.CostOptimization;
 using BIReportingCopilot.Core;
 using BIReportingCopilot.Core.Commands;
+using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Handlers;
 using BIReportingCopilot.Infrastructure.Handlers.AI;
 using BIReportingCopilot.Infrastructure.AI.Intelligence;
@@ -15,7 +17,8 @@ using System.Text;
 namespace BIReportingCopilot.API.Controllers;
 
 /// <summary>
-/// Cache Controller - Provides cache operations and semantic cache management
+/// Consolidated Cache Controller - Provides cache operations, semantic cache management, and optimization
+/// Combines functionality from CacheController and CacheOptimizationController
 /// </summary>
 [ApiController]
 [Route("api/cache")]
@@ -26,17 +29,20 @@ public class CacheController : ControllerBase
     private readonly ILogger<CacheController> _logger;
     private readonly IMediator _mediator;
     private readonly IVectorSearchService _vectorSearchService;
+    private readonly ICacheOptimizationService _cacheOptimizationService;
 
     public CacheController(
         ICacheService cacheService,
         ILogger<CacheController> logger,
         IMediator mediator,
-        IVectorSearchService vectorSearchService)
+        IVectorSearchService vectorSearchService,
+        ICacheOptimizationService cacheOptimizationService)
     {
         _cacheService = cacheService;
         _logger = logger;
         _mediator = mediator;
         _vectorSearchService = vectorSearchService;
+        _cacheOptimizationService = cacheOptimizationService;
     }
 
     #region Basic Cache Operations
@@ -458,6 +464,307 @@ public class CacheController : ControllerBase
     }
 
     #endregion
+
+    #region Cache Optimization Operations (from CacheOptimizationController)
+
+    /// <summary>
+    /// Get cache statistics for a specific cache type
+    /// </summary>
+    [HttpGet("optimization/statistics/{cacheType}")]
+    public async Task<IActionResult> GetCacheStatistics(string cacheType)
+    {
+        try
+        {
+            var statistics = await _cacheOptimizationService.GetCacheStatisticsAsync(cacheType);
+
+            return Ok(new
+            {
+                success = true,
+                cacheType = cacheType,
+                statistics = statistics
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cache statistics for {CacheType}", cacheType);
+            return StatusCode(500, new { success = false, error = "Failed to retrieve cache statistics" });
+        }
+    }
+
+    /// <summary>
+    /// Get statistics for all cache types
+    /// </summary>
+    [HttpGet("optimization/statistics")]
+    public async Task<IActionResult> GetAllCacheStatistics()
+    {
+        try
+        {
+            var allStatistics = await _cacheOptimizationService.GetAllCacheStatisticsAsync();
+
+            return Ok(new
+            {
+                success = true,
+                statistics = allStatistics
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all cache statistics");
+            return StatusCode(500, new { success = false, error = "Failed to retrieve cache statistics" });
+        }
+    }
+
+    /// <summary>
+    /// Get cache operation history
+    /// </summary>
+    [HttpGet("optimization/history/{cacheType}")]
+    public async Task<IActionResult> GetCacheOperationHistory(
+        string cacheType,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null)
+    {
+        try
+        {
+            var history = await _cacheOptimizationService.GetCacheOperationHistoryAsync(cacheType, startDate, endDate);
+
+            return Ok(new
+            {
+                success = true,
+                cacheType = cacheType,
+                history = history,
+                period = new { startDate, endDate }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cache operation history for {CacheType}", cacheType);
+            return StatusCode(500, new { success = false, error = "Failed to retrieve cache operation history" });
+        }
+    }
+
+    /// <summary>
+    /// Get cache configurations
+    /// </summary>
+    [HttpGet("optimization/configurations")]
+    public async Task<IActionResult> GetCacheConfigurations()
+    {
+        try
+        {
+            var configurations = await _cacheOptimizationService.GetAllCacheConfigurationsAsync();
+
+            return Ok(new
+            {
+                success = true,
+                configurations = configurations
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cache configurations");
+            return StatusCode(500, new { success = false, error = "Failed to retrieve cache configurations" });
+        }
+    }
+
+    /// <summary>
+    /// Get cache configuration for a specific type
+    /// </summary>
+    [HttpGet("optimization/configurations/{cacheType}")]
+    public async Task<IActionResult> GetCacheConfiguration(string cacheType)
+    {
+        try
+        {
+            var configuration = await _cacheOptimizationService.GetCacheConfigurationAsync(cacheType);
+
+            if (configuration == null)
+            {
+                return NotFound(new { success = false, error = "Cache configuration not found" });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                configuration = configuration
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cache configuration for {CacheType}", cacheType);
+            return StatusCode(500, new { success = false, error = "Failed to retrieve cache configuration" });
+        }
+    }
+
+    /// <summary>
+    /// Create a new cache configuration
+    /// </summary>
+    [HttpPost("optimization/configurations")]
+    public async Task<IActionResult> CreateCacheConfiguration([FromBody] CacheConfiguration configuration)
+    {
+        try
+        {
+            var createdConfiguration = await _cacheOptimizationService.CreateCacheConfigurationAsync(configuration);
+
+            return CreatedAtAction(nameof(GetCacheConfiguration),
+                new { cacheType = createdConfiguration.CacheType },
+                new
+                {
+                    success = true,
+                    configuration = createdConfiguration
+                });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating cache configuration");
+            return StatusCode(500, new { success = false, error = "Failed to create cache configuration" });
+        }
+    }
+
+    /// <summary>
+    /// Update a cache configuration
+    /// </summary>
+    [HttpPut("optimization/configurations/{configId}")]
+    public async Task<IActionResult> UpdateCacheConfiguration(string configId, [FromBody] CacheConfiguration configuration)
+    {
+        try
+        {
+            configuration.Id = configId;
+            var updatedConfiguration = await _cacheOptimizationService.UpdateCacheConfigurationAsync(configuration);
+
+            return Ok(new
+            {
+                success = true,
+                configuration = updatedConfiguration
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating cache configuration {ConfigId}", configId);
+            return StatusCode(500, new { success = false, error = "Failed to update cache configuration" });
+        }
+    }
+
+    /// <summary>
+    /// Delete a cache configuration
+    /// </summary>
+    [HttpDelete("optimization/configurations/{configId}")]
+    public async Task<IActionResult> DeleteCacheConfiguration(string configId)
+    {
+        try
+        {
+            var deleted = await _cacheOptimizationService.DeleteCacheConfigurationAsync(configId);
+
+            if (!deleted)
+            {
+                return NotFound(new { success = false, error = "Cache configuration not found" });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Cache configuration deleted successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting cache configuration {ConfigId}", configId);
+            return StatusCode(500, new { success = false, error = "Failed to delete cache configuration" });
+        }
+    }
+
+    /// <summary>
+    /// Invalidate cache by pattern
+    /// </summary>
+    [HttpPost("optimization/invalidate/pattern")]
+    public async Task<IActionResult> InvalidateCacheByPattern([FromBody] InvalidateByPatternRequest request)
+    {
+        try
+        {
+            await _cacheOptimizationService.InvalidateCacheByPatternAsync(request.Pattern);
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Cache entries matching pattern '{request.Pattern}' invalidated successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error invalidating cache by pattern {Pattern}", request.Pattern);
+            return StatusCode(500, new { success = false, error = "Failed to invalidate cache by pattern" });
+        }
+    }
+
+    /// <summary>
+    /// Invalidate cache by tags
+    /// </summary>
+    [HttpPost("optimization/invalidate/tags")]
+    public async Task<IActionResult> InvalidateCacheByTags([FromBody] InvalidateByTagsRequest request)
+    {
+        try
+        {
+            await _cacheOptimizationService.InvalidateCacheByTagsAsync(request.Tags);
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Cache entries with tags [{string.Join(", ", request.Tags)}] invalidated successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error invalidating cache by tags");
+            return StatusCode(500, new { success = false, error = "Failed to invalidate cache by tags" });
+        }
+    }
+
+    /// <summary>
+    /// Get cache optimization recommendations
+    /// </summary>
+    [HttpGet("optimization/recommendations")]
+    public async Task<IActionResult> GetOptimizationRecommendations([FromQuery] string? cacheType = null)
+    {
+        try
+        {
+            var recommendations = await _cacheOptimizationService.GetCacheOptimizationRecommendationsAsync(cacheType);
+
+            return Ok(new
+            {
+                success = true,
+                recommendations = recommendations,
+                cacheType = cacheType
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cache optimization recommendations");
+            return StatusCode(500, new { success = false, error = "Failed to retrieve optimization recommendations" });
+        }
+    }
+
+    /// <summary>
+    /// Get cache health status
+    /// </summary>
+    [HttpGet("optimization/health")]
+    public async Task<IActionResult> GetCacheHealthStatus()
+    {
+        try
+        {
+            var healthStatus = await _cacheOptimizationService.GetCacheHealthStatusAsync();
+
+            return Ok(new
+            {
+                success = true,
+                healthStatus = healthStatus,
+                timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cache health status");
+            return StatusCode(500, new { success = false, error = "Failed to retrieve cache health status" });
+        }
+    }
+
+    #endregion
 }
 
 /// <summary>
@@ -499,4 +806,23 @@ public class TestCacheLookupRequest
     public string? SqlQuery { get; set; }
     public double SimilarityThreshold { get; set; } = 0.85;
     public int MaxResults { get; set; } = 5;
+}
+
+/// <summary>
+/// Request models from CacheOptimizationController
+/// </summary>
+public class InvalidateByPatternRequest
+{
+    public string Pattern { get; set; } = string.Empty;
+}
+
+public class InvalidateByTagsRequest
+{
+    public List<string> Tags { get; set; } = new();
+}
+
+public class ScheduleInvalidationRequest
+{
+    public string CacheKey { get; set; } = string.Empty;
+    public DateTime InvalidationTime { get; set; }
 }

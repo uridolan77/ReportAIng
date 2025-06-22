@@ -216,43 +216,43 @@ export const adminApi = baseApi.injectEndpoints({
     
     // System Configuration
     getSystemConfiguration: builder.query<SystemConfiguration, void>({
-      query: () => '/configuration/system',
+      query: () => '/system/configuration/application',
       providesTags: ['SystemConfig'],
     }),
-    
+
     updateSystemConfiguration: builder.mutation<{ success: boolean }, Partial<SystemConfiguration>>({
       query: (body) => ({
-        url: '/configuration/system',
+        url: '/system/configuration/application',
         method: 'PUT',
         body,
       }),
       invalidatesTags: ['SystemConfig'],
     }),
-    
+
     // AI Provider Settings
     getAIProviders: builder.query<AIProviderConfig[], void>({
-      query: () => '/configuration/ai-providers',
+      query: () => '/system/configuration/ai',
       providesTags: ['SystemConfig'],
     }),
-    
+
     updateAIProvider: builder.mutation<{ success: boolean }, { providerId: string; config: Partial<AIProviderConfig> }>({
       query: ({ providerId, config }) => ({
-        url: `/configuration/ai-providers/${providerId}`,
+        url: `/system/configuration/ai-providers/${providerId}`,
         method: 'PUT',
         body: config,
       }),
       invalidatesTags: ['SystemConfig'],
     }),
-    
+
     // Security Settings
     getSecuritySettings: builder.query<SecuritySettings, void>({
-      query: () => '/configuration/security',
+      query: () => '/system/configuration/security',
       providesTags: ['SystemConfig'],
     }),
-    
+
     updateSecuritySettings: builder.mutation<{ success: boolean }, Partial<SecuritySettings>>({
       query: (body) => ({
-        url: '/configuration/security',
+        url: '/system/configuration/security',
         method: 'PUT',
         body,
       }),
@@ -274,7 +274,7 @@ export const adminApi = baseApi.injectEndpoints({
       metadata: any
     }>({
       query: ({ schemaName, tableName, metadata }) => ({
-        url: `/semantic/tables/${schemaName}/${tableName}/metadata`,
+        url: `/semantic-layer/enhanced/table/${schemaName}/${tableName}`,
         method: 'PUT',
         body: metadata,
       }),
@@ -286,7 +286,7 @@ export const adminApi = baseApi.injectEndpoints({
       metadata: any
     }>({
       query: ({ tableName, columnName, metadata }) => ({
-        url: `/semantic/columns/${tableName}/${columnName}/metadata`,
+        url: `/semantic-layer/enhanced/column/${tableName}/${columnName}`,
         method: 'PUT',
         body: metadata,
       }),
@@ -295,14 +295,14 @@ export const adminApi = baseApi.injectEndpoints({
     // Semantic Embeddings
     generateSemanticEmbeddings: builder.mutation<number, { forceRegeneration?: boolean }>({
       query: ({ forceRegeneration = false }) => ({
-        url: `/semantic/embeddings/generate?forceRegeneration=${forceRegeneration}`,
+        url: `/semantic-layer/enhanced/embeddings/generate?forceRegeneration=${forceRegeneration}`,
         method: 'POST',
       }),
     }),
 
     // Semantic Validation
     validateSemanticMetadata: builder.query<any, void>({
-      query: () => '/semantic/validate',
+      query: () => '/semantic-layer/enhanced/validate',
     }),
 
     // Semantic Enrichment
@@ -311,7 +311,7 @@ export const adminApi = baseApi.injectEndpoints({
       forceRegeneration?: boolean
     }>({
       query: (body) => ({
-        url: '/semantic/enrich',
+        url: '/semantic-layer/enhanced/enrich',
         method: 'POST',
         body,
       }),

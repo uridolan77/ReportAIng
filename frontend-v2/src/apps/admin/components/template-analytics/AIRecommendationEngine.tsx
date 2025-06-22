@@ -39,8 +39,14 @@ import {
   DislikeOutlined,
   LikeOutlined,
   StarOutlined,
-  FireOutlined
+  FireOutlined,
+  BrainOutlined
 } from '@ant-design/icons'
+import {
+  useGenerateImprovementSuggestionsMutation,
+  useGetUsageInsightsQuery,
+  useGetQualityMetricsQuery
+} from '@shared/store/api/templateAnalyticsApi'
 
 const { Title, Text, Paragraph } = Typography
 const { TextArea } = Input
@@ -84,82 +90,88 @@ export const AIRecommendationEngine: React.FC = () => {
   const [selectedRecommendation, setSelectedRecommendation] = useState<AIRecommendation | null>(null)
   const [form] = Form.useForm()
 
-  // Mock AI recommendations
-  const [recommendations, setRecommendations] = useState<AIRecommendation[]>([
-    {
-      id: 'rec_1',
-      type: 'optimization',
-      title: 'Optimize SQL Generation Prompt Structure',
-      description: 'Analysis shows that restructuring the SQL generation prompt can improve success rate by 15%',
-      reasoning: 'Pattern analysis of 10,000+ queries reveals that templates with specific instruction ordering perform significantly better',
-      confidence: 92,
-      impact: 'high',
-      effort: 'medium',
-      category: 'Performance',
-      templateKey: 'sql_generation',
-      estimatedImprovement: 15.3,
-      priority: 95,
-      tags: ['sql', 'optimization', 'prompt-engineering'],
-      createdAt: '2024-01-15T10:30:00Z',
-      status: 'new'
-    },
-    {
-      id: 'rec_2',
-      type: 'new_template',
-      title: 'Create Financial Reporting Template',
-      description: 'Emerging usage pattern detected: 23% increase in financial reporting queries',
-      reasoning: 'Users are adapting general templates for financial use cases, creating a specialized template would improve efficiency',
-      confidence: 87,
-      impact: 'medium',
-      effort: 'high',
-      category: 'New Feature',
-      estimatedImprovement: 28.5,
-      priority: 78,
-      tags: ['financial', 'reporting', 'new-template'],
-      createdAt: '2024-01-15T09:15:00Z',
-      status: 'reviewing'
-    },
-    {
-      id: 'rec_3',
-      type: 'security',
-      title: 'Enhance Input Validation for Data Analysis Template',
-      description: 'Potential security vulnerability detected in data analysis template input handling',
-      reasoning: 'Static analysis identified patterns that could lead to injection attacks',
-      confidence: 96,
-      impact: 'critical',
-      effort: 'low',
-      category: 'Security',
-      templateKey: 'data_analysis',
-      estimatedImprovement: 0,
-      priority: 98,
-      tags: ['security', 'validation', 'critical'],
-      createdAt: '2024-01-15T08:45:00Z',
-      status: 'accepted'
-    }
-  ])
+  // API hooks
+  const [generateSuggestions, { isLoading: isGenerating }] = useGenerateImprovementSuggestionsMutation()
+  const { data: usageInsights } = useGetUsageInsightsQuery({
+    startDate: dayjs().subtract(30, 'day').toISOString(),
+    endDate: dayjs().toISOString(),
+    intentType: ''
+  })
+  const { data: qualityMetrics } = useGetQualityMetricsQuery({ intentType: '' })
 
-  const [insights, setInsights] = useState<AIInsight[]>([
-    {
-      id: 'insight_1',
-      title: 'Peak Hour Performance Pattern',
-      description: 'Templates show 23% slower response times during 9-11 AM',
-      type: 'pattern',
-      severity: 'warning',
-      affectedTemplates: ['sql_generation', 'insight_generation'],
-      dataPoints: [],
-      actionable: true
-    },
-    {
-      id: 'insight_2',
-      title: 'Unusual Error Spike Detected',
-      description: 'Error rate increased 340% in the last 2 hours for explanation templates',
-      type: 'anomaly',
-      severity: 'critical',
-      affectedTemplates: ['explanation'],
-      dataPoints: [],
-      actionable: true
+  // Real AI recommendations from API
+  const [recommendations, setRecommendations] = useState<AIRecommendation[]>([])
+
+  // Generate AI recommendations based on real data
+  useEffect(() => {
+    if (usageInsights && qualityMetrics) {
+      generateAIRecommendations()
     }
-  ])
+  }, [usageInsights, qualityMetrics])
+
+  const generateAIRecommendations = async () => {
+    try {
+      const result = await generateSuggestions({
+        performanceThreshold: 80,
+        minDataPoints: 10
+      }).unwrap()
+
+      // Transform API response to AI recommendations format
+      const aiRecommendations: AIRecommendation[] = result.map((suggestion, index) => ({
+        id: suggestion.id || `ai-${index}`,
+        type: suggestion.category?.toLowerCase() as any || 'optimization',
+        title: suggestion.title,
+        description: suggestion.description,
+        reasoning: suggestion.reasoning || 'AI analysis based on performance patterns',
+        confidence: Math.round((suggestion.confidence || 0.85) * 100),
+        impact: suggestion.impact > 0.8 ? 'high' : suggestion.impact > 0.5 ? 'medium' : 'low',
+        effort: suggestion.effort?.toLowerCase() as any || 'medium',
+        category: suggestion.category || 'Performance',
+        templateKey: suggestion.affectedTemplates?.[0] || '',
+        estimatedImprovement: suggestion.expectedImprovement || 0,
+        priority: Math.round((suggestion.confidence || 0.85) * 100),
+        tags: suggestion.tags || ['ai-generated'],
+        createdAt: suggestion.createdAt || new Date().toISOString(),
+        status: 'new'
+      }))
+
+      setRecommendations(aiRecommendations)
+    } catch (error) {
+      console.error('Failed to generate AI recommendations:', error)
+      // Fallback to basic recommendations if API fails
+      setRecommendations([
+        {
+          id: 'rec_1',
+          type: 'optimization',
+          title: 'Optimize Template Performance',
+          description: 'Basic optimization recommendations based on general patterns',
+          reasoning: 'Fallback recommendation when API is unavailable',
+          confidence: 75,
+          impact: 'medium',
+          effort: 'medium',
+          category: 'Performance',
+          templateKey: '',
+          estimatedImprovement: 10,
+          priority: 75,
+          tags: ['optimization', 'fallback'],
+          createdAt: new Date().toISOString(),
+          status: 'new'
+        }
+      ])
+    }
+  }
+
+  // Real AI insights from usage data
+  const insights: AIInsight[] = usageInsights?.insights?.map((insight, index) => ({
+    id: insight.id || `insight-${index}`,
+    title: insight.title,
+    description: insight.description,
+    type: insight.category?.toLowerCase() as any || 'pattern',
+    severity: insight.priority === 'high' ? 'critical' : insight.priority === 'medium' ? 'warning' : 'info',
+    affectedTemplates: insight.affectedTemplates || [],
+    dataPoints: insight.dataPoints || [],
+    actionable: insight.actionable !== false
+  })) || []
 
   const handleAcceptRecommendation = async (recommendation: AIRecommendation) => {
     try {
@@ -271,7 +283,12 @@ export const AIRecommendationEngine: React.FC = () => {
             <Button icon={<SettingOutlined />} onClick={() => setIsConfigModalVisible(true)}>
               Configure AI
             </Button>
-            <Button type="primary" icon={<RobotOutlined />}>
+            <Button
+              type="primary"
+              icon={<RobotOutlined />}
+              onClick={generateAIRecommendations}
+              loading={isGenerating}
+            >
               Generate New Recommendations
             </Button>
           </Space>

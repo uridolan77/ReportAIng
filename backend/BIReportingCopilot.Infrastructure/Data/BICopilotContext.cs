@@ -152,7 +152,7 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.Tags).HasMaxLength(1000);
 
             // Map entity property to correct database column name
-            entity.Property(e => e.LastBusinessReview).HasColumnName("LastBusinessReview");
+            entity.Property(e => e.LastBusinessReviewDate).HasColumnName("LastBusinessReviewDate");
 
             // Fix decimal precision warnings
             entity.Property(e => e.SuccessRate).HasPrecision(5, 2);
