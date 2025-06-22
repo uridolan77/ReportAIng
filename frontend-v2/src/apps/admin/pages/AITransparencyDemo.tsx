@@ -17,17 +17,17 @@ import { AIFeatureWrapper } from '@shared/components/ai/common/AIFeatureWrapper'
 const { Title, Text, Paragraph } = Typography
 
 /**
- * AITransparencyDemo - Demonstration page for AI transparency components
- * 
- * This page showcases:
+ * AITransparencyAnalysis - AI transparency analysis and exploration page
+ *
+ * This page provides:
  * - Complete AI transparency panel
  * - Individual transparency components
- * - Different configuration options
- * - Interactive examples
- * - Integration patterns
+ * - Interactive analysis tools
+ * - Decision exploration
+ * - Component examples
  */
-export const AITransparencyDemo: React.FC = () => {
-  const [activeDemo, setActiveDemo] = useState('complete')
+export const AITransparencyAnalysis: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('complete')
   const [demoTraceId] = useState('demo-trace-001')
 
   // Mock data for demonstrations
@@ -188,13 +188,6 @@ LIMIT 100`,
       ),
       children: (
         <div>
-          <Alert
-            message="Complete AI Transparency Panel"
-            description="This demonstrates the full transparency panel with all features enabled."
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
           <AITransparencyPanel
             traceId={demoTraceId}
             showDetailedMetrics={true}
@@ -213,13 +206,6 @@ LIMIT 100`,
       ),
       children: (
         <div>
-          <Alert
-            message="Prompt Construction Viewer"
-            description="Shows step-by-step prompt building process with confidence indicators."
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
           <PromptConstructionViewer
             trace={mockTrace}
             interactive={true}
@@ -238,13 +224,6 @@ LIMIT 100`,
       ),
       children: (
         <div>
-          <Alert
-            message="Confidence Breakdown Chart"
-            description="Interactive visualization of confidence factors and analysis."
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
           <ConfidenceBreakdownChart
             analysis={mockAnalysis}
             showFactors={true}
@@ -264,13 +243,6 @@ LIMIT 100`,
       ),
       children: (
         <div>
-          <Alert
-            message="AI Decision Explainer"
-            description="Detailed explanation of AI reasoning and optimization suggestions."
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
           <AIDecisionExplainer
             explanation={mockExplanation}
             showAlternatives={true}
@@ -289,14 +261,6 @@ LIMIT 100`,
       ),
       children: (
         <div>
-          <Alert
-            message="Individual Component Examples"
-            description="Examples of individual transparency components in different configurations."
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-          
           <Row gutter={[16, 16]}>
             <Col span={8}>
               <Card title="Confidence Indicators" size="small">
@@ -360,20 +324,19 @@ LIMIT 100`,
         <Title level={2}>
           <Space>
             <EyeOutlined />
-            AI Transparency Components Demo
+            AI Transparency Analysis
           </Space>
         </Title>
         <Paragraph>
-          This page demonstrates the comprehensive AI transparency components that provide 
-          visibility into AI decision-making processes. These components help users understand 
-          how AI arrives at its conclusions, building trust and enabling better collaboration 
-          between humans and AI systems.
+          Explore AI decision-making processes with comprehensive transparency tools.
+          Analyze confidence factors, examine prompt construction, and understand
+          how AI arrives at its conclusions.
         </Paragraph>
       </div>
 
       <Tabs
-        activeKey={activeDemo}
-        onChange={setActiveDemo}
+        activeKey={activeTab}
+        onChange={setActiveTab}
         items={tabItems}
         size="large"
       />
@@ -381,4 +344,4 @@ LIMIT 100`,
   )
 }
 
-export default AITransparencyDemo
+export default AITransparencyAnalysis

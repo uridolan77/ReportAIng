@@ -91,8 +91,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (path === '/admin/system-config') return ['admin-config']
     if (path === '/admin/ai-analytics') return ['admin-ai-analytics']
     if (path === '/admin/llm-management') return ['admin-llm-management']
-    if (path === '/admin/ai-transparency') return ['admin-ai-transparency']
-    if (path === '/admin/llm-management') return ['admin-llm-management']
+
+    // AI Transparency submenu items
+    if (path === '/admin/transparency-dashboard') return ['admin-ai-transparency-dashboard']
+    if (path === '/admin/transparency-management') return ['admin-transparency-management']
+    if (path === '/admin/transparency-review') return ['admin-transparency-review']
+
+    // Demo and test pages
     if (path === '/admin/ai-transparency') return ['admin-ai-transparency']
     if (path === '/admin/ai-transparency-demo') return ['admin-ai-transparency-demo']
     if (path === '/admin/business-intelligence-demo') return ['admin-business-intelligence-demo']
