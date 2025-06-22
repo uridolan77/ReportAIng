@@ -18,7 +18,8 @@ import {
   Switch,
   Alert,
   Tooltip,
-  Badge
+  Badge,
+  Divider
 } from 'antd'
 import {
   DatabaseOutlined,
@@ -30,7 +31,11 @@ import {
   DeleteOutlined,
   PlusOutlined,
   ExportOutlined,
-  ImportOutlined
+  ImportOutlined,
+  EyeOutlined,
+  BarChartOutlined,
+  RobotOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons'
 import {
   useGetTuningDashboardQuery,
@@ -41,6 +46,11 @@ import {
   useCreateQueryPatternMutation,
   useUpdatePromptTemplateMutation
 } from '@shared/store/api/tuningApi'
+import { useGetTransparencyDashboardMetricsQuery } from '@shared/store/api/transparencyApi'
+import { useGetAgentAnalyticsQuery } from '@shared/store/api/intelligentAgentsApi'
+import { AIFeatureWrapper } from '@shared/components/ai/common/AIFeatureWrapper'
+import { ConfidenceIndicator } from '@shared/components/ai/common/ConfidenceIndicator'
+import { AITransparencyPanel } from '@shared/components/ai/transparency/AITransparencyPanel'
 import { useResponsive } from '@shared/hooks/useResponsive'
 
 const { Title, Text } = Typography
@@ -54,6 +64,8 @@ export const TuningDashboard: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<any>(null)
   const [showTableModal, setShowTableModal] = useState(false)
   const [showPatternModal, setShowPatternModal] = useState(false)
+  const [showTransparencyPanel, setShowTransparencyPanel] = useState(false)
+  const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null)
   const [form] = Form.useForm()
 
   const {
@@ -75,6 +87,17 @@ export const TuningDashboard: React.FC = () => {
     data: promptTemplates,
     isLoading: templatesLoading
   } = useGetPromptTemplatesQuery({})
+
+  // AI Analytics data
+  const {
+    data: transparencyMetrics,
+    isLoading: transparencyLoading
+  } = useGetTransparencyDashboardMetricsQuery({ days: 30 })
+
+  const {
+    data: agentAnalytics,
+    isLoading: agentLoading
+  } = useGetAgentAnalyticsQuery({ days: 30 })
 
   const [updateTable] = useUpdateTuningTableMutation()
   const [createPattern] = useCreateQueryPatternMutation()
@@ -313,7 +336,7 @@ export const TuningDashboard: React.FC = () => {
                 />
               </Card>
             </Col>
-            
+
             <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
@@ -324,7 +347,7 @@ export const TuningDashboard: React.FC = () => {
                 />
               </Card>
             </Col>
-            
+
             <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
@@ -335,7 +358,7 @@ export const TuningDashboard: React.FC = () => {
                 />
               </Card>
             </Col>
-            
+
             <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
@@ -347,6 +370,71 @@ export const TuningDashboard: React.FC = () => {
               </Card>
             </Col>
           </Row>
+
+          {/* AI Analytics Section */}
+          <AIFeatureWrapper feature="transparencyPanelEnabled">
+            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+              <Col span={24}>
+                <Card
+                  title={
+                    <Space>
+                      <RobotOutlined />
+                      <span>AI Performance Analytics</span>
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => setShowTransparencyPanel(!showTransparencyPanel)}
+                      >
+                        {showTransparencyPanel ? 'Hide' : 'Show'} Transparency
+                      </Button>
+                    </Space>
+                  }
+                >
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12} lg={6}>
+                      <div style={{ textAlign: 'center' }}>
+                        <ConfidenceIndicator
+                          confidence={transparencyMetrics?.averageConfidence || 0.87}
+                          size="large"
+                          type="circle"
+                          showLabel={true}
+                        />
+                        <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                          Avg AI Confidence
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col xs={24} sm={12} lg={6}>
+                      <Statistic
+                        title="AI Queries"
+                        value={transparencyMetrics?.totalTraces || 1247}
+                        prefix={<ThunderboltOutlined />}
+                        valueStyle={{ color: '#1890ff' }}
+                      />
+                    </Col>
+                    <Col xs={24} sm={12} lg={6}>
+                      <Statistic
+                        title="Active Agents"
+                        value={agentAnalytics?.agentUtilization?.length || 8}
+                        prefix={<RobotOutlined />}
+                        valueStyle={{ color: '#52c41a' }}
+                      />
+                    </Col>
+                    <Col xs={24} sm={12} lg={6}>
+                      <Statistic
+                        title="Success Rate"
+                        value={agentAnalytics?.successRate ? (agentAnalytics.successRate * 100).toFixed(1) : '94.5'}
+                        suffix="%"
+                        prefix={<BarChartOutlined />}
+                        valueStyle={{ color: '#722ed1' }}
+                      />
+                    </Col>
+                  </Row>
+                </Card>
+              </Col>
+            </Row>
+          </AIFeatureWrapper>
 
           {/* Tuning Coverage */}
           <Row gutter={[16, 16]}>
@@ -400,6 +488,55 @@ export const TuningDashboard: React.FC = () => {
               </Card>
             </Col>
           </Row>
+
+          {/* AI Transparency Panel */}
+          {showTransparencyPanel && (
+            <AIFeatureWrapper feature="transparencyPanelEnabled">
+              <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
+                <Col span={24}>
+                  <Card
+                    title={
+                      <Space>
+                        <EyeOutlined />
+                        <span>AI Decision Transparency</span>
+                      </Space>
+                    }
+                  >
+                    <Alert
+                      message="AI Transparency Integration"
+                      description="This section shows AI decision-making transparency for tuning operations. Select a recent trace to explore AI reasoning."
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: 16 }}
+                    />
+
+                    {selectedTraceId ? (
+                      <AITransparencyPanel
+                        traceId={selectedTraceId}
+                        showDetailedMetrics={true}
+                        compact={false}
+                      />
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                        <Space direction="vertical">
+                          <RobotOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />
+                          <Text type="secondary">
+                            No transparency trace selected. Recent AI operations will appear here.
+                          </Text>
+                          <Button
+                            type="primary"
+                            onClick={() => setSelectedTraceId('demo-tuning-trace-001')}
+                          >
+                            View Demo Trace
+                          </Button>
+                        </Space>
+                      </div>
+                    )}
+                  </Card>
+                </Col>
+              </Row>
+            </AIFeatureWrapper>
+          )}
         </TabPane>
 
         {/* Business Tables Tab */}
@@ -463,6 +600,81 @@ export const TuningDashboard: React.FC = () => {
               size={responsive.isMobile ? 'small' : 'middle'}
             />
           </Card>
+        </TabPane>
+
+        {/* AI Transparency Tab */}
+        <TabPane
+          tab={
+            <AIFeatureWrapper feature="transparencyPanelEnabled" fallback={null}>
+              <Space>
+                <EyeOutlined />
+                <span>AI Transparency</span>
+              </Space>
+            </AIFeatureWrapper>
+          }
+          key="transparency"
+        >
+          <AIFeatureWrapper feature="transparencyPanelEnabled">
+            <Card
+              title={
+                <Space>
+                  <EyeOutlined />
+                  <span>AI Decision Transparency</span>
+                </Space>
+              }
+              extra={
+                <Space>
+                  <Select
+                    placeholder="Select trace"
+                    style={{ width: 200 }}
+                    value={selectedTraceId}
+                    onChange={setSelectedTraceId}
+                  >
+                    <Select.Option value="demo-tuning-trace-001">Demo Tuning Trace</Select.Option>
+                    <Select.Option value="demo-pattern-trace-002">Pattern Analysis Trace</Select.Option>
+                    <Select.Option value="demo-optimization-trace-003">Optimization Trace</Select.Option>
+                  </Select>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={() => setSelectedTraceId(null)}
+                  >
+                    Clear
+                  </Button>
+                </Space>
+              }
+            >
+              {selectedTraceId ? (
+                <AITransparencyPanel
+                  traceId={selectedTraceId}
+                  showDetailedMetrics={true}
+                  compact={false}
+                />
+              ) : (
+                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                  <Space direction="vertical" size="large">
+                    <RobotOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
+                    <div>
+                      <Title level={4} type="secondary">AI Transparency Dashboard</Title>
+                      <Text type="secondary">
+                        Select a trace from the dropdown above to explore AI decision-making processes
+                      </Text>
+                    </div>
+                    <Space>
+                      <Button
+                        type="primary"
+                        onClick={() => setSelectedTraceId('demo-tuning-trace-001')}
+                      >
+                        View Demo Trace
+                      </Button>
+                      <Button onClick={() => setSelectedTraceId('demo-pattern-trace-002')}>
+                        Pattern Analysis
+                      </Button>
+                    </Space>
+                  </Space>
+                </div>
+              )}
+            </Card>
+          </AIFeatureWrapper>
         </TabPane>
 
         {/* Prompt Templates Tab */}

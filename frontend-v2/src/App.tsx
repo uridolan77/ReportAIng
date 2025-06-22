@@ -45,7 +45,9 @@ function App() {
                 </AuthGuard>
               }
             />
-            
+
+
+
             {/* Default redirects */}
             <Route
               path="/"

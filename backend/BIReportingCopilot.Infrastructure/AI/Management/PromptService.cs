@@ -1,6 +1,7 @@
 using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Schema;
+using BIReportingCopilot.Core.Interfaces.Analytics;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Data.Entities;
@@ -20,17 +21,23 @@ public class PromptService : IPromptService
     private readonly BICopilotContext _context;
     private readonly ISecretsManagementService _secretsService;
     private readonly ISemanticLayerService? _semanticLayerService;
+    private readonly IPromptGenerationLogsService? _promptLogsService;
+    private readonly ITokenUsageAnalyticsService? _tokenAnalyticsService;
 
     public PromptService(
         ILogger<PromptService> logger,
         BICopilotContext context,
         ISecretsManagementService secretsService,
-        ISemanticLayerService? semanticLayerService = null)
+        ISemanticLayerService? semanticLayerService = null,
+        IPromptGenerationLogsService? promptLogsService = null,
+        ITokenUsageAnalyticsService? tokenAnalyticsService = null)
     {
         _logger = logger;
         _context = context;
         _secretsService = secretsService;
         _semanticLayerService = semanticLayerService;
+        _promptLogsService = promptLogsService;
+        _tokenAnalyticsService = tokenAnalyticsService;
     }
 
     public async Task<string> BuildQueryPromptAsync(string naturalLanguageQuery, SchemaMetadata schema, string? context = null)
@@ -202,6 +209,9 @@ public class PromptService : IPromptService
 
             _logger.LogInformation("✅ Prompt details created successfully: Template={TemplateName}, Sections={SectionCount}, TokenCount={TokenCount}",
                 promptDetails.TemplateName, promptDetails.Sections.Length, promptDetails.TokenCount);
+
+            // Log prompt generation analytics
+            await LogPromptGenerationAsync(naturalLanguageQuery, promptDetails, schema, context);
 
             return promptDetails;
         }
@@ -1859,6 +1869,179 @@ Provide a clear, structured explanation that matches the requested complexity le
         prompt.AppendLine("Provide the corrected SQL query:");
 
         return prompt.ToString();
+    }
+
+    #endregion
+
+    #region Analytics Logging
+
+    /// <summary>
+    /// Log prompt generation analytics for tracking and analysis
+    /// </summary>
+    private async Task LogPromptGenerationAsync(string userQuestion, PromptDetails promptDetails, SchemaMetadata schema, string? context)
+    {
+        try
+        {
+            if (_promptLogsService == null)
+            {
+                _logger.LogDebug("Prompt logging service not available, skipping analytics logging");
+                return;
+            }
+
+            // Classify intent and domain from the user question
+            var (intentType, domain) = ClassifyUserQuestion(userQuestion);
+
+            // Calculate generation time (approximate since we don't track it precisely)
+            var generationTimeMs = 100; // Default estimate
+
+            // Extract entities from the question (simple keyword extraction)
+            var extractedEntities = ExtractEntitiesFromQuestion(userQuestion);
+
+            // Create the log request
+            var logRequest = new PromptGenerationLogRequest
+            {
+                UserId = "system", // TODO: Get from current user context
+                UserQuestion = userQuestion,
+                GeneratedPrompt = promptDetails.FullPrompt,
+                IntentType = intentType,
+                Domain = domain,
+                ConfidenceScore = CalculateConfidenceScore(promptDetails, schema),
+                TablesUsed = schema.Tables?.Count ?? 0,
+                GenerationTimeMs = generationTimeMs,
+                TemplateUsed = promptDetails.TemplateName,
+                WasSuccessful = true,
+                ExtractedEntities = JsonSerializer.Serialize(extractedEntities),
+                TimeContext = !string.IsNullOrEmpty(context) ? JsonSerializer.Serialize(new { context }) : null,
+                TokensUsed = promptDetails.TokenCount,
+                CostEstimate = CalculateCostEstimate(promptDetails.TokenCount),
+                ModelUsed = "gpt-4", // TODO: Get from configuration
+                SessionId = Guid.NewGuid().ToString(), // TODO: Get from current session
+                RequestId = Guid.NewGuid().ToString()
+            };
+
+            // Log the prompt generation
+            var logId = await _promptLogsService.LogPromptGenerationAsync(logRequest);
+
+            // Record token usage analytics
+            if (_tokenAnalyticsService != null)
+            {
+                await _tokenAnalyticsService.RecordTokenUsageAsync(
+                    logRequest.UserId,
+                    "prompt_generation",
+                    intentType,
+                    promptDetails.TokenCount,
+                    logRequest.CostEstimate ?? 0);
+            }
+
+            _logger.LogDebug("✅ Logged prompt generation analytics: LogId={LogId}, Intent={Intent}, Domain={Domain}, Tokens={Tokens}",
+                logId, intentType, domain, promptDetails.TokenCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "⚠️ Failed to log prompt generation analytics - continuing without logging");
+        }
+    }
+
+    /// <summary>
+    /// Classify user question into intent type and domain
+    /// </summary>
+    private (string intentType, string domain) ClassifyUserQuestion(string userQuestion)
+    {
+        var lowerQuestion = userQuestion.ToLower();
+
+        // Simple intent classification
+        string intentType = "ANALYSIS";
+        if (lowerQuestion.Contains("show") || lowerQuestion.Contains("list") || lowerQuestion.Contains("display"))
+            intentType = "REPORTING";
+        else if (lowerQuestion.Contains("compare") || lowerQuestion.Contains("vs") || lowerQuestion.Contains("versus"))
+            intentType = "COMPARATIVE";
+        else if (lowerQuestion.Contains("trend") || lowerQuestion.Contains("over time") || lowerQuestion.Contains("growth"))
+            intentType = "TREND_ANALYSIS";
+        else if (lowerQuestion.Contains("total") || lowerQuestion.Contains("sum") || lowerQuestion.Contains("count"))
+            intentType = "AGGREGATION";
+
+        // Simple domain classification
+        string domain = "General";
+        if (lowerQuestion.Contains("sales") || lowerQuestion.Contains("revenue") || lowerQuestion.Contains("customer"))
+            domain = "Sales";
+        else if (lowerQuestion.Contains("finance") || lowerQuestion.Contains("cost") || lowerQuestion.Contains("profit"))
+            domain = "Finance";
+        else if (lowerQuestion.Contains("product") || lowerQuestion.Contains("inventory") || lowerQuestion.Contains("stock"))
+            domain = "Product";
+        else if (lowerQuestion.Contains("employee") || lowerQuestion.Contains("hr") || lowerQuestion.Contains("staff"))
+            domain = "HR";
+
+        return (intentType, domain);
+    }
+
+    /// <summary>
+    /// Extract entities from user question (simple keyword extraction)
+    /// </summary>
+    private List<object> ExtractEntitiesFromQuestion(string userQuestion)
+    {
+        var entities = new List<object>();
+        var lowerQuestion = userQuestion.ToLower();
+
+        // Extract common business entities
+        var entityKeywords = new Dictionary<string, string>
+        {
+            ["sales"] = "metric",
+            ["revenue"] = "metric",
+            ["profit"] = "metric",
+            ["customer"] = "entity",
+            ["product"] = "entity",
+            ["order"] = "entity",
+            ["employee"] = "entity",
+            ["date"] = "temporal",
+            ["month"] = "temporal",
+            ["year"] = "temporal",
+            ["quarter"] = "temporal"
+        };
+
+        foreach (var keyword in entityKeywords)
+        {
+            if (lowerQuestion.Contains(keyword.Key))
+            {
+                entities.Add(new { name = keyword.Key, type = keyword.Value });
+            }
+        }
+
+        return entities;
+    }
+
+    /// <summary>
+    /// Calculate confidence score based on prompt quality indicators
+    /// </summary>
+    private decimal CalculateConfidenceScore(PromptDetails promptDetails, SchemaMetadata schema)
+    {
+        decimal score = 0.5m; // Base score
+
+        // Boost score based on template quality
+        if (!string.IsNullOrEmpty(promptDetails.TemplateName) && promptDetails.TemplateName != "fallback")
+            score += 0.2m;
+
+        // Boost score based on schema richness
+        if (schema.Tables?.Count > 0)
+            score += 0.1m;
+
+        // Boost score based on prompt completeness
+        if (promptDetails.Sections?.Length > 3)
+            score += 0.1m;
+
+        // Boost score based on token count (reasonable length)
+        if (promptDetails.TokenCount > 100 && promptDetails.TokenCount < 4000)
+            score += 0.1m;
+
+        return Math.Min(1.0m, score);
+    }
+
+    /// <summary>
+    /// Calculate estimated cost based on token count
+    /// </summary>
+    private decimal CalculateCostEstimate(int tokenCount)
+    {
+        // Rough estimate: $0.03 per 1K tokens for GPT-4
+        return (decimal)tokenCount / 1000 * 0.03m;
     }
 
     #endregion

@@ -27,7 +27,8 @@ import {
   EyeOutlined,
   BranchesOutlined,
   TagOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  AimOutlined
 } from '@ant-design/icons'
 import type { SemanticAnalysis } from '@shared/types/chat'
 
@@ -65,7 +66,7 @@ export const SemanticInsightsPanel: React.FC<SemanticInsightsPanelProps> = ({
     switch (type) {
       case 'table': return <DatabaseOutlined />
       case 'column': return <BranchesOutlined />
-      case 'metric': return <TargetOutlined />
+      case 'metric': return <AimOutlined />
       case 'dimension': return <BookOutlined />
       case 'filter': return <ExclamationCircleOutlined />
       default: return <QuestionCircleOutlined />
@@ -446,7 +447,7 @@ export const SemanticInsightsPanel: React.FC<SemanticInsightsPanelProps> = ({
             key: 'overview',
             label: (
               <Space>
-                <TargetOutlined />
+                <AimOutlined />
                 <Text strong>Overview</Text>
               </Space>
             ),

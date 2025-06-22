@@ -9,6 +9,14 @@ import UserManagement from './pages/UserManagement'
 import Analytics from './pages/Analytics'
 import CostManagement from './pages/CostManagement'
 import PerformanceMonitoring from './pages/PerformanceMonitoring'
+import AIAnalyticsDashboard from './pages/AIAnalyticsDashboard'
+import LLMManagementDashboard from './pages/LLMManagementDashboard'
+import AITransparencyDashboard from './pages/AITransparencyDashboard'
+import AITransparencyDemo from './pages/AITransparencyDemo'
+import BusinessIntelligenceDemo from './pages/BusinessIntelligenceDemo'
+import AIManagementDemo from './pages/AIManagementDemo'
+import AdvancedAIFeaturesDemo from './pages/AdvancedAIFeaturesDemo'
+import AIIntegrationTestPage from './pages/AIIntegrationTestPage'
 
 export default function AdminApp() {
   return (
@@ -36,6 +44,16 @@ export default function AdminApp() {
 
         {/* Performance monitoring */}
         <Route path="/performance" element={<PerformanceMonitoring />} />
+
+        {/* AI Analytics and Management */}
+        <Route path="/ai-analytics" element={<AIAnalyticsDashboard />} />
+        <Route path="/llm-management" element={<LLMManagementDashboard />} />
+        <Route path="/ai-transparency" element={<AITransparencyDashboard />} />
+        <Route path="/ai-transparency-demo" element={<AITransparencyDemo />} />
+        <Route path="/business-intelligence-demo" element={<BusinessIntelligenceDemo />} />
+        <Route path="/ai-management-demo" element={<AIManagementDemo />} />
+        <Route path="/advanced-ai-features-demo" element={<AdvancedAIFeaturesDemo />} />
+        <Route path="/ai-integration-test" element={<AIIntegrationTestPage />} />
 
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/admin" replace />} />

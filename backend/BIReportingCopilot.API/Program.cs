@@ -366,6 +366,9 @@ if (!string.IsNullOrEmpty(connectionString))
 
     builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.MonitoringDbContext>(options =>
         options.UseSqlServer(connectionString, sqlOptions => ConfigureSqlServerOptions(sqlOptions)));
+
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.TransparencyDbContext>(options =>
+        options.UseSqlServer(connectionString, sqlOptions => ConfigureSqlServerOptions(sqlOptions)));
 }
 else
 {
@@ -388,6 +391,9 @@ else
 
     builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.MonitoringDbContext>(options =>
         options.UseInMemoryDatabase("MonitoringDev"));
+
+    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.TransparencyDbContext>(options =>
+        options.UseInMemoryDatabase("TransparencyDev"));
 }
 
 // DbContext factory for managing bounded contexts
@@ -774,6 +780,23 @@ builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Agents.ISqlGenerat
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Agents.IIntelligentAgentOrchestrator, BIReportingCopilot.Infrastructure.AI.Agents.IntelligentAgentOrchestrator>();
 // Agent-to-Agent communication protocol
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Agents.IAgentCommunicationProtocol, BIReportingCopilot.Infrastructure.AI.Agents.AgentCommunicationProtocol>();
+
+// ===== PHASE 2B: AI TRANSPARENCY FOUNDATION =====
+// Transparency repositories
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ITransparencyRepository, BIReportingCopilot.Infrastructure.Data.Repositories.TransparencyRepository>();
+
+// Transparency and explainability services
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Transparency.IPromptConstructionTracer, BIReportingCopilot.Infrastructure.Transparency.PromptConstructionTracer>();
+
+// ===== AI ANALYTICS & LOGGING SERVICES =====
+// Token usage analytics service
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Analytics.ITokenUsageAnalyticsService, BIReportingCopilot.Infrastructure.Analytics.TokenUsageAnalyticsService>();
+
+// Prompt generation logging service
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Analytics.IPromptGenerationLogsService, BIReportingCopilot.Infrastructure.Analytics.PromptGenerationLogsService>();
+
+// Prompt success tracking service
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Analytics.IPromptSuccessTrackingService, BIReportingCopilot.Infrastructure.Analytics.PromptSuccessTrackingService>();
 
 // ===== MODULAR DASHBOARD SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Dashboard.DashboardCreationService>();

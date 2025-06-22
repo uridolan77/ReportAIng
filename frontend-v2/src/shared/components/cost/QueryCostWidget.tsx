@@ -49,9 +49,9 @@ export const QueryCostWidget: React.FC<QueryCostWidgetProps> = ({
         {showTrend && realTimeMetrics && (
           <Tooltip title={`Efficiency: ${(realTimeMetrics.efficiency * 100).toFixed(1)}%`}>
             {realTimeMetrics.efficiency > 0.8 ? (
-              <TrendingDownOutlined style={{ color: '#52c41a' }} />
+              <ArrowDownOutlined style={{ color: '#52c41a' }} />
             ) : (
-              <TrendingUpOutlined style={{ color: '#f5222d' }} />
+              <ArrowUpOutlined style={{ color: '#f5222d' }} />
             )}
           </Tooltip>
         )}
@@ -110,9 +110,9 @@ export const QueryCostWidget: React.FC<QueryCostWidgetProps> = ({
                     Efficiency: {(realTimeMetrics.efficiency * 100).toFixed(1)}%
                   </Text>
                   {realTimeMetrics.efficiency > 0.8 ? (
-                    <TrendingDownOutlined style={{ color: '#52c41a', fontSize: '12px' }} />
+                    <ArrowDownOutlined style={{ color: '#52c41a', fontSize: '12px' }} />
                   ) : (
-                    <TrendingUpOutlined style={{ color: '#f5222d', fontSize: '12px' }} />
+                    <ArrowUpOutlined style={{ color: '#f5222d', fontSize: '12px' }} />
                   )}
                 </Space>
               </div>

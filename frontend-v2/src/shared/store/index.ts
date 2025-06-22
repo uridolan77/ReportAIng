@@ -6,6 +6,8 @@ import { authSlice } from './auth'
 import { uiSlice } from './ui'
 import { chatSlice } from './chat'
 import { baseApi } from './api/baseApi'
+import aiTransparencyReducer from './aiTransparencySlice'
+import streamingProcessingReducer from './streamingProcessingSlice'
 
 // Import API files to ensure endpoints are injected
 import './api/authApi'
@@ -35,6 +37,10 @@ export const store = configureStore({
     ui: uiSlice.reducer,
     chat: chatSlice.reducer,
 
+    // AI feature slices
+    aiTransparency: aiTransparencyReducer,
+    streamingProcessing: streamingProcessingReducer,
+
     // Single API slice (all endpoints are injected into baseApi)
     [baseApi.reducerPath]: baseApi.reducer,
   },
@@ -62,6 +68,12 @@ export const persistor = persistStore(store)
 
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
+
+// Typed hooks for use throughout the app
+import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux'
+
+export const useAppDispatch = () => useDispatch<AppDispatch>()
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
 
 // Export actions
 export { authActions } from './auth'

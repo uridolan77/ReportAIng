@@ -15,7 +15,11 @@ import {
   DollarOutlined,
   ThunderboltOutlined,
   TeamOutlined,
-  ToolOutlined
+  ToolOutlined,
+  RobotOutlined,
+  EyeOutlined,
+  ExperimentOutlined,
+  BulbOutlined
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppSelector, useAppDispatch } from '../../hooks'
@@ -85,6 +89,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (path === '/admin/performance') return ['admin-performance']
     if (path === '/admin/users') return ['admin-users']
     if (path === '/admin/system-config') return ['admin-config']
+    if (path === '/admin/ai-analytics') return ['admin-ai-analytics']
+    if (path === '/admin/llm-management') return ['admin-llm-management']
+    if (path === '/admin/ai-transparency') return ['admin-ai-transparency']
+    if (path === '/admin/llm-management') return ['admin-llm-management']
+    if (path === '/admin/ai-transparency') return ['admin-ai-transparency']
+    if (path === '/admin/ai-transparency-demo') return ['admin-ai-transparency-demo']
+    if (path === '/admin/business-intelligence-demo') return ['admin-business-intelligence-demo']
+    if (path === '/admin/ai-management-demo') return ['admin-ai-management-demo']
+    if (path === '/admin/advanced-ai-features-demo') return ['admin-advanced-ai-features-demo']
+    if (path === '/admin/ai-integration-test') return ['admin-ai-integration-test']
     return []
   }
 
@@ -159,6 +173,59 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         icon: <ToolOutlined />,
         label: 'System Config',
         onClick: () => navigate('/admin/system-config'),
+      },
+      {
+        key: 'ai-section',
+        label: 'AI Management',
+        type: 'group',
+      },
+      {
+        key: 'admin-ai-analytics',
+        icon: <RobotOutlined />,
+        label: 'AI Analytics',
+        onClick: () => navigate('/admin/ai-analytics'),
+      },
+      {
+        key: 'admin-llm-management',
+        icon: <SettingOutlined />,
+        label: 'LLM Management',
+        onClick: () => navigate('/admin/llm-management'),
+      },
+      {
+        key: 'admin-ai-transparency',
+        icon: <EyeOutlined />,
+        label: 'AI Transparency',
+        onClick: () => navigate('/admin/ai-transparency'),
+      },
+      {
+        key: 'admin-ai-transparency-demo',
+        icon: <ExperimentOutlined />,
+        label: 'Transparency Demo',
+        onClick: () => navigate('/admin/ai-transparency-demo'),
+      },
+      {
+        key: 'admin-business-intelligence-demo',
+        icon: <BulbOutlined />,
+        label: 'BI Intelligence Demo',
+        onClick: () => navigate('/admin/business-intelligence-demo'),
+      },
+      {
+        key: 'admin-ai-management-demo',
+        icon: <ThunderboltOutlined />,
+        label: 'AI Management Demo',
+        onClick: () => navigate('/admin/ai-management-demo'),
+      },
+      {
+        key: 'admin-advanced-ai-features-demo',
+        icon: <RobotOutlined />,
+        label: 'Advanced AI Features',
+        onClick: () => navigate('/admin/advanced-ai-features-demo'),
+      },
+      {
+        key: 'admin-ai-integration-test',
+        icon: <ExperimentOutlined />,
+        label: 'AI Integration Test',
+        onClick: () => navigate('/admin/ai-integration-test'),
       },
     ] : []),
   ]

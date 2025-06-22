@@ -84,6 +84,14 @@ export const baseApi = createApi({
     'AIProvider',
     'SecuritySettings',
     'UserSessions',
+    // LLM Management
+    'LLMProvider',
+    'LLMProviderHealth',
+    'LLMModel',
+    'LLMUsage',
+    'LLMCost',
+    'LLMPerformance',
+    'LLMDashboard',
   ],
   endpoints: () => ({}),
 })

@@ -53,6 +53,11 @@ public class BICopilotContext : DbContext
     public DbSet<QueryPerformanceEntity> QueryPerformance { get; set; }
     public DbSet<SystemMetricsEntity> SystemMetrics { get; set; }
 
+    // AI Logging and Analytics entities
+    public DbSet<TokenUsageAnalyticsEntity> TokenUsageAnalytics { get; set; }
+    public DbSet<PromptGenerationLogsEntity> PromptGenerationLogs { get; set; }
+    public DbSet<PromptSuccessTrackingEntity> PromptSuccessTracking { get; set; }
+
     // AI Learning and Semantic Cache (Unified Models)
     public DbSet<Core.Models.UnifiedAIGenerationAttempt> AIGenerationAttempts { get; set; }
     public DbSet<Core.Models.UnifiedAIFeedbackEntry> AIFeedbackEntries { get; set; }
@@ -423,6 +428,9 @@ public class BICopilotContext : DbContext
         modelBuilder.ApplyConfiguration(new SchemaRelationshipConfiguration());
         modelBuilder.ApplyConfiguration(new UserSchemaPreferenceConfiguration());
 
+        // Configure AI Logging and Analytics entities
+        ConfigureAILoggingEntities(modelBuilder);
+
         // Configure Query Suggestions entities
         ConfigureQuerySuggestions(modelBuilder);
 
@@ -686,5 +694,91 @@ Return only the SQL query without any explanation or markdown formatting.",
         });
 
         // Business-Context-Aware Prompt Building tables exist in database but no EF entities configured
+    }
+
+    private static void ConfigureAILoggingEntities(ModelBuilder modelBuilder)
+    {
+        // TokenUsageAnalytics configuration
+        modelBuilder.Entity<TokenUsageAnalyticsEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.Date, e.RequestType, e.IntentType }).IsUnique();
+            entity.HasIndex(e => e.Date).IsDescending();
+            entity.HasIndex(e => new { e.UserId, e.Date }).IsDescending();
+            entity.HasIndex(e => new { e.RequestType, e.Date }).IsDescending();
+            entity.HasIndex(e => new { e.IntentType, e.Date }).IsDescending();
+
+            entity.Property(e => e.Id).HasMaxLength(450);
+            entity.Property(e => e.UserId).HasMaxLength(450);
+            entity.Property(e => e.RequestType).HasMaxLength(100);
+            entity.Property(e => e.IntentType).HasMaxLength(100);
+            entity.Property(e => e.NaturalLanguageDescription).HasMaxLength(2000);
+            entity.Property(e => e.BusinessRules).HasMaxLength(2000);
+            entity.Property(e => e.RelationshipContext).HasMaxLength(2000);
+            entity.Property(e => e.DataGovernanceLevel).HasMaxLength(100);
+            entity.Property(e => e.TotalCost).HasPrecision(10, 6);
+            entity.Property(e => e.AverageTokensPerRequest).HasPrecision(10, 2);
+            entity.Property(e => e.AverageCostPerRequest).HasPrecision(10, 6);
+            entity.Property(e => e.ImportanceScore).HasPrecision(5, 4);
+            entity.Property(e => e.UsageFrequency).HasPrecision(5, 4);
+        });
+
+        // PromptGenerationLogs configuration
+        modelBuilder.Entity<PromptGenerationLogsEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Timestamp).IsDescending();
+            entity.HasIndex(e => new { e.UserId, e.Timestamp }).IsDescending();
+            entity.HasIndex(e => new { e.IntentType, e.Timestamp }).IsDescending();
+            entity.HasIndex(e => new { e.Domain, e.Timestamp }).IsDescending();
+            entity.HasIndex(e => new { e.WasSuccessful, e.Timestamp }).IsDescending();
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => e.RequestId);
+
+            entity.Property(e => e.UserId).HasMaxLength(256);
+            entity.Property(e => e.UserQuestion).HasMaxLength(1000);
+            entity.Property(e => e.GeneratedPrompt).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.IntentType).HasMaxLength(50);
+            entity.Property(e => e.Domain).HasMaxLength(100);
+            entity.Property(e => e.TemplateUsed).HasMaxLength(100);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(1000);
+            entity.Property(e => e.ExtractedEntities).HasMaxLength(500);
+            entity.Property(e => e.TimeContext).HasMaxLength(200);
+            entity.Property(e => e.ModelUsed).HasMaxLength(50);
+            entity.Property(e => e.UserFeedback).HasMaxLength(500);
+            entity.Property(e => e.SessionId).HasMaxLength(100);
+            entity.Property(e => e.RequestId).HasMaxLength(100);
+            entity.Property(e => e.ConfidenceScore).HasPrecision(5, 4);
+            entity.Property(e => e.CostEstimate).HasPrecision(10, 4);
+            entity.Property(e => e.UserRating).HasPrecision(3, 2);
+        });
+
+        // PromptSuccessTracking configuration
+        modelBuilder.Entity<PromptSuccessTrackingEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.CreatedDate).IsDescending();
+            entity.HasIndex(e => new { e.UserId, e.CreatedDate }).IsDescending();
+            entity.HasIndex(e => new { e.IntentClassified, e.CreatedDate }).IsDescending();
+            entity.HasIndex(e => new { e.DomainClassified, e.CreatedDate }).IsDescending();
+            entity.HasIndex(e => new { e.SQLExecutionSuccess, e.CreatedDate }).IsDescending();
+            entity.HasIndex(e => new { e.UserFeedbackRating, e.CreatedDate }).IsDescending();
+
+            entity.Property(e => e.SessionId).HasMaxLength(128);
+            entity.Property(e => e.UserId).HasMaxLength(512);
+            entity.Property(e => e.UserQuestion).HasMaxLength(2000);
+            entity.Property(e => e.GeneratedPrompt).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.TemplateUsed).HasMaxLength(100);
+            entity.Property(e => e.IntentClassified).HasMaxLength(50);
+            entity.Property(e => e.DomainClassified).HasMaxLength(50);
+            entity.Property(e => e.TablesRetrieved).HasMaxLength(1000);
+            entity.Property(e => e.GeneratedSQL).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.SQLExecutionError).HasMaxLength(2000);
+            entity.Property(e => e.UserFeedbackComments).HasMaxLength(1000);
+            entity.Property(e => e.ConfidenceScore).HasPrecision(5, 4);
+        });
     }
 }

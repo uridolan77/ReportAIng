@@ -2,7 +2,9 @@ using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Models.BusinessContext;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Core.Interfaces.Cache;
+using BIReportingCopilot.Infrastructure.Interfaces;
 using BIReportingCopilot.Infrastructure.BusinessContext.Enhanced;
+using BIReportingCopilot.Infrastructure.Data.Entities;
 using System.Text.Json;
 
 namespace BIReportingCopilot.Infrastructure.Transparency;
@@ -12,7 +14,8 @@ namespace BIReportingCopilot.Infrastructure.Transparency;
 /// </summary>
 public class PromptConstructionTracer : IPromptConstructionTracer
 {
-    private readonly ICacheService _cacheService;
+    private readonly BIReportingCopilot.Core.Interfaces.Cache.ICacheService _cacheService;
+    private readonly ITransparencyRepository _transparencyRepository;
     private readonly ILogger<PromptConstructionTracer> _logger;
 
     // Performance tracking for transparency operations
@@ -20,10 +23,12 @@ public class PromptConstructionTracer : IPromptConstructionTracer
     private readonly object _metricsLock = new();
 
     public PromptConstructionTracer(
-        ICacheService cacheService,
+        BIReportingCopilot.Core.Interfaces.Cache.ICacheService cacheService,
+        ITransparencyRepository transparencyRepository,
         ILogger<PromptConstructionTracer> logger)
     {
         _cacheService = cacheService;
+        _transparencyRepository = transparencyRepository;
         _logger = logger;
     }
 
@@ -70,6 +75,9 @@ public class PromptConstructionTracer : IPromptConstructionTracer
             trace.TotalDuration = (trace.EndTime - trace.StartTime).TotalMilliseconds;
             trace.OverallConfidence = CalculateOverallConfidence(trace);
             trace.EfficiencyScore = CalculateEfficiencyScore(trace);
+
+            // Save to database
+            await SaveTraceToDatabase(trace, profile.UserId ?? "system");
 
             // Cache the trace for future reference
             await _cacheService.SetAsync($"prompt_trace:{traceId}", trace, TimeSpan.FromHours(24));
@@ -474,6 +482,77 @@ public class PromptConstructionTracer : IPromptConstructionTracer
     private async Task<Dictionary<string, object>> GenerateDetailedMetricsAsync(PromptConstructionTrace trace) => new();
     private Dictionary<string, object> GeneratePerformanceAnalysis(PromptConstructionTrace trace) => new();
     private List<string> GenerateOptimizationSuggestions(PromptConstructionTrace trace) => new();
+
+    /// <summary>
+    /// Save the prompt construction trace and its steps to the database
+    /// </summary>
+    private async Task SaveTraceToDatabase(PromptConstructionTrace trace, string userId)
+    {
+        try
+        {
+            _logger.LogDebug("Saving prompt trace {TraceId} to database for user {UserId}", trace.TraceId, userId);
+
+            // Create the main trace entity
+            var traceEntity = new PromptConstructionTraceEntity
+            {
+                TraceId = trace.TraceId,
+                UserId = userId,
+                UserQuestion = trace.UserQuestion,
+                IntentType = trace.IntentType.ToString(),
+                StartTime = trace.StartTime,
+                EndTime = trace.EndTime,
+                OverallConfidence = (decimal)trace.OverallConfidence,
+                TotalTokens = trace.BuildSteps.Sum(s => s.Details.ContainsKey("tokens_used") ? Convert.ToInt32(s.Details["tokens_used"]) : 0),
+                FinalPrompt = null, // Will be set if available
+                Success = string.IsNullOrEmpty(trace.ErrorMessage),
+                ErrorMessage = trace.ErrorMessage,
+                Metadata = JsonSerializer.Serialize(new
+                {
+                    domain_name = trace.DomainName,
+                    total_duration = trace.TotalDuration,
+                    efficiency_score = trace.EfficiencyScore,
+                    steps_count = trace.BuildSteps.Count
+                })
+            };
+
+            // Save the trace
+            var savedTrace = await _transparencyRepository.SavePromptTraceAsync(traceEntity);
+
+            // Save each step
+            foreach (var step in trace.BuildSteps)
+            {
+                var stepEntity = new PromptConstructionStepEntity
+                {
+                    TraceId = trace.TraceId,
+                    StepName = step.StepName,
+                    StepOrder = trace.BuildSteps.IndexOf(step) + 1,
+                    StartTime = step.StartTime,
+                    EndTime = step.EndTime,
+                    Success = step.Success,
+                    TokensAdded = step.Details.ContainsKey("tokens_used") ? Convert.ToInt32(step.Details["tokens_used"]) : 0,
+                    Confidence = (decimal)step.ConfidenceScore,
+                    Content = JsonSerializer.Serialize(new
+                    {
+                        confidence = step.ConfidenceScore,
+                        success = step.Success,
+                        duration_ms = step.Duration
+                    }),
+                    Details = JsonSerializer.Serialize(step.Details),
+                    ErrorMessage = null
+                };
+
+                await _transparencyRepository.SavePromptStepAsync(stepEntity);
+            }
+
+            _logger.LogInformation("Successfully saved prompt trace {TraceId} with {StepCount} steps to database",
+                trace.TraceId, trace.BuildSteps.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save prompt trace {TraceId} to database", trace.TraceId);
+            // Don't throw - we don't want to break the main flow if database save fails
+        }
+    }
 }
 
 // Supporting data structures

@@ -6,6 +6,7 @@ using BIReportingCopilot.Core.Interfaces;
 using BIReportingCopilot.Core.Interfaces.Query;
 using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Security;
+using BIReportingCopilot.Core.Interfaces.Analytics;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Commands;
 using BIReportingCopilot.API.Hubs;
@@ -14,6 +15,9 @@ using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using SchemaService = BIReportingCopilot.Core.Interfaces.Schema.ISchemaService;
 using IContextManager = BIReportingCopilot.Core.Interfaces.IContextManager;
+// AI Transparency Foundation imports
+using BIReportingCopilot.Infrastructure.Transparency;
+using BIReportingCopilot.Infrastructure.BusinessContext.Enhanced;
 
 namespace BIReportingCopilot.API.Controllers;
 
@@ -38,6 +42,13 @@ public class QueryController : ControllerBase
     private readonly IHubContext<QueryStatusHub> _hubContext;
     private readonly IContextManager _contextManager;
     private readonly IConfiguration _configuration;
+    // AI Transparency Foundation services
+    private readonly IPromptConstructionTracer _promptTracer;
+    private readonly IEnhancedBusinessContextAnalyzer _businessContextAnalyzer;
+    private readonly ITokenBudgetManager _tokenBudgetManager;
+    // Analytics services
+    private readonly IPromptSuccessTrackingService? _promptSuccessTrackingService;
+    private readonly ITokenUsageAnalyticsService? _tokenUsageAnalyticsService;
 
     public QueryController(
         ILogger<QueryController> logger,
@@ -52,7 +63,14 @@ public class QueryController : ControllerBase
         IAuditService auditService,
         IHubContext<QueryStatusHub> hubContext,
         IContextManager contextManager,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        // AI Transparency Foundation services
+        IPromptConstructionTracer promptTracer,
+        IEnhancedBusinessContextAnalyzer businessContextAnalyzer,
+        ITokenBudgetManager tokenBudgetManager,
+        // Analytics services
+        IPromptSuccessTrackingService? promptSuccessTrackingService = null,
+        ITokenUsageAnalyticsService? tokenUsageAnalyticsService = null)
     {
         _logger = logger;
         _mediator = mediator;
@@ -67,6 +85,13 @@ public class QueryController : ControllerBase
         _hubContext = hubContext;
         _contextManager = contextManager;
         _configuration = configuration;
+        // AI Transparency Foundation services
+        _promptTracer = promptTracer;
+        _businessContextAnalyzer = businessContextAnalyzer;
+        _tokenBudgetManager = tokenBudgetManager;
+        // Analytics services
+        _promptSuccessTrackingService = promptSuccessTrackingService;
+        _tokenUsageAnalyticsService = tokenUsageAnalyticsService;
     }
 
     #region Standard Query Operations
@@ -321,28 +346,55 @@ public class QueryController : ControllerBase
     [HttpPost("enhanced")]
     public async Task<ActionResult<EnhancedQueryResponse>> ProcessEnhancedQuery([FromBody] EnhancedQueryRequest request)
     {
+        var traceId = Guid.NewGuid().ToString();
+
         try
         {
             var userId = GetCurrentUserId();
-            _logger.LogInformation("🚀 [ENHANCED] ENDPOINT HIT - Processing enhanced query for user {UserId}: {Query}", userId, request.Query);
+            _logger.LogInformation("🚀 [ENHANCED] ENDPOINT HIT - Processing enhanced query for user {UserId}: {Query} [TraceId: {TraceId}]", userId, request.Query, traceId);
             _logger.LogInformation("💬 [CHAT] Request details - ExecuteQuery: {ExecuteQuery}, IncludeAlternatives: {IncludeAlternatives}, IncludeSemanticAnalysis: {IncludeSemanticAnalysis}",
                 request.ExecuteQuery, request.IncludeAlternatives, request.IncludeSemanticAnalysis);
 
-            // Process the query with enhanced AI pipeline
-            _logger.LogInformation("🔄 [ENHANCED] Starting AI query processing pipeline for user {UserId}", userId);
+            // 🔍 STEP 1: Start AI Transparency Tracking
+            _logger.LogInformation("🔍 [TRANSPARENCY] Starting transparency tracking for query [TraceId: {TraceId}]", traceId);
 
-            // Add timeout to prevent hanging and fallback for development
+            // 🧠 STEP 2: Enhanced Business Context Analysis
+            _logger.LogInformation("🧠 [BUSINESS-CONTEXT] Analyzing business context for query [TraceId: {TraceId}]", traceId);
+            var businessProfile = await _businessContextAnalyzer.AnalyzeUserQuestionAsync(request.Query, userId);
+
+            // 💰 STEP 3: Token Budget Management
+            _logger.LogInformation("💰 [TOKEN-BUDGET] Managing token budget for query [TraceId: {TraceId}]", traceId);
+            var tokenBudget = await _tokenBudgetManager.CreateTokenBudgetAsync(businessProfile, 4000, 500);
+
+            // Process the query with enhanced AI pipeline
+            _logger.LogInformation("🔄 [ENHANCED] Starting AI query processing pipeline for user {UserId} [TraceId: {TraceId}]", userId, traceId);
+
+            // 🤖 STEP 4: AI Query Processing with Transparency
             QueryProcessingResult processedQuery;
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+                // Log transparency information
+                _logger.LogInformation("🔍 [TRANSPARENCY] Query processing start - Intent: {Intent}, Confidence: {Confidence}, Tokens: {Tokens} [TraceId: {TraceId}]",
+                    businessProfile.Intent.Type, businessProfile.ConfidenceScore, tokenBudget.AvailableContextTokens, traceId);
+
                 processedQuery = await _queryProcessor.ProcessQueryAsync(request.Query, userId, cts.Token);
-                _logger.LogInformation("✅ [ENHANCED] AI query processing completed - SQL generated: {HasSql}, Confidence: {Confidence}",
-                    !string.IsNullOrEmpty(processedQuery.GeneratedSql), processedQuery.ConfidenceScore);
+
+                // Log successful processing
+                _logger.LogInformation("🔍 [TRANSPARENCY] Query processing complete - SQL: {HasSql}, Confidence: {Confidence}, Time: {Time}ms [TraceId: {TraceId}]",
+                    !string.IsNullOrEmpty(processedQuery.GeneratedSql), processedQuery.ConfidenceScore, processedQuery.ProcessingTime.TotalMilliseconds, traceId);
+
+                _logger.LogInformation("✅ [ENHANCED] AI query processing completed - SQL generated: {HasSql}, Confidence: {Confidence} [TraceId: {TraceId}]",
+                    !string.IsNullOrEmpty(processedQuery.GeneratedSql), processedQuery.ConfidenceScore, traceId);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("⚠️ [ENHANCED] AI query processing failed, using fallback: {Error}", ex.Message);
+                _logger.LogWarning("⚠️ [ENHANCED] AI query processing failed, using fallback: {Error} [TraceId: {TraceId}]", ex.Message, traceId);
+
+                // Log failure
+                _logger.LogWarning("🔍 [TRANSPARENCY] Query processing failed - Error: {Error}, Fallback: true [TraceId: {TraceId}]", ex.Message, traceId);
+
                 // Fallback for development when AI services are not available
                 processedQuery = new QueryProcessingResult
                 {
@@ -400,6 +452,13 @@ public class QueryController : ControllerBase
                 UsedSchema = new BIReportingCopilot.Core.Models.SchemaContext()
             };
 
+            // 📊 STEP 6: Complete Transparency Logging
+            _logger.LogInformation("🔍 [TRANSPARENCY] Query processing complete - Success: {Success}, Tokens: {Tokens}, Confidence: {Confidence} [TraceId: {TraceId}]",
+                !string.IsNullOrEmpty(processedQuery.GeneratedSql), tokenBudget.AvailableContextTokens, processedQuery.ConfidenceScore, traceId);
+
+            // 📈 STEP 7: Analytics Logging
+            await LogQueryAnalyticsAsync(request.Query, processedQuery, businessProfile, tokenBudget, traceId, userId, queryResult);
+
             var response = new EnhancedQueryResponse
             {
                 ProcessedQuery = mappedProcessedQuery,
@@ -407,15 +466,34 @@ public class QueryController : ControllerBase
                 SemanticAnalysis = semanticAnalysis,
                 Classification = new ClassificationResponse
                 {
-                    Category = "general",
-                    Complexity = "medium",
+                    Category = businessProfile.Intent.Type.ToString().ToLower(),
+                    Complexity = businessProfile.ConfidenceScore > 0.8 ? "low" : businessProfile.ConfidenceScore > 0.5 ? "medium" : "high",
                     EstimatedExecutionTime = TimeSpan.FromSeconds(1),
                     RecommendedVisualization = "table",
                     OptimizationSuggestions = new List<string>()
                 },
                 Alternatives = new List<AlternativeQueryResponse>(), // No alternatives available from QueryProcessingResult
                 Success = true,
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
+                // 🔍 Add transparency metadata to response
+                TransparencyData = new TransparencyMetadata
+                {
+                    TraceId = traceId,
+                    BusinessContext = new BusinessContextSummary
+                    {
+                        Intent = businessProfile.Intent.Type.ToString(),
+                        Confidence = businessProfile.ConfidenceScore,
+                        Domain = businessProfile.Domain.Name,
+                        Entities = businessProfile.Entities.Select(e => e.Name).ToList()
+                    },
+                    TokenUsage = new TokenUsageSummary
+                    {
+                        AllocatedTokens = tokenBudget.AvailableContextTokens,
+                        EstimatedCost = 0.01m, // Placeholder cost calculation
+                        Provider = "openai"
+                    },
+                    ProcessingSteps = 3 // Business context, token budget, query processing
+                }
             };
 
             // Add AI status headers to the response
@@ -1042,6 +1120,99 @@ public class QueryController : ControllerBase
         return result;
     }
 
+    /// <summary>
+    /// Log query analytics for tracking and analysis
+    /// </summary>
+    private async Task LogQueryAnalyticsAsync(
+        string userQuestion,
+        QueryProcessingResult processedQuery,
+        BIReportingCopilot.Core.Models.BusinessContext.BusinessContextProfile businessProfile,
+        BIReportingCopilot.Infrastructure.BusinessContext.Enhanced.TokenBudget tokenBudget,
+        string traceId,
+        string userId,
+        QueryResult? queryResult)
+    {
+        try
+        {
+            // Log prompt success tracking
+            if (_promptSuccessTrackingService != null)
+            {
+                var trackingRequest = new PromptSuccessTrackingRequest
+                {
+                    SessionId = traceId,
+                    UserId = userId,
+                    UserQuestion = userQuestion,
+                    GeneratedPrompt = "Enhanced query processing", // We don't have the actual prompt here
+                    TemplateUsed = "enhanced_query_processing",
+                    IntentClassified = businessProfile.Intent.Type.ToString(),
+                    DomainClassified = businessProfile.Domain.Name,
+                    TablesRetrieved = string.Join(",", businessProfile.Entities.Select(e => e.Name)),
+                    GeneratedSQL = processedQuery.GeneratedSql,
+                    ProcessingTimeMs = (int)processedQuery.ProcessingTime.TotalMilliseconds,
+                    ConfidenceScore = (decimal)processedQuery.ConfidenceScore
+                };
+
+                var sessionId = await _promptSuccessTrackingService.TrackPromptSessionAsync(trackingRequest);
+
+                // Update with SQL execution results if available
+                if (queryResult != null)
+                {
+                    await _promptSuccessTrackingService.UpdateSQLExecutionResultAsync(
+                        sessionId,
+                        queryResult.IsSuccessful,
+                        queryResult.IsSuccessful ? null : queryResult.Metadata?.Error,
+                        queryResult.Metadata?.ExecutionTimeMs);
+                }
+
+                _logger.LogDebug("✅ Logged prompt success tracking: SessionId={SessionId}, Intent={Intent}, Success={Success}",
+                    sessionId, businessProfile.Intent.Type, queryResult?.IsSuccessful ?? false);
+            }
+
+            // Log token usage analytics
+            if (_tokenUsageAnalyticsService != null)
+            {
+                var estimatedTokens = EstimateTokenUsage(userQuestion, processedQuery.GeneratedSql);
+                var estimatedCost = CalculateEstimatedCost(estimatedTokens);
+
+                await _tokenUsageAnalyticsService.RecordTokenUsageAsync(
+                    userId,
+                    "enhanced_query",
+                    businessProfile.Intent.Type.ToString(),
+                    estimatedTokens,
+                    estimatedCost);
+
+                _logger.LogDebug("✅ Logged token usage analytics: UserId={UserId}, Tokens={Tokens}, Cost={Cost:C}",
+                    userId, estimatedTokens, estimatedCost);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "⚠️ Failed to log query analytics - continuing without logging");
+        }
+    }
+
+    /// <summary>
+    /// Estimate token usage for a query processing session
+    /// </summary>
+    private int EstimateTokenUsage(string userQuestion, string generatedSql)
+    {
+        // Rough estimation: 1 token ≈ 4 characters
+        var questionTokens = (userQuestion?.Length ?? 0) / 4;
+        var sqlTokens = (generatedSql?.Length ?? 0) / 4;
+        var systemPromptTokens = 500; // Estimated system prompt overhead
+
+        return questionTokens + sqlTokens + systemPromptTokens;
+    }
+
+    /// <summary>
+    /// Calculate estimated cost based on token count
+    /// </summary>
+    private decimal CalculateEstimatedCost(int tokenCount)
+    {
+        // Rough estimate: $0.03 per 1K tokens for GPT-4
+        return (decimal)tokenCount / 1000 * 0.03m;
+    }
+
     #endregion
 }
 
@@ -1071,6 +1242,40 @@ public class EnhancedQueryResponse
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
     public DateTime Timestamp { get; set; }
+    // 🔍 AI Transparency Foundation integration
+    public TransparencyMetadata? TransparencyData { get; set; }
+}
+
+/// <summary>
+/// Transparency metadata for query responses
+/// </summary>
+public class TransparencyMetadata
+{
+    public string TraceId { get; set; } = string.Empty;
+    public BusinessContextSummary? BusinessContext { get; set; }
+    public TokenUsageSummary? TokenUsage { get; set; }
+    public int ProcessingSteps { get; set; }
+}
+
+/// <summary>
+/// Business context summary for transparency
+/// </summary>
+public class BusinessContextSummary
+{
+    public string Intent { get; set; } = string.Empty;
+    public double Confidence { get; set; }
+    public string Domain { get; set; } = string.Empty;
+    public List<string> Entities { get; set; } = new();
+}
+
+/// <summary>
+/// Token usage summary for transparency
+/// </summary>
+public class TokenUsageSummary
+{
+    public int AllocatedTokens { get; set; }
+    public decimal EstimatedCost { get; set; }
+    public string Provider { get; set; } = string.Empty;
 }
 
 /// <summary>

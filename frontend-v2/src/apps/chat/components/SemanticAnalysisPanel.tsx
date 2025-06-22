@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   Card,
   Row,
@@ -10,7 +10,9 @@ import {
   Space,
   Tooltip,
   Alert,
-  Divider
+  Divider,
+  Button,
+  Collapse
 } from 'antd'
 import {
   BulbOutlined,
@@ -18,21 +20,37 @@ import {
   QuestionCircleOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
-  BookOutlined
+  BookOutlined,
+  EyeOutlined,
+  BarChartOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons'
+import { ConfidenceIndicator } from '@shared/components/ai/common/ConfidenceIndicator'
+import { AITransparencyPanel } from '@shared/components/ai/transparency/AITransparencyPanel'
+import { useFeatureFlag } from '@shared/components/ai/common/hooks/useAIFeatureFlags'
 import type { SemanticAnalysis } from '@shared/types/chat'
 
 const { Text, Title } = Typography
+const { Panel } = Collapse
 
 interface SemanticAnalysisPanelProps {
   analysis: SemanticAnalysis
   compact?: boolean
+  showTransparency?: boolean
+  traceId?: string
 }
 
 export const SemanticAnalysisPanel: React.FC<SemanticAnalysisPanelProps> = ({
   analysis,
   compact = false,
+  showTransparency: propShowTransparency,
+  traceId
 }) => {
+  const [showTransparencyPanel, setShowTransparencyPanel] = useState(false)
+  const transparencyEnabled = useFeatureFlag('transparencyPanelEnabled')
+
+  // Show transparency if explicitly requested or if feature is enabled and traceId is provided
+  const shouldShowTransparency = propShowTransparency ?? (transparencyEnabled && !!traceId)
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 0.8) return '#52c41a'
     if (confidence >= 0.6) return '#faad14'
@@ -78,15 +96,24 @@ export const SemanticAnalysisPanel: React.FC<SemanticAnalysisPanelProps> = ({
           <Text strong>Intent:</Text>
           <Tag color="blue">{analysis.intent}</Tag>
           <Text strong>Confidence:</Text>
-          <Progress
+          <ConfidenceIndicator
+            confidence={analysis.confidence}
+            size="small"
             type="circle"
-            size={24}
-            percent={analysis.confidence * 100}
-            strokeColor={getConfidenceColor(analysis.confidence)}
-            format={() => `${(analysis.confidence * 100).toFixed(0)}%`}
+            showPercentage={true}
           />
+          {shouldShowTransparency && (
+            <Tooltip title="Show AI transparency">
+              <Button
+                size="small"
+                type="text"
+                icon={<EyeOutlined />}
+                onClick={() => setShowTransparencyPanel(!showTransparencyPanel)}
+              />
+            </Tooltip>
+          )}
         </Space>
-        
+
         {analysis.entities.length > 0 && (
           <div>
             <Text strong>Entities: </Text>
@@ -107,21 +134,58 @@ export const SemanticAnalysisPanel: React.FC<SemanticAnalysisPanelProps> = ({
             </Space>
           </div>
         )}
+
+        {/* Transparency Panel for compact view */}
+        {shouldShowTransparency && showTransparencyPanel && traceId && (
+          <Card size="small" style={{ marginTop: 8 }}>
+            <AITransparencyPanel
+              traceId={traceId}
+              compact={true}
+              showDetailedMetrics={false}
+            />
+          </Card>
+        )}
       </Space>
     )
   }
 
   return (
     <div style={{ padding: '16px 0' }}>
+      {/* Header with transparency toggle */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16
+      }}>
+        <Title level={5} style={{ margin: 0 }}>
+          Semantic Analysis
+        </Title>
+        {shouldShowTransparency && (
+          <Space>
+            <Button
+              size="small"
+              type={showTransparencyPanel ? 'primary' : 'default'}
+              icon={<EyeOutlined />}
+              onClick={() => setShowTransparencyPanel(!showTransparencyPanel)}
+            >
+              AI Transparency
+            </Button>
+          </Space>
+        )}
+      </div>
+
       {/* Overall Analysis */}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col span={8}>
           <Card size="small">
             <div style={{ textAlign: 'center' }}>
-              <Title level={4} style={{ margin: 0, color: getConfidenceColor(analysis.confidence) }}>
-                {(analysis.confidence * 100).toFixed(1)}%
-              </Title>
-              <Text type="secondary">Confidence</Text>
+              <ConfidenceIndicator
+                confidence={analysis.confidence}
+                size="medium"
+                type="circle"
+                showLabel={true}
+              />
             </div>
           </Card>
         </Col>
@@ -163,12 +227,11 @@ export const SemanticAnalysisPanel: React.FC<SemanticAnalysisPanelProps> = ({
                     {entity.type}
                   </Tag>
                   <Text strong>{entity.name}</Text>
-                  <Progress
+                  <ConfidenceIndicator
+                    confidence={entity.confidence}
+                    size="small"
                     type="circle"
-                    size={20}
-                    percent={entity.confidence * 100}
-                    strokeColor={getConfidenceColor(entity.confidence)}
-                    format={() => ''}
+                    showPercentage={false}
                   />
                   {entity.businessMeaning && (
                     <Text type="secondary" style={{ fontSize: '12px' }}>
@@ -211,12 +274,11 @@ export const SemanticAnalysisPanel: React.FC<SemanticAnalysisPanelProps> = ({
                 <Space>
                   <DatabaseOutlined />
                   <Text strong>{table.schemaName}.{table.tableName}</Text>
-                  <Progress
+                  <ConfidenceIndicator
+                    confidence={table.relevanceScore}
+                    size="small"
                     type="circle"
-                    size={20}
-                    percent={table.relevanceScore * 100}
-                    strokeColor={getConfidenceColor(table.relevanceScore)}
-                    format={() => ''}
+                    showPercentage={false}
                   />
                   <Text type="secondary" style={{ fontSize: '12px' }}>
                     {table.businessPurpose}
@@ -275,6 +337,18 @@ export const SemanticAnalysisPanel: React.FC<SemanticAnalysisPanelProps> = ({
             )}
           />
         </Card>
+      )}
+
+      {/* AI Transparency Panel */}
+      {shouldShowTransparency && showTransparencyPanel && traceId && (
+        <div style={{ marginTop: 24 }}>
+          <Divider />
+          <AITransparencyPanel
+            traceId={traceId}
+            showDetailedMetrics={true}
+            compact={false}
+          />
+        </div>
       )}
     </div>
   )
