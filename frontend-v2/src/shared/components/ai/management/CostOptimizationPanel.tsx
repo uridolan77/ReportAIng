@@ -31,7 +31,6 @@ import {
 } from '@ant-design/icons'
 import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { ConfidenceIndicator } from '../common/ConfidenceIndicator'
-import { useGetAgentAnalyticsQuery } from '@shared/store/api/intelligentAgentsApi'
 import { useGetTransparencyMetricsQuery } from '@shared/store/api/transparencyApi'
 import dayjs from 'dayjs'
 
@@ -92,7 +91,7 @@ export const CostOptimizationPanel: React.FC<CostOptimizationPanelProps> = ({
   const [selectedOptimization, setSelectedOptimization] = useState<CostOptimization | null>(null)
 
   // Real API data
-  const { data: agentAnalytics, isLoading: analyticsLoading } = useGetAgentAnalyticsQuery({ days: selectedTimeRange })
+  const { data: agentAnalytics, isLoading: analyticsLoading } = useGetTransparencyMetricsQuery({ days: selectedTimeRange, includeDetails: true })
   const { data: transparencyMetrics, isLoading: metricsLoading } = useGetTransparencyMetricsQuery({ days: selectedTimeRange })
 
   // Mock cost data (replace with real API data)

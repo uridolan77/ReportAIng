@@ -46,8 +46,7 @@ import {
   useCreateQueryPatternMutation,
   useUpdatePromptTemplateMutation
 } from '@shared/store/api/tuningApi'
-import { useGetTransparencyDashboardMetricsQuery } from '@shared/store/api/transparencyApi'
-import { useGetAgentAnalyticsQuery } from '@shared/store/api/intelligentAgentsApi'
+import { useGetTransparencyDashboardMetricsQuery, useGetTransparencyMetricsQuery } from '@shared/store/api/transparencyApi'
 import { AIFeatureWrapper } from '@shared/components/ai/common/AIFeatureWrapper'
 import { ConfidenceIndicator } from '@shared/components/ai/common/ConfidenceIndicator'
 import { AITransparencyPanel } from '@shared/components/ai/transparency/AITransparencyPanel'
@@ -97,7 +96,7 @@ export const TuningDashboard: React.FC = () => {
   const {
     data: agentAnalytics,
     isLoading: agentLoading
-  } = useGetAgentAnalyticsQuery({ days: 30 })
+  } = useGetTransparencyMetricsQuery({ days: 30, includeDetails: true })
 
   const [updateTable] = useUpdateTuningTableMutation()
   const [createPattern] = useCreateQueryPatternMutation()

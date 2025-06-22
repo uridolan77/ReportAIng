@@ -31,12 +31,11 @@ import {
 } from '@ant-design/icons'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { ConfidenceIndicator } from '../common/ConfidenceIndicator'
-import { 
-  useGetAgentCapabilitiesQuery, 
-  useGetAgentPerformanceMetricsQuery,
-  useGetAgentAnalyticsQuery 
-} from '@shared/store/api/intelligentAgentsApi'
-import { useGetTransparencyMetricsQuery } from '@shared/store/api/transparencyApi'
+import {
+  useGetTransparencyMetricsQuery,
+  useGetModelPerformanceComparisonQuery,
+  useGetRealTimeMonitoringDataQuery
+} from '@shared/store/api/transparencyApi'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -77,13 +76,10 @@ export const ModelPerformanceAnalytics: React.FC<ModelPerformanceAnalyticsProps>
   const [activeTab, setActiveTab] = useState('overview')
 
   // Real API data
-  const { data: capabilities, isLoading: capabilitiesLoading, refetch: refetchCapabilities } = useGetAgentCapabilitiesQuery()
-  const { data: agentAnalytics, isLoading: analyticsLoading, refetch: refetchAnalytics } = useGetAgentAnalyticsQuery({ days: selectedTimeRange })
+  const { data: capabilities, isLoading: capabilitiesLoading, refetch: refetchCapabilities } = useGetModelPerformanceComparisonQuery({ days: selectedTimeRange })
+  const { data: agentAnalytics, isLoading: analyticsLoading, refetch: refetchAnalytics } = useGetTransparencyMetricsQuery({ days: selectedTimeRange, includeDetails: true })
   const { data: transparencyMetrics, isLoading: metricsLoading } = useGetTransparencyMetricsQuery({ days: selectedTimeRange })
-  const { data: performanceMetrics } = useGetAgentPerformanceMetricsQuery({ 
-    agentId: selectedModel || undefined,
-    timeRange: 'day'
-  })
+  const { data: performanceMetrics } = useGetRealTimeMonitoringDataQuery()
 
   // Process performance data
   const performanceData = useMemo(() => {
