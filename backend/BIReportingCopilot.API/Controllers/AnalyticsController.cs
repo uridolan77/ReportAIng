@@ -1,12 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces.Analytics;
+using BIReportingCopilot.Core.Interfaces.CostOptimization;
+using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.Analytics;
+using BIReportingCopilot.Infrastructure.Extensions;
+using BIReportingCopilot.Infrastructure.Performance;
+using BIReportingCopilot.Infrastructure.Monitoring;
+using BIReportingCopilot.Core.Interfaces.Cache;
 using System.Security.Claims;
+using System.Diagnostics;
+using InterfaceTemplatePerformanceMetrics = BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics;
+using TemplateAnalytics = BIReportingCopilot.Core.Interfaces.Analytics.TemplateAnalytics;
+using TemplateBusinessMetadata = BIReportingCopilot.Core.Interfaces.Analytics.TemplateBusinessMetadata;
+using TemplateUsageAnalytics = BIReportingCopilot.Core.Interfaces.Analytics.TemplateUsageAnalytics;
 
 namespace BIReportingCopilot.API.Controllers;
 
 /// <summary>
-/// Analytics controller providing AI usage analytics, token tracking, and success metrics
+/// Consolidated Analytics Controller - Comprehensive analytics, performance monitoring, and template analytics
+/// Combines functionality from AnalyticsController, TemplateAnalyticsController, PerformanceController, and PerformanceMonitoringController
 /// </summary>
 [ApiController]
 [Route("api/analytics")]
@@ -17,6 +30,21 @@ public class AnalyticsController : ControllerBase
     private readonly ITokenUsageAnalyticsService _tokenAnalyticsService;
     private readonly IPromptGenerationLogsService _promptLogsService;
     private readonly IPromptSuccessTrackingService _promptSuccessService;
+
+    // Template Analytics Services
+    private readonly ITemplatePerformanceService _templatePerformanceService;
+    private readonly IABTestingService _abTestingService;
+    private readonly ITemplateManagementService _templateManagementService;
+
+    // Performance Services
+    private readonly IPerformanceOptimizationService _performanceOptimizationService;
+    private readonly ICacheOptimizationService _cacheOptimizationService;
+    private readonly IResourceMonitoringService _resourceMonitoringService;
+
+    // Performance Monitoring Services
+    private readonly PerformanceManagementService _performanceManagementService;
+    private readonly MonitoringManagementService _monitoringManagementService;
+    private readonly ISemanticCacheService _semanticCacheService;
 
     public AnalyticsController(
         ILogger<AnalyticsController> logger,

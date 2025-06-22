@@ -232,20 +232,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         key: 'admin-metadata',
         icon: <DatabaseOutlined />,
         label: 'Business Metadata',
-        children: [
-          {
-            key: 'admin-metadata-standard',
-            icon: <FileTextOutlined />,
-            label: 'Standard View',
-            onClick: () => navigate('/admin/business-metadata'),
-          },
-          {
-            key: 'admin-metadata-enhanced',
-            icon: <StarOutlined />,
-            label: 'Enhanced View',
-            onClick: () => navigate('/admin/business-metadata-enhanced'),
-          },
-        ],
+        onClick: () => navigate('/admin/business-metadata'),
       },
       {
         key: 'admin-analytics',

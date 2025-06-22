@@ -37,7 +37,7 @@ public class TemplatePerformanceService : ITemplatePerformanceService
     {
         try
         {
-            _logger.LogDebug("Tracking template usage: {TemplateKey}, Success: {Success}, Confidence: {Confidence}", 
+            _logger.LogDebug("📊 [ANALYTICS] Tracking template usage: {TemplateKey}, Success: {Success}, Confidence: {Confidence}",
                 templateKey, wasSuccessful, confidenceScore);
 
             // Get template to find ID
@@ -48,17 +48,31 @@ public class TemplatePerformanceService : ITemplatePerformanceService
                 return;
             }
 
-            // Update performance metrics
+            // Update performance metrics (existing separate table)
             await _performanceRepository.IncrementUsageAsync(template.Id, wasSuccessful, confidenceScore, processingTimeMs, cancellationToken);
 
-            // Update template usage count
+            // Update template usage count and analytics columns (NEW)
             await _templateRepository.UpdateUsageCountAsync(template.Id, cancellationToken);
 
-            _logger.LogInformation("Successfully tracked usage for template {TemplateKey}", templateKey);
+            // Update LastUsedDate in the new analytics columns
+            await _templateRepository.UpdateLastUsedDateAsync(template.Id, cancellationToken);
+
+            // Update success rate if we have enough data
+            if (template.UsageCount > 0)
+            {
+                var newSuccessRate = wasSuccessful ?
+                    ((template.SuccessRate ?? 0) * template.UsageCount + (wasSuccessful ? 100 : 0)) / (template.UsageCount + 1) :
+                    ((template.SuccessRate ?? 0) * template.UsageCount) / (template.UsageCount + 1);
+
+                await _templateRepository.UpdateSuccessRateAsync(template.Id, newSuccessRate, cancellationToken);
+            }
+
+            _logger.LogInformation("✅ [ANALYTICS] Successfully tracked usage for template {TemplateKey} - Usage Count: {UsageCount}",
+                templateKey, template.UsageCount + 1);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error tracking template usage for {TemplateKey}", templateKey);
+            _logger.LogError(ex, "❌ [ANALYTICS] Error tracking template usage for {TemplateKey}", templateKey);
             throw;
         }
     }

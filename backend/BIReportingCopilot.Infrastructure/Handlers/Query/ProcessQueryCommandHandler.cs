@@ -83,6 +83,20 @@ public class ProcessQueryCommandHandler : IRequestHandler<ProcessQueryCommand, Q
             // Step 5: Generate SQL with enhanced context
             await NotifyProgress(request.UserId, queryId, "ai_processing", "Generating optimized SQL with AI", 40);
             _logger.LogInformation("🔍 [PROCESS-QUERY] About to send GenerateSqlCommand for question: {Question}", request.Question);
+
+            // Track template selection for analytics
+            try
+            {
+                await _serviceProvider.TrackTemplateSelectionAsync(
+                    "sql_generation",
+                    "query_generation",
+                    request.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ [ANALYTICS] Failed to track template selection");
+            }
+
             var sqlResult = await _mediator.Send(new GenerateSqlCommand
             {
                 Question = request.Question,

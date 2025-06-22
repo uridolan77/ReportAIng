@@ -548,6 +548,17 @@ public class TemplateImprovementSuggestionRepository : IRepository<BIReportingCo
         }
     }
 
+    public async Task UpdateLastUsedDateAsync(long templateId, CancellationToken cancellationToken = default)
+    {
+        var entity = await _context.PromptTemplates.FirstOrDefaultAsync(x => x.Id == templateId, cancellationToken);
+        if (entity != null)
+        {
+            entity.LastUsedDate = DateTime.UtcNow;
+            entity.UpdatedDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+    }
+
     public async Task UpdateLastBusinessReviewAsync(long templateId, CancellationToken cancellationToken = default)
     {
         var entity = await _context.PromptTemplates.FirstOrDefaultAsync(x => x.Id == templateId, cancellationToken);
@@ -959,6 +970,17 @@ public class EnhancedPromptTemplateRepository : IRepository<BIReportingCopilot.C
         if (entity != null)
         {
             entity.SuccessRate = successRate;
+            entity.UpdatedDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    public async Task UpdateLastUsedDateAsync(long templateId, CancellationToken cancellationToken = default)
+    {
+        var entity = await _context.PromptTemplates.FirstOrDefaultAsync(x => x.Id == templateId, cancellationToken);
+        if (entity != null)
+        {
+            entity.LastUsedDate = DateTime.UtcNow;
             entity.UpdatedDate = DateTime.UtcNow;
             await _context.SaveChangesAsync(cancellationToken);
         }

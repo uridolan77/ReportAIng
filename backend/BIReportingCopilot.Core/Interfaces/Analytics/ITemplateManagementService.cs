@@ -107,6 +107,16 @@ public interface ITemplateManagementService
     /// Get template management dashboard data
     /// </summary>
     Task<TemplateManagementDashboard> GetDashboardAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get comprehensive template analytics
+    /// </summary>
+    Task<TemplateAnalytics> GetTemplateAnalyticsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get template performance metrics for all templates
+    /// </summary>
+    Task<List<TemplatePerformanceMetrics>> GetTemplatePerformanceMetricsAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -393,6 +403,26 @@ public class TemplateActivityDataPoint
     public int TemplatesUpdated { get; set; }
     public int TemplatesActivated { get; set; }
     public int TemplatesDeactivated { get; set; }
+}
+
+/// <summary>
+/// Comprehensive template analytics
+/// </summary>
+public class TemplateAnalytics
+{
+    public int TotalTemplates { get; set; }
+    public int ActiveTemplates { get; set; }
+    public int InactiveTemplates { get; set; }
+    public int TemplatesWithBusinessMetadata { get; set; }
+    public decimal AverageUsageCount { get; set; }
+    public decimal AverageSuccessRate { get; set; }
+    public decimal AverageImportanceScore { get; set; }
+    public Dictionary<string, int> TemplatesByIntentType { get; set; } = new();
+    public Dictionary<string, int> TemplatesByDataGovernanceLevel { get; set; } = new();
+    public Dictionary<string, int> TemplatesByUsageFrequency { get; set; } = new();
+    public List<TemplatePerformanceMetrics> TopPerformingTemplates { get; set; } = new();
+    public List<TemplatePerformanceMetrics> RecentlyUsedTemplates { get; set; } = new();
+    public DateTime AnalysisDate { get; set; }
 }
 
 #endregion

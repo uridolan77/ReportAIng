@@ -130,6 +130,7 @@ public interface IEnhancedPromptTemplateRepository : IRepository<PromptTemplateE
     Task UpdateUsageCountAsync(long id, CancellationToken cancellationToken = default);
     Task UpdateSuccessRateAsync(long id, decimal successRate, CancellationToken cancellationToken = default);
     Task UpdateLastBusinessReviewAsync(long id, CancellationToken cancellationToken = default);
+    Task UpdateLastUsedDateAsync(long id, CancellationToken cancellationToken = default);
 
     // Template versioning
     Task<List<PromptTemplateEntity>> GetTemplateVersionsAsync(string templateKey, CancellationToken cancellationToken = default);

@@ -32,10 +32,12 @@ export default function AdminApp() {
         
         {/* Business metadata management */}
         <Route path="/business-metadata" element={<BusinessMetadata />} />
-        <Route path="/business-metadata-enhanced" element={<EnhancedBusinessMetadata />} />
         <Route path="/business-metadata/edit/:tableId" element={<BusinessTableEditPage />} />
         <Route path="/business-metadata/add" element={<BusinessTableEditPage />} />
         <Route path="/business-metadata/view/:tableId" element={<BusinessTableEditPage />} />
+
+        {/* Legacy enhanced route - redirect to main page */}
+        <Route path="/business-metadata-enhanced" element={<BusinessMetadata />} />
         
         {/* System configuration */}
         <Route path="/system-config" element={<SystemConfiguration />} />

@@ -963,5 +963,100 @@ public class TemplateManagementService : ITemplateManagementService
         };
     }
 
+    public async Task<TemplateAnalytics> GetTemplateAnalyticsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("📊 [ANALYTICS] Getting comprehensive template analytics");
+
+            // Get all templates with analytics data
+            var allTemplates = await _templateRepository.GetAllAsync(cancellationToken);
+            var activeTemplates = allTemplates.Where(t => t.IsActive).ToList();
+            var templatesWithBusinessMetadata = allTemplates.Where(t =>
+                !string.IsNullOrEmpty(t.BusinessPurpose) ||
+                !string.IsNullOrEmpty(t.BusinessFriendlyName) ||
+                !string.IsNullOrEmpty(t.NaturalLanguageDescription)).ToList();
+
+            // Calculate averages
+            var avgUsageCount = allTemplates.Any() ? allTemplates.Average(t => t.UsageCount) : 0;
+            var avgSuccessRate = allTemplates.Where(t => t.SuccessRate.HasValue).Any() ?
+                allTemplates.Where(t => t.SuccessRate.HasValue).Average(t => t.SuccessRate!.Value) : 0;
+            var avgImportanceScore = allTemplates.Where(t => t.ImportanceScore.HasValue).Any() ?
+                allTemplates.Where(t => t.ImportanceScore.HasValue).Average(t => t.ImportanceScore!.Value) : 0;
+
+            // Group by categories
+            var templatesByIntentType = allTemplates
+                .GroupBy(t => t.IntentType ?? "Unknown")
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var templatesByGovernanceLevel = allTemplates
+                .GroupBy(t => t.DataGovernanceLevel ?? "Not Set")
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var templatesByUsageFrequency = allTemplates
+                .GroupBy(t => t.UsageFrequency ?? "Unknown")
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // Get top performing templates
+            var topPerformers = await _performanceService.GetTopPerformingTemplatesAsync(count: 5, cancellationToken: cancellationToken);
+            var recentlyUsed = await _performanceService.GetRecentlyUsedTemplatesAsync(days: 7, cancellationToken: cancellationToken);
+
+            var analytics = new TemplateAnalytics
+            {
+                TotalTemplates = allTemplates.Count,
+                ActiveTemplates = activeTemplates.Count,
+                InactiveTemplates = allTemplates.Count - activeTemplates.Count,
+                TemplatesWithBusinessMetadata = templatesWithBusinessMetadata.Count,
+                AverageUsageCount = (decimal)avgUsageCount,
+                AverageSuccessRate = (decimal)avgSuccessRate,
+                AverageImportanceScore = (decimal)avgImportanceScore,
+                TemplatesByIntentType = templatesByIntentType,
+                TemplatesByDataGovernanceLevel = templatesByGovernanceLevel,
+                TemplatesByUsageFrequency = templatesByUsageFrequency,
+                TopPerformingTemplates = topPerformers,
+                RecentlyUsedTemplates = recentlyUsed,
+                AnalysisDate = DateTime.UtcNow
+            };
+
+            _logger.LogInformation("✅ [ANALYTICS] Template analytics generated - Total: {Total}, Active: {Active}, With Metadata: {WithMetadata}",
+                analytics.TotalTemplates, analytics.ActiveTemplates, analytics.TemplatesWithBusinessMetadata);
+
+            return analytics;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [ANALYTICS] Error getting template analytics");
+            throw;
+        }
+    }
+
+    public async Task<List<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics>> GetTemplatePerformanceMetricsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("📊 [ANALYTICS] Getting template performance metrics for all templates");
+
+            var allTemplates = await _templateRepository.GetActiveTemplatesAsync(cancellationToken);
+            var performanceMetrics = new List<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics>();
+
+            foreach (var template in allTemplates)
+            {
+                var performance = await _performanceService.GetTemplatePerformanceAsync(template.TemplateKey ?? string.Empty, cancellationToken);
+                if (performance != null)
+                {
+                    performanceMetrics.Add(performance);
+                }
+            }
+
+            _logger.LogInformation("✅ [ANALYTICS] Retrieved performance metrics for {Count} templates", performanceMetrics.Count);
+            return performanceMetrics;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [ANALYTICS] Error getting template performance metrics");
+            throw;
+        }
+    }
+
     #endregion
 }

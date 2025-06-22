@@ -4,6 +4,9 @@ using BIReportingCopilot.Core.Interfaces.Analytics;
 using BIReportingCopilot.Core.Models.Analytics;
 using BIReportingCopilot.Infrastructure.Extensions;
 using InterfaceTemplatePerformanceMetrics = BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics;
+using TemplateAnalytics = BIReportingCopilot.Core.Interfaces.Analytics.TemplateAnalytics;
+using TemplateBusinessMetadata = BIReportingCopilot.Core.Interfaces.Analytics.TemplateBusinessMetadata;
+using TemplateUsageAnalytics = BIReportingCopilot.Core.Interfaces.Analytics.TemplateUsageAnalytics;
 
 namespace BIReportingCopilot.API.Controllers;
 
@@ -443,6 +446,103 @@ public class TemplateAnalyticsController : ControllerBase
         {
             _logger.LogError(ex, "Error completing A/B test {TestId}", testId);
             return StatusCode(500, "Error completing A/B test");
+        }
+    }
+
+    /// <summary>
+    /// Get comprehensive template analytics
+    /// </summary>
+    [HttpGet("analytics")]
+    public async Task<ActionResult<TemplateAnalytics>> GetTemplateAnalytics()
+    {
+        try
+        {
+            _logger.LogInformation("📊 [API] Getting comprehensive template analytics");
+            var analytics = await _managementService.GetTemplateAnalyticsAsync();
+            return Ok(analytics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting template analytics");
+            return StatusCode(500, "Error retrieving template analytics");
+        }
+    }
+
+    /// <summary>
+    /// Get template performance metrics for all templates
+    /// </summary>
+    [HttpGet("analytics/performance")]
+    public async Task<ActionResult<List<InterfaceTemplatePerformanceMetrics>>> GetTemplatePerformanceMetrics()
+    {
+        try
+        {
+            _logger.LogInformation("📊 [API] Getting template performance metrics");
+            var metrics = await _managementService.GetTemplatePerformanceMetricsAsync();
+            return Ok(metrics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting template performance metrics");
+            return StatusCode(500, "Error retrieving template performance metrics");
+        }
+    }
+
+    /// <summary>
+    /// Update template business metadata
+    /// </summary>
+    [HttpPut("analytics/{templateKey}/business-metadata")]
+    public async Task<ActionResult> UpdateTemplateBusinessMetadata(
+        string templateKey,
+        [FromBody] TemplateBusinessMetadata metadata)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(templateKey))
+            {
+                return BadRequest("Template key is required");
+            }
+
+            _logger.LogInformation("📊 [API] Updating business metadata for template: {TemplateKey}", templateKey);
+            var success = await _managementService.UpdateBusinessMetadataAsync(templateKey, metadata);
+
+            if (!success)
+            {
+                return NotFound($"Template not found: {templateKey}");
+            }
+
+            return Ok(new { message = "Business metadata updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating business metadata for template: {TemplateKey}", templateKey);
+            return StatusCode(500, "Error updating business metadata");
+        }
+    }
+
+    /// <summary>
+    /// Get template usage analytics
+    /// </summary>
+    [HttpGet("analytics/{templateKey}/usage")]
+    public async Task<ActionResult<TemplateUsageAnalytics>> GetTemplateUsageAnalytics(
+        string templateKey,
+        [FromQuery] int days = 30)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(templateKey))
+            {
+                return BadRequest("Template key is required");
+            }
+
+            _logger.LogInformation("📊 [API] Getting usage analytics for template: {TemplateKey}", templateKey);
+            var timeWindow = TimeSpan.FromDays(days);
+            var analytics = await _managementService.GetUsageAnalyticsAsync(templateKey, timeWindow);
+            return Ok(analytics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting usage analytics for template: {TemplateKey}", templateKey);
+            return StatusCode(500, "Error retrieving usage analytics");
         }
     }
 
