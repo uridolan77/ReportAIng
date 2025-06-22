@@ -195,6 +195,9 @@ public class FeedbackAnalysis
     public List<ImprovementSuggestionFromFeedback> UserSuggestions { get; set; } = new();
     public decimal SentimentScore { get; set; }
     public DateTime AnalysisDate { get; set; }
+
+    // Additional properties expected by service
+    public Dictionary<string, decimal> SentimentDistribution { get; set; } = new();
 }
 
 /// <summary>
@@ -213,6 +216,10 @@ public class TemplateVariant
     public string GenerationReasoning { get; set; } = string.Empty;
     public Dictionary<string, object> VariantMetadata { get; set; } = new();
     public DateTime GeneratedDate { get; set; }
+
+    // Additional properties expected by service
+    public decimal ExpectedPerformanceChange { get; set; }
+    public string GeneratedBy { get; set; } = "System";
 }
 
 /// <summary>
@@ -283,6 +290,13 @@ public class OptimizationHistory
     public decimal CumulativeImprovement { get; set; }
     public DateTime FirstOptimization { get; set; }
     public DateTime LastOptimization { get; set; }
+
+    // Additional properties expected by service
+    public List<PerformanceTrendPoint> PerformanceTrend { get; set; } = new();
+    public int SuccessfulOptimizations { get; set; }
+    public decimal AverageImprovementPercent { get; set; }
+    public DateTime? LastOptimizationDate { get; set; }
+    public DateTime GeneratedDate { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
@@ -301,6 +315,15 @@ public class ModelTrainingResult
     public bool TrainingSuccessful { get; set; }
     public string? ErrorMessage { get; set; }
     public Dictionary<string, object> ModelParameters { get; set; } = new();
+
+    // Additional properties expected by service
+    public DateTime TrainingStartTime { get; set; }
+    public DateTime TrainingEndTime { get; set; }
+    public TimeSpan TrainingDuration { get; set; }
+    public int DataPointsUsed { get; set; }
+    public decimal ModelPerformanceImprovement { get; set; }
+    public string TrainingStatus { get; set; } = string.Empty;
+    public string TrainingNotes { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -333,6 +356,10 @@ public class ReviewResult
     public string? ReviewedBy { get; set; }
     public DateTime ReviewDate { get; set; }
     public string? NextSteps { get; set; }
+
+    // Additional properties expected by service
+    public string NewStatus { get; set; } = string.Empty;
+    public string? Comments { get; set; }
 }
 
 #region Supporting Models
@@ -410,6 +437,9 @@ public class QualityStrength
     public string StrengthType { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public decimal Score { get; set; }
+
+    // Additional property expected by service
+    public decimal ImpactScore { get; set; }
 }
 
 public class ReadabilityMetrics
@@ -419,6 +449,12 @@ public class ReadabilityMetrics
     public decimal AverageSentenceLength { get; set; }
     public int ComplexWordCount { get; set; }
     public decimal ReadingLevel { get; set; }
+
+    // Additional properties expected by service
+    public decimal OverallScore { get; set; }
+    public decimal SentenceComplexity { get; set; }
+    public decimal VocabularyLevel { get; set; }
+    public string ReadingLevelText { get; set; } = string.Empty;
 }
 
 public class StructureAnalysis
@@ -428,6 +464,13 @@ public class StructureAnalysis
     public bool HasBusinessContext { get; set; }
     public int SectionCount { get; set; }
     public decimal StructureScore { get; set; }
+
+    // Additional properties expected by service
+    public decimal OverallScore { get; set; }
+    public bool HasClearSections { get; set; }
+    public bool HasNumberedSteps { get; set; }
+    public bool HasBulletPoints { get; set; }
+    public decimal ComplexityScore { get; set; }
 }
 
 public class ContentCompleteness
@@ -435,6 +478,12 @@ public class ContentCompleteness
     public decimal CompletenessScore { get; set; }
     public List<string> MissingElements { get; set; } = new();
     public List<string> PresentElements { get; set; } = new();
+
+    // Additional properties expected by service
+    public decimal OverallScore { get; set; }
+    public bool HasInstructions { get; set; }
+    public bool HasExamples { get; set; }
+    public bool HasContext { get; set; }
 }
 
 public class OptimizationEvent
@@ -444,6 +493,12 @@ public class OptimizationEvent
     public string Description { get; set; } = string.Empty;
     public decimal ImpactMeasured { get; set; }
     public string OptimizedBy { get; set; } = string.Empty;
+
+    // Additional properties expected by service
+    public string EventType { get; set; } = string.Empty;
+    public DateTime EventDate { get; set; }
+    public decimal ImpactScore { get; set; }
+    public string Status { get; set; } = "Completed";
 }
 
 public class PerformanceSnapshot

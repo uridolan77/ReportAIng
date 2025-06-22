@@ -108,6 +108,13 @@ export const baseApi = createApi({
     'TemplateManagement',
     'TemplateVersion',
     'TemplateQuality',
+    // Template Improvement
+    'TemplateImprovement',
+    'ImprovementSuggestion',
+    'OptimizedTemplate',
+    'PerformancePrediction',
+    'TemplateVariant',
+    'ContentQuality',
   ],
   endpoints: () => ({}),
 })

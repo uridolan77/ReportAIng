@@ -142,18 +142,30 @@ export const AIStatusIndicator: React.FC = () => {
   }
 
   return (
-    <Tooltip title={getTooltipContent()} placement="bottomRight">
-      <Button
-        type="text"
-        size="small"
+    <Tooltip title={getTooltipContent()} placement="top">
+      <div
         onClick={checkAIHealth}
-        loading={loading}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '4px',
-          padding: '4px 8px',
-          height: 'auto',
+          justifyContent: 'center',
+          gap: '6px',
+          padding: '6px 12px',
+          borderRadius: '6px',
+          background: 'rgba(255, 255, 255, 0.1)',
+          border: `1px solid ${getStatusColor()}`,
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          minWidth: '120px',
+          ':hover': {
+            background: 'rgba(255, 255, 255, 0.15)',
+          }
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
         }}
       >
         <Badge
@@ -165,14 +177,16 @@ export const AIStatusIndicator: React.FC = () => {
         </Badge>
         <Text
           style={{
-            fontSize: '12px',
-            color: getStatusColor(),
+            fontSize: '11px',
+            color: 'white',
             fontWeight: 500,
+            textAlign: 'center',
+            flex: 1,
           }}
         >
           {getStatusText()}
         </Text>
-      </Button>
+      </div>
     </Tooltip>
   )
 }

@@ -57,7 +57,7 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IQueryService, BIReportingCopilot.Infrastructure.Query.QueryService>();
         services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Schema.SchemaService>();
         services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Query.SqlQueryService>();
-        services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.AI.Management.PromptService>();
+        // IPromptService is registered in RepositoryRegistrationExtensions with TrackedPromptService decorator
 
         return services;
     }

@@ -765,7 +765,7 @@ builder.Services.AddScoped<IQueryProgressNotifier, BIReportingCopilot.API.Hubs.S
 builder.Services.AddScoped<IQueryService, BIReportingCopilot.Infrastructure.Query.QueryService>();
 builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Schema.SchemaService>(); // Unified with built-in caching
 builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Query.SqlQueryService>();
-builder.Services.AddScoped<IPromptService, BIReportingCopilot.Infrastructure.AI.Management.PromptService>();
+// IPromptService is registered in RepositoryRegistrationExtensions with TrackedPromptService decorator
 
 // ===== AI SERVICES (Strategic Enhancements #2 & #3) =====
 // TODO: Fix interface implementations

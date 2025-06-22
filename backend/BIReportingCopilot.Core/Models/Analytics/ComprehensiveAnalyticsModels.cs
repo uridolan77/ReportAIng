@@ -13,7 +13,7 @@ public class ComprehensiveAnalyticsDashboard
     public PerformanceTrendsData PerformanceTrends { get; set; } = new();
     public UsageInsightsData UsageInsights { get; set; } = new();
     public QualityMetricsData QualityMetrics { get; set; } = new();
-    public List<PerformanceAlert> ActiveAlerts { get; set; } = new();
+    public List<BIReportingCopilot.Core.Models.Analytics.PerformanceAlert> ActiveAlerts { get; set; } = new();
     public DateRange DateRange { get; set; } = new();
     public DateTime GeneratedDate { get; set; } = DateTime.UtcNow;
 }
@@ -42,6 +42,17 @@ public class PerformanceTrendDataPoint
     public int ActiveTemplates { get; set; }
     public decimal AverageResponseTime { get; set; }
     public int ErrorCount { get; set; }
+}
+
+/// <summary>
+/// Performance trend point for template improvement analysis
+/// </summary>
+public class PerformanceTrendPoint
+{
+    public DateTime Date { get; set; }
+    public decimal SuccessRate { get; set; }
+    public decimal UserRating { get; set; }
+    public int ResponseTime { get; set; }
 }
 
 /// <summary>
@@ -115,35 +126,9 @@ public class DateRange
 }
 
 /// <summary>
-/// Performance alert for monitoring
+/// Performance alert for monitoring (using existing definition from PromptSuccessModels)
 /// </summary>
-public class PerformanceAlert
-{
-    public string AlertId { get; set; } = Guid.NewGuid().ToString();
-    public string AlertType { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public AlertSeverity Severity { get; set; }
-    public string TemplateKey { get; set; } = string.Empty;
-    public string IntentType { get; set; } = string.Empty;
-    public Dictionary<string, object> AlertData { get; set; } = new();
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
-    public DateTime? ResolvedDate { get; set; }
-    public bool IsResolved { get; set; }
-    public string? ResolvedBy { get; set; }
-    public string? ResolutionNotes { get; set; }
-}
-
-/// <summary>
-/// Alert severity levels
-/// </summary>
-public enum AlertSeverity
-{
-    Low,
-    Medium,
-    High,
-    Critical
-}
+// Note: PerformanceAlert and AlertSeverity are already defined in PromptSuccessModels.cs
 
 /// <summary>
 /// Real-time analytics data for live monitoring

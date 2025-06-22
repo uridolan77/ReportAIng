@@ -12,14 +12,14 @@ namespace BIReportingCopilot.Infrastructure.Services;
 /// </summary>
 public class TrackedPromptService : IPromptService
 {
-    private readonly PromptService _innerPromptService;
+    private readonly IPromptService _innerPromptService;
     private readonly ITemplatePerformanceService _performanceService;
     private readonly IABTestingService _abTestingService;
     private readonly ILogger<TrackedPromptService> _logger;
     private readonly ConcurrentDictionary<string, TemplateUsageContext> _activeUsages = new();
 
     public TrackedPromptService(
-        PromptService innerPromptService,
+        IPromptService innerPromptService,
         ITemplatePerformanceService performanceService,
         IABTestingService abTestingService,
         ILogger<TrackedPromptService> logger)

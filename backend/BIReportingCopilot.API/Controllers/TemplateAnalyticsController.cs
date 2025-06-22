@@ -77,7 +77,7 @@ public class TemplateAnalyticsController : ControllerBase
             // Get additional analytics
             var performanceTrends = await GetPerformanceTrendsData(start, end, intentType);
             var usageInsights = await GetUsageInsights(start, end);
-            var qualityMetrics = await GetQualityMetrics();
+            var qualityMetrics = await GetQualityMetricsData();
             var alerts = await _performanceService.GetPerformanceAlertsAsync();
 
             var comprehensiveDashboard = new ComprehensiveAnalyticsDashboard
@@ -88,7 +88,20 @@ public class TemplateAnalyticsController : ControllerBase
                 PerformanceTrends = performanceTrends,
                 UsageInsights = usageInsights,
                 QualityMetrics = qualityMetrics,
-                ActiveAlerts = alerts,
+                ActiveAlerts = alerts?.Select(a => new BIReportingCopilot.Core.Models.Analytics.PerformanceAlert
+                {
+                    AlertId = a.TemplateKey, // Use TemplateKey as AlertId
+                    AlertType = a.AlertType,
+                    Severity = (BIReportingCopilot.Core.Models.Analytics.AlertSeverity)a.Severity,
+                    Title = a.AlertType,
+                    Description = a.Message,
+                    MetricName = "SuccessRate",
+                    CurrentValue = 0, // Would need to get actual value
+                    ThresholdValue = 0.7m, // Default threshold
+                    TriggeredAt = a.CreatedDate,
+                    IsResolved = a.IsAcknowledged,
+                    ResolvedAt = null
+                }).ToList() ?? new(),
                 GeneratedDate = DateTime.UtcNow,
                 DateRange = new DateRange { StartDate = start, EndDate = end }
             };
@@ -160,7 +173,7 @@ public class TemplateAnalyticsController : ControllerBase
     {
         try
         {
-            var metrics = await GetQualityMetrics(intentType);
+            var metrics = await GetQualityMetricsData(intentType);
             return Ok(metrics);
         }
         catch (Exception ex)
@@ -679,15 +692,43 @@ public class TemplateAnalyticsController : ControllerBase
             TotalUsage = totalUsage,
             AverageSuccessRate = (decimal)avgSuccessRate,
             UsageByIntentType = performanceByIntent.ToDictionary(p => p.Key, p => p.Value.TotalUsages),
-            TopPerformingTemplates = topPerformers.Take(5).ToList(),
-            UnderperformingTemplates = underperforming.Take(5).ToList(),
+            TopPerformingTemplates = topPerformers.Take(5).Select(t => new BIReportingCopilot.Core.Models.Analytics.TemplatePerformanceMetrics
+            {
+                TemplateKey = t.TemplateKey,
+                TemplateName = t.TemplateName,
+                IntentType = t.IntentType,
+                TotalUsages = t.TotalUsages,
+                SuccessfulUsages = t.SuccessfulUsages,
+                SuccessRate = t.SuccessRate,
+                AverageUserRating = t.AverageUserRating,
+                AverageConfidenceScore = t.AverageConfidenceScore,
+                AverageProcessingTimeMs = t.AverageProcessingTimeMs,
+                LastUsedDate = t.LastUsedDate,
+                CreatedDate = DateTime.UtcNow, // Default value
+                UpdatedDate = DateTime.UtcNow // Default value
+            }).ToList(),
+            UnderperformingTemplates = underperforming.Take(5).Select(t => new BIReportingCopilot.Core.Models.Analytics.TemplatePerformanceMetrics
+            {
+                TemplateKey = t.TemplateKey,
+                TemplateName = t.TemplateName,
+                IntentType = t.IntentType,
+                TotalUsages = t.TotalUsages,
+                SuccessfulUsages = t.SuccessfulUsages,
+                SuccessRate = t.SuccessRate,
+                AverageUserRating = t.AverageUserRating,
+                AverageConfidenceScore = t.AverageConfidenceScore,
+                AverageProcessingTimeMs = t.AverageProcessingTimeMs,
+                LastUsedDate = t.LastUsedDate,
+                CreatedDate = DateTime.UtcNow, // Default value
+                UpdatedDate = DateTime.UtcNow // Default value
+            }).ToList(),
             Insights = insights,
             TimeRange = new DateRange { StartDate = startDate, EndDate = endDate },
             GeneratedDate = DateTime.UtcNow
         };
     }
 
-    private async Task<QualityMetricsData> GetQualityMetrics(string? intentType = null)
+    private async Task<QualityMetricsData> GetQualityMetricsData(string? intentType = null)
     {
         var allTemplates = await _performanceService.GetTopPerformingTemplatesAsync(count: 1000);
 

@@ -229,3 +229,279 @@ export interface ExportRequest {
   filters?: DashboardFilters;
   dateRange?: TimeRange;
 }
+
+// Template Improvement Types
+export interface TemplateImprovementSuggestion {
+  id: number;
+  templateKey: string;
+  templateName: string;
+  type: ImprovementType;
+  currentVersion: string;
+  suggestedChanges: string; // JSON object
+  reasoningExplanation: string;
+  expectedImprovementPercent: number;
+  basedOnDataPoints: number;
+  confidenceScore: number;
+  status: SuggestionStatus;
+  reviewedBy?: string;
+  createdDate: string;
+  reviewedDate?: string;
+  reviewComments?: string;
+}
+
+export interface OptimizedTemplate {
+  originalTemplateKey: string;
+  optimizedContent: string;
+  strategyUsed: OptimizationStrategy;
+  changesApplied: OptimizationChange[];
+  expectedPerformanceImprovement: number;
+  confidenceScore: number;
+  optimizationReasoning: string;
+  metricPredictions: Record<string, number>;
+  optimizedDate: string;
+  optimizedBy: string;
+}
+
+export interface OptimizationChange {
+  changeType: string;
+  description: string;
+  impactScore: number;
+}
+
+export interface PerformancePrediction {
+  templateContent: string;
+  intentType: string;
+  predictedSuccessRate: number;
+  predictedUserRating: number;
+  predictedResponseTime: number;
+  predictionConfidence: number;
+  strengthFactors: string[];
+  weaknessFactors: string[];
+  improvementSuggestions: string[];
+  featureScores: Record<string, number>;
+  predictionDate: string;
+}
+
+export interface TemplateVariant {
+  originalTemplateKey: string;
+  variantType: VariantType;
+  variantContent: string;
+  expectedPerformanceChange: number;
+  confidenceScore: number;
+  generationReasoning: string;
+  generatedDate: string;
+  generatedBy: string;
+}
+
+export interface ContentQualityAnalysis {
+  templateContent: string;
+  overallQualityScore: number;
+  qualityDimensions: Record<string, number>;
+  identifiedIssues: QualityIssue[];
+  strengths: QualityStrength[];
+  improvementSuggestions: string[];
+  readability: ReadabilityMetrics;
+  structure: StructureAnalysis;
+  completeness: ContentCompleteness;
+  analysisDate: string;
+}
+
+export interface QualityIssue {
+  issueType: string;
+  description: string;
+  severity: number;
+  suggestion: string;
+}
+
+export interface QualityStrength {
+  strengthType: string;
+  description: string;
+  impactScore: number;
+}
+
+export interface ReadabilityMetrics {
+  overallScore: number;
+  sentenceComplexity: number;
+  vocabularyLevel: number;
+  readingLevel: string;
+}
+
+export interface StructureAnalysis {
+  overallScore: number;
+  hasClearSections: boolean;
+  hasNumberedSteps: boolean;
+  hasBulletPoints: boolean;
+  complexityScore: number;
+}
+
+export interface ContentCompleteness {
+  overallScore: number;
+  hasInstructions: boolean;
+  hasExamples: boolean;
+  hasContext: boolean;
+  missingElements: string[];
+}
+
+export interface ReviewResult {
+  suggestionId: number;
+  action: SuggestionReviewAction;
+  newStatus: string;
+  reviewedBy: string;
+  reviewDate: string;
+  comments?: string;
+  success: boolean;
+  message: string;
+}
+
+// Comprehensive Analytics Types
+export interface ComprehensiveAnalyticsDashboard {
+  performanceOverview: PerformanceDashboardData;
+  abTestingOverview: ABTestDashboard;
+  managementOverview: TemplateManagementDashboard;
+  performanceTrends: PerformanceTrendsData;
+  usageInsights: UsageInsightsData;
+  qualityMetrics: QualityMetricsData;
+  activeAlerts: PerformanceAlert[];
+  dateRange: DateRange;
+  generatedDate: string;
+}
+
+export interface ABTestDashboard {
+  totalActiveTests: number;
+  totalCompletedTests: number;
+  averageTestDuration: number;
+  successfulTests: number;
+  testsAwaitingResults: number;
+  recentTests: ABTestDetails[];
+}
+
+export interface PerformanceTrendsData {
+  dataPoints: PerformanceTrendDataPoint[];
+  timeRange: DateRange;
+  granularity: string;
+  intentType?: string;
+  generatedDate: string;
+}
+
+export interface PerformanceTrendDataPoint {
+  timestamp: string;
+  averageSuccessRate: number;
+  averageConfidenceScore: number;
+  totalUsage: number;
+  activeTemplates: number;
+  averageResponseTime: number;
+  errorCount: number;
+}
+
+export interface UsageInsightsData {
+  totalUsage: number;
+  averageSuccessRate: number;
+  usageByIntentType: Record<string, number>;
+  topPerformingTemplates: TemplatePerformanceMetrics[];
+  underperformingTemplates: TemplatePerformanceMetrics[];
+  insights: UsageInsight[];
+  timeRange: DateRange;
+  generatedDate: string;
+}
+
+export interface UsageInsight {
+  type: string;
+  title: string;
+  description: string;
+  impact: 'High' | 'Medium' | 'Low';
+  recommendation: string;
+  data: Record<string, any>;
+  generatedDate: string;
+}
+
+export interface QualityMetricsData {
+  overallQualityScore: number;
+  averageConfidenceScore: number;
+  qualityDistribution: Record<string, number>;
+  totalTemplatesAnalyzed: number;
+  templatesAboveThreshold: number;
+  templatesBelowThreshold: number;
+  detailedMetrics: QualityMetric[];
+  intentType?: string;
+  generatedDate: string;
+}
+
+export interface QualityMetric {
+  templateKey: string;
+  templateName: string;
+  qualityScore: number;
+  qualityCategory: string;
+  lastAnalyzed: string;
+}
+
+export interface RealTimeAnalyticsData {
+  activeUsers: number;
+  queriesPerMinute: number;
+  currentSuccessRate: number;
+  averageResponseTime: number;
+  errorsInLastHour: number;
+  recentActivities: RecentActivity[];
+  activeTemplateUsage: Record<string, number>;
+  lastUpdated: string;
+}
+
+export interface RecentActivity {
+  id: string;
+  type: string;
+  description: string;
+  timestamp: string;
+  templateKey?: string;
+  userId?: string;
+}
+
+export interface DateRange {
+  startDate: string;
+  endDate: string;
+}
+
+export interface AnalyticsExportConfig {
+  format: 'CSV' | 'Excel' | 'JSON';
+  dateRange: DateRange;
+  includedMetrics: string[];
+  intentTypeFilter?: string;
+  includeCharts: boolean;
+  includeRawData: boolean;
+  exportedBy: string;
+  requestedDate: string;
+}
+
+// Enums
+export type ImprovementType =
+  | 'ContentOptimization'
+  | 'StructureImprovement'
+  | 'ContextEnhancement'
+  | 'ExampleAddition'
+  | 'InstructionClarification'
+  | 'PerformanceOptimization';
+
+export type SuggestionStatus =
+  | 'Pending'
+  | 'Approved'
+  | 'Rejected'
+  | 'Implemented'
+  | 'NeedsChanges'
+  | 'ScheduledForTesting';
+
+export type OptimizationStrategy =
+  | 'PerformanceFocused'
+  | 'AccuracyFocused'
+  | 'UserSatisfactionFocused'
+  | 'ResponseTimeFocused'
+  | 'Balanced';
+
+export type VariantType =
+  | 'ContentVariation'
+  | 'StructureVariation'
+  | 'StyleVariation'
+  | 'ComplexityVariation';
+
+export type SuggestionReviewAction =
+  | 'Approve'
+  | 'Reject'
+  | 'RequestChanges'
+  | 'ScheduleABTest';

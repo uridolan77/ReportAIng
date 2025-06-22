@@ -166,8 +166,8 @@ public class TemplateAnalyticsHub : Hub
     /// <summary>
     /// Broadcast alert to subscribers
     /// </summary>
-    public static async Task BroadcastAlert(IHubContext<TemplateAnalyticsHub> hubContext, 
-        PerformanceAlert alert)
+    public static async Task BroadcastAlert(IHubContext<TemplateAnalyticsHub> hubContext,
+        BIReportingCopilot.Core.Models.Analytics.PerformanceAlert alert)
     {
         await hubContext.Clients.Group("Alerts").SendAsync("NewAlert", alert);
     }

@@ -17,10 +17,88 @@ import type {
   TemplateSearchResult,
   UserFeedback,
   ExportRequest,
+  // Template Improvement Types
+  TemplateImprovementSuggestion,
+  OptimizedTemplate,
+  PerformancePrediction,
+  TemplateVariant,
+  ContentQualityAnalysis,
+  ReviewResult,
+  OptimizationStrategy,
+  SuggestionReviewAction,
+  // Comprehensive Analytics Types
+  ComprehensiveAnalyticsDashboard,
+  PerformanceTrendsData,
+  UsageInsightsData,
+  QualityMetricsData,
+  RealTimeAnalyticsData,
+  AnalyticsExportConfig,
 } from '@shared/types/templateAnalytics'
 
 export const templateAnalyticsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // Comprehensive Analytics Dashboard Endpoints
+    getComprehensiveDashboard: builder.query<ComprehensiveAnalyticsDashboard, {
+      startDate?: string;
+      endDate?: string;
+      intentType?: string;
+    }>({
+      query: ({ startDate, endDate, intentType }) => ({
+        url: 'templateanalytics/dashboard/comprehensive',
+        params: { startDate, endDate, intentType },
+      }),
+      providesTags: ['Analytics'],
+    }),
+
+    getPerformanceTrends: builder.query<PerformanceTrendsData, {
+      startDate?: string;
+      endDate?: string;
+      intentType?: string;
+      granularity?: string;
+    }>({
+      query: ({ startDate, endDate, intentType, granularity }) => ({
+        url: 'templateanalytics/trends/performance',
+        params: { startDate, endDate, intentType, granularity },
+      }),
+      providesTags: ['Analytics'],
+    }),
+
+    getUsageInsights: builder.query<UsageInsightsData, {
+      startDate?: string;
+      endDate?: string;
+      intentType?: string;
+    }>({
+      query: ({ startDate, endDate, intentType }) => ({
+        url: 'templateanalytics/insights/usage',
+        params: { startDate, endDate, intentType },
+      }),
+      providesTags: ['Analytics'],
+    }),
+
+    getQualityMetrics: builder.query<QualityMetricsData, {
+      intentType?: string;
+    }>({
+      query: ({ intentType }) => ({
+        url: 'templateanalytics/metrics/quality',
+        params: { intentType },
+      }),
+      providesTags: ['Analytics'],
+    }),
+
+    getRealTimeAnalytics: builder.query<RealTimeAnalyticsData, void>({
+      query: () => 'templateanalytics/realtime',
+      providesTags: ['Analytics'],
+    }),
+
+    exportAnalytics: builder.mutation<Blob, AnalyticsExportConfig>({
+      query: (config) => ({
+        url: 'templateanalytics/export',
+        method: 'POST',
+        body: config,
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
+
     // Performance Dashboard Endpoints
     getPerformanceDashboard: builder.query<PerformanceDashboardData, {
       startDate?: string;
@@ -261,19 +339,118 @@ export const templateAnalyticsApi = baseApi.injectEndpoints({
         responseHandler: (response) => response.blob(),
       }),
     }),
+
+    // Template Improvement Endpoints
+    analyzeTemplatePerformance: builder.mutation<TemplateImprovementSuggestion[], string>({
+      query: (templateKey) => ({
+        url: `templateimprovement/analyze/${templateKey}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['TemplateImprovement'],
+    }),
+
+    generateImprovementSuggestions: builder.mutation<TemplateImprovementSuggestion[], {
+      performanceThreshold?: number;
+      minDataPoints?: number;
+    }>({
+      query: (params) => ({
+        url: 'templateimprovement/generate',
+        method: 'POST',
+        body: params,
+      }),
+      invalidatesTags: ['TemplateImprovement'],
+    }),
+
+    optimizeTemplate: builder.mutation<OptimizedTemplate, {
+      templateKey: string;
+      strategy: OptimizationStrategy;
+    }>({
+      query: (params) => ({
+        url: 'templateimprovement/optimize',
+        method: 'POST',
+        body: params,
+      }),
+      invalidatesTags: ['TemplateImprovement'],
+    }),
+
+    predictTemplatePerformance: builder.mutation<PerformancePrediction, {
+      templateContent: string;
+      intentType: string;
+    }>({
+      query: (params) => ({
+        url: 'templateimprovement/predict',
+        method: 'POST',
+        body: params,
+      }),
+    }),
+
+    generateTemplateVariants: builder.mutation<TemplateVariant[], {
+      templateKey: string;
+      variantCount?: number;
+    }>({
+      query: ({ templateKey, variantCount }) => ({
+        url: `templateimprovement/variants/${templateKey}`,
+        method: 'POST',
+        params: { variantCount },
+      }),
+      invalidatesTags: ['TemplateImprovement'],
+    }),
+
+    reviewImprovementSuggestion: builder.mutation<ReviewResult, {
+      suggestionId: number;
+      action: SuggestionReviewAction;
+      reviewComments?: string;
+    }>({
+      query: ({ suggestionId, ...body }) => ({
+        url: `templateimprovement/review/${suggestionId}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['TemplateImprovement'],
+    }),
+
+    analyzeContentQuality: builder.mutation<ContentQualityAnalysis, {
+      templateContent: string;
+    }>({
+      query: (params) => ({
+        url: 'templateimprovement/analyze-content',
+        method: 'POST',
+        body: params,
+      }),
+    }),
+
+    exportImprovementSuggestions: builder.mutation<Blob, {
+      startDate: string;
+      endDate: string;
+      format: 'CSV' | 'JSON' | 'Excel';
+    }>({
+      query: (params) => ({
+        url: 'templateimprovement/export',
+        method: 'POST',
+        body: params,
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
   }),
 })
 
 // Export hooks for use in components
 export const {
+  // Comprehensive Analytics
+  useGetComprehensiveDashboardQuery,
+  useGetPerformanceTrendsQuery,
+  useGetUsageInsightsQuery,
+  useGetQualityMetricsQuery,
+  useGetRealTimeAnalyticsQuery,
+  useExportAnalyticsMutation,
+
   // Performance Dashboard
   useGetPerformanceDashboardQuery,
   useGetTemplatePerformanceQuery,
   useGetTopPerformingTemplatesQuery,
   useGetPerformanceAlertsQuery,
-  useGetPerformanceTrendsQuery,
   useResolvePerformanceAlertMutation,
-  
+
   // A/B Testing
   useGetABTestsQuery,
   useGetABTestQuery,
@@ -284,7 +461,7 @@ export const {
   useResumeABTestMutation,
   useGetABTestAnalysisQuery,
   useGetABTestRecommendationsQuery,
-  
+
   // Template Management
   useGetTemplateManagementDashboardQuery,
   useGetTemplateWithMetricsQuery,
@@ -292,8 +469,18 @@ export const {
   useCreateTemplateMutation,
   useUpdateTemplateMutation,
   useDeleteTemplateMutation,
-  
+
   // User Feedback & Export
   useTrackUserFeedbackMutation,
   useExportDataMutation,
+
+  // Template Improvement
+  useAnalyzeTemplatePerformanceMutation,
+  useGenerateImprovementSuggestionsMutation,
+  useOptimizeTemplateMutation,
+  usePredictTemplatePerformanceMutation,
+  useGenerateTemplateVariantsMutation,
+  useReviewImprovementSuggestionMutation,
+  useAnalyzeContentQualityMutation,
+  useExportImprovementSuggestionsMutation,
 } = templateAnalyticsApi

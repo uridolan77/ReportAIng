@@ -32,14 +32,14 @@ import {
   FileTextOutlined,
   AreaChartOutlined,
   BranchesOutlined,
-  MonitorOutlined
+  MonitorOutlined,
+  RocketOutlined
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppSelector, useAppDispatch } from '../../hooks'
 import { selectUser, selectIsAdmin, authActions } from '../../store/auth'
 import { selectSidebarCollapsed, uiActions } from '../../store/ui'
-import { ApiModeToggle } from './ApiModeToggle'
-import { AIStatusIndicator } from './AIStatusIndicator'
+import { SystemStatusIndicator } from './ApiModeToggle'
 
 const { Header, Sider, Content } = AntLayout
 const { Text } = Typography
@@ -164,6 +164,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (path === '/admin/ai-transparency-analysis') return ['admin-ai-transparency-analysis']
 
     // Advanced Features - Template Analytics
+    if (path === '/admin/template-analytics/enhanced') return ['admin-template-enhanced']
+    if (path === '/admin/template-analytics/demo') return ['admin-template-demo']
     if (path === '/admin/template-analytics/performance') return ['admin-template-performance']
     if (path === '/admin/template-analytics/ab-testing') return ['admin-template-ab-testing']
     if (path === '/admin/template-analytics/management') return ['admin-template-management']
@@ -177,7 +179,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     // Main User Interface
     {
       key: 'main-section',
-      label: 'Main Interface',
+      label: sidebarCollapsed ? '' : 'Main Interface',
       type: 'group',
       icon: <AppstoreOutlined />,
     },
@@ -216,7 +218,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       // Data & Analytics
       {
         key: 'data-section',
-        label: 'Data & Analytics',
+        label: sidebarCollapsed ? '' : 'Data & Analytics',
         type: 'group',
         icon: <LineChartOutlined />,
       },
@@ -254,8 +256,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       // System Management
       {
         key: 'system-section',
-        label: 'System Management',
+        label: sidebarCollapsed ? '' : 'System Management',
         type: 'group',
+        icon: <ControlOutlined />,
       },
       {
         key: 'admin-performance',
@@ -264,11 +267,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         children: [
           {
             key: 'admin-performance-metrics',
+            icon: <MonitorOutlined />,
             label: 'Performance Metrics',
             onClick: () => navigate('/admin/performance'),
           },
           {
             key: 'admin-cost',
+            icon: <DollarOutlined />,
             label: 'Cost Management',
             onClick: () => navigate('/admin/cost-management'),
           },
@@ -281,11 +286,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         children: [
           {
             key: 'admin-ai-analytics',
+            icon: <AreaChartOutlined />,
             label: 'AI Analytics',
             onClick: () => navigate('/admin/ai-analytics'),
           },
           {
             key: 'admin-llm-management',
+            icon: <ApiOutlined />,
             label: 'LLM Management',
             onClick: () => navigate('/admin/llm-management'),
           },
@@ -306,8 +313,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       // Advanced Features
       {
         key: 'advanced-section',
-        label: 'Advanced Features',
+        label: sidebarCollapsed ? '' : 'Advanced Features',
         type: 'group',
+        icon: <ExperimentOutlined />,
       },
       {
         key: 'admin-ai-transparency',
@@ -316,21 +324,25 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         children: [
           {
             key: 'admin-ai-transparency-dashboard',
+            icon: <DashboardOutlined />,
             label: 'Dashboard',
             onClick: () => navigate('/admin/transparency-dashboard'),
           },
           {
             key: 'admin-transparency-management',
+            icon: <ControlOutlined />,
             label: 'Management',
             onClick: () => navigate('/admin/transparency-management'),
           },
           {
             key: 'admin-transparency-review',
+            icon: <SearchOutlined />,
             label: 'Review & Analysis',
             onClick: () => navigate('/admin/transparency-review'),
           },
           {
             key: 'admin-ai-transparency-analysis',
+            icon: <BranchesOutlined />,
             label: 'Interactive Analysis',
             onClick: () => navigate('/admin/ai-transparency-analysis'),
           },
@@ -338,26 +350,42 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       },
       {
         key: 'admin-template-analytics',
-        icon: <ExperimentOutlined />,
+        icon: <FileTextOutlined />,
         label: 'Template Analytics',
         children: [
           {
+            key: 'admin-template-enhanced',
+            icon: <BulbOutlined />,
+            label: 'Enhanced Analytics',
+            onClick: () => navigate('/admin/template-analytics/enhanced'),
+          },
+          {
+            key: 'admin-template-demo',
+            icon: <RocketOutlined />,
+            label: 'Features Demo',
+            onClick: () => navigate('/admin/template-analytics/demo'),
+          },
+          {
             key: 'admin-template-performance',
+            icon: <FundOutlined />,
             label: 'Performance Dashboard',
             onClick: () => navigate('/admin/template-analytics/performance'),
           },
           {
             key: 'admin-template-ab-testing',
+            icon: <ExperimentOutlined />,
             label: 'A/B Testing',
             onClick: () => navigate('/admin/template-analytics/ab-testing'),
           },
           {
             key: 'admin-template-management',
+            icon: <SafetyOutlined />,
             label: 'Template Management',
             onClick: () => navigate('/admin/template-analytics/management'),
           },
           {
             key: 'admin-template-advanced',
+            icon: <AreaChartOutlined />,
             label: 'Advanced Analytics',
             onClick: () => navigate('/admin/template-analytics/analytics'),
           },
@@ -372,8 +400,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         trigger={null}
         collapsible
         collapsed={sidebarCollapsed}
+        width={sidebarWidth}
+        collapsedWidth={80}
         style={{
           background: '#001529',
+          position: 'relative',
+          height: '100vh',
+          overflow: 'hidden',
         }}
       >
         <div
@@ -387,18 +420,145 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             justifyContent: 'center',
           }}
         >
-          {!sidebarCollapsed && (
+          {sidebarCollapsed ? (
+            <RocketOutlined style={{ color: 'white', fontSize: '18px' }} />
+          ) : (
             <Text style={{ color: 'white', fontWeight: 'bold' }}>
               BI Copilot
             </Text>
           )}
         </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={getSelectedKeys()}
-          items={menuItems}
-        />
+        <div style={{
+          height: 'calc(100vh - 64px)', // Account for brand section height
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={getSelectedKeys()}
+            items={menuItems}
+            style={{
+              flex: 1,
+              borderRight: 0,
+              overflow: 'auto',
+              minHeight: 0, // Important for flex child with overflow
+            }}
+          />
+
+          {/* Bottom Section with User Info and Controls - Sticky to bottom */}
+          <div
+            style={{
+              padding: sidebarCollapsed ? '12px 8px' : '16px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(0, 0, 0, 0.2)',
+              flexShrink: 0, // Prevent shrinking
+            }}
+          >
+            {sidebarCollapsed ? (
+              // Collapsed view - stacked icons
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px',
+                width: '100%'
+              }}>
+                {/* User Avatar */}
+                <Dropdown
+                  menu={{ items: userMenuItems }}
+                  placement="topRight"
+                  arrow
+                  overlayStyle={{
+                    background: '#1f1f1f',
+                    border: '1px solid #434343',
+                    borderRadius: '6px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+                  }}
+                  overlayClassName="dark-dropdown"
+                >
+                  <Avatar
+                    style={{ cursor: 'pointer' }}
+                    icon={<UserOutlined />}
+                    size="small"
+                  />
+                </Dropdown>
+
+                {/* System Status Indicator - Collapsed Version */}
+                <div style={{ width: '100%' }}>
+                  <SystemStatusIndicator collapsed={true} />
+                </div>
+              </div>
+            ) : (
+              // Expanded view - full layout
+              <div>
+                {/* User Info */}
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <Avatar
+                      icon={<UserOutlined />}
+                      size="small"
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: 'white', fontSize: '12px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {user?.displayName || user?.username}
+                      </div>
+                      <div style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '10px' }}>
+                        {isAdmin ? 'Administrator' : 'User'}
+                      </div>
+                    </div>
+                    <Dropdown
+                      menu={{ items: userMenuItems }}
+                      placement="topRight"
+                      arrow
+                      overlayStyle={{
+                        background: '#1f1f1f',
+                        border: '1px solid #434343',
+                        borderRadius: '6px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+                      }}
+                      overlayClassName="dark-dropdown"
+                    >
+                      <Button
+                        type="text"
+                        icon={<SettingOutlined />}
+                        size="small"
+                        style={{ color: 'rgba(255, 255, 255, 0.6)' }}
+                      />
+                    </Dropdown>
+                  </div>
+                </div>
+
+                {/* System Status Indicator */}
+                <SystemStatusIndicator collapsed={false} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Resize Handle */}
+        {!sidebarCollapsed && (
+          <div
+            onMouseDown={handleMouseDown}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: 4,
+              height: '100%',
+              cursor: 'col-resize',
+              backgroundColor: 'transparent',
+              zIndex: 1000,
+              transition: 'background-color 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent'
+            }}
+          />
+        )}
       </Sider>
       
       <AntLayout>
@@ -408,7 +568,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             background: '#fff',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-start',
             borderBottom: '1px solid #f0f0f0',
           }}
         >
@@ -422,33 +582,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               height: 64,
             }}
           />
-          
-          <Space size="large">
-            {/* AI Status Indicator */}
-            <AIStatusIndicator />
-
-            <Divider type="vertical" style={{ height: '24px' }} />
-
-            {/* API Mode Toggle */}
-            <ApiModeToggle />
-
-            <Divider type="vertical" style={{ height: '24px' }} />
-
-            {/* User Info and Menu */}
-            <Space>
-              <Text>Welcome, {user?.displayName || user?.username}</Text>
-              <Dropdown
-                menu={{ items: userMenuItems }}
-                placement="bottomRight"
-                arrow
-              >
-                <Avatar
-                  style={{ cursor: 'pointer' }}
-                  icon={<UserOutlined />}
-                />
-              </Dropdown>
-            </Space>
-          </Space>
         </Header>
         
         <Content

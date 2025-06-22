@@ -190,3 +190,33 @@ h6 {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-disabled);
 }
+
+/* Dark Dropdown Styling */
+.dark-dropdown .ant-dropdown-menu {
+  background: #1f1f1f !important;
+  border: 1px solid #434343 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark-dropdown .ant-dropdown-menu-item {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: transparent !important;
+}
+
+.dark-dropdown .ant-dropdown-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+.dark-dropdown .ant-dropdown-menu-item-divider {
+  background: #434343 !important;
+}
+
+.dark-dropdown .ant-dropdown-menu-item .anticon {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.dark-dropdown .ant-dropdown-menu-item:hover .anticon {
+  color: white !important;
+}

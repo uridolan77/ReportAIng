@@ -26,3 +26,6 @@ export {
   usePerformanceScore,
   usePerformanceComparison
 } from './usePerformanceMonitoring'
+
+// Template Analytics Hooks
+export { useTemplateAnalyticsHub } from './useTemplateAnalyticsHub'
