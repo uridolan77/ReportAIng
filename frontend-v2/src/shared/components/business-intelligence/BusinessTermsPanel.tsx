@@ -1,0 +1,988 @@
+import React, { useState, useCallback, useMemo } from 'react'
+import {
+  Card,
+  Empty,
+  Spin,
+  Typography,
+  Space,
+  Input,
+  Select,
+  Button,
+  Tag,
+  List,
+  Avatar,
+  Tooltip,
+  Badge,
+  Collapse,
+  Tree,
+  Tabs,
+  Row,
+  Col,
+  Statistic,
+  Progress,
+  Divider,
+  Alert,
+  Timeline,
+  Drawer,
+  Modal,
+  Rate,
+  message
+} from 'antd'
+import {
+  BookOutlined,
+  SearchOutlined,
+  TagsOutlined,
+  LinkOutlined,
+  InfoCircleOutlined,
+  StarOutlined,
+  BranchesOutlined,
+  FilterOutlined,
+  EyeOutlined,
+  EditOutlined,
+  PlusOutlined,
+  NodeIndexOutlined,
+  ClusterOutlined,
+  FileTextOutlined,
+  ThunderboltOutlined,
+  CheckCircleOutlined,
+  WarningOutlined
+} from '@ant-design/icons'
+
+const { Text, Title, Paragraph } = Typography
+const { Search } = Input
+const { Option } = Select
+const { Panel } = Collapse
+const { TabPane } = Tabs
+const { TreeNode } = Tree
+
+interface BusinessTerm {
+  id: string
+  name: string
+  definition: string
+  category: string
+  subcategory?: string
+  synonyms: string[]
+  relatedTerms: string[]
+  usageFrequency: number
+  confidence: number
+  businessContext: string
+  technicalMapping: string[]
+  examples: string[]
+  lastUpdated: string
+  owner: string
+  status: 'active' | 'deprecated' | 'draft'
+  tags: string[]
+}
+
+interface TermCategory {
+  id: string
+  name: string
+  description: string
+  termCount: number
+  subcategories: TermSubcategory[]
+  color: string
+}
+
+interface TermSubcategory {
+  id: string
+  name: string
+  description: string
+  termCount: number
+}
+
+interface TermRelationship {
+  fromTerm: string
+  toTerm: string
+  relationshipType: 'synonym' | 'related' | 'parent' | 'child' | 'opposite'
+  strength: number
+  description: string
+}
+
+interface BusinessTermsPanelProps {
+  query: string
+  loading?: boolean
+  showRelationshipGraph?: boolean
+  showCategoryTree?: boolean
+  interactive?: boolean
+  onTermSelect?: (termId: string) => void
+  onTermEdit?: (termId: string) => void
+  onCategoryFilter?: (categoryId: string) => void
+}
+
+/**
+ * BusinessTermsPanel - Comprehensive business terms management and exploration
+ *
+ * Features:
+ * - Advanced search and filtering capabilities
+ * - Category-based organization with hierarchical structure
+ * - Relationship mapping and visualization
+ * - Term definitions with business context
+ * - Usage analytics and frequency tracking
+ * - Interactive term exploration and editing
+ */
+export const BusinessTermsPanel: React.FC<BusinessTermsPanelProps> = ({
+  query,
+  loading = false,
+  showRelationshipGraph = true,
+  showCategoryTree = true,
+  interactive = true,
+  onTermSelect,
+  onTermEdit,
+  onCategoryFilter
+}) => {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [selectedTerm, setSelectedTerm] = useState<BusinessTerm | null>(null)
+  const [activeTab, setActiveTab] = useState('terms')
+  const [termDrawerVisible, setTermDrawerVisible] = useState(false)
+  const [filterVisible, setFilterVisible] = useState(false)
+
+  // Mock data for development - will be replaced with real API data
+  const mockTermsData = useMemo(() => ({
+    categories: [
+      {
+        id: 'sales',
+        name: 'Sales & Revenue',
+        description: 'Terms related to sales processes, revenue tracking, and customer acquisition',
+        termCount: 25,
+        color: '#52c41a',
+        subcategories: [
+          { id: 'sales-metrics', name: 'Sales Metrics', description: 'KPIs and performance indicators', termCount: 12 },
+          { id: 'sales-process', name: 'Sales Process', description: 'Workflow and methodology terms', termCount: 8 },
+          { id: 'customer-data', name: 'Customer Data', description: 'Customer-related terminology', termCount: 5 }
+        ]
+      },
+      {
+        id: 'finance',
+        name: 'Finance & Accounting',
+        description: 'Financial terms, accounting principles, and budget-related concepts',
+        termCount: 18,
+        color: '#1890ff',
+        subcategories: [
+          { id: 'financial-metrics', name: 'Financial Metrics', description: 'Financial KPIs and ratios', termCount: 10 },
+          { id: 'accounting', name: 'Accounting', description: 'Accounting principles and terms', termCount: 8 }
+        ]
+      },
+      {
+        id: 'marketing',
+        name: 'Marketing & Analytics',
+        description: 'Marketing campaigns, analytics, and customer engagement terms',
+        termCount: 22,
+        color: '#722ed1',
+        subcategories: [
+          { id: 'campaigns', name: 'Campaigns', description: 'Marketing campaign terminology', termCount: 12 },
+          { id: 'analytics', name: 'Analytics', description: 'Marketing analytics and metrics', termCount: 10 }
+        ]
+      }
+    ],
+    terms: [
+      {
+        id: 'revenue',
+        name: 'Revenue',
+        definition: 'The total amount of income generated by a business from its operations before any expenses are deducted',
+        category: 'sales',
+        subcategory: 'sales-metrics',
+        synonyms: ['Income', 'Sales', 'Turnover'],
+        relatedTerms: ['Profit', 'Gross Revenue', 'Net Revenue'],
+        usageFrequency: 0.95,
+        confidence: 0.98,
+        businessContext: 'Core financial metric used across all departments for performance measurement',
+        technicalMapping: ['sales_fact.amount', 'revenue_table.total_revenue'],
+        examples: ['Q4 revenue exceeded expectations', 'Monthly recurring revenue (MRR)'],
+        lastUpdated: '2024-01-15T10:00:00Z',
+        owner: 'Finance Team',
+        status: 'active' as const,
+        tags: ['financial', 'kpi', 'core-metric']
+      },
+      {
+        id: 'customer-acquisition-cost',
+        name: 'Customer Acquisition Cost',
+        definition: 'The cost associated with convincing a potential customer to buy a product or service',
+        category: 'sales',
+        subcategory: 'sales-metrics',
+        synonyms: ['CAC', 'Acquisition Cost'],
+        relatedTerms: ['Customer Lifetime Value', 'Marketing Spend', 'Conversion Rate'],
+        usageFrequency: 0.78,
+        confidence: 0.92,
+        businessContext: 'Critical metric for evaluating marketing efficiency and sales performance',
+        technicalMapping: ['marketing_costs.total / customers_acquired.count'],
+        examples: ['Our CAC decreased by 15% this quarter', 'CAC payback period'],
+        lastUpdated: '2024-01-12T14:30:00Z',
+        owner: 'Marketing Team',
+        status: 'active' as const,
+        tags: ['marketing', 'sales', 'efficiency']
+      },
+      {
+        id: 'conversion-rate',
+        name: 'Conversion Rate',
+        definition: 'The percentage of visitors who take a desired action on a website or marketing campaign',
+        category: 'marketing',
+        subcategory: 'analytics',
+        synonyms: ['CVR', 'Conversion Percentage'],
+        relatedTerms: ['Click-through Rate', 'Bounce Rate', 'Engagement Rate'],
+        usageFrequency: 0.85,
+        confidence: 0.94,
+        businessContext: 'Key performance indicator for digital marketing and website optimization',
+        technicalMapping: ['conversions.count / visitors.count * 100'],
+        examples: ['Email conversion rate improved to 3.2%', 'Landing page conversion optimization'],
+        lastUpdated: '2024-01-10T09:15:00Z',
+        owner: 'Digital Marketing Team',
+        status: 'active' as const,
+        tags: ['digital', 'performance', 'optimization']
+      },
+      {
+        id: 'gross-margin',
+        name: 'Gross Margin',
+        definition: 'The difference between revenue and cost of goods sold, expressed as a percentage of revenue',
+        category: 'finance',
+        subcategory: 'financial-metrics',
+        synonyms: ['Gross Profit Margin', 'GP Margin'],
+        relatedTerms: ['Net Margin', 'Operating Margin', 'EBITDA'],
+        usageFrequency: 0.82,
+        confidence: 0.96,
+        businessContext: 'Essential profitability metric used for pricing decisions and financial analysis',
+        technicalMapping: ['(revenue - cogs) / revenue * 100'],
+        examples: ['Gross margin improved to 45%', 'Product line gross margin analysis'],
+        lastUpdated: '2024-01-08T16:45:00Z',
+        owner: 'Finance Team',
+        status: 'active' as const,
+        tags: ['financial', 'profitability', 'analysis']
+      }
+    ],
+    relationships: [
+      {
+        fromTerm: 'revenue',
+        toTerm: 'gross-margin',
+        relationshipType: 'related' as const,
+        strength: 0.9,
+        description: 'Revenue is a key component in calculating gross margin'
+      },
+      {
+        fromTerm: 'customer-acquisition-cost',
+        toTerm: 'conversion-rate',
+        relationshipType: 'related' as const,
+        strength: 0.85,
+        description: 'Higher conversion rates typically lead to lower customer acquisition costs'
+      }
+    ]
+  }), [])
+
+  const filteredTerms = useMemo(() => {
+    let terms = mockTermsData.terms
+
+    // Filter by search term
+    if (searchTerm) {
+      terms = terms.filter(term =>
+        term.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        term.definition.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        term.synonyms.some(synonym => synonym.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        term.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    }
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      terms = terms.filter(term => term.category === selectedCategory)
+    }
+
+    return terms
+  }, [mockTermsData.terms, searchTerm, selectedCategory])
+
+  const handleTermSelect = useCallback((term: BusinessTerm) => {
+    setSelectedTerm(term)
+    setTermDrawerVisible(true)
+    if (onTermSelect) {
+      onTermSelect(term.id)
+    }
+  }, [onTermSelect])
+
+  const handleTermEdit = useCallback((termId: string) => {
+    if (onTermEdit) {
+      onTermEdit(termId)
+    }
+    message.success('Term editing functionality would open here')
+  }, [onTermEdit])
+
+  const handleCategoryFilter = useCallback((categoryId: string) => {
+    setSelectedCategory(categoryId)
+    if (onCategoryFilter) {
+      onCategoryFilter(categoryId)
+    }
+  }, [onCategoryFilter])
+
+  // Utility functions
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      'active': '#52c41a',
+      'deprecated': '#ff4d4f',
+      'draft': '#fa8c16'
+    }
+    return colors[status] || '#d9d9d9'
+  }
+
+  const getUsageLevel = (frequency: number) => {
+    if (frequency >= 0.9) return { level: 'Very High', color: '#52c41a' }
+    if (frequency >= 0.8) return { level: 'High', color: '#1890ff' }
+    if (frequency >= 0.6) return { level: 'Medium', color: '#fa8c16' }
+    return { level: 'Low', color: '#ff4d4f' }
+  }
+
+  const getRelationshipIcon = (type: string) => {
+    const icons: Record<string, React.ReactNode> = {
+      'synonym': <TagsOutlined style={{ color: '#52c41a' }} />,
+      'related': <LinkOutlined style={{ color: '#1890ff' }} />,
+      'parent': <BranchesOutlined style={{ color: '#722ed1' }} />,
+      'child': <NodeIndexOutlined style={{ color: '#fa8c16' }} />,
+      'opposite': <WarningOutlined style={{ color: '#ff4d4f' }} />
+    }
+    return icons[type] || <InfoCircleOutlined />
+  }
+
+  if (loading) {
+    return (
+      <Card>
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16 }}>
+            <Text>Loading business terms...</Text>
+            <br />
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              Analyzing glossary, relationships, and usage patterns...
+            </Text>
+          </div>
+        </div>
+      </Card>
+    )
+  }
+
+  if (!query && filteredTerms.length === 0) {
+    return (
+      <Card>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={
+            <div>
+              <Text>Enter a query to see related business terms</Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                AI will identify relevant business terminology and definitions
+              </Text>
+            </div>
+          }
+        />
+      </Card>
+    )
+  }
+
+  return (
+    <Space direction="vertical" style={{ width: '100%' }} size="large">
+      {/* Header with Search and Filters */}
+      <Card
+        title={
+          <Space>
+            <BookOutlined />
+            <span>Business Terms Glossary</span>
+            <Badge count={filteredTerms.length} style={{ backgroundColor: '#722ed1' }} />
+          </Space>
+        }
+        extra={
+          interactive && (
+            <Space>
+              <Button
+                icon={<PlusOutlined />}
+                type="primary"
+                size="small"
+                onClick={() => message.info('Add new term functionality')}
+              >
+                Add Term
+              </Button>
+              <Button
+                icon={<FilterOutlined />}
+                size="small"
+                onClick={() => setFilterVisible(!filterVisible)}
+              >
+                Filters
+              </Button>
+            </Space>
+          )
+        }
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          {/* Search and Category Filter */}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} md={16}>
+              <Search
+                placeholder="Search terms, definitions, synonyms, or tags..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onSearch={setSearchTerm}
+                enterButton={<SearchOutlined />}
+                size="large"
+                allowClear
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Select
+                value={selectedCategory}
+                onChange={handleCategoryFilter}
+                style={{ width: '100%' }}
+                size="large"
+                placeholder="Select category"
+              >
+                <Option value="all">All Categories</Option>
+                {mockTermsData.categories.map(category => (
+                  <Option key={category.id} value={category.id}>
+                    <Space>
+                      <span style={{ color: category.color }}>●</span>
+                      {category.name}
+                      <Badge count={category.termCount} size="small" />
+                    </Space>
+                  </Option>
+                ))}
+              </Select>
+            </Col>
+          </Row>
+
+          {/* Advanced Filters (Collapsible) */}
+          {filterVisible && (
+            <Card size="small" style={{ backgroundColor: '#fafafa' }}>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={8}>
+                  <Text strong>Status:</Text>
+                  <Select
+                    mode="multiple"
+                    style={{ width: '100%', marginTop: 4 }}
+                    placeholder="Filter by status"
+                    allowClear
+                  >
+                    <Option value="active">Active</Option>
+                    <Option value="deprecated">Deprecated</Option>
+                    <Option value="draft">Draft</Option>
+                  </Select>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Text strong>Usage Level:</Text>
+                  <Select
+                    mode="multiple"
+                    style={{ width: '100%', marginTop: 4 }}
+                    placeholder="Filter by usage"
+                    allowClear
+                  >
+                    <Option value="high">High Usage</Option>
+                    <Option value="medium">Medium Usage</Option>
+                    <Option value="low">Low Usage</Option>
+                  </Select>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Text strong>Owner:</Text>
+                  <Select
+                    mode="multiple"
+                    style={{ width: '100%', marginTop: 4 }}
+                    placeholder="Filter by owner"
+                    allowClear
+                  >
+                    <Option value="finance">Finance Team</Option>
+                    <Option value="marketing">Marketing Team</Option>
+                    <Option value="sales">Sales Team</Option>
+                  </Select>
+                </Col>
+              </Row>
+            </Card>
+          )}
+
+          {/* Statistics Overview */}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={6}>
+              <Statistic
+                title="Total Terms"
+                value={filteredTerms.length}
+                prefix={<BookOutlined />}
+                valueStyle={{ color: '#722ed1' }}
+              />
+            </Col>
+            <Col xs={24} sm={6}>
+              <Statistic
+                title="Categories"
+                value={mockTermsData.categories.length}
+                prefix={<ClusterOutlined />}
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </Col>
+            <Col xs={24} sm={6}>
+              <Statistic
+                title="Active Terms"
+                value={filteredTerms.filter(t => t.status === 'active').length}
+                prefix={<CheckCircleOutlined />}
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Col>
+            <Col xs={24} sm={6}>
+              <Statistic
+                title="Avg Confidence"
+                value={Math.round((filteredTerms.reduce((sum, t) => sum + t.confidence, 0) / filteredTerms.length) * 100)}
+                suffix="%"
+                prefix={<StarOutlined />}
+                valueStyle={{ color: '#fa8c16' }}
+              />
+            </Col>
+          </Row>
+        </Space>
+      </Card>
+
+      {/* Main Content Tabs */}
+      <Card>
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          size="large"
+          type="card"
+        >
+          {/* Terms List Tab */}
+          <TabPane
+            tab={
+              <Space>
+                <BookOutlined />
+                <span>Terms</span>
+                <Badge count={filteredTerms.length} size="small" />
+              </Space>
+            }
+            key="terms"
+          >
+            <List
+              dataSource={filteredTerms}
+              renderItem={(term) => {
+                const usageLevel = getUsageLevel(term.usageFrequency)
+                return (
+                  <List.Item
+                    actions={interactive ? [
+                      <Button
+                        key="view"
+                        type="link"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleTermSelect(term)}
+                      >
+                        View
+                      </Button>,
+                      <Button
+                        key="edit"
+                        type="link"
+                        icon={<EditOutlined />}
+                        onClick={() => handleTermEdit(term.id)}
+                      >
+                        Edit
+                      </Button>
+                    ] : undefined}
+                  >
+                    <List.Item.Meta
+                      avatar={
+                        <Avatar
+                          style={{
+                            backgroundColor: getStatusColor(term.status),
+                            fontSize: '14px',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          {term.name.charAt(0).toUpperCase()}
+                        </Avatar>
+                      }
+                      title={
+                        <Space>
+                          <Text strong style={{ fontSize: '16px' }}>{term.name}</Text>
+                          <Tag color={getStatusColor(term.status)}>
+                            {term.status.toUpperCase()}
+                          </Tag>
+                          <Tag color={usageLevel.color}>
+                            {usageLevel.level} Usage
+                          </Tag>
+                          <Progress
+                            percent={Math.round(term.confidence * 100)}
+                            size="small"
+                            style={{ width: 80 }}
+                            strokeColor="#52c41a"
+                            showInfo={false}
+                          />
+                        </Space>
+                      }
+                      description={
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                          <Paragraph
+                            style={{ marginBottom: 8, fontSize: '13px' }}
+                            ellipsis={{ rows: 2, expandable: true }}
+                          >
+                            {term.definition}
+                          </Paragraph>
+
+                          <div>
+                            <Text strong style={{ fontSize: '12px', color: '#1890ff' }}>
+                              Category:
+                            </Text>
+                            <Tag color="blue" style={{ marginLeft: 4 }}>
+                              {mockTermsData.categories.find(c => c.id === term.category)?.name}
+                            </Tag>
+
+                            {term.synonyms.length > 0 && (
+                              <>
+                                <Text strong style={{ fontSize: '12px', color: '#52c41a', marginLeft: 16 }}>
+                                  Synonyms:
+                                </Text>
+                                <Space wrap size="small" style={{ marginLeft: 4 }}>
+                                  {term.synonyms.slice(0, 3).map((synonym, idx) => (
+                                    <Tag key={idx} color="green" size="small">{synonym}</Tag>
+                                  ))}
+                                  {term.synonyms.length > 3 && (
+                                    <Tag color="default" size="small">+{term.synonyms.length - 3} more</Tag>
+                                  )}
+                                </Space>
+                              </>
+                            )}
+                          </div>
+
+                          <div>
+                            <Space wrap size="small">
+                              {term.tags.map((tag, idx) => (
+                                <Tag key={idx} color="purple" size="small">#{tag}</Tag>
+                              ))}
+                            </Space>
+                          </div>
+                        </Space>
+                      }
+                    />
+                  </List.Item>
+                )
+              }}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} terms`
+              }}
+            />
+          </TabPane>
+
+          {/* Categories Tab */}
+          {showCategoryTree && (
+            <TabPane
+              tab={
+                <Space>
+                  <ClusterOutlined />
+                  <span>Categories</span>
+                  <Badge count={mockTermsData.categories.length} size="small" />
+                </Space>
+              }
+              key="categories"
+            >
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                <Alert
+                  message="Business Terms Organization"
+                  description="Terms are organized into categories and subcategories for better navigation and understanding"
+                  type="info"
+                  showIcon
+                />
+
+                {mockTermsData.categories.map((category) => (
+                  <Card
+                    key={category.id}
+                    size="small"
+                    title={
+                      <Space>
+                        <span style={{ color: category.color, fontSize: '16px' }}>●</span>
+                        <span>{category.name}</span>
+                        <Badge count={category.termCount} style={{ backgroundColor: category.color }} />
+                      </Space>
+                    }
+                    extra={
+                      interactive && (
+                        <Button
+                          type="link"
+                          size="small"
+                          onClick={() => handleCategoryFilter(category.id)}
+                        >
+                          View Terms
+                        </Button>
+                      )
+                    }
+                  >
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Paragraph>{category.description}</Paragraph>
+
+                      <div>
+                        <Text strong>Subcategories:</Text>
+                        <Row gutter={[8, 8]} style={{ marginTop: 8 }}>
+                          {category.subcategories.map((sub) => (
+                            <Col key={sub.id} xs={24} sm={12} md={8}>
+                              <Card
+                                size="small"
+                                hoverable={interactive}
+                                style={{ cursor: interactive ? 'pointer' : 'default' }}
+                              >
+                                <Statistic
+                                  title={sub.name}
+                                  value={sub.termCount}
+                                  suffix="terms"
+                                  valueStyle={{ fontSize: '14px' }}
+                                />
+                                <Text type="secondary" style={{ fontSize: '11px' }}>
+                                  {sub.description}
+                                </Text>
+                              </Card>
+                            </Col>
+                          ))}
+                        </Row>
+                      </div>
+                    </Space>
+                  </Card>
+                ))}
+              </Space>
+            </TabPane>
+          )}
+
+          {/* Relationships Tab */}
+          {showRelationshipGraph && (
+            <TabPane
+              tab={
+                <Space>
+                  <NodeIndexOutlined />
+                  <span>Relationships</span>
+                  <Badge count={mockTermsData.relationships.length} size="small" />
+                </Space>
+              }
+              key="relationships"
+            >
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                <Alert
+                  message="Term Relationships & Connections"
+                  description="Explore how business terms relate to each other through synonyms, hierarchies, and semantic connections"
+                  type="success"
+                  showIcon
+                />
+
+                {mockTermsData.relationships.map((relationship, index) => (
+                  <Card
+                    key={index}
+                    size="small"
+                    title={
+                      <Space>
+                        {getRelationshipIcon(relationship.relationshipType)}
+                        <span>{relationship.fromTerm}</span>
+                        <Tag color="blue">{relationship.relationshipType}</Tag>
+                        <span>{relationship.toTerm}</span>
+                      </Space>
+                    }
+                  >
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div>
+                        <Text strong>Relationship Strength: </Text>
+                        <Progress
+                          percent={Math.round(relationship.strength * 100)}
+                          size="small"
+                          style={{ width: 200 }}
+                          strokeColor="#1890ff"
+                        />
+                      </div>
+
+                      <div>
+                        <Text strong>Description: </Text>
+                        <Text>{relationship.description}</Text>
+                      </div>
+
+                      {interactive && (
+                        <div style={{ textAlign: 'right' }}>
+                          <Space>
+                            <Button
+                              size="small"
+                              type="link"
+                              onClick={() => {
+                                const fromTerm = filteredTerms.find(t => t.name === relationship.fromTerm)
+                                if (fromTerm) handleTermSelect(fromTerm)
+                              }}
+                            >
+                              View {relationship.fromTerm}
+                            </Button>
+                            <Button
+                              size="small"
+                              type="link"
+                              onClick={() => {
+                                const toTerm = filteredTerms.find(t => t.name === relationship.toTerm)
+                                if (toTerm) handleTermSelect(toTerm)
+                              }}
+                            >
+                              View {relationship.toTerm}
+                            </Button>
+                          </Space>
+                        </div>
+                      )}
+                    </Space>
+                  </Card>
+                ))}
+
+                {mockTermsData.relationships.length === 0 && (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="No term relationships found"
+                  />
+                )}
+              </Space>
+            </TabPane>
+          )}
+        </Tabs>
+      </Card>
+
+      {/* Term Detail Drawer */}
+      <Drawer
+        title={
+          selectedTerm && (
+            <Space>
+              <BookOutlined />
+              <span>{selectedTerm.name}</span>
+              <Tag color={getStatusColor(selectedTerm.status)}>
+                {selectedTerm.status.toUpperCase()}
+              </Tag>
+            </Space>
+          )
+        }
+        placement="right"
+        width={600}
+        open={termDrawerVisible}
+        onClose={() => setTermDrawerVisible(false)}
+        extra={
+          interactive && selectedTerm && (
+            <Space>
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => handleTermEdit(selectedTerm.id)}
+              >
+                Edit
+              </Button>
+              <Button
+                type="primary"
+                icon={<StarOutlined />}
+                onClick={() => message.success('Term bookmarked')}
+              >
+                Bookmark
+              </Button>
+            </Space>
+          )
+        }
+      >
+        {selectedTerm && (
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            {/* Term Overview */}
+            <Card size="small" title="Definition">
+              <Paragraph style={{ fontSize: '14px', lineHeight: '1.6' }}>
+                {selectedTerm.definition}
+              </Paragraph>
+
+              <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                <Col span={12}>
+                  <Statistic
+                    title="Confidence Score"
+                    value={selectedTerm.confidence}
+                    precision={2}
+                    suffix="/ 1.0"
+                    valueStyle={{ color: '#52c41a' }}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic
+                    title="Usage Frequency"
+                    value={Math.round(selectedTerm.usageFrequency * 100)}
+                    suffix="%"
+                    valueStyle={{ color: '#1890ff' }}
+                  />
+                </Col>
+              </Row>
+            </Card>
+
+            {/* Business Context */}
+            <Card size="small" title="Business Context">
+              <Paragraph>{selectedTerm.businessContext}</Paragraph>
+            </Card>
+
+            {/* Synonyms & Related Terms */}
+            <Card size="small" title="Related Terminology">
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {selectedTerm.synonyms.length > 0 && (
+                  <div>
+                    <Text strong>Synonyms:</Text>
+                    <div style={{ marginTop: 4 }}>
+                      <Space wrap>
+                        {selectedTerm.synonyms.map((synonym, idx) => (
+                          <Tag key={idx} color="green">{synonym}</Tag>
+                        ))}
+                      </Space>
+                    </div>
+                  </div>
+                )}
+
+                {selectedTerm.relatedTerms.length > 0 && (
+                  <div>
+                    <Text strong>Related Terms:</Text>
+                    <div style={{ marginTop: 4 }}>
+                      <Space wrap>
+                        {selectedTerm.relatedTerms.map((term, idx) => (
+                          <Tag key={idx} color="blue">{term}</Tag>
+                        ))}
+                      </Space>
+                    </div>
+                  </div>
+                )}
+              </Space>
+            </Card>
+
+            {/* Technical Mapping */}
+            <Card size="small" title="Technical Mapping">
+              <List
+                size="small"
+                dataSource={selectedTerm.technicalMapping}
+                renderItem={(mapping) => (
+                  <List.Item>
+                    <Text code>{mapping}</Text>
+                  </List.Item>
+                )}
+              />
+            </Card>
+
+            {/* Examples */}
+            {selectedTerm.examples.length > 0 && (
+              <Card size="small" title="Usage Examples">
+                <List
+                  size="small"
+                  dataSource={selectedTerm.examples}
+                  renderItem={(example) => (
+                    <List.Item>
+                      <Text italic>"{example}"</Text>
+                    </List.Item>
+                  )}
+                />
+              </Card>
+            )}
+
+            {/* Metadata */}
+            <Card size="small" title="Metadata">
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div>
+                  <Text strong>Owner: </Text>
+                  <Text>{selectedTerm.owner}</Text>
+                </div>
+                <div>
+                  <Text strong>Last Updated: </Text>
+                  <Text>{new Date(selectedTerm.lastUpdated).toLocaleDateString()}</Text>
+                </div>
+                <div>
+                  <Text strong>Tags: </Text>
+                  <Space wrap>
+                    {selectedTerm.tags.map((tag, idx) => (
+                      <Tag key={idx} color="purple">#{tag}</Tag>
+                    ))}
+                  </Space>
+                </div>
+              </Space>
+            </Card>
+          </Space>
+        )}
+      </Drawer>
+    </Space>
+  )
+}
+
+export default BusinessTermsPanel

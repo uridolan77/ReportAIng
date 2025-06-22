@@ -6,6 +6,10 @@ using BIReportingCopilot.Infrastructure.Data.Configurations;
 using System.Text.Json;
 using BIReportingCopilot.Infrastructure.AI.Agents;
 using InfraUserPreferencesEntity = BIReportingCopilot.Infrastructure.Data.Entities.UserPreferencesEntity;
+using TemplatePerformanceMetricsEntity = BIReportingCopilot.Core.Models.TemplatePerformanceMetricsEntity;
+using TemplateABTestEntity = BIReportingCopilot.Core.Models.TemplateABTestEntity;
+using TemplateImprovementSuggestionEntity = BIReportingCopilot.Core.Models.TemplateImprovementSuggestionEntity;
+using PromptTemplateEntity = BIReportingCopilot.Core.Models.PromptTemplateEntity;
 using InfraAuditLogEntity = BIReportingCopilot.Infrastructure.Data.Entities.AuditLogEntity;
 using InfraUserEntity = BIReportingCopilot.Infrastructure.Data.Entities.UserEntity;
 using InfraUserSessionEntity = BIReportingCopilot.Infrastructure.Data.Entities.UserSessionEntity;
@@ -163,11 +167,10 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.TemplateKey).HasMaxLength(100);
             entity.Property(e => e.IntentType).HasMaxLength(50);
             entity.Property(e => e.CreatedBy).HasMaxLength(256);
-            entity.Property(e => e.UpdatedBy).HasMaxLength(256);
 
             // Configure relationships
             entity.HasOne(e => e.Template)
-                .WithMany(t => t.PerformanceMetrics)
+                .WithMany()
                 .HasForeignKey(e => e.TemplateId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
@@ -182,16 +185,15 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.TestName).HasMaxLength(100);
             entity.Property(e => e.Status).HasMaxLength(20);
             entity.Property(e => e.CreatedBy).HasMaxLength(256);
-            entity.Property(e => e.UpdatedBy).HasMaxLength(256);
 
             // Configure relationships
             entity.HasOne(e => e.OriginalTemplate)
-                .WithMany(t => t.OriginalABTests)
+                .WithMany()
                 .HasForeignKey(e => e.OriginalTemplateId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.VariantTemplate)
-                .WithMany(t => t.VariantABTests)
+                .WithMany()
                 .HasForeignKey(e => e.VariantTemplateId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -214,11 +216,10 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.ReviewedBy).HasMaxLength(512);
             entity.Property(e => e.ReviewComments).HasMaxLength(1000);
             entity.Property(e => e.CreatedBy).HasMaxLength(256);
-            entity.Property(e => e.UpdatedBy).HasMaxLength(256);
 
             // Configure relationships
             entity.HasOne(e => e.Template)
-                .WithMany(t => t.ImprovementSuggestions)
+                .WithMany()
                 .HasForeignKey(e => e.TemplateId)
                 .OnDelete(DeleteBehavior.Cascade);
         });

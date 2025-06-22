@@ -1,3 +1,5 @@
+using BIReportingCopilot.Core.Models;
+
 namespace BIReportingCopilot.Infrastructure.Data.Entities;
 
 public abstract class BaseEntity
@@ -50,41 +52,8 @@ public class SchemaMetadataEntity : BaseEntity
 // QueryHistoryEntity moved to Core/Models/UnifiedQueryHistory.cs as UnifiedQueryHistoryEntity
 // This eliminates the duplicate QueryHistoryEntity classes and provides a single source of truth
 
-public class PromptTemplateEntity : BaseEntity
-{
-    public long Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Version { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public bool IsActive { get; set; } = true;
-    public decimal? SuccessRate { get; set; }
-    public int UsageCount { get; set; }
-    public string? Parameters { get; set; }
-
-    // Additional fields from database schema
-    public string? BusinessPurpose { get; set; }
-    public string? RelatedBusinessTerms { get; set; }
-    public string? BusinessFriendlyName { get; set; }
-    public string? NaturalLanguageDescription { get; set; }
-    public string? BusinessRules { get; set; }
-    public string? RelationshipContext { get; set; }
-    public string? DataGovernanceLevel { get; set; }
-    public DateTime? LastBusinessReview { get; set; }
-    public decimal? ImportanceScore { get; set; }
-    public string? UsageFrequency { get; set; }
-    public string? TemplateKey { get; set; }
-    public string? IntentType { get; set; }
-    public int? Priority { get; set; }
-    public string? Tags { get; set; }
-    public string? UpdatedBy { get; set; }
-
-    // Navigation properties
-    public virtual ICollection<TemplatePerformanceMetricsEntity> PerformanceMetrics { get; set; } = new List<TemplatePerformanceMetricsEntity>();
-    public virtual ICollection<TemplateABTestEntity> OriginalABTests { get; set; } = new List<TemplateABTestEntity>();
-    public virtual ICollection<TemplateABTestEntity> VariantABTests { get; set; } = new List<TemplateABTestEntity>();
-    public virtual ICollection<TemplateImprovementSuggestionEntity> ImprovementSuggestions { get; set; } = new List<TemplateImprovementSuggestionEntity>();
-}
+// PromptTemplateEntity moved to Core/Models/TemplateEntities.cs as the single source of truth
+// Template analytics entities also moved to Core/Models/TemplateEntities.cs
 
 public class QueryCacheEntity : BaseEntity
 {

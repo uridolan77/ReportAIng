@@ -3,6 +3,7 @@ using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Interfaces.Analytics;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.AI.Management;
+using System.Collections.Concurrent;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
@@ -15,7 +16,7 @@ public class TrackedPromptService : IPromptService
     private readonly ITemplatePerformanceService _performanceService;
     private readonly IABTestingService _abTestingService;
     private readonly ILogger<TrackedPromptService> _logger;
-    private readonly Dictionary<string, TemplateUsageContext> _activeUsages = new();
+    private readonly ConcurrentDictionary<string, TemplateUsageContext> _activeUsages = new();
 
     public TrackedPromptService(
         PromptService innerPromptService,
@@ -377,6 +378,95 @@ public class TrackedPromptService : IPromptService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error tracking template usage");
+        }
+    }
+
+    #endregion
+
+    #region Missing IPromptService Interface Methods
+
+    public async Task SavePromptAsync(string promptKey, string template, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("🎯 [TRACKED] Saving prompt for key: {PromptKey}", promptKey);
+            await _innerPromptService.SavePromptAsync(promptKey, template, cancellationToken);
+            _logger.LogInformation("✅ [TRACKED] Prompt saved successfully: {PromptKey}", promptKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [TRACKED] Error saving prompt for key: {PromptKey}", promptKey);
+            throw;
+        }
+    }
+
+    public async Task<List<string>> GetPromptKeysAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("🎯 [TRACKED] Getting all prompt keys");
+            var keys = await _innerPromptService.GetPromptKeysAsync(cancellationToken);
+            _logger.LogDebug("✅ [TRACKED] Retrieved {Count} prompt keys", keys.Count);
+            return keys;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [TRACKED] Error getting prompt keys");
+            throw;
+        }
+    }
+
+    public async Task<string> BuildSQLGenerationPromptAsync(string prompt, SchemaMetadata? schema = null, BIReportingCopilot.Core.Models.QueryContext? context = null)
+    {
+        var usageId = Guid.NewGuid().ToString();
+        var startTime = DateTime.UtcNow;
+        var templateKey = "sql_generation";
+
+        try
+        {
+            _logger.LogDebug("🎯 [TRACKED] Building SQL generation prompt (Usage: {UsageId})", usageId);
+
+            // Check for A/B testing
+            var selectedTemplate = await SelectTemplateForABTestAsync(templateKey, null);
+            if (selectedTemplate.IsVariant && selectedTemplate.TestId.HasValue)
+            {
+                templateKey = selectedTemplate.SelectedTemplateKey;
+            }
+
+            // Track usage start
+            _activeUsages[usageId] = new TemplateUsageContext
+            {
+                TemplateKey = templateKey,
+                StartTime = startTime,
+                UsageId = usageId,
+                Query = prompt,
+                Schema = schema,
+                Context = context?.BusinessDomain,
+                ABTestId = selectedTemplate.TestId
+            };
+
+            // Build prompt using inner service
+            var builtPrompt = await _innerPromptService.BuildSQLGenerationPromptAsync(prompt, schema, context);
+
+            // Track successful prompt building
+            var processingTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
+            await TrackTemplateUsageAsync(templateKey, true, 0.8m, processingTime, usageId, selectedTemplate.TestId);
+
+            return builtPrompt;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [TRACKED] Error building SQL generation prompt");
+
+            // Track failed prompt building
+            var processingTime = (int)(DateTime.UtcNow - startTime).TotalMilliseconds;
+            await TrackTemplateUsageAsync(templateKey, false, 0.0m, processingTime, usageId);
+
+            throw;
+        }
+        finally
+        {
+            _activeUsages.TryRemove(usageId, out _);
         }
     }
 

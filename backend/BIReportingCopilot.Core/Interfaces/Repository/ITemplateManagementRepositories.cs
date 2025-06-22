@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.Analytics;
 
 namespace BIReportingCopilot.Core.Interfaces.Repository;
 
@@ -72,6 +73,7 @@ public interface ITemplateImprovementRepository : IRepository<TemplateImprovemen
     Task<List<TemplateImprovementSuggestionEntity>> GetByStatusAsync(string status, CancellationToken cancellationToken = default);
     Task<List<TemplateImprovementSuggestionEntity>> GetBySuggestionTypeAsync(string suggestionType, CancellationToken cancellationToken = default);
     Task<List<TemplateImprovementSuggestionEntity>> GetPendingReviewAsync(CancellationToken cancellationToken = default);
+    Task<List<TemplateImprovementSuggestionEntity>> GetPendingSuggestionsAsync(CancellationToken cancellationToken = default);
     Task<List<TemplateImprovementSuggestionEntity>> GetByReviewerAsync(string reviewerId, CancellationToken cancellationToken = default);
 
     // Review workflow
@@ -133,4 +135,8 @@ public interface IEnhancedPromptTemplateRepository : IRepository<PromptTemplateE
     Task<List<PromptTemplateEntity>> GetTemplateVersionsAsync(string templateKey, CancellationToken cancellationToken = default);
     Task<PromptTemplateEntity?> GetLatestVersionAsync(string templateKey, CancellationToken cancellationToken = default);
     Task<string> GenerateNextVersionAsync(string templateKey, CancellationToken cancellationToken = default);
+
+    // Template search
+    Task<List<PromptTemplateEntity>> SearchTemplatesAsync(TemplateSearchCriteria criteria, CancellationToken cancellationToken = default);
+    Task<int> GetSearchCountAsync(TemplateSearchCriteria criteria, CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,5 @@
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.Analytics;
 
 namespace BIReportingCopilot.Core.Interfaces.Analytics;
 
@@ -95,7 +96,7 @@ public interface ITemplateManagementService
     /// <summary>
     /// Export templates for backup or migration
     /// </summary>
-    Task<byte[]> ExportTemplatesAsync(List<string> templateKeys, ExportFormat format = ExportFormat.JSON, CancellationToken cancellationToken = default);
+    Task<byte[]> ExportTemplatesAsync(List<string> templateKeys, BIReportingCopilot.Core.Models.Analytics.ExportFormat format = BIReportingCopilot.Core.Models.Analytics.ExportFormat.JSON, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Import templates from backup or migration

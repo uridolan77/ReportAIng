@@ -1363,7 +1363,7 @@ Rows: {result.Metadata.RowCount}
 Return JSON with visualization config.";
     }
 
-    private PromptTemplate MapToPromptTemplate(PromptTemplateEntity entity)
+    private PromptTemplate MapToPromptTemplate(BIReportingCopilot.Core.Models.PromptTemplateEntity entity)
     {
         var parameters = new Dictionary<string, object>();
         if (!string.IsNullOrEmpty(entity.Parameters))

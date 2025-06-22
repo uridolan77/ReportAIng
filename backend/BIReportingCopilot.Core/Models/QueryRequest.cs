@@ -199,6 +199,11 @@ public class PromptDetails
     public Dictionary<string, string> Variables { get; set; } = new();
     public int TokenCount { get; set; }
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+
+    // Template analytics tracking properties
+    public string? TemplateKey { get; set; }
+    public string? UsageId { get; set; }
+    public long? ABTestId { get; set; }
 }
 
 public class PromptSection

@@ -1,7 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 using BIReportingCopilot.Core.Interfaces.Analytics;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.Analytics;
+using BIReportingCopilot.Core.Commands;
 using BIReportingCopilot.Infrastructure.Services;
 
 namespace BIReportingCopilot.Infrastructure.Extensions;
@@ -27,13 +31,13 @@ public static class TemplateTrackingExtensions
                 await trackedPromptService.TrackSqlGenerationResultAsync(
                     sqlResult.PromptDetails.UsageId,
                     sqlResult.Success,
-                    sqlResult.Confidence,
+                    (decimal)sqlResult.Confidence,
                     userId);
             }
         }
         catch (Exception ex)
         {
-            var logger = serviceProvider.GetService<ILogger<TemplateTrackingExtensions>>();
+            var logger = serviceProvider.GetService<ILogger<TrackedPromptService>>();
             logger?.LogError(ex, "Error tracking template usage from SQL result");
         }
     }
@@ -64,7 +68,7 @@ public static class TemplateTrackingExtensions
         }
         catch (Exception ex)
         {
-            var logger = serviceProvider.GetService<ILogger<TemplateTrackingExtensions>>();
+            var logger = serviceProvider.GetService<ILogger<TrackedPromptService>>();
             logger?.LogError(ex, "Error tracking template usage from query response");
         }
     }
@@ -88,7 +92,7 @@ public static class TemplateTrackingExtensions
         }
         catch (Exception ex)
         {
-            var logger = serviceProvider.GetService<ILogger<TemplateTrackingExtensions>>();
+            var logger = serviceProvider.GetService<ILogger<TrackedPromptService>>();
             logger?.LogError(ex, "Error tracking template user feedback");
         }
     }
@@ -96,7 +100,7 @@ public static class TemplateTrackingExtensions
     /// <summary>
     /// Get template performance metrics for dashboard
     /// </summary>
-    public static async Task<TemplatePerformanceMetrics?> GetTemplatePerformanceAsync(
+    public static async Task<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics?> GetTemplatePerformanceAsync(
         this IServiceProvider serviceProvider,
         string templateKey)
     {
@@ -110,7 +114,7 @@ public static class TemplateTrackingExtensions
         }
         catch (Exception ex)
         {
-            var logger = serviceProvider.GetService<ILogger<TemplateTrackingExtensions>>();
+            var logger = serviceProvider.GetService<ILogger<TrackedPromptService>>();
             logger?.LogError(ex, "Error getting template performance for {TemplateKey}", templateKey);
         }
 
@@ -133,7 +137,7 @@ public static class TemplateTrackingExtensions
         }
         catch (Exception ex)
         {
-            var logger = serviceProvider.GetService<ILogger<TemplateTrackingExtensions>>();
+            var logger = serviceProvider.GetService<ILogger<TrackedPromptService>>();
             logger?.LogError(ex, "Error getting A/B test recommendations");
         }
 
@@ -174,7 +178,7 @@ public static class TemplateTrackingExtensions
         }
         catch (Exception ex)
         {
-            var logger = serviceProvider.GetService<ILogger<TemplateTrackingExtensions>>();
+            var logger = serviceProvider.GetService<ILogger<TrackedPromptService>>();
             logger?.LogError(ex, "Error creating A/B test for template {TemplateKey}", templateKey);
         }
 
@@ -198,7 +202,7 @@ public static class TemplateTrackingExtensions
         }
         catch (Exception ex)
         {
-            var logger = serviceProvider.GetService<ILogger<TemplateTrackingExtensions>>();
+            var logger = serviceProvider.GetService<ILogger<TrackedPromptService>>();
             logger?.LogError(ex, "Error getting template improvement suggestions for {TemplateKey}", templateKey);
         }
 
@@ -231,7 +235,7 @@ public static class TemplateTrackingExtensions
         }
         catch (Exception ex)
         {
-            var logger = serviceProvider.GetService<ILogger<TemplateTrackingExtensions>>();
+            var logger = serviceProvider.GetService<ILogger<TrackedPromptService>>();
             logger?.LogError(ex, "Error tracking template selection for {TemplateKey}", templateKey);
         }
     }
@@ -254,7 +258,7 @@ public static class TemplateTrackingExtensions
         }
         catch (Exception ex)
         {
-            var logger = serviceProvider.GetService<ILogger<TemplateTrackingExtensions>>();
+            var logger = serviceProvider.GetService<ILogger<TrackedPromptService>>();
             logger?.LogError(ex, "Error getting template health status for {TemplateKey}", templateKey);
         }
 
@@ -264,7 +268,7 @@ public static class TemplateTrackingExtensions
     /// <summary>
     /// Get performance alerts for templates
     /// </summary>
-    public static async Task<List<PerformanceAlert>> GetTemplatePerformanceAlertsAsync(
+    public static async Task<List<BIReportingCopilot.Core.Interfaces.Analytics.PerformanceAlert>> GetTemplatePerformanceAlertsAsync(
         this IServiceProvider serviceProvider)
     {
         try
@@ -277,11 +281,11 @@ public static class TemplateTrackingExtensions
         }
         catch (Exception ex)
         {
-            var logger = serviceProvider.GetService<ILogger<TemplateTrackingExtensions>>();
+            var logger = serviceProvider.GetService<ILogger<TrackedPromptService>>();
             logger?.LogError(ex, "Error getting template performance alerts");
         }
 
-        return new List<PerformanceAlert>();
+        return new List<BIReportingCopilot.Core.Interfaces.Analytics.PerformanceAlert>();
     }
 
     #region Private Helper Methods
@@ -301,12 +305,12 @@ public static class TemplateTrackingExtensions
             confidence += 0.3m; // Has data
         }
 
-        if (queryResponse.Metadata?.RowCount > 0)
+        if (queryResponse.Data?.Count() > 0)
         {
             confidence += 0.1m; // Has rows
         }
 
-        if (string.IsNullOrEmpty(queryResponse.Metadata?.Error))
+        if (queryResponse.IsSuccessful)
         {
             confidence += 0.1m; // No errors
         }

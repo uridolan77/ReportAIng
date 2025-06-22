@@ -19,7 +19,7 @@ import {
   BarChartOutlined,
   LineChartOutlined,
   PieChartOutlined,
-  TrendingUpOutlined,
+  RiseOutlined,
   DownloadOutlined,
   CalendarOutlined,
   DatabaseOutlined,
@@ -158,7 +158,7 @@ export const MetadataAnalyticsDashboard: React.FC<MetadataAnalyticsDashboardProp
             precision={1}
             suffix="/100"
             loading={statisticsLoading}
-            prefix={<TrendingUpOutlined />}
+            prefix={<RiseOutlined />}
           />
           <Progress
             percent={statistics?.averageMetadataCompleteness || 0}

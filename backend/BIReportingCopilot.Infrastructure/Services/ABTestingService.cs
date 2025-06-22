@@ -4,6 +4,8 @@ using BIReportingCopilot.Core.Interfaces.Analytics;
 using BIReportingCopilot.Core.Interfaces.Repository;
 using BIReportingCopilot.Core.Models.Analytics;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Core.Models;
+using AnalyticsExportFormat = BIReportingCopilot.Core.Models.Analytics.ExportFormat;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
@@ -546,13 +548,13 @@ public class ABTestingService : IABTestingService
         }
     }
 
-    public async Task<byte[]> ExportTestResultsAsync(long testId, ExportFormat format = ExportFormat.CSV, CancellationToken cancellationToken = default)
+    public async Task<byte[]> ExportTestResultsAsync(long testId, AnalyticsExportFormat format = AnalyticsExportFormat.CSV, CancellationToken cancellationToken = default)
     {
         try
         {
             var analysis = await AnalyzeTestResultsAsync(testId, cancellationToken);
 
-            if (format == ExportFormat.CSV)
+            if (format == AnalyticsExportFormat.CSV)
             {
                 var csv = "TestId,TestName,Status,OriginalSuccessRate,VariantSuccessRate,StatisticalSignificance,Winner,ImprovementPercent\n";
                 csv += $"{analysis.TestId},{analysis.TestName},{analysis.Status},{analysis.OriginalSuccessRate},{analysis.VariantSuccessRate},{analysis.StatisticalSignificance},{analysis.WinnerTemplateKey},{analysis.ImprovementPercent}\n";

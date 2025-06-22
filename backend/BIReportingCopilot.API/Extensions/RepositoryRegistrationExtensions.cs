@@ -1,6 +1,6 @@
 using BIReportingCopilot.Core.Interfaces.Repository;
 using BIReportingCopilot.Core.Interfaces.Security;
-using BIReportingCopilot.Core.Interfaces.Repository;
+using BIReportingCopilot.Core.Interfaces.Analytics;
 using BIReportingCopilot.Infrastructure.Repositories;
 using BIReportingCopilot.Infrastructure.Interfaces;
 
@@ -31,9 +31,7 @@ public static class RepositoryRegistrationExtensions
         services.AddScoped<IMfaChallengeRepository, MfaChallengeRepository>();
 
         // Template Management Repositories
-        services.AddScoped<ITemplatePerformanceRepository, TemplatePerformanceRepository>();
-        services.AddScoped<ITemplateABTestRepository, TemplateABTestRepository>();
-        services.AddScoped<ITemplateImprovementRepository, TemplateImprovementRepository>();
+        services.AddScoped<ITemplateImprovementRepository, TemplateImprovementSuggestionRepository>();
         services.AddScoped<IEnhancedPromptTemplateRepository, EnhancedPromptTemplateRepository>();
 
         // Template Management Services

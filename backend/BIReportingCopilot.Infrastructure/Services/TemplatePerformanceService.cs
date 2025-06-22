@@ -2,7 +2,12 @@ using Microsoft.Extensions.Logging;
 using BIReportingCopilot.Core.Interfaces.Analytics;
 using BIReportingCopilot.Core.Interfaces.Repository;
 using BIReportingCopilot.Core.Models.Analytics;
+using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using AutoMapper;
+using InterfaceTemplatePerformanceMetrics = BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics;
+using InterfacePerformanceDataPoint = BIReportingCopilot.Core.Interfaces.Analytics.PerformanceDataPoint;
+using InterfaceComparisonResult = BIReportingCopilot.Core.Interfaces.Analytics.ComparisonResult;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
@@ -13,15 +18,18 @@ public class TemplatePerformanceService : ITemplatePerformanceService
 {
     private readonly ITemplatePerformanceRepository _performanceRepository;
     private readonly IEnhancedPromptTemplateRepository _templateRepository;
+    private readonly IMapper _mapper;
     private readonly ILogger<TemplatePerformanceService> _logger;
 
     public TemplatePerformanceService(
         ITemplatePerformanceRepository performanceRepository,
         IEnhancedPromptTemplateRepository templateRepository,
+        IMapper mapper,
         ILogger<TemplatePerformanceService> logger)
     {
         _performanceRepository = performanceRepository;
         _templateRepository = templateRepository;
+        _mapper = mapper;
         _logger = logger;
     }
 
@@ -79,7 +87,7 @@ public class TemplatePerformanceService : ITemplatePerformanceService
         }
     }
 
-    public async Task<TemplatePerformanceMetrics?> GetTemplatePerformanceAsync(string templateKey, CancellationToken cancellationToken = default)
+    public async Task<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics?> GetTemplatePerformanceAsync(string templateKey, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -104,11 +112,11 @@ public class TemplatePerformanceService : ITemplatePerformanceService
         }
     }
 
-    public async Task<List<TemplatePerformanceMetrics>> GetTemplatePerformanceAsync(List<string> templateKeys, CancellationToken cancellationToken = default)
+    public async Task<List<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics>> GetTemplatePerformanceAsync(List<string> templateKeys, CancellationToken cancellationToken = default)
     {
         try
         {
-            var results = new List<TemplatePerformanceMetrics>();
+            var results = new List<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics>();
 
             foreach (var templateKey in templateKeys)
             {
@@ -128,11 +136,11 @@ public class TemplatePerformanceService : ITemplatePerformanceService
         }
     }
 
-    public async Task<List<TemplatePerformanceMetrics>> GetTopPerformingTemplatesAsync(string? intentType = null, int count = 10, CancellationToken cancellationToken = default)
+    public async Task<List<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics>> GetTopPerformingTemplatesAsync(string? intentType = null, int count = 10, CancellationToken cancellationToken = default)
     {
         try
         {
-            List<TemplatePerformanceMetricsEntity> entities;
+            List<BIReportingCopilot.Core.Models.TemplatePerformanceMetricsEntity> entities;
 
             if (!string.IsNullOrEmpty(intentType))
             {
@@ -144,7 +152,7 @@ public class TemplatePerformanceService : ITemplatePerformanceService
                 entities = await _performanceRepository.GetTopPerformingTemplatesAsync(count, cancellationToken);
             }
 
-            var results = new List<TemplatePerformanceMetrics>();
+            var results = new List<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics>();
             foreach (var entity in entities)
             {
                 var template = await _templateRepository.GetByIdAsync(entity.TemplateId, cancellationToken);
@@ -163,14 +171,14 @@ public class TemplatePerformanceService : ITemplatePerformanceService
         }
     }
 
-    public async Task<List<TemplatePerformanceMetrics>> GetUnderperformingTemplatesAsync(decimal threshold = 0.7m, int minUsageCount = 10, CancellationToken cancellationToken = default)
+    public async Task<List<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics>> GetUnderperformingTemplatesAsync(decimal threshold = 0.7m, int minUsageCount = 10, CancellationToken cancellationToken = default)
     {
         try
         {
             var entities = await _performanceRepository.GetUnderperformingTemplatesAsync(threshold, cancellationToken);
             entities = entities.Where(x => x.TotalUsages >= minUsageCount).ToList();
 
-            var results = new List<TemplatePerformanceMetrics>();
+            var results = new List<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics>();
             foreach (var entity in entities)
             {
                 var template = await _templateRepository.GetByIdAsync(entity.TemplateId, cancellationToken);
@@ -205,9 +213,9 @@ public class TemplatePerformanceService : ITemplatePerformanceService
             {
                 TemplateKey = templateKey,
                 TimeWindow = timeWindow,
-                DataPoints = new List<PerformanceDataPoint>
+                DataPoints = new List<InterfacePerformanceDataPoint>
                 {
-                    new PerformanceDataPoint
+                    new InterfacePerformanceDataPoint
                     {
                         Timestamp = DateTime.UtcNow,
                         SuccessRate = performance.SuccessRate,
@@ -230,14 +238,14 @@ public class TemplatePerformanceService : ITemplatePerformanceService
         }
     }
 
-    public async Task<Dictionary<string, TemplatePerformanceMetrics>> GetPerformanceByIntentTypeAsync(CancellationToken cancellationToken = default)
+    public async Task<Dictionary<string, BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics>> GetPerformanceByIntentTypeAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             var successRates = await _performanceRepository.GetSuccessRatesByIntentTypeAsync(cancellationToken);
             var usageCounts = await _performanceRepository.GetUsageCountsByIntentTypeAsync(cancellationToken);
 
-            var results = new Dictionary<string, TemplatePerformanceMetrics>();
+            var results = new Dictionary<string, InterfaceTemplatePerformanceMetrics>();
 
             foreach (var intentType in successRates.Keys.Union(usageCounts.Keys))
             {
@@ -245,7 +253,7 @@ public class TemplatePerformanceService : ITemplatePerformanceService
                 var totalUsage = usageCounts.GetValueOrDefault(intentType, 0);
                 var avgProcessingTime = await _performanceRepository.GetAverageProcessingTimeAsync(intentType, cancellationToken);
 
-                results[intentType] = new TemplatePerformanceMetrics
+                results[intentType] = new InterfaceTemplatePerformanceMetrics
                 {
                     IntentType = intentType,
                     SuccessRate = avgSuccessRate,
@@ -284,7 +292,7 @@ public class TemplatePerformanceService : ITemplatePerformanceService
             };
 
             // Calculate metric comparisons
-            comparison.MetricComparisons["SuccessRate"] = new ComparisonResult
+            comparison.MetricComparisons["SuccessRate"] = new InterfaceComparisonResult
             {
                 MetricName = "Success Rate",
                 Value1 = performance1.SuccessRate,
@@ -295,7 +303,7 @@ public class TemplatePerformanceService : ITemplatePerformanceService
                 BetterTemplate = performance2.SuccessRate > performance1.SuccessRate ? templateKey2 : templateKey1
             };
 
-            comparison.MetricComparisons["ProcessingTime"] = new ComparisonResult
+            comparison.MetricComparisons["ProcessingTime"] = new InterfaceComparisonResult
             {
                 MetricName = "Processing Time",
                 Value1 = performance1.AverageProcessingTimeMs,
@@ -327,13 +335,13 @@ public class TemplatePerformanceService : ITemplatePerformanceService
         }
     }
 
-    public async Task<List<TemplatePerformanceMetrics>> GetRecentlyUsedTemplatesAsync(int days = 30, CancellationToken cancellationToken = default)
+    public async Task<List<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics>> GetRecentlyUsedTemplatesAsync(int days = 30, CancellationToken cancellationToken = default)
     {
         try
         {
             var entities = await _performanceRepository.GetRecentlyUsedAsync(days, cancellationToken);
 
-            var results = new List<TemplatePerformanceMetrics>();
+            var results = new List<BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics>();
             foreach (var entity in entities)
             {
                 var template = await _templateRepository.GetByIdAsync(entity.TemplateId, cancellationToken);
@@ -406,14 +414,14 @@ public class TemplatePerformanceService : ITemplatePerformanceService
         }
     }
 
-    public async Task<byte[]> ExportPerformanceDataAsync(DateTime startDate, DateTime endDate, ExportFormat format = ExportFormat.CSV, CancellationToken cancellationToken = default)
+    public async Task<byte[]> ExportPerformanceDataAsync(DateTime startDate, DateTime endDate, BIReportingCopilot.Core.Models.Analytics.ExportFormat format = BIReportingCopilot.Core.Models.Analytics.ExportFormat.CSV, CancellationToken cancellationToken = default)
     {
         try
         {
             var performanceData = await _performanceRepository.GetByUsageDateRangeAsync(startDate, endDate, cancellationToken);
 
             // Simple CSV export implementation
-            if (format == ExportFormat.CSV)
+            if (format == BIReportingCopilot.Core.Models.Analytics.ExportFormat.CSV)
             {
                 var csv = "TemplateKey,TemplateName,IntentType,TotalUsages,SuccessfulUsages,SuccessRate,AverageConfidenceScore,AverageProcessingTimeMs,AverageUserRating,LastUsedDate\n";
                 
@@ -435,21 +443,21 @@ public class TemplatePerformanceService : ITemplatePerformanceService
         }
     }
 
-    public async Task<List<PerformanceAlert>> GetPerformanceAlertsAsync(CancellationToken cancellationToken = default)
+    public async Task<List<BIReportingCopilot.Core.Interfaces.Analytics.PerformanceAlert>> GetPerformanceAlertsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var alerts = new List<PerformanceAlert>();
+            var alerts = new List<BIReportingCopilot.Core.Interfaces.Analytics.PerformanceAlert>();
 
             // Get underperforming templates
             var underperforming = await GetUnderperformingTemplatesAsync(cancellationToken: cancellationToken);
             foreach (var template in underperforming)
             {
-                alerts.Add(new PerformanceAlert
+                alerts.Add(new BIReportingCopilot.Core.Interfaces.Analytics.PerformanceAlert
                 {
                     TemplateKey = template.TemplateKey,
                     TemplateName = template.TemplateName,
-                    Severity = template.SuccessRate < 0.5m ? AlertSeverity.High : AlertSeverity.Medium,
+                    Severity = template.SuccessRate < 0.5m ? BIReportingCopilot.Core.Interfaces.Analytics.AlertSeverity.High : BIReportingCopilot.Core.Interfaces.Analytics.AlertSeverity.Medium,
                     AlertType = "Low Success Rate",
                     Message = $"Template has low success rate: {template.SuccessRate:P2}",
                     CreatedDate = DateTime.UtcNow
@@ -485,7 +493,7 @@ public class TemplatePerformanceService : ITemplatePerformanceService
                     {
                         PatternType = "Success Rate",
                         Description = performance.SuccessRate > 0.8m ? "High success rate" : "Needs improvement",
-                        Frequency = performance.SuccessRate,
+                        Frequency = (int)(performance.SuccessRate * 100),
                         Impact = performance.SuccessRate
                     }
                 },
@@ -503,9 +511,9 @@ public class TemplatePerformanceService : ITemplatePerformanceService
 
     #region Private Methods
 
-    private static TemplatePerformanceMetrics MapToPerformanceMetrics(TemplatePerformanceMetricsEntity entity, PromptTemplateEntity template)
+    private static BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics MapToPerformanceMetrics(BIReportingCopilot.Core.Models.TemplatePerformanceMetricsEntity entity, BIReportingCopilot.Core.Models.PromptTemplateEntity template)
     {
-        return new TemplatePerformanceMetrics
+        return new BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics
         {
             TemplateKey = entity.TemplateKey,
             TemplateName = template.Name,

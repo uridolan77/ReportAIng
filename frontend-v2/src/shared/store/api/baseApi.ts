@@ -97,6 +97,17 @@ export const baseApi = createApi({
     'EnhancedBusinessMetadata',
     'EnhancedGlossary',
     'EnhancedDomain',
+    // Template Analytics
+    'TemplatePerformance',
+    'TemplateMetrics',
+    'PerformanceAlert',
+    'PerformanceTrend',
+    'ABTest',
+    'ABTestAnalysis',
+    'ABTestRecommendation',
+    'TemplateManagement',
+    'TemplateVersion',
+    'TemplateQuality',
   ],
   endpoints: () => ({}),
 })

@@ -30,7 +30,7 @@ import {
   SettingOutlined,
   FilterOutlined,
   ExportOutlined,
-  BulkOutlined,
+  AppstoreOutlined,
   EyeOutlined,
   DatabaseOutlined,
   CheckCircleOutlined,
@@ -42,6 +42,7 @@ import {
   MobileOutlined,
   BookOutlined,
   ApartmentOutlined,
+  LinkOutlined,
 } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
 import { useEnhancedBusinessMetadata } from '@shared/hooks/useEnhancedBusinessMetadata'
@@ -85,6 +86,7 @@ export const EnhancedBusinessMetadata: React.FC = () => {
     tablesLoading,
     statisticsLoading,
     deleting,
+    searching,
     bulkOperating,
     handleSearch,
     handleFilterChange,
@@ -434,7 +436,7 @@ export const EnhancedBusinessMetadata: React.FC = () => {
             </Col>
             <Col>
               <Dropdown menu={{ items: bulkMenuItems }} placement="bottomRight">
-                <Button icon={<BulkOutlined />} loading={bulkOperating}>
+                <Button icon={<AppstoreOutlined />} loading={bulkOperating}>
                   Bulk Actions
                 </Button>
               </Dropdown>

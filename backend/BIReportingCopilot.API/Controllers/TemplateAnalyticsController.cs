@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces.Analytics;
 using BIReportingCopilot.Core.Models.Analytics;
 using BIReportingCopilot.Infrastructure.Extensions;
+using InterfaceTemplatePerformanceMetrics = BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics;
 
 namespace BIReportingCopilot.API.Controllers;
 
@@ -56,7 +57,7 @@ public class TemplateAnalyticsController : ControllerBase
     /// Get template performance metrics
     /// </summary>
     [HttpGet("performance/{templateKey}")]
-    public async Task<ActionResult<TemplatePerformanceMetrics>> GetTemplatePerformance(string templateKey)
+    public async Task<ActionResult<InterfaceTemplatePerformanceMetrics>> GetTemplatePerformance(string templateKey)
     {
         try
         {
@@ -78,7 +79,7 @@ public class TemplateAnalyticsController : ControllerBase
     /// Get top performing templates
     /// </summary>
     [HttpGet("performance/top")]
-    public async Task<ActionResult<List<TemplatePerformanceMetrics>>> GetTopPerformingTemplates(
+    public async Task<ActionResult<List<InterfaceTemplatePerformanceMetrics>>> GetTopPerformingTemplates(
         [FromQuery] string? intentType = null,
         [FromQuery] int count = 10)
     {
@@ -98,7 +99,7 @@ public class TemplateAnalyticsController : ControllerBase
     /// Get underperforming templates
     /// </summary>
     [HttpGet("performance/underperforming")]
-    public async Task<ActionResult<List<TemplatePerformanceMetrics>>> GetUnderperformingTemplates(
+    public async Task<ActionResult<List<InterfaceTemplatePerformanceMetrics>>> GetUnderperformingTemplates(
         [FromQuery] decimal threshold = 0.7m,
         [FromQuery] int minUsageCount = 10)
     {

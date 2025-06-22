@@ -426,4 +426,37 @@ public class PerformanceSnapshot
     public int UsageCount { get; set; }
 }
 
+/// <summary>
+/// Usage pattern analysis for templates
+/// </summary>
+public class UsagePattern
+{
+    public string PatternType { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int Frequency { get; set; }
+    public decimal Confidence { get; set; }
+    public decimal Impact { get; set; }
+    public Dictionary<string, object> PatternData { get; set; } = new();
+}
+
+/// <summary>
+/// Template performance metrics model (non-entity)
+/// </summary>
+public class TemplatePerformanceMetrics
+{
+    public string TemplateKey { get; set; } = string.Empty;
+    public string TemplateName { get; set; } = string.Empty;
+    public string IntentType { get; set; } = string.Empty;
+    public int TotalUsages { get; set; }
+    public int SuccessfulUsages { get; set; }
+    public decimal SuccessRate { get; set; }
+    public decimal AverageConfidenceScore { get; set; }
+    public int AverageProcessingTimeMs { get; set; }
+    public decimal? AverageUserRating { get; set; }
+    public DateTime? LastUsedDate { get; set; }
+    public DateTime CreatedDate { get; set; }
+    public DateTime UpdatedDate { get; set; }
+    public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
+}
+
 #endregion

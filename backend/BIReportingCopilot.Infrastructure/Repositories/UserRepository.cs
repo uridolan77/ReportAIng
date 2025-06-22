@@ -16,7 +16,7 @@ namespace BIReportingCopilot.Infrastructure.Repositories;
 /// Unified user repository implementing both domain model and entity operations
 /// Consolidates UserRepository and UserEntityRepository functionality
 /// </summary>
-public class UserRepository : BIReportingCopilot.Core.Interfaces.Repository.IUserRepository, IUserEntityRepository, BIReportingCopilot.Infrastructure.Interfaces.IUserRepository
+public class UserRepository : IUserEntityRepository, BIReportingCopilot.Infrastructure.Interfaces.IUserRepository, BIReportingCopilot.Core.Interfaces.Repository.IUserRepository
 {
     private readonly BICopilotContext _context;
     private readonly ILogger<UserRepository> _logger;
@@ -145,7 +145,7 @@ public class UserRepository : BIReportingCopilot.Core.Interfaces.Repository.IUse
     }
 
     // Legacy methods for backward compatibility
-    public async Task<User?> GetByIdAsync(string userId) => await GetUserByIdAsync(userId);
+    public async Task<User?> GetByIdAsync(string userId) => await GetByIdAsync(userId, CancellationToken.None);
     public async Task<User?> GetByUsernameAsync(string username) => await GetUserByUsernameAsync(username);
     public async Task<User?> GetByEmailAsync(string email) => await GetUserByEmailAsync(email);
 
@@ -1153,6 +1153,300 @@ public class UserRepository : BIReportingCopilot.Core.Interfaces.Repository.IUse
     async Task BIReportingCopilot.Infrastructure.Interfaces.IUserRepository.DeleteAsync(string id, CancellationToken cancellationToken)
     {
         await DeleteAsync(id, cancellationToken);
+    }
+
+    #endregion
+
+    #region Core.Interfaces.Repository.IUserRepository Implementation
+
+    // Note: GetByEmailAsync, ExistsByUsernameAsync, ExistsByEmailAsync, ExistsAsync, and UpdateAsync
+    // are already implemented in the "Missing Interface Method Implementations" section above
+
+    /// <summary>
+    /// Get all async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userEntities = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.IsActive)
+                .ToListAsync(cancellationToken);
+
+            return userEntities.Select(MapToModel).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all users");
+            return new List<User>();
+        }
+    }
+
+    /// <summary>
+    /// Find async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<List<User>> FindAsync(System.Linq.Expressions.Expression<Func<User, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var allUsers = await GetAllAsync(cancellationToken);
+            return allUsers.Where(predicate.Compile()).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error finding users with predicate");
+            return new List<User>();
+        }
+    }
+
+    /// <summary>
+    /// First or default async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<User?> FirstOrDefaultAsync(System.Linq.Expressions.Expression<Func<User, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var users = await FindAsync(predicate, cancellationToken);
+            return users.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting first user with predicate");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Any async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<bool> AnyAsync(System.Linq.Expressions.Expression<Func<User, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var users = await FindAsync(predicate, cancellationToken);
+            return users.Any();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking if any user matches predicate");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Count async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<int> CountAsync(System.Linq.Expressions.Expression<Func<User, bool>>? predicate = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (predicate == null)
+            {
+                return await _context.Users.CountAsync(u => u.IsActive, cancellationToken);
+            }
+
+            var users = await FindAsync(predicate, cancellationToken);
+            return users.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error counting users");
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Get paged async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<List<User>> GetPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userEntities = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.IsActive)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return userEntities.Select(MapToModel).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting paged users");
+            return new List<User>();
+        }
+    }
+
+    /// <summary>
+    /// Get paged async with predicate (Core IUserRepository interface)
+    /// </summary>
+    public async Task<List<User>> GetPagedAsync(System.Linq.Expressions.Expression<Func<User, bool>> predicate, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var users = await FindAsync(predicate, cancellationToken);
+            return users.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting paged users with predicate");
+            return new List<User>();
+        }
+    }
+
+    /// <summary>
+    /// Get ordered async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<List<User>> GetOrderedAsync<TOrderBy>(System.Linq.Expressions.Expression<Func<User, TOrderBy>> orderBy, bool descending = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var users = await GetAllAsync(cancellationToken);
+            return descending ? users.OrderByDescending(orderBy.Compile()).ToList() : users.OrderBy(orderBy.Compile()).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting ordered users");
+            return new List<User>();
+        }
+    }
+
+    /// <summary>
+    /// Get ordered async with predicate (Core IUserRepository interface)
+    /// </summary>
+    public async Task<List<User>> GetOrderedAsync<TOrderBy>(System.Linq.Expressions.Expression<Func<User, bool>> predicate, System.Linq.Expressions.Expression<Func<User, TOrderBy>> orderBy, bool descending = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var users = await FindAsync(predicate, cancellationToken);
+            return descending ? users.OrderByDescending(orderBy.Compile()).ToList() : users.OrderBy(orderBy.Compile()).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting ordered users with predicate");
+            return new List<User>();
+        }
+    }
+
+    /// <summary>
+    /// Bulk insert async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<int> BulkInsertAsync(IEnumerable<User> entities, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userEntities = entities.Select(MapToEntity);
+            _context.Users.AddRange(userEntities);
+            return await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk inserting users");
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Bulk update async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<int> BulkUpdateAsync(IEnumerable<User> entities, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userEntities = entities.Select(MapToEntity);
+            _context.Users.UpdateRange(userEntities);
+            return await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk updating users");
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Bulk delete async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<int> BulkDeleteAsync(System.Linq.Expressions.Expression<Func<User, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var users = await FindAsync(predicate, cancellationToken);
+            var userEntities = users.Select(MapToEntity);
+            _context.Users.RemoveRange(userEntities);
+            return await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk deleting users");
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Get by ID with includes async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<User?> GetByIdWithIncludesAsync(string id, params System.Linq.Expressions.Expression<Func<User, object>>[] includes)
+    {
+        // For User entity, we don't have complex includes, so just return the basic user
+        return await GetByIdAsync(id);
+    }
+
+    /// <summary>
+    /// Find with includes async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<List<User>> FindWithIncludesAsync(System.Linq.Expressions.Expression<Func<User, bool>> predicate, params System.Linq.Expressions.Expression<Func<User, object>>[] includes)
+    {
+        // For User entity, we don't have complex includes, so just return the basic find
+        return await FindAsync(predicate);
+    }
+
+    /// <summary>
+    /// Get async enumerable (Core IUserRepository interface)
+    /// </summary>
+    public IAsyncEnumerable<User> GetAsyncEnumerable(System.Linq.Expressions.Expression<Func<User, bool>>? predicate = null, CancellationToken cancellationToken = default)
+    {
+        var query = _context.Users.AsNoTracking().Where(u => u.IsActive);
+        return query.Select(e => MapToModel(e)).AsAsyncEnumerable();
+    }
+
+    /// <summary>
+    /// Execute in transaction async (Core IUserRepository interface)
+    /// </summary>
+    public async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<Task<TResult>> operation, CancellationToken cancellationToken = default)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var result = await operation();
+            await transaction.CommitAsync(cancellationToken);
+            return result;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Execute in transaction async (Core IUserRepository interface)
+    /// </summary>
+    public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await operation();
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     #endregion

@@ -2,7 +2,13 @@ using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces.Analytics;
 using BIReportingCopilot.Core.Interfaces.Repository;
+using BIReportingCopilot.Core.Models.Analytics;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Core.Models;
+using ABTestStatus = BIReportingCopilot.Core.Models.Analytics.ABTestStatus;
+using SuggestionStatus = BIReportingCopilot.Core.Models.Analytics.SuggestionStatus;
+using TemplateSearchCriteria = BIReportingCopilot.Core.Interfaces.Analytics.TemplateSearchCriteria;
+using TemplatePerformanceMetrics = BIReportingCopilot.Core.Interfaces.Analytics.TemplatePerformanceMetrics;
 
 namespace BIReportingCopilot.Infrastructure.Services;
 
@@ -46,7 +52,7 @@ public class TemplateManagementService : ITemplateManagementService
 
             var performanceMetrics = await _performanceService.GetTemplatePerformanceAsync(templateKey, cancellationToken);
             var activeTests = await _abTestRepository.GetTestsByTemplateIdAsync(template.Id, cancellationToken);
-            var pendingSuggestions = await _improvementRepository.GetPendingSuggestionsAsync(templateKey, cancellationToken);
+            var pendingSuggestions = await _improvementRepository.GetByTemplateIdAsync(template.Id, cancellationToken);
 
             return new TemplateWithMetrics
             {
@@ -393,7 +399,7 @@ public class TemplateManagementService : ITemplateManagementService
                 {
                     Version = template.Version,
                     Content = template.Content,
-                    CreatedDate = template.UpdatedDate,
+                    CreatedDate = template.UpdatedDate ?? DateTime.UtcNow,
                     CreatedBy = template.CreatedBy ?? "System",
                     IsActive = template.IsActive,
                     PerformanceMetrics = performance
@@ -428,12 +434,28 @@ public class TemplateManagementService : ITemplateManagementService
         }
     }
 
-    public async Task<TemplateSearchResult> SearchTemplatesAsync(TemplateSearchCriteria criteria, CancellationToken cancellationToken = default)
+    public async Task<TemplateSearchResult> SearchTemplatesAsync(BIReportingCopilot.Core.Interfaces.Analytics.TemplateSearchCriteria criteria, CancellationToken cancellationToken = default)
     {
         try
         {
-            var templates = await _templateRepository.SearchTemplatesAsync(criteria, cancellationToken);
-            var totalCount = await _templateRepository.GetSearchCountAsync(criteria, cancellationToken);
+            // Convert interface criteria to model criteria
+            var modelCriteria = new BIReportingCopilot.Core.Models.TemplateSearchCriteria
+            {
+                SearchTerm = criteria.SearchTerm,
+                IntentType = criteria.IntentTypes?.FirstOrDefault(),
+                IsActive = criteria.IsActive,
+                Tags = criteria.Tags,
+                CreatedAfter = criteria.CreatedAfter,
+                CreatedBefore = criteria.CreatedBefore,
+                CreatedBy = criteria.CreatedBy,
+                SortBy = criteria.SortBy,
+                SortDescending = criteria.SortDescending,
+                Page = criteria.Page,
+                PageSize = criteria.PageSize
+            };
+
+            var templates = await _templateRepository.SearchTemplatesAsync(modelCriteria, cancellationToken);
+            var totalCount = await _templateRepository.GetSearchCountAsync(modelCriteria, cancellationToken);
 
             var results = new List<TemplateWithMetrics>();
             foreach (var template in templates)
@@ -687,11 +709,11 @@ public class TemplateManagementService : ITemplateManagementService
         }
     }
 
-    public async Task<byte[]> ExportTemplatesAsync(List<string> templateKeys, ExportFormat format = ExportFormat.JSON, CancellationToken cancellationToken = default)
+    public async Task<byte[]> ExportTemplatesAsync(List<string> templateKeys, BIReportingCopilot.Core.Models.Analytics.ExportFormat format = BIReportingCopilot.Core.Models.Analytics.ExportFormat.JSON, CancellationToken cancellationToken = default)
     {
         try
         {
-            var templates = new List<PromptTemplateEntity>();
+            var templates = new List<BIReportingCopilot.Core.Models.PromptTemplateEntity>();
             foreach (var key in templateKeys)
             {
                 var template = await _templateRepository.GetByKeyAsync(key, cancellationToken);
@@ -701,13 +723,13 @@ public class TemplateManagementService : ITemplateManagementService
                 }
             }
 
-            if (format == ExportFormat.JSON)
+            if (format == BIReportingCopilot.Core.Models.Analytics.ExportFormat.JSON)
             {
                 var json = JsonSerializer.Serialize(templates, new JsonSerializerOptions { WriteIndented = true });
                 return System.Text.Encoding.UTF8.GetBytes(json);
             }
 
-            if (format == ExportFormat.CSV)
+            if (format == BIReportingCopilot.Core.Models.Analytics.ExportFormat.CSV)
             {
                 var csv = "TemplateKey,Name,IntentType,Content,Description,IsActive,Version,CreatedBy,CreatedDate\n";
                 foreach (var template in templates)
@@ -732,7 +754,7 @@ public class TemplateManagementService : ITemplateManagementService
         {
             var result = new TemplateImportResult { Success = true };
             var json = System.Text.Encoding.UTF8.GetString(templateData);
-            var templates = JsonSerializer.Deserialize<List<PromptTemplateEntity>>(json);
+            var templates = JsonSerializer.Deserialize<List<BIReportingCopilot.Core.Models.PromptTemplateEntity>>(json);
 
             if (templates == null)
             {
@@ -917,19 +939,19 @@ public class TemplateManagementService : ITemplateManagementService
         };
     }
 
-    private static TemplateImprovementSuggestion MapToImprovementSuggestion(TemplateImprovementSuggestionEntity entity)
+    private static BIReportingCopilot.Core.Models.Analytics.TemplateImprovementSuggestion MapToImprovementSuggestion(BIReportingCopilot.Core.Models.TemplateImprovementSuggestionEntity entity)
     {
-        return new TemplateImprovementSuggestion
+        return new BIReportingCopilot.Core.Models.Analytics.TemplateImprovementSuggestion
         {
             Id = entity.Id,
             TemplateKey = entity.TemplateKey,
             TemplateName = entity.TemplateName ?? string.Empty,
-            Type = Enum.Parse<ImprovementType>(entity.ImprovementType, true),
+            Type = Enum.Parse<BIReportingCopilot.Core.Models.Analytics.ImprovementType>(entity.ImprovementType, true),
             CurrentVersion = entity.CurrentVersion ?? string.Empty,
             SuggestedChanges = entity.SuggestedChanges ?? string.Empty,
             ReasoningExplanation = entity.ReasoningExplanation ?? string.Empty,
-            ExpectedImprovementPercent = entity.ExpectedImprovementPercent,
-            ConfidenceScore = entity.ConfidenceScore,
+            ExpectedImprovementPercent = entity.ExpectedImprovementPercent ?? 0,
+            ConfidenceScore = entity.ConfidenceScore ?? 0,
             Status = Enum.Parse<SuggestionStatus>(entity.Status, true),
             CreatedDate = entity.CreatedDate
         };

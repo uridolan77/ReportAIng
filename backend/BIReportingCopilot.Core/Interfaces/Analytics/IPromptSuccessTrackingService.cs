@@ -98,13 +98,19 @@ public class PromptSuccessAnalytics
 /// </summary>
 public class TemplatePerformanceMetrics
 {
+    public string TemplateKey { get; set; } = string.Empty;
     public string TemplateName { get; set; } = string.Empty;
-    public int TotalUsage { get; set; }
-    public int SuccessfulUsage { get; set; }
+    public string IntentType { get; set; } = string.Empty;
+    public int TotalUsages { get; set; }
+    public int SuccessfulUsages { get; set; }
     public decimal SuccessRate { get; set; }
     public decimal AverageConfidenceScore { get; set; }
     public int AverageProcessingTimeMs { get; set; }
     public decimal? AverageUserRating { get; set; }
+    public DateTime? LastUsedDate { get; set; }
+    public DateTime CreatedDate { get; set; }
+    public DateTime UpdatedDate { get; set; }
+    public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
 }
 
 /// <summary>

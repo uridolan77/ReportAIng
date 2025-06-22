@@ -21,7 +21,7 @@ import {
   BarChartOutlined,
   LineChartOutlined,
   PieChartOutlined,
-  TrendingUpOutlined,
+  RiseOutlined,
   DownloadOutlined,
   CalendarOutlined,
   BookOutlined,
@@ -321,7 +321,7 @@ export const DomainGlossaryAnalytics: React.FC = () => {
                 : 0
             }
             suffix="/100"
-            prefix={<TrendingUpOutlined />}
+            prefix={<RiseOutlined />}
             loading={glossaryLoading}
           />
         </Card>

@@ -184,15 +184,15 @@ public class PromptSuccessTrackingService : IPromptSuccessTrackingService
             .Select(g => new TemplatePerformanceMetrics
             {
                 TemplateName = g.Key!,
-                TotalUsage = g.Count(),
-                SuccessfulUsage = g.Count(s => s.IsSuccessfulSession()),
+                TotalUsages = g.Count(),
+                SuccessfulUsages = g.Count(s => s.IsSuccessfulSession()),
                 SuccessRate = g.Count() > 0 ? (decimal)g.Count(s => s.IsSuccessfulSession()) / g.Count() : 0,
                 AverageConfidenceScore = g.Average(s => s.ConfidenceScore),
                 AverageProcessingTimeMs = (int)g.Average(s => s.ProcessingTimeMs),
                 AverageUserRating = g.Where(s => s.UserFeedbackRating.HasValue).Any() ?
                     (decimal?)g.Where(s => s.UserFeedbackRating.HasValue).Average(s => s.UserFeedbackRating!.Value) : null
             })
-            .OrderByDescending(t => t.TotalUsage)
+            .OrderByDescending(t => t.TotalUsages)
             .ToListAsync(cancellationToken);
 
         return templateMetrics ?? new List<TemplatePerformanceMetrics>();

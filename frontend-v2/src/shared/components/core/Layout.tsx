@@ -99,9 +99,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (path === '/admin/transparency-review') return ['admin-transparency-review']
     if (path === '/admin/ai-transparency-analysis') return ['admin-ai-transparency-analysis']
 
+    // Template Analytics submenu items
+    if (path === '/admin/template-analytics/performance') return ['admin-template-performance']
+    if (path === '/admin/template-analytics/ab-testing') return ['admin-template-ab-testing']
+    if (path === '/admin/template-analytics/management') return ['admin-template-management']
+    if (path === '/admin/template-analytics/analytics') return ['admin-template-advanced']
+    if (path === '/admin/template-analytics/reports') return ['admin-template-reports']
+    if (path.startsWith('/admin/template-analytics')) return ['admin-template-analytics']
+
     // Demo and test pages
     if (path === '/admin/ai-transparency') return ['admin-ai-transparency']
-    if (path === '/admin/business-intelligence-demo') return ['admin-business-intelligence-demo']
+    if (path === '/admin/business-intelligence') return ['admin-business-intelligence']
     if (path === '/admin/ai-management-demo') return ['admin-ai-management-demo']
     if (path === '/admin/advanced-ai-features-demo') return ['admin-advanced-ai-features-demo']
     if (path === '/admin/ai-integration-test') return ['admin-ai-integration-test']
@@ -237,10 +245,42 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         ],
       },
       {
-        key: 'admin-business-intelligence-demo',
+        key: 'admin-template-analytics',
+        icon: <ExperimentOutlined />,
+        label: 'Template Analytics',
+        children: [
+          {
+            key: 'admin-template-performance',
+            label: 'Performance Dashboard',
+            onClick: () => navigate('/admin/template-analytics/performance'),
+          },
+          {
+            key: 'admin-template-ab-testing',
+            label: 'A/B Testing',
+            onClick: () => navigate('/admin/template-analytics/ab-testing'),
+          },
+          {
+            key: 'admin-template-management',
+            label: 'Template Management',
+            onClick: () => navigate('/admin/template-analytics/management'),
+          },
+          {
+            key: 'admin-template-advanced',
+            label: 'Advanced Analytics',
+            onClick: () => navigate('/admin/template-analytics/analytics'),
+          },
+          {
+            key: 'admin-template-reports',
+            label: 'Reports & Export',
+            onClick: () => navigate('/admin/template-analytics/reports'),
+          },
+        ],
+      },
+      {
+        key: 'admin-business-intelligence',
         icon: <BulbOutlined />,
-        label: 'BI Intelligence Demo',
-        onClick: () => navigate('/admin/business-intelligence-demo'),
+        label: 'Business Intelligence',
+        onClick: () => navigate('/admin/business-intelligence'),
       },
       {
         key: 'admin-ai-management-demo',

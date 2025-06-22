@@ -14,13 +14,14 @@ import AIAnalyticsDashboard from './pages/AIAnalyticsDashboard'
 import LLMManagementDashboard from './pages/LLMManagementDashboard'
 import AITransparencyDashboard from './pages/AITransparencyDashboard'
 import AITransparencyAnalysisPage from './pages/AITransparencyAnalysisPage'
-import BusinessIntelligenceDemo from './pages/BusinessIntelligenceDemo'
+import BusinessIntelligencePage from './pages/BusinessIntelligencePage'
 import AIManagementDemo from './pages/AIManagementDemo'
 import AdvancedAIFeaturesDemo from './pages/AdvancedAIFeaturesDemo'
 import AIIntegrationTestPage from './pages/AIIntegrationTestPage'
 import TransparencyDashboardPage from './pages/TransparencyDashboardPage'
 import TransparencyManagementPage from './pages/TransparencyManagementPage'
 import TransparencyReviewPage from './pages/TransparencyReviewPage'
+import TemplateAnalyticsRoutes from './routes/TemplateAnalyticsRoutes'
 
 export default function AdminApp() {
   return (
@@ -56,7 +57,7 @@ export default function AdminApp() {
         <Route path="/llm-management" element={<LLMManagementDashboard />} />
         <Route path="/ai-transparency" element={<AITransparencyDashboard />} />
         <Route path="/ai-transparency-analysis" element={<AITransparencyAnalysisPage />} />
-        <Route path="/business-intelligence-demo" element={<BusinessIntelligenceDemo />} />
+        <Route path="/business-intelligence" element={<BusinessIntelligencePage />} />
         <Route path="/ai-management-demo" element={<AIManagementDemo />} />
         <Route path="/advanced-ai-features-demo" element={<AdvancedAIFeaturesDemo />} />
         <Route path="/ai-integration-test" element={<AIIntegrationTestPage />} />
@@ -65,6 +66,9 @@ export default function AdminApp() {
         <Route path="/transparency-dashboard" element={<TransparencyDashboardPage />} />
         <Route path="/transparency-management" element={<TransparencyManagementPage />} />
         <Route path="/transparency-review" element={<TransparencyReviewPage />} />
+
+        {/* Template Analytics */}
+        <Route path="/template-analytics/*" element={<TemplateAnalyticsRoutes />} />
 
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/admin" replace />} />
