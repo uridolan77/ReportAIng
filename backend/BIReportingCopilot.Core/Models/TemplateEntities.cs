@@ -24,8 +24,8 @@ public class PromptTemplateEntity
     public string CreatedBy { get; set; } = string.Empty;
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedDate { get; set; }
-    public DateTime? LastUsedDate { get; set; }
-    public DateTime? LastBusinessReviewDate { get; set; }
+    // Match actual database column names
+    public DateTime? LastBusinessReview { get; set; } // Maps to LastBusinessReview column
     public string? BusinessPurpose { get; set; }
     public string? RelatedBusinessTerms { get; set; }
     public string? BusinessFriendlyName { get; set; }
@@ -33,9 +33,16 @@ public class PromptTemplateEntity
     public string? BusinessRules { get; set; }
     public string? RelationshipContext { get; set; }
     public string? DataGovernanceLevel { get; set; }
-    public decimal? ImportanceScore { get; set; }
-    public string? UsageFrequency { get; set; }
-    public string? BusinessMetadata { get; set; }
+    public decimal ImportanceScore { get; set; } = 0.5m; // NOT NULL in database
+    public decimal UsageFrequency { get; set; } = 0.0m; // NOT NULL in database
+
+    // Computed properties for backward compatibility
+    [NotMapped]
+    public DateTime? LastBusinessReviewDate
+    {
+        get => LastBusinessReview;
+        set => LastBusinessReview = value;
+    }
 }
 
 /// <summary>

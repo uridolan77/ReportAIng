@@ -147,13 +147,17 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.BusinessRules).HasMaxLength(2000);
             entity.Property(e => e.RelationshipContext).HasMaxLength(1000);
             entity.Property(e => e.DataGovernanceLevel).HasMaxLength(50);
-            entity.Property(e => e.UsageFrequency).HasMaxLength(50);
             entity.Property(e => e.TemplateKey).HasMaxLength(100);
             entity.Property(e => e.IntentType).HasMaxLength(50);
             entity.Property(e => e.Tags).HasMaxLength(1000);
+
+            // Map entity property to correct database column name
+            entity.Property(e => e.LastBusinessReview).HasColumnName("LastBusinessReview");
+
             // Fix decimal precision warnings
             entity.Property(e => e.SuccessRate).HasPrecision(5, 2);
             entity.Property(e => e.ImportanceScore).HasPrecision(5, 2);
+            entity.Property(e => e.UsageFrequency).HasPrecision(5, 2);
         });
 
         // Configure Template Management entities
@@ -167,6 +171,13 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.TemplateKey).HasMaxLength(100);
             entity.Property(e => e.IntentType).HasMaxLength(50);
             entity.Property(e => e.CreatedBy).HasMaxLength(256);
+
+            // Configure JSON column for AdditionalMetrics
+            entity.Property(e => e.AdditionalMetrics)
+                .HasConversion(
+                    v => v == null ? null : JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                    v => v == null ? null : JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions)null))
+                .HasColumnType("nvarchar(max)");
 
             // Configure relationships
             entity.HasOne(e => e.Template)

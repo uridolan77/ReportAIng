@@ -518,9 +518,15 @@ public class TemplateManagementService : ITemplateManagementService
                 return false;
             }
 
-            // Store business metadata as JSON in a metadata field
-            var metadataJson = JsonSerializer.Serialize(metadata);
-            template.BusinessMetadata = metadataJson;
+            // Update business metadata fields directly
+            template.BusinessPurpose = metadata.BusinessPurpose;
+            template.RelatedBusinessTerms = metadata.RelatedBusinessTerms != null ?
+                string.Join(",", metadata.RelatedBusinessTerms) : null;
+            template.BusinessFriendlyName = metadata.BusinessFriendlyName;
+            template.NaturalLanguageDescription = metadata.NaturalLanguageDescription;
+            template.BusinessRules = metadata.BusinessRules;
+            template.RelationshipContext = metadata.RelationshipContext;
+            template.DataGovernanceLevel = metadata.DataGovernanceLevel;
             template.UpdatedDate = DateTime.UtcNow;
 
             await _templateRepository.UpdateAsync(template, cancellationToken);
