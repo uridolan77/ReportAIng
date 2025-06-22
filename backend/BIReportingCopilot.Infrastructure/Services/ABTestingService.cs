@@ -198,9 +198,11 @@ public class ABTestingService : IABTestingService
 
             if (relevantTests.Any())
             {
-                // Select a test (could implement user-based consistent selection)
-                var selectedTest = relevantTests.First();
-                var useVariant = _random.Next(100) < selectedTest.TrafficSplitPercent;
+                // Select a test based on priority (most recent or highest traffic split)
+                var selectedTest = relevantTests.OrderByDescending(t => t.StartDate).First();
+
+                // Use consistent user-based hashing for traffic splitting
+                var useVariant = ShouldUseVariant(userId, selectedTest.Id, selectedTest.TrafficSplitPercent);
 
                 var selectedTemplate = useVariant ? selectedTest.VariantTemplate : selectedTest.OriginalTemplate;
 
@@ -291,14 +293,37 @@ public class ABTestingService : IABTestingService
                 throw new InvalidOperationException("Performance metrics not available for analysis");
             }
 
-            // Calculate statistical significance (simplified)
+            // Calculate statistical significance using two-proportion z-test
             var originalSuccessRate = originalPerformance.SuccessRate;
             var variantSuccessRate = variantPerformance.SuccessRate;
-            var improvementPercent = originalSuccessRate > 0 ? 
+            var improvementPercent = originalSuccessRate > 0 ?
                 ((variantSuccessRate - originalSuccessRate) / originalSuccessRate) * 100 : 0;
 
-            // Simplified statistical significance calculation
-            var statisticalSignificance = Math.Abs(improvementPercent) > 5 ? 0.95m : 0.5m;
+            // Proper statistical significance calculation
+            var originalSuccesses = (int)(originalPerformance.TotalUsages * originalSuccessRate);
+            var variantSuccesses = (int)(variantPerformance.TotalUsages * variantSuccessRate);
+
+            var statisticalSignificance = CalculateTwoProportionZTest(
+                originalPerformance.TotalUsages,
+                originalSuccesses,
+                variantPerformance.TotalUsages,
+                variantSuccesses
+            );
+
+            // Calculate additional statistical metrics
+            var effectSize = CalculateEffectSize((double)originalSuccessRate, (double)variantSuccessRate);
+            var confidenceInterval = CalculateConfidenceInterval(
+                originalPerformance.TotalUsages, originalSuccesses,
+                variantPerformance.TotalUsages, variantSuccesses
+            );
+
+            // Determine recommendation based on statistical significance and practical significance
+            var recommendation = DetermineTestRecommendation(
+                statisticalSignificance,
+                improvementPercent,
+                originalPerformance.TotalUsages + variantPerformance.TotalUsages,
+                test.StartDate
+            );
 
             var analysis = new ABTestAnalysis
             {
@@ -313,14 +338,15 @@ public class ABTestingService : IABTestingService
                 VariantSuccessRate = variantSuccessRate,
                 StatisticalSignificance = statisticalSignificance,
                 ConfidenceInterval = 0.95m,
-                WinnerTemplateKey = variantSuccessRate > originalSuccessRate ? 
-                    test.VariantTemplate.TemplateKey ?? string.Empty : 
+                WinnerTemplateKey = variantSuccessRate > originalSuccessRate ?
+                    test.VariantTemplate.TemplateKey ?? string.Empty :
                     test.OriginalTemplate.TemplateKey ?? string.Empty,
                 ImprovementPercent = improvementPercent,
-                Recommendation = statisticalSignificance > 0.9m ? 
-                    (variantSuccessRate > originalSuccessRate ? TestRecommendation.ImplementVariant : TestRecommendation.KeepOriginal) :
-                    TestRecommendation.ExtendTest,
-                AnalysisDate = DateTime.UtcNow
+                Recommendation = recommendation,
+                AnalysisDate = DateTime.UtcNow,
+                EffectSize = (decimal)effectSize,
+                ConfidenceIntervalLower = (decimal)confidenceInterval.lower,
+                ConfidenceIntervalUpper = (decimal)confidenceInterval.upper
             };
 
             return analysis;
@@ -666,6 +692,272 @@ public class ABTestingService : IABTestingService
             CreatedBy = entity.CreatedBy ?? string.Empty,
             CreatedDate = entity.CreatedDate
         };
+    }
+
+    #endregion
+
+    #region Statistical Analysis Methods
+
+    /// <summary>
+    /// Calculate statistical significance using two-proportion z-test
+    /// </summary>
+    private decimal CalculateTwoProportionZTest(int n1, int x1, int n2, int x2)
+    {
+        // Check for minimum sample size requirements
+        if (n1 < 30 || n2 < 30)
+        {
+            _logger.LogWarning("Sample sizes too small for reliable statistical analysis: n1={N1}, n2={N2}", n1, n2);
+            return 0.5m; // Not enough data for reliable analysis
+        }
+
+        // Calculate proportions
+        var p1 = (double)x1 / n1;
+        var p2 = (double)x2 / n2;
+
+        // Check for edge cases
+        if (p1 == p2) return 0.5m; // No difference
+        if (n1 == 0 || n2 == 0) return 0.5m; // No data
+
+        // Calculate pooled proportion
+        var pooledP = (double)(x1 + x2) / (n1 + n2);
+
+        // Calculate standard error
+        var standardError = Math.Sqrt(pooledP * (1 - pooledP) * (1.0 / n1 + 1.0 / n2));
+
+        // Avoid division by zero
+        if (standardError == 0) return 0.5m;
+
+        // Calculate z-score
+        var zScore = Math.Abs(p2 - p1) / standardError;
+
+        // Convert z-score to confidence level (two-tailed test)
+        var pValue = 2 * (1 - StandardNormalCDF(Math.Abs(zScore)));
+        var confidence = 1 - pValue;
+
+        return (decimal)Math.Max(0, Math.Min(1, confidence));
+    }
+
+    /// <summary>
+    /// Calculate cumulative distribution function for standard normal distribution
+    /// Using Abramowitz and Stegun approximation
+    /// </summary>
+    private static double StandardNormalCDF(double x)
+    {
+        if (x < 0)
+            return 1 - StandardNormalCDF(-x);
+
+        // Constants for approximation
+        const double a1 = 0.254829592;
+        const double a2 = -0.284496736;
+        const double a3 = 1.421413741;
+        const double a4 = -1.453152027;
+        const double a5 = 1.061405429;
+        const double p = 0.3275911;
+
+        var t = 1.0 / (1.0 + p * x);
+        var y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.Exp(-x * x / 2.0) / Math.Sqrt(2 * Math.PI);
+
+        return y;
+    }
+
+    /// <summary>
+    /// Calculate minimum sample size required for detecting a given effect size
+    /// </summary>
+    private int CalculateMinimumSampleSize(double baselineRate, double minimumDetectableEffect, double alpha = 0.05, double power = 0.8)
+    {
+        // This is a simplified calculation - in practice, you might want to use more sophisticated methods
+        var p1 = baselineRate;
+        var p2 = baselineRate * (1 + minimumDetectableEffect);
+
+        // Ensure p2 is within valid range
+        p2 = Math.Max(0, Math.Min(1, p2));
+
+        var pooledP = (p1 + p2) / 2;
+        var delta = Math.Abs(p2 - p1);
+
+        if (delta == 0) return int.MaxValue; // No effect to detect
+
+        // Z-scores for alpha and power
+        var zAlpha = 1.96; // For alpha = 0.05 (two-tailed)
+        var zBeta = 0.84;  // For power = 0.8
+
+        var numerator = Math.Pow(zAlpha * Math.Sqrt(2 * pooledP * (1 - pooledP)) + zBeta * Math.Sqrt(p1 * (1 - p1) + p2 * (1 - p2)), 2);
+        var denominator = Math.Pow(delta, 2);
+
+        return (int)Math.Ceiling(numerator / denominator);
+    }
+
+    /// <summary>
+    /// Calculate effect size (Cohen's h for proportions)
+    /// </summary>
+    private double CalculateEffectSize(double p1, double p2)
+    {
+        // Cohen's h for proportions
+        var h = 2 * (Math.Asin(Math.Sqrt(p1)) - Math.Asin(Math.Sqrt(p2)));
+        return Math.Abs(h);
+    }
+
+    /// <summary>
+    /// Calculate confidence interval for difference in proportions
+    /// </summary>
+    private (double lower, double upper) CalculateConfidenceInterval(int n1, int x1, int n2, int x2, double confidenceLevel = 0.95)
+    {
+        var p1 = (double)x1 / n1;
+        var p2 = (double)x2 / n2;
+        var diff = p2 - p1;
+
+        // Standard error for difference in proportions
+        var se = Math.Sqrt((p1 * (1 - p1) / n1) + (p2 * (1 - p2) / n2));
+
+        // Z-score for confidence level
+        var alpha = 1 - confidenceLevel;
+        var zScore = 1.96; // For 95% confidence (approximate)
+
+        var margin = zScore * se;
+
+        return (diff - margin, diff + margin);
+    }
+
+    /// <summary>
+    /// Determine test recommendation based on statistical and practical significance
+    /// </summary>
+    private TestRecommendation DetermineTestRecommendation(decimal statisticalSignificance, decimal improvementPercent, int totalSampleSize, DateTime testStartDate)
+    {
+        var testDuration = DateTime.UtcNow - testStartDate;
+        var isStatisticallySignificant = statisticalSignificance > 0.95m;
+        var isPracticallySignificant = Math.Abs(improvementPercent) > 5; // 5% improvement threshold
+        var hasMinimumSampleSize = totalSampleSize >= 200; // Minimum total sample size
+        var hasRunLongEnough = testDuration.TotalDays >= 7; // Minimum test duration
+
+        // If statistically and practically significant with adequate sample size
+        if (isStatisticallySignificant && isPracticallySignificant && hasMinimumSampleSize && hasRunLongEnough)
+        {
+            return improvementPercent > 0 ? TestRecommendation.ImplementVariant : TestRecommendation.KeepOriginal;
+        }
+
+        // If not statistically significant but test has run long enough with good sample size
+        if (!isStatisticallySignificant && hasRunLongEnough && hasMinimumSampleSize)
+        {
+            return TestRecommendation.KeepOriginal; // No significant difference found
+        }
+
+        // If statistically significant but not practically significant
+        if (isStatisticallySignificant && !isPracticallySignificant)
+        {
+            return TestRecommendation.KeepOriginal; // Difference too small to matter
+        }
+
+        // Need more data or time
+        return TestRecommendation.ExtendTest;
+    }
+
+    /// <summary>
+    /// Automated winner selection - checks all active tests and implements winners when criteria are met
+    /// </summary>
+    public async Task<List<AutomatedTestResult>> ProcessAutomatedWinnerSelectionAsync(CancellationToken cancellationToken = default)
+    {
+        var results = new List<AutomatedTestResult>();
+
+        try
+        {
+            _logger.LogInformation("Starting automated winner selection process");
+
+            var activeTests = await GetActiveTestsAsync(cancellationToken);
+
+            foreach (var test in activeTests)
+            {
+                try
+                {
+                    var analysis = await AnalyzeTestResultsAsync(test.Id, cancellationToken);
+
+                    var result = new AutomatedTestResult
+                    {
+                        TestId = test.Id,
+                        TestName = test.TestName,
+                        Action = AutomatedTestAction.NoAction,
+                        Reason = "Test analysis completed",
+                        ProcessedDate = DateTime.UtcNow
+                    };
+
+                    // Check if test should be automatically completed
+                    if (analysis.Recommendation == TestRecommendation.ImplementVariant ||
+                        analysis.Recommendation == TestRecommendation.KeepOriginal)
+                    {
+                        var implementResult = await CompleteTestAsync(test.Id,
+                            analysis.Recommendation == TestRecommendation.ImplementVariant, cancellationToken);
+
+                        result.Action = analysis.Recommendation == TestRecommendation.ImplementVariant ?
+                            AutomatedTestAction.ImplementedVariant : AutomatedTestAction.KeptOriginal;
+                        result.Reason = $"Automatically completed: {analysis.Recommendation}. " +
+                                      $"Statistical significance: {analysis.StatisticalSignificance:P2}, " +
+                                      $"Improvement: {analysis.ImprovementPercent:F1}%";
+                        result.ImplementedTemplateKey = implementResult.ImplementedTemplateKey;
+                    }
+                    else if (ShouldExpireTest(test, analysis))
+                    {
+                        await _abTestRepository.CompleteTestAsync(test.Id, test.Id, cancellationToken);
+                        result.Action = AutomatedTestAction.ExpiredTest;
+                        result.Reason = "Test expired without conclusive results";
+                    }
+
+                    results.Add(result);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing automated winner selection for test {TestId}", test.Id);
+                    results.Add(new AutomatedTestResult
+                    {
+                        TestId = test.Id,
+                        TestName = test.TestName,
+                        Action = AutomatedTestAction.Error,
+                        Reason = $"Error during processing: {ex.Message}",
+                        ProcessedDate = DateTime.UtcNow
+                    });
+                }
+            }
+
+            _logger.LogInformation("Completed automated winner selection process. Processed {TestCount} tests", results.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in automated winner selection process");
+            throw;
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    /// Check if a test should be expired due to running too long without conclusive results
+    /// </summary>
+    private bool ShouldExpireTest(ABTestDetails test, ABTestAnalysis analysis)
+    {
+        var testDuration = DateTime.UtcNow - test.StartDate;
+        var maxTestDuration = TimeSpan.FromDays(60); // Maximum test duration
+        var hasMinimumSample = (test.OriginalUsageCount + test.VariantUsageCount) >= 1000;
+
+        return testDuration > maxTestDuration &&
+               hasMinimumSample &&
+               analysis.Recommendation == TestRecommendation.ExtendTest;
+    }
+
+    /// <summary>
+    /// Determine if user should see variant using consistent hashing
+    /// </summary>
+    private bool ShouldUseVariant(string userId, long testId, int trafficSplitPercent)
+    {
+        // Create a consistent hash based on user ID and test ID
+        var hashInput = $"{userId}_{testId}";
+        var hash = hashInput.GetHashCode();
+
+        // Ensure positive hash value
+        if (hash < 0) hash = -hash;
+
+        // Convert to percentage (0-99)
+        var userBucket = hash % 100;
+
+        // Return true if user falls within the variant percentage
+        return userBucket < trafficSplitPercent;
     }
 
     #endregion

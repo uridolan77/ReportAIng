@@ -106,6 +106,11 @@ public interface IABTestingService
     /// Get A/B test history and trends
     /// </summary>
     Task<ABTestHistory> GetTestHistoryAsync(string? templateKey = null, TimeSpan? timeWindow = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Process automated winner selection for all active tests
+    /// </summary>
+    Task<List<AutomatedTestResult>> ProcessAutomatedWinnerSelectionAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

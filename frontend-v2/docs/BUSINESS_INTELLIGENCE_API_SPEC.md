@@ -1168,6 +1168,312 @@ Authorization: Bearer <jwt_token>
 }
 ```
 
+## Advanced Entity Detection Endpoints
+
+### 24. Entity Relationships
+**Endpoint:** `GET /api/business-intelligence/entities/relationships`
+
+**Purpose:** Get relationships between detected entities with business context.
+
+**Query Parameters:**
+- `entityIds` (required): Comma-separated list of entity IDs
+- `includeStrength` (optional): Include relationship strength scoring
+- `includeBusinessContext` (optional): Include business context explanations
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "relationships": [
+      {
+        "id": "rel-001",
+        "fromEntityId": "entity-sales",
+        "toEntityId": "entity-revenue",
+        "relationshipType": "synonym",
+        "strength": 0.95,
+        "description": "Sales and revenue are closely related business metrics",
+        "businessContext": "Both metrics are used for financial performance analysis",
+        "bidirectional": true,
+        "confidence": 0.92
+      }
+    ],
+    "relationshipTypes": ["synonym", "related", "parent", "child", "opposite", "contains"],
+    "totalRelationships": 1,
+    "averageStrength": 0.95
+  }
+}
+```
+
+## Advanced Entity Detection Endpoints
+
+### 24. Entity Relationships
+**Endpoint:** `GET /api/business-intelligence/entities/relationships`
+
+**Purpose:** Get relationships between detected entities with business context.
+
+**Query Parameters:**
+- `entityIds` (required): Comma-separated list of entity IDs
+- `includeStrength` (optional): Include relationship strength scoring
+- `includeBusinessContext` (optional): Include business context explanations
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "relationships": [
+      {
+        "id": "rel-001",
+        "fromEntityId": "entity-sales",
+        "toEntityId": "entity-revenue",
+        "relationshipType": "synonym",
+        "strength": 0.95,
+        "description": "Sales and revenue are closely related business metrics",
+        "businessContext": "Both metrics are used for financial performance analysis",
+        "bidirectional": true,
+        "confidence": 0.92
+      },
+      {
+        "id": "rel-002",
+        "fromEntityId": "entity-sales",
+        "toEntityId": "entity-region",
+        "relationshipType": "contains",
+        "strength": 0.88,
+        "description": "Sales data contains regional breakdown information",
+        "businessContext": "Regional analysis is essential for sales performance evaluation",
+        "bidirectional": false,
+        "confidence": 0.89
+      }
+    ],
+    "relationshipTypes": ["synonym", "related", "parent", "child", "opposite", "contains"],
+    "totalRelationships": 2,
+    "averageStrength": 0.915
+  }
+}
+```
+
+### 25. Entity Schema Mappings
+**Endpoint:** `GET /api/business-intelligence/entities/schema-mappings`
+
+**Purpose:** Get database schema mappings for detected entities.
+
+**Query Parameters:**
+- `entityIds` (required): Comma-separated list of entity IDs
+- `includeTransformations` (optional): Include SQL transformation details
+- `includeMappingQuality` (optional): Include mapping confidence and quality metrics
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "mappings": [
+      {
+        "entityId": "entity-sales",
+        "tableName": "sales_fact",
+        "columnName": "amount",
+        "mappingType": "direct",
+        "confidence": 0.95,
+        "transformation": "SUM(amount) for aggregation queries",
+        "dataType": "decimal",
+        "nullable": false,
+        "businessRules": ["Must be positive", "Currency in USD"],
+        "qualityMetrics": {
+          "completeness": 0.98,
+          "accuracy": 0.95,
+          "consistency": 0.92
+        }
+      },
+      {
+        "entityId": "entity-region",
+        "tableName": "region_dim",
+        "columnName": "region_name",
+        "mappingType": "direct",
+        "confidence": 0.88,
+        "transformation": "GROUP BY region_name for regional analysis",
+        "dataType": "varchar",
+        "nullable": false,
+        "businessRules": ["Standardized region names", "No duplicates allowed"],
+        "qualityMetrics": {
+          "completeness": 1.0,
+          "accuracy": 0.97,
+          "consistency": 0.95
+        }
+      }
+    ],
+    "mappingTypes": ["direct", "calculated", "derived"],
+    "totalMappings": 2,
+    "averageConfidence": 0.915
+  }
+}
+```
+
+### 26. Entity Analysis
+**Endpoint:** `POST /api/business-intelligence/entities/analyze`
+
+**Purpose:** Perform advanced analysis on detected entities including statistics and recommendations.
+
+**Request Body:**
+```json
+{
+  "query": "Show me quarterly sales by region for the last year",
+  "entityIds": ["entity-sales", "entity-region", "entity-quarterly"],
+  "includeStatistics": true,
+  "includeRecommendations": true,
+  "includeQualityAssessment": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "entityStatistics": {
+      "totalEntities": 3,
+      "averageConfidence": 0.91,
+      "highConfidenceEntities": 2,
+      "businessEntities": 2,
+      "technicalEntities": 1,
+      "entityTypes": {
+        "business_metric": 1,
+        "dimension": 1,
+        "time": 1
+      }
+    },
+    "qualityAssessment": {
+      "overallQuality": 0.93,
+      "detectionAccuracy": 0.95,
+      "mappingQuality": 0.91,
+      "businessRelevance": 0.94,
+      "issues": [
+        {
+          "entityId": "entity-quarterly",
+          "issue": "Ambiguous time reference",
+          "severity": "medium",
+          "recommendation": "Specify exact quarter (Q1, Q2, Q3, Q4)"
+        }
+      ]
+    },
+    "recommendations": [
+      {
+        "type": "enhancement",
+        "title": "Add business context for entities",
+        "description": "Enhance entity definitions with more detailed business meanings",
+        "impact": "medium",
+        "effort": "low"
+      },
+      {
+        "type": "optimization",
+        "title": "Improve entity confidence",
+        "description": "Review and validate low-confidence entity mappings",
+        "impact": "high",
+        "effort": "medium"
+      }
+    ]
+  }
+}
+```
+
+## Advanced Performance Analytics Endpoints
+
+### 27. Performance Optimization Suggestions
+**Endpoint:** `GET /api/business-intelligence/analytics/optimization-suggestions`
+
+**Purpose:** Get AI-powered performance optimization suggestions with impact assessment.
+
+**Query Parameters:**
+- `includeImplementationDetails` (optional): Include detailed implementation steps
+- `priorityLevel` (optional): Filter by priority level (high, medium, low)
+- `optimizationType` (optional): Filter by type (performance, accuracy, efficiency, cost)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "suggestions": [
+      {
+        "id": "opt-001",
+        "type": "performance",
+        "title": "Enable Query Result Caching",
+        "description": "Implement intelligent caching for frequently used query patterns",
+        "impact": "high",
+        "effort": "medium",
+        "estimatedImprovement": "40% faster response time",
+        "priority": 1,
+        "implementationSteps": [
+          "Analyze query patterns for caching opportunities",
+          "Implement Redis-based caching layer",
+          "Configure cache invalidation strategies"
+        ],
+        "estimatedTimeToImplement": "2-3 weeks",
+        "resourcesRequired": ["Backend Developer", "DevOps Engineer"]
+      }
+    ],
+    "totalSuggestions": 1,
+    "highPrioritySuggestions": 1,
+    "estimatedOverallImprovement": "45% performance increase"
+  }
+}
+```
+
+### 28. System Health Monitoring
+**Endpoint:** `GET /api/business-intelligence/analytics/system-health`
+
+**Purpose:** Get comprehensive system health metrics and alerts.
+
+**Query Parameters:**
+- `includeAlerts` (optional): Include active system alerts
+- `includeHistoricalData` (optional): Include historical health trends
+- `timeRange` (optional): Time range for health data (1h, 24h, 7d, 30d)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "overallHealth": {
+      "status": "healthy",
+      "score": 94.5,
+      "uptime": 99.98,
+      "lastIncident": "2024-01-10T08:00:00Z"
+    },
+    "componentHealth": [
+      {
+        "component": "Query Analysis Engine",
+        "status": "healthy",
+        "responseTime": 1.2,
+        "errorRate": 0.02,
+        "lastCheck": "2024-01-15T10:30:00Z"
+      },
+      {
+        "component": "Entity Detection Service",
+        "status": "healthy",
+        "responseTime": 0.8,
+        "errorRate": 0.01,
+        "lastCheck": "2024-01-15T10:30:00Z"
+      }
+    ],
+    "alerts": [
+      {
+        "id": "alert-001",
+        "severity": "warning",
+        "message": "Response time above threshold",
+        "component": "Query Analysis Engine",
+        "timestamp": "2024-01-15T09:45:00Z",
+        "resolved": false
+      }
+    ],
+    "recommendations": [
+      "Consider scaling Query Analysis Engine during peak hours",
+      "Monitor cache hit rate for optimization opportunities"
+    ]
+  }
+}
+```
+
 ## Error Handling
 
 All endpoints follow consistent error response format:
@@ -1243,7 +1549,11 @@ X-RateLimit-Reset: 1642248000
 ### Phase 5 (Extended Features - Additional Capabilities):
 21. `GET /api/business-intelligence/schema/relationships` - Table relationships
 22. `GET /api/business-intelligence/terms/relationships` - Term relationships
-23. Additional optimization and monitoring endpoints
+23. `GET /api/business-intelligence/entities/relationships` - Entity relationships
+24. `GET /api/business-intelligence/entities/schema-mappings` - Entity schema mappings
+25. `POST /api/business-intelligence/entities/analyze` - Advanced entity analysis
+26. `GET /api/business-intelligence/analytics/optimization-suggestions` - Performance optimization
+27. `GET /api/business-intelligence/analytics/system-health` - System health monitoring
 
 ## Notes for Backend Implementation
 
@@ -1265,7 +1575,7 @@ X-RateLimit-Reset: 1642248000
 
 ## API Coverage Summary
 
-This specification provides **23 comprehensive endpoints** covering all aspects of the Business Intelligence system:
+This specification provides **28 comprehensive endpoints** covering all aspects of the Business Intelligence system:
 
 ### Core Analysis (5 endpoints)
 - Query analysis and understanding
@@ -1280,11 +1590,17 @@ This specification provides **23 comprehensive endpoints** covering all aspects 
 - Business terms management and validation
 - Query refinement and alternatives
 
-### Analytics & Performance (8 endpoints)
+### Advanced Entity Detection (3 endpoints)
+- Entity relationships and mapping
+- Schema mappings with transformations
+- Advanced entity analysis and statistics
+
+### Analytics & Performance (10 endpoints)
 - Usage analytics and monitoring
 - Performance metrics and optimization
-- Real-time system health
-- Term usage analytics
+- Real-time system health monitoring
+- Optimization suggestions with impact assessment
+- System health alerts and recommendations
 
 ### Key Features Supported:
 ✅ **Natural Language Processing** - Advanced NLP for query understanding

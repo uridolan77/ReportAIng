@@ -1068,6 +1068,8 @@ app.MapHub<BIReportingCopilot.Infrastructure.Hubs.TransparencyHub>("/hubs/transp
 app.MapHub<CostMonitoringHub>("/hubs/cost-monitoring");
 app.MapHub<PerformanceMonitoringHub>("/hubs/performance-monitoring");
 app.MapHub<ResourceMonitoringHub>("/hubs/resource-monitoring");
+// Template Analytics hub for real-time analytics updates
+app.MapHub<TemplateAnalyticsHub>("/hubs/template-analytics");
 
 // Configure health checks
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions

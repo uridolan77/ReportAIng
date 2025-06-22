@@ -162,6 +162,11 @@ export const BusinessIntelligencePage: React.FC = () => {
           showConfidence={true}
           showTooltips={true}
           showRelationships={true}
+          showMappings={true}
+          showAdvancedAnalysis={true}
+          onEntityClick={(entityId) => console.log('Entity clicked:', entityId)}
+          onEntityEdit={(entityId) => console.log('Entity edit:', entityId)}
+          onRelationshipExplore={(relationship) => console.log('Relationship explore:', relationship)}
         />
       )
     },
@@ -276,7 +281,11 @@ export const BusinessIntelligencePage: React.FC = () => {
           query={currentQuery}
           analysisResults={analysisResults}
           showOptimizations={true}
+          showUsageAnalytics={true}
+          showRealTimeMetrics={true}
           interactive={true}
+          onOptimizationApply={(suggestionId) => console.log('Optimization applied:', suggestionId)}
+          onMetricRefresh={() => console.log('Metrics refreshed')}
         />
       )
     }

@@ -43,6 +43,10 @@ public static class RepositoryRegistrationExtensions
         services.AddScoped<BIReportingCopilot.Infrastructure.Services.TrackedPromptService>();
         services.AddScoped<BIReportingCopilot.Infrastructure.Extensions.TemplatePerformanceMonitoringService>();
 
+        // Background Services
+        services.AddHostedService<BIReportingCopilot.Infrastructure.Services.ABTestAutomationService>();
+        services.AddHostedService<BIReportingCopilot.API.Hubs.AnalyticsUpdateService>();
+
         return services;
     }
 }

@@ -39,7 +39,10 @@ public class TemplateAnalyticsController : ControllerBase
     /// Get performance dashboard data
     /// </summary>
     [HttpGet("dashboard")]
-    public async Task<ActionResult<PerformanceDashboardData>> GetDashboard()
+    public async Task<ActionResult<PerformanceDashboardData>> GetDashboard(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? intentType = null)
     {
         try
         {
@@ -50,6 +53,120 @@ public class TemplateAnalyticsController : ControllerBase
         {
             _logger.LogError(ex, "Error getting performance dashboard");
             return StatusCode(500, "Error retrieving dashboard data");
+        }
+    }
+
+    /// <summary>
+    /// Get comprehensive analytics dashboard with trends and insights
+    /// </summary>
+    [HttpGet("dashboard/comprehensive")]
+    public async Task<ActionResult<ComprehensiveAnalyticsDashboard>> GetComprehensiveDashboard(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? intentType = null)
+    {
+        try
+        {
+            var start = startDate ?? DateTime.UtcNow.AddDays(-30);
+            var end = endDate ?? DateTime.UtcNow;
+
+            var performanceDashboard = await _performanceService.GetDashboardDataAsync();
+            var abTestDashboard = await _abTestingService.GetTestDashboardAsync();
+            var managementDashboard = await _managementService.GetDashboardAsync();
+
+            // Get additional analytics
+            var performanceTrends = await GetPerformanceTrendsData(start, end, intentType);
+            var usageInsights = await GetUsageInsights(start, end);
+            var qualityMetrics = await GetQualityMetrics();
+            var alerts = await _performanceService.GetPerformanceAlertsAsync();
+
+            var comprehensiveDashboard = new ComprehensiveAnalyticsDashboard
+            {
+                PerformanceOverview = performanceDashboard,
+                ABTestingOverview = abTestDashboard,
+                ManagementOverview = managementDashboard,
+                PerformanceTrends = performanceTrends,
+                UsageInsights = usageInsights,
+                QualityMetrics = qualityMetrics,
+                ActiveAlerts = alerts,
+                GeneratedDate = DateTime.UtcNow,
+                DateRange = new DateRange { StartDate = start, EndDate = end }
+            };
+
+            return Ok(comprehensiveDashboard);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting comprehensive analytics dashboard");
+            return StatusCode(500, "Error retrieving comprehensive dashboard data");
+        }
+    }
+
+    /// <summary>
+    /// Get performance trends over time
+    /// </summary>
+    [HttpGet("trends/performance")]
+    public async Task<ActionResult<PerformanceTrendsData>> GetPerformanceTrends(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? intentType = null,
+        [FromQuery] string? granularity = "daily")
+    {
+        try
+        {
+            var start = startDate ?? DateTime.UtcNow.AddDays(-30);
+            var end = endDate ?? DateTime.UtcNow;
+
+            var trends = await GetPerformanceTrendsData(start, end, intentType, granularity);
+            return Ok(trends);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting performance trends");
+            return StatusCode(500, "Error retrieving performance trends");
+        }
+    }
+
+    /// <summary>
+    /// Get usage analytics and insights
+    /// </summary>
+    [HttpGet("insights/usage")]
+    public async Task<ActionResult<UsageInsightsData>> GetUsageInsights(
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] string? intentType = null)
+    {
+        try
+        {
+            var start = startDate ?? DateTime.UtcNow.AddDays(-30);
+            var end = endDate ?? DateTime.UtcNow;
+
+            var insights = await GetUsageInsights(start, end, intentType);
+            return Ok(insights);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting usage insights");
+            return StatusCode(500, "Error retrieving usage insights");
+        }
+    }
+
+    /// <summary>
+    /// Get quality metrics and analysis
+    /// </summary>
+    [HttpGet("metrics/quality")]
+    public async Task<ActionResult<QualityMetricsData>> GetQualityMetrics(
+        [FromQuery] string? intentType = null)
+    {
+        try
+        {
+            var metrics = await GetQualityMetrics(intentType);
+            return Ok(metrics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting quality metrics");
+            return StatusCode(500, "Error retrieving quality metrics");
         }
     }
 
@@ -398,6 +515,43 @@ public class TemplateAnalyticsController : ControllerBase
     }
 
     /// <summary>
+    /// Get real-time analytics data
+    /// </summary>
+    [HttpGet("realtime")]
+    public async Task<ActionResult<RealTimeAnalyticsData>> GetRealTimeAnalytics()
+    {
+        try
+        {
+            var realtimeData = await GetRealTimeAnalyticsData();
+            return Ok(realtimeData);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting real-time analytics");
+            return StatusCode(500, "Error retrieving real-time analytics");
+        }
+    }
+
+    /// <summary>
+    /// Export comprehensive analytics data
+    /// </summary>
+    [HttpPost("export")]
+    public async Task<ActionResult> ExportAnalyticsData([FromBody] AnalyticsExportConfig config)
+    {
+        try
+        {
+            var exportResult = await ExportAnalyticsDataAsync(config);
+
+            return File(exportResult.Data, exportResult.ContentType, exportResult.FileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exporting analytics data");
+            return StatusCode(500, "Error exporting analytics data");
+        }
+    }
+
+    /// <summary>
     /// Export performance data
     /// </summary>
     [HttpGet("performance/export")]
@@ -409,7 +563,7 @@ public class TemplateAnalyticsController : ControllerBase
         try
         {
             var data = await _performanceService.ExportPerformanceDataAsync(startDate, endDate, format);
-            
+
             var contentType = format switch
             {
                 ExportFormat.CSV => "text/csv",
@@ -419,7 +573,7 @@ public class TemplateAnalyticsController : ControllerBase
             };
 
             var fileName = $"template_performance_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.{format.ToString().ToLower()}";
-            
+
             return File(data, contentType, fileName);
         }
         catch (Exception ex)
@@ -428,6 +582,218 @@ public class TemplateAnalyticsController : ControllerBase
             return StatusCode(500, "Error exporting performance data");
         }
     }
+
+    #region Helper Methods
+
+    private async Task<PerformanceTrendsData> GetPerformanceTrendsData(DateTime startDate, DateTime endDate, string? intentType = null, string granularity = "daily")
+    {
+        // Get performance data points over time
+        var templates = await _performanceService.GetTopPerformingTemplatesAsync(count: 100);
+
+        if (!string.IsNullOrEmpty(intentType))
+        {
+            templates = templates.Where(t => t.IntentType == intentType).ToList();
+        }
+
+        var dataPoints = new List<PerformanceTrendDataPoint>();
+        var current = startDate;
+        var interval = granularity.ToLower() switch
+        {
+            "hourly" => TimeSpan.FromHours(1),
+            "daily" => TimeSpan.FromDays(1),
+            "weekly" => TimeSpan.FromDays(7),
+            "monthly" => TimeSpan.FromDays(30),
+            _ => TimeSpan.FromDays(1)
+        };
+
+        while (current <= endDate)
+        {
+            // In a real implementation, you'd query historical data for this time period
+            var avgSuccessRate = templates.Any() ? templates.Average(t => (double)t.SuccessRate) : 0;
+            var avgConfidence = templates.Any() ? templates.Average(t => (double)t.AverageConfidenceScore) : 0;
+            var totalUsage = templates.Sum(t => t.TotalUsages);
+
+            dataPoints.Add(new PerformanceTrendDataPoint
+            {
+                Timestamp = current,
+                AverageSuccessRate = (decimal)avgSuccessRate,
+                AverageConfidenceScore = (decimal)avgConfidence,
+                TotalUsage = totalUsage,
+                ActiveTemplates = templates.Count
+            });
+
+            current = current.Add(interval);
+        }
+
+        return new PerformanceTrendsData
+        {
+            DataPoints = dataPoints,
+            TimeRange = new DateRange { StartDate = startDate, EndDate = endDate },
+            Granularity = granularity,
+            IntentType = intentType,
+            GeneratedDate = DateTime.UtcNow
+        };
+    }
+
+    private async Task<UsageInsightsData> GetUsageInsights(DateTime startDate, DateTime endDate, string? intentType = null)
+    {
+        var performanceByIntent = await _performanceService.GetPerformanceByIntentTypeAsync();
+        var topPerformers = await _performanceService.GetTopPerformingTemplatesAsync(count: 10);
+        var underperforming = await _performanceService.GetUnderperformingTemplatesAsync();
+
+        // Calculate insights
+        var totalUsage = topPerformers.Sum(t => t.TotalUsages);
+        var avgSuccessRate = topPerformers.Any() ? topPerformers.Average(t => (double)t.SuccessRate) : 0;
+
+        var insights = new List<UsageInsight>();
+
+        // Add usage pattern insights
+        if (performanceByIntent.Any())
+        {
+            var mostUsedIntent = performanceByIntent.OrderByDescending(p => p.Value.TotalUsages).First();
+            insights.Add(new UsageInsight
+            {
+                Type = "MostUsedIntentType",
+                Title = "Most Popular Intent Type",
+                Description = $"{mostUsedIntent.Key} accounts for the highest usage with {mostUsedIntent.Value.TotalUsages} total uses",
+                Impact = "High",
+                Recommendation = "Consider optimizing templates for this intent type"
+            });
+        }
+
+        // Add performance insights
+        if (avgSuccessRate < 0.8)
+        {
+            insights.Add(new UsageInsight
+            {
+                Type = "LowSuccessRate",
+                Title = "Below Average Success Rate",
+                Description = $"Overall success rate is {avgSuccessRate:P2}, below the recommended 80%",
+                Impact = "High",
+                Recommendation = "Review underperforming templates and consider A/B testing improvements"
+            });
+        }
+
+        return new UsageInsightsData
+        {
+            TotalUsage = totalUsage,
+            AverageSuccessRate = (decimal)avgSuccessRate,
+            UsageByIntentType = performanceByIntent.ToDictionary(p => p.Key, p => p.Value.TotalUsages),
+            TopPerformingTemplates = topPerformers.Take(5).ToList(),
+            UnderperformingTemplates = underperforming.Take(5).ToList(),
+            Insights = insights,
+            TimeRange = new DateRange { StartDate = startDate, EndDate = endDate },
+            GeneratedDate = DateTime.UtcNow
+        };
+    }
+
+    private async Task<QualityMetricsData> GetQualityMetrics(string? intentType = null)
+    {
+        var allTemplates = await _performanceService.GetTopPerformingTemplatesAsync(count: 1000);
+
+        if (!string.IsNullOrEmpty(intentType))
+        {
+            allTemplates = allTemplates.Where(t => t.IntentType == intentType).ToList();
+        }
+
+        var qualityDistribution = new Dictionary<string, int>
+        {
+            ["Excellent"] = allTemplates.Count(t => t.SuccessRate >= 0.9m),
+            ["Good"] = allTemplates.Count(t => t.SuccessRate >= 0.8m && t.SuccessRate < 0.9m),
+            ["Fair"] = allTemplates.Count(t => t.SuccessRate >= 0.7m && t.SuccessRate < 0.8m),
+            ["Poor"] = allTemplates.Count(t => t.SuccessRate < 0.7m)
+        };
+
+        var avgQualityScore = allTemplates.Any() ? allTemplates.Average(t => (double)t.SuccessRate) * 100 : 0;
+        var avgConfidenceScore = allTemplates.Any() ? allTemplates.Average(t => (double)t.AverageConfidenceScore) : 0;
+
+        return new QualityMetricsData
+        {
+            OverallQualityScore = (decimal)avgQualityScore,
+            AverageConfidenceScore = (decimal)avgConfidenceScore,
+            QualityDistribution = qualityDistribution,
+            TotalTemplatesAnalyzed = allTemplates.Count,
+            TemplatesAboveThreshold = allTemplates.Count(t => t.SuccessRate >= 0.8m),
+            TemplatesBelowThreshold = allTemplates.Count(t => t.SuccessRate < 0.8m),
+            IntentType = intentType,
+            GeneratedDate = DateTime.UtcNow
+        };
+    }
+
+    private async Task<RealTimeAnalyticsData> GetRealTimeAnalyticsData()
+    {
+        var topTemplates = await _performanceService.GetTopPerformingTemplatesAsync(count: 10);
+        var recentTemplates = await _performanceService.GetRecentlyUsedTemplatesAsync(days: 1);
+
+        // Calculate real-time metrics
+        var totalUsageToday = recentTemplates.Sum(t => t.TotalUsages);
+        var avgSuccessRate = recentTemplates.Any() ? recentTemplates.Average(t => (double)t.SuccessRate) : 0;
+        var avgResponseTime = recentTemplates.Any() ? recentTemplates.Average(t => (double)t.AverageProcessingTimeMs) : 0;
+
+        // Simulate recent activities (in a real implementation, this would come from logs)
+        var recentActivities = new List<RecentActivity>();
+        foreach (var template in recentTemplates.Take(10))
+        {
+            recentActivities.Add(new RecentActivity
+            {
+                ActivityType = "TemplateUsage",
+                Description = $"Template {template.TemplateKey} used",
+                TemplateKey = template.TemplateKey,
+                UserId = "system",
+                WasSuccessful = template.SuccessRate > 0.8m,
+                Timestamp = DateTime.UtcNow.AddMinutes(-Random.Shared.Next(0, 60))
+            });
+        }
+
+        return new RealTimeAnalyticsData
+        {
+            ActiveUsers = Random.Shared.Next(10, 50), // Would come from session tracking
+            QueriesPerMinute = totalUsageToday / (24 * 60), // Rough estimate
+            CurrentSuccessRate = (decimal)avgSuccessRate,
+            AverageResponseTime = (decimal)avgResponseTime,
+            ErrorsInLastHour = Random.Shared.Next(0, 5), // Would come from error logs
+            RecentActivities = recentActivities.OrderByDescending(a => a.Timestamp).ToList(),
+            ActiveTemplateUsage = recentTemplates.ToDictionary(t => t.TemplateKey, t => t.TotalUsages),
+            LastUpdated = DateTime.UtcNow
+        };
+    }
+
+    private async Task<AnalyticsExportResult> ExportAnalyticsDataAsync(AnalyticsExportConfig config)
+    {
+        var startTime = DateTime.UtcNow;
+
+        // Gather data based on configuration
+        var performanceData = await _performanceService.ExportPerformanceDataAsync(
+            config.DateRange.StartDate,
+            config.DateRange.EndDate,
+            config.Format);
+
+        var fileName = $"analytics_export_{config.DateRange.StartDate:yyyyMMdd}_{config.DateRange.EndDate:yyyyMMdd}";
+        var contentType = config.Format switch
+        {
+            ExportFormat.CSV => "text/csv",
+            ExportFormat.Excel => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ExportFormat.JSON => "application/json",
+            _ => "application/octet-stream"
+        };
+
+        fileName += $".{config.Format.ToString().ToLower()}";
+
+        var generationTime = DateTime.UtcNow - startTime;
+
+        return new AnalyticsExportResult
+        {
+            Data = performanceData,
+            FileName = fileName,
+            ContentType = contentType,
+            FileSizeBytes = performanceData.Length,
+            Configuration = config,
+            GeneratedDate = DateTime.UtcNow,
+            GenerationTime = generationTime
+        };
+    }
+
+    #endregion
 }
 
 /// <summary>

@@ -128,10 +128,39 @@ public class ABTestAnalysis
     public decimal ConfidenceInterval { get; set; }
     public string WinnerTemplateKey { get; set; } = string.Empty;
     public decimal ImprovementPercent { get; set; }
+    public decimal EffectSize { get; set; }
+    public decimal ConfidenceIntervalLower { get; set; }
+    public decimal ConfidenceIntervalUpper { get; set; }
     public Dictionary<string, MetricComparison> MetricComparisons { get; set; } = new();
     public List<string> Insights { get; set; } = new();
     public TestRecommendation Recommendation { get; set; }
     public DateTime AnalysisDate { get; set; }
+}
+
+/// <summary>
+/// Automated test processing result
+/// </summary>
+public class AutomatedTestResult
+{
+    public long TestId { get; set; }
+    public string TestName { get; set; } = string.Empty;
+    public AutomatedTestAction Action { get; set; }
+    public string Reason { get; set; } = string.Empty;
+    public string ImplementedTemplateKey { get; set; } = string.Empty;
+    public DateTime ProcessedDate { get; set; }
+}
+
+/// <summary>
+/// Actions that can be taken during automated test processing
+/// </summary>
+public enum AutomatedTestAction
+{
+    NoAction,
+    ImplementedVariant,
+    KeptOriginal,
+    ExpiredTest,
+    PausedTest,
+    Error
 }
 
 /// <summary>

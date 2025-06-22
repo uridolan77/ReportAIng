@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useCallback } from 'react'
 import { Layout as AntLayout, Menu, Avatar, Dropdown, Space, Typography, Button, Divider } from 'antd'
 import {
   UserOutlined,
@@ -19,7 +19,20 @@ import {
   RobotOutlined,
   EyeOutlined,
   ExperimentOutlined,
-  BulbOutlined
+  BulbOutlined,
+  AppstoreOutlined,
+  LineChartOutlined,
+  ControlOutlined,
+  StarOutlined,
+  CommentOutlined,
+  SearchOutlined,
+  FundOutlined,
+  ApiOutlined,
+  SafetyOutlined,
+  FileTextOutlined,
+  AreaChartOutlined,
+  BranchesOutlined,
+  MonitorOutlined
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppSelector, useAppDispatch } from '../../hooks'
@@ -39,10 +52,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useAppDispatch()
-  
+
   const user = useAppSelector(selectUser)
   const isAdmin = useAppSelector(selectIsAdmin)
   const sidebarCollapsed = useAppSelector(selectSidebarCollapsed)
+
+  // Sidebar width state
+  const [sidebarWidth, setSidebarWidth] = useState(280)
+  const [isResizing, setIsResizing] = useState(false)
 
   const handleLogout = () => {
     dispatch(authActions.logout())
@@ -52,6 +69,46 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const toggleSidebar = () => {
     dispatch(uiActions.setSidebarCollapsed(!sidebarCollapsed))
   }
+
+  // Sidebar resize handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
+  }, [])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return
+
+    const newWidth = e.clientX
+    if (newWidth >= 200 && newWidth <= 400) {
+      setSidebarWidth(newWidth)
+    }
+  }, [isResizing])
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false)
+  }, [])
+
+  React.useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp])
 
   const userMenuItems = [
     {
@@ -79,60 +136,75 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   const getSelectedKeys = () => {
     const path = location.pathname
-    if (path === '/chat' || path === '/chat/') return ['chat']
+
+    // Main Interface
+    if (path === '/chat' || path === '/chat/') return ['chat-standard']
     if (path.startsWith('/chat/enhanced')) return ['chat-enhanced']
     if (path === '/chat/history') return ['chat-history']
-    if (path.startsWith('/chat/results')) return ['chat-results']
+    if (path === '/admin/business-intelligence') return ['business-intelligence']
+
+    // Data & Analytics
     if (path === '/admin' || path === '/admin/') return ['admin-dashboard']
-    if (path === '/admin/business-metadata') return ['admin-metadata']
+    if (path === '/admin/business-metadata') return ['admin-metadata-standard']
+    if (path === '/admin/business-metadata-enhanced') return ['admin-metadata-enhanced']
     if (path === '/admin/analytics') return ['admin-analytics']
+
+    // System Management
+    if (path === '/admin/performance') return ['admin-performance-metrics']
     if (path === '/admin/cost-management') return ['admin-cost']
-    if (path === '/admin/performance') return ['admin-performance']
-    if (path === '/admin/users') return ['admin-users']
-    if (path === '/admin/system-config') return ['admin-config']
     if (path === '/admin/ai-analytics') return ['admin-ai-analytics']
     if (path === '/admin/llm-management') return ['admin-llm-management']
+    if (path === '/admin/users') return ['admin-users']
+    if (path === '/admin/system-config') return ['admin-config']
 
-    // AI Transparency submenu items
+    // Advanced Features - AI Transparency
     if (path === '/admin/transparency-dashboard') return ['admin-ai-transparency-dashboard']
     if (path === '/admin/transparency-management') return ['admin-transparency-management']
     if (path === '/admin/transparency-review') return ['admin-transparency-review']
     if (path === '/admin/ai-transparency-analysis') return ['admin-ai-transparency-analysis']
 
-    // Template Analytics submenu items
+    // Advanced Features - Template Analytics
     if (path === '/admin/template-analytics/performance') return ['admin-template-performance']
     if (path === '/admin/template-analytics/ab-testing') return ['admin-template-ab-testing']
     if (path === '/admin/template-analytics/management') return ['admin-template-management']
     if (path === '/admin/template-analytics/analytics') return ['admin-template-advanced']
-    if (path === '/admin/template-analytics/reports') return ['admin-template-reports']
     if (path.startsWith('/admin/template-analytics')) return ['admin-template-analytics']
 
-    // Demo and test pages
-    if (path === '/admin/ai-transparency') return ['admin-ai-transparency']
-    if (path === '/admin/business-intelligence') return ['admin-business-intelligence']
-    if (path === '/admin/ai-management-demo') return ['admin-ai-management-demo']
-    if (path === '/admin/advanced-ai-features-demo') return ['admin-advanced-ai-features-demo']
-    if (path === '/admin/ai-integration-test') return ['admin-ai-integration-test']
     return []
   }
 
   const menuItems = [
+    // Main User Interface
     {
-      key: 'chat-section',
-      label: 'Chat & Queries',
+      key: 'main-section',
+      label: 'Main Interface',
       type: 'group',
+      icon: <AppstoreOutlined />,
     },
     {
       key: 'chat',
       icon: <MessageOutlined />,
-      label: 'Chat Interface',
-      onClick: () => navigate('/chat'),
+      label: 'AI Chat',
+      children: [
+        {
+          key: 'chat-standard',
+          icon: <CommentOutlined />,
+          label: 'Standard Chat',
+          onClick: () => navigate('/chat'),
+        },
+        {
+          key: 'chat-enhanced',
+          icon: <StarOutlined />,
+          label: 'Enhanced Chat',
+          onClick: () => navigate('/chat/enhanced'),
+        },
+      ],
     },
     {
-      key: 'chat-enhanced',
-      icon: <EyeOutlined />,
-      label: 'Enhanced Chat',
-      onClick: () => navigate('/chat/enhanced'),
+      key: 'business-intelligence',
+      icon: <BulbOutlined />,
+      label: 'Business Intelligence',
+      onClick: () => navigate('/admin/business-intelligence'),
     },
     {
       key: 'chat-history',
@@ -140,53 +212,84 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       label: 'Query History',
       onClick: () => navigate('/chat/history'),
     },
-    {
-      key: 'chat-results',
-      icon: <FileSearchOutlined />,
-      label: 'Query Results',
-      onClick: () => navigate('/chat/results'),
-    },
     ...(isAdmin ? [
+      // Data & Analytics
       {
-        key: 'admin-section',
-        label: 'Administration',
+        key: 'data-section',
+        label: 'Data & Analytics',
         type: 'group',
+        icon: <LineChartOutlined />,
       },
       {
         key: 'admin-dashboard',
         icon: <DashboardOutlined />,
-        label: 'Dashboard',
+        label: 'Admin Dashboard',
         onClick: () => navigate('/admin'),
       },
       {
         key: 'admin-metadata',
         icon: <DatabaseOutlined />,
         label: 'Business Metadata',
-        onClick: () => navigate('/admin/business-metadata'),
-      },
-      {
-        key: 'admin-metadata-enhanced',
-        icon: <DatabaseOutlined />,
-        label: 'Enhanced Metadata',
-        onClick: () => navigate('/admin/business-metadata-enhanced'),
+        children: [
+          {
+            key: 'admin-metadata-standard',
+            icon: <FileTextOutlined />,
+            label: 'Standard View',
+            onClick: () => navigate('/admin/business-metadata'),
+          },
+          {
+            key: 'admin-metadata-enhanced',
+            icon: <StarOutlined />,
+            label: 'Enhanced View',
+            onClick: () => navigate('/admin/business-metadata-enhanced'),
+          },
+        ],
       },
       {
         key: 'admin-analytics',
         icon: <BarChartOutlined />,
-        label: 'Analytics',
+        label: 'Analytics & Reports',
         onClick: () => navigate('/admin/analytics'),
       },
+      // System Management
       {
-        key: 'admin-cost',
-        icon: <DollarOutlined />,
-        label: 'Cost Management',
-        onClick: () => navigate('/admin/cost-management'),
+        key: 'system-section',
+        label: 'System Management',
+        type: 'group',
       },
       {
         key: 'admin-performance',
         icon: <ThunderboltOutlined />,
-        label: 'Performance',
-        onClick: () => navigate('/admin/performance'),
+        label: 'Performance & Cost',
+        children: [
+          {
+            key: 'admin-performance-metrics',
+            label: 'Performance Metrics',
+            onClick: () => navigate('/admin/performance'),
+          },
+          {
+            key: 'admin-cost',
+            label: 'Cost Management',
+            onClick: () => navigate('/admin/cost-management'),
+          },
+        ],
+      },
+      {
+        key: 'admin-ai-management',
+        icon: <RobotOutlined />,
+        label: 'AI Management',
+        children: [
+          {
+            key: 'admin-ai-analytics',
+            label: 'AI Analytics',
+            onClick: () => navigate('/admin/ai-analytics'),
+          },
+          {
+            key: 'admin-llm-management',
+            label: 'LLM Management',
+            onClick: () => navigate('/admin/llm-management'),
+          },
+        ],
       },
       {
         key: 'admin-users',
@@ -200,22 +303,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         label: 'System Config',
         onClick: () => navigate('/admin/system-config'),
       },
+      // Advanced Features
       {
-        key: 'ai-section',
-        label: 'AI Management',
+        key: 'advanced-section',
+        label: 'Advanced Features',
         type: 'group',
-      },
-      {
-        key: 'admin-ai-analytics',
-        icon: <RobotOutlined />,
-        label: 'AI Analytics',
-        onClick: () => navigate('/admin/ai-analytics'),
-      },
-      {
-        key: 'admin-llm-management',
-        icon: <SettingOutlined />,
-        label: 'LLM Management',
-        onClick: () => navigate('/admin/llm-management'),
       },
       {
         key: 'admin-ai-transparency',
@@ -269,36 +361,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             label: 'Advanced Analytics',
             onClick: () => navigate('/admin/template-analytics/analytics'),
           },
-          {
-            key: 'admin-template-reports',
-            label: 'Reports & Export',
-            onClick: () => navigate('/admin/template-analytics/reports'),
-          },
         ],
-      },
-      {
-        key: 'admin-business-intelligence',
-        icon: <BulbOutlined />,
-        label: 'Business Intelligence',
-        onClick: () => navigate('/admin/business-intelligence'),
-      },
-      {
-        key: 'admin-ai-management-demo',
-        icon: <ThunderboltOutlined />,
-        label: 'AI Management Demo',
-        onClick: () => navigate('/admin/ai-management-demo'),
-      },
-      {
-        key: 'admin-advanced-ai-features-demo',
-        icon: <RobotOutlined />,
-        label: 'Advanced AI Features',
-        onClick: () => navigate('/admin/advanced-ai-features-demo'),
-      },
-      {
-        key: 'admin-ai-integration-test',
-        icon: <ExperimentOutlined />,
-        label: 'AI Integration Test',
-        onClick: () => navigate('/admin/ai-integration-test'),
       },
     ] : []),
   ]
