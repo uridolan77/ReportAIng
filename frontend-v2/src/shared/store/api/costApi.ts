@@ -24,7 +24,7 @@ export const costApi = baseApi.injectEndpoints({
       endDate?: string
     }>({
       query: (params) => ({
-        url: '/cost-management/analytics',
+        url: '/ResourceManagement/cost/analytics',
         params,
       }),
       providesTags: ['CostAnalytics'],
@@ -37,7 +37,7 @@ export const costApi = baseApi.injectEndpoints({
       page?: number
     }>({
       query: (params) => ({
-        url: '/cost-management/history',
+        url: '/ResourceManagement/cost/history',
         params,
       }),
       providesTags: ['CostHistory'],
@@ -49,7 +49,7 @@ export const costApi = baseApi.injectEndpoints({
       endDate?: string
     }>({
       query: ({ dimension, ...params }) => ({
-        url: `/cost-management/breakdown/${dimension}`,
+        url: `/ResourceManagement/cost/breakdown/${dimension}`,
         params,
       }),
       providesTags: ['CostAnalytics'],
@@ -61,7 +61,7 @@ export const costApi = baseApi.injectEndpoints({
       periods?: number
     }>({
       query: (params) => ({
-        url: '/cost-management/trends',
+        url: '/ResourceManagement/cost/trends',
         params,
       }),
       providesTags: ['CostAnalytics'],
@@ -69,13 +69,13 @@ export const costApi = baseApi.injectEndpoints({
 
     // Budgets
     getBudgets: builder.query<BudgetsResponse, void>({
-      query: () => '/cost-management/budgets',
+      query: () => '/ResourceManagement/cost/budgets',
       providesTags: ['Budget'],
     }),
 
     createBudget: builder.mutation<BudgetResponse, CreateBudgetRequest>({
       query: (budget) => ({
-        url: '/cost-management/budgets',
+        url: '/ResourceManagement/cost/budgets',
         method: 'POST',
         body: budget,
       }),
@@ -87,7 +87,7 @@ export const costApi = baseApi.injectEndpoints({
       budget: UpdateBudgetRequest
     }>({
       query: ({ budgetId, budget }) => ({
-        url: `/cost-management/budgets/${budgetId}`,
+        url: `/ResourceManagement/cost/budgets/${budgetId}`,
         method: 'PUT',
         body: budget,
       }),
@@ -96,7 +96,7 @@ export const costApi = baseApi.injectEndpoints({
 
     deleteBudget: builder.mutation<void, string>({
       query: (budgetId) => ({
-        url: `/cost-management/budgets/${budgetId}`,
+        url: `/ResourceManagement/cost/budgets/${budgetId}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Budget'],
@@ -105,7 +105,7 @@ export const costApi = baseApi.injectEndpoints({
     // Predictions & Recommendations
     predictCost: builder.mutation<CostPredictionResponse, CostPredictionRequest>({
       query: (request) => ({
-        url: '/cost-management/predict',
+        url: '/ResourceManagement/cost/predict',
         method: 'POST',
         body: request,
       }),
@@ -113,13 +113,13 @@ export const costApi = baseApi.injectEndpoints({
 
     getCostForecast: builder.query<CostForecastResponse, { days?: number }>({
       query: (params) => ({
-        url: '/cost-management/forecast',
+        url: '/ResourceManagement/cost/forecast',
         params,
       }),
     }),
 
     getOptimizationRecommendations: builder.query<RecommendationsResponse, void>({
-      query: () => '/cost-management/recommendations',
+      query: () => '/ResourceManagement/cost/recommendations',
       providesTags: ['CostRecommendations'],
     }),
 
@@ -128,13 +128,13 @@ export const costApi = baseApi.injectEndpoints({
       endDate?: string
     }>({
       query: (params) => ({
-        url: '/cost-management/roi',
+        url: '/ResourceManagement/cost/roi',
         params,
       }),
     }),
 
     getRealTimeCostMetrics: builder.query<RealTimeMetricsResponse, void>({
-      query: () => '/cost-management/realtime',
+      query: () => '/ResourceManagement/cost/realtime',
       // Polling every 30 seconds for real-time data
       pollingInterval: 30000,
     }),

@@ -168,7 +168,7 @@ export const adminApi = baseApi.injectEndpoints({
     // Analytics endpoints
     getAnalytics: builder.query<any, AnalyticsRequest>({
       query: (params) => ({
-        url: '/admin/analytics',
+        url: '/User/admin/analytics',
         params
       }),
       providesTags: ['Analytics'],
@@ -182,7 +182,7 @@ export const adminApi = baseApi.injectEndpoints({
     // User Management
     getUsers: builder.query<{ users: User[]; total: number }, GetUsersRequest>({
       query: (params) => ({
-        url: '/admin/users',
+        url: '/User/admin/users',
         params
       }),
       providesTags: ['User'],
@@ -190,7 +190,7 @@ export const adminApi = baseApi.injectEndpoints({
 
     createUser: builder.mutation<User, CreateUserRequest>({
       query: (body) => ({
-        url: '/admin/users',
+        url: '/User/admin/users',
         method: 'POST',
         body,
       }),
@@ -199,7 +199,7 @@ export const adminApi = baseApi.injectEndpoints({
 
     updateUser: builder.mutation<User, UpdateUserRequest>({
       query: ({ id, ...body }) => ({
-        url: `/admin/users/${id}`,
+        url: `/User/admin/users/${id}`,
         method: 'PUT',
         body,
       }),
@@ -208,7 +208,7 @@ export const adminApi = baseApi.injectEndpoints({
 
     deleteUser: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({
-        url: `/admin/users/${id}`,
+        url: `/User/admin/users/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['User'],
