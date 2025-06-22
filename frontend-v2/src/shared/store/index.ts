@@ -20,6 +20,7 @@ import './api/featuresApi'
 import './api/tuningApi'
 import './api/costApi'
 import './api/performanceApi'
+import './api/transparencyApi'
 
 // Configure persistence for auth slice
 const authPersistConfig = {

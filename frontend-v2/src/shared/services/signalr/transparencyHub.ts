@@ -1,6 +1,6 @@
 import { HubConnectionBuilder, HubConnection, HubConnectionState } from '@microsoft/signalr'
 import { store } from '@shared/store'
-import { selectAuthToken } from '@shared/store/authSlice'
+import { selectAccessToken } from '@shared/store/auth'
 
 /**
  * TransparencyHubService - SignalR service for real-time transparency updates
@@ -27,7 +27,7 @@ class TransparencyHubService {
 
     try {
       const state = store.getState()
-      const token = selectAuthToken(state)
+      const token = selectAccessToken(state)
 
       if (!token) {
         throw new Error('No authentication token available')

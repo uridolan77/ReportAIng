@@ -23,13 +23,13 @@ import {
   ExperimentOutlined
 } from '@ant-design/icons'
 import { useGetAlternativeOptionsQuery } from '@shared/store/api/transparencyApi'
-import type { AlternativeOptionDto } from '@shared/types/ai'
+import type { AlternativeOption } from '@shared/types/ai'
 
 const { Title, Text, Paragraph } = Typography
 
 export interface AlternativeOptionsPanelProps {
   traceId: string
-  onSelectAlternative?: (option: AlternativeOptionDto) => void
+  onSelectAlternative?: (option: AlternativeOption) => void
   showDetailedAnalysis?: boolean
   compact?: boolean
   className?: string
@@ -80,13 +80,13 @@ export const AlternativeOptionsPanel: React.FC<AlternativeOptionsPanelProps> = (
   }
 
   // Handle option selection
-  const handleSelectOption = async (option: AlternativeOptionDto) => {
+  const handleSelectOption = async (option: AlternativeOption) => {
     if (applyingOption) return
 
-    setApplyingOption(option.optionId)
+    setApplyingOption(option.id)
     try {
       await onSelectAlternative?.(option)
-      setSelectedOption(option.optionId)
+      setSelectedOption(option.id)
     } catch (error) {
       console.error('Failed to apply alternative option:', error)
     } finally {
@@ -115,13 +115,13 @@ export const AlternativeOptionsPanel: React.FC<AlternativeOptionsPanelProps> = (
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
-      render: (description: string, record: AlternativeOptionDto) => (
+      render: (description: string, record: AlternativeOption) => (
         <div>
           <Text strong>{description}</Text>
-          {showDetailedAnalysis && record.rationale && (
+          {showDetailedAnalysis && record.reasoning && (
             <div style={{ marginTop: 4 }}>
               <Text type="secondary" style={{ fontSize: '12px' }}>
-                {record.rationale}
+                {record.reasoning}
               </Text>
             </div>
           )}
@@ -133,10 +133,10 @@ export const AlternativeOptionsPanel: React.FC<AlternativeOptionsPanelProps> = (
       dataIndex: 'score',
       key: 'score',
       width: 120,
-      sorter: (a: AlternativeOptionDto, b: AlternativeOptionDto) => a.score - b.score,
+      sorter: (a: AlternativeOption, b: AlternativeOption) => a.confidence - b.confidence,
       render: (score: number) => {
         const percentage = Math.round(score * 100)
-        const color = percentage >= 80 ? 'success' : percentage >= 60 ? 'warning' : 'exception'
+        const color = percentage >= 80 ? 'success' : percentage >= 60 ? 'normal' : 'exception'
         return (
           <div style={{ textAlign: 'center' }}>
             <Progress
@@ -151,16 +151,16 @@ export const AlternativeOptionsPanel: React.FC<AlternativeOptionsPanelProps> = (
       },
     },
     {
-      title: 'Improvement',
-      dataIndex: 'estimatedImprovement',
-      key: 'improvement',
+      title: 'Impact',
+      dataIndex: 'estimatedImpact',
+      key: 'impact',
       width: 120,
-      render: (improvement: number) => (
+      render: (impact: AlternativeOption['estimatedImpact']) => (
         <div style={{ textAlign: 'center' }}>
           <Badge
-            count={`+${improvement.toFixed(1)}%`}
-            style={{ 
-              backgroundColor: improvement > 10 ? '#52c41a' : improvement > 5 ? '#faad14' : '#1890ff' 
+            count={`+${impact.performance.toFixed(1)}%`}
+            style={{
+              backgroundColor: impact.performance > 10 ? '#52c41a' : impact.performance > 5 ? '#faad14' : '#1890ff'
             }}
           />
         </div>
@@ -170,9 +170,9 @@ export const AlternativeOptionsPanel: React.FC<AlternativeOptionsPanelProps> = (
       title: 'Action',
       key: 'action',
       width: 120,
-      render: (_: any, record: AlternativeOptionDto) => {
-        const isSelected = selectedOption === record.optionId
-        const isApplying = applyingOption === record.optionId
+      render: (_: any, record: AlternativeOption) => {
+        const isSelected = selectedOption === record.id
+        const isApplying = applyingOption === record.id
         
         return (
           <Space direction="vertical" size="small">
@@ -285,7 +285,7 @@ export const AlternativeOptionsPanel: React.FC<AlternativeOptionsPanelProps> = (
                 <strong>{alternatives.length}</strong> alternatives found
               </Text>
               <Text type="secondary">
-                Best improvement: <strong>+{Math.max(...alternatives.map(a => a.estimatedImprovement)).toFixed(1)}%</strong>
+                Best improvement: <strong>+{Math.max(...alternatives.map(a => a.estimatedImpact.performance)).toFixed(1)}%</strong>
               </Text>
               <Text type="secondary">
                 Avg score: <strong>{Math.round(alternatives.reduce((sum, a) => sum + a.score, 0) / alternatives.length * 100)}%</strong>
@@ -300,12 +300,12 @@ export const AlternativeOptionsPanel: React.FC<AlternativeOptionsPanelProps> = (
       <Table
         dataSource={sortedAlternatives}
         columns={columns}
-        rowKey="optionId"
+        rowKey="id"
         size={compact ? 'small' : 'middle'}
         pagination={false}
         scroll={{ x: 600 }}
-        rowClassName={(record) => 
-          selectedOption === record.optionId ? 'ant-table-row-selected' : ''
+        rowClassName={(record) =>
+          selectedOption === record.id ? 'ant-table-row-selected' : ''
         }
       />
 

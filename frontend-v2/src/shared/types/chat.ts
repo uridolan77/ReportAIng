@@ -228,6 +228,7 @@ export interface ChatState {
   
   // UI state
   isTyping: boolean
+  isLoading: boolean
   isConnected: boolean
   streamingProgress: StreamingProgress | null
   

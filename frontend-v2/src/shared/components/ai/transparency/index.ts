@@ -13,6 +13,23 @@ export type { ConfidenceBreakdownChartProps } from './ConfidenceBreakdownChart'
 export { default as AIDecisionExplainer } from './AIDecisionExplainer'
 export type { AIDecisionExplainerProps } from './AIDecisionExplainer'
 
+// New transparency components
+export { default as AlternativeOptionsPanel } from './AlternativeOptionsPanel'
+export type { AlternativeOptionsPanelProps } from './AlternativeOptionsPanel'
+
+export { default as LiveTransparencyPanel } from './LiveTransparencyPanel'
+export type { LiveTransparencyPanelProps } from './LiveTransparencyPanel'
+
+export { default as TransparencyExportPanel } from './TransparencyExportPanel'
+export type { TransparencyExportPanelProps } from './TransparencyExportPanel'
+
+// Advanced analytics with D3.js
+export { default as ConfidenceTrendsChart } from './ConfidenceTrendsChart'
+export type { ConfidenceTrendsChartProps } from './ConfidenceTrendsChart'
+
+export { default as TokenUsageChart } from './TokenUsageChart'
+export type { TokenUsageChartProps } from './TokenUsageChart'
+
 // Query Flow Analysis Components
 export { default as QueryFlowAnalyzer } from './QueryFlowAnalyzer'
 export type { QueryFlowAnalyzerProps } from './QueryFlowAnalyzer'

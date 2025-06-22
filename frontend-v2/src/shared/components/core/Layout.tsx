@@ -199,7 +199,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           {
             key: 'admin-ai-transparency-dashboard',
             label: 'Dashboard',
-            onClick: () => navigate('/admin/ai-transparency'),
+            onClick: () => navigate('/admin/transparency-dashboard'),
           },
           {
             key: 'admin-transparency-management',

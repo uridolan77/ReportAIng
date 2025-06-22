@@ -30,6 +30,7 @@ const initialState: ChatState = {
   currentConversation: null,
   messages: [],
   isTyping: false,
+  isLoading: false,
   isConnected: false,
   streamingProgress: null,
   inputValue: '',
@@ -169,6 +170,10 @@ export const chatSlice = createSlice({
       state.isTyping = action.payload
     },
 
+    setIsLoading: (state, action: PayloadAction<boolean>) => {
+      state.isLoading = action.payload
+    },
+
     setIsConnected: (state, action: PayloadAction<boolean>) => {
       state.isConnected = action.payload
       if (action.payload) {
@@ -243,6 +248,7 @@ export const selectChat = (state: RootState) => state.chat
 export const selectCurrentConversation = (state: RootState) => state.chat.currentConversation
 export const selectMessages = (state: RootState) => state.chat.messages
 export const selectIsTyping = (state: RootState) => state.chat.isTyping
+export const selectIsLoading = (state: RootState) => state.chat.isLoading
 export const selectIsConnected = (state: RootState) => state.chat.isConnected
 export const selectStreamingProgress = (state: RootState) => state.chat.streamingProgress
 export const selectInputValue = (state: RootState) => state.chat.inputValue
