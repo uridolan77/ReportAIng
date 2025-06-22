@@ -6,6 +6,72 @@ USE [BIReportingCopilot_Dev]
 GO
 
 -- =====================================================================================
+-- 0. FIX QUERYHISTORY TABLE SCHEMA MISMATCH
+-- =====================================================================================
+
+-- Add missing columns to QueryHistory table to match Entity Framework model
+IF EXISTS (SELECT * FROM sysobjects WHERE name='QueryHistory' AND xtype='U')
+BEGIN
+    -- Add Classification column if it doesn't exist
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('QueryHistory') AND name = 'Classification')
+    BEGIN
+        ALTER TABLE [dbo].[QueryHistory] ADD [Classification] nvarchar(100) NULL
+        PRINT 'Added Classification column to QueryHistory'
+    END
+
+    -- Add CreatedAt column if it doesn't exist
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('QueryHistory') AND name = 'CreatedAt')
+    BEGIN
+        ALTER TABLE [dbo].[QueryHistory] ADD [CreatedAt] datetime2(7) NULL
+        PRINT 'Added CreatedAt column to QueryHistory'
+    END
+
+    -- Add Explanation column if it doesn't exist
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('QueryHistory') AND name = 'Explanation')
+    BEGIN
+        ALTER TABLE [dbo].[QueryHistory] ADD [Explanation] nvarchar(max) NULL
+        PRINT 'Added Explanation column to QueryHistory'
+    END
+
+    -- Add Metadata column if it doesn't exist
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('QueryHistory') AND name = 'Metadata')
+    BEGIN
+        ALTER TABLE [dbo].[QueryHistory] ADD [Metadata] nvarchar(max) NULL
+        PRINT 'Added Metadata column to QueryHistory'
+    END
+
+    -- Add OriginalQuery column if it doesn't exist
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('QueryHistory') AND name = 'OriginalQuery')
+    BEGIN
+        ALTER TABLE [dbo].[QueryHistory] ADD [OriginalQuery] nvarchar(2000) NULL
+        PRINT 'Added OriginalQuery column to QueryHistory'
+    END
+
+    -- Add ResultData column if it doesn't exist
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('QueryHistory') AND name = 'ResultData')
+    BEGIN
+        ALTER TABLE [dbo].[QueryHistory] ADD [ResultData] nvarchar(max) NULL
+        PRINT 'Added ResultData column to QueryHistory'
+    END
+
+    -- Add Status column if it doesn't exist
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('QueryHistory') AND name = 'Status')
+    BEGIN
+        ALTER TABLE [dbo].[QueryHistory] ADD [Status] nvarchar(50) NULL
+        PRINT 'Added Status column to QueryHistory'
+    END
+
+    -- Add UpdatedAt column if it doesn't exist
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('QueryHistory') AND name = 'UpdatedAt')
+    BEGIN
+        ALTER TABLE [dbo].[QueryHistory] ADD [UpdatedAt] datetime2(7) NULL
+        PRINT 'Added UpdatedAt column to QueryHistory'
+    END
+
+    PRINT 'QueryHistory table schema updated successfully!'
+END
+
+-- =====================================================================================
 -- 1. PROMPT SUCCESS TRACKING TABLES
 -- =====================================================================================
 

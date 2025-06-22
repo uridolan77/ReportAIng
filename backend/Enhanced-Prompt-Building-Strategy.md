@@ -343,8 +343,502 @@ public interface IInteractivePromptBuilder
 3. **Adoption Risk**: Provide clear onboarding and gradual feature introduction
 4. **Quality Risk**: Implement comprehensive testing and user feedback loops
 
+## Process Improvements Beyond Transparency
+
+### Critical Process Issues Identified
+
+#### 1. Business Context Analysis Limitations
+
+**Current Issues:**
+- **Hardcoded Intent Classification**: Uses simple prompt-based classification with hardcoded fallbacks
+- **Weak Entity Extraction**: Basic keyword matching without sophisticated NLP
+- **Domain Detection Gaps**: Limited to gaming domain with hardcoded fallbacks
+- **No Confidence Validation**: No validation of AI-generated analysis results
+- **Missing Contextual Learning**: No learning from user corrections or feedback
+
+**Improvement Opportunities:**
+```csharp
+// Current: Simple prompt-based classification
+var prompt = $@"Classify the following business question into one of these intent types:
+- Analytical: Complex analysis requiring aggregations, calculations
+...
+Question: {userQuestion}";
+
+// Improved: Multi-model ensemble with confidence validation
+public async Task<QueryIntent> ClassifyBusinessIntentAsync(string userQuestion)
+{
+    var results = await Task.WhenAll(
+        _primaryClassifier.ClassifyAsync(userQuestion),
+        _fallbackClassifier.ClassifyAsync(userQuestion),
+        _patternMatcher.MatchIntentAsync(userQuestion)
+    );
+
+    return _ensembleAggregator.CombineResults(results);
+}
+```
+
+#### 2. Semantic Matching Weaknesses
+
+**Current Issues:**
+- **Mock Implementations**: Many semantic similarity calculations return hardcoded values (0.5)
+- **Fixed Thresholds**: Hard-coded similarity threshold of 0.3 for all contexts
+- **Limited Vector Search**: Placeholder implementations for vector embeddings
+- **No Context-Aware Scoring**: Same scoring weights for all query types
+- **Missing Semantic Caching**: No caching of expensive embedding calculations
+
+**Improvement Opportunities:**
+```csharp
+// Current: Fixed threshold and mock similarity
+if (similarity > 0.3) // Fixed threshold
+{
+    scoredTables.Add((table, similarity));
+}
+
+// Improved: Dynamic thresholds and context-aware scoring
+var threshold = _thresholdOptimizer.GetOptimalThreshold(profile.Intent.Type, profile.Domain);
+var contextAwareScore = _scoringEngine.CalculateContextualRelevance(
+    similarity, table, profile, _userFeedbackHistory);
+
+if (contextAwareScore > threshold)
+{
+    scoredTables.Add((table, contextAwareScore));
+}
+```
+
+#### 3. Template Selection Inefficiencies
+
+**Current Issues:**
+- **Fallback-Heavy Logic**: Extensive fallback chains indicate unreliable primary selection
+- **Limited Template Variety**: Only 7 intent-based templates
+- **No Dynamic Templates**: Templates are static, not adapted to context
+- **Missing A/B Testing**: No optimization of template effectiveness
+- **No User Pattern Learning**: Templates don't adapt to user preferences
+
+#### 4. Context Assembly Problems
+
+**Current Issues:**
+- **Context Bloat Risk**: No intelligent filtering of context sections
+- **Fixed Section Order**: Same prompt structure for all query types
+- **No Token Management**: No consideration of token limits or costs
+- **Missing Relevance Ranking**: All context treated equally
+- **No Progressive Enhancement**: Cannot build context incrementally
+
+#### 5. Performance and Scalability Issues
+
+**Current Issues:**
+- **Synchronous Processing**: Sequential context building steps
+- **Cache Misses**: Limited caching strategy for expensive operations
+- **No Batch Processing**: Individual processing for each component
+- **Missing Performance Monitoring**: No real-time performance tracking
+- **No Load Balancing**: Single-threaded processing bottlenecks
+
+### Enhanced Process Architecture
+
+#### 1. Intelligent Business Context Analysis
+
+**Multi-Model Intent Classification**
+```csharp
+public class EnhancedBusinessContextAnalyzer
+{
+    private readonly IIntentClassificationEnsemble _intentEnsemble;
+    private readonly IEntityExtractionPipeline _entityPipeline;
+    private readonly IDomainDetectionService _domainDetector;
+    private readonly IConfidenceValidator _confidenceValidator;
+    private readonly IUserFeedbackLearner _feedbackLearner;
+
+    public async Task<BusinessContextProfile> AnalyzeUserQuestionAsync(string userQuestion, string userId)
+    {
+        // Parallel multi-model analysis
+        var analysisTask = Task.WhenAll(
+            _intentEnsemble.ClassifyWithConfidenceAsync(userQuestion),
+            _entityPipeline.ExtractEntitiesAsync(userQuestion),
+            _domainDetector.DetectDomainAsync(userQuestion),
+            _feedbackLearner.GetUserPatternsAsync(userId)
+        );
+
+        var (intent, entities, domain, userPatterns) = await analysisTask;
+
+        // Validate and enhance results
+        var profile = new BusinessContextProfile
+        {
+            Intent = await _confidenceValidator.ValidateIntentAsync(intent, userQuestion),
+            Entities = await _confidenceValidator.ValidateEntitiesAsync(entities, userQuestion),
+            Domain = await _confidenceValidator.ValidateDomainAsync(domain, userQuestion),
+            UserPatterns = userPatterns
+        };
+
+        // Learn from this analysis for future improvements
+        await _feedbackLearner.RecordAnalysisAsync(profile, userQuestion, userId);
+
+        return profile;
+    }
+}
+```
+
+**Advanced Entity Extraction Pipeline**
+```csharp
+public class EntityExtractionPipeline
+{
+    private readonly INamedEntityRecognizer _nerModel;
+    private readonly IBusinessTermMatcher _termMatcher;
+    private readonly ISemanticEntityLinker _entityLinker;
+    private readonly IEntityConfidenceScorer _confidenceScorer;
+
+    public async Task<List<BusinessEntity>> ExtractEntitiesAsync(string userQuestion)
+    {
+        // Multi-stage entity extraction
+        var nerEntities = await _nerModel.ExtractAsync(userQuestion);
+        var businessTerms = await _termMatcher.MatchTermsAsync(userQuestion);
+        var linkedEntities = await _entityLinker.LinkToSchemaAsync(nerEntities, businessTerms);
+
+        // Score and rank entities
+        var scoredEntities = await _confidenceScorer.ScoreEntitiesAsync(linkedEntities, userQuestion);
+
+        return scoredEntities.Where(e => e.ConfidenceScore > 0.7).ToList();
+    }
+}
+```
+
+#### 2. Advanced Semantic Matching Engine
+
+**Context-Aware Relevance Scoring**
+```csharp
+public class AdvancedSemanticMatchingService
+{
+    private readonly IVectorEmbeddingService _embeddingService;
+    private readonly IContextualScoringEngine _scoringEngine;
+    private readonly IThresholdOptimizer _thresholdOptimizer;
+    private readonly ISemanticCache _semanticCache;
+
+    public async Task<List<BusinessTableInfoDto>> SemanticTableSearchAsync(
+        string query,
+        BusinessContextProfile profile,
+        int topK = 5)
+    {
+        // Check semantic cache first
+        var cacheKey = GenerateSemanticCacheKey(query, profile);
+        if (await _semanticCache.TryGetAsync(cacheKey, out var cachedResults))
+        {
+            return cachedResults;
+        }
+
+        // Generate query embedding
+        var queryEmbedding = await _embeddingService.GenerateEmbeddingAsync(query);
+
+        // Get all table embeddings (cached)
+        var tableEmbeddings = await GetCachedTableEmbeddingsAsync();
+
+        // Calculate contextual similarities in parallel
+        var similarities = await CalculateContextualSimilaritiesAsync(
+            queryEmbedding, tableEmbeddings, profile);
+
+        // Apply dynamic threshold
+        var threshold = await _thresholdOptimizer.GetOptimalThresholdAsync(profile);
+
+        // Filter and rank results
+        var results = similarities
+            .Where(s => s.Score > threshold)
+            .OrderByDescending(s => s.Score)
+            .Take(topK)
+            .Select(s => s.Table)
+            .ToList();
+
+        // Cache results
+        await _semanticCache.SetAsync(cacheKey, results, TimeSpan.FromHours(1));
+
+        return results;
+    }
+
+    private async Task<List<(BusinessTableInfoDto Table, double Score)>> CalculateContextualSimilaritiesAsync(
+        float[] queryEmbedding,
+        Dictionary<long, float[]> tableEmbeddings,
+        BusinessContextProfile profile)
+    {
+        var tasks = tableEmbeddings.Select(async kvp =>
+        {
+            var table = await GetTableByIdAsync(kvp.Key);
+            var baseScore = CalculateCosineSimilarity(queryEmbedding, kvp.Value);
+
+            // Apply contextual adjustments
+            var contextualScore = await _scoringEngine.ApplyContextualAdjustmentsAsync(
+                baseScore, table, profile);
+
+            return (table, contextualScore);
+        });
+
+        return await Task.WhenAll(tasks);
+    }
+}
+```
+
+**Dynamic Threshold Optimization**
+```csharp
+public class ThresholdOptimizer
+{
+    private readonly IUserFeedbackRepository _feedbackRepo;
+    private readonly IPerformanceMetricsService _metricsService;
+
+    public async Task<double> GetOptimalThresholdAsync(BusinessContextProfile profile)
+    {
+        // Get historical performance data
+        var historicalData = await _feedbackRepo.GetThresholdPerformanceAsync(
+            profile.Intent.Type, profile.Domain.Name);
+
+        // Calculate optimal threshold based on precision/recall trade-off
+        var optimalThreshold = CalculateOptimalThreshold(historicalData);
+
+        // Apply domain-specific adjustments
+        return ApplyDomainAdjustments(optimalThreshold, profile.Domain);
+    }
+
+    private double CalculateOptimalThreshold(List<ThresholdPerformanceData> data)
+    {
+        // Find threshold that maximizes F1 score
+        return data
+            .GroupBy(d => Math.Round(d.Threshold, 2))
+            .Select(g => new
+            {
+                Threshold = g.Key,
+                F1Score = CalculateF1Score(g.ToList())
+            })
+            .OrderByDescending(x => x.F1Score)
+            .First()
+            .Threshold;
+    }
+}
+```
+
+#### 3. Intelligent Template Selection and Generation
+
+**Dynamic Template Engine**
+```csharp
+public class DynamicTemplateEngine
+{
+    private readonly ITemplateRepository _templateRepo;
+    private readonly ITemplateGenerator _templateGenerator;
+    private readonly ITemplateOptimizer _templateOptimizer;
+    private readonly IUserPreferenceService _userPreferences;
+
+    public async Task<PromptTemplate> SelectOptimalTemplateAsync(
+        BusinessContextProfile profile,
+        string userId)
+    {
+        // Get user preferences and patterns
+        var userPrefs = await _userPreferences.GetUserPreferencesAsync(userId);
+
+        // Find candidate templates
+        var candidates = await FindCandidateTemplatesAsync(profile, userPrefs);
+
+        // If no good candidates, generate dynamic template
+        if (!candidates.Any() || candidates.Max(c => c.RelevanceScore) < 0.8)
+        {
+            return await _templateGenerator.GenerateDynamicTemplateAsync(profile, userPrefs);
+        }
+
+        // Select best template and optimize it
+        var bestTemplate = candidates.OrderByDescending(c => c.RelevanceScore).First();
+        return await _templateOptimizer.OptimizeTemplateAsync(bestTemplate, profile);
+    }
+
+    private async Task<PromptTemplate> GenerateDynamicTemplateAsync(
+        BusinessContextProfile profile,
+        UserPromptPreferences userPrefs)
+    {
+        var templateBuilder = new StringBuilder();
+
+        // Build template based on intent and user preferences
+        templateBuilder.AppendLine(GetSystemPromptForIntent(profile.Intent.Type));
+
+        if (userPrefs.IncludeBusinessContext)
+        {
+            templateBuilder.AppendLine("## Business Context");
+            templateBuilder.AppendLine("{business_context}");
+        }
+
+        if (userPrefs.VerbosityLevel == VerbosityLevel.Detailed)
+        {
+            templateBuilder.AppendLine("## Detailed Schema Information");
+            templateBuilder.AppendLine("{detailed_schema}");
+        }
+        else
+        {
+            templateBuilder.AppendLine("## Schema Context");
+            templateBuilder.AppendLine("{schema_context}");
+        }
+
+        // Add intent-specific sections
+        AddIntentSpecificSections(templateBuilder, profile.Intent.Type, userPrefs);
+
+        return new PromptTemplate
+        {
+            Name = $"Dynamic_{profile.Intent.Type}_{DateTime.UtcNow:yyyyMMdd}",
+            Content = templateBuilder.ToString(),
+            Category = "dynamic",
+            Metadata = new Dictionary<string, object>
+            {
+                ["generated_for_intent"] = profile.Intent.Type,
+                ["user_preferences"] = userPrefs,
+                ["generation_timestamp"] = DateTime.UtcNow
+            }
+        };
+    }
+}
+```
+
+#### 4. Smart Context Assembly Engine
+
+**Progressive Context Building**
+```csharp
+public class SmartContextAssemblyEngine
+{
+    private readonly ITokenCounter _tokenCounter;
+    private readonly IContextPrioritizer _contextPrioritizer;
+    private readonly IContextOptimizer _contextOptimizer;
+
+    public async Task<string> BuildOptimalPromptAsync(
+        string userQuestion,
+        BusinessContextProfile profile,
+        ContextualBusinessSchema schema,
+        PromptTemplate template,
+        int maxTokens = 4000)
+    {
+        // Start with base template
+        var promptBuilder = new PromptBuilder(template.Content);
+
+        // Add essential context first
+        await AddEssentialContextAsync(promptBuilder, userQuestion, profile);
+
+        // Calculate remaining token budget
+        var currentTokens = _tokenCounter.CountTokens(promptBuilder.ToString());
+        var remainingTokens = maxTokens - currentTokens - 500; // Reserve for response
+
+        // Prioritize and add additional context within budget
+        var contextSections = await _contextPrioritizer.PrioritizeContextSectionsAsync(
+            schema, profile, remainingTokens);
+
+        foreach (var section in contextSections)
+        {
+            var sectionTokens = _tokenCounter.CountTokens(section.Content);
+            if (currentTokens + sectionTokens <= maxTokens - 500)
+            {
+                promptBuilder.AddSection(section);
+                currentTokens += sectionTokens;
+            }
+            else
+            {
+                // Try to compress or summarize the section
+                var compressedSection = await _contextOptimizer.CompressSectionAsync(
+                    section, maxTokens - 500 - currentTokens);
+                if (compressedSection != null)
+                {
+                    promptBuilder.AddSection(compressedSection);
+                    currentTokens += _tokenCounter.CountTokens(compressedSection.Content);
+                }
+            }
+        }
+
+        return promptBuilder.ToString();
+    }
+}
+```
+
+**Context Prioritization Algorithm**
+```csharp
+public class ContextPrioritizer
+{
+    public async Task<List<ContextSection>> PrioritizeContextSectionsAsync(
+        ContextualBusinessSchema schema,
+        BusinessContextProfile profile,
+        int tokenBudget)
+    {
+        var sections = new List<ContextSection>();
+
+        // Create all possible context sections
+        sections.AddRange(await CreateTableContextSectionsAsync(schema.RelevantTables));
+        sections.AddRange(await CreateColumnContextSectionsAsync(schema.TableColumns));
+        sections.AddRange(await CreateBusinessRuleSectionsAsync(schema.BusinessRules));
+        sections.AddRange(await CreateExampleSectionsAsync(profile));
+        sections.AddRange(await CreateGlossarySectionsAsync(schema.RelevantGlossaryTerms));
+
+        // Score each section for relevance and importance
+        foreach (var section in sections)
+        {
+            section.RelevanceScore = await CalculateSectionRelevanceAsync(section, profile);
+            section.ImportanceScore = await CalculateSectionImportanceAsync(section, profile.Intent);
+            section.TokenCost = _tokenCounter.CountTokens(section.Content);
+            section.EfficiencyScore = (section.RelevanceScore * section.ImportanceScore) / section.TokenCost;
+        }
+
+        // Use knapsack algorithm to optimize context selection within token budget
+        return SolveContextKnapsackProblem(sections, tokenBudget);
+    }
+
+    private List<ContextSection> SolveContextKnapsackProblem(
+        List<ContextSection> sections,
+        int tokenBudget)
+    {
+        // Dynamic programming solution for optimal context selection
+        var n = sections.Count;
+        var dp = new double[n + 1, tokenBudget + 1];
+        var selected = new bool[n + 1, tokenBudget + 1];
+
+        // Fill DP table
+        for (int i = 1; i <= n; i++)
+        {
+            for (int w = 1; w <= tokenBudget; w++)
+            {
+                var section = sections[i - 1];
+                if (section.TokenCost <= w)
+                {
+                    var includeValue = section.EfficiencyScore + dp[i - 1, w - section.TokenCost];
+                    var excludeValue = dp[i - 1, w];
+
+                    if (includeValue > excludeValue)
+                    {
+                        dp[i, w] = includeValue;
+                        selected[i, w] = true;
+                    }
+                    else
+                    {
+                        dp[i, w] = excludeValue;
+                    }
+                }
+                else
+                {
+                    dp[i, w] = dp[i - 1, w];
+                }
+            }
+        }
+
+        // Backtrack to find selected sections
+        var result = new List<ContextSection>();
+        int currentWeight = tokenBudget;
+        for (int i = n; i > 0 && currentWeight > 0; i--)
+        {
+            if (selected[i, currentWeight])
+            {
+                result.Add(sections[i - 1]);
+                currentWeight -= sections[i - 1].TokenCost;
+            }
+        }
+
+        return result.OrderByDescending(s => s.ImportanceScore).ToList();
+    }
+}
+```
+
 ### Conclusion
 
 This enhanced prompt building strategy transforms the current black-box system into a transparent, user-controlled, and highly customizable solution. By implementing these improvements in phases, we can significantly enhance user trust, control, and satisfaction while maintaining system performance and reliability.
 
 The strategic plan balances immediate transparency needs with long-term advanced features, ensuring users gain visibility and control over the prompt building process while preserving the sophisticated business context intelligence that makes the system effective.
+
+**Key Process Improvements:**
+1. **Multi-model ensemble** for more accurate business context analysis
+2. **Dynamic threshold optimization** based on user feedback and performance data
+3. **Intelligent template generation** that adapts to user preferences and context
+4. **Smart context assembly** with token budget optimization and relevance prioritization
+5. **Progressive enhancement** capabilities for incremental context building
+6. **Performance monitoring** and optimization at every stage
+
+These enhancements address the core limitations of the current implementation while maintaining backward compatibility and ensuring scalable performance.

@@ -8,5 +8,5 @@ namespace BIReportingCopilot.Infrastructure.Interfaces;
 public interface IUserRepository : BIReportingCopilot.Core.Interfaces.Repository.IUserRepository
 {
     // Infrastructure-specific user operations
-    Task DeleteAsync(string id, CancellationToken cancellationToken = default);
+    new Task DeleteAsync(string id, CancellationToken cancellationToken = default);
 }

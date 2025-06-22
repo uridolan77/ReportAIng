@@ -70,7 +70,7 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
             TableColumns = tableColumns,
             RelevantGlossaryTerms = glossaryTerms,
             BusinessRules = businessRules,
-            Relationships = relationships,
+            TableRelationships = relationships,
             RelevanceScore = relevanceScore,
             Complexity = complexity,
             SuggestedIndexes = GenerateIndexSuggestions(relevantTables, profile),

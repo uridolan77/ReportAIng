@@ -42,6 +42,7 @@ public class BusinessTableInfoDto
     public decimal ImportanceScore { get; set; }
     public decimal UsageFrequency { get; set; }
     public decimal SemanticCoverageScore { get; set; }
+    public double RelevanceScore { get; set; }
     public DateTime? LastAnalyzed { get; set; }
     public string BusinessOwner { get; set; } = string.Empty;
 }
@@ -51,18 +52,21 @@ public class BusinessTableInfoDto
 /// </summary>
 public class BusinessColumnInfo
 {
+    public long Id { get; set; }
     public string ColumnName { get; set; } = string.Empty;
     public string DataType { get; set; } = string.Empty;
     public string BusinessName { get; set; } = string.Empty;
     public string BusinessMeaning { get; set; } = string.Empty; // Added missing property
     public string BusinessPurpose { get; set; } = string.Empty;
     public string BusinessContext { get; set; } = string.Empty;
+    public string SemanticContext { get; set; } = string.Empty; // Added missing property
     public List<string> SampleValues { get; set; } = new();
     public List<string> DataExamples { get; set; } = new(); // Added missing property
     public bool IsKey { get; set; }
     public bool IsKeyColumn { get; set; } // Added missing property
     public bool IsRequired { get; set; }
     public string? ValidationRules { get; set; }
+    public double RelevanceScore { get; set; }
 }
 
 /// <summary>

@@ -28,6 +28,7 @@ public class BusinessGlossaryDto
     public string RegulationReferences { get; set; } = string.Empty;
     public double ConfidenceScore { get; set; } = 1.0;
     public double AmbiguityScore { get; set; } = 0.0;
+    public double RelevanceScore { get; set; } = 0.5;
     public string ContextualVariations { get; set; } = string.Empty;
 
     public bool IsActive { get; set; } = true;

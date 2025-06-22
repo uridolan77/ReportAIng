@@ -11,7 +11,8 @@ public class ContextualBusinessSchema
     public Dictionary<long, List<BusinessColumnInfo>> TableColumns { get; set; } = new();
     public List<BusinessGlossaryDto> RelevantGlossaryTerms { get; set; } = new();
     public List<BusinessRule> BusinessRules { get; set; } = new();
-    public List<TableRelationship> Relationships { get; set; } = new();
+    public List<TableRelationship> TableRelationships { get; set; } = new();
+    public List<RelevantQueryExample> RelevantExamples { get; set; } = new();
     public Dictionary<string, string> SemanticMappings { get; set; } = new();
     public double RelevanceScore { get; set; }
     public SchemaComplexity Complexity { get; set; }
@@ -32,6 +33,7 @@ public class BusinessRule
     public string SqlExpression { get; set; } = string.Empty;
     public List<string> AffectedColumns { get; set; } = new();
     public int Priority { get; set; }
+    public double RelevanceScore { get; set; }
 }
 
 /// <summary>

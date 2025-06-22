@@ -7,6 +7,7 @@ namespace BIReportingCopilot.Core.Models.BusinessContext;
 /// </summary>
 public class BusinessContextProfile
 {
+    public string AnalysisId { get; set; } = Guid.NewGuid().ToString();
     public string OriginalQuestion { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
     public QueryIntent Intent { get; set; } = new();
@@ -17,12 +18,13 @@ public class BusinessContextProfile
     public double ConfidenceScore { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public Dictionary<string, object> Metadata { get; set; } = new();
-    
+
     // Additional context for enhanced analysis
     public List<string> IdentifiedMetrics { get; set; } = new();
     public List<string> IdentifiedDimensions { get; set; } = new();
     public TimeRange? TimeContext { get; set; }
     public List<string> ComparisonTerms { get; set; } = new();
+    public Dictionary<string, object> UserPatterns { get; set; } = new();
 }
 
 /// <summary>
@@ -34,6 +36,8 @@ public class QueryIntent
     public string Description { get; set; } = string.Empty;
     public double ConfidenceScore { get; set; }
     public List<string> SubIntents { get; set; } = new();
+    public List<string> Keywords { get; set; } = new();
+    public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
 /// <summary>
@@ -61,6 +65,7 @@ public class BusinessDomain
     public List<string> RelatedTables { get; set; } = new();
     public List<string> KeyConcepts { get; set; } = new();
     public double RelevanceScore { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
 /// <summary>
@@ -75,6 +80,9 @@ public class BusinessEntity
     public string MappedColumnName { get; set; } = string.Empty;
     public double ConfidenceScore { get; set; }
     public Dictionary<string, object> Properties { get; set; } = new();
+    public Dictionary<string, object> Metadata { get; set; } = new();
+    public string ExtractionMethod { get; set; } = string.Empty;
+    public int Position { get; set; }
 }
 
 /// <summary>
