@@ -133,7 +133,13 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
             var table = await _businessTableService.GetBusinessTableAsync(tableId);
             if (table?.Columns != null)
             {
-                allColumns.AddRange(table.Columns);
+                allColumns.AddRange(table.Columns.Select(c => new BusinessColumnInfo
+                {
+                    ColumnName = c.ColumnName,
+                    BusinessMeaning = c.BusinessMeaning,
+                    BusinessContext = c.BusinessContext,
+                    IsKeyColumn = c.IsKeyColumn
+                }));
             }
         }
 

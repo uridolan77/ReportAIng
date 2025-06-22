@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCAPB Admin - Template Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet">
+    <style>
+        .template-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #007bff;
+        }
+        .template-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .performance-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .template-content {
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        .search-filters {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .template-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-active { background-color: #28a745; }
+        .status-inactive { background-color: #dc3545; }
+        .status-testing { background-color: #ffc107; }
+        .modal-lg { max-width: 90%; }
+        .code-editor {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-cogs me-2"></i>BCAPB Admin - Template Management
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="admin-dashboard.html">
+                    <i class="fas fa-chart-line me-1"></i>Dashboard
+                </a>
+                <a class="nav-link active" href="admin-template-management.html">
+                    <i class="fas fa-file-code me-1"></i>Templates
+                </a>
+                <a class="nav-link" href="admin-analytics.html">
+                    <i class="fas fa-analytics me-1"></i>Analytics
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Metrics Overview -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value" id="totalTemplates">-</div>
+                <div class="metric-label">Total Templates</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="activeTemplates">-</div>
+                <div class="metric-label">Active Templates</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="avgSuccessRate">-</div>
+                <div class="metric-label">Avg Success Rate</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="templatesNeedingReview">-</div>
+                <div class="metric-label">Need Review</div>
+            </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="search-filters">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="searchTemplates" class="form-label">Search Templates</label>
+                    <input type="text" class="form-control" id="searchTemplates" placeholder="Search by name, key, or content...">
+                </div>
+                <div class="col-md-2">
+                    <label for="filterIntent" class="form-label">Intent Type</label>
+                    <select class="form-select" id="filterIntent">
+                        <option value="">All Intents</option>
+                        <option value="Analytical">Analytical</option>
+                        <option value="Comparison">Comparison</option>
+                        <option value="Trend">Trend</option>
+                        <option value="Detail">Detail</option>
+                        <option value="Operational">Operational</option>
+                        <option value="Exploratory">Exploratory</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filterStatus" class="form-label">Status</label>
+                    <select class="form-select" id="filterStatus">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="testing">Testing</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filterPerformance" class="form-label">Performance</label>
+                    <select class="form-select" id="filterPerformance">
+                        <option value="">All Performance</option>
+                        <option value="excellent">Excellent (>90%)</option>
+                        <option value="good">Good (70-90%)</option>
+                        <option value="poor">Poor (<70%)</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" onclick="applyFilters()">
+                            <i class="fas fa-search"></i> Filter
+                        </button>
+                        <button class="btn btn-success" onclick="showCreateTemplateModal()">
+                            <i class="fas fa-plus"></i> New
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Templates Grid -->
+        <div class="row" id="templatesContainer">
+            <!-- Templates will be loaded here -->
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="text-center mt-4" id="loadingSpinner" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading templates...</p>
+        </div>
+    </div>
+
+    <!-- Template Edit/Create Modal -->
+    <div class="modal fade" id="templateModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="templateModalTitle">Edit Template</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="templateForm">
+                        <input type="hidden" id="templateId">
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="templateKey" class="form-label">Template Key *</label>
+                                <input type="text" class="form-control" id="templateKey" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="templateName" class="form-label">Template Name *</label>
+                                <input type="text" class="form-control" id="templateName" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="intentType" class="form-label">Intent Type *</label>
+                                <select class="form-select" id="intentType" required>
+                                    <option value="">Select Intent</option>
+                                    <option value="Analytical">Analytical</option>
+                                    <option value="Comparison">Comparison</option>
+                                    <option value="Trend">Trend</option>
+                                    <option value="Detail">Detail</option>
+                                    <option value="Operational">Operational</option>
+                                    <option value="Exploratory">Exploratory</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="priority" class="form-label">Priority</label>
+                                <input type="number" class="form-control" id="priority" min="1" max="1000" value="100">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="isActive" class="form-label">Status</label>
+                                <select class="form-select" id="isActive">
+                                    <option value="true">Active</option>
+                                    <option value="false">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" rows="2"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="templateContent" class="form-label">Template Content *</label>
+                            <textarea class="form-control code-editor" id="templateContent" rows="12" required 
+                                placeholder="Enter your prompt template content here..."></textarea>
+                            <div class="form-text">
+                                Use placeholders like {USER_QUESTION}, {BUSINESS_CONTEXT}, {RELEVANT_TABLES}, etc.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Tags</label>
+                            <input type="text" class="form-control" id="tags" 
+                                placeholder="Enter tags separated by commas">
+                            <div class="form-text">
+                                Tags help with template discovery and organization
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="version" class="form-label">Version</label>
+                                <input type="text" class="form-control" id="version" value="1.0">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Category</label>
+                                <input type="text" class="form-control" id="category" placeholder="e.g., Gaming, Finance">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTemplate()">
+                        <i class="fas fa-save"></i> Save Template
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Performance Modal -->
+    <div class="modal fade" id="performanceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Template Performance Analytics</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="performanceContent">
+                        <!-- Performance charts and metrics will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="successToast" class="toast" role="alert">
+            <div class="toast-header">
+                <i class="fas fa-check-circle text-success me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="successToastBody">
+                Operation completed successfully!
+            </div>
+        </div>
+        
+        <div id="errorToast" class="toast" role="alert">
+            <div class="toast-header">
+                <i class="fas fa-exclamation-circle text-danger me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="errorToastBody">
+                An error occurred!
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script>
+        // Template Management JavaScript
+        let templates = [];
+        let filteredTemplates = [];
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTemplates();
+            loadMetrics();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('searchTemplates').addEventListener('input', applyFilters);
+            document.getElementById('filterIntent').addEventListener('change', applyFilters);
+            document.getElementById('filterStatus').addEventListener('change', applyFilters);
+            document.getElementById('filterPerformance').addEventListener('change', applyFilters);
+        }
+
+        async function loadTemplates() {
+            showLoading(true);
+            try {
+                const response = await fetch('/api/admin/templates');
+                if (response.ok) {
+                    templates = await response.json();
+                    filteredTemplates = [...templates];
+                    renderTemplates();
+                } else {
+                    showError('Failed to load templates');
+                }
+            } catch (error) {
+                showError('Error loading templates: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function loadMetrics() {
+            try {
+                const response = await fetch('/api/admin/templates/metrics');
+                if (response.ok) {
+                    const metrics = await response.json();
+                    updateMetricsDisplay(metrics);
+                }
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+            }
+        }
+
+        function updateMetricsDisplay(metrics) {
+            document.getElementById('totalTemplates').textContent = metrics.totalTemplates || 0;
+            document.getElementById('activeTemplates').textContent = metrics.activeTemplates || 0;
+            document.getElementById('avgSuccessRate').textContent =
+                metrics.averageSuccessRate ? (metrics.averageSuccessRate * 100).toFixed(1) + '%' : '-';
+            document.getElementById('templatesNeedingReview').textContent = metrics.templatesNeedingReview || 0;
+        }
+
+        function renderTemplates() {
+            const container = document.getElementById('templatesContainer');
+            container.innerHTML = '';
+
+            if (filteredTemplates.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No templates found matching your criteria.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredTemplates.forEach(template => {
+                const templateCard = createTemplateCard(template);
+                container.appendChild(templateCard);
+            });
+        }
+
+        function createTemplateCard(template) {
+            const col = document.createElement('div');
+            col.className = 'col-lg-6 col-xl-4 mb-4';
+
+            const performanceBadge = getPerformanceBadge(template.successRate);
+            const statusIndicator = getStatusIndicator(template.isActive);
+
+            col.innerHTML = `
+                <div class="card template-card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            ${statusIndicator}
+                            ${template.name}
+                        </h6>
+                        ${performanceBadge}
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <small class="text-muted">Key:</small>
+                            <code>${template.key}</code>
+                        </div>
+                        <div class="mb-2">
+                            <small class="text-muted">Intent:</small>
+                            <span class="badge bg-primary">${template.intentType}</span>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Description:</small>
+                            <p class="small mb-0">${template.description || 'No description'}</p>
+                        </div>
+                        <div class="template-content mb-3">
+                            ${template.content.substring(0, 200)}${template.content.length > 200 ? '...' : ''}
+                        </div>
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <small class="text-muted d-block">Usage</small>
+                                <strong>${template.usageCount || 0}</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Success</small>
+                                <strong>${template.successRate ? (template.successRate * 100).toFixed(1) + '%' : '-'}</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Rating</small>
+                                <strong>${template.averageRating ? template.averageRating.toFixed(1) : '-'}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="template-actions">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editTemplate(${template.id})">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-outline-info" onclick="viewPerformance(${template.id})">
+                                <i class="fas fa-chart-line"></i> Performance
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="duplicateTemplate(${template.id})">
+                                <i class="fas fa-copy"></i> Duplicate
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTemplate(${template.id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            return col;
+        }
+
+        function getPerformanceBadge(successRate) {
+            if (!successRate) return '<span class="badge bg-secondary performance-badge">No Data</span>';
+
+            const rate = successRate * 100;
+            if (rate >= 90) return '<span class="badge bg-success performance-badge">Excellent</span>';
+            if (rate >= 70) return '<span class="badge bg-warning performance-badge">Good</span>';
+            return '<span class="badge bg-danger performance-badge">Poor</span>';
+        }
+
+        function getStatusIndicator(isActive) {
+            const statusClass = isActive ? 'status-active' : 'status-inactive';
+            return `<span class="status-indicator ${statusClass}"></span>`;
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchTemplates').value.toLowerCase();
+            const intentFilter = document.getElementById('filterIntent').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            const performanceFilter = document.getElementById('filterPerformance').value;
+
+            filteredTemplates = templates.filter(template => {
+                // Search filter
+                const matchesSearch = !searchTerm ||
+                    template.name.toLowerCase().includes(searchTerm) ||
+                    template.key.toLowerCase().includes(searchTerm) ||
+                    template.content.toLowerCase().includes(searchTerm);
+
+                // Intent filter
+                const matchesIntent = !intentFilter || template.intentType === intentFilter;
+
+                // Status filter
+                const matchesStatus = !statusFilter ||
+                    (statusFilter === 'active' && template.isActive) ||
+                    (statusFilter === 'inactive' && !template.isActive);
+
+                // Performance filter
+                let matchesPerformance = true;
+                if (performanceFilter && template.successRate) {
+                    const rate = template.successRate * 100;
+                    matchesPerformance =
+                        (performanceFilter === 'excellent' && rate >= 90) ||
+                        (performanceFilter === 'good' && rate >= 70 && rate < 90) ||
+                        (performanceFilter === 'poor' && rate < 70);
+                }
+
+                return matchesSearch && matchesIntent && matchesStatus && matchesPerformance;
+            });
+
+            renderTemplates();
+        }
+
+        function showCreateTemplateModal() {
+            document.getElementById('templateModalTitle').textContent = 'Create New Template';
+            document.getElementById('templateForm').reset();
+            document.getElementById('templateId').value = '';
+            new bootstrap.Modal(document.getElementById('templateModal')).show();
+        }
+
+        async function editTemplate(templateId) {
+            try {
+                const response = await fetch(`/api/admin/templates/${templateId}`);
+                if (response.ok) {
+                    const template = await response.json();
+                    populateTemplateForm(template);
+                    document.getElementById('templateModalTitle').textContent = 'Edit Template';
+                    new bootstrap.Modal(document.getElementById('templateModal')).show();
+                } else {
+                    showError('Failed to load template details');
+                }
+            } catch (error) {
+                showError('Error loading template: ' + error.message);
+            }
+        }
+
+        function populateTemplateForm(template) {
+            document.getElementById('templateId').value = template.id;
+            document.getElementById('templateKey').value = template.key;
+            document.getElementById('templateName').value = template.name;
+            document.getElementById('intentType').value = template.intentType;
+            document.getElementById('priority').value = template.priority;
+            document.getElementById('isActive').value = template.isActive.toString();
+            document.getElementById('description').value = template.description || '';
+            document.getElementById('templateContent').value = template.content;
+            document.getElementById('tags').value = template.tags || '';
+            document.getElementById('version').value = template.version || '1.0';
+            document.getElementById('category').value = template.category || '';
+        }
+
+        async function saveTemplate() {
+            const form = document.getElementById('templateForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const templateData = {
+                id: document.getElementById('templateId').value || undefined,
+                key: document.getElementById('templateKey').value,
+                name: document.getElementById('templateName').value,
+                intentType: document.getElementById('intentType').value,
+                priority: parseInt(document.getElementById('priority').value),
+                isActive: document.getElementById('isActive').value === 'true',
+                description: document.getElementById('description').value,
+                content: document.getElementById('templateContent').value,
+                tags: document.getElementById('tags').value,
+                version: document.getElementById('version').value,
+                category: document.getElementById('category').value
+            };
+
+            try {
+                const url = templateData.id ? `/api/admin/templates/${templateData.id}` : '/api/admin/templates';
+                const method = templateData.id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(templateData)
+                });
+
+                if (response.ok) {
+                    showSuccess(templateData.id ? 'Template updated successfully!' : 'Template created successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('templateModal')).hide();
+                    loadTemplates();
+                    loadMetrics();
+                } else {
+                    const error = await response.text();
+                    showError('Failed to save template: ' + error);
+                }
+            } catch (error) {
+                showError('Error saving template: ' + error.message);
+            }
+        }
+
+        async function deleteTemplate(templateId) {
+            if (!confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/templates/${templateId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showSuccess('Template deleted successfully!');
+                    loadTemplates();
+                    loadMetrics();
+                } else {
+                    showError('Failed to delete template');
+                }
+            } catch (error) {
+                showError('Error deleting template: ' + error.message);
+            }
+        }
+
+        async function duplicateTemplate(templateId) {
+            try {
+                const response = await fetch(`/api/admin/templates/${templateId}/duplicate`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    showSuccess('Template duplicated successfully!');
+                    loadTemplates();
+                    loadMetrics();
+                } else {
+                    showError('Failed to duplicate template');
+                }
+            } catch (error) {
+                showError('Error duplicating template: ' + error.message);
+            }
+        }
+
+        async function viewPerformance(templateId) {
+            try {
+                const response = await fetch(`/api/admin/templates/${templateId}/performance`);
+                if (response.ok) {
+                    const performance = await response.json();
+                    showPerformanceModal(performance);
+                } else {
+                    showError('Failed to load performance data');
+                }
+            } catch (error) {
+                showError('Error loading performance: ' + error.message);
+            }
+        }
+
+        function showPerformanceModal(performance) {
+            const content = document.getElementById('performanceContent');
+            content.innerHTML = `
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-primary">${(performance.successRate * 100).toFixed(1)}%</h4>
+                            <small class="text-muted">Success Rate</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-info">${performance.usageCount}</h4>
+                            <small class="text-muted">Total Usage</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-success">${performance.averageRating?.toFixed(1) || '-'}</h4>
+                            <small class="text-muted">Avg Rating</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-warning">${performance.averageProcessingTime}ms</h4>
+                            <small class="text-muted">Avg Response Time</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <strong>Performance Insights:</strong>
+                    <ul class="mb-0 mt-2">
+                        ${performance.insights?.map(insight => `<li>${insight}</li>`).join('') || '<li>No insights available</li>'}
+                    </ul>
+                </div>
+            `;
+
+            new bootstrap.Modal(document.getElementById('performanceModal')).show();
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+        }
+
+        function showSuccess(message) {
+            document.getElementById('successToastBody').textContent = message;
+            new bootstrap.Toast(document.getElementById('successToast')).show();
+        }
+
+        function showError(message) {
+            document.getElementById('errorToastBody').textContent = message;
+            new bootstrap.Toast(document.getElementById('errorToast')).show();
+        }
+    </script>
+</body>
+</html>

@@ -487,32 +487,63 @@ public class BusinessTableManagementService : IBusinessTableManagementService
             SemanticCoverageScore = entity.SemanticCoverageScore,
             LastAnalyzed = entity.LastAnalyzed,
             BusinessOwner = entity.BusinessOwner ?? string.Empty,
-            Columns = entity.Columns?.Select(MapColumnToBusinessColumnInfo).ToList() ?? new List<BusinessColumnInfo>()
+            Columns = entity.Columns?.Select(MapColumnToDto).ToList() ?? new List<BusinessColumnInfoDto>()
         };
     }
 
     private static BusinessColumnInfoDto MapColumnToDto(BusinessColumnInfoEntity entity)
     {
-        var dataExamples = new List<string>();
-        if (!string.IsNullOrEmpty(entity.DataExamples))
-        {
-            try
-            {
-                dataExamples = JsonSerializer.Deserialize<List<string>>(entity.DataExamples) ?? new List<string>();
-            }
-            catch { /* Ignore deserialization errors */ }
-        }
-
         return new BusinessColumnInfoDto
         {
-            Id = (int)entity.Id,
-            ColumnName = entity.ColumnName,
-            BusinessMeaning = entity.BusinessMeaning,
-            BusinessContext = entity.BusinessContext,
-            DataExamples = dataExamples,
-            ValidationRules = entity.ValidationRules,
+            Id = entity.Id,
+            TableInfoId = entity.TableInfoId,
+            ColumnName = entity.ColumnName ?? string.Empty,
+            BusinessMeaning = entity.BusinessMeaning ?? string.Empty,
+            BusinessContext = entity.BusinessContext ?? string.Empty,
+            DataExamples = entity.DataExamples ?? string.Empty,
+            ValidationRules = entity.ValidationRules ?? string.Empty,
+            NaturalLanguageAliases = entity.NaturalLanguageAliases ?? string.Empty,
+            ValueExamples = entity.ValueExamples ?? string.Empty,
+            DataLineage = entity.DataLineage ?? string.Empty,
+            CalculationRules = entity.CalculationRules ?? string.Empty,
+            SemanticTags = entity.SemanticTags ?? string.Empty,
+            BusinessDataType = entity.BusinessDataType ?? string.Empty,
+            ConstraintsAndRules = entity.ConstraintsAndRules ?? string.Empty,
+            DataQualityScore = (double)entity.DataQualityScore,
+            UsageFrequency = (int)entity.UsageFrequency,
+            PreferredAggregation = entity.PreferredAggregation ?? string.Empty,
+            RelatedBusinessTerms = entity.RelatedBusinessTerms ?? string.Empty,
             IsKeyColumn = entity.IsKeyColumn,
-            IsActive = entity.IsActive
+            IsSensitiveData = entity.IsSensitiveData,
+            IsCalculatedField = entity.IsCalculatedField,
+            IsActive = entity.IsActive,
+            CreatedDate = entity.CreatedDate,
+            UpdatedDate = entity.UpdatedDate,
+            CreatedBy = entity.CreatedBy ?? string.Empty,
+            UpdatedBy = entity.UpdatedBy ?? string.Empty,
+
+            // Additional semantic and AI-related fields
+            SemanticContext = entity.SemanticContext ?? string.Empty,
+            ConceptualRelationships = entity.ConceptualRelationships ?? string.Empty,
+            DomainSpecificTerms = entity.DomainSpecificTerms ?? string.Empty,
+            QueryIntentMapping = entity.QueryIntentMapping ?? string.Empty,
+            BusinessQuestionTypes = entity.BusinessQuestionTypes ?? string.Empty,
+            SemanticSynonyms = entity.SemanticSynonyms ?? string.Empty,
+            AnalyticalContext = entity.AnalyticalContext ?? string.Empty,
+            BusinessMetrics = entity.BusinessMetrics ?? string.Empty,
+            SemanticRelevanceScore = (double)entity.SemanticRelevanceScore,
+            LLMPromptHints = entity.LLMPromptHints ?? string.Empty,
+            VectorSearchTags = entity.VectorSearchTags ?? string.Empty,
+
+            // Fields that don't exist in entity - set to empty defaults
+            BusinessPurpose = string.Empty,
+            BusinessFriendlyName = string.Empty,
+            NaturalLanguageDescription = string.Empty,
+            BusinessRules = string.Empty,
+            RelationshipContext = string.Empty,
+            DataGovernanceLevel = string.Empty,
+            LastBusinessReview = null,
+            ImportanceScore = 0.5
         };
     }
 
@@ -576,7 +607,17 @@ public class BusinessTableManagementService : IBusinessTableManagementService
             PrimaryUseCase = tableInfo.PrimaryUseCase,
             CommonQueryPatterns = tableInfo.CommonQueryPatterns,
             BusinessRules = tableInfo.BusinessRules,
-            Columns = tableInfo.Columns ?? new List<BusinessColumnInfo>()
+            Columns = tableInfo.Columns?.Select(c => new BusinessColumnInfo
+            {
+                ColumnName = c.ColumnName,
+                BusinessMeaning = c.BusinessMeaning,
+                BusinessContext = c.BusinessContext,
+                DataType = "varchar", // Default data type since BusinessColumnInfoDto doesn't have DataType
+                IsKeyColumn = c.IsKeyColumn,
+                DataExamples = new List<string>(), // Convert from string to list if needed
+                IsKey = c.IsKeyColumn,
+                IsRequired = c.IsKeyColumn
+            }).ToList() ?? new List<BusinessColumnInfo>()
         };
 
         var created = await CreateBusinessTableAsync(request, "system");
@@ -603,9 +644,9 @@ public class BusinessTableManagementService : IBusinessTableManagementService
                 ColumnName = c.ColumnName,
                 BusinessMeaning = c.BusinessMeaning,
                 BusinessContext = c.BusinessContext,
-                DataType = c.DataType ?? "varchar",
+                DataType = "varchar", // Default data type since BusinessColumnInfoDto doesn't have DataType
                 IsKeyColumn = c.IsKeyColumn,
-                DataExamples = c.DataExamples ?? new List<string>(),
+                DataExamples = new List<string>(), // Convert from string to list if needed
                 IsKey = c.IsKeyColumn,
                 IsRequired = c.IsKeyColumn
             }).ToList() ?? new List<BusinessColumnInfo>()

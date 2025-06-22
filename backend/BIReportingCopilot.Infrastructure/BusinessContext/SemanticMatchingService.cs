@@ -129,7 +129,13 @@ public class SemanticMatchingService : ISemanticMatchingService
                 var table = await _businessTableService.GetBusinessTableAsync(tableId.Value);
                 if (table?.Columns != null)
                 {
-                    allColumns.AddRange(table.Columns);
+                    allColumns.AddRange(table.Columns.Select(c => new BusinessColumnInfo
+                    {
+                        ColumnName = c.ColumnName,
+                        BusinessMeaning = c.BusinessMeaning,
+                        BusinessContext = c.BusinessContext,
+                        IsKeyColumn = c.IsKeyColumn
+                    }));
                 }
             }
             else
@@ -141,7 +147,13 @@ public class SemanticMatchingService : ISemanticMatchingService
                     var tableDetails = await _businessTableService.GetBusinessTableAsync(table.Id);
                     if (tableDetails?.Columns != null)
                     {
-                        allColumns.AddRange(tableDetails.Columns);
+                        allColumns.AddRange(tableDetails.Columns.Select(c => new BusinessColumnInfo
+                        {
+                            ColumnName = c.ColumnName,
+                            BusinessMeaning = c.BusinessMeaning,
+                            BusinessContext = c.BusinessContext,
+                            IsKeyColumn = c.IsKeyColumn
+                        }));
                     }
                 }
             }

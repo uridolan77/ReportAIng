@@ -436,7 +436,13 @@ public class SchemaNavigationAgent : ISchemaNavigationAgent
         var relevantColumns = new List<string>();
 
         // Use columns from the table DTO (already loaded)
-        var columns = table.Columns ?? new List<BusinessColumnInfo>();
+        var columns = table.Columns?.Select(c => new BusinessColumnInfo
+        {
+            ColumnName = c.ColumnName,
+            BusinessMeaning = c.BusinessMeaning,
+            BusinessContext = c.BusinessContext,
+            IsKeyColumn = c.IsKeyColumn
+        }).ToList() ?? new List<BusinessColumnInfo>();
 
         foreach (var column in columns)
         {

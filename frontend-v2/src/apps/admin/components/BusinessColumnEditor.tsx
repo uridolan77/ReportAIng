@@ -13,11 +13,12 @@ import {
   Typography,
   Divider,
   DatePicker,
-  Tabs
+  Tabs,
+  Spin
 } from 'antd'
 import dayjs from 'dayjs'
 import type { BusinessColumnInfoDto } from '@shared/store/api/businessApi'
-import { useUpdateBusinessColumnMutation } from '@shared/store/api/businessApi'
+import { useUpdateBusinessColumnMutation, useGetBusinessColumnQuery } from '@shared/store/api/businessApi'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -43,8 +44,22 @@ export const BusinessColumnEditor: React.FC<BusinessColumnEditorProps> = ({
 
   const isEditing = !!column
 
+  // Fetch full column details when editing
+  const { data: fullColumnData, isLoading: isLoadingColumn } = useGetBusinessColumnQuery(
+    column?.id || 0,
+    { skip: !column?.id || !open }
+  )
+
+  // Use the full column data if available, otherwise fall back to the passed column
+  const columnData = fullColumnData || column
+
   useEffect(() => {
-    if (open && column) {
+    if (open && columnData) {
+      console.log('🔍 Column data received:', columnData)
+
+      // Reset form first to clear any previous values
+      form.resetFields()
+
       // Add a small delay to ensure the modal is fully rendered
       setTimeout(() => {
         // Helper function to convert arrays to strings for form display
@@ -63,68 +78,70 @@ export const BusinessColumnEditor: React.FC<BusinessColumnEditorProps> = ({
 
         // Map the column data directly (it's already in camelCase)
         const formValues = {
-          id: column.id,
-          tableInfoId: column.tableInfoId || tableId,
-          columnName: convertToString(column.columnName),
-          businessMeaning: convertToString(column.businessMeaning),
-          businessContext: convertToString(column.businessContext),
-          businessPurpose: convertToString(column.businessPurpose),
-          businessFriendlyName: convertToString(column.businessName || column.businessFriendlyName),
-          naturalLanguageDescription: convertToString(column.naturalLanguageDescription),
-          businessDataType: convertToString(column.businessDataType || column.dataType),
+          id: columnData.id,
+          tableInfoId: columnData.tableInfoId || tableId,
+          columnName: convertToString(columnData.columnName),
+          businessMeaning: convertToString(columnData.businessMeaning),
+          businessContext: convertToString(columnData.businessContext),
+          businessPurpose: convertToString(columnData.businessPurpose),
+          businessFriendlyName: convertToString(columnData.businessName || columnData.businessFriendlyName),
+          naturalLanguageDescription: convertToString(columnData.naturalLanguageDescription),
+          businessDataType: convertToString(columnData.businessDataType || columnData.dataType),
 
           // Convert arrays/objects to strings for form fields
-          dataExamples: convertToString(column.dataExamples || column.sampleValues),
-          valueExamples: convertToString(column.valueExamples || column.sampleValues),
-          validationRules: convertToString(column.validationRules),
-          naturalLanguageAliases: convertToString(column.naturalLanguageAliases),
-          dataLineage: convertToString(column.dataLineage),
-          calculationRules: convertToString(column.calculationRules),
-          semanticTags: convertToString(column.semanticTags),
-          constraintsAndRules: convertToString(column.constraintsAndRules),
-          relatedBusinessTerms: convertToString(column.relatedBusinessTerms),
-          vectorSearchTags: convertToString(column.vectorSearchTags),
-          semanticContext: convertToString(column.semanticContext),
-          conceptualRelationships: convertToString(column.conceptualRelationships),
-          domainSpecificTerms: convertToString(column.domainSpecificTerms),
-          queryIntentMapping: convertToString(column.queryIntentMapping),
-          businessQuestionTypes: convertToString(column.businessQuestionTypes),
-          semanticSynonyms: convertToString(column.semanticSynonyms),
-          analyticalContext: convertToString(column.analyticalContext),
-          businessMetrics: convertToString(column.businessMetrics),
-          llmPromptHints: convertToString(column.llmPromptHints),
-          relationshipContext: convertToString(column.relationshipContext),
-          businessRules: convertToString(column.businessRules),
+          dataExamples: convertToString(columnData.dataExamples || columnData.sampleValues),
+          valueExamples: convertToString(columnData.valueExamples || columnData.sampleValues),
+          validationRules: convertToString(columnData.validationRules),
+          naturalLanguageAliases: convertToString(columnData.naturalLanguageAliases),
+          dataLineage: convertToString(columnData.dataLineage),
+          calculationRules: convertToString(columnData.calculationRules),
+          semanticTags: convertToString(columnData.semanticTags),
+          constraintsAndRules: convertToString(columnData.constraintsAndRules),
+          relatedBusinessTerms: convertToString(columnData.relatedBusinessTerms),
+          vectorSearchTags: convertToString(columnData.vectorSearchTags),
+          semanticContext: convertToString(columnData.semanticContext),
+          conceptualRelationships: convertToString(columnData.conceptualRelationships),
+          domainSpecificTerms: convertToString(columnData.domainSpecificTerms),
+          queryIntentMapping: convertToString(columnData.queryIntentMapping),
+          businessQuestionTypes: convertToString(columnData.businessQuestionTypes),
+          semanticSynonyms: convertToString(columnData.semanticSynonyms),
+          analyticalContext: convertToString(columnData.analyticalContext),
+          businessMetrics: convertToString(columnData.businessMetrics),
+          llmPromptHints: convertToString(columnData.llmPromptHints),
+          relationshipContext: convertToString(columnData.relationshipContext),
+          businessRules: convertToString(columnData.businessRules),
 
           // Numeric fields with defaults
-          dataQualityScore: column.dataQualityScore || 5,
-          usageFrequency: column.usageFrequency || 0,
-          semanticRelevanceScore: column.semanticRelevanceScore || 0.5,
-          importanceScore: column.importanceScore || 0.5,
+          dataQualityScore: columnData.dataQualityScore !== undefined ? columnData.dataQualityScore : 5,
+          usageFrequency: columnData.usageFrequency !== undefined ? columnData.usageFrequency : 0,
+          semanticRelevanceScore: columnData.semanticRelevanceScore !== undefined ? columnData.semanticRelevanceScore : 0.5,
+          importanceScore: columnData.importanceScore !== undefined ? columnData.importanceScore : 0.5,
 
           // Boolean fields
-          isKeyColumn: column.isKeyColumn || column.isKey || false,
-          isSensitiveData: column.isSensitiveData || false,
-          isCalculatedField: column.isCalculatedField || false,
-          isActive: column.isActive !== undefined ? column.isActive : true,
+          isKeyColumn: columnData.isKeyColumn || columnData.isKey || false,
+          isSensitiveData: columnData.isSensitiveData || false,
+          isCalculatedField: columnData.isCalculatedField || false,
+          isActive: columnData.isActive !== undefined ? columnData.isActive : true,
 
           // Other fields - ensure they're not undefined
-          preferredAggregation: column.preferredAggregation || undefined,
-          dataGovernanceLevel: column.dataGovernanceLevel || undefined,
+          preferredAggregation: columnData.preferredAggregation || undefined,
+          dataGovernanceLevel: columnData.dataGovernanceLevel || undefined,
 
           // Handle date field
-          lastBusinessReview: column.lastBusinessReview ? dayjs(column.lastBusinessReview) : undefined,
+          lastBusinessReview: columnData.lastBusinessReview ? dayjs(columnData.lastBusinessReview) : undefined,
         }
 
-        console.log('Setting form values:', formValues)
+        console.log('📝 Setting form values:', formValues)
         form.setFieldsValue(formValues)
 
         // Force a re-render to ensure values are displayed
         setTimeout(() => {
-          console.log('Current form values:', form.getFieldsValue())
+          const currentValues = form.getFieldsValue()
+          console.log('✅ Current form values after setting:', currentValues)
         }, 100)
       }, 100)
     } else if (open) {
+      console.log('🆕 Opening form for new column')
       form.resetFields()
       form.setFieldsValue({
         tableInfoId: tableId,
@@ -138,16 +155,16 @@ export const BusinessColumnEditor: React.FC<BusinessColumnEditorProps> = ({
         isCalculatedField: false,
       })
     }
-  }, [open, column, tableId, form])
+  }, [open, columnData, tableId, form])
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
 
-      if (isEditing && column) {
+      if (isEditing && columnData) {
         // Convert form values to API format
         const updateRequest = {
-          columnId: column.id,
+          columnId: columnData.id,
           columnName: values.columnName,
           businessFriendlyName: values.businessFriendlyName,
           businessDataType: values.businessDataType,
@@ -188,12 +205,13 @@ export const BusinessColumnEditor: React.FC<BusinessColumnEditorProps> = ({
 
   return (
     <Modal
-      key={column?.id || 'new'}
-      title={isEditing ? 'Edit Business Column' : 'Add Business Column'}
+      key={`column-editor-${columnData?.id || 'new'}-${open}`}
+      title={isEditing ? `Edit Business Column: ${columnData?.columnName || 'Unknown'}` : 'Add Business Column'}
       open={open}
       onCancel={onClose}
       width={1200}
       style={{ top: 20 }}
+      destroyOnClose={true}
       footer={[
         <Button key="cancel" onClick={onClose}>
           Cancel
@@ -203,7 +221,18 @@ export const BusinessColumnEditor: React.FC<BusinessColumnEditorProps> = ({
         </Button>,
       ]}
     >
-      <Form form={form} layout="vertical">
+      {isLoadingColumn && isEditing ? (
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: '16px' }}>Loading column details...</div>
+        </div>
+      ) : (
+      <Form
+        form={form}
+        layout="vertical"
+        preserve={false}
+        key={`form-${columnData?.id || 'new'}`}
+      >
         <Tabs activeKey={activeTab} onChange={setActiveTab}>
           <TabPane tab="Basic Information" key="basic">
             <Row gutter={16}>
@@ -657,6 +686,7 @@ export const BusinessColumnEditor: React.FC<BusinessColumnEditorProps> = ({
           </TabPane>
         </Tabs>
       </Form>
+      )}
     </Modal>
   )
 }

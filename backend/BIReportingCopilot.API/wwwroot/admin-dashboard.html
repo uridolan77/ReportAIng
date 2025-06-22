@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCAPB Admin - Performance Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .dashboard-card {
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .metric-value {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .metric-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .metric-change {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 2rem;
+        }
+        .alert-item {
+            border-left: 4px solid;
+            margin-bottom: 1rem;
+        }
+        .alert-critical { border-left-color: #dc3545; }
+        .alert-warning { border-left-color: #ffc107; }
+        .alert-info { border-left-color: #17a2b8; }
+        .real-time-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #28a745;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .performance-indicator {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .gauge-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-chart-line me-2"></i>BCAPB Admin - Performance Dashboard
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link active" href="admin-dashboard.html">
+                    <i class="fas fa-chart-line me-1"></i>Dashboard
+                </a>
+                <a class="nav-link" href="admin-template-management.html">
+                    <i class="fas fa-file-code me-1"></i>Templates
+                </a>
+                <a class="nav-link" href="admin-analytics.html">
+                    <i class="fas fa-analytics me-1"></i>Analytics
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Real-time Status Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-success d-flex align-items-center">
+                    <span class="real-time-indicator me-2"></span>
+                    <strong>System Status: Operational</strong>
+                    <span class="ms-auto">
+                        Last Updated: <span id="lastUpdated">-</span>
+                        <button class="btn btn-sm btn-outline-success ms-2" onclick="refreshDashboard()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics Row -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value" id="totalQueries">-</div>
+                    <div class="metric-label">Total Queries Today</div>
+                    <div class="metric-change" id="queriesChange">-</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value" id="successRate">-</div>
+                    <div class="metric-label">Success Rate</div>
+                    <div class="metric-change" id="successRateChange">-</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value" id="avgResponseTime">-</div>
+                    <div class="metric-label">Avg Response Time</div>
+                    <div class="metric-change" id="responseTimeChange">-</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-value" id="activeUsers">-</div>
+                    <div class="metric-label">Active Users</div>
+                    <div class="metric-change" id="activeUsersChange">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Indicators -->
+        <div class="status-grid">
+            <div class="performance-indicator">
+                <div class="gauge-container">
+                    <canvas id="systemHealthGauge" width="120" height="120"></canvas>
+                </div>
+                <h6>System Health</h6>
+                <span id="systemHealthValue" class="badge bg-success">Excellent</span>
+            </div>
+            <div class="performance-indicator">
+                <div class="gauge-container">
+                    <canvas id="performanceGauge" width="120" height="120"></canvas>
+                </div>
+                <h6>Performance Score</h6>
+                <span id="performanceValue" class="badge bg-success">95%</span>
+            </div>
+            <div class="performance-indicator">
+                <div class="gauge-container">
+                    <canvas id="qualityGauge" width="120" height="120"></canvas>
+                </div>
+                <h6>Quality Score</h6>
+                <span id="qualityValue" class="badge bg-success">92%</span>
+            </div>
+            <div class="performance-indicator">
+                <div class="gauge-container">
+                    <canvas id="satisfactionGauge" width="120" height="120"></canvas>
+                </div>
+                <h6>User Satisfaction</h6>
+                <span id="satisfactionValue" class="badge bg-success">4.7/5</span>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-line me-2"></i>Performance Trends (Last 24 Hours)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="performanceTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Active Alerts
+                        </h5>
+                    </div>
+                    <div class="card-body" style="max-height: 350px; overflow-y: auto;">
+                        <div id="alertsContainer">
+                            <!-- Alerts will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage Analytics Row -->
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-pie-chart me-2"></i>Query Distribution by Intent
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="intentDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-users me-2"></i>User Activity Heatmap
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="userActivityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template Performance Row -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card dashboard-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-trophy me-2"></i>Top Performing Templates
+                        </h5>
+                        <a href="admin-template-management.html" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-cog me-1"></i>Manage Templates
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Template</th>
+                                        <th>Intent Type</th>
+                                        <th>Usage Count</th>
+                                        <th>Success Rate</th>
+                                        <th>Avg Rating</th>
+                                        <th>Performance Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topTemplatesTable">
+                                    <!-- Top templates will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Resources Row -->
+        <div class="row mb-4">
+            <div class="col-lg-4">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-microchip me-2"></i>CPU Usage
+                        </h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="gauge-container">
+                            <canvas id="cpuGauge" width="120" height="120"></canvas>
+                        </div>
+                        <span id="cpuValue" class="badge bg-success">25%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-memory me-2"></i>Memory Usage
+                        </h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="gauge-container">
+                            <canvas id="memoryGauge" width="120" height="120"></canvas>
+                        </div>
+                        <span id="memoryValue" class="badge bg-warning">68%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-database me-2"></i>Database Connections
+                        </h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="gauge-container">
+                            <canvas id="dbGauge" width="120" height="120"></canvas>
+                        </div>
+                        <span id="dbValue" class="badge bg-success">12/100</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Dashboard JavaScript will be added here
+        let charts = {};
+        let refreshInterval;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            startAutoRefresh();
+        });
+
+        function initializeDashboard() {
+            loadDashboardData();
+            initializeCharts();
+        }
+
+        async function loadDashboardData() {
+            try {
+                const [metrics, alerts, templates] = await Promise.all([
+                    fetch('/api/admin/dashboard/metrics').then(r => r.json()),
+                    fetch('/api/admin/dashboard/alerts').then(r => r.json()),
+                    fetch('/api/admin/dashboard/top-templates').then(r => r.json())
+                ]);
+
+                updateMetrics(metrics);
+                updateAlerts(alerts);
+                updateTopTemplates(templates);
+                updateLastUpdated();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function updateMetrics(metrics) {
+            document.getElementById('totalQueries').textContent = metrics.totalQueries || 0;
+            document.getElementById('successRate').textContent = 
+                metrics.successRate ? (metrics.successRate * 100).toFixed(1) + '%' : '-';
+            document.getElementById('avgResponseTime').textContent = 
+                metrics.avgResponseTime ? metrics.avgResponseTime + 'ms' : '-';
+            document.getElementById('activeUsers').textContent = metrics.activeUsers || 0;
+
+            // Update change indicators
+            updateChangeIndicator('queriesChange', metrics.queriesChange);
+            updateChangeIndicator('successRateChange', metrics.successRateChange);
+            updateChangeIndicator('responseTimeChange', metrics.responseTimeChange);
+            updateChangeIndicator('activeUsersChange', metrics.activeUsersChange);
+        }
+
+        function updateChangeIndicator(elementId, change) {
+            const element = document.getElementById(elementId);
+            if (change > 0) {
+                element.innerHTML = `<i class="fas fa-arrow-up"></i> +${change.toFixed(1)}%`;
+                element.className = 'metric-change text-success';
+            } else if (change < 0) {
+                element.innerHTML = `<i class="fas fa-arrow-down"></i> ${change.toFixed(1)}%`;
+                element.className = 'metric-change text-danger';
+            } else {
+                element.innerHTML = '<i class="fas fa-minus"></i> No change';
+                element.className = 'metric-change text-muted';
+            }
+        }
+
+        function updateAlerts(alerts) {
+            const container = document.getElementById('alertsContainer');
+            if (alerts.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted">No active alerts</div>';
+                return;
+            }
+
+            container.innerHTML = alerts.map(alert => `
+                <div class="alert-item alert alert-${alert.severity}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${alert.title}</strong>
+                            <p class="mb-1 small">${alert.description}</p>
+                            <small class="text-muted">${new Date(alert.triggeredAt).toLocaleString()}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="dismissAlert('${alert.alertId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateTopTemplates(templates) {
+            const tbody = document.getElementById('topTemplatesTable');
+            tbody.innerHTML = templates.map((template, index) => `
+                <tr>
+                    <td><span class="badge bg-primary">#${index + 1}</span></td>
+                    <td>${template.name}</td>
+                    <td><span class="badge bg-secondary">${template.intentType}</span></td>
+                    <td>${template.usageCount}</td>
+                    <td>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-success" style="width: ${template.successRate * 100}%">
+                                ${(template.successRate * 100).toFixed(1)}%
+                            </div>
+                        </div>
+                    </td>
+                    <td>${template.averageRating ? template.averageRating.toFixed(1) : '-'}</td>
+                    <td>
+                        <span class="badge ${getPerformanceBadgeClass(template.performanceScore)}">
+                            ${template.performanceScore.toFixed(1)}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getPerformanceBadgeClass(score) {
+            if (score >= 90) return 'bg-success';
+            if (score >= 70) return 'bg-warning';
+            return 'bg-danger';
+        }
+
+        function initializeCharts() {
+            // Initialize all charts here
+            // This is a simplified version - full implementation would include all chart configurations
+            console.log('Charts initialized');
+        }
+
+        function updateLastUpdated() {
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+        }
+
+        function refreshDashboard() {
+            loadDashboardData();
+        }
+
+        function startAutoRefresh() {
+            refreshInterval = setInterval(refreshDashboard, 30000); // Refresh every 30 seconds
+        }
+
+        function dismissAlert(alertId) {
+            fetch(`/api/admin/alerts/${alertId}/dismiss`, { method: 'POST' })
+                .then(() => loadDashboardData())
+                .catch(error => console.error('Error dismissing alert:', error));
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>

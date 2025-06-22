@@ -116,23 +116,50 @@ public class AggregatedStatistics
 public class BusinessColumnInfoDto
 {
     public long Id { get; set; }
-    public string ColumnId { get; set; } = string.Empty;
+    public long TableInfoId { get; set; }
     public string ColumnName { get; set; } = string.Empty;
-    public string TableName { get; set; } = string.Empty;
-    public string BusinessName { get; set; } = string.Empty;
-    public string BusinessDescription { get; set; } = string.Empty;
-    public string BusinessMeaning { get; set; } = string.Empty; // Added missing property
-    public string BusinessContext { get; set; } = string.Empty; // Added missing property
-    public string DataType { get; set; } = string.Empty;
-    public List<string> DataExamples { get; set; } = new(); // Added missing property
-    public string ValidationRules { get; set; } = string.Empty; // Added missing property
-    public bool IsNullable { get; set; }
-    public bool IsPrimaryKey { get; set; }
-    public bool IsForeignKey { get; set; }
-    public bool IsKeyColumn { get; set; } // Added missing property
-    public bool IsActive { get; set; } = true; // Added missing property
-    public string? DefaultValue { get; set; }
-    public string? BusinessRules { get; set; }
-    public List<string> Tags { get; set; } = new();
-    public DateTime LastUpdated { get; set; }
+    public string BusinessMeaning { get; set; } = string.Empty;
+    public string BusinessContext { get; set; } = string.Empty;
+    public string DataExamples { get; set; } = string.Empty;
+    public string ValidationRules { get; set; } = string.Empty;
+    public string NaturalLanguageAliases { get; set; } = string.Empty;
+    public string ValueExamples { get; set; } = string.Empty;
+    public string DataLineage { get; set; } = string.Empty;
+    public string CalculationRules { get; set; } = string.Empty;
+    public string SemanticTags { get; set; } = string.Empty;
+    public string BusinessDataType { get; set; } = string.Empty;
+    public string ConstraintsAndRules { get; set; } = string.Empty;
+    public double DataQualityScore { get; set; } = 5.0;
+    public int UsageFrequency { get; set; } = 0;
+    public string PreferredAggregation { get; set; } = string.Empty;
+    public string RelatedBusinessTerms { get; set; } = string.Empty;
+    public bool IsKeyColumn { get; set; }
+    public bool IsSensitiveData { get; set; }
+    public bool IsCalculatedField { get; set; }
+    public bool IsActive { get; set; } = true;
+    public DateTime? CreatedDate { get; set; }
+    public DateTime? UpdatedDate { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public string UpdatedBy { get; set; } = string.Empty;
+
+    // Additional semantic and AI-related fields
+    public string SemanticContext { get; set; } = string.Empty;
+    public string ConceptualRelationships { get; set; } = string.Empty;
+    public string DomainSpecificTerms { get; set; } = string.Empty;
+    public string QueryIntentMapping { get; set; } = string.Empty;
+    public string BusinessQuestionTypes { get; set; } = string.Empty;
+    public string SemanticSynonyms { get; set; } = string.Empty;
+    public string AnalyticalContext { get; set; } = string.Empty;
+    public string BusinessMetrics { get; set; } = string.Empty;
+    public double SemanticRelevanceScore { get; set; } = 0.5;
+    public string LLMPromptHints { get; set; } = string.Empty;
+    public string VectorSearchTags { get; set; } = string.Empty;
+    public string BusinessPurpose { get; set; } = string.Empty;
+    public string BusinessFriendlyName { get; set; } = string.Empty;
+    public string NaturalLanguageDescription { get; set; } = string.Empty;
+    public string BusinessRules { get; set; } = string.Empty;
+    public string RelationshipContext { get; set; } = string.Empty;
+    public string DataGovernanceLevel { get; set; } = string.Empty;
+    public DateTime? LastBusinessReview { get; set; }
+    public double ImportanceScore { get; set; } = 0.5;
 }

@@ -18,7 +18,7 @@ public class BusinessTableInfoDto
     public List<string> CommonQueryPatterns { get; set; } = new();
     public string BusinessRules { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
-    public List<BusinessColumnInfo> Columns { get; set; } = new();
+    public List<BusinessColumnInfoDto> Columns { get; set; } = new();
     public DateTime CreatedDate { get; set; }
     public string CreatedBy { get; set; } = string.Empty;
     public DateTime? UpdatedDate { get; set; }
