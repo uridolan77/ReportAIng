@@ -428,6 +428,9 @@ public class BICopilotContext : DbContext
         modelBuilder.ApplyConfiguration(new SchemaRelationshipConfiguration());
         modelBuilder.ApplyConfiguration(new UserSchemaPreferenceConfiguration());
 
+        // Configure Cost Management entities
+        ConfigureCostManagementEntities(modelBuilder);
+
         // Configure AI Logging and Analytics entities
         ConfigureAILoggingEntities(modelBuilder);
 
@@ -779,6 +782,91 @@ Return only the SQL query without any explanation or markdown formatting.",
             entity.Property(e => e.SQLExecutionError).HasMaxLength(2000);
             entity.Property(e => e.UserFeedbackComments).HasMaxLength(1000);
             entity.Property(e => e.ConfidenceScore).HasPrecision(5, 4);
+        });
+    }
+
+    private static void ConfigureCostManagementEntities(ModelBuilder modelBuilder)
+    {
+        // Configure CostTrackingEntity to map to LLMCostTracking table
+        modelBuilder.Entity<Entities.CostTrackingEntity>(entity =>
+        {
+            entity.ToTable("LLMCostTracking");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => new { e.ProviderId, e.ModelId });
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.ProviderId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.ModelId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.RequestType).HasMaxLength(50);
+            entity.Property(e => e.RequestId).HasMaxLength(256);
+            entity.Property(e => e.QueryId).HasMaxLength(256);
+            entity.Property(e => e.Department).HasMaxLength(100);
+            entity.Property(e => e.Project).HasMaxLength(100);
+            entity.Property(e => e.Cost).HasPrecision(18, 8);
+            entity.Property(e => e.CostPerToken).HasPrecision(18, 8);
+            entity.Property(e => e.Metadata).HasColumnType("nvarchar(max)");
+        });
+
+        // Configure BudgetManagementEntity to map to LLMBudgetManagement table
+        modelBuilder.Entity<Entities.BudgetManagementEntity>(entity =>
+        {
+            entity.ToTable("LLMBudgetManagement");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.EntityId);
+            entity.HasIndex(e => new { e.Type, e.EntityId });
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Type).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.EntityId).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.Period).HasMaxLength(20);
+            entity.Property(e => e.BudgetAmount).HasPrecision(18, 2);
+            entity.Property(e => e.SpentAmount).HasPrecision(18, 2);
+            entity.Property(e => e.AlertThreshold).HasPrecision(5, 2);
+        });
+
+        // Configure other cost management entities with appropriate table mappings
+        modelBuilder.Entity<Entities.ResourceUsageEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Timestamp);
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.ResourceType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ResourceId).HasMaxLength(256);
+            entity.Property(e => e.RequestId).HasMaxLength(256);
+            entity.Property(e => e.ResourceName).HasMaxLength(100);
+            entity.Property(e => e.Unit).HasMaxLength(20);
+            entity.Property(e => e.Tags).HasMaxLength(500);
+            entity.Property(e => e.Cost).HasPrecision(18, 8);
+            entity.Property(e => e.Metadata).HasColumnType("nvarchar(max)");
+        });
+
+        modelBuilder.Entity<Entities.CostPredictionEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.QueryId);
+            entity.HasIndex(e => e.UserId);
+            entity.Property(e => e.QueryId).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.ModelUsed).HasMaxLength(100);
+            entity.Property(e => e.EstimatedCost).HasPrecision(18, 8);
+            entity.Property(e => e.ConfidenceScore).HasPrecision(3, 2);
+            entity.Property(e => e.Factors).HasColumnType("nvarchar(max)");
+        });
+
+        modelBuilder.Entity<Entities.CostOptimizationRecommendationEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => e.Priority);
+            entity.Property(e => e.Type).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Priority).HasMaxLength(20);
+            entity.Property(e => e.PotentialSavings).HasPrecision(18, 2);
+            entity.Property(e => e.Description).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.Implementation).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.Benefits).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.Risks).HasColumnType("nvarchar(max)");
         });
     }
 }

@@ -349,7 +349,7 @@ export const PerformanceMetricsViewer: React.FC<PerformanceMetricsViewerProps> =
             <Card size="small">
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text strong>Slow Steps</Text>
-                <Text type="secondary">> {performanceThresholds.acceptable}ms</Text>
+                <Text type="secondary">&gt; {performanceThresholds.acceptable}ms</Text>
                 <Progress 
                   percent={(steps.filter(s => s.processingTimeMs > performanceThresholds.acceptable).length / steps.length) * 100}
                   strokeColor="#ff4d4f"
