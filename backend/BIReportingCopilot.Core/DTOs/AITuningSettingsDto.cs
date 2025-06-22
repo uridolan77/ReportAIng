@@ -83,7 +83,7 @@ public class TuningValidationResult
     public string ValidationId { get; set; } = Guid.NewGuid().ToString();
     public bool IsValid { get; set; }
     public double ValidationScore { get; set; }
-    public List<ValidationIssue> Issues { get; set; } = new();
+    public List<TuningValidationIssue> Issues { get; set; } = new();
     public List<ValidationRecommendation> Recommendations { get; set; } = new();
     public DateTime ValidatedAt { get; set; } = DateTime.UtcNow;
     public List<string> Errors { get; set; } = new();
@@ -92,9 +92,9 @@ public class TuningValidationResult
 }
 
 /// <summary>
-/// Validation issue
+/// Tuning validation issue (specific to AI tuning)
 /// </summary>
-public class ValidationIssue
+public class TuningValidationIssue
 {
     public string IssueId { get; set; } = Guid.NewGuid().ToString();
     public string Title { get; set; } = string.Empty;

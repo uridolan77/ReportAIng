@@ -733,6 +733,167 @@ public class BusinessTableManagementService : IBusinessTableManagementService
     }
 
     /// <summary>
+    /// Update business table with UpdateTableInfoRequest
+    /// </summary>
+    public async Task<BusinessTableInfoDto?> UpdateBusinessTableAsync(long id, UpdateTableInfoRequest request, string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var entity = await _context.BusinessTableInfo
+                .Include(t => t.Columns)
+                .FirstOrDefaultAsync(t => t.Id == id && t.IsActive, cancellationToken);
+
+            if (entity == null)
+                return null;
+
+            // Update business metadata fields
+            entity.BusinessPurpose = request.BusinessPurpose;
+            entity.BusinessContext = request.BusinessContext;
+            entity.PrimaryUseCase = request.PrimaryUseCase;
+            entity.CommonQueryPatterns = JsonSerializer.Serialize(request.CommonQueryPatterns);
+            entity.BusinessRules = request.BusinessRules;
+            entity.DomainClassification = request.DomainClassification;
+            entity.NaturalLanguageAliases = JsonSerializer.Serialize(request.NaturalLanguageAliases);
+            entity.BusinessProcesses = JsonSerializer.Serialize(request.BusinessProcesses);
+            entity.AnalyticalUseCases = JsonSerializer.Serialize(request.AnalyticalUseCases);
+            entity.ReportingCategories = JsonSerializer.Serialize(request.ReportingCategories);
+            entity.VectorSearchKeywords = JsonSerializer.Serialize(request.VectorSearchKeywords);
+            entity.BusinessGlossaryTerms = JsonSerializer.Serialize(request.BusinessGlossaryTerms);
+            entity.LLMContextHints = JsonSerializer.Serialize(request.LLMContextHints);
+            entity.QueryComplexityHints = JsonSerializer.Serialize(request.QueryComplexityHints);
+            entity.IsActive = request.IsActive;
+            entity.UpdatedBy = userId;
+            entity.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            // Invalidate cache
+            await InvalidateBusinessTablesCache();
+
+            // Return updated entity
+            return await GetBusinessTableAsync(id, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating business table {TableId}", id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Delete business table with user tracking
+    /// </summary>
+    public async Task<bool> DeleteBusinessTableAsync(long id, string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var entity = await _context.BusinessTableInfo
+                .FirstOrDefaultAsync(t => t.Id == id && t.IsActive, cancellationToken);
+
+            if (entity == null)
+                return false;
+
+            // Soft delete
+            entity.IsActive = false;
+            entity.UpdatedBy = userId;
+            entity.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            // Invalidate cache
+            await InvalidateBusinessTablesCache();
+
+            _logger.LogInformation("Soft deleted business table {TableId} by user {UserId}", id, userId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting business table {TableId}", id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Get business tables with filtering and pagination
+    /// </summary>
+    public async Task<PagedResult<BusinessTableInfoDto>> GetBusinessTablesAsync(BusinessTableFilter filter, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var query = _context.BusinessTableInfo
+                .Include(t => t.Columns)
+                .Where(t => t.IsActive);
+
+            // Apply filters
+            if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+            {
+                var searchTerm = filter.SearchTerm.ToLower();
+                query = query.Where(t =>
+                    t.TableName.ToLower().Contains(searchTerm) ||
+                    t.BusinessPurpose.ToLower().Contains(searchTerm) ||
+                    t.BusinessContext.ToLower().Contains(searchTerm));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.SchemaName))
+            {
+                query = query.Where(t => t.SchemaName == filter.SchemaName);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.Domain))
+            {
+                query = query.Where(t => t.DomainClassification == filter.Domain);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.BusinessOwner))
+            {
+                query = query.Where(t => t.CreatedBy == filter.BusinessOwner);
+            }
+
+            if (filter.IsActive.HasValue)
+            {
+                query = query.Where(t => t.IsActive == filter.IsActive.Value);
+            }
+
+            if (filter.CreatedAfter.HasValue)
+            {
+                query = query.Where(t => t.CreatedDate >= filter.CreatedAfter.Value);
+            }
+
+            if (filter.CreatedBefore.HasValue)
+            {
+                query = query.Where(t => t.CreatedDate <= filter.CreatedBefore.Value);
+            }
+
+            // Get total count
+            var totalCount = await query.CountAsync(cancellationToken);
+
+            // Apply pagination
+            var items = await query
+                .OrderBy(t => t.SchemaName)
+                .ThenBy(t => t.TableName)
+                .Skip((filter.Page - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToListAsync(cancellationToken);
+
+            // Map to DTOs
+            var dtos = items.Select(MapToDto).ToList();
+
+            return new PagedResult<BusinessTableInfoDto>
+            {
+                Items = dtos,
+                CurrentPage = filter.Page,
+                PageSize = filter.PageSize,
+                TotalItems = totalCount
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting filtered business tables");
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Delete business table by long ID with cancellation token support
     /// </summary>
     public async Task<bool> DeleteBusinessTableAsync(long id, CancellationToken cancellationToken = default)

@@ -80,6 +80,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const getSelectedKeys = () => {
     const path = location.pathname
     if (path === '/chat' || path === '/chat/') return ['chat']
+    if (path.startsWith('/chat/enhanced')) return ['chat-enhanced']
     if (path === '/chat/history') return ['chat-history']
     if (path.startsWith('/chat/results')) return ['chat-results']
     if (path === '/admin' || path === '/admin/') return ['admin-dashboard']
@@ -96,10 +97,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (path === '/admin/transparency-dashboard') return ['admin-ai-transparency-dashboard']
     if (path === '/admin/transparency-management') return ['admin-transparency-management']
     if (path === '/admin/transparency-review') return ['admin-transparency-review']
+    if (path === '/admin/ai-transparency-analysis') return ['admin-ai-transparency-analysis']
 
     // Demo and test pages
     if (path === '/admin/ai-transparency') return ['admin-ai-transparency']
-    if (path === '/admin/ai-transparency-demo') return ['admin-ai-transparency-demo']
     if (path === '/admin/business-intelligence-demo') return ['admin-business-intelligence-demo']
     if (path === '/admin/ai-management-demo') return ['admin-ai-management-demo']
     if (path === '/admin/advanced-ai-features-demo') return ['admin-advanced-ai-features-demo']
@@ -118,6 +119,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       icon: <MessageOutlined />,
       label: 'Chat Interface',
       onClick: () => navigate('/chat'),
+    },
+    {
+      key: 'chat-enhanced',
+      icon: <EyeOutlined />,
+      label: 'Enhanced Chat',
+      onClick: () => navigate('/chat/enhanced'),
     },
     {
       key: 'chat-history',
@@ -216,13 +223,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             label: 'Review & Analysis',
             onClick: () => navigate('/admin/transparency-review'),
           },
+          {
+            key: 'admin-ai-transparency-analysis',
+            label: 'Interactive Analysis',
+            onClick: () => navigate('/admin/ai-transparency-analysis'),
+          },
         ],
-      },
-      {
-        key: 'admin-ai-transparency-demo',
-        icon: <ExperimentOutlined />,
-        label: 'Transparency Demo',
-        onClick: () => navigate('/admin/ai-transparency-demo'),
       },
       {
         key: 'admin-business-intelligence-demo',

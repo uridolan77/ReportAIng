@@ -9,6 +9,7 @@ namespace BIReportingCopilot.Core.Interfaces.Business;
 /// </summary>
 public interface IBusinessTableManagementService
 {
+    // Basic CRUD operations
     Task<List<BusinessTableInfoDto>> GetBusinessTablesAsync(CancellationToken cancellationToken = default);
     Task<List<BusinessTableInfoOptimizedDto>> GetBusinessTablesOptimizedAsync(CancellationToken cancellationToken = default);
     Task<BusinessTableInfoDto?> GetBusinessTableAsync(long id, CancellationToken cancellationToken = default);
@@ -16,9 +17,16 @@ public interface IBusinessTableManagementService
     Task<BusinessTableInfoDto> CreateBusinessTableAsync(CreateTableInfoRequest request, string userId, CancellationToken cancellationToken = default);
     Task<bool> UpdateBusinessTableAsync(BusinessTableInfoDto table, CancellationToken cancellationToken = default);
     Task<BusinessTableInfoDto?> UpdateBusinessTableAsync(long id, CreateTableInfoRequest request, string userId, CancellationToken cancellationToken = default);
+    Task<BusinessTableInfoDto?> UpdateBusinessTableAsync(long id, UpdateTableInfoRequest request, string userId, CancellationToken cancellationToken = default);
     Task<bool> DeleteBusinessTableAsync(string tableId, CancellationToken cancellationToken = default);
     Task<bool> DeleteBusinessTableAsync(long id, CancellationToken cancellationToken = default);
+    Task<bool> DeleteBusinessTableAsync(long id, string userId, CancellationToken cancellationToken = default);
+
+    // Search and filtering
     Task<List<BusinessTableInfoDto>> SearchBusinessTablesAsync(string searchTerm, CancellationToken cancellationToken = default);
+    Task<PagedResult<BusinessTableInfoDto>> GetBusinessTablesAsync(BusinessTableFilter filter, CancellationToken cancellationToken = default);
+
+    // Statistics and analytics
     Task<BusinessTableStatistics> GetTableStatisticsAsync(CancellationToken cancellationToken = default);
 
     // Column-specific operations

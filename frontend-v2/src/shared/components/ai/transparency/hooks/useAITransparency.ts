@@ -10,18 +10,25 @@ import {
   setCurrentAnalysis,
   setCurrentExplanation
 } from '@shared/store/aiTransparencySlice'
+import { 
+  useGetTransparencyTraceQuery,
+  useGetConfidenceBreakdownQuery,
+  useGetAlternativeOptionsQuery,
+  useGetTransparencyTracesQuery
+} from '@shared/store/api/transparencyApi'
+import { transparencySignalR } from '@shared/services/transparencySignalR'
 import type { UseAITransparencyResult, TransparencyData } from '../types'
 import type { PromptConstructionTrace, ConfidenceAnalysis, AIDecisionExplanation } from '@shared/types/ai'
 
 /**
- * Hook for managing AI transparency data and operations
+ * Hook for managing AI transparency data and real-time updates
  * 
- * This hook provides:
- * - Transparency data loading and caching
- * - Real-time trace updates
- * - Error handling and retry logic
- * - Export functionality
- * - Performance tracking
+ * Provides comprehensive transparency information including:
+ * - Prompt construction traces
+ * - Confidence analysis
+ * - Decision explanations
+ * - Alternative options
+ * - Real-time updates via SignalR
  */
 export const useAITransparency = (traceId: string): UseAITransparencyResult => {
   const dispatch = useAppDispatch()
@@ -30,175 +37,89 @@ export const useAITransparency = (traceId: string): UseAITransparencyResult => {
   const [localLoading, setLocalLoading] = useState(false)
   const [localError, setLocalError] = useState<string>()
 
-  // Combine transparency data
-  const transparencyData: TransparencyData | undefined = trace ? {
-    trace,
-    analysis: analysis || {
-      overallConfidence: trace.totalConfidence,
-      factors: [],
-      breakdown: {
-        contextualRelevance: 0.9,
-        syntacticCorrectness: 0.85,
-        semanticClarity: 0.88,
-        businessAlignment: 0.92
-      },
-      recommendations: []
-    },
-    explanation: explanation || {
-      decision: 'AI decision based on analysis',
-      reasoning: ['Step 1', 'Step 2', 'Step 3'],
-      confidence: trace.totalConfidence,
-      alternatives: [],
-      factors: [],
-      recommendations: trace.optimizationSuggestions
-    },
-    alternatives: trace.optimizationSuggestions.map(opt => ({
-      id: opt.id,
-      description: opt.description,
-      confidence: 0.8,
-      reasoning: opt.implementation,
-      tradeoffs: [opt.description],
-      estimatedImpact: {
-        performance: opt.expectedImprovement,
-        accuracy: opt.expectedImprovement * 0.8,
-        cost: opt.expectedImprovement * 0.6
+  // Use real API queries
+  const { data: traceData, isLoading: traceLoading, error: traceError } = useGetTransparencyTraceQuery(
+    traceId, 
+    { skip: !traceId }
+  )
+  const { data: confidenceData, isLoading: confidenceLoading } = useGetConfidenceBreakdownQuery(
+    traceData?.analysisId || '', 
+    { skip: !traceData?.analysisId }
+  )
+  const { data: alternativesData, isLoading: alternativesLoading } = useGetAlternativeOptionsQuery(
+    traceId, 
+    { skip: !traceId }
+  )
+
+  // Combine transparency data from real API responses
+  const transparencyData: TransparencyData | undefined = traceData ? {
+    trace: {
+      traceId: traceData.traceId,
+      steps: traceData.detailedMetrics?.steps || [],
+      finalPrompt: traceData.summary || '',
+      totalConfidence: traceData.overallConfidence || 0,
+      optimizationSuggestions: traceData.optimizationSuggestions || [],
+      metadata: {
+        modelUsed: traceData.detailedMetrics?.modelUsed || 'unknown',
+        provider: traceData.detailedMetrics?.provider || 'unknown',
+        tokensUsed: traceData.detailedMetrics?.tokensUsed || 0,
+        processingTime: traceData.detailedMetrics?.processingTime || 0
       }
-    })),
-    recommendations: trace.optimizationSuggestions,
+    },
+    analysis: confidenceData ? {
+      overallConfidence: confidenceData.overallConfidence,
+      factors: confidenceData.confidenceFactors || [],
+      breakdown: confidenceData.factorBreakdown || {
+        contextualRelevance: 0,
+        syntacticCorrectness: 0,
+        semanticClarity: 0,
+        businessAlignment: 0
+      },
+      recommendations: confidenceData.recommendations || []
+    } : undefined,
+    explanation: {
+      decision: traceData.summary || 'AI decision based on analysis',
+      reasoning: traceData.detailedMetrics?.reasoning || [],
+      confidence: traceData.overallConfidence || 0,
+      alternatives: alternativesData || [],
+      factors: confidenceData?.confidenceFactors || [],
+      recommendations: traceData.optimizationSuggestions || []
+    },
+    alternatives: alternativesData || [],
+    recommendations: traceData.optimizationSuggestions || [],
     metadata: {
-      timestamp: new Date().toISOString(),
-      version: '1.0',
-      source: 'ai-transparency-hook'
+      timestamp: traceData.generatedAt || new Date().toISOString(),
+      version: '2.0',
+      source: 'transparency-api'
     }
   } : undefined
 
-  // Load trace data
+  // Load trace data - now handled by RTK Query automatically
   const loadTrace = useCallback(async (id: string) => {
     setLocalLoading(true)
     setLocalError(undefined)
     dispatch(setLoading(true))
 
     try {
-      // TODO: Replace with actual API call when available
-      // const response = await fetch(`/api/ai/transparency/trace/${id}`)
-      // const traceData = await response.json()
-
-      // Mock data for development
-      const mockTrace: PromptConstructionTrace = {
-        traceId: id,
-        steps: [
-          {
-            stepName: 'Query Analysis',
-            description: 'Analyzing user query for intent and context',
-            confidence: 0.92,
-            context: ['user_query', 'session_context', 'business_rules'],
-            alternatives: ['Simple keyword matching', 'Pattern-based analysis'],
-            reasoning: 'High confidence due to clear query structure and available context',
-            timestamp: new Date().toISOString()
-          },
-          {
-            stepName: 'Schema Mapping',
-            description: 'Mapping query elements to database schema',
-            confidence: 0.88,
-            context: ['schema_metadata', 'table_relationships', 'column_types'],
-            alternatives: ['Manual schema selection', 'Rule-based mapping'],
-            reasoning: 'Good schema understanding with some ambiguity in column selection',
-            timestamp: new Date().toISOString()
-          },
-          {
-            stepName: 'SQL Generation',
-            description: 'Generating optimized SQL query',
-            confidence: 0.94,
-            context: ['query_patterns', 'performance_hints', 'business_constraints'],
-            alternatives: ['Basic SQL template', 'Manual query construction'],
-            reasoning: 'Excellent pattern match with optimization opportunities',
-            timestamp: new Date().toISOString()
-          }
-        ],
-        finalPrompt: `Generate SQL query for sales analysis:
-SELECT s.product_id, p.product_name, SUM(s.amount) as total_sales
-FROM sales s
-JOIN products p ON s.product_id = p.id
-WHERE s.sale_date >= '2024-01-01'
-GROUP BY s.product_id, p.product_name
-ORDER BY total_sales DESC`,
-        totalConfidence: 0.91,
-        optimizationSuggestions: [
-          {
-            id: 'opt-1',
-            type: 'performance',
-            title: 'Add Date Index',
-            description: 'Consider adding an index on sale_date for better performance',
-            impact: 'medium',
-            effort: 'low',
-            expectedImprovement: 0.25,
-            implementation: 'CREATE INDEX idx_sales_date ON sales(sale_date)'
-          },
-          {
-            id: 'opt-2',
-            type: 'accuracy',
-            title: 'Add Data Validation',
-            description: 'Include validation for negative amounts',
-            impact: 'low',
-            effort: 'low',
-            expectedImprovement: 0.1,
-            implementation: 'WHERE s.amount > 0 AND s.sale_date >= \'2024-01-01\''
-          }
-        ],
-        metadata: {
-          modelUsed: 'gpt-4',
-          provider: 'openai',
-          tokensUsed: 1150,
-          processingTime: 750
+      // Data is automatically loaded by RTK Query hooks
+      // Just need to handle the state updates
+      if (traceData) {
+        dispatch(setActiveTrace(id))
+        
+        if (confidenceData) {
+          dispatch(setCurrentAnalysis({
+            overallConfidence: confidenceData.overallConfidence,
+            factors: confidenceData.confidenceFactors || [],
+            breakdown: confidenceData.factorBreakdown || {
+              contextualRelevance: 0,
+              syntacticCorrectness: 0,
+              semanticClarity: 0,
+              businessAlignment: 0
+            },
+            recommendations: confidenceData.recommendations || []
+          }))
         }
       }
-
-      // Mock analysis data
-      const mockAnalysis: ConfidenceAnalysis = {
-        overallConfidence: mockTrace.totalConfidence,
-        factors: [
-          {
-            name: 'Query Clarity',
-            score: 0.95,
-            explanation: 'Query intent is very clear and well-structured',
-            impact: 'high',
-            category: 'context'
-          },
-          {
-            name: 'Schema Match',
-            score: 0.88,
-            explanation: 'Good match between query and available schema',
-            impact: 'high',
-            category: 'business'
-          },
-          {
-            name: 'Optimization Potential',
-            score: 0.90,
-            explanation: 'Multiple optimization opportunities identified',
-            impact: 'medium',
-            category: 'syntax'
-          }
-        ],
-        breakdown: {
-          contextualRelevance: 0.95,
-          syntacticCorrectness: 0.88,
-          semanticClarity: 0.92,
-          businessAlignment: 0.89
-        },
-        recommendations: [
-          'Consider adding more specific filters for better performance',
-          'Review business rules for additional validation opportunities'
-        ]
-      }
-
-      // Add to store
-      dispatch(addTrace(mockTrace))
-      dispatch(setActiveTrace(id))
-      dispatch(setCurrentAnalysis(mockAnalysis))
-
-      // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load transparency data'
       setLocalError(errorMessage)
@@ -207,7 +128,51 @@ ORDER BY total_sales DESC`,
       setLocalLoading(false)
       dispatch(setLoading(false))
     }
-  }, [dispatch])
+  }, [dispatch, traceData, confidenceData])
+
+  // Handle API loading states and errors
+  useEffect(() => {
+    const isLoading = traceLoading || confidenceLoading || alternativesLoading
+    const hasError = traceError
+
+    setLocalLoading(isLoading)
+    
+    if (hasError) {
+      const errorMessage = 'error' in hasError ? hasError.error : 'Failed to load transparency data'
+      setLocalError(errorMessage)
+      dispatch(setError(errorMessage))
+    } else {
+      setLocalError(undefined)
+    }
+
+    dispatch(setLoading(isLoading))
+  }, [traceLoading, confidenceLoading, alternativesLoading, traceError, dispatch])
+
+  // Legacy mock trace structure for backward compatibility
+  const createLegacyTrace = useCallback((apiData: any): PromptConstructionTrace => {
+    return {
+      traceId: apiData.traceId || '',
+      steps: apiData.detailedMetrics?.steps || [],
+      finalPrompt: apiData.summary || '',
+      totalConfidence: apiData.overallConfidence || 0,
+      optimizationSuggestions: apiData.optimizationSuggestions || [],
+      metadata: {
+        modelUsed: apiData.detailedMetrics?.modelUsed || 'unknown',
+        provider: apiData.detailedMetrics?.provider || 'unknown',
+        tokensUsed: apiData.detailedMetrics?.tokensUsed || 0,
+        processingTime: apiData.detailedMetrics?.processingTime || 0
+      }
+    }
+  }, [])
+
+  // Update store when API data is available
+  useEffect(() => {
+    if (traceData && !trace) {
+      const legacyTrace = createLegacyTrace(traceData)
+      dispatch(addTrace(legacyTrace))
+      dispatch(setActiveTrace(traceData.traceId))
+    }
+  }, [traceData, trace, createLegacyTrace, dispatch])
 
   // Refresh trace data
   const refreshTrace = useCallback(async () => {
@@ -251,94 +216,146 @@ ORDER BY total_sales DESC`,
 /**
  * Hook for managing multiple transparency traces
  */
-export const useAITransparencyHistory = () => {
+export const useAITransparencyHistory = (limit = 10) => {
   const dispatch = useAppDispatch()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string>()
+  
+  // Use real API query for traces
+  const { 
+    data: tracesData, 
+    isLoading: loading, 
+    error: apiError,
+    refetch: loadTraceHistory 
+  } = useGetTransparencyTracesQuery({
+    page: 1,
+    pageSize: limit,
+    sortBy: 'createdAt',
+    sortOrder: 'desc'
+  })
 
-  const loadTraceHistory = useCallback(async (limit = 10) => {
-    setLoading(true)
-    setError(undefined)
+  const error = apiError ? 
+    ('error' in apiError ? apiError.error : 'Failed to load trace history') : 
+    undefined
 
-    try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/ai/transparency/history?limit=${limit}`)
-      // const traces = await response.json()
-
-      // Mock history data
-      const mockTraces: PromptConstructionTrace[] = []
-      for (let i = 0; i < limit; i++) {
-        mockTraces.push({
-          traceId: `trace-${i + 1}`,
+  // Update store when traces are loaded
+  useEffect(() => {
+    if (tracesData?.traces) {
+      tracesData.traces.forEach(apiTrace => {
+        const legacyTrace: PromptConstructionTrace = {
+          traceId: apiTrace.traceId,
           steps: [],
-          finalPrompt: `Mock prompt ${i + 1}`,
-          totalConfidence: 0.8 + Math.random() * 0.2,
+          finalPrompt: apiTrace.userQuestion,
+          totalConfidence: apiTrace.overallConfidence || 0,
           optimizationSuggestions: [],
           metadata: {
-            modelUsed: 'gpt-4',
-            provider: 'openai',
-            tokensUsed: 1000 + Math.random() * 500,
-            processingTime: 500 + Math.random() * 1000
+            modelUsed: 'unknown',
+            provider: 'unknown',
+            tokensUsed: 0,
+            processingTime: 0
           }
-        })
-      }
-
-      // Add traces to store
-      mockTraces.forEach(trace => {
-        dispatch(addTrace(trace))
+        }
+        dispatch(addTrace(legacyTrace))
       })
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load trace history'
-      setError(errorMessage)
-    } finally {
-      setLoading(false)
     }
-  }, [dispatch])
+  }, [tracesData, dispatch])
 
   return {
     loadTraceHistory,
     loading,
-    error
+    error,
+    traces: tracesData?.traces || []
   }
 }
 
 /**
- * Hook for real-time transparency updates
+ * Hook for real-time transparency updates using SignalR
  */
 export const useRealTimeTransparency = (sessionId?: string) => {
   const [isConnected, setIsConnected] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<string>()
+  const [connectionError, setConnectionError] = useState<string>()
 
   useEffect(() => {
     if (!sessionId) return
 
-    // TODO: Implement WebSocket connection for real-time updates
-    // const ws = new WebSocket(`/ws/transparency/${sessionId}`)
-    
-    // ws.onopen = () => setIsConnected(true)
-    // ws.onclose = () => setIsConnected(false)
-    // ws.onmessage = (event) => {
-    //   const data = JSON.parse(event.data)
-    //   setLastUpdate(new Date().toISOString())
-    //   // Handle real-time transparency updates
-    // }
+    let cleanup: (() => void) | undefined
 
-    // Mock connection
-    setIsConnected(true)
-    const interval = setInterval(() => {
-      setLastUpdate(new Date().toISOString())
-    }, 5000)
+    const initializeConnection = async () => {
+      try {
+        // Connect to SignalR
+        await transparencySignalR.connect()
+        setIsConnected(transparencySignalR.getConnectionStatus())
+        setConnectionError(undefined)
+
+        // Subscribe to real-time events
+        const unsubscribeTraceStarted = transparencySignalR.subscribe('TraceStarted', (data) => {
+          console.log('🚀 Real-time trace started:', data)
+          setLastUpdate(new Date().toISOString())
+        })
+
+        const unsubscribeTraceUpdated = transparencySignalR.subscribe('TraceUpdated', (data) => {
+          console.log('📝 Real-time trace updated:', data)
+          setLastUpdate(new Date().toISOString())
+        })
+
+        const unsubscribeTraceCompleted = transparencySignalR.subscribe('TraceCompleted', (data) => {
+          console.log('✅ Real-time trace completed:', data)
+          setLastUpdate(new Date().toISOString())
+        })
+
+        const unsubscribeStepCompleted = transparencySignalR.subscribe('StepCompleted', (data) => {
+          console.log('🔄 Real-time step completed:', data)
+          setLastUpdate(new Date().toISOString())
+        })
+
+        const unsubscribeConfidenceUpdated = transparencySignalR.subscribe('ConfidenceUpdated', (data) => {
+          console.log('📊 Real-time confidence updated:', data)
+          setLastUpdate(new Date().toISOString())
+        })
+
+        // Cleanup function
+        cleanup = () => {
+          unsubscribeTraceStarted()
+          unsubscribeTraceUpdated()
+          unsubscribeTraceCompleted()
+          unsubscribeStepCompleted()
+          unsubscribeConfidenceUpdated()
+          transparencySignalR.disconnect()
+        }
+
+      } catch (error) {
+        console.error('❌ Failed to initialize SignalR connection:', error)
+        setConnectionError(error instanceof Error ? error.message : 'Connection failed')
+        setIsConnected(false)
+      }
+    }
+
+    initializeConnection()
 
     return () => {
-      clearInterval(interval)
+      if (cleanup) {
+        cleanup()
+      }
       setIsConnected(false)
     }
   }, [sessionId])
 
+  // Monitor connection status
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentStatus = transparencySignalR.getConnectionStatus()
+      if (currentStatus !== isConnected) {
+        setIsConnected(currentStatus)
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [isConnected])
+
   return {
     isConnected,
-    lastUpdate
+    lastUpdate,
+    connectionError,
+    connectionState: transparencySignalR.getConnectionState()
   }
 }
 

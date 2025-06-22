@@ -190,27 +190,39 @@ function Test-LLMManagementEndpoints {
     Write-Host "=" * 50 -ForegroundColor Magenta
     
     # Test providers
-    $providers = Invoke-AuthenticatedRequest -Uri "$BaseUrl/api/llm-management/providers"
+    $providers = Invoke-AuthenticatedRequest -Uri "$BaseUrl/api/llmmanagement/providers"
     if ($providers) {
         Write-Host "LLM Providers: Retrieved providers data" -ForegroundColor Cyan
     }
-    
+
     # Test models
-    $models = Invoke-AuthenticatedRequest -Uri "$BaseUrl/api/llm-management/models"
+    $models = Invoke-AuthenticatedRequest -Uri "$BaseUrl/api/llmmanagement/models"
     if ($models) {
         Write-Host "LLM Models: Retrieved models data" -ForegroundColor Cyan
     }
-    
-    # Test usage logs
-    $usage = Invoke-AuthenticatedRequest -Uri "$BaseUrl/api/llm-management/usage?limit=10"
+
+    # Test usage history
+    $usage = Invoke-AuthenticatedRequest -Uri "$BaseUrl/api/llmmanagement/usage/history?take=10"
     if ($usage) {
-        Write-Host "Usage Logs: Retrieved usage data" -ForegroundColor Cyan
+        Write-Host "Usage History: Retrieved usage data" -ForegroundColor Cyan
     }
-    
-    # Test performance metrics
-    $performance = Invoke-AuthenticatedRequest -Uri "$BaseUrl/api/llm-management/performance"
-    if ($performance) {
-        Write-Host "Performance Metrics: Retrieved metrics" -ForegroundColor Cyan
+
+    # Test usage analytics
+    $analytics = Invoke-AuthenticatedRequest -Uri "$BaseUrl/api/llmmanagement/usage/analytics?startDate=2025-05-01&endDate=2025-06-22"
+    if ($analytics) {
+        Write-Host "Usage Analytics: Retrieved analytics data" -ForegroundColor Cyan
+    }
+
+    # Test dashboard summary
+    $dashboard = Invoke-AuthenticatedRequest -Uri "$BaseUrl/api/llmmanagement/dashboard/summary"
+    if ($dashboard) {
+        Write-Host "Dashboard Summary: Retrieved dashboard data" -ForegroundColor Cyan
+    }
+
+    # Test provider health
+    $health = Invoke-AuthenticatedRequest -Uri "$BaseUrl/api/llmmanagement/providers/health"
+    if ($health) {
+        Write-Host "Provider Health: Retrieved health status" -ForegroundColor Cyan
     }
 }
 

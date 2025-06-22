@@ -10,7 +10,7 @@ import {
   CheckCircleOutlined,
   InfoCircleOutlined
 } from '@ant-design/icons'
-import { Line } from '@ant-design/plots'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 
 const { Text, Title } = Typography
 
@@ -189,13 +189,12 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
             <Statistic
               title="Cost"
               value={currentMetrics.cost}
-              prefix="$"
+              prefix={<DollarOutlined />}
               precision={3}
-              valueStyle={{ 
+              valueStyle={{
                 fontSize: '14px',
                 color: currentMetrics.cost < 0.05 ? '#52c41a' : '#faad14'
               }}
-              prefix={<DollarOutlined />}
             />
           </Col>
         </Row>
@@ -228,38 +227,40 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   const renderHistoricalChart = () => {
     if (!showHistorical) return null
 
-    const config = {
-      data: historicalData,
-      xField: 'time',
-      yField: 'responseTime',
-      height: 150,
-      smooth: true,
-      point: {
-        size: 3,
-        shape: 'circle',
-      },
-      line: {
-        color: '#1890ff',
-      },
-      xAxis: {
-        label: {
-          style: {
-            fontSize: 10,
-          },
-        },
-      },
-      yAxis: {
-        label: {
-          style: {
-            fontSize: 10,
-          },
-        },
-      },
-    }
-
     return (
       <Card size="small" title="Performance Trends">
-        <Line {...config} />
+        <div style={{ height: 150, width: '100%' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={historicalData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="time"
+                tick={{ fontSize: 10 }}
+                axisLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 10 }}
+                axisLine={false}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  fontSize: '12px',
+                  backgroundColor: '#fff',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '6px'
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="responseTime"
+                stroke="#1890ff"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 4 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
         <div style={{ marginTop: '8px', textAlign: 'center' }}>
           <Text type="secondary" style={{ fontSize: '11px' }}>
             Response time over last 20 minutes

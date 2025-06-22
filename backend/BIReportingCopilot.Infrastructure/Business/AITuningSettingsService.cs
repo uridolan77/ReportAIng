@@ -269,14 +269,14 @@ public class AITuningSettingsService : IAITuningSettingsService
             var result = new TuningValidationResult
             {
                 IsValid = !string.IsNullOrEmpty(settings.SettingKey) && !string.IsNullOrEmpty(settings.SettingValue),
-                Issues = new List<ValidationIssue>()
+                Issues = new List<TuningValidationIssue>()
             };
 
             if (string.IsNullOrEmpty(settings.SettingKey))
-                result.Issues.Add(new ValidationIssue { Title = "Missing Setting Key", Description = "Setting key is required", Severity = ValidationIssueSeverity.Error });
+                result.Issues.Add(new TuningValidationIssue { Title = "Missing Setting Key", Description = "Setting key is required", Severity = ValidationIssueSeverity.Error });
 
             if (string.IsNullOrEmpty(settings.SettingValue))
-                result.Issues.Add(new ValidationIssue { Title = "Missing Setting Value", Description = "Setting value is required", Severity = ValidationIssueSeverity.Error });
+                result.Issues.Add(new TuningValidationIssue { Title = "Missing Setting Value", Description = "Setting value is required", Severity = ValidationIssueSeverity.Error });
 
             return Task.FromResult(result);
         }
@@ -286,7 +286,7 @@ public class AITuningSettingsService : IAITuningSettingsService
             return Task.FromResult(new TuningValidationResult
             {
                 IsValid = false,
-                Issues = new List<ValidationIssue> { new ValidationIssue { Title = "Validation Error", Description = ex.Message, Severity = ValidationIssueSeverity.Error } }
+                Issues = new List<TuningValidationIssue> { new TuningValidationIssue { Title = "Validation Error", Description = ex.Message, Severity = ValidationIssueSeverity.Error } }
             });
         }
     }

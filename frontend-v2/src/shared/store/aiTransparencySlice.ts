@@ -105,6 +105,13 @@ export const aiTransparencySlice = createSlice({
       state.activeTraceId = action.payload
     },
 
+    updateTrace: (state, action: PayloadAction<{ id: string; changes: Partial<PromptConstructionTrace> }>) => {
+      const { id, changes } = action.payload
+      if (state.traces[id]) {
+        state.traces[id] = { ...state.traces[id], ...changes }
+      }
+    },
+
     removeTrace: (state, action: PayloadAction<string>) => {
       const traceId = action.payload
       delete state.traces[traceId]
@@ -199,6 +206,7 @@ export const aiTransparencySlice = createSlice({
 export const {
   addTrace,
   setActiveTrace,
+  updateTrace,
   removeTrace,
   clearTraces,
   setShowDetailedMetrics,

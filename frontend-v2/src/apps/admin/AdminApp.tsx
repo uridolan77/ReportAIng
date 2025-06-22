@@ -12,7 +12,7 @@ import PerformanceMonitoring from './pages/PerformanceMonitoring'
 import AIAnalyticsDashboard from './pages/AIAnalyticsDashboard'
 import LLMManagementDashboard from './pages/LLMManagementDashboard'
 import AITransparencyDashboard from './pages/AITransparencyDashboard'
-import AITransparencyDemo from './pages/AITransparencyDemo'
+import AITransparencyAnalysisPage from './pages/AITransparencyAnalysisPage'
 import BusinessIntelligenceDemo from './pages/BusinessIntelligenceDemo'
 import AIManagementDemo from './pages/AIManagementDemo'
 import AdvancedAIFeaturesDemo from './pages/AdvancedAIFeaturesDemo'
@@ -52,7 +52,7 @@ export default function AdminApp() {
         <Route path="/ai-analytics" element={<AIAnalyticsDashboard />} />
         <Route path="/llm-management" element={<LLMManagementDashboard />} />
         <Route path="/ai-transparency" element={<AITransparencyDashboard />} />
-        <Route path="/ai-transparency-demo" element={<AITransparencyDemo />} />
+        <Route path="/ai-transparency-analysis" element={<AITransparencyAnalysisPage />} />
         <Route path="/business-intelligence-demo" element={<BusinessIntelligenceDemo />} />
         <Route path="/ai-management-demo" element={<AIManagementDemo />} />
         <Route path="/advanced-ai-features-demo" element={<AdvancedAIFeaturesDemo />} />
