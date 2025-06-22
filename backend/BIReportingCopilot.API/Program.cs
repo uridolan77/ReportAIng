@@ -560,6 +560,10 @@ builder.Services.AddScoped<IAIProviderFactory, BIReportingCopilot.Infrastructure
 builder.Services.AddScoped<ILLMManagementService, BIReportingCopilot.Infrastructure.AI.Management.LLMManagementService>();
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Management.LLMManagementService>();
 
+// ===== COST MANAGEMENT SERVICES =====
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.CostOptimization.ICostManagementService, BIReportingCopilot.Infrastructure.CostOptimization.CostManagementService>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.CostOptimization.ICostAnalyticsService, BIReportingCopilot.Infrastructure.CostOptimization.CostAnalyticsService>();
+
 // ===== LLM-AWARE AI SERVICE =====
 // Register the base AI service directly (without circular dependency)
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Core.AIService>();
@@ -784,6 +788,8 @@ builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Agents.IAgentCommu
 // ===== PHASE 2B: AI TRANSPARENCY FOUNDATION =====
 // Transparency repositories
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ITransparencyRepository, BIReportingCopilot.Infrastructure.Data.Repositories.TransparencyRepository>();
+// Transparency services
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Transparency.ITransparencyService, BIReportingCopilot.Infrastructure.Transparency.TransparencyService>();
 
 // Transparency and explainability services
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Transparency.IPromptConstructionTracer, BIReportingCopilot.Infrastructure.Transparency.PromptConstructionTracer>();
@@ -1056,6 +1062,8 @@ app.MapHub<QueryStatusHub>("/hubs/query-status");
 app.MapHub<QueryHub>("/hubs/query");
 // Real-time streaming hub for streaming features
 app.MapHub<BIReportingCopilot.Infrastructure.AI.Streaming.StreamingHub>("/hubs/streaming");
+// Transparency hub for real-time transparency updates
+app.MapHub<BIReportingCopilot.Infrastructure.Hubs.TransparencyHub>("/hubs/transparency");
 // Phase 5: Cost Control & Performance Optimization hubs
 app.MapHub<CostMonitoringHub>("/hubs/cost-monitoring");
 app.MapHub<PerformanceMonitoringHub>("/hubs/performance-monitoring");

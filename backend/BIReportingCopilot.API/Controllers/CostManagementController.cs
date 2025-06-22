@@ -10,7 +10,7 @@ namespace BIReportingCopilot.API.Controllers;
 /// Cost management and optimization controller
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/cost-management")]
 [Authorize]
 public class CostManagementController : ControllerBase
 {

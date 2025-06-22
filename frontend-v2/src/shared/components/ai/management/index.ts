@@ -4,6 +4,8 @@
 export { default as LLMProviderManager } from './LLMProviderManager'
 export type { LLMProviderManagerProps } from './LLMProviderManager'
 
+export { default as LLMModelsManager } from './LLMModelsManager'
+
 export { default as ModelPerformanceAnalytics } from './ModelPerformanceAnalytics'
 export type { ModelPerformanceAnalyticsProps } from './ModelPerformanceAnalytics'
 

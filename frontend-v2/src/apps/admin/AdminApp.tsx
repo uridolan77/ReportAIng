@@ -17,6 +17,8 @@ import BusinessIntelligenceDemo from './pages/BusinessIntelligenceDemo'
 import AIManagementDemo from './pages/AIManagementDemo'
 import AdvancedAIFeaturesDemo from './pages/AdvancedAIFeaturesDemo'
 import AIIntegrationTestPage from './pages/AIIntegrationTestPage'
+import TransparencyManagementPage from './pages/TransparencyManagementPage'
+import TransparencyReviewPage from './pages/TransparencyReviewPage'
 
 export default function AdminApp() {
   return (
@@ -54,6 +56,10 @@ export default function AdminApp() {
         <Route path="/ai-management-demo" element={<AIManagementDemo />} />
         <Route path="/advanced-ai-features-demo" element={<AdvancedAIFeaturesDemo />} />
         <Route path="/ai-integration-test" element={<AIIntegrationTestPage />} />
+
+        {/* New Comprehensive Transparency Pages */}
+        <Route path="/transparency-management" element={<TransparencyManagementPage />} />
+        <Route path="/transparency-review" element={<TransparencyReviewPage />} />
 
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/admin" replace />} />

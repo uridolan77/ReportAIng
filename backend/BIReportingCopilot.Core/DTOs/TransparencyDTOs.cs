@@ -27,6 +27,7 @@ public class OptimizePromptRequest
 {
     public string UserQuery { get; set; } = string.Empty;
     public string? UserId { get; set; }
+    public string? TraceId { get; set; }
     public string? CurrentPrompt { get; set; }
     public Dictionary<string, object>? Context { get; set; }
     public string[] OptimizationTypes { get; set; } = Array.Empty<string>();
@@ -253,4 +254,135 @@ public class PromptBuildStep
     public double Confidence { get; set; }
     public TimeSpan Duration { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
+/// Dashboard-specific transparency metrics
+/// </summary>
+public class TransparencyDashboardMetricsDto
+{
+    public int TotalTraces { get; set; }
+    public double AverageConfidence { get; set; }
+    public List<OptimizationSuggestionDto> TopOptimizations { get; set; } = new();
+    public List<ConfidenceTrendDto> ConfidenceTrends { get; set; } = new();
+    public List<ModelUsageDto> UsageByModel { get; set; } = new();
+}
+
+/// <summary>
+/// Transparency settings for a user
+/// </summary>
+public class TransparencySettingsDto
+{
+    public bool EnableDetailedLogging { get; set; } = true;
+    public double ConfidenceThreshold { get; set; } = 0.7;
+    public int RetentionDays { get; set; } = 30;
+    public bool EnableOptimizationSuggestions { get; set; } = true;
+}
+
+/// <summary>
+/// Export transparency data request
+/// </summary>
+public class ExportTransparencyRequest
+{
+    public List<string>? TraceIds { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public string Format { get; set; } = "json"; // json, csv, excel
+    public string? UserId { get; set; }
+}
+
+/// <summary>
+/// Transparency trace summary DTO
+/// </summary>
+public class TransparencyTraceDto
+{
+    public string TraceId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string UserQuestion { get; set; } = string.Empty;
+    public string IntentType { get; set; } = string.Empty;
+    public double OverallConfidence { get; set; }
+    public int TotalTokens { get; set; }
+    public bool Success { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>
+/// Detailed transparency trace DTO
+/// </summary>
+public class TransparencyTraceDetailDto : TransparencyTraceDto
+{
+    public List<PromptConstructionStepDto> Steps { get; set; } = new();
+    public string? FinalPrompt { get; set; }
+    public string? ErrorMessage { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
+/// Prompt construction step DTO
+/// </summary>
+public class PromptConstructionStepDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string StepName { get; set; } = string.Empty;
+    public int StepOrder { get; set; }
+    public DateTime StartTime { get; set; }
+    public DateTime? EndTime { get; set; }
+    public bool Success { get; set; }
+    public int TokensAdded { get; set; }
+    public double Confidence { get; set; }
+    public string? Content { get; set; }
+    public Dictionary<string, object> Details { get; set; } = new();
+}
+
+/// <summary>
+/// Confidence trend data point
+/// </summary>
+public class ConfidenceTrendDto
+{
+    public DateTime Date { get; set; }
+    public double Confidence { get; set; }
+    public int TraceCount { get; set; }
+}
+
+/// <summary>
+/// Model usage statistics
+/// </summary>
+public class ModelUsageDto
+{
+    public string Model { get; set; } = string.Empty;
+    public int Count { get; set; }
+    public double AverageConfidence { get; set; }
+    public int TotalTokens { get; set; }
+}
+
+/// <summary>
+/// Token usage analytics
+/// </summary>
+public class TokenUsageAnalyticsDto
+{
+    public int TotalTokensUsed { get; set; }
+    public double AverageTokensPerQuery { get; set; }
+    public Dictionary<string, int> TokensByIntentType { get; set; } = new();
+    public List<TokenTrendDto> TokenTrends { get; set; } = new();
+}
+
+/// <summary>
+/// Token trend data point
+/// </summary>
+public class TokenTrendDto
+{
+    public DateTime Date { get; set; }
+    public int TokensUsed { get; set; }
+    public int QueryCount { get; set; }
+}
+
+/// <summary>
+/// Transparency performance metrics
+/// </summary>
+public class TransparencyPerformanceDto
+{
+    public double AverageProcessingTime { get; set; }
+    public int TotalQueries { get; set; }
+    public double SuccessRate { get; set; }
+    public Dictionary<string, double> PerformanceByIntentType { get; set; } = new();
 }

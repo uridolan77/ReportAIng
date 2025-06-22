@@ -91,10 +91,10 @@ export const LLMProviderManager: React.FC<LLMProviderManagerProps> = ({
 
   // Combine providers with health status
   const providersWithHealth = useMemo(() => {
-    if (!providers || !healthStatus) return []
+    if (!providers) return []
 
     return providers.map(provider => {
-      const health = healthStatus.find(h => h.providerId === provider.providerId)
+      const health = healthStatus?.find(h => h.providerId === provider.providerId)
       return {
         ...provider,
         health: health || {
@@ -216,27 +216,33 @@ export const LLMProviderManager: React.FC<LLMProviderManagerProps> = ({
       title: 'Provider',
       dataIndex: 'name',
       key: 'name',
-      render: (text: string, record: any) => (
-        <Space>
-          {getStatusIcon(record.health.status)}
-          <div>
-            <div style={{ fontWeight: 'bold' }}>{text}</div>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {record.type} • {record.providerId}
-            </Text>
-          </div>
-        </Space>
-      )
+      render: (text: string, record: any) => {
+        const healthStatus = record.health?.status || (record.health?.isHealthy ? 'healthy' : 'offline')
+        return (
+          <Space>
+            {getStatusIcon(healthStatus)}
+            <div>
+              <div style={{ fontWeight: 'bold' }}>{text || 'Unknown Provider'}</div>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {record.type || 'unknown'} • {record.providerId || 'no-id'}
+              </Text>
+            </div>
+          </Space>
+        )
+      }
     },
     {
       title: 'Status',
       dataIndex: ['health', 'status'],
       key: 'status',
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)}>
-          {status.toUpperCase()}
-        </Tag>
-      )
+      render: (status: string, record: any) => {
+        const healthStatus = record.health?.status || (record.health?.isHealthy ? 'healthy' : 'offline')
+        return (
+          <Tag color={getStatusColor(healthStatus)}>
+            {healthStatus?.toUpperCase() || 'UNKNOWN'}
+          </Tag>
+        )
+      }
     },
     {
       title: 'Enabled',
@@ -257,11 +263,11 @@ export const LLMProviderManager: React.FC<LLMProviderManagerProps> = ({
         <Space direction="vertical" size="small">
           <div>
             <Text type="secondary">Status: </Text>
-            <Text>{record.health.isHealthy ? 'Healthy' : 'Unhealthy'}</Text>
+            <Text>{record.health?.isHealthy ? 'Healthy' : 'Unhealthy'}</Text>
           </div>
           <div>
             <Text type="secondary">Response: </Text>
-            <Text>{record.health.responseTime || 'N/A'}ms</Text>
+            <Text>{record.health?.responseTime || 'N/A'}ms</Text>
           </div>
         </Space>
       )
@@ -272,9 +278,9 @@ export const LLMProviderManager: React.FC<LLMProviderManagerProps> = ({
       render: (_: any, record: any) => (
         <Space direction="vertical" size="small">
           <Text style={{ fontSize: '12px' }}>
-            {new Date(record.health.lastChecked).toLocaleString()}
+            {record.health?.lastChecked ? new Date(record.health.lastChecked).toLocaleString() : 'Never'}
           </Text>
-          {record.health.errorMessage && (
+          {record.health?.errorMessage && (
             <Text type="danger" style={{ fontSize: '11px' }}>
               {record.health.errorMessage}
             </Text>
@@ -424,6 +430,9 @@ export const LLMProviderManager: React.FC<LLMProviderManagerProps> = ({
           loading={providersLoading || healthLoading}
           pagination={compact ? false : { pageSize: 10 }}
           size={compact ? 'small' : 'default'}
+          locale={{
+            emptyText: providersLoading ? 'Loading providers...' : 'No LLM providers configured. Click "Add Provider" to get started.'
+          }}
         />
       </Card>
 

@@ -195,7 +195,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         key: 'admin-ai-transparency',
         icon: <EyeOutlined />,
         label: 'AI Transparency',
-        onClick: () => navigate('/admin/ai-transparency'),
+        children: [
+          {
+            key: 'admin-ai-transparency-dashboard',
+            label: 'Dashboard',
+            onClick: () => navigate('/admin/ai-transparency'),
+          },
+          {
+            key: 'admin-transparency-management',
+            label: 'Management',
+            onClick: () => navigate('/admin/transparency-management'),
+          },
+          {
+            key: 'admin-transparency-review',
+            label: 'Review & Analysis',
+            onClick: () => navigate('/admin/transparency-review'),
+          },
+        ],
       },
       {
         key: 'admin-ai-transparency-demo',

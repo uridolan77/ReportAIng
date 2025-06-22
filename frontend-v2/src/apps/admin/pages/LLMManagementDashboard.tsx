@@ -20,11 +20,13 @@ import {
   BarChartOutlined,
   CheckCircleOutlined,
   DatabaseOutlined,
-  ApiOutlined
+  ApiOutlined,
+  RobotOutlined
 } from '@ant-design/icons'
 import { AIFeatureWrapper } from '@shared/components/ai/common/AIFeatureWrapper'
 import {
   LLMProviderManager,
+  LLMModelsManager,
   ModelPerformanceAnalytics,
   CostOptimizationPanel,
   AIConfigurationManager
@@ -152,6 +154,21 @@ export const LLMManagementDashboard: React.FC = () => {
           showMetrics={true}
           showConfiguration={true}
           compact={false}
+        />
+      )
+    },
+    {
+      key: 'models',
+      label: (
+        <Space>
+          <RobotOutlined />
+          <span>Models</span>
+        </Space>
+      ),
+      children: (
+        <LLMModelsManager
+          compact={false}
+          showActions={true}
         />
       )
     },

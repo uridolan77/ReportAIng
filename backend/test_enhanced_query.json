@@ -1,0 +1,6 @@
+{
+  "Query": "Show me sales data for Q3 2024",
+  "ExecuteQuery": false,
+  "IncludeAlternatives": true,
+  "IncludeSemanticAnalysis": true
+}

@@ -4,6 +4,7 @@ using BIReportingCopilot.Core.Models.BusinessContext;
 using BIReportingCopilot.Infrastructure.Transparency;
 using BIReportingCopilot.Core.Interfaces.Data;
 using BIReportingCopilot.Core.DTOs;
+using BIReportingCopilot.Core.Interfaces.Transparency;
 
 namespace BIReportingCopilot.API.Controllers;
 
@@ -19,6 +20,7 @@ public class TransparencyController : ControllerBase
     private readonly IBusinessMetadataRetrievalService _metadataService;
     private readonly IContextualPromptBuilder _promptBuilder;
     private readonly IAuditService _auditService;
+    private readonly ITransparencyService _transparencyService;
     private readonly ILogger<TransparencyController> _logger;
 
     public TransparencyController(
@@ -27,6 +29,7 @@ public class TransparencyController : ControllerBase
         IBusinessMetadataRetrievalService metadataService,
         IContextualPromptBuilder promptBuilder,
         IAuditService auditService,
+        ITransparencyService transparencyService,
         ILogger<TransparencyController> logger)
     {
         _promptTracer = promptTracer;
@@ -34,6 +37,7 @@ public class TransparencyController : ControllerBase
         _metadataService = metadataService;
         _promptBuilder = promptBuilder;
         _auditService = auditService;
+        _transparencyService = transparencyService;
         _logger = logger;
     }
 
@@ -144,40 +148,13 @@ public class TransparencyController : ControllerBase
         {
             _logger.LogInformation("Retrieving confidence breakdown for analysis: {AnalysisId}", analysisId);
 
-            // For now, create a mock confidence breakdown
-            // In a full implementation, this would retrieve stored analysis data
-            var breakdown = new ConfidenceBreakdown
-            {
-                AnalysisId = analysisId,
-                OverallConfidence = 0.85,
-                FactorBreakdown = new Dictionary<string, double>
-                {
-                    ["Intent Classification"] = 0.92,
-                    ["Entity Recognition"] = 0.78,
-                    ["Schema Relevance"] = 0.85,
-                    ["Template Selection"] = 0.88
-                },
-                ConfidenceFactors = new List<ConfidenceFactor>
-                {
-                    new ConfidenceFactor
-                    {
-                        FactorName = "Intent Classification",
-                        Score = 0.92,
-                        Weight = 0.3,
-                        Description = "High confidence in understanding user intent"
-                    },
-                    new ConfidenceFactor
-                    {
-                        FactorName = "Entity Recognition", 
-                        Score = 0.78,
-                        Weight = 0.25,
-                        Description = "Good entity extraction with some ambiguity"
-                    }
-                },
-                Timestamp = DateTime.UtcNow
-            };
-
+            var breakdown = await _transparencyService.GetConfidenceBreakdownAsync(analysisId);
             return Ok(breakdown);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Analysis {AnalysisId} not found", analysisId);
+            return NotFound(new { error = "Analysis not found", analysisId = analysisId });
         }
         catch (Exception ex)
         {
@@ -196,30 +173,7 @@ public class TransparencyController : ControllerBase
         {
             _logger.LogInformation("Retrieving alternative options for trace: {TraceId}", traceId);
 
-            // For now, create mock alternative options
-            // In a full implementation, this would retrieve stored alternatives
-            var alternatives = new List<AlternativeOptionDto>
-            {
-                new AlternativeOptionDto
-                {
-                    OptionId = Guid.NewGuid().ToString(),
-                    Type = "Template",
-                    Description = "Use analytical template instead of reporting template",
-                    Score = 0.82,
-                    Rationale = "Better suited for complex analytical queries",
-                    EstimatedImprovement = 15.0
-                },
-                new AlternativeOptionDto
-                {
-                    OptionId = Guid.NewGuid().ToString(),
-                    Type = "Context",
-                    Description = "Include additional business rules context",
-                    Score = 0.75,
-                    Rationale = "May improve accuracy for domain-specific queries",
-                    EstimatedImprovement = 8.0
-                }
-            };
-
+            var alternatives = await _transparencyService.GetAlternativeOptionsAsync(traceId);
             return Ok(alternatives);
         }
         catch (Exception ex)
@@ -240,34 +194,7 @@ public class TransparencyController : ControllerBase
         {
             _logger.LogInformation("Generating optimization suggestions for query: {Query}", request.UserQuery);
 
-            // For now, create mock optimization suggestions
-            // In a full implementation, this would use the PromptOptimizationEngine
-            var suggestions = new List<OptimizationSuggestionDto>
-            {
-                new OptimizationSuggestionDto
-                {
-                    SuggestionId = Guid.NewGuid().ToString(),
-                    Type = "Token Optimization",
-                    Title = "Reduce context verbosity",
-                    Description = "Remove redundant schema information to save tokens",
-                    Priority = "Medium",
-                    EstimatedTokenSaving = 150,
-                    EstimatedPerformanceGain = 12.0,
-                    Implementation = "Filter out less relevant table columns"
-                },
-                new OptimizationSuggestionDto
-                {
-                    SuggestionId = Guid.NewGuid().ToString(),
-                    Type = "Accuracy Improvement",
-                    Title = "Add domain-specific examples",
-                    Description = "Include more relevant query examples for better context",
-                    Priority = "High",
-                    EstimatedTokenSaving = -50, // Uses more tokens
-                    EstimatedPerformanceGain = 25.0,
-                    Implementation = "Add 2-3 similar query examples to the prompt"
-                }
-            };
-
+            var suggestions = await _transparencyService.GetOptimizationSuggestionsAsync(request.UserQuery, request.TraceId);
             return Ok(suggestions.ToArray());
         }
         catch (Exception ex)
@@ -289,40 +216,219 @@ public class TransparencyController : ControllerBase
         {
             _logger.LogInformation("Retrieving transparency metrics for user: {UserId}, days: {Days}", userId, days);
 
-            // For now, create mock metrics
-            // In a full implementation, this would aggregate real data
-            var metrics = new TransparencyMetricsDto
-            {
-                TotalAnalyses = 156,
-                AverageConfidence = 0.84,
-                ConfidenceDistribution = new Dictionary<string, int>
-                {
-                    ["High (>0.8)"] = 98,
-                    ["Medium (0.6-0.8)"] = 45,
-                    ["Low (<0.6)"] = 13
-                },
-                TopIntentTypes = new Dictionary<string, int>
-                {
-                    ["Analytical"] = 67,
-                    ["Reporting"] = 45,
-                    ["Exploratory"] = 32,
-                    ["Comparative"] = 12
-                },
-                OptimizationImpact = new Dictionary<string, double>
-                {
-                    ["Token Savings"] = 23.5,
-                    ["Performance Improvement"] = 18.2,
-                    ["Accuracy Gain"] = 15.8
-                },
-                TimeRange = new { from = DateTime.UtcNow.AddDays(-days), to = DateTime.UtcNow }
-            };
-
+            var metrics = await _transparencyService.GetTransparencyMetricsAsync(userId, days);
             return Ok(metrics);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving transparency metrics");
             return StatusCode(500, new { error = "Failed to retrieve transparency metrics", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get dashboard-specific transparency metrics
+    /// </summary>
+    [HttpGet("metrics/dashboard")]
+    public async Task<ActionResult<TransparencyDashboardMetricsDto>> GetDashboardMetrics(
+        [FromQuery] int days = 30)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving dashboard transparency metrics for {Days} days", days);
+
+            var metrics = await _transparencyService.GetDashboardMetricsAsync(days);
+            return Ok(metrics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving dashboard transparency metrics");
+            return StatusCode(500, new { error = "Failed to retrieve dashboard metrics", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get transparency settings for the current user
+    /// </summary>
+    [HttpGet("settings")]
+    public async Task<ActionResult<TransparencySettingsDto>> GetTransparencySettings()
+    {
+        try
+        {
+            var userId = User.Identity?.Name ?? "anonymous";
+            _logger.LogInformation("Retrieving transparency settings for user: {UserId}", userId);
+
+            var settings = await _transparencyService.GetTransparencySettingsAsync(userId);
+            return Ok(settings);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving transparency settings");
+            return StatusCode(500, new { error = "Failed to retrieve transparency settings", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Update transparency settings for the current user
+    /// </summary>
+    [HttpPut("settings")]
+    public async Task<ActionResult> UpdateTransparencySettings([FromBody] TransparencySettingsDto settings)
+    {
+        try
+        {
+            var userId = User.Identity?.Name ?? "anonymous";
+            _logger.LogInformation("Updating transparency settings for user: {UserId}", userId);
+
+            await _transparencyService.UpdateTransparencySettingsAsync(userId, settings);
+            return Ok(new { message = "Settings updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating transparency settings");
+            return StatusCode(500, new { error = "Failed to update transparency settings", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Export transparency data
+    /// </summary>
+    [HttpPost("export")]
+    public async Task<ActionResult> ExportTransparencyData([FromBody] ExportTransparencyRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Exporting transparency data in format: {Format}", request.Format);
+
+            var data = await _transparencyService.ExportTransparencyDataAsync(request);
+
+            var contentType = request.Format.ToLower() switch
+            {
+                "json" => "application/json",
+                "csv" => "text/csv",
+                "excel" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                _ => "application/octet-stream"
+            };
+
+            var fileName = $"transparency-data-{DateTime.UtcNow:yyyy-MM-dd}.{request.Format.ToLower()}";
+
+            return File(data, contentType, fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exporting transparency data");
+            return StatusCode(500, new { error = "Failed to export transparency data", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get recent transparency traces
+    /// </summary>
+    [HttpGet("traces/recent")]
+    public async Task<ActionResult<List<TransparencyTraceDto>>> GetRecentTraces(
+        [FromQuery] string? userId = null,
+        [FromQuery] int limit = 10)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving recent transparency traces for user: {UserId}, limit: {Limit}", userId, limit);
+
+            var traces = await _transparencyService.GetRecentTracesAsync(userId, limit);
+            return Ok(traces);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving recent transparency traces");
+            return StatusCode(500, new { error = "Failed to retrieve recent traces", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get detailed trace information
+    /// </summary>
+    [HttpGet("traces/{traceId}/detail")]
+    public async Task<ActionResult<TransparencyTraceDetailDto>> GetTraceDetail(string traceId)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving detailed trace information for: {TraceId}", traceId);
+
+            var traceDetail = await _transparencyService.GetTraceDetailAsync(traceId);
+            return Ok(traceDetail);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Trace {TraceId} not found", traceId);
+            return NotFound(new { error = "Trace not found", traceId = traceId });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving trace detail for {TraceId}", traceId);
+            return StatusCode(500, new { error = "Failed to retrieve trace detail", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get confidence trends over time
+    /// </summary>
+    [HttpGet("analytics/confidence-trends")]
+    public async Task<ActionResult<List<ConfidenceTrendDto>>> GetConfidenceTrends(
+        [FromQuery] string? userId = null,
+        [FromQuery] int days = 30)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving confidence trends for user: {UserId}, days: {Days}", userId, days);
+
+            var trends = await _transparencyService.GetConfidenceTrendsAsync(userId, days);
+            return Ok(trends);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving confidence trends");
+            return StatusCode(500, new { error = "Failed to retrieve confidence trends", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get token usage analytics
+    /// </summary>
+    [HttpGet("analytics/token-usage")]
+    public async Task<ActionResult<TokenUsageAnalyticsDto>> GetTokenUsageAnalytics(
+        [FromQuery] string? userId = null,
+        [FromQuery] int days = 30)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving token usage analytics for user: {UserId}, days: {Days}", userId, days);
+
+            var analytics = await _transparencyService.GetTokenUsageAnalyticsAsync(userId, days);
+            return Ok(analytics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving token usage analytics");
+            return StatusCode(500, new { error = "Failed to retrieve token usage analytics", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get performance metrics for transparency operations
+    /// </summary>
+    [HttpGet("analytics/performance")]
+    public async Task<ActionResult<TransparencyPerformanceDto>> GetPerformanceMetrics(
+        [FromQuery] int days = 7)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving transparency performance metrics for {Days} days", days);
+
+            var performance = await _transparencyService.GetPerformanceMetricsAsync(days);
+            return Ok(performance);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving transparency performance metrics");
+            return StatusCode(500, new { error = "Failed to retrieve performance metrics", details = ex.Message });
         }
     }
 }

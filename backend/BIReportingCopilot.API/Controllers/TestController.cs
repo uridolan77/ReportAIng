@@ -68,6 +68,8 @@ namespace BIReportingCopilot.API.Controllers
                         new Claim(ClaimTypes.NameIdentifier, userId),
                         new Claim(ClaimTypes.Name, userName),
                         new Claim(ClaimTypes.Email, userId),
+                        new Claim(ClaimTypes.Role, "Admin"),
+                        new Claim(ClaimTypes.Role, "Analyst"),
                         new Claim("role", "TestUser"),
                         new Claim("test", "true")
                     }),
