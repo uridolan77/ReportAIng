@@ -10,6 +10,7 @@ import UserManagement from './pages/UserManagement'
 import Analytics from './pages/Analytics'
 import CostManagement from './pages/CostManagement'
 import PerformanceMonitoring from './pages/PerformanceMonitoring'
+import PerformanceCostManagement from './pages/PerformanceCostManagement'
 import AIAnalyticsDashboard from './pages/AIAnalyticsDashboard'
 import LLMManagementDashboard from './pages/LLMManagementDashboard'
 import AITransparencyDashboard from './pages/AITransparencyDashboard'
@@ -48,11 +49,12 @@ export default function AdminApp() {
         {/* Analytics and monitoring */}
         <Route path="/analytics" element={<Analytics />} />
 
-        {/* Cost management */}
-        <Route path="/cost-management" element={<CostManagement />} />
+        {/* Unified Performance & Cost Management */}
+        <Route path="/performance-cost" element={<PerformanceCostManagement />} />
 
-        {/* Performance monitoring */}
-        <Route path="/performance" element={<PerformanceMonitoring />} />
+        {/* Legacy routes - redirect to unified page */}
+        <Route path="/cost-management" element={<Navigate to="/admin/performance-cost" replace />} />
+        <Route path="/performance" element={<Navigate to="/admin/performance-cost" replace />} />
 
         {/* AI Analytics and Management */}
         <Route path="/ai-analytics" element={<AIAnalyticsDashboard />} />

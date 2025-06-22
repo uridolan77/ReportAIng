@@ -35,7 +35,7 @@ public class PromptTemplateEntity
     public string? RelationshipContext { get; set; }
     public string? DataGovernanceLevel { get; set; }
     public decimal? ImportanceScore { get; set; } = 0.5m; // Make nullable to match database
-    public string? UsageFrequency { get; set; } // Change to string to match database
+    public decimal? UsageFrequency { get; set; } // Change to decimal to match database
     public string? BusinessMetadata { get; set; } // JSON metadata
 }
 

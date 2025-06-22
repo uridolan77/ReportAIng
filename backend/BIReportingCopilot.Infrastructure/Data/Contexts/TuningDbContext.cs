@@ -301,7 +301,7 @@ Return only the SQL query without any explanation or markdown formatting.",
                 NaturalLanguageDescription = "Converts user questions into SQL SELECT statements",
                 DataGovernanceLevel = "Standard",
                 ImportanceScore = 0.8m,
-                UsageFrequency = "High"
+                UsageFrequency = 0.8m
             }
         );
     }

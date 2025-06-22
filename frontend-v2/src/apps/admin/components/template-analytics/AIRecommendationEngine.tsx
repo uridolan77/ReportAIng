@@ -40,7 +40,7 @@ import {
   LikeOutlined,
   StarOutlined,
   FireOutlined,
-  BrainOutlined
+  RobotOutlined
 } from '@ant-design/icons'
 import {
   useGenerateImprovementSuggestionsMutation,
@@ -235,7 +235,7 @@ export const AIRecommendationEngine: React.FC = () => {
       case 'security': return <AlertOutlined />
       case 'performance': return <ThunderboltOutlined />
       case 'usage': return <TrophyOutlined />
-      default: return <BrainOutlined />
+      default: return <RobotOutlined />
     }
   }
 
@@ -435,7 +435,7 @@ export const AIRecommendationEngine: React.FC = () => {
       key: 'recommendations',
       label: (
         <Space>
-          <BrainOutlined />
+          <RobotOutlined />
           AI Recommendations
           <Badge count={recommendations.filter(r => r.status === 'new').length} />
         </Space>

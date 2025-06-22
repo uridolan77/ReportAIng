@@ -248,23 +248,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         icon: <ControlOutlined />,
       },
       {
-        key: 'admin-performance',
+        key: 'admin-performance-cost',
         icon: <ThunderboltOutlined />,
         label: 'Performance & Cost',
-        children: [
-          {
-            key: 'admin-performance-metrics',
-            icon: <MonitorOutlined />,
-            label: 'Performance Metrics',
-            onClick: () => navigate('/admin/performance'),
-          },
-          {
-            key: 'admin-cost',
-            icon: <DollarOutlined />,
-            label: 'Cost Management',
-            onClick: () => navigate('/admin/cost-management'),
-          },
-        ],
+        onClick: () => navigate('/admin/performance-cost'),
       },
       {
         key: 'admin-ai-management',

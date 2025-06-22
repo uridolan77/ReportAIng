@@ -181,7 +181,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                     b.Property<long>("TotalRequests")
                         .HasColumnType("bigint");
 
-                    b.ToTable("CachePerformanceMetrics");
+                    b.ToTable("CachePerformanceMetrics", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Core.Models.LLMModelConfig", b =>
@@ -990,7 +990,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TempFiles");
+                    b.ToTable("TempFiles", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Core.Models.UnifiedAIFeedbackEntry", b =>
@@ -1074,7 +1074,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasIndex("UserId", "CreatedAt");
 
-                    b.ToTable("AIFeedbackEntries");
+                    b.ToTable("AIFeedbackEntries", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Core.Models.UnifiedAIGenerationAttempt", b =>
@@ -1170,7 +1170,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AIGenerationAttempts");
+                    b.ToTable("AIGenerationAttempts", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Core.Models.UnifiedQueryHistoryEntity", b =>
@@ -1283,7 +1283,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("QueryHistory");
+                    b.ToTable("QueryHistory", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Core.Models.UnifiedSemanticCacheEntry", b =>
@@ -1368,7 +1368,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                     b.HasIndex("QueryHash")
                         .IsUnique();
 
-                    b.ToTable("SemanticCacheEntries");
+                    b.ToTable("SemanticCacheEntries", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Core.Models.UserSchemaPreference", b =>
@@ -1477,7 +1477,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasIndex("Success", "CreatedAt");
 
-                    b.ToTable("AgentCommunicationLogs");
+                    b.ToTable("AgentCommunicationLogs", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.AITuningSettingsEntity", b =>
@@ -1537,7 +1537,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_AITuningSettings_SettingKey");
 
-                    b.ToTable("AITuningSettings");
+                    b.ToTable("AITuningSettings", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.AuditLogEntity", b =>
@@ -1606,7 +1606,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasIndex("UserId", "Timestamp");
 
-                    b.ToTable("AuditLog");
+                    b.ToTable("AuditLog", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.BudgetManagementEntity", b =>
@@ -1672,7 +1672,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BudgetManagement");
+                    b.ToTable("BudgetManagement", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.BusinessColumnInfoEntity", b =>
@@ -1848,7 +1848,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_BusinessColumnInfo_Table_Column");
 
-                    b.ToTable("BusinessColumnInfo");
+                    b.ToTable("BusinessColumnInfo", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.BusinessDomainEntity", b =>
@@ -1914,7 +1914,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BusinessDomain");
+                    b.ToTable("BusinessDomain", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.BusinessGlossaryEntity", b =>
@@ -2087,7 +2087,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_BusinessGlossary_Term");
 
-                    b.ToTable("BusinessGlossary");
+                    b.ToTable("BusinessGlossary", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.BusinessTableInfoEntity", b =>
@@ -2249,7 +2249,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_BusinessTableInfo_Schema_Table");
 
-                    b.ToTable("BusinessTableInfo");
+                    b.ToTable("BusinessTableInfo", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.CacheConfigurationEntity", b =>
@@ -2310,7 +2310,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CacheConfigurations");
+                    b.ToTable("CacheConfigurations", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.CacheStatisticsEntity", b =>
@@ -2366,7 +2366,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CacheStatistics");
+                    b.ToTable("CacheStatistics", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.CostOptimizationRecommendationEntity", b =>
@@ -2429,7 +2429,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CostOptimizationRecommendations");
+                    b.ToTable("CostOptimizationRecommendations", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.CostPredictionEntity", b =>
@@ -2484,7 +2484,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CostPredictions");
+                    b.ToTable("CostPredictions", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.CostTrackingEntity", b =>
@@ -2569,7 +2569,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CostTracking");
+                    b.ToTable("CostTracking", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.MfaChallengeEntity", b =>
@@ -2626,7 +2626,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasIndex("UserId", "ExpiresAt");
 
-                    b.ToTable("MfaChallenges");
+                    b.ToTable("MfaChallenges", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.PerformanceMetricsEntity", b =>
@@ -2710,7 +2710,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PerformanceMetricsEntries");
+                    b.ToTable("PerformanceMetricsEntries", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.PromptLogEntity", b =>
@@ -2776,7 +2776,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PromptLogs");
+                    b.ToTable("PromptLogs", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.PromptTemplateEntity", b =>
@@ -2838,7 +2838,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                     b.HasIndex("Name", "Version")
                         .IsUnique();
 
-                    b.ToTable("PromptTemplates");
+                    b.ToTable("PromptTemplates", (string)null);
 
                     b.HasData(
                         new
@@ -2913,7 +2913,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                     b.HasIndex("QueryHash")
                         .IsUnique();
 
-                    b.ToTable("QueryCache");
+                    b.ToTable("QueryCache", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.QueryPatternEntity", b =>
@@ -2995,7 +2995,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                     b.HasIndex("Priority", "IsActive")
                         .HasDatabaseName("IX_QueryPatterns_Priority_Active");
 
-                    b.ToTable("QueryPatterns");
+                    b.ToTable("QueryPatterns", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.QueryPerformanceEntity", b =>
@@ -3052,7 +3052,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasIndex("Timestamp");
 
-                    b.ToTable("QueryPerformance");
+                    b.ToTable("QueryPerformance", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.RefreshTokenEntity", b =>
@@ -3108,7 +3108,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.ResourceQuotaEntity", b =>
@@ -3158,7 +3158,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ResourceQuotas");
+                    b.ToTable("ResourceQuotas", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.ResourceUsageEntity", b =>
@@ -3232,7 +3232,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ResourceUsage");
+                    b.ToTable("ResourceUsage", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.SchemaMetadataEntity", b =>
@@ -3356,7 +3356,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasIndex("DatabaseName", "SchemaName", "TableName");
 
-                    b.ToTable("SchemaMetadata");
+                    b.ToTable("SchemaMetadata", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.SemanticSchemaMappingEntity", b =>
@@ -3423,7 +3423,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SemanticSchemaMapping");
+                    b.ToTable("SemanticSchemaMapping", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.SystemConfigurationEntity", b =>
@@ -3467,7 +3467,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("Key");
 
-                    b.ToTable("SystemConfiguration");
+                    b.ToTable("SystemConfiguration", (string)null);
 
                     b.HasData(
                         new
@@ -3574,7 +3574,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasIndex("Timestamp");
 
-                    b.ToTable("SystemMetricsEntity");
+                    b.ToTable("SystemMetricsEntity", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.UserEntity", b =>
@@ -3659,7 +3659,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
 
                     b.HasData(
                         new
@@ -3722,7 +3722,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("UserPreferences");
+                    b.ToTable("UserPreferences", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Infrastructure.Data.Entities.UserSessionEntity", b =>
@@ -3774,7 +3774,7 @@ namespace BIReportingCopilot.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserSessions");
+                    b.ToTable("UserSessions", (string)null);
                 });
 
             modelBuilder.Entity("BIReportingCopilot.Core.Models.BusinessSchemaVersion", b =>

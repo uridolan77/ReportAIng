@@ -34,7 +34,7 @@ import {
   SettingOutlined,
   ClockCircleOutlined,
   UserOutlined,
-  BrainOutlined
+  RobotOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import {
@@ -236,7 +236,7 @@ export const AdvancedAnalyticsDashboard: React.FC = () => {
             title="Forecast Accuracy"
             value={isComprehensiveLoading ? '...' : `${analyticsData.predictiveMetrics.forecastAccuracy}%`}
             subtitle="Model confidence"
-            icon={<BrainOutlined />}
+            icon={<RobotOutlined />}
             color="#fa8c16"
             trend={{ value: 2.1, isPositive: true }}
             loading={isComprehensiveLoading}
@@ -396,7 +396,7 @@ export const AdvancedAnalyticsDashboard: React.FC = () => {
       key: 'predictive',
       label: (
         <Space>
-          <BrainOutlined />
+          <RobotOutlined />
           Predictive Insights
         </Space>
       ),
@@ -455,7 +455,7 @@ export const AdvancedAnalyticsDashboard: React.FC = () => {
                 <Button icon={<SettingOutlined />}>
                   Configure Alerts
                 </Button>
-                <Button type="primary" icon={<BrainOutlined />}>
+                <Button type="primary" icon={<RobotOutlined />}>
                   AI Assistant
                 </Button>
               </Space>

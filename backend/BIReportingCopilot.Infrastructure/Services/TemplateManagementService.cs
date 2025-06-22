@@ -994,7 +994,7 @@ public class TemplateManagementService : ITemplateManagementService
                 .ToDictionary(g => g.Key, g => g.Count());
 
             var templatesByUsageFrequency = allTemplates
-                .GroupBy(t => t.UsageFrequency ?? "Unknown")
+                .GroupBy(t => t.UsageFrequency?.ToString() ?? "Unknown")
                 .ToDictionary(g => g.Key, g => g.Count());
 
             // Get top performing templates
