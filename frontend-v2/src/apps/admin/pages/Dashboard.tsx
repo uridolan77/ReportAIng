@@ -27,6 +27,7 @@ export default function Dashboard() {
   const { useMockData } = useApiMode()
 
   // Cost and Performance Metrics - using standard hooks
+  const { analytics: costAnalytics, realTime: costRealTime, refetch: refetchCost } = useCostMetrics('7d')
   const { alerts: costAlerts, criticalCount: costCriticalCount } = useCostAlerts()
   const { criticalAlerts: perfCriticalAlerts, highAlerts: perfHighAlerts } = usePerformanceAlerts()
 

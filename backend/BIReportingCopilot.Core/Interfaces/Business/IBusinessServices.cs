@@ -20,6 +20,10 @@ public interface IBusinessTableManagementService
     Task<bool> DeleteBusinessTableAsync(long id, CancellationToken cancellationToken = default);
     Task<List<BusinessTableInfoDto>> SearchBusinessTablesAsync(string searchTerm, CancellationToken cancellationToken = default);
     Task<BusinessTableStatistics> GetTableStatisticsAsync(CancellationToken cancellationToken = default);
+
+    // Column-specific operations
+    Task<BusinessColumnInfoDto?> GetColumnAsync(long columnId, CancellationToken cancellationToken = default);
+    Task<BusinessColumnInfoDto?> UpdateColumnAsync(long columnId, UpdateColumnRequest request, string userId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

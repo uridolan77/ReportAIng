@@ -48,23 +48,23 @@ public class PromptTemplate
 {
     // Properties expected by Infrastructure services
     public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string Category { get; set; } = string.Empty;
-    public List<string> Tags { get; set; } = new();
-    public List<string> Variables { get; set; } = new();
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; }
-    public Dictionary<string, object> Metadata { get; set; } = new();
-
-    // Original properties
     public string Name { get; set; } = string.Empty;
     public string Version { get; set; } = "1.0";
     public string Content { get; set; } = string.Empty;
-    public string? Description { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string TemplateKey { get; set; } = string.Empty;
+    public int Priority { get; set; } = 100;
     public bool IsActive { get; set; } = true;
     public string CreatedBy { get; set; } = string.Empty;
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
     public double? SuccessRate { get; set; }
     public int UsageCount { get; set; }
+    public List<string> Tags { get; set; } = new();
+    public List<string> Variables { get; set; } = new();
+    public Dictionary<string, object> Metadata { get; set; } = new();
     public Dictionary<string, object> Parameters { get; set; } = new();
 }
 

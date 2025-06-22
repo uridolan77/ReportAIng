@@ -11,6 +11,7 @@ using BIReportingCopilot.Core.Interfaces.Messaging;
 using BIReportingCopilot.Core.Interfaces.Cache;
 using BIReportingCopilot.Core.Interfaces.Schema;
 using BIReportingCopilot.Core.Interfaces.Tuning;
+using BIReportingCopilot.Core.Interfaces.BusinessContext;
 using BIReportingCopilot.Infrastructure.AI.Management;
 using BIReportingCopilot.Infrastructure.Authentication;
 using BIReportingCopilot.Infrastructure.Business;
@@ -24,6 +25,7 @@ using BIReportingCopilot.Infrastructure.AI;
 using BIReportingCopilot.Infrastructure.Repositories;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Configuration;
+using BIReportingCopilot.Infrastructure.BusinessContext;
 using Microsoft.AspNetCore.SignalR;
 using BIReportingCopilot.API.Hubs;
 
@@ -161,6 +163,28 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IBusinessContextAutoGenerator, BIReportingCopilot.Infrastructure.AI.Management.BusinessContextAutoGenerator>();
 
         // Tuning Services - Registered in Program.cs
+
+        return services;
+    }
+
+    /// <summary>
+    /// Add Business Context Aware Prompt Building services
+    /// </summary>
+    public static IServiceCollection AddBusinessContextServices(this IServiceCollection services)
+    {
+        // Business Context Analysis
+        services.AddScoped<IBusinessContextAnalyzer, BusinessContextAnalyzer>();
+        services.AddScoped<IBusinessMetadataRetrievalService, BusinessMetadataRetrievalService>();
+        services.AddScoped<IContextualPromptBuilder, ContextualPromptBuilder>();
+
+        // Semantic Matching (placeholder - would need actual implementation)
+        services.AddScoped<ISemanticMatchingService, SemanticMatchingService>();
+
+        // HttpClient for external API calls (OpenAI, etc.)
+        services.AddHttpClient();
+
+        // Vector Embedding Service for semantic search
+        services.AddScoped<IVectorEmbeddingService, VectorEmbeddingService>();
 
         return services;
     }

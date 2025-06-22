@@ -216,6 +216,87 @@ public class BusinessController : ControllerBase
 
     #endregion
 
+    #region Business Columns
+
+    /// <summary>
+    /// Get all columns for a specific table
+    /// </summary>
+    [HttpGet("tables/{tableId:long}/columns")]
+    public async Task<ActionResult<List<BusinessColumnInfoDto>>> GetTableColumns(long tableId)
+    {
+        try
+        {
+            _logger.LogInformation("Getting columns for table {TableId}", tableId);
+            var table = await _businessTableService.GetBusinessTableAsync(tableId);
+
+            if (table == null)
+            {
+                return NotFound(new { error = $"Business table with ID {tableId} not found" });
+            }
+
+            return Ok(table.Columns);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting columns for table {TableId}", tableId);
+            return StatusCode(500, new { error = "Failed to retrieve table columns", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get specific column by ID
+    /// </summary>
+    [HttpGet("columns/{columnId:long}")]
+    public async Task<ActionResult<BusinessColumnInfoDto>> GetColumn(long columnId)
+    {
+        try
+        {
+            _logger.LogInformation("Getting column {ColumnId}", columnId);
+            var column = await _businessTableService.GetColumnAsync(columnId);
+
+            if (column == null)
+            {
+                return NotFound(new { error = $"Column with ID {columnId} not found" });
+            }
+
+            return Ok(column);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting column {ColumnId}", columnId);
+            return StatusCode(500, new { error = "Failed to retrieve column", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Update specific column
+    /// </summary>
+    [HttpPut("columns/{columnId:long}")]
+    public async Task<ActionResult<BusinessColumnInfoDto>> UpdateColumn(long columnId, [FromBody] UpdateColumnRequest request)
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "system";
+            _logger.LogInformation("Updating column {ColumnId} by user {UserId}", columnId, userId);
+
+            var column = await _businessTableService.UpdateColumnAsync(columnId, request, userId);
+
+            if (column == null)
+            {
+                return NotFound(new { error = $"Column with ID {columnId} not found" });
+            }
+
+            return Ok(column);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating column {ColumnId}", columnId);
+            return StatusCode(500, new { error = "Failed to update column", details = ex.Message });
+        }
+    }
+
+    #endregion
+
     #region Business Glossary
 
     /// <summary>

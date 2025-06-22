@@ -205,7 +205,7 @@ public class DomainAnalysis
     public List<string> SecondaryDomains { get; set; } = new();
     public double DomainConfidence { get; set; }
     public List<DomainConcept> DomainConcepts { get; set; } = new();
-    public BusinessContext BusinessContext { get; set; } = new();
+    public BIReportingCopilot.Core.Models.Business.BusinessContext BusinessContext { get; set; } = new();
 
     // Additional property for compatibility
     public string Domain { get; set; } = string.Empty;
@@ -909,9 +909,9 @@ public class DomainConcept
 }
 
 /// <summary>
-/// Business context
+/// Business context information for NLU processing
 /// </summary>
-public class BusinessContext
+public class BusinessContextInfo
 {
     public string ContextId { get; set; } = Guid.NewGuid().ToString();
     public string Domain { get; set; } = string.Empty;

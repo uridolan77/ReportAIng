@@ -64,6 +64,31 @@ export interface BusinessColumnInfoDto {
   isSensitiveData: boolean
   isCalculatedField: boolean
   isActive: boolean
+  createdDate?: string
+  updatedDate?: string
+  createdBy?: string
+  updatedBy?: string
+
+  // Additional semantic and AI-related fields
+  semanticContext?: string
+  conceptualRelationships?: string
+  domainSpecificTerms?: string
+  queryIntentMapping?: string
+  businessQuestionTypes?: string
+  semanticSynonyms?: string
+  analyticalContext?: string
+  businessMetrics?: string
+  semanticRelevanceScore?: number
+  llmPromptHints?: string
+  vectorSearchTags?: string
+  businessPurpose?: string
+  businessFriendlyName?: string
+  naturalLanguageDescription?: string
+  businessRules?: string
+  relationshipContext?: string
+  dataGovernanceLevel?: string
+  lastBusinessReview?: string
+  importanceScore?: number
 }
 
 export interface BusinessGlossaryDto {
@@ -114,6 +139,31 @@ export interface CreateGlossaryTermRequest {
 
 export interface UpdateGlossaryTermRequest extends Partial<BusinessGlossaryDto> {
   id: number
+}
+
+export interface UpdateColumnRequest {
+  columnName: string
+  businessFriendlyName?: string
+  businessDataType?: string
+  naturalLanguageDescription?: string
+  businessMeaning?: string
+  businessContext?: string
+  businessPurpose?: string
+  dataExamples?: string[]
+  valueExamples?: string[]
+  validationRules?: string
+  businessRules?: string
+  preferredAggregation?: string
+  dataGovernanceLevel?: string
+  lastBusinessReview?: string
+  dataQualityScore?: number
+  usageFrequency?: number
+  semanticRelevanceScore?: number
+  importanceScore?: number
+  isActive?: boolean
+  isKeyColumn?: boolean
+  isSensitiveData?: boolean
+  isCalculatedField?: boolean
 }
 
 export const businessApi = baseApi.injectEndpoints({
@@ -172,6 +222,24 @@ export const businessApi = baseApi.injectEndpoints({
     getBusinessColumns: builder.query<BusinessColumnInfoDto[], number>({
       query: (tableId) => `/business/tables/${tableId}/columns`,
       providesTags: ['BusinessColumn'],
+    }),
+
+    getBusinessColumn: builder.query<BusinessColumnInfoDto, number>({
+      query: (columnId) => `/business/columns/${columnId}`,
+      providesTags: (result, error, columnId) => [{ type: 'BusinessColumn', id: columnId }],
+    }),
+
+    updateBusinessColumn: builder.mutation<BusinessColumnInfoDto, { columnId: number } & UpdateColumnRequest>({
+      query: ({ columnId, ...body }) => ({
+        url: `/business/columns/${columnId}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { columnId }) => [
+        { type: 'BusinessColumn', id: columnId },
+        'BusinessColumn',
+        'BusinessTable'
+      ],
     }),
 
     // Business Glossary
@@ -379,6 +447,8 @@ export const {
   useUpdateBusinessTableMutation,
   useDeleteBusinessTableMutation,
   useGetBusinessColumnsQuery,
+  useGetBusinessColumnQuery,
+  useUpdateBusinessColumnMutation,
   useGetBusinessGlossaryQuery,
   useCreateGlossaryTermMutation,
   useUpdateGlossaryTermMutation,

@@ -1,6 +1,47 @@
 namespace BIReportingCopilot.Core.Models.Business;
 
 /// <summary>
+/// Business context for auto-generation
+/// </summary>
+public class BusinessContext
+{
+    /// <summary>
+    /// Domain name
+    /// </summary>
+    public string Domain { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Context description
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Business tables in this context
+    /// </summary>
+    public List<BusinessTable> Tables { get; set; } = new();
+
+    /// <summary>
+    /// Business terms in this context
+    /// </summary>
+    public List<BusinessTerm> Terms { get; set; } = new();
+
+    /// <summary>
+    /// Business relationships in this context
+    /// </summary>
+    public List<BusinessRelationship> Relationships { get; set; } = new();
+
+    /// <summary>
+    /// When this context was generated
+    /// </summary>
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Additional metadata
+    /// </summary>
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
 /// Business table information for context generation
 /// </summary>
 public class BusinessTable

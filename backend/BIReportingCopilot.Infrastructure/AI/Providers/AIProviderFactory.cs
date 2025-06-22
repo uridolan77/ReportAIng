@@ -228,8 +228,41 @@ internal class FallbackAIProvider : IAIProvider
 
     public Task<string> GenerateCompletionAsync(string prompt, AIOptions options, CancellationToken cancellationToken)
     {
-        _logger.LogError("AI provider not configured - cannot generate completion");
-        throw new InvalidOperationException("AI service not configured. Please configure OpenAI or Azure OpenAI.");
+        _logger.LogWarning("Using fallback AI provider - returning mock SQL response for prompt: {Prompt}",
+            prompt.Length > 100 ? prompt.Substring(0, 100) + "..." : prompt);
+
+        // Generate a basic SQL response based on the prompt
+        var sql = GenerateFallbackSQL(prompt);
+        return Task.FromResult(sql);
+    }
+
+    private string GenerateFallbackSQL(string prompt)
+    {
+        var lowerPrompt = prompt.ToLowerInvariant();
+
+        // Basic pattern matching for common queries
+        if (lowerPrompt.Contains("count") || lowerPrompt.Contains("total"))
+        {
+            return "SELECT COUNT(*) as TotalCount FROM tbl_Daily_actions WITH (NOLOCK)";
+        }
+
+        if (lowerPrompt.Contains("top") || lowerPrompt.Contains("limit"))
+        {
+            return "SELECT TOP 10 * FROM tbl_Daily_actions WITH (NOLOCK) ORDER BY ActionDate DESC";
+        }
+
+        if (lowerPrompt.Contains("revenue") || lowerPrompt.Contains("deposit"))
+        {
+            return "SELECT SUM(DepositAmount) as TotalRevenue FROM tbl_Daily_actions WITH (NOLOCK) WHERE ActionDate >= DATEADD(day, -7, GETDATE())";
+        }
+
+        if (lowerPrompt.Contains("player") || lowerPrompt.Contains("user"))
+        {
+            return "SELECT PlayerID, PlayerName, Status FROM tbl_Players WITH (NOLOCK) WHERE Status = 'Active'";
+        }
+
+        // Default fallback query
+        return "SELECT TOP 100 * FROM tbl_Daily_actions WITH (NOLOCK) ORDER BY ActionDate DESC";
     }
 
     public async IAsyncEnumerable<StreamingResponse> GenerateCompletionStreamAsync(
@@ -237,36 +270,46 @@ internal class FallbackAIProvider : IAIProvider
         AIOptions options,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        _logger.LogWarning("Using fallback AI provider for streaming - returning mock response");
+        _logger.LogWarning("Using fallback AI provider for streaming - generating mock SQL response");
 
-        yield return new StreamingResponse
+        // Generate the full SQL response
+        var sql = GenerateFallbackSQL(prompt);
+
+        // Split the SQL into chunks for streaming simulation
+        var chunks = SplitIntoChunks(sql, 20); // Split into ~20 character chunks
+
+        for (int i = 0; i < chunks.Count; i++)
         {
-            Type = StreamingResponseType.SQLGeneration,
-            Content = "-- Fallback response: AI service not configured",
-            IsComplete = false,
-            ChunkIndex = 0
-        };
+            yield return new StreamingResponse
+            {
+                Type = StreamingResponseType.SQLGeneration,
+                Content = chunks[i],
+                IsComplete = false,
+                ChunkIndex = i
+            };
 
-        // Simulate streaming delay
-        await Task.Delay(100, cancellationToken);
+            // Simulate streaming delay
+            await Task.Delay(50, cancellationToken);
+        }
 
-        yield return new StreamingResponse
-        {
-            Type = StreamingResponseType.SQLGeneration,
-            Content = "\nSELECT * FROM [Table] WHERE 1=1",
-            IsComplete = false,
-            ChunkIndex = 1
-        };
-
-        await Task.Delay(100, cancellationToken);
-
+        // Final completion marker
         yield return new StreamingResponse
         {
             Type = StreamingResponseType.SQLGeneration,
             Content = string.Empty,
             IsComplete = true,
-            ChunkIndex = 2
+            ChunkIndex = chunks.Count
         };
+    }
+
+    private List<string> SplitIntoChunks(string text, int chunkSize)
+    {
+        var chunks = new List<string>();
+        for (int i = 0; i < text.Length; i += chunkSize)
+        {
+            chunks.Add(text.Substring(i, Math.Min(chunkSize, text.Length - i)));
+        }
+        return chunks;
     }
 
     // =============================================================================
@@ -278,17 +321,29 @@ internal class FallbackAIProvider : IAIProvider
     /// </summary>
     public async Task<AIResponse> GenerateResponseAsync(AIRequest request, CancellationToken cancellationToken = default)
     {
-        _logger.LogWarning("Using fallback AI provider - returning mock response");
+        _logger.LogWarning("Using fallback AI provider - generating mock SQL response");
+
+        var options = new AIOptions
+        {
+            Temperature = (float)request.Temperature,
+            MaxTokens = request.MaxTokens,
+            TimeoutSeconds = 30
+        };
+
+        var sql = await GenerateCompletionAsync(request.Prompt, options, cancellationToken);
 
         return new AIResponse
         {
             RequestId = request.RequestId,
-            Content = "-- Fallback response: AI service not configured\nSELECT * FROM [Table] WHERE 1=1",
+            Content = sql,
             Success = true,
+            TokensUsed = sql.Length / 4, // Rough estimate
+            Model = "fallback-v1.0",
+            Provider = ProviderId,
             Metadata = new Dictionary<string, object>
             {
                 ["provider"] = "fallback",
-                ["warning"] = "AI service not properly configured"
+                ["warning"] = "AI service not properly configured - using pattern-based fallback"
             }
         };
     }

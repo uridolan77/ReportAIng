@@ -466,10 +466,10 @@ public class NLUService : IAdvancedNLUService
                 Category = "business",
                 Relevance = 0.8
             }).ToList(),
-            BusinessContext = new BusinessContext
+            BusinessContext = new BIReportingCopilot.Core.Models.Business.BusinessContext
             {
-                Industry = "gaming",
-                BusinessProcesses = new List<string> { "player_management", "revenue_tracking" }
+                Domain = "gaming",
+                Description = "Gaming industry business context"
             }
         });
     }
@@ -916,10 +916,10 @@ public class NLUService : IAdvancedNLUService
                     SecondaryDomains = new List<string>(),
                     DomainConfidence = 0.1,
                     DomainConcepts = new List<DomainConcept>(),
-                    BusinessContext = new BusinessContext
+                    BusinessContext = new BIReportingCopilot.Core.Models.Business.BusinessContext
                     {
-                        Industry = "unknown",
-                        BusinessProcesses = new List<string>()
+                        Domain = "unknown",
+                        Description = "Unknown business context"
                     }
                 },
                 Recommendations = new List<NLURecommendation>

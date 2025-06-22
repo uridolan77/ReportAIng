@@ -114,15 +114,122 @@ catch (Exception ex)
 // Add validated configuration
 builder.Services.AddValidatedConfiguration(builder.Configuration);
 
-// Configure OpenAI settings
-builder.Services.Configure<BIReportingCopilot.Core.Configuration.OpenAIConfiguration>(
-    builder.Configuration.GetSection("OpenAI"));
-builder.Services.Configure<BIReportingCopilot.Core.Configuration.AzureOpenAIConfiguration>(
-    builder.Configuration.GetSection("AzureOpenAI"));
+// Configure OpenAI settings with placeholder resolution
+builder.Services.Configure<BIReportingCopilot.Core.Configuration.OpenAIConfiguration>(config =>
+{
+    builder.Configuration.GetSection("OpenAI").Bind(config);
+
+    // Use the existing SecureConnectionStringProvider to resolve placeholders
+    if (config.ApiKey.StartsWith("{azurevault:"))
+    {
+        try
+        {
+            // Create a temporary connection string provider to resolve the placeholder
+            var connectionStringProvider = new BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider(
+                builder.Configuration,
+                new Microsoft.Extensions.Logging.Abstractions.NullLogger<BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider>());
+
+            // Use the existing ReplacePlaceholdersAsync method via reflection
+            var method = typeof(BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider)
+                .GetMethod("ReplacePlaceholdersAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            if (method != null)
+            {
+                var task = (Task<string>)method.Invoke(connectionStringProvider, new object[] { config.ApiKey });
+                var resolvedApiKey = task.GetAwaiter().GetResult();
+                config.ApiKey = resolvedApiKey;
+                Log.Information("OpenAI API Key resolved from Azure Key Vault");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to resolve OpenAI API Key from Azure Key Vault, keeping placeholder");
+        }
+    }
+});
+
+builder.Services.Configure<BIReportingCopilot.Core.Configuration.AzureOpenAIConfiguration>(config =>
+{
+    builder.Configuration.GetSection("AzureOpenAI").Bind(config);
+
+    // Resolve Azure OpenAI API key placeholder if present
+    if (config.ApiKey.StartsWith("{azurevault:"))
+    {
+        try
+        {
+            var connectionStringProvider = new BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider(
+                builder.Configuration,
+                new Microsoft.Extensions.Logging.Abstractions.NullLogger<BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider>());
+
+            var method = typeof(BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider)
+                .GetMethod("ReplacePlaceholdersAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            if (method != null)
+            {
+                var task = (Task<string>)method.Invoke(connectionStringProvider, new object[] { config.ApiKey });
+                var resolvedApiKey = task.GetAwaiter().GetResult();
+                config.ApiKey = resolvedApiKey;
+                Log.Information("Azure OpenAI API Key resolved from Azure Key Vault");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to resolve Azure OpenAI API Key from Azure Key Vault, keeping placeholder");
+        }
+    }
+});
+
 builder.Services.Configure<BIReportingCopilot.Core.Configuration.AIServiceConfiguration>(config =>
 {
     builder.Configuration.GetSection("OpenAI").Bind(config.OpenAI);
     builder.Configuration.GetSection("AzureOpenAI").Bind(config.AzureOpenAI);
+
+    // Resolve placeholders for both providers using the same method
+    if (config.OpenAI.ApiKey.StartsWith("{azurevault:"))
+    {
+        try
+        {
+            var connectionStringProvider = new BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider(
+                builder.Configuration,
+                new Microsoft.Extensions.Logging.Abstractions.NullLogger<BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider>());
+
+            var method = typeof(BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider)
+                .GetMethod("ReplacePlaceholdersAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            if (method != null)
+            {
+                var task = (Task<string>)method.Invoke(connectionStringProvider, new object[] { config.OpenAI.ApiKey });
+                config.OpenAI.ApiKey = task.GetAwaiter().GetResult();
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to resolve OpenAI API Key in AIServiceConfiguration");
+        }
+    }
+
+    if (config.AzureOpenAI.ApiKey.StartsWith("{azurevault:"))
+    {
+        try
+        {
+            var connectionStringProvider = new BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider(
+                builder.Configuration,
+                new Microsoft.Extensions.Logging.Abstractions.NullLogger<BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider>());
+
+            var method = typeof(BIReportingCopilot.Infrastructure.Configuration.SecureConnectionStringProvider)
+                .GetMethod("ReplacePlaceholdersAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            if (method != null)
+            {
+                var task = (Task<string>)method.Invoke(connectionStringProvider, new object[] { config.AzureOpenAI.ApiKey });
+                config.AzureOpenAI.ApiKey = task.GetAwaiter().GetResult();
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to resolve Azure OpenAI API Key in AIServiceConfiguration");
+        }
+    }
 });
 
 // JWT settings are already configured by AddValidatedConfiguration above
@@ -385,40 +492,39 @@ builder.Services.AddSignalR(options =>
 // Add OpenAI client for AI service
 builder.Services.AddSingleton(provider =>
 {
-    var configuration = provider.GetRequiredService<IConfiguration>();
     var logger = provider.GetRequiredService<ILogger<Program>>();
 
-    // Try Azure OpenAI first, then fallback to OpenAI
-    var azureConfig = configuration.GetSection("AzureOpenAI");
-    var azureEndpoint = azureConfig["Endpoint"];
-    var azureApiKey = azureConfig["ApiKey"];
+    // Get the resolved configurations from the options
+    var openAIOptions = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BIReportingCopilot.Core.Configuration.OpenAIConfiguration>>();
+    var azureOpenAIOptions = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BIReportingCopilot.Core.Configuration.AzureOpenAIConfiguration>>();
 
-    if (!string.IsNullOrEmpty(azureEndpoint) && !string.IsNullOrEmpty(azureApiKey))
+    var openAIConfig = openAIOptions.Value;
+    var azureConfig = azureOpenAIOptions.Value;
+
+    // Try Azure OpenAI first if configured
+    if (!string.IsNullOrEmpty(azureConfig.Endpoint) && !string.IsNullOrEmpty(azureConfig.ApiKey))
     {
-        logger.LogInformation("Configuring Azure OpenAI client with endpoint: {Endpoint}", azureEndpoint);
-        return new Azure.AI.OpenAI.OpenAIClient(new Uri(azureEndpoint), new Azure.AzureKeyCredential(azureApiKey));
+        logger.LogInformation("Configuring Azure OpenAI client with endpoint: {Endpoint}", azureConfig.Endpoint);
+        return new Azure.AI.OpenAI.OpenAIClient(new Uri(azureConfig.Endpoint), new Azure.AzureKeyCredential(azureConfig.ApiKey));
     }
 
     // Fallback to regular OpenAI
-    var openAIConfig = configuration.GetSection("OpenAI");
-    var openAIApiKey = openAIConfig["ApiKey"];
-
     logger.LogInformation("🔍 DEBUG: OpenAI API Key value: '{ApiKey}' (Length: {Length})",
-        openAIApiKey?.Substring(0, Math.Min(20, openAIApiKey?.Length ?? 0)) + "...",
-        openAIApiKey?.Length ?? 0);
+        openAIConfig.ApiKey?.Substring(0, Math.Min(20, openAIConfig.ApiKey?.Length ?? 0)) + "...",
+        openAIConfig.ApiKey?.Length ?? 0);
 
-    if (!string.IsNullOrEmpty(openAIApiKey) && openAIApiKey != "your-openai-api-key-here")
+    if (!string.IsNullOrEmpty(openAIConfig.ApiKey) && openAIConfig.ApiKey != "your-openai-api-key-here")
     {
-        // Check if it's still an Azure Key Vault placeholder
-        if (openAIApiKey.StartsWith("{azurevault:"))
+        // Check if it's still an Azure Key Vault placeholder (shouldn't be after resolution)
+        if (openAIConfig.ApiKey.StartsWith("{azurevault:"))
         {
-            logger.LogWarning("🚨 OpenAI API Key is still an Azure Key Vault placeholder: {ApiKey}", openAIApiKey);
-            logger.LogWarning("Azure Key Vault resolution is not working. Using fallback.");
+            logger.LogWarning("🚨 OpenAI API Key is still an Azure Key Vault placeholder after resolution: {ApiKey}", openAIConfig.ApiKey);
+            logger.LogWarning("Azure Key Vault resolution failed. Using fallback.");
         }
         else
         {
-            logger.LogInformation("Configuring OpenAI client");
-            return new Azure.AI.OpenAI.OpenAIClient(openAIApiKey);
+            logger.LogInformation("✅ Configuring OpenAI client with resolved API key");
+            return new Azure.AI.OpenAI.OpenAIClient(openAIConfig.ApiKey);
         }
     }
 
@@ -430,6 +536,10 @@ builder.Services.AddSingleton(provider =>
 // ===== REPOSITORY LAYER =====
 // Unified repository registrations with proper interface mappings
 builder.Services.AddRepositoryServices();
+
+// ===== BUSINESS CONTEXT SERVICES =====
+// Business Context Aware Prompt Building services
+builder.Services.AddBusinessContextServices();
 
 // ===== HTTP CONTEXT ACCESSOR =====
 // Required for services that need access to HTTP context (like LLMAwareAIService)
@@ -901,6 +1011,9 @@ if (app.Environment.IsDevelopment())
 
 // Add response compression
 app.UseResponseCompression();
+
+// Enable static files (for embeddings management UI)
+app.UseStaticFiles();
 
 // Custom middleware
 app.UseGlobalExceptionHandler(); // Global exception handling

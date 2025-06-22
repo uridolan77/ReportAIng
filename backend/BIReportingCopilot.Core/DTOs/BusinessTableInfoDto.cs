@@ -111,3 +111,64 @@ public class CreateColumnInfoRequest : BIReportingCopilot.Core.Models.CreateColu
 {
     // Inherits all properties from the base class
 }
+
+/// <summary>
+/// Update column request DTO
+/// </summary>
+public class UpdateColumnRequest
+{
+    [StringLength(128)]
+    public string ColumnName { get; set; } = string.Empty;
+
+    [StringLength(100)]
+    public string BusinessFriendlyName { get; set; } = string.Empty;
+
+    [StringLength(50)]
+    public string BusinessDataType { get; set; } = string.Empty;
+
+    [StringLength(1000)]
+    public string NaturalLanguageDescription { get; set; } = string.Empty;
+
+    [StringLength(500)]
+    public string BusinessMeaning { get; set; } = string.Empty;
+
+    [StringLength(1000)]
+    public string BusinessContext { get; set; } = string.Empty;
+
+    [StringLength(500)]
+    public string BusinessPurpose { get; set; } = string.Empty;
+
+    public List<string> DataExamples { get; set; } = new();
+
+    public List<string> ValueExamples { get; set; } = new();
+
+    [StringLength(1000)]
+    public string ValidationRules { get; set; } = string.Empty;
+
+    [StringLength(1000)]
+    public string BusinessRules { get; set; } = string.Empty;
+
+    [StringLength(50)]
+    public string PreferredAggregation { get; set; } = string.Empty;
+
+    [StringLength(50)]
+    public string DataGovernanceLevel { get; set; } = string.Empty;
+
+    public DateTime? LastBusinessReview { get; set; }
+
+    public double DataQualityScore { get; set; } = 5.0;
+
+    public int UsageFrequency { get; set; } = 0;
+
+    public double SemanticRelevanceScore { get; set; } = 0.5;
+
+    public double ImportanceScore { get; set; } = 0.5;
+
+    public bool IsActive { get; set; } = true;
+
+    public bool IsKeyColumn { get; set; } = false;
+
+    public bool IsSensitiveData { get; set; } = false;
+
+    public bool IsCalculatedField { get; set; } = false;
+}

@@ -706,4 +706,83 @@ public class BusinessTableManagementService : IBusinessTableManagementService
     {
         return await GetTableStatisticsAsync();
     }
+
+    #region Column Operations
+
+    /// <summary>
+    /// Get specific column by ID
+    /// </summary>
+    public async Task<BusinessColumnInfoDto?> GetColumnAsync(long columnId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var columnEntity = await _context.BusinessColumnInfo
+                .Include(c => c.TableInfo)
+                .FirstOrDefaultAsync(c => c.Id == columnId && c.IsActive, cancellationToken);
+
+            if (columnEntity == null)
+                return null;
+
+            return MapColumnToDto(columnEntity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting column {ColumnId}", columnId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Update specific column
+    /// </summary>
+    public async Task<BusinessColumnInfoDto?> UpdateColumnAsync(long columnId, UpdateColumnRequest request, string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var columnEntity = await _context.BusinessColumnInfo
+                .Include(c => c.TableInfo)
+                .FirstOrDefaultAsync(c => c.Id == columnId && c.IsActive, cancellationToken);
+
+            if (columnEntity == null)
+                return null;
+
+            // Update column properties
+            columnEntity.ColumnName = request.ColumnName;
+            columnEntity.BusinessMeaning = request.BusinessMeaning;
+            columnEntity.BusinessContext = request.BusinessContext;
+            // columnEntity.BusinessPurpose = request.BusinessPurpose; // TODO: Add to entity
+            columnEntity.DataExamples = JsonSerializer.Serialize(request.DataExamples);
+            columnEntity.ValidationRules = request.ValidationRules;
+            // columnEntity.BusinessRules = request.BusinessRules; // TODO: Add to entity
+            columnEntity.PreferredAggregation = request.PreferredAggregation;
+            // columnEntity.DataGovernanceLevel = request.DataGovernanceLevel; // TODO: Add to entity
+            // columnEntity.LastBusinessReview = request.LastBusinessReview; // TODO: Add to entity
+            columnEntity.DataQualityScore = (decimal)request.DataQualityScore;
+            columnEntity.UsageFrequency = (decimal)request.UsageFrequency;
+            columnEntity.SemanticRelevanceScore = (decimal)request.SemanticRelevanceScore;
+            // columnEntity.ImportanceScore = request.ImportanceScore; // TODO: Add to entity
+            columnEntity.IsActive = request.IsActive;
+            columnEntity.IsKeyColumn = request.IsKeyColumn;
+            columnEntity.IsSensitiveData = request.IsSensitiveData;
+            columnEntity.IsCalculatedField = request.IsCalculatedField;
+            columnEntity.BusinessDataType = request.BusinessDataType;
+            // columnEntity.NaturalLanguageDescription = request.NaturalLanguageDescription; // TODO: Add to entity
+            columnEntity.UpdatedBy = userId;
+            columnEntity.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            // Invalidate cache for the parent table
+            await InvalidateBusinessTablesCache();
+
+            return MapColumnToDto(columnEntity);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating column {ColumnId}", columnId);
+            throw;
+        }
+    }
+
+    #endregion
 }

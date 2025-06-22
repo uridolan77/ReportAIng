@@ -647,7 +647,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
     /// <summary>
     /// Generate context (IBusinessContextAutoGenerator interface)
     /// </summary>
-    public async Task<BusinessContext> GenerateContextAsync(string domain, CancellationToken cancellationToken = default)
+    public async Task<BIReportingCopilot.Core.Models.Business.BusinessContext> GenerateContextAsync(string domain, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -664,7 +664,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
 
             var response = await GenerateBusinessContextInternalAsync(request, "system");
 
-            return new BusinessContext
+            return new BIReportingCopilot.Core.Models.Business.BusinessContext
             {
                 Domain = domain,
                 Description = $"Auto-generated business context for {domain}",
@@ -694,7 +694,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error generating business context for domain: {Domain}", domain);
-            return new BusinessContext
+            return new BIReportingCopilot.Core.Models.Business.BusinessContext
             {
                 Domain = domain,
                 Description = "Error generating context",
@@ -706,7 +706,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
     /// <summary>
     /// Generate context from schema async (IBusinessContextAutoGenerator interface)
     /// </summary>
-    public async Task<BusinessContext> GenerateContextFromSchemaAsync(SchemaMetadata schema, CancellationToken cancellationToken = default)
+    public async Task<BIReportingCopilot.Core.Models.Business.BusinessContext> GenerateContextFromSchemaAsync(SchemaMetadata schema, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -718,7 +718,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error generating context from schema");
-            return new BusinessContext
+            return new BIReportingCopilot.Core.Models.Business.BusinessContext
             {
                 Domain = "Unknown",
                 Description = "Auto-generated context from schema",
@@ -730,14 +730,14 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
     /// <summary>
     /// Get available contexts async (IBusinessContextAutoGenerator interface)
     /// </summary>
-    public async Task<List<BusinessContext>> GetAvailableContextsAsync(CancellationToken cancellationToken = default)
+    public async Task<List<BIReportingCopilot.Core.Models.Business.BusinessContext>> GetAvailableContextsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation("📋 Getting available business contexts");
 
             // Return predefined contexts for common business domains
-            return new List<BusinessContext>
+            return new List<BIReportingCopilot.Core.Models.Business.BusinessContext>
             {
                 await GenerateContextAsync("gaming", cancellationToken),
                 await GenerateContextAsync("finance", cancellationToken),
@@ -749,7 +749,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Error getting available contexts");
-            return new List<BusinessContext>();
+            return new List<BIReportingCopilot.Core.Models.Business.BusinessContext>();
         }
     }
 
@@ -774,7 +774,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
     /// <summary>
     /// Generate table context async (IBusinessContextAutoGenerator interface)
     /// </summary>
-    public async Task<BusinessContext> GenerateTableContextAsync(string tableName, SchemaMetadata schema, CancellationToken cancellationToken = default)
+    public async Task<BIReportingCopilot.Core.Models.Business.BusinessContext> GenerateTableContextAsync(string tableName, SchemaMetadata schema, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -791,7 +791,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
             var prompt = $"Generate business context for table '{tableName}' with columns: {string.Join(", ", table.Columns.Select(c => c.Name))}";
             var aiResponse = await _aiService.GenerateSQLAsync(prompt);
 
-            return new BusinessContext
+            return new BIReportingCopilot.Core.Models.Business.BusinessContext
             {
                 Domain = tableName,
                 Description = ExtractDescription(aiResponse),
@@ -817,9 +817,9 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
     /// <summary>
     /// Generate table contexts async (IBusinessContextAutoGenerator interface)
     /// </summary>
-    public async Task<List<BusinessContext>> GenerateTableContextsAsync(List<string> tableNames, SchemaMetadata schema, CancellationToken cancellationToken = default)
+    public async Task<List<BIReportingCopilot.Core.Models.Business.BusinessContext>> GenerateTableContextsAsync(List<string> tableNames, SchemaMetadata schema, CancellationToken cancellationToken = default)
     {
-        var contexts = new List<BusinessContext>();
+        var contexts = new List<BIReportingCopilot.Core.Models.Business.BusinessContext>();
 
         foreach (var tableName in tableNames)
         {
@@ -841,13 +841,13 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
     /// <summary>
     /// Generate glossary terms async (IBusinessContextAutoGenerator interface)
     /// </summary>
-    public async Task<List<BusinessTerm>> GenerateGlossaryTermsAsync(SchemaMetadata schema, CancellationToken cancellationToken = default)
+    public async Task<List<BIReportingCopilot.Core.Models.Business.BusinessTerm>> GenerateGlossaryTermsAsync(SchemaMetadata schema, CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation("📚 Generating glossary terms for schema");
 
-            var terms = new List<BusinessTerm>();
+            var terms = new List<BIReportingCopilot.Core.Models.Business.BusinessTerm>();
 
             // Generate terms for each table
             foreach (var table in schema.Tables)
@@ -856,7 +856,7 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
                 var aiResponse = await _aiService.GenerateSQLAsync(prompt);
 
                 // Parse AI response and create terms
-                var tableTerm = new BusinessTerm
+                var tableTerm = new BIReportingCopilot.Core.Models.Business.BusinessTerm
                 {
                     Term = table.Name,
                     Definition = ExtractDefinition(aiResponse),
@@ -877,25 +877,25 @@ public class BusinessContextAutoGenerator : IBusinessContextAutoGenerator
     /// <summary>
     /// Analyze table relationships async (IBusinessContextAutoGenerator interface)
     /// </summary>
-    public async Task<List<BusinessRelationship>> AnalyzeTableRelationshipsAsync(SchemaMetadata schema, CancellationToken cancellationToken = default)
+    public async Task<List<BIReportingCopilot.Core.Models.Business.BusinessRelationship>> AnalyzeTableRelationshipsAsync(SchemaMetadata schema, CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation("🔗 Analyzing table relationships");
 
-            var relationships = new List<BusinessRelationship>();
+            var relationships = new List<BIReportingCopilot.Core.Models.Business.BusinessRelationship>();
 
             // Analyze foreign key relationships
             foreach (var table in schema.Tables)
             {
                 foreach (var column in table.Columns.Where(c => c.IsForeignKey))
                 {
-                    var relationship = new BusinessRelationship
+                    var relationship = new BIReportingCopilot.Core.Models.Business.BusinessRelationship
                     {
                         SourceTable = table.Name,
                         TargetTable = "Unknown", // TODO: Add foreign key table detection
                         RelationshipType = "Foreign Key",
-                        Description = $"{table.Name} has foreign key relationship"
+                        BusinessDescription = $"{table.Name} has foreign key relationship"
                     };
                     relationships.Add(relationship);
                 }

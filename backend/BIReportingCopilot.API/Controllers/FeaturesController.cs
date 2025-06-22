@@ -783,10 +783,7 @@ public class AnalyzeNLURequest
     public NLUAnalysisContext? Context { get; set; }
 }
 
-public class ClassifyIntentRequest
-{
-    public string Query { get; set; } = string.Empty;
-}
+// ClassifyIntentRequest moved to BusinessContextController.cs to avoid duplication
 
 public class SmartSuggestionsRequest
 {

@@ -31,6 +31,8 @@ public class BICopilotContext : DbContext
     public DbSet<SystemConfigurationEntity> SystemConfiguration { get; set; }
     public DbSet<InfraAuditLogEntity> AuditLog { get; set; }
 
+    // Business-Context-Aware Prompt Building entities (tables exist but no EF entities needed for now)
+
     // AI Tuning entities
     public DbSet<BusinessTableInfoEntity> BusinessTableInfo { get; set; }
     public DbSet<BusinessColumnInfoEntity> BusinessColumnInfo { get; set; }
@@ -682,5 +684,7 @@ Return only the SQL query without any explanation or markdown formatting.",
             entity.HasIndex(e => new { e.ModelId, e.Timestamp }).IsDescending();
             entity.HasIndex(e => new { e.RequestType, e.Timestamp }).IsDescending();
         });
+
+        // Business-Context-Aware Prompt Building tables exist in database but no EF entities configured
     }
 }

@@ -116,3 +116,61 @@ public enum TimeGranularity
     Year,
     Unknown
 }
+
+/// <summary>
+/// Result from vector similarity search
+/// </summary>
+public class VectorSearchResult
+{
+    public long EntityId { get; set; }
+    public string EntityType { get; set; } = string.Empty;
+    public double SimilarityScore { get; set; }
+    public string SourceText { get; set; } = string.Empty;
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+/// <summary>
+/// Relevant prompt template found through semantic search
+/// </summary>
+public class RelevantPromptTemplate
+{
+    public long TemplateId { get; set; }
+    public string TemplateKey { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public string IntentType { get; set; } = string.Empty;
+    public double RelevanceScore { get; set; }
+    public int Priority { get; set; }
+    public List<string> Tags { get; set; } = new();
+}
+
+/// <summary>
+/// Relevant query example found through semantic search
+/// </summary>
+public class RelevantQueryExample
+{
+    public long ExampleId { get; set; }
+    public string NaturalLanguageQuery { get; set; } = string.Empty;
+    public string GeneratedSql { get; set; } = string.Empty;
+    public string IntentType { get; set; } = string.Empty;
+    public string Domain { get; set; } = string.Empty;
+    public double RelevanceScore { get; set; }
+    public decimal SuccessRate { get; set; }
+    public string BusinessContext { get; set; } = string.Empty;
+    public List<string> UsedTables { get; set; } = new();
+}
+
+/// <summary>
+/// Vector embedding data
+/// </summary>
+public class VectorEmbedding
+{
+    public long Id { get; set; }
+    public string EntityType { get; set; } = string.Empty;
+    public long EntityId { get; set; }
+    public float[] Vector { get; set; } = Array.Empty<float>();
+    public string ModelVersion { get; set; } = string.Empty;
+    public string SourceText { get; set; } = string.Empty;
+    public double QualityScore { get; set; }
+    public DateTime CreatedDate { get; set; }
+}
