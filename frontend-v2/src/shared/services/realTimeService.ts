@@ -240,7 +240,5 @@ export const useRealTime = () => {
   }
 }
 
-// Initialize mock updates in development
-if (import.meta.env.DEV) {
-  realTimeService.startMockUpdates()
-}
+// Real-time service initialized
+// Mock functionality has been removed in favor of actual WebSocket connections
