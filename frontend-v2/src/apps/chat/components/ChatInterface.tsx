@@ -1,16 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Button, Input, Typography, Card, Space, Spin, message } from 'antd'
+import { Button, Input, Typography, Card, Space, Spin, message, Tooltip } from 'antd'
 import {
   SendOutlined,
   StarOutlined,
   BulbOutlined,
   LoadingOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  EyeOutlined,
+  ApiOutlined
 } from '@ant-design/icons'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { StreamingProgress } from './StreamingProgress'
 import { ConnectionStatus } from './ConnectionStatus'
+import { ProcessFlowViewer } from './ProcessFlowViewer'
+import { useProcessFlow } from '../hooks/useProcessFlow'
 import { useAppSelector, useAppDispatch } from '@shared/hooks'
 import { 
   selectMessages, 
@@ -46,6 +50,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [sendMessage] = useSendMessageMutation()
   const [executeEnhancedQuery] = useExecuteEnhancedQueryMutation()
   const [isFirstVisit, setIsFirstVisit] = useState(false)
+
+  // Process Flow Management
+  const {
+    processData,
+    isVisible: isProcessFlowVisible,
+    showProcessFlow,
+    hideProcessFlow,
+    updateStep,
+    setTransparencyData
+  } = useProcessFlow({ enableRealTime: true })
 
   // Example queries for first-time users
   const exampleQueries = [
@@ -103,6 +117,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
 
       dispatch(chatActions.addMessage(tempMessage))
+
+      // Show process flow for enhanced queries
+      const sessionId = `session-${Date.now()}`;
+      showProcessFlow(sessionId, {
+        query: content,
+        userId: 'current-user' // Replace with actual user ID
+      });
 
       // Execute enhanced query with streaming support
       const result = await executeEnhancedQuery({
@@ -162,6 +183,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleCancelStreaming = () => {
     if (streamingProgress?.sessionId) {
       socketService.cancelStreamingQuery(streamingProgress.sessionId)
+    }
+  }
+
+  const handleShowProcessFlow = (messageId: string) => {
+    // Find the message to get its content
+    const message = messages.find(m => m.id === messageId);
+    if (message) {
+      const sessionId = `msg-${messageId}`;
+      showProcessFlow(sessionId, {
+        query: message.content,
+        userId: 'current-user', // Replace with actual user ID
+        status: 'completed' // Since this is a historical message
+      });
     }
   }
 
@@ -227,6 +261,30 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {/* Connection Status */}
           <div style={{ marginTop: '16px' }}>
             <ConnectionStatus />
+          </div>
+
+          {/* Process Flow Button */}
+          <div style={{ marginTop: '12px' }}>
+            <Tooltip title="View detailed process flow and AI transparency">
+              <Button
+                type="text"
+                icon={<EyeOutlined />}
+                onClick={() => showProcessFlow('demo-session', {
+                  query: 'Demo query to show process flow',
+                  userId: 'demo-user'
+                })}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13px',
+                  color: '#64748b'
+                }}
+              >
+                <ApiOutlined />
+                View Process Flow
+              </Button>
+            </Tooltip>
           </div>
         </div>
       )}
@@ -317,6 +375,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             messages={messages}
             isLoading={isLoading}
             onRerun={handleSendMessage}
+            onShowProcessFlow={handleShowProcessFlow}
           />
         </div>
       )}
@@ -342,6 +401,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           placeholder="Ask me anything about your data..."
         />
       </div>
+
+      {/* Process Flow Viewer */}
+      <ProcessFlowViewer
+        visible={isProcessFlowVisible}
+        onClose={hideProcessFlow}
+        processData={processData}
+        realTimeUpdates={true}
+      />
     </div>
   )
 }

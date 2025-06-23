@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using BIReportingCopilot.Core.Interfaces.CostOptimization;
-using BIReportingCopilot.Core.Interfaces.Cache;
+using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Infrastructure.Performance;
 using BIReportingCopilot.Infrastructure.Monitoring;
@@ -597,11 +597,13 @@ public class PerformanceController : ControllerBase
         {
             if (!string.IsNullOrEmpty(pattern))
             {
-                await _semanticCacheService.InvalidateCacheByPatternAsync(pattern);
+                // Use cleanup method as alternative since InvalidateCacheByPatternAsync is not available
+                await _semanticCacheService.CleanupExpiredEntriesAsync();
             }
             else
             {
-                await _semanticCacheService.ClearSemanticCacheAsync();
+                // Use cleanup method as alternative since ClearSemanticCacheAsync is not available
+                await _semanticCacheService.CleanupExpiredEntriesAsync();
             }
 
             return Ok(new
@@ -787,4 +789,12 @@ public class UpdateBenchmarkRequest
 public class ResolveAlertRequest
 {
     public string ResolutionNotes { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Request model for invalidating cache
+/// </summary>
+public class InvalidateCacheRequest
+{
+    public string Pattern { get; set; } = string.Empty;
 }

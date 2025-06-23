@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.ProcessFlow;
 using BIReportingCopilot.Infrastructure.Data.Entities;
 using BIReportingCopilot.Infrastructure.Data.Configurations;
 using System.Text.Json;
@@ -63,10 +64,12 @@ public class BICopilotContext : DbContext
     public DbSet<QueryPerformanceEntity> QueryPerformance { get; set; }
     public DbSet<SystemMetricsEntity> SystemMetrics { get; set; }
 
-    // AI Logging and Analytics entities
-    public DbSet<TokenUsageAnalyticsEntity> TokenUsageAnalytics { get; set; }
+    // AI Logging and Analytics entities - CONSOLIDATED to ProcessFlow system
+    // NOTE: TokenUsageAnalytics and PromptSuccessTracking now handled by ProcessFlow tables
+    // Legacy tables kept for backward compatibility during transition
     public DbSet<PromptGenerationLogsEntity> PromptGenerationLogs { get; set; }
-    public DbSet<PromptSuccessTrackingEntity> PromptSuccessTracking { get; set; }
+
+    // ProcessFlow entities - CONSOLIDATED transparency and analytics (using Entity models)
 
     // AI Learning and Semantic Cache (Unified Models)
     public DbSet<Core.Models.UnifiedAIGenerationAttempt> AIGenerationAttempts { get; set; }
@@ -110,6 +113,12 @@ public class BICopilotContext : DbContext
 
     // Phase 2A: Enhanced Multi-Agent Architecture
     public DbSet<AgentCommunicationLogEntity> AgentCommunicationLogs { get; set; }
+
+    // Process Flow Tracking entities
+    public DbSet<ProcessFlowSessionEntity> ProcessFlowSessions { get; set; }
+    public DbSet<ProcessFlowStepEntity> ProcessFlowSteps { get; set; }
+    public DbSet<ProcessFlowLogEntity> ProcessFlowLogs { get; set; }
+    public DbSet<ProcessFlowTransparencyEntity> ProcessFlowTransparency { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -522,6 +531,8 @@ public class BICopilotContext : DbContext
             entity.Property(e => e.ImportanceScore).HasPrecision(5, 4);
         });
 
+        // NOTE: BaseEntity decimal precision configurations removed - these fields are in specific entities
+
         // Apply schema management configurations
         modelBuilder.ApplyConfiguration(new BusinessSchemaConfiguration());
         modelBuilder.ApplyConfiguration(new BusinessSchemaVersionConfiguration());
@@ -539,6 +550,9 @@ public class BICopilotContext : DbContext
 
         // Configure Query Suggestions entities
         ConfigureQuerySuggestions(modelBuilder);
+
+        // Configure Process Flow entities
+        ConfigureProcessFlowEntities(modelBuilder);
 
         // Seed default data
         SeedDefaultData(modelBuilder);
@@ -804,30 +818,7 @@ Return only the SQL query without any explanation or markdown formatting.",
 
     private static void ConfigureAILoggingEntities(ModelBuilder modelBuilder)
     {
-        // TokenUsageAnalytics configuration
-        modelBuilder.Entity<TokenUsageAnalyticsEntity>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.UserId, e.Date, e.RequestType, e.IntentType }).IsUnique();
-            entity.HasIndex(e => e.Date).IsDescending();
-            entity.HasIndex(e => new { e.UserId, e.Date }).IsDescending();
-            entity.HasIndex(e => new { e.RequestType, e.Date }).IsDescending();
-            entity.HasIndex(e => new { e.IntentType, e.Date }).IsDescending();
-
-            entity.Property(e => e.Id).HasMaxLength(450);
-            entity.Property(e => e.UserId).HasMaxLength(450);
-            entity.Property(e => e.RequestType).HasMaxLength(100);
-            entity.Property(e => e.IntentType).HasMaxLength(100);
-            entity.Property(e => e.NaturalLanguageDescription).HasMaxLength(2000);
-            entity.Property(e => e.BusinessRules).HasMaxLength(2000);
-            entity.Property(e => e.RelationshipContext).HasMaxLength(2000);
-            entity.Property(e => e.DataGovernanceLevel).HasMaxLength(100);
-            entity.Property(e => e.TotalCost).HasPrecision(10, 6);
-            entity.Property(e => e.AverageTokensPerRequest).HasPrecision(10, 2);
-            entity.Property(e => e.AverageCostPerRequest).HasPrecision(10, 6);
-            entity.Property(e => e.ImportanceScore).HasPrecision(5, 4);
-            entity.Property(e => e.UsageFrequency).HasPrecision(5, 4);
-        });
+        // Legacy TokenUsageAnalytics configuration REMOVED - replaced by ProcessFlow system
 
         // PromptGenerationLogs configuration
         modelBuilder.Entity<PromptGenerationLogsEntity>(entity =>
@@ -860,32 +851,7 @@ Return only the SQL query without any explanation or markdown formatting.",
             entity.Property(e => e.UserRating).HasPrecision(3, 2);
         });
 
-        // PromptSuccessTracking configuration
-        modelBuilder.Entity<PromptSuccessTrackingEntity>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.SessionId);
-            entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.CreatedDate).IsDescending();
-            entity.HasIndex(e => new { e.UserId, e.CreatedDate }).IsDescending();
-            entity.HasIndex(e => new { e.IntentClassified, e.CreatedDate }).IsDescending();
-            entity.HasIndex(e => new { e.DomainClassified, e.CreatedDate }).IsDescending();
-            entity.HasIndex(e => new { e.SQLExecutionSuccess, e.CreatedDate }).IsDescending();
-            entity.HasIndex(e => new { e.UserFeedbackRating, e.CreatedDate }).IsDescending();
-
-            entity.Property(e => e.SessionId).HasMaxLength(128);
-            entity.Property(e => e.UserId).HasMaxLength(512);
-            entity.Property(e => e.UserQuestion).HasMaxLength(2000);
-            entity.Property(e => e.GeneratedPrompt).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.TemplateUsed).HasMaxLength(100);
-            entity.Property(e => e.IntentClassified).HasMaxLength(50);
-            entity.Property(e => e.DomainClassified).HasMaxLength(50);
-            entity.Property(e => e.TablesRetrieved).HasMaxLength(1000);
-            entity.Property(e => e.GeneratedSQL).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.SQLExecutionError).HasMaxLength(2000);
-            entity.Property(e => e.UserFeedbackComments).HasMaxLength(1000);
-            entity.Property(e => e.ConfidenceScore).HasPrecision(5, 4);
-        });
+        // Legacy PromptSuccessTracking configuration REMOVED - replaced by ProcessFlow system
     }
 
     private static void ConfigureCostManagementEntities(ModelBuilder modelBuilder)
@@ -970,6 +936,106 @@ Return only the SQL query without any explanation or markdown formatting.",
             entity.Property(e => e.Implementation).HasColumnType("nvarchar(max)");
             entity.Property(e => e.Benefits).HasColumnType("nvarchar(max)");
             entity.Property(e => e.Risks).HasColumnType("nvarchar(max)");
+        });
+    }
+
+    private static void ConfigureProcessFlowEntities(ModelBuilder modelBuilder)
+    {
+        // Configure ProcessFlowSession
+        modelBuilder.Entity<ProcessFlowSessionEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.SessionId).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.StartTime);
+            entity.HasIndex(e => new { e.UserId, e.StartTime });
+            entity.HasIndex(e => new { e.Status, e.StartTime });
+            entity.Property(e => e.SessionId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.QueryType).HasMaxLength(100);
+            entity.Property(e => e.ConversationId).HasMaxLength(450);
+            entity.Property(e => e.MessageId).HasMaxLength(450);
+            entity.Property(e => e.OverallConfidence).HasPrecision(5, 4);
+        });
+
+        // Configure ProcessFlowStep
+        modelBuilder.Entity<ProcessFlowStepEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.SessionId, e.StepId }).IsUnique();
+            entity.HasIndex(e => new { e.SessionId, e.StepOrder });
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => new { e.SessionId, e.Status });
+            entity.Property(e => e.SessionId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.StepId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.ParentStepId).HasMaxLength(100);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Confidence).HasPrecision(5, 4);
+
+            // Configure relationships
+            entity.HasOne(e => e.Session)
+                  .WithMany(s => s.Steps)
+                  .HasForeignKey(e => e.SessionId)
+                  .HasPrincipalKey(s => s.SessionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ParentStep)
+                  .WithMany(s => s.SubSteps)
+                  .HasForeignKey(e => e.ParentStepId)
+                  .HasPrincipalKey(s => s.StepId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure ProcessFlowLog
+        modelBuilder.Entity<ProcessFlowLogEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => e.StepId);
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => new { e.SessionId, e.Timestamp });
+            entity.HasIndex(e => new { e.LogLevel, e.Timestamp });
+            entity.Property(e => e.SessionId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.StepId).HasMaxLength(100);
+            entity.Property(e => e.LogLevel).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Message).IsRequired();
+            entity.Property(e => e.Source).HasMaxLength(100);
+
+            // Configure relationships
+            entity.HasOne(e => e.Session)
+                  .WithMany(s => s.Logs)
+                  .HasForeignKey(e => e.SessionId)
+                  .HasPrincipalKey(s => s.SessionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Step)
+                  .WithMany(s => s.Logs)
+                  .HasForeignKey(e => e.StepId)
+                  .HasPrincipalKey(s => s.StepId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure ProcessFlowTransparency
+        modelBuilder.Entity<ProcessFlowTransparencyEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.SessionId).IsUnique();
+            entity.Property(e => e.SessionId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.Model).HasMaxLength(100);
+            entity.Property(e => e.Temperature).HasPrecision(3, 2);
+            entity.Property(e => e.EstimatedCost).HasPrecision(10, 6);
+            entity.Property(e => e.Confidence).HasPrecision(5, 4);
+
+            // Configure one-to-one relationship
+            entity.HasOne(e => e.Session)
+                  .WithOne(s => s.Transparency)
+                  .HasForeignKey<ProcessFlowTransparencyEntity>(e => e.SessionId)
+                  .HasPrincipalKey<ProcessFlowSessionEntity>(s => s.SessionId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

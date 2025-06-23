@@ -22,12 +22,12 @@ import {
   WarningOutlined
 } from '@ant-design/icons'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
-import type { PromptConstructionStep } from '@shared/types/transparency'
+import type { ProcessFlowStep } from '@shared/types/transparency'
 
 const { Title, Text } = Typography
 
 export interface PerformanceMetricsViewerProps {
-  steps: PromptConstructionStep[]
+  steps: ProcessFlowStep[]
   showTrendAnalysis?: boolean
   showBottleneckDetection?: boolean
   showOptimizationSuggestions?: boolean
@@ -43,9 +43,9 @@ export interface PerformanceMetricsViewerProps {
 interface PerformanceAnalysis {
   totalTime: number
   averageTime: number
-  fastestStep: PromptConstructionStep | null
-  slowestStep: PromptConstructionStep | null
-  bottlenecks: PromptConstructionStep[]
+  fastestStep: ProcessFlowStep | null
+  slowestStep: ProcessFlowStep | null
+  bottlenecks: ProcessFlowStep[]
   efficiency: number
   throughput: number
   performanceGrade: 'excellent' | 'good' | 'fair' | 'poor'
@@ -88,22 +88,22 @@ export const PerformanceMetricsViewer: React.FC<PerformanceMetricsViewerProps> =
       }
     }
 
-    const totalTime = steps.reduce((sum, step) => sum + step.processingTimeMs, 0)
+    const totalTime = steps.reduce((sum, step) => sum + (step.durationMs || 0), 0)
     const averageTime = totalTime / steps.length
-    
-    const fastestStep = steps.reduce((fastest, step) => 
-      step.processingTimeMs < (fastest?.processingTimeMs || Infinity) ? step : fastest, steps[0])
-    const slowestStep = steps.reduce((slowest, step) => 
-      step.processingTimeMs > (slowest?.processingTimeMs || 0) ? step : slowest, steps[0])
+
+    const fastestStep = steps.reduce((fastest, step) =>
+      (step.durationMs || 0) < (fastest?.durationMs || Infinity) ? step : fastest, steps[0])
+    const slowestStep = steps.reduce((slowest, step) =>
+      (step.durationMs || 0) > (slowest?.durationMs || 0) ? step : slowest, steps[0])
 
     // Detect bottlenecks (steps taking significantly longer than average)
-    const bottlenecks = steps.filter(step => 
-      step.processingTimeMs > averageTime * 2 || 
-      step.processingTimeMs > performanceThresholds.slow
+    const bottlenecks = steps.filter(step =>
+      (step.durationMs || 0) > averageTime * 2 ||
+      (step.durationMs || 0) > performanceThresholds.slow
     )
 
     // Calculate efficiency (confidence per ms)
-    const totalConfidence = steps.reduce((sum, step) => sum + step.confidence, 0)
+    const totalConfidence = steps.reduce((sum, step) => sum + (step.confidence || 0), 0)
     const efficiency = totalTime > 0 ? totalConfidence / totalTime : 0
 
     // Calculate throughput (steps per second)
@@ -126,8 +126,8 @@ export const PerformanceMetricsViewer: React.FC<PerformanceMetricsViewerProps> =
     if (efficiency < 0.001) {
       suggestions.push('Low efficiency detected - review confidence vs processing time ratio')
     }
-    if (slowestStep && slowestStep.processingTimeMs > performanceThresholds.slow) {
-      suggestions.push(`Step "${slowestStep.stepName}" is significantly slow - requires optimization`)
+    if (slowestStep && (slowestStep.durationMs || 0) > performanceThresholds.slow) {
+      suggestions.push(`Step "${slowestStep.name}" is significantly slow - requires optimization`)
     }
 
     return {
@@ -147,14 +147,15 @@ export const PerformanceMetricsViewer: React.FC<PerformanceMetricsViewerProps> =
   const trendData = useMemo(() => {
     let cumulativeTime = 0
     return steps.map((step, index) => {
-      cumulativeTime += step.processingTimeMs
+      const duration = step.durationMs || 0
+      cumulativeTime += duration
       return {
         step: index + 1,
-        stepName: step.stepName.substring(0, 15) + (step.stepName.length > 15 ? '...' : ''),
-        processingTime: step.processingTimeMs,
+        stepName: step.name.substring(0, 15) + (step.name.length > 15 ? '...' : ''),
+        processingTime: duration,
         cumulativeTime,
-        confidence: step.confidence * 100,
-        efficiency: step.processingTimeMs > 0 ? (step.confidence / step.processingTimeMs) * 1000 : 0
+        confidence: (step.confidence || 0) * 100,
+        efficiency: duration > 0 ? ((step.confidence || 0) / duration) * 1000 : 0
       }
     })
   }, [steps])
@@ -179,25 +180,26 @@ export const PerformanceMetricsViewer: React.FC<PerformanceMetricsViewerProps> =
   const renderPerformanceTimeline = () => (
     <Timeline>
       {steps.map((step, index) => {
+        const duration = step.durationMs || 0
         const isBottleneck = analysis.bottlenecks.includes(step)
-        const isFast = step.processingTimeMs <= performanceThresholds.fast
-        
+        const isFast = duration <= performanceThresholds.fast
+
         return (
           <Timeline.Item
-            key={step.id}
-            color={getPerformanceColor(step.processingTimeMs)}
+            key={step.stepId}
+            color={getPerformanceColor(duration)}
             dot={
-              <Tooltip title={`${step.processingTimeMs}ms`}>
-                {isBottleneck ? <WarningOutlined /> : 
+              <Tooltip title={`${duration}ms`}>
+                {isBottleneck ? <WarningOutlined /> :
                  isFast ? <ThunderboltOutlined /> : <ClockCircleOutlined />}
               </Tooltip>
             }
           >
             <Space direction="vertical" size="small">
               <Space>
-                <Text strong>{step.stepName}</Text>
-                <Tag color={getPerformanceColor(step.processingTimeMs)}>
-                  {step.processingTimeMs}ms
+                <Text strong>{step.name}</Text>
+                <Tag color={getPerformanceColor(duration)}>
+                  {duration}ms
                 </Tag>
                 {isBottleneck && (
                   <Tag color="red" icon={<WarningOutlined />}>
@@ -211,7 +213,7 @@ export const PerformanceMetricsViewer: React.FC<PerformanceMetricsViewerProps> =
                 )}
               </Space>
               <Text type="secondary" style={{ fontSize: '12px' }}>
-                {((step.processingTimeMs / analysis.totalTime) * 100).toFixed(1)}% of total time
+                {((duration / analysis.totalTime) * 100).toFixed(1)}% of total time
               </Text>
             </Space>
           </Timeline.Item>
@@ -324,10 +326,10 @@ export const PerformanceMetricsViewer: React.FC<PerformanceMetricsViewerProps> =
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text strong>Fast Steps</Text>
                 <Text type="secondary">≤ {performanceThresholds.fast}ms</Text>
-                <Progress 
-                  percent={(steps.filter(s => s.processingTimeMs <= performanceThresholds.fast).length / steps.length) * 100}
+                <Progress
+                  percent={(steps.filter(s => (s.durationMs || 0) <= performanceThresholds.fast).length / steps.length) * 100}
                   strokeColor="#52c41a"
-                  format={(percent) => `${steps.filter(s => s.processingTimeMs <= performanceThresholds.fast).length}/${steps.length}`}
+                  format={(percent) => `${steps.filter(s => (s.durationMs || 0) <= performanceThresholds.fast).length}/${steps.length}`}
                 />
               </Space>
             </Card>
@@ -337,10 +339,10 @@ export const PerformanceMetricsViewer: React.FC<PerformanceMetricsViewerProps> =
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text strong>Acceptable Steps</Text>
                 <Text type="secondary">{performanceThresholds.fast + 1}-{performanceThresholds.acceptable}ms</Text>
-                <Progress 
-                  percent={(steps.filter(s => s.processingTimeMs > performanceThresholds.fast && s.processingTimeMs <= performanceThresholds.acceptable).length / steps.length) * 100}
+                <Progress
+                  percent={(steps.filter(s => (s.durationMs || 0) > performanceThresholds.fast && (s.durationMs || 0) <= performanceThresholds.acceptable).length / steps.length) * 100}
                   strokeColor="#1890ff"
-                  format={(percent) => `${steps.filter(s => s.processingTimeMs > performanceThresholds.fast && s.processingTimeMs <= performanceThresholds.acceptable).length}/${steps.length}`}
+                  format={(percent) => `${steps.filter(s => (s.durationMs || 0) > performanceThresholds.fast && (s.durationMs || 0) <= performanceThresholds.acceptable).length}/${steps.length}`}
                 />
               </Space>
             </Card>
@@ -350,10 +352,10 @@ export const PerformanceMetricsViewer: React.FC<PerformanceMetricsViewerProps> =
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text strong>Slow Steps</Text>
                 <Text type="secondary">&gt; {performanceThresholds.acceptable}ms</Text>
-                <Progress 
-                  percent={(steps.filter(s => s.processingTimeMs > performanceThresholds.acceptable).length / steps.length) * 100}
+                <Progress
+                  percent={(steps.filter(s => (s.durationMs || 0) > performanceThresholds.acceptable).length / steps.length) * 100}
                   strokeColor="#ff4d4f"
-                  format={(percent) => `${steps.filter(s => s.processingTimeMs > performanceThresholds.acceptable).length}/${steps.length}`}
+                  format={(percent) => `${steps.filter(s => (s.durationMs || 0) > performanceThresholds.acceptable).length}/${steps.length}`}
                 />
               </Space>
             </Card>
@@ -379,13 +381,13 @@ export const PerformanceMetricsViewer: React.FC<PerformanceMetricsViewerProps> =
             />
             <Space direction="vertical" style={{ width: '100%' }}>
               {analysis.bottlenecks.map((step, index) => (
-                <Card key={step.id} size="small" style={{ background: '#fff2e8' }}>
+                <Card key={step.stepId} size="small" style={{ background: '#fff2e8' }}>
                   <Space>
                     <WarningOutlined style={{ color: '#fa8c16' }} />
-                    <Text strong>{step.stepName}</Text>
-                    <Tag color="orange">{step.processingTimeMs}ms</Tag>
+                    <Text strong>{step.name}</Text>
+                    <Tag color="orange">{step.durationMs || 0}ms</Tag>
                     <Text type="secondary">
-                      {((step.processingTimeMs / analysis.averageTime) * 100).toFixed(0)}% above average
+                      {(((step.durationMs || 0) / analysis.averageTime) * 100).toFixed(0)}% above average
                     </Text>
                   </Space>
                 </Card>

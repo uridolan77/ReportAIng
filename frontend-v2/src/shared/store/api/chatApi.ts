@@ -119,15 +119,16 @@ export const chatApi = baseApi.injectEndpoints({
     }),
 
     getPopularQueries: builder.query<QuerySuggestion[], { limit?: number; timeframe?: 'day' | 'week' | 'month' }>({
-      query: ({ limit = 10, timeframe = 'week' }) => 
-        `/chat/popular-queries?limit=${limit}&timeframe=${timeframe}`,
+      query: ({ limit = 10, timeframe = 'week' }) =>
+        `/QuerySuggestions/popular?count=${limit}`,
     }),
 
     getQueryTemplates: builder.query<QuerySuggestion[], { category?: string; limit?: number }>({
       query: ({ category, limit = 20 }) => {
-        const params = new URLSearchParams({ limit: limit.toString() })
-        if (category) params.append('category', category)
-        return `/chat/templates?${params}`
+        if (category) {
+          return `/QuerySuggestions/category/${category}?includeInactive=false`
+        }
+        return `/QuerySuggestions/grouped?includeInactive=false`
       },
     }),
 

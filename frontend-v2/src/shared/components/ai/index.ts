@@ -85,10 +85,11 @@ export const AI_FEATURE_FLAGS = {
 } as const
 
 export const AI_COMPONENT_NAMES = {
-  TRANSPARENCY_PANEL: 'AITransparencyPanel',
-  PROMPT_CONSTRUCTION_VIEWER: 'PromptConstructionViewer',
-  CONFIDENCE_BREAKDOWN_CHART: 'ConfidenceBreakdownChart',
-  AI_DECISION_EXPLAINER: 'AIDecisionExplainer',
+  PROCESSFLOW_SESSION_VIEWER: 'ProcessFlowSessionViewer',
+  PROCESSFLOW_DASHBOARD: 'ProcessFlowDashboard',
+  PROCESSFLOW_ANALYTICS: 'ProcessFlowAnalytics',
+  TOKEN_USAGE_ANALYZER: 'TokenUsageAnalyzer',
+  PERFORMANCE_METRICS_VIEWER: 'PerformanceMetricsViewer',
   SEMANTIC_ANALYSIS_PANEL: 'SemanticAnalysisPanel',
   CHAT_INTERFACE: 'ChatInterface',
   LLM_PROVIDER_MANAGER: 'LLMProviderManager',

@@ -5,29 +5,7 @@
 // AI TRANSPARENCY TYPES
 // ============================================================================
 
-export interface PromptConstructionStep {
-  stepName: string
-  description: string
-  confidence: number
-  context: string[]
-  alternatives?: string[]
-  reasoning: string
-  timestamp: string
-}
 
-export interface PromptConstructionTrace {
-  traceId: string
-  steps: PromptConstructionStep[]
-  finalPrompt: string
-  totalConfidence: number
-  optimizationSuggestions: OptimizationSuggestion[]
-  metadata: {
-    modelUsed: string
-    provider: string
-    tokensUsed: number
-    processingTime: number
-  }
-}
 
 export interface ConfidenceFactor {
   name: string
@@ -62,24 +40,13 @@ export interface AlternativeOption {
   }
 }
 
-export interface OptimizationSuggestion {
-  id: string
-  type: 'performance' | 'accuracy' | 'cost' | 'clarity'
-  title: string
-  description: string
-  impact: 'high' | 'medium' | 'low'
-  effort: 'low' | 'medium' | 'high'
-  expectedImprovement: number
-  implementation: string
-}
-
 export interface AIDecisionExplanation {
   decision: string
   reasoning: string[]
   confidence: number
   alternatives: AlternativeOption[]
   factors: ConfidenceFactor[]
-  recommendations: OptimizationSuggestion[]
+  recommendations: string[]
 }
 
 // ============================================================================
@@ -401,7 +368,7 @@ export interface IntentAlternative {
 }
 
 export interface IntentConfidenceBreakdown {
-  factors: ConfidenceFactor[]
+  factors: ProcessFlowConfidenceFactor[]
   overallScore: number
 }
 

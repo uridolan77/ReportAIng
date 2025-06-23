@@ -21,7 +21,8 @@ import {
   CheckCircleOutlined,
   DatabaseOutlined,
   ApiOutlined,
-  RobotOutlined
+  RobotOutlined,
+  EyeOutlined
 } from '@ant-design/icons'
 import { AIFeatureWrapper } from '@shared/components/ai/common/AIFeatureWrapper'
 import {
@@ -36,6 +37,7 @@ import {
   useGetProvidersQuery,
   useGetProviderHealthQuery
 } from '@shared/store/api/llmManagementApi'
+import { TokenUsageAnalyzer, PerformanceMetricsViewer } from '@shared/components/ai/transparency'
 
 const { Title, Text } = Typography
 
@@ -204,6 +206,45 @@ export const LLMManagementDashboard: React.FC = () => {
           showProjections={true}
           compact={false}
         />
+      )
+    },
+    {
+      key: 'transparency',
+      label: (
+        <Space>
+          <EyeOutlined />
+          <span>ProcessFlow Monitoring</span>
+        </Space>
+      ),
+      children: (
+        <div>
+          <Alert
+            message="ProcessFlow Monitoring"
+            description="Monitor AI processing performance, token usage, and transparency metrics for LLM operations."
+            type="info"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
+
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={12}>
+              <TokenUsageAnalyzer
+                timeRange={7}
+                showCostBreakdown={true}
+                showModelComparison={true}
+                compact={false}
+              />
+            </Col>
+            <Col xs={24} lg={12}>
+              <PerformanceMetricsViewer
+                timeRange={7}
+                showTrends={true}
+                showAlerts={true}
+                compact={false}
+              />
+            </Col>
+          </Row>
+        </div>
       )
     },
     {

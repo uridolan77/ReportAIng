@@ -2,9 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using BIReportingCopilot.Core.Models.BusinessContext;
 using BIReportingCopilot.Core.Interfaces.Cache;
-using BIReportingCopilot.Infrastructure.Interfaces;
 using BIReportingCopilot.Core.Extensions;
-using BIReportingCopilot.Infrastructure.Data.Entities;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -16,7 +14,6 @@ namespace BIReportingCopilot.Infrastructure.BusinessContext.Enhanced;
 public class TokenBudgetManager : ITokenBudgetManager
 {
     private readonly BIReportingCopilot.Core.Interfaces.Cache.ICacheService _cacheService;
-    private readonly ITransparencyRepository _transparencyRepository;
     private readonly IConfiguration _configuration;
     private readonly ILogger<TokenBudgetManager> _logger;
 
@@ -103,12 +100,10 @@ public class TokenBudgetManager : ITokenBudgetManager
 
     public TokenBudgetManager(
         BIReportingCopilot.Core.Interfaces.Cache.ICacheService cacheService,
-        ITransparencyRepository transparencyRepository,
         IConfiguration configuration,
         ILogger<TokenBudgetManager> logger)
     {
         _cacheService = cacheService;
-        _transparencyRepository = transparencyRepository;
         _configuration = configuration;
         _logger = logger;
     }
@@ -173,8 +168,8 @@ public class TokenBudgetManager : ITokenBudgetManager
             // Apply user-specific adjustments
             budget = await ApplyUserAdjustmentsAsync(budget, profile.UserId);
 
-            // Save to database
-            await SaveTokenBudgetToDatabase(budget, profile.UserId);
+            // NOTE: Token budget tracking now handled by ProcessFlow system
+            // Legacy database saving removed - ProcessFlow provides comprehensive tracking
 
             // Cache the budget for 1 hour
             await _cacheService.SetAsync(cacheKey, budget, TimeSpan.FromHours(1));
@@ -570,46 +565,8 @@ public class TokenBudgetManager : ITokenBudgetManager
         }
     }
 
-    /// <summary>
-    /// Save the token budget to the database
-    /// </summary>
-    private async Task SaveTokenBudgetToDatabase(TokenBudget budget, string userId)
-    {
-        try
-        {
-            _logger.LogDebug("Saving token budget for user {UserId}, intent {IntentType}", userId, budget.IntentType);
-
-            var budgetEntity = new TokenBudgetEntity
-            {
-                UserId = userId,
-                RequestType = "prompt_construction",
-                IntentType = budget.IntentType.ToString(),
-                MaxTotalTokens = budget.MaxTotalTokens,
-                BasePromptTokens = budget.BasePromptTokens,
-                ReservedResponseTokens = budget.ReservedResponseTokens,
-                AvailableContextTokens = budget.AvailableContextTokens,
-                SchemaContextBudget = budget.SchemaContextBudget,
-                BusinessContextBudget = budget.BusinessContextBudget,
-                ExamplesBudget = budget.ExamplesBudget,
-                RulesBudget = budget.RulesBudget,
-                GlossaryBudget = budget.GlossaryBudget,
-                EstimatedCost = 0.0m, // Would be calculated based on token costs
-                ActualTokensUsed = null, // Will be updated when actually used
-                ActualCost = null,
-                CompletedAt = null // Will be set when the budget is completed
-            };
-
-            await _transparencyRepository.SaveTokenBudgetAsync(budgetEntity);
-
-            _logger.LogInformation("Successfully saved token budget for user {UserId}, intent {IntentType}",
-                userId, budget.IntentType);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to save token budget to database for user {UserId}", userId);
-            // Don't throw - we don't want to break the main flow if database save fails
-        }
-    }
+    // NOTE: Token budget database saving removed - now handled by ProcessFlow system
+    // ProcessFlow provides comprehensive token tracking through ProcessFlowTransparency table
 }
 
 // Supporting data structures

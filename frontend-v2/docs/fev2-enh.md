@@ -60,11 +60,11 @@ This document outlines the comprehensive AI frontend development plan for the BI
 - **SqlGenerationAgent** - Advanced SQL generation
 - **IntelligentAgentOrchestrator** - Multi-agent coordination
 
-#### **4. Transparency & Explainability**
-- **PromptConstructionTracer** - AI decision transparency
-- **TransparencyReportGenerator** - Detailed AI explanations
-- **PromptOptimizationEngine** - AI prompt improvement
-- **AIDecisionLogger** - Complete audit trails
+#### **4. ProcessFlow Transparency System**
+- **ProcessFlow Analytics** - Real-time process monitoring
+- **Session Tracking** - Complete process flow visibility
+- **Performance Metrics** - Step-by-step analysis
+- **Token Usage Analytics** - Cost and efficiency tracking
 
 #### **5. LLM Management System**
 - **LLMManagementService** - Multi-provider management

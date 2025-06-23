@@ -89,6 +89,7 @@ interface MessageListProps {
   onRerun?: (query: string) => void
   onEdit?: (messageId: string) => void
   onDelete?: (messageId: string) => void
+  onShowProcessFlow?: (messageId: string) => void
   className?: string
 }
 
@@ -99,6 +100,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   onRerun,
   onEdit,
   onDelete,
+  onShowProcessFlow,
   className = ''
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -205,6 +207,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                 onRerun={onRerun}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onShowProcessFlow={onShowProcessFlow}
               />
             ))}
           </div>

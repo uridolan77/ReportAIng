@@ -13,9 +13,9 @@ import {
   Statistic,
   Progress
 } from 'antd'
-import { 
-  DashboardOutlined, 
-  BarChartOutlined, 
+import {
+  DashboardOutlined,
+  BarChartOutlined,
   FileTextOutlined,
   TrophyOutlined,
   UserOutlined,
@@ -26,13 +26,18 @@ import {
   ClockCircleOutlined,
   SettingOutlined,
   ReloadOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  EyeOutlined,
+  ApiOutlined
 } from '@ant-design/icons'
 import { PageLayout } from '@shared/components/core/Layout'
 
 // Import existing dashboard components
 import Dashboard from './Dashboard'
 import Analytics from './Analytics'
+
+// Import ProcessFlow components
+import { ProcessFlowDashboard, ProcessFlowAnalytics } from '@shared/components/ai/transparency'
 
 const { Title, Text } = Typography
 
@@ -281,6 +286,45 @@ export const ComprehensiveAdminDashboard: React.FC = () => {
                   </Button>
                 </Space>
               </Card>
+            </Col>
+          </Row>
+        </div>
+      )
+    },
+    {
+      key: 'processflow',
+      label: (
+        <Space>
+          <EyeOutlined />
+          ProcessFlow Transparency
+        </Space>
+      ),
+      children: (
+        <div>
+          <Alert
+            message="ProcessFlow Transparency System"
+            description="Monitor AI processing steps, token usage, performance metrics, and transparency data in real-time."
+            type="info"
+            showIcon
+            style={{ marginBottom: '24px' }}
+          />
+
+          <Row gutter={[16, 16]}>
+            <Col span={24}>
+              <ProcessFlowDashboard
+                filters={{ days: 7, includeDetails: true }}
+                showCharts={true}
+                showMetrics={true}
+              />
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
+            <Col span={24}>
+              <ProcessFlowAnalytics
+                defaultFilters={{ days: 7, includeStepDetails: true, includeTokenUsage: true }}
+                showExport={true}
+              />
             </Col>
           </Row>
         </div>

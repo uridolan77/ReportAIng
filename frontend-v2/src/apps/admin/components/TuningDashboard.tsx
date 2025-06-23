@@ -46,10 +46,10 @@ import {
   useCreateQueryPatternMutation,
   useUpdatePromptTemplateMutation
 } from '@shared/store/api/tuningApi'
-import { useGetTransparencyDashboardMetricsQuery, useGetTransparencyMetricsQuery } from '@shared/store/api/transparencyApi'
+import { useGetProcessFlowDashboardQuery } from '@shared/store/api/transparencyApi'
 import { AIFeatureWrapper } from '@shared/components/ai/common/AIFeatureWrapper'
 import { ConfidenceIndicator } from '@shared/components/ai/common/ConfidenceIndicator'
-import { AITransparencyPanel } from '@shared/components/ai/transparency/AITransparencyPanel'
+import { ProcessFlowDashboard } from '@shared/components/ai/transparency'
 import { useResponsive } from '@shared/hooks/useResponsive'
 
 const { Title, Text } = Typography
@@ -510,10 +510,10 @@ export const TuningDashboard: React.FC = () => {
                     />
 
                     {selectedTraceId ? (
-                      <AITransparencyPanel
-                        traceId={selectedTraceId}
-                        showDetailedMetrics={true}
-                        compact={false}
+                      <ProcessFlowDashboard
+                        filters={{ days: 7, includeDetails: true }}
+                        showCharts={true}
+                        showMetrics={true}
                       />
                     ) : (
                       <div style={{ textAlign: 'center', padding: '40px 0' }}>

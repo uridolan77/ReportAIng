@@ -367,8 +367,9 @@ if (!string.IsNullOrEmpty(connectionString))
     builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.MonitoringDbContext>(options =>
         options.UseSqlServer(connectionString, sqlOptions => ConfigureSqlServerOptions(sqlOptions)));
 
-    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.TransparencyDbContext>(options =>
-        options.UseSqlServer(connectionString, sqlOptions => ConfigureSqlServerOptions(sqlOptions)));
+    // NOTE: TransparencyDbContext removed - functionality moved to ProcessFlow system
+    // builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.TransparencyDbContext>(options =>
+    //     options.UseSqlServer(connectionString, sqlOptions => ConfigureSqlServerOptions(sqlOptions)));
 }
 else
 {
@@ -392,8 +393,9 @@ else
     builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.MonitoringDbContext>(options =>
         options.UseInMemoryDatabase("MonitoringDev"));
 
-    builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.TransparencyDbContext>(options =>
-        options.UseInMemoryDatabase("TransparencyDev"));
+    // NOTE: TransparencyDbContext removed - functionality moved to ProcessFlow system
+    // builder.Services.AddDbContext<BIReportingCopilot.Infrastructure.Data.Contexts.TransparencyDbContext>(options =>
+    //     options.UseInMemoryDatabase("TransparencyDev"));
 }
 
 // DbContext factory for managing bounded contexts
@@ -660,6 +662,10 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Core.LearningSer
 builder.Services.AddScoped<IQueryProcessor, BIReportingCopilot.Infrastructure.AI.Core.QueryProcessor>();
 // Register missing dependencies for QueryProcessor
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IQueryOptimizer, BIReportingCopilot.Infrastructure.AI.Analysis.QueryOptimizer>();
+
+// Process Flow Service - CONSOLIDATED to new ProcessFlow tables only
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Services.IProcessFlowService, BIReportingCopilot.Infrastructure.Services.ProcessFlowService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Core.ProcessFlowTracker>();
 // Register IQueryClassifier from QueryAnalysisService (consolidated service)
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IQueryClassifier>(provider =>
     provider.GetRequiredService<BIReportingCopilot.Infrastructure.AI.Analysis.QueryAnalysisService>());
@@ -786,24 +792,21 @@ builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Agents.IIntelligen
 // Agent-to-Agent communication protocol
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Agents.IAgentCommunicationProtocol, BIReportingCopilot.Infrastructure.AI.Agents.AgentCommunicationProtocol>();
 
-// ===== PHASE 2B: AI TRANSPARENCY FOUNDATION =====
-// Transparency repositories
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ITransparencyRepository, BIReportingCopilot.Infrastructure.Data.Repositories.TransparencyRepository>();
-// Transparency services
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Transparency.ITransparencyService, BIReportingCopilot.Infrastructure.Transparency.TransparencyService>();
+// ===== PHASE 2B: PROCESS FLOW SYSTEM - CONSOLIDATED TRANSPARENCY =====
+// ProcessFlow services - CONSOLIDATED transparency tracking
+// NOTE: ProcessFlowService moved to Infrastructure.Services namespace
+// builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Core.ProcessFlowService>();
+// builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Services.IProcessFlowService, BIReportingCopilot.Infrastructure.AI.Core.IntegratedProcessFlowService>();
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Core.ProcessFlowTracker>();
 
-// Transparency and explainability services
-builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Transparency.IPromptConstructionTracer, BIReportingCopilot.Infrastructure.Transparency.PromptConstructionTracer>();
+// Legacy transparency services REMOVED - replaced by ProcessFlow system
 
-// ===== AI ANALYTICS & LOGGING SERVICES =====
-// Token usage analytics service
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Analytics.ITokenUsageAnalyticsService, BIReportingCopilot.Infrastructure.Analytics.TokenUsageAnalyticsService>();
+// ===== AI ANALYTICS & LOGGING SERVICES - CONSOLIDATED =====
+// NOTE: Token usage and prompt success tracking now handled by ProcessFlow system
+// Legacy analytics services REMOVED - replaced by ProcessFlow system
 
-// Prompt generation logging service
+// Prompt generation logging service (still used)
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Analytics.IPromptGenerationLogsService, BIReportingCopilot.Infrastructure.Analytics.PromptGenerationLogsService>();
-
-// Prompt success tracking service
-builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Analytics.IPromptSuccessTrackingService, BIReportingCopilot.Infrastructure.Analytics.PromptSuccessTrackingService>();
 
 // ===== MODULAR DASHBOARD SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Dashboard.DashboardCreationService>();
@@ -991,13 +994,11 @@ builder.Services.AddEndpointsApiExplorer();
 var healthChecks = builder.Services.AddHealthChecks();
 
 // Add fast health checks that return cached status
-// TODO: Fix missing health check classes
-// healthChecks.AddCheck<BIReportingCopilot.API.HealthChecks.BIDatabaseHealthCheck>("bidatabase");
+healthChecks.AddCheck<BIReportingCopilot.API.HealthChecks.BIDatabaseHealthCheck>("bidatabase");
 
 // Add configuration health checks (Enhancement #3: Configuration Management)
 healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.ConfigurationHealthCheck>("configuration");
-// TODO: Fix missing health check class
-// healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.ConfigurationPerformanceHealthCheck>("configuration-performance");
+healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.ConfigurationPerformanceHealthCheck>("configuration-performance");
 
 // Add bounded contexts health check (Enhancement #4: Database Context Optimization)
 healthChecks.AddCheck<BIReportingCopilot.Infrastructure.Health.BoundedContextsHealthCheck>("bounded-contexts");

@@ -26,7 +26,7 @@ import {
   InfoCircleOutlined
 } from '@ant-design/icons'
 import { ConfidenceIndicator } from '@shared/components/ai/common/ConfidenceIndicator'
-import { AITransparencyPanel } from '@shared/components/ai/transparency/AITransparencyPanel'
+import { ProcessFlowSessionViewer } from '@shared/components/ai/transparency'
 import { useFeatureFlag } from '@shared/components/ai/common/hooks/useAIFeatureFlags'
 import type { SemanticAnalysis } from '@shared/types/chat'
 
@@ -135,13 +135,15 @@ export const SemanticAnalysisPanel: React.FC<SemanticAnalysisPanelProps> = ({
           </div>
         )}
 
-        {/* Transparency Panel for compact view */}
+        {/* ProcessFlow Session Viewer for compact view */}
         {shouldShowTransparency && showTransparencyPanel && traceId && (
           <Card size="small" style={{ marginTop: 8 }}>
-            <AITransparencyPanel
-              traceId={traceId}
+            <ProcessFlowSessionViewer
+              sessionId={traceId}
               compact={true}
-              showDetailedMetrics={false}
+              showDetailedSteps={false}
+              showLogs={false}
+              showTransparency={true}
             />
           </Card>
         )}
@@ -339,13 +341,15 @@ export const SemanticAnalysisPanel: React.FC<SemanticAnalysisPanelProps> = ({
         </Card>
       )}
 
-      {/* AI Transparency Panel */}
+      {/* ProcessFlow Session Viewer */}
       {shouldShowTransparency && showTransparencyPanel && traceId && (
         <div style={{ marginTop: 24 }}>
           <Divider />
-          <AITransparencyPanel
-            traceId={traceId}
-            showDetailedMetrics={true}
+          <ProcessFlowSessionViewer
+            sessionId={traceId}
+            showDetailedSteps={true}
+            showLogs={true}
+            showTransparency={true}
             compact={false}
           />
         </div>

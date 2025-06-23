@@ -10,7 +10,9 @@ import {
   DownloadOutlined,
   MoreOutlined,
   DeleteOutlined,
-  FlagOutlined
+  FlagOutlined,
+  EyeOutlined,
+  ApiOutlined
 } from '@ant-design/icons'
 import type { ChatMessage } from '@shared/types/chat'
 
@@ -24,6 +26,7 @@ interface MessageActionsProps {
   onDelete?: (messageId: string) => void
   onReport?: (messageId: string) => void
   onExport?: (messageId: string) => void
+  onShowProcessFlow?: (messageId: string) => void
 }
 
 export const MessageActions: React.FC<MessageActionsProps> = ({
@@ -36,6 +39,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   onDelete,
   onReport,
   onExport,
+  onShowProcessFlow,
 }) => {
   const isUser = message.type === 'user'
   const isAssistant = message.type === 'assistant'
@@ -93,6 +97,20 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
           size="small"
           icon={<PlayCircleOutlined />}
           onClick={onRerun}
+        />
+      </Tooltip>
+    )
+  }
+
+  // Process Flow action - for assistant messages (AI responses)
+  if (isAssistant && onShowProcessFlow) {
+    primaryActions.push(
+      <Tooltip key="process-flow" title="View AI process flow and transparency">
+        <Button
+          type="text"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => onShowProcessFlow(message.id)}
         />
       </Tooltip>
     )

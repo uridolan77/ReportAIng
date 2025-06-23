@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using BIReportingCopilot.Core.Interfaces.BusinessContext;
 using BIReportingCopilot.Core.Interfaces.AI;
-using BIReportingCopilot.Infrastructure.Interfaces;
+// using BIReportingCopilot.Infrastructure.Interfaces; // REMOVED - legacy transparency interfaces
 using BIReportingCopilot.Core.Models.BusinessContext;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Data.Entities;
@@ -17,20 +17,17 @@ public class BusinessContextAnalyzer : IBusinessContextAnalyzer
 {
     private readonly IAIService _aiService;
     private readonly ISemanticMatchingService _semanticMatchingService;
-    private readonly ITransparencyRepository _transparencyRepository;
     private readonly ILogger<BusinessContextAnalyzer> _logger;
     private readonly IMemoryCache _cache;
 
     public BusinessContextAnalyzer(
         IAIService aiService,
         ISemanticMatchingService semanticMatchingService,
-        ITransparencyRepository transparencyRepository,
         ILogger<BusinessContextAnalyzer> logger,
         IMemoryCache cache)
     {
         _aiService = aiService;
         _semanticMatchingService = semanticMatchingService;
-        _transparencyRepository = transparencyRepository;
         _logger = logger;
         _cache = cache;
     }
@@ -392,67 +389,9 @@ Otherwise return JSON:
         {
             _logger.LogDebug("Saving business context profile for user {UserId}", profile.UserId);
 
-            // Create the main profile entity
-            var profileEntity = new BusinessContextProfileEntity
-            {
-                UserId = profile.UserId,
-                OriginalQuestion = profile.OriginalQuestion,
-                IntentType = profile.Intent.Type.ToString(),
-                IntentConfidence = (decimal)profile.Intent.ConfidenceScore,
-                IntentDescription = $"User wants to {profile.Intent.Type.ToString().ToLower()} data",
-                DomainName = profile.Domain.Name,
-                DomainConfidence = (decimal)profile.Domain.RelevanceScore,
-                OverallConfidence = (decimal)profile.ConfidenceScore,
-                ProcessingTimeMs = 0, // Would be calculated from actual processing time
-                Entities = JsonSerializer.Serialize(profile.Entities.Select(e => new
-                {
-                    name = e.Name,
-                    type = e.Type.ToString(),
-                    originalText = e.OriginalText,
-                    confidence = e.ConfidenceScore
-                })),
-                Keywords = JsonSerializer.Serialize(profile.BusinessTerms),
-                Metadata = JsonSerializer.Serialize(new
-                {
-                    identifiedMetrics = profile.IdentifiedMetrics,
-                    identifiedDimensions = profile.IdentifiedDimensions,
-                    comparisonTerms = profile.ComparisonTerms,
-                    analysisId = profile.AnalysisId,
-                    termRelevanceScores = profile.TermRelevanceScores,
-                    timeContext = profile.TimeContext != null ? new
-                    {
-                        startDate = profile.TimeContext.StartDate,
-                        endDate = profile.TimeContext.EndDate,
-                        relativeExpression = profile.TimeContext.RelativeExpression,
-                        granularity = profile.TimeContext.Granularity.ToString()
-                    } : null
-                })
-            };
-
-            // Save the profile
-            var savedProfile = await _transparencyRepository.SaveBusinessContextAsync(profileEntity);
-
-            // Save each entity
-            foreach (var entity in profile.Entities)
-            {
-                var entityEntity = new BusinessEntityEntity
-                {
-                    ProfileId = savedProfile.Id,
-                    EntityType = entity.Type.ToString(),
-                    EntityValue = entity.Name,
-                    Confidence = (decimal)entity.ConfidenceScore,
-                    StartPosition = 0, // Would be calculated from OriginalText position
-                    EndPosition = entity.OriginalText.Length,
-                    Context = entity.OriginalText,
-                    Metadata = JsonSerializer.Serialize(new
-                    {
-                        originalText = entity.OriginalText,
-                        entityType = entity.Type.ToString()
-                    })
-                };
-
-                await _transparencyRepository.SaveBusinessEntityAsync(entityEntity);
-            }
+            // NOTE: Business context profile saving now handled by ProcessFlow system
+            // The profile data is now tracked through ProcessFlow transparency and metadata
+            // This method is kept for compatibility but actual persistence is handled elsewhere
 
             _logger.LogInformation("Successfully saved business context profile with {EntityCount} entities to database",
                 profile.Entities.Count);

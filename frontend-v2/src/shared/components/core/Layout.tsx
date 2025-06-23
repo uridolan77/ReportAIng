@@ -150,8 +150,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (path === '/admin/analytics') return ['admin-dashboard'] // Redirect to consolidated dashboard
 
     // System Management
-    if (path === '/admin/performance') return ['admin-performance-metrics']
-    if (path === '/admin/cost-management') return ['admin-cost']
+    if (path === '/admin/performance') return ['admin-ai-analytics'] // Redirect to consolidated AI analytics
+    if (path === '/admin/cost-management') return ['admin-ai-analytics'] // Redirect to consolidated AI analytics
+    if (path === '/admin/performance-cost') return ['admin-ai-analytics'] // Redirect to consolidated AI analytics
     if (path === '/admin/ai-analytics') return ['admin-ai-analytics']
     if (path === '/admin/llm-management') return ['admin-llm-management']
     if (path === '/admin/users') return ['admin-users']
@@ -164,10 +165,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (path === '/admin/transparency-review') return ['admin-ai-transparency']
     if (path === '/admin/ai-transparency-analysis') return ['admin-ai-transparency']
 
-    // Advanced Features - Template Analytics
-    if (path === '/admin/template-analytics/analytics') return ['admin-template-analytics']
-    if (path === '/admin/template-analytics/management') return ['admin-template-management']
-    if (path === '/admin/template-analytics/analytics') return ['admin-template-advanced']
+    // Advanced Features - Template Analytics (consolidated)
+    if (path === '/admin/template-analytics') return ['admin-template-analytics']
     if (path.startsWith('/admin/template-analytics')) return ['admin-template-analytics']
 
     return []
@@ -240,29 +239,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         icon: <ControlOutlined />,
       },
       {
-        key: 'admin-performance-cost',
-        icon: <ThunderboltOutlined />,
-        label: 'Performance & Cost',
-        onClick: () => navigate('/admin/performance-cost'),
+        key: 'admin-ai-analytics',
+        icon: <AreaChartOutlined />,
+        label: 'AI Analytics',
+        onClick: () => navigate('/admin/ai-analytics'),
       },
       {
-        key: 'admin-ai-management',
-        icon: <RobotOutlined />,
-        label: 'AI Management',
-        children: [
-          {
-            key: 'admin-ai-analytics',
-            icon: <AreaChartOutlined />,
-            label: 'AI Analytics',
-            onClick: () => navigate('/admin/ai-analytics'),
-          },
-          {
-            key: 'admin-llm-management',
-            icon: <ApiOutlined />,
-            label: 'LLM Management',
-            onClick: () => navigate('/admin/llm-management'),
-          },
-        ],
+        key: 'admin-llm-management',
+        icon: <ApiOutlined />,
+        label: 'LLM Management',
+        onClick: () => navigate('/admin/llm-management'),
       },
       {
         key: 'admin-users',
@@ -286,27 +272,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       {
         key: 'admin-ai-transparency',
         icon: <EyeOutlined />,
-        label: 'AI Transparency',
+        label: 'ProcessFlow Transparency',
         onClick: () => navigate('/admin/ai-transparency'),
       },
+
       {
         key: 'admin-template-analytics',
         icon: <FileTextOutlined />,
         label: 'Template Analytics',
-        children: [
-          {
-            key: 'admin-template-analytics',
-            icon: <DashboardOutlined />,
-            label: 'Analytics & Performance',
-            onClick: () => navigate('/admin/template-analytics/analytics'),
-          },
-          {
-            key: 'admin-template-management',
-            icon: <SafetyOutlined />,
-            label: 'Management & Features',
-            onClick: () => navigate('/admin/template-analytics/management'),
-          },
-        ],
+        onClick: () => navigate('/admin/template-analytics'),
       },
     ] : []),
   ]

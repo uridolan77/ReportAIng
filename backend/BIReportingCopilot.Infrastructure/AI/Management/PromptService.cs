@@ -22,22 +22,19 @@ public class PromptService : IPromptService
     private readonly ISecretsManagementService _secretsService;
     private readonly ISemanticLayerService? _semanticLayerService;
     private readonly IPromptGenerationLogsService? _promptLogsService;
-    private readonly ITokenUsageAnalyticsService? _tokenAnalyticsService;
 
     public PromptService(
         ILogger<PromptService> logger,
         BICopilotContext context,
         ISecretsManagementService secretsService,
         ISemanticLayerService? semanticLayerService = null,
-        IPromptGenerationLogsService? promptLogsService = null,
-        ITokenUsageAnalyticsService? tokenAnalyticsService = null)
+        IPromptGenerationLogsService? promptLogsService = null)
     {
         _logger = logger;
         _context = context;
         _secretsService = secretsService;
         _semanticLayerService = semanticLayerService;
         _promptLogsService = promptLogsService;
-        _tokenAnalyticsService = tokenAnalyticsService;
     }
 
     public async Task<string> BuildQueryPromptAsync(string naturalLanguageQuery, SchemaMetadata schema, string? context = null)
@@ -1922,16 +1919,8 @@ Provide a clear, structured explanation that matches the requested complexity le
             // Log the prompt generation
             var logId = await _promptLogsService.LogPromptGenerationAsync(logRequest);
 
-            // Record token usage analytics
-            if (_tokenAnalyticsService != null)
-            {
-                await _tokenAnalyticsService.RecordTokenUsageAsync(
-                    logRequest.UserId,
-                    "prompt_generation",
-                    intentType,
-                    promptDetails.TokenCount,
-                    logRequest.CostEstimate ?? 0);
-            }
+            // NOTE: Token analytics now handled by ProcessFlow system
+            // Token usage tracking is automatically handled by ProcessFlowTracker
 
             _logger.LogDebug("✅ Logged prompt generation analytics: LogId={LogId}, Intent={Intent}, Domain={Domain}, Tokens={Tokens}",
                 logId, intentType, domain, promptDetails.TokenCount);

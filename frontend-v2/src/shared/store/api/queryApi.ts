@@ -1,11 +1,13 @@
 import { baseApi } from './baseApi'
+import type { EnhancedQueryTransparencyData } from '@shared/types/transparency'
 
 export interface QueryRequest {
   question: string
   context?: string
 }
 
-export interface EnhancedQueryRequest {
+// ProcessFlow-enhanced query request
+export interface ProcessFlowQueryRequest {
   query: string
   context?: string
   includeExplanation: boolean
@@ -13,6 +15,16 @@ export interface EnhancedQueryRequest {
   maxResults?: number
   preferredTables?: string[]
   excludedTables?: string[]
+
+  // ProcessFlow options
+  includeTransparencyData: boolean
+  enableProcessFlowTracking: boolean
+  sessionId?: string
+  trackingOptions?: {
+    includeStepDetails?: boolean
+    includeTokenUsage?: boolean
+    includePerformanceMetrics?: boolean
+  }
 }
 
 export interface QueryMetadata {
@@ -40,7 +52,7 @@ export interface QuerySemanticAnalysis {
   suggestedClarifications: string[]
 }
 
-export interface EnhancedQueryResponse {
+export interface ProcessFlowQueryResponse {
   sql: string
   explanation: string
   confidence: number
@@ -49,6 +61,16 @@ export interface EnhancedQueryResponse {
   estimatedExecutionTime: number
   results?: any[]
   metadata: QueryMetadata
+
+  // ProcessFlow transparency metadata
+  transparencyData: EnhancedQueryTransparencyData
+
+  // ProcessFlow fields
+  sessionId: string
+  processingSteps: number
+  totalProcessingTime: number
+  success: boolean
+  timestamp: string
 }
 
 export interface QueryHistoryItem {
@@ -103,14 +125,38 @@ export const queryApi = baseApi.injectEndpoints({
       invalidatesTags: ['QueryHistory'],
     }),
     
-    // Enhanced Query with AI
-    executeEnhancedQuery: builder.mutation<EnhancedQueryResponse, EnhancedQueryRequest>({
+    // ProcessFlow-enhanced query with full transparency tracking
+    executeProcessFlowQuery: builder.mutation<ProcessFlowQueryResponse, ProcessFlowQueryRequest>({
       query: (body) => ({
-        url: '/query/enhanced',
+        url: '/query/enhanced/processflow',
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['QueryHistory'],
+      invalidatesTags: ['QueryHistory', 'ProcessFlowSession'],
+    }),
+
+    // Get ProcessFlow session for a query
+    getQueryProcessFlowSession: builder.query<{
+      sessionId: string
+      status: string
+      steps: Array<{
+        stepId: string
+        stepType: string
+        name: string
+        status: string
+        duration?: number
+        confidence?: number
+      }>
+      transparency?: {
+        totalTokens: number
+        estimatedCost: number
+        model: string
+      }
+    }, string>({
+      query: (queryId) => `/query/${queryId}/processflow`,
+      providesTags: (result, error, queryId) => [
+        { type: 'QueryProcessFlow', id: queryId }
+      ],
     }),
     
     // Query History
@@ -153,10 +199,61 @@ export const queryApi = baseApi.injectEndpoints({
 
 export const {
   useExecuteQueryMutation,
-  useExecuteEnhancedQueryMutation,
+  useExecuteProcessFlowQueryMutation,
+  useGetQueryProcessFlowSessionQuery,
   useGetQueryHistoryQuery,
   useRefreshSchemaCacheMutation,
   useStartStreamingQueryMutation,
   useGetQueryDetailsQuery,
   useGetQueryResultsQuery,
 } = queryApi
+
+// Enhanced hooks for ProcessFlow queries
+export const useProcessFlowQuery = () => {
+  const [executeQuery] = useExecuteProcessFlowQueryMutation()
+
+  const executeWithTracking = async (request: ProcessFlowQueryRequest) => {
+    try {
+      const result = await executeQuery({
+        ...request,
+        includeTransparencyData: true,
+        enableProcessFlowTracking: true,
+        trackingOptions: {
+          includeStepDetails: true,
+          includeTokenUsage: true,
+          includePerformanceMetrics: true,
+          ...request.trackingOptions
+        }
+      }).unwrap()
+
+      return result
+    } catch (error) {
+      console.error('ProcessFlow query execution failed:', error)
+      throw error
+    }
+  }
+
+  return {
+    executeQuery: executeWithTracking,
+    isLoading: false // This would be managed by the mutation state
+  }
+}
+
+export const useQueryWithTransparency = (queryId: string) => {
+  const detailsQuery = useGetQueryDetailsQuery(queryId, { skip: !queryId })
+  const processFlowQuery = useGetQueryProcessFlowSessionQuery(queryId, { skip: !queryId })
+  const resultsQuery = useGetQueryResultsQuery(queryId, { skip: !queryId })
+
+  return {
+    query: detailsQuery.data,
+    processFlow: processFlowQuery.data,
+    results: resultsQuery.data,
+    isLoading: detailsQuery.isLoading || processFlowQuery.isLoading || resultsQuery.isLoading,
+    error: detailsQuery.error || processFlowQuery.error || resultsQuery.error,
+    refetch: () => {
+      detailsQuery.refetch()
+      processFlowQuery.refetch()
+      resultsQuery.refetch()
+    }
+  }
+}

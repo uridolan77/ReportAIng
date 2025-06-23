@@ -39,14 +39,8 @@ import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { StreamingProgress } from './StreamingProgress'
 
-// Transparency Components
-import { LiveQueryTracker } from '@shared/components/ai/transparency/LiveQueryTracker'
-import { RealTimeMonitor } from '@shared/components/ai/transparency/RealTimeMonitor'
-import { InstantFeedbackPanel } from '@shared/components/ai/transparency/InstantFeedbackPanel'
-import { QueryFlowAnalyzer } from '@shared/components/ai/transparency/QueryFlowAnalyzer'
-import { TraceDetailViewer } from '@shared/components/ai/transparency/TraceDetailViewer'
-import { BusinessContextAnalyzer } from '@shared/components/ai/transparency/BusinessContextAnalyzer'
-import { ModelPerformanceComparison } from '@shared/components/ai/transparency/ModelPerformanceComparison'
+// ProcessFlow Transparency Components
+import { ProcessFlowSessionViewer, ProcessFlowDashboard } from '@shared/components/ai/transparency'
 
 // Enhanced Features Components
 import { QuerySuggestions } from './QuerySuggestions'
@@ -322,23 +316,23 @@ export const ComprehensiveChatInterface: React.FC<ComprehensiveChatInterfaceProp
               </Card>
             )}
 
-            {/* Live Query Tracking */}
+            {/* ProcessFlow Session Tracking */}
             {currentQueryId && settings.showQueryFlow && (
-              <LiveQueryTracker
-                queryId={currentQueryId}
-                autoTrack={true}
-                showStepDetails={true}
-                showUserInfo={false}
+              <ProcessFlowSessionViewer
+                sessionId={currentQueryId}
+                showDetailedSteps={true}
+                showLogs={true}
+                showTransparency={true}
+                compact={true}
               />
             )}
 
-            {/* Feedback Panel */}
-            {currentQueryId && !isLoading && settings.enableFeedbackCollection && (
-              <InstantFeedbackPanel
-                queryId={currentQueryId}
-                showRating={true}
-                showComments={true}
-                showSuggestions={mode === 'advanced'}
+            {/* ProcessFlow Dashboard */}
+            {settings.enableAdvancedAnalytics && (
+              <ProcessFlowDashboard
+                filters={{ days: 1, includeDetails: true }}
+                showCharts={false}
+                showMetrics={true}
               />
             )}
           </Space>

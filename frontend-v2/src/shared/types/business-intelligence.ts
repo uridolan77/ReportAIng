@@ -319,12 +319,12 @@ export interface IntentAlternative {
   tradeoffs?: string[]
 }
 
-export interface ConfidenceBreakdown {
+export interface ProcessFlowConfidenceBreakdown {
   overallConfidence: number
-  factors: ConfidenceFactor[]
+  factors: ProcessFlowConfidenceFactor[]
 }
 
-export interface ConfidenceFactor {
+export interface ProcessFlowConfidenceFactor {
   name: string
   score: number
   impact: 'low' | 'medium' | 'high'

@@ -45,6 +45,7 @@ interface MessageItemProps {
   showTimestamp?: boolean
   onRerun?: (query: string) => void
   onEdit?: (messageId: string) => void
+  onShowProcessFlow?: (messageId: string) => void
 }
 
 export const MessageItem: React.FC<MessageItemProps> = ({
@@ -53,6 +54,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   showTimestamp = true,
   onRerun,
   onEdit,
+  onShowProcessFlow,
 }) => {
   const dispatch = useAppDispatch()
   const [showDetails, setShowDetails] = useState(false)
@@ -329,6 +331,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             onFavorite={handleToggleFavorite}
             onRerun={handleRerun}
             onEdit={onEdit}
+            onShowProcessFlow={onShowProcessFlow}
           />
         ]}
       >

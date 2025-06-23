@@ -53,8 +53,8 @@ export const SystemStatusIndicator: React.FC<SystemStatusIndicatorProps> = ({ co
   const checkSystemHealth = async () => {
     setLoading(true)
     try {
-      // Check API health
-      const apiResponse = await fetch('/api/health', {
+      // Check API health - use absolute URL to backend
+      const apiResponse = await fetch('http://localhost:55244/api/system/health', {
         method: 'GET',
         timeout: 3000
       } as any)

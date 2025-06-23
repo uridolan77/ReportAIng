@@ -15,8 +15,10 @@ using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using SchemaService = BIReportingCopilot.Core.Interfaces.Schema.ISchemaService;
 using IContextManager = BIReportingCopilot.Core.Interfaces.IContextManager;
-// AI Transparency Foundation imports
-using BIReportingCopilot.Infrastructure.Transparency;
+// Process Flow and Business Context imports
+using BIReportingCopilot.Core.Interfaces.Services;
+using BIReportingCopilot.Core.Models.ProcessFlow;
+using BIReportingCopilot.Infrastructure.AI.Core;
 using BIReportingCopilot.Infrastructure.BusinessContext.Enhanced;
 
 namespace BIReportingCopilot.API.Controllers;
@@ -42,16 +44,14 @@ public class QueryController : ControllerBase
     private readonly IHubContext<QueryStatusHub> _hubContext;
     private readonly IContextManager _contextManager;
     private readonly IConfiguration _configuration;
-    // AI Transparency Foundation services
-    private readonly IPromptConstructionTracer _promptTracer;
+    // Process Flow Services - CONSOLIDATED transparency tracking
+    private readonly IProcessFlowService _processFlowService;
+    private readonly ProcessFlowTracker _processFlowTracker;
     private readonly IEnhancedBusinessContextAnalyzer _businessContextAnalyzer;
     private readonly ITokenBudgetManager _tokenBudgetManager;
-    // Transparency integration dependencies
+    // Business context dependencies
     private readonly BIReportingCopilot.Core.Interfaces.BusinessContext.IBusinessMetadataRetrievalService _metadataService;
     private readonly BIReportingCopilot.Core.Interfaces.BusinessContext.IContextualPromptBuilder _promptBuilder;
-    // Analytics services
-    private readonly IPromptSuccessTrackingService? _promptSuccessTrackingService;
-    private readonly ITokenUsageAnalyticsService? _tokenUsageAnalyticsService;
 
     public QueryController(
         ILogger<QueryController> logger,
@@ -67,16 +67,13 @@ public class QueryController : ControllerBase
         IHubContext<QueryStatusHub> hubContext,
         IContextManager contextManager,
         IConfiguration configuration,
-        // AI Transparency Foundation services
-        IPromptConstructionTracer promptTracer,
+        // Process Flow Service - CONSOLIDATED transparency tracking
+        IProcessFlowService processFlowService,
+        ProcessFlowTracker processFlowTracker,
         IEnhancedBusinessContextAnalyzer businessContextAnalyzer,
         ITokenBudgetManager tokenBudgetManager,
-        // Transparency integration dependencies
         BIReportingCopilot.Core.Interfaces.BusinessContext.IBusinessMetadataRetrievalService metadataService,
-        BIReportingCopilot.Core.Interfaces.BusinessContext.IContextualPromptBuilder promptBuilder,
-        // Analytics services
-        IPromptSuccessTrackingService? promptSuccessTrackingService = null,
-        ITokenUsageAnalyticsService? tokenUsageAnalyticsService = null)
+        BIReportingCopilot.Core.Interfaces.BusinessContext.IContextualPromptBuilder promptBuilder)
     {
         _logger = logger;
         _mediator = mediator;
@@ -91,16 +88,14 @@ public class QueryController : ControllerBase
         _hubContext = hubContext;
         _contextManager = contextManager;
         _configuration = configuration;
-        // AI Transparency Foundation services
-        _promptTracer = promptTracer;
+        // Process Flow Services - CONSOLIDATED transparency tracking
+        _processFlowService = processFlowService;
+        _processFlowTracker = processFlowTracker;
         _businessContextAnalyzer = businessContextAnalyzer;
         _tokenBudgetManager = tokenBudgetManager;
-        // Initialize transparency dependencies
+        // Initialize business context dependencies
         _metadataService = metadataService;
         _promptBuilder = promptBuilder;
-        // Analytics services
-        _promptSuccessTrackingService = promptSuccessTrackingService;
-        _tokenUsageAnalyticsService = tokenUsageAnalyticsService;
     }
 
     #region Standard Query Operations
@@ -465,8 +460,8 @@ public class QueryController : ControllerBase
             _logger.LogInformation("🔍 [TRANSPARENCY] Query processing complete - Success: {Success}, Tokens: {Tokens}, Confidence: {Confidence} [TraceId: {TraceId}]",
                 !string.IsNullOrEmpty(processedQuery.GeneratedSql), tokenBudget.AvailableContextTokens, processedQuery.ConfidenceScore, traceId);
 
-            // 🔍 STEP 5: Create Transparency Trace (ACTIVE INTEGRATION)
-            await CreateTransparencyTraceAsync(request.Query, processedQuery, businessProfile, tokenBudget, traceId, userId);
+            // 🔍 STEP 5: Create Process Flow Trace (CONSOLIDATED INTEGRATION)
+            await CreateProcessFlowTraceAsync(request.Query, processedQuery, businessProfile, tokenBudget, traceId, userId);
 
             // 📈 STEP 7: Analytics Logging
             await LogQueryAnalyticsAsync(request.Query, processedQuery, businessProfile, tokenBudget, traceId, userId, queryResult);
@@ -1133,9 +1128,9 @@ public class QueryController : ControllerBase
     }
 
     /// <summary>
-    /// Create transparency trace for AI query processing - FULL INTEGRATION
+    /// Create process flow trace for AI query processing - CONSOLIDATED INTEGRATION
     /// </summary>
-    private async Task CreateTransparencyTraceAsync(
+    private async Task CreateProcessFlowTraceAsync(
         string userQuestion,
         QueryProcessingResult processedQuery,
         BIReportingCopilot.Core.Models.BusinessContext.BusinessContextProfile businessProfile,
@@ -1145,76 +1140,97 @@ public class QueryController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("🔍 [TRANSPARENCY] Creating transparency trace {TraceId} for user {UserId}", traceId, userId);
+            _logger.LogInformation("🔍 [PROCESS-FLOW] Creating process flow trace {TraceId} for user {UserId}", traceId, userId);
 
-            // Step 1: Get relevant metadata for transparency analysis
-            var schema = await _metadataService.GetRelevantBusinessMetadataAsync(
-                businessProfile,
-                10); // Max tables for analysis
-
-            // Step 2: Build business-aware prompt for transparency tracking
-            var prompt = await _promptBuilder.BuildBusinessAwarePromptAsync(
+            // Start process flow session using the ProcessFlowTracker
+            var sessionId = await _processFlowTracker.StartSessionAsync(
+                userId,
                 userQuestion,
-                businessProfile,
-                schema);
+                "enhanced",
+                conversationId: null,
+                messageId: traceId);
 
-            // Step 3: Create ProgressiveBuildResult with actual data
-            var buildResult = new BIReportingCopilot.Infrastructure.BusinessContext.Enhanced.ProgressiveBuildResult
-            {
-                FinalPrompt = prompt ?? $"Generated prompt for: {userQuestion}",
-                FinalTokenCount = tokenBudget.AvailableContextTokens,
-                BuildSteps = new List<BIReportingCopilot.Infrastructure.BusinessContext.Enhanced.ProgressiveBuildStep>
-                {
-                    new BIReportingCopilot.Infrastructure.BusinessContext.Enhanced.ProgressiveBuildStep
-                    {
-                        StepName = "Business Context Analysis",
-                        Description = $"Intent: {businessProfile.Intent.Type}, Domain: {businessProfile.Domain.Name}, Confidence: {businessProfile.ConfidenceScore:F2}",
-                        Timestamp = DateTime.UtcNow.AddSeconds(-3)
-                    },
-                    new BIReportingCopilot.Infrastructure.BusinessContext.Enhanced.ProgressiveBuildStep
-                    {
-                        StepName = "Schema Retrieval",
-                        Description = $"Retrieved {schema.RelevantTables.Count} tables, Relevance: {schema.RelevanceScore:F2}",
-                        Timestamp = DateTime.UtcNow.AddSeconds(-2)
-                    },
-                    new BIReportingCopilot.Infrastructure.BusinessContext.Enhanced.ProgressiveBuildStep
-                    {
-                        StepName = "Prompt Construction",
-                        Description = $"Built prompt ({prompt?.Length ?? 0} chars) with business context",
-                        Timestamp = DateTime.UtcNow.AddSeconds(-1)
-                    },
-                    new BIReportingCopilot.Infrastructure.BusinessContext.Enhanced.ProgressiveBuildStep
-                    {
-                        StepName = "SQL Generation",
-                        Description = $"Generated SQL ({processedQuery.GeneratedSql?.Length ?? 0} chars), Confidence: {processedQuery.ConfidenceScore:F2}",
-                        Timestamp = DateTime.UtcNow
-                    }
-                }
-            };
+            // Track business context analysis step
+            await _processFlowTracker.TrackStepAsync(ProcessFlowSteps.SemanticAnalysis, async () => {
+                await _processFlowTracker.SetStepInputAsync(ProcessFlowSteps.SemanticAnalysis, new {
+                    Query = userQuestion,
+                    Intent = businessProfile.Intent.Type.ToString(),
+                    Domain = businessProfile.Domain.Name
+                });
 
-            // Step 4: Create the transparency trace using the existing tracer
-            var trace = await _promptTracer.TracePromptConstructionAsync(
-                userQuestion,
-                businessProfile,
-                buildResult);
+                await _processFlowTracker.SetStepOutputAsync(ProcessFlowSteps.SemanticAnalysis, new {
+                    Intent = businessProfile.Intent.Type.ToString(),
+                    Domain = businessProfile.Domain.Name,
+                    Confidence = businessProfile.ConfidenceScore,
+                    Entities = businessProfile.Entities.Select(e => e.Name).ToList()
+                });
+            });
 
-            _logger.LogInformation("✅ [TRANSPARENCY] Successfully created transparency trace {TraceId} with confidence {Confidence:F3}",
-                trace.TraceId, trace.OverallConfidence);
+            // Track schema retrieval step
+            await _processFlowTracker.TrackStepAsync(ProcessFlowSteps.SchemaRetrieval, async () => {
+                var schema = await _metadataService.GetRelevantBusinessMetadataAsync(businessProfile, 10);
 
-            // Step 5: Log additional success metrics
-            _logger.LogInformation("📊 [TRANSPARENCY] Trace details - Steps: {StepCount}, Tokens: {TokenCount}, Success: {Success}",
-                buildResult.BuildSteps.Count, buildResult.FinalTokenCount, !string.IsNullOrEmpty(processedQuery.GeneratedSql));
+                await _processFlowTracker.SetStepOutputAsync(ProcessFlowSteps.SchemaRetrieval, new {
+                    TablesRetrieved = schema.RelevantTables.Count,
+                    RelevanceScore = schema.RelevanceScore,
+                    Tables = schema.RelevantTables.Select(t => t.TableName).ToList()
+                });
+            });
+
+            // Track prompt building step
+            await _processFlowTracker.TrackStepAsync(ProcessFlowSteps.PromptBuilding, async () => {
+                var schema = await _metadataService.GetRelevantBusinessMetadataAsync(businessProfile, 10);
+                var prompt = await _promptBuilder.BuildBusinessAwarePromptAsync(userQuestion, businessProfile, schema);
+
+                await _processFlowTracker.SetStepOutputAsync(ProcessFlowSteps.PromptBuilding, new {
+                    PromptLength = prompt?.Length ?? 0,
+                    TokenBudget = tokenBudget.AvailableContextTokens,
+                    Prompt = prompt
+                });
+            });
+
+            // Track AI generation step
+            await _processFlowTracker.TrackStepAsync(ProcessFlowSteps.AIGeneration, async () => {
+                await _processFlowTracker.SetStepOutputAsync(ProcessFlowSteps.AIGeneration, new {
+                    GeneratedSQL = processedQuery.GeneratedSql,
+                    SQLLength = processedQuery.GeneratedSql?.Length ?? 0,
+                    Confidence = processedQuery.ConfidenceScore,
+                    ProcessingTimeMs = processedQuery.ProcessingTime.TotalMilliseconds
+                });
+            });
+
+            // Set AI transparency information
+            await _processFlowTracker.SetTransparencyAsync(
+                model: "gpt-4",
+                temperature: 0.1m,
+                promptTokens: EstimateTokenUsage(userQuestion, ""),
+                completionTokens: EstimateTokenUsage("", processedQuery.GeneratedSql),
+                cost: CalculateEstimatedCost(EstimateTokenUsage(userQuestion, processedQuery.GeneratedSql)),
+                confidence: (decimal)processedQuery.ConfidenceScore,
+                processingTimeMs: (long)processedQuery.ProcessingTime.TotalMilliseconds
+            );
+
+            // Complete the process flow session
+            await _processFlowTracker.CompleteSessionAsync(
+                ProcessFlowStatus.Completed,
+                generatedSQL: processedQuery.GeneratedSql,
+                executionResult: "Query processing completed successfully",
+                overallConfidence: (decimal)processedQuery.ConfidenceScore
+            );
+
+            _logger.LogInformation("✅ [PROCESS-FLOW] Successfully created process flow trace {SessionId} with confidence {Confidence:F3}",
+                sessionId, processedQuery.ConfidenceScore);
 
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ [TRANSPARENCY] Failed to create transparency trace {TraceId} for user {UserId}", traceId, userId);
-            // Don't throw - transparency failure shouldn't break the main query flow
+            _logger.LogError(ex, "❌ [PROCESS-FLOW] Failed to create process flow trace {TraceId} for user {UserId}", traceId, userId);
+            // Don't throw - process flow failure shouldn't break the main query flow
         }
     }
 
     /// <summary>
-    /// Log query analytics for tracking and analysis
+    /// Log query analytics using ProcessFlow system - CONSOLIDATED ANALYTICS
     /// </summary>
     private async Task LogQueryAnalyticsAsync(
         string userQuestion,
@@ -1227,60 +1243,32 @@ public class QueryController : ControllerBase
     {
         try
         {
-            // Log prompt success tracking
-            if (_promptSuccessTrackingService != null)
-            {
-                var trackingRequest = new PromptSuccessTrackingRequest
-                {
-                    SessionId = traceId,
-                    UserId = userId,
-                    UserQuestion = userQuestion,
-                    GeneratedPrompt = "Enhanced query processing", // We don't have the actual prompt here
-                    TemplateUsed = "enhanced_query_processing",
-                    IntentClassified = businessProfile.Intent.Type.ToString(),
-                    DomainClassified = businessProfile.Domain.Name,
-                    TablesRetrieved = string.Join(",", businessProfile.Entities.Select(e => e.Name)),
-                    GeneratedSQL = processedQuery.GeneratedSql,
-                    ProcessingTimeMs = (int)processedQuery.ProcessingTime.TotalMilliseconds,
-                    ConfidenceScore = (decimal)processedQuery.ConfidenceScore
-                };
+            _logger.LogDebug("📊 [PROCESS-FLOW] Logging query analytics for trace {TraceId}", traceId);
 
-                var sessionId = await _promptSuccessTrackingService.TrackPromptSessionAsync(trackingRequest);
+            // All analytics are now handled by the ProcessFlowTracker in CreateProcessFlowTraceAsync
+            // This method is kept for backward compatibility but the actual tracking
+            // is done through the consolidated ProcessFlow system
 
-                // Update with SQL execution results if available
-                if (queryResult != null)
-                {
-                    await _promptSuccessTrackingService.UpdateSQLExecutionResultAsync(
-                        sessionId,
-                        queryResult.IsSuccessful,
-                        queryResult.IsSuccessful ? null : queryResult.Metadata?.Error,
-                        queryResult.Metadata?.ExecutionTimeMs);
-                }
+            // Log summary for debugging
+            var estimatedTokens = EstimateTokenUsage(userQuestion, processedQuery.GeneratedSql);
+            var estimatedCost = CalculateEstimatedCost(estimatedTokens);
 
-                _logger.LogDebug("✅ Logged prompt success tracking: SessionId={SessionId}, Intent={Intent}, Success={Success}",
-                    sessionId, businessProfile.Intent.Type, queryResult?.IsSuccessful ?? false);
-            }
+            _logger.LogDebug("✅ [PROCESS-FLOW] Analytics summary - UserId: {UserId}, Intent: {Intent}, Tokens: {Tokens}, Cost: {Cost:C}, Success: {Success}",
+                userId,
+                businessProfile.Intent.Type,
+                estimatedTokens,
+                estimatedCost,
+                queryResult?.IsSuccessful ?? false);
 
-            // Log token usage analytics
-            if (_tokenUsageAnalyticsService != null)
-            {
-                var estimatedTokens = EstimateTokenUsage(userQuestion, processedQuery.GeneratedSql);
-                var estimatedCost = CalculateEstimatedCost(estimatedTokens);
-
-                await _tokenUsageAnalyticsService.RecordTokenUsageAsync(
-                    userId,
-                    "enhanced_query",
-                    businessProfile.Intent.Type.ToString(),
-                    estimatedTokens,
-                    estimatedCost);
-
-                _logger.LogDebug("✅ Logged token usage analytics: UserId={UserId}, Tokens={Tokens}, Cost={Cost:C}",
-                    userId, estimatedTokens, estimatedCost);
-            }
+            // Note: Detailed analytics are now captured in ProcessFlow tables:
+            // - ProcessFlowSessions: Session-level tracking
+            // - ProcessFlowSteps: Step-by-step analysis
+            // - ProcessFlowTransparency: Token usage and cost tracking
+            // - ProcessFlowLogs: Detailed logging
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "⚠️ Failed to log query analytics - continuing without logging");
+            _logger.LogWarning(ex, "⚠️ [PROCESS-FLOW] Failed to log query analytics summary - continuing without logging");
         }
     }
 

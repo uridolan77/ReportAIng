@@ -6,6 +6,7 @@ import EnhancedChatPage from './pages/EnhancedChatPage'
 import EnhancedChatInterface from './components/EnhancedChatInterface'
 import QueryHistory from './pages/QueryHistory'
 import QueryResults from './pages/QueryResults'
+import { ProcessFlowDemo } from './components/ProcessFlowDemo'
 
 export default function ChatApp() {
   return (
@@ -27,6 +28,9 @@ export default function ChatApp() {
 
         {/* Query results */}
         <Route path="/results/:queryId?" element={<QueryResults />} />
+
+        {/* Process Flow Demo */}
+        <Route path="/process-flow-demo" element={<ProcessFlowDemo />} />
 
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/chat" replace />} />

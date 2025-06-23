@@ -1,7 +1,5 @@
 using BIReportingCopilot.Core.Models.Analytics;
 
-using BIReportingCopilot.Core.Models;
-
 namespace BIReportingCopilot.Core.Interfaces.Analytics;
 
 /// <summary>
@@ -98,6 +96,26 @@ public class TemplatePerformanceTrends
     public decimal TrendDirection { get; set; } // Positive = improving, Negative = declining
     public Dictionary<string, decimal> TrendMetrics { get; set; } = new();
     public DateTime AnalysisDate { get; set; }
+}
+
+/// <summary>
+/// Template performance metrics interface model
+/// </summary>
+public class TemplatePerformanceMetrics
+{
+    public string TemplateKey { get; set; } = string.Empty;
+    public string TemplateName { get; set; } = string.Empty;
+    public string IntentType { get; set; } = string.Empty;
+    public int TotalUsages { get; set; }
+    public int SuccessfulUsages { get; set; }
+    public decimal SuccessRate { get; set; }
+    public decimal AverageConfidenceScore { get; set; }
+    public int AverageProcessingTimeMs { get; set; }
+    public decimal? AverageUserRating { get; set; }
+    public DateTime? LastUsedDate { get; set; }
+    public DateTime CreatedDate { get; set; }
+    public DateTime UpdatedDate { get; set; }
+    public Dictionary<string, object> AdditionalMetrics { get; set; } = new();
 }
 
 /// <summary>
