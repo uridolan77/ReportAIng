@@ -563,6 +563,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Management.LLMMa
 // ===== COST MANAGEMENT SERVICES =====
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.CostOptimization.ICostManagementService, BIReportingCopilot.Infrastructure.CostOptimization.CostManagementService>();
 builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.CostOptimization.ICostAnalyticsService, BIReportingCopilot.Infrastructure.CostOptimization.CostAnalyticsService>();
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.CostOptimization.IResourceManagementService, BIReportingCopilot.Infrastructure.CostOptimization.ResourceManagementService>();
 
 // ===== LLM-AWARE AI SERVICE =====
 // Register the base AI service directly (without circular dependency)

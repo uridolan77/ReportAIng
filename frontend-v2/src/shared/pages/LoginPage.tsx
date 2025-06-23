@@ -30,35 +30,6 @@ export default function LoginPage() {
   const [login, { isLoading: isLoginLoading, error: loginError }] = useLoginMutation()
   const [loginWithMfa, { isLoading: isMfaLoading, error: mfaError }] = useLoginWithMfaMutation()
 
-  // Enhanced login with automatic fallback to mock data
-  const { mutate: enhancedLogin, isLoading: isEnhancedLoading, error: enhancedError } = useEnhancedLogin({
-    onSuccess: (result) => {
-      if (result.success && result.user) {
-        dispatch(authActions.loginSuccess({
-          user: result.user,
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-        }))
-      }
-    },
-    onError: (error) => {
-      dispatch(authActions.setError(error.message || 'Login failed'))
-    }
-  })
-
-  // Quick login for development
-  const { mutate: quickLogin, isLoading: isQuickLoading } = useQuickLogin({
-    onSuccess: (result) => {
-      if (result.success && result.user) {
-        dispatch(authActions.loginSuccess({
-          user: result.user,
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-        }))
-      }
-    }
-  })
-
   const { useMockData } = useApiMode()
 
   const from = (location.state as any)?.from?.pathname || '/chat'
@@ -94,20 +65,49 @@ export default function LoginPage() {
           }))
         }
       } else {
-        // Use enhanced login with automatic fallback to mock data
-        enhancedLogin({
+        // Standard login
+        const result = await login({
           username: values.username,
           password: values.password
-        })
-        setCredentials({ username: values.username, password: values.password })
+        }).unwrap()
+
+        if (result.success && result.user) {
+          dispatch(authActions.loginSuccess({
+            user: result.user,
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+          }))
+        } else if (result.requiresMfa) {
+          // Handle MFA requirement
+          setShowMfa(true)
+          setCredentials({ username: values.username, password: values.password })
+        }
       }
     } catch (error: any) {
       dispatch(authActions.setError(error.data?.message || 'Login failed'))
     }
   }
 
-  const handleQuickLogin = () => {
-    quickLogin()
+  const handleQuickLogin = async () => {
+    try {
+      dispatch(authActions.setError(null))
+
+      // Quick login with admin credentials for development
+      const result = await login({
+        username: 'admin',
+        password: 'admin'
+      }).unwrap()
+
+      if (result.success && result.user) {
+        dispatch(authActions.loginSuccess({
+          user: result.user,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+        }))
+      }
+    } catch (error: any) {
+      dispatch(authActions.setError(error.data?.message || 'Quick login failed'))
+    }
   }
 
   const handleBackToLogin = () => {
@@ -117,8 +117,8 @@ export default function LoginPage() {
     form.resetFields(['mfaCode'])
   }
 
-  const currentError = loginError || mfaError || enhancedError
-  const isLoading = isLoginLoading || isMfaLoading || isEnhancedLoading || isQuickLoading
+  const currentError = loginError || mfaError
+  const isLoading = isLoginLoading || isMfaLoading
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-secondary p-lg">
@@ -165,7 +165,7 @@ export default function LoginPage() {
                   type="primary"
                   icon={<ThunderboltOutlined />}
                   onClick={handleQuickLogin}
-                  loading={isQuickLoading}
+                  loading={isLoading}
                   style={{ marginTop: 8 }}
                 >
                   Quick Login (admin)

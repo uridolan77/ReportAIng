@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   Modal, 
   Tabs, 
@@ -29,6 +29,11 @@ import {
   FileOutlined
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
+import {
+  useGetTemplateManagementDashboardQuery,
+  useExportDataMutation,
+  useCreateTemplateMutation
+} from '@shared/store/api/templateAnalyticsApi'
 
 const { Title, Text } = Typography
 const { Dragger } = Upload
@@ -51,31 +56,37 @@ export const TemplateImportExport: React.FC<TemplateImportExportProps> = ({
   const [importResults, setImportResults] = useState<any[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // Mock template data for export selection
-  const availableTemplates = [
-    { key: 'sql_generation', name: 'SQL Generation Template', intentType: 'sql_generation' },
-    { key: 'insight_generation', name: 'Insight Generation Template', intentType: 'insight_generation' },
-    { key: 'explanation', name: 'Explanation Template', intentType: 'explanation' },
-    { key: 'data_analysis', name: 'Data Analysis Template', intentType: 'data_analysis' }
-  ]
+  // API hooks
+  const {
+    data: managementData,
+    isLoading: isLoadingTemplates
+  } = useGetTemplateManagementDashboardQuery()
+
+  const [exportData, { isLoading: isExporting }] = useExportDataMutation()
+  const [createTemplate, { isLoading: isCreating }] = useCreateTemplateMutation()
+
+  // Get available templates from API
+  const availableTemplates = managementData?.templates?.map(template => ({
+    key: template.templateKey,
+    name: template.templateName,
+    intentType: template.intentType
+  })) || []
 
   const handleExport = async () => {
     setIsProcessing(true)
     try {
-      // Simulate export process
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      const exportData = {
-        templates: selectedTemplates.length > 0 ? selectedTemplates : availableTemplates.map(t => t.key),
-        format: exportFormat,
+      const exportConfig = {
+        templateKeys: selectedTemplates.length > 0 ? selectedTemplates : availableTemplates.map(t => t.key),
+        format: exportFormat as 'JSON' | 'CSV' | 'Excel',
         includeMetadata,
         includeVersionHistory,
-        exportDate: new Date().toISOString(),
-        version: '1.0'
+        startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // Last 30 days
+        endDate: new Date().toISOString()
       }
 
+      const blob = await exportData(exportConfig).unwrap()
+
       // Create and download file
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -87,7 +98,7 @@ export const TemplateImportExport: React.FC<TemplateImportExportProps> = ({
 
       message.success('Templates exported successfully')
     } catch (error) {
-      message.error('Export failed')
+      message.error('Export failed: ' + (error as any)?.data?.message || 'Unknown error')
     } finally {
       setIsProcessing(false)
     }

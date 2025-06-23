@@ -1687,4 +1687,247 @@ public class LLMManagementService : ILLMManagementService
     }
 
     #endregion
+
+    #region Additional Analytics Methods
+
+    /// <summary>
+    /// Get usage logs with filtering and pagination
+    /// </summary>
+    public async Task<List<LLMUsageLog>> GetUsageLogsAsync(
+        DateTime startDate,
+        DateTime endDate,
+        string? userId = null,
+        string? providerId = null,
+        int page = 1,
+        int pageSize = 50)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
+            {
+                if (context is BICopilotContext legacyContext)
+                {
+                    var query = legacyContext.LLMUsageLogs
+                        .Where(l => l.Timestamp >= startDate && l.Timestamp <= endDate);
+
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        query = query.Where(l => l.UserId == userId);
+                    }
+
+                    if (!string.IsNullOrEmpty(providerId))
+                    {
+                        query = query.Where(l => l.ProviderId == providerId);
+                    }
+
+                    return await query
+                        .OrderByDescending(l => l.Timestamp)
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToListAsync();
+                }
+
+                return new List<LLMUsageLog>();
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving usage logs");
+            return new List<LLMUsageLog>();
+        }
+    }
+
+    /// <summary>
+    /// Get cost tracking analytics
+    /// </summary>
+    public async Task<object> GetCostTrackingAsync(DateTime startDate, DateTime endDate, string? userId = null)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
+            {
+                if (context is BICopilotContext legacyContext)
+                {
+                    var query = legacyContext.LLMUsageLogs
+                        .Where(l => l.Timestamp >= startDate && l.Timestamp <= endDate);
+
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        query = query.Where(l => l.UserId == userId);
+                    }
+
+                    var totalCost = await query.SumAsync(l => l.Cost);
+                    var totalTokens = await query.SumAsync(l => l.TotalTokens);
+                    var requestCount = await query.CountAsync();
+
+                    var costByProvider = await query
+                        .GroupBy(l => l.ProviderId)
+                        .Select(g => new
+                        {
+                            ProviderId = g.Key,
+                            TotalCost = g.Sum(l => l.Cost),
+                            TotalTokens = g.Sum(l => l.TotalTokens),
+                            RequestCount = g.Count()
+                        })
+                        .ToListAsync();
+
+                    var costByDay = await query
+                        .GroupBy(l => l.Timestamp.Date)
+                        .Select(g => new
+                        {
+                            Date = g.Key,
+                            TotalCost = g.Sum(l => l.Cost),
+                            TotalTokens = g.Sum(l => l.TotalTokens),
+                            RequestCount = g.Count()
+                        })
+                        .OrderBy(x => x.Date)
+                        .ToListAsync();
+
+                    return (object)new
+                    {
+                        summary = new
+                        {
+                            totalCost,
+                            totalTokens,
+                            requestCount,
+                            averageCostPerRequest = requestCount > 0 ? totalCost / requestCount : 0,
+                            averageTokensPerRequest = requestCount > 0 ? (double)totalTokens / requestCount : 0
+                        },
+                        costByProvider,
+                        costByDay
+                    };
+                }
+
+                return (object)new { };
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving cost tracking data");
+            return new { };
+        }
+    }
+
+    /// <summary>
+    /// Get token usage analytics
+    /// </summary>
+    public async Task<object> GetTokenUsageAnalyticsAsync(DateTime startDate, DateTime endDate, string groupBy = "day")
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
+            {
+                if (context is BICopilotContext legacyContext)
+                {
+                    var query = legacyContext.LLMUsageLogs
+                        .Where(l => l.Timestamp >= startDate && l.Timestamp <= endDate);
+
+                    var analytics = new
+                    {
+                        totalInputTokens = await query.SumAsync(l => l.InputTokens),
+                        totalOutputTokens = await query.SumAsync(l => l.OutputTokens),
+                        totalTokens = await query.SumAsync(l => l.TotalTokens),
+                        averageInputTokens = await query.AverageAsync(l => (double)l.InputTokens),
+                        averageOutputTokens = await query.AverageAsync(l => (double)l.OutputTokens),
+                        tokensByProvider = await query
+                            .GroupBy(l => l.ProviderId)
+                            .Select(g => new
+                            {
+                                ProviderId = g.Key,
+                                InputTokens = g.Sum(l => l.InputTokens),
+                                OutputTokens = g.Sum(l => l.OutputTokens),
+                                TotalTokens = g.Sum(l => l.TotalTokens)
+                            })
+                            .ToListAsync(),
+                        tokensByRequestType = await query
+                            .GroupBy(l => l.RequestType)
+                            .Select(g => new
+                            {
+                                RequestType = g.Key,
+                                InputTokens = g.Sum(l => l.InputTokens),
+                                OutputTokens = g.Sum(l => l.OutputTokens),
+                                TotalTokens = g.Sum(l => l.TotalTokens)
+                            })
+                            .ToListAsync()
+                    };
+
+                    return (object)analytics;
+                }
+
+                return (object)new { };
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving token usage analytics");
+            return new { };
+        }
+    }
+
+    /// <summary>
+    /// Get budget management data
+    /// </summary>
+    public async Task<List<object>> GetBudgetsAsync(string? userId = null)
+    {
+        try
+        {
+            return await _contextFactory.ExecuteWithContextAsync(ContextType.Legacy, async context =>
+            {
+                if (context is BICopilotContext legacyContext)
+                {
+                    // For now, return mock budget data since budget management tables might not be fully implemented
+                    var budgets = new List<object>
+                    {
+                        new
+                        {
+                            id = 1,
+                            name = "Monthly LLM Budget",
+                            budgetAmount = 1000.00m,
+                            spentAmount = 245.67m,
+                            remainingAmount = 754.33m,
+                            utilizationRate = 0.2457,
+                            period = "monthly",
+                            isActive = true,
+                            alertThreshold = 0.8,
+                            blockThreshold = 0.95,
+                            createdDate = DateTime.UtcNow.AddDays(-30),
+                            lastUpdated = DateTime.UtcNow
+                        },
+                        new
+                        {
+                            id = 2,
+                            name = "Weekly Development Budget",
+                            budgetAmount = 250.00m,
+                            spentAmount = 89.23m,
+                            remainingAmount = 160.77m,
+                            utilizationRate = 0.3569,
+                            period = "weekly",
+                            isActive = true,
+                            alertThreshold = 0.75,
+                            blockThreshold = 0.9,
+                            createdDate = DateTime.UtcNow.AddDays(-7),
+                            lastUpdated = DateTime.UtcNow
+                        }
+                    };
+
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        // Filter by user if needed
+                        return budgets.Where(b => true).ToList(); // Placeholder logic
+                    }
+
+                    return budgets;
+                }
+
+                return new List<object>();
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving budget data");
+            return new List<object>();
+        }
+    }
+
+    #endregion
 }

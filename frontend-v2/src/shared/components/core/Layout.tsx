@@ -144,10 +144,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (path === '/admin/business-intelligence') return ['business-intelligence']
 
     // Data & Analytics
-    if (path === '/admin' || path === '/admin/') return ['admin-dashboard']
-    if (path === '/admin/business-metadata') return ['admin-metadata-standard']
-    if (path === '/admin/business-metadata-enhanced') return ['admin-metadata-enhanced']
-    if (path === '/admin/analytics') return ['admin-analytics']
+    if (path === '/admin' || path === '/admin/' || path === '/admin/dashboard') return ['admin-dashboard']
+    if (path === '/admin/business-metadata') return ['business-intelligence']
+    if (path === '/admin/business-metadata-enhanced') return ['business-intelligence']
+    if (path === '/admin/analytics') return ['admin-dashboard'] // Redirect to consolidated dashboard
 
     // System Management
     if (path === '/admin/performance') return ['admin-performance-metrics']
@@ -157,17 +157,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (path === '/admin/users') return ['admin-users']
     if (path === '/admin/system-config') return ['admin-config']
 
-    // Advanced Features - AI Transparency
-    if (path === '/admin/transparency-dashboard') return ['admin-ai-transparency-dashboard']
-    if (path === '/admin/transparency-management') return ['admin-transparency-management']
-    if (path === '/admin/transparency-review') return ['admin-transparency-review']
-    if (path === '/admin/ai-transparency-analysis') return ['admin-ai-transparency-analysis']
+    // Advanced Features - AI Transparency (consolidated)
+    if (path === '/admin/ai-transparency') return ['admin-ai-transparency']
+    if (path === '/admin/transparency-dashboard') return ['admin-ai-transparency']
+    if (path === '/admin/transparency-management') return ['admin-ai-transparency']
+    if (path === '/admin/transparency-review') return ['admin-ai-transparency']
+    if (path === '/admin/ai-transparency-analysis') return ['admin-ai-transparency']
 
     // Advanced Features - Template Analytics
-    if (path === '/admin/template-analytics/enhanced') return ['admin-template-enhanced']
-    if (path === '/admin/template-analytics/demo') return ['admin-template-demo']
-    if (path === '/admin/template-analytics/performance') return ['admin-template-performance']
-    if (path === '/admin/template-analytics/ab-testing') return ['admin-template-ab-testing']
+    if (path === '/admin/template-analytics/analytics') return ['admin-template-analytics']
     if (path === '/admin/template-analytics/management') return ['admin-template-management']
     if (path === '/admin/template-analytics/analytics') return ['admin-template-advanced']
     if (path.startsWith('/admin/template-analytics')) return ['admin-template-analytics']
@@ -226,19 +224,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         key: 'admin-dashboard',
         icon: <DashboardOutlined />,
         label: 'Admin Dashboard',
-        onClick: () => navigate('/admin'),
+        onClick: () => navigate('/admin/dashboard'),
       },
       {
-        key: 'admin-metadata',
+        key: 'business-metadata',
         icon: <DatabaseOutlined />,
         label: 'Business Metadata',
         onClick: () => navigate('/admin/business-metadata'),
-      },
-      {
-        key: 'admin-analytics',
-        icon: <BarChartOutlined />,
-        label: 'Analytics & Reports',
-        onClick: () => navigate('/admin/analytics'),
       },
       // System Management
       {
@@ -295,32 +287,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         key: 'admin-ai-transparency',
         icon: <EyeOutlined />,
         label: 'AI Transparency',
-        children: [
-          {
-            key: 'admin-ai-transparency-dashboard',
-            icon: <DashboardOutlined />,
-            label: 'Dashboard',
-            onClick: () => navigate('/admin/transparency-dashboard'),
-          },
-          {
-            key: 'admin-transparency-management',
-            icon: <ControlOutlined />,
-            label: 'Management',
-            onClick: () => navigate('/admin/transparency-management'),
-          },
-          {
-            key: 'admin-transparency-review',
-            icon: <SearchOutlined />,
-            label: 'Review & Analysis',
-            onClick: () => navigate('/admin/transparency-review'),
-          },
-          {
-            key: 'admin-ai-transparency-analysis',
-            icon: <BranchesOutlined />,
-            label: 'Interactive Analysis',
-            onClick: () => navigate('/admin/ai-transparency-analysis'),
-          },
-        ],
+        onClick: () => navigate('/admin/ai-transparency'),
       },
       {
         key: 'admin-template-analytics',
@@ -328,40 +295,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         label: 'Template Analytics',
         children: [
           {
-            key: 'admin-template-enhanced',
-            icon: <BulbOutlined />,
-            label: 'Enhanced Analytics',
-            onClick: () => navigate('/admin/template-analytics/enhanced'),
-          },
-          {
-            key: 'admin-template-demo',
-            icon: <RocketOutlined />,
-            label: 'Features Demo',
-            onClick: () => navigate('/admin/template-analytics/demo'),
-          },
-          {
-            key: 'admin-template-performance',
-            icon: <FundOutlined />,
-            label: 'Performance Dashboard',
-            onClick: () => navigate('/admin/template-analytics/performance'),
-          },
-          {
-            key: 'admin-template-ab-testing',
-            icon: <ExperimentOutlined />,
-            label: 'A/B Testing',
-            onClick: () => navigate('/admin/template-analytics/ab-testing'),
+            key: 'admin-template-analytics',
+            icon: <DashboardOutlined />,
+            label: 'Analytics & Performance',
+            onClick: () => navigate('/admin/template-analytics/analytics'),
           },
           {
             key: 'admin-template-management',
             icon: <SafetyOutlined />,
-            label: 'Template Management',
+            label: 'Management & Features',
             onClick: () => navigate('/admin/template-analytics/management'),
-          },
-          {
-            key: 'admin-template-advanced',
-            icon: <AreaChartOutlined />,
-            label: 'Advanced Analytics',
-            onClick: () => navigate('/admin/template-analytics/analytics'),
           },
         ],
       },

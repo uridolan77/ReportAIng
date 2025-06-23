@@ -3,7 +3,16 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Spin } from 'antd'
 
 // Lazy load components for code splitting
-const TemplatePerformanceDashboard = lazy(() => 
+const TemplateAnalytics = lazy(() =>
+  import('../pages/template-analytics/TemplateAnalytics')
+)
+
+const TemplateManagementComplete = lazy(() =>
+  import('../pages/template-analytics/TemplateManagementComplete')
+)
+
+// Legacy components for redirects
+const TemplatePerformanceDashboard = lazy(() =>
   import('../pages/template-analytics/TemplatePerformanceDashboard')
 )
 
@@ -15,20 +24,12 @@ const TemplateManagementHub = lazy(() =>
   import('../pages/template-analytics/TemplateManagementHub')
 )
 
-const AdvancedAnalytics = lazy(() =>
-  import('../pages/template-analytics/AdvancedAnalyticsDashboard')
-)
-
-const ReportsExport = lazy(() =>
-  import('../pages/template-analytics/ReportsExportDashboard')
-)
-
 const EnhancedTemplateAnalytics = lazy(() =>
   import('../pages/template-analytics/EnhancedTemplateAnalytics')
 )
 
-const TemplateAnalyticsDemo = lazy(() =>
-  import('../pages/template-analytics/TemplateAnalyticsDemo')
+const TemplateFeatures = lazy(() =>
+  import('../pages/template-analytics/TemplateFeatures')
 )
 
 const LoadingSkeleton = () => (
@@ -46,15 +47,20 @@ export const TemplateAnalyticsRoutes: React.FC = () => {
   return (
     <Suspense fallback={<LoadingSkeleton />}>
       <Routes>
-        <Route path="/enhanced" element={<EnhancedTemplateAnalytics />} />
-        <Route path="/demo" element={<TemplateAnalyticsDemo />} />
-        <Route path="/performance" element={<TemplatePerformanceDashboard />} />
-        <Route path="/ab-testing" element={<ABTestingDashboard />} />
-        <Route path="/management" element={<TemplateManagementHub />} />
-        <Route path="/analytics" element={<AdvancedAnalytics />} />
-        <Route path="/reports" element={<ReportsExport />} />
-        <Route path="/" element={<Navigate to="/admin/template-analytics/enhanced" replace />} />
-        <Route path="*" element={<Navigate to="/admin/template-analytics/enhanced" replace />} />
+        {/* Main consolidated routes */}
+        <Route path="/analytics" element={<TemplateAnalytics />} />
+        <Route path="/management" element={<TemplateManagementComplete />} />
+
+        {/* Legacy route redirects */}
+        <Route path="/enhanced" element={<Navigate to="/admin/template-analytics/analytics" replace />} />
+        <Route path="/demo" element={<Navigate to="/admin/template-analytics/management" replace />} />
+        <Route path="/features" element={<Navigate to="/admin/template-analytics/management" replace />} />
+        <Route path="/performance" element={<Navigate to="/admin/template-analytics/analytics" replace />} />
+        <Route path="/ab-testing" element={<Navigate to="/admin/template-analytics/analytics" replace />} />
+        <Route path="/reports" element={<Navigate to="/admin/template-analytics/analytics" replace />} />
+
+        <Route path="/" element={<Navigate to="/admin/template-analytics/analytics" replace />} />
+        <Route path="*" element={<Navigate to="/admin/template-analytics/analytics" replace />} />
       </Routes>
     </Suspense>
   )

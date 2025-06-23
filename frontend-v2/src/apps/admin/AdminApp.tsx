@@ -24,14 +24,20 @@ import TransparencyManagementPage from './pages/TransparencyManagementPage'
 import TransparencyReviewPage from './pages/TransparencyReviewPage'
 import TemplateAnalyticsRoutes from './routes/TemplateAnalyticsRoutes'
 
+// New consolidated pages
+import ComprehensiveAdminDashboard from './pages/ComprehensiveAdminDashboard'
+import ComprehensiveAITransparency from './pages/ComprehensiveAITransparency'
+
 export default function AdminApp() {
   return (
     <AppLayout>
       <Routes>
-        {/* Main admin dashboard */}
-        <Route path="/" element={<Dashboard />} />
-        
-        {/* Business metadata management */}
+        {/* Consolidated Admin Dashboard - combines dashboard, analytics, and reports */}
+        <Route path="/" element={<ComprehensiveAdminDashboard />} />
+        <Route path="/dashboard" element={<ComprehensiveAdminDashboard />} />
+
+        {/* Business Intelligence - enhanced business metadata management */}
+        <Route path="/business-intelligence" element={<BusinessIntelligencePage />} />
         <Route path="/business-metadata" element={<BusinessMetadata />} />
         <Route path="/business-metadata/edit/:tableId" element={<BusinessTableEditPage />} />
         <Route path="/business-metadata/add" element={<BusinessTableEditPage />} />
@@ -39,15 +45,15 @@ export default function AdminApp() {
 
         {/* Legacy enhanced route - redirect to main page */}
         <Route path="/business-metadata-enhanced" element={<BusinessMetadata />} />
-        
+
         {/* System configuration */}
         <Route path="/system-config" element={<SystemConfiguration />} />
-        
+
         {/* User management */}
         <Route path="/users" element={<UserManagement />} />
-        
-        {/* Analytics and monitoring */}
-        <Route path="/analytics" element={<Analytics />} />
+
+        {/* Legacy analytics route - redirect to consolidated dashboard */}
+        <Route path="/analytics" element={<Navigate to="/admin/dashboard" replace />} />
 
         {/* Unified Performance & Cost Management */}
         <Route path="/performance-cost" element={<PerformanceCostManagement />} />
@@ -59,17 +65,20 @@ export default function AdminApp() {
         {/* AI Analytics and Management */}
         <Route path="/ai-analytics" element={<AIAnalyticsDashboard />} />
         <Route path="/llm-management" element={<LLMManagementDashboard />} />
-        <Route path="/ai-transparency" element={<AITransparencyDashboard />} />
-        <Route path="/ai-transparency-analysis" element={<AITransparencyAnalysisPage />} />
-        <Route path="/business-intelligence" element={<BusinessIntelligencePage />} />
-        <Route path="/ai-management-demo" element={<AIManagementDemo />} />
-        <Route path="/advanced-ai-features-demo" element={<AdvancedAIFeaturesDemo />} />
-        <Route path="/ai-integration-test" element={<AIIntegrationTestPage />} />
 
-        {/* New Comprehensive Transparency Pages */}
-        <Route path="/transparency-dashboard" element={<TransparencyDashboardPage />} />
-        <Route path="/transparency-management" element={<TransparencyManagementPage />} />
-        <Route path="/transparency-review" element={<TransparencyReviewPage />} />
+        {/* Consolidated AI Transparency - combines dashboard, management, review, and analysis */}
+        <Route path="/ai-transparency" element={<ComprehensiveAITransparency />} />
+
+        {/* Legacy transparency routes - redirect to consolidated page */}
+        <Route path="/ai-transparency-analysis" element={<Navigate to="/admin/ai-transparency" replace />} />
+        <Route path="/transparency-dashboard" element={<Navigate to="/admin/ai-transparency" replace />} />
+        <Route path="/transparency-management" element={<Navigate to="/admin/ai-transparency" replace />} />
+        <Route path="/transparency-review" element={<Navigate to="/admin/ai-transparency" replace />} />
+
+        {/* Legacy demo routes - redirect to main features */}
+        <Route path="/ai-management-demo" element={<Navigate to="/admin/llm-management" replace />} />
+        <Route path="/advanced-ai-features-demo" element={<Navigate to="/admin/ai-analytics" replace />} />
+        <Route path="/ai-integration-test" element={<Navigate to="/admin/ai-transparency" replace />} />
 
         {/* Template Analytics */}
         <Route path="/template-analytics/*" element={<TemplateAnalyticsRoutes />} />
