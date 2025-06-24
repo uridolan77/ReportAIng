@@ -26,6 +26,7 @@ using BIReportingCopilot.Infrastructure.Repositories;
 using BIReportingCopilot.Infrastructure.Data;
 using BIReportingCopilot.Infrastructure.Configuration;
 using BIReportingCopilot.Infrastructure.BusinessContext;
+using BIReportingCopilot.Infrastructure.BusinessContext.Enhanced;
 using Microsoft.AspNetCore.SignalR;
 using BIReportingCopilot.API.Hubs;
 
@@ -177,6 +178,28 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IBusinessMetadataRetrievalService, BusinessMetadataRetrievalService>();
         services.AddScoped<IContextualPromptBuilder, ContextualPromptBuilder>();
 
+        // Enhanced Business Context Analysis - Register dependencies first
+        services.AddScoped<IIntentClassificationEnsemble, IntentClassificationEnsemble>();
+        services.AddScoped<IEntityExtractionPipeline, EntityExtractionPipeline>();
+        services.AddScoped<IAdvancedDomainDetector, AdvancedDomainDetector>();
+        services.AddScoped<IConfidenceValidationSystem, ConfidenceValidationSystem>();
+        services.AddScoped<IBusinessTermExtractor, BusinessTermExtractor>();
+        services.AddScoped<ITimeContextAnalyzer, TimeContextAnalyzer>();
+        services.AddScoped<IUserFeedbackLearner, UserFeedbackLearner>();
+
+        // Additional dependencies for EntityExtractionPipeline
+        services.AddScoped<IBusinessTermMatcher, BusinessTermMatcher>();
+        services.AddScoped<ISemanticEntityLinker, SemanticEntityLinker>();
+
+        // Additional dependencies for ConfidenceValidationSystem
+        services.AddScoped<BIReportingCopilot.Core.Interfaces.BusinessContext.IUserFeedbackRepository, UserFeedbackRepository>();
+
+        // Token Budget Management
+        services.AddScoped<ITokenBudgetManager, TokenBudgetManager>();
+
+        // Register the main enhanced analyzer
+        services.AddScoped<IEnhancedBusinessContextAnalyzer, EnhancedBusinessContextAnalyzer>();
+
         // Semantic Matching (placeholder - would need actual implementation)
         services.AddScoped<ISemanticMatchingService, SemanticMatchingService>();
 
@@ -274,7 +297,7 @@ public static class ServiceRegistrationExtensions
             provider.GetRequiredService<BIReportingCopilot.Infrastructure.Messaging.NotificationManagementService>());
 
         // Progress Reporting
-        services.AddScoped<IQueryProgressNotifier, BIReportingCopilot.API.Hubs.SignalRQueryProgressNotifier>();
+        services.AddScoped<IQueryProgressNotifier, BIReportingCopilot.API.Hubs.NoOpQueryProgressNotifier>();
         services.AddScoped<IProgressReporter>(provider =>
         {
             var hubContext = provider.GetRequiredService<IHubContext<BIReportingCopilot.API.Hubs.QueryStatusHub>>();

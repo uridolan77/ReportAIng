@@ -7,6 +7,7 @@ import EnhancedChatInterface from './components/EnhancedChatInterface'
 import QueryHistory from './pages/QueryHistory'
 import QueryResults from './pages/QueryResults'
 import { ProcessFlowDemo } from './components/ProcessFlowDemo'
+import AIPipelineTestPage from '../../pages/AIPipelineTestPage'
 
 export default function ChatApp() {
   return (
@@ -31,6 +32,9 @@ export default function ChatApp() {
 
         {/* Process Flow Demo */}
         <Route path="/process-flow-demo" element={<ProcessFlowDemo />} />
+
+        {/* AI Pipeline Testing */}
+        <Route path="/pipeline-test" element={<AIPipelineTestPage />} />
 
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/chat" replace />} />

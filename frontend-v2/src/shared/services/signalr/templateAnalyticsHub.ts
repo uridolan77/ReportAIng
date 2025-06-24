@@ -32,9 +32,36 @@ export class TemplateAnalyticsHub {
     }
 
     try {
+      // Get the backend URL from environment or default
+      const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:55244'
+      const hubUrl = `${backendUrl}/hubs/template-analytics`
+
+      console.log('Connecting to template analytics hub:', hubUrl)
+
       this.connection = new HubConnectionBuilder()
-        .withUrl('/hubs/template-analytics', {
-          accessTokenFactory: () => this.getAuthToken() || ''
+        .withUrl(hubUrl, {
+          accessTokenFactory: () => {
+            const token = this.getAuthToken()
+            if (!token) {
+              console.warn('No token available for template analytics hub')
+              return ''
+            }
+
+            // Check if token is expired
+            try {
+              const payload = JSON.parse(atob(token.split('.')[1]))
+              const currentTime = Math.floor(Date.now() / 1000)
+              if (payload.exp < currentTime) {
+                console.warn('Token expired for template analytics hub')
+                return ''
+              }
+            } catch {
+              console.warn('Invalid token format for template analytics hub')
+              return ''
+            }
+
+            return token
+          }
         })
         .withAutomaticReconnect({
           nextRetryDelayInMilliseconds: (retryContext) => {

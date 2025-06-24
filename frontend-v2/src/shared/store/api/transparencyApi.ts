@@ -100,6 +100,89 @@ export const transparencyApi = baseApi.injectEndpoints({
       providesTags: ['ProcessFlowSessions'],
     }),
 
+    // Get transparency dashboard metrics
+    getTransparencyDashboardMetrics: builder.query<{
+      totalTraces: number
+      averageConfidence: number
+      totalQueries: number
+      successRate: number
+      averageResponseTime: number
+    }, { days?: number }>({
+      query: (params) => ({
+        url: '/transparency/dashboard/metrics',
+        params,
+      }),
+      providesTags: ['TransparencyMetrics'],
+    }),
+
+    // Get transparency settings
+    getTransparencySettings: builder.query<{
+      enabled: boolean
+      level: 'basic' | 'detailed' | 'expert'
+      autoShow: boolean
+      confidenceThreshold: number
+    }, void>({
+      query: () => '/transparency/settings',
+      providesTags: ['TransparencySettings'],
+    }),
+
+    // Update transparency settings
+    updateTransparencySettings: builder.mutation<void, {
+      enabled?: boolean
+      level?: 'basic' | 'detailed' | 'expert'
+      autoShow?: boolean
+      confidenceThreshold?: number
+    }>({
+      query: (body) => ({
+        url: '/transparency/settings',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['TransparencySettings'],
+    }),
+
+    // Get transparency metrics
+    getTransparencyMetrics: builder.query<{
+      totalTraces: number
+      averageConfidence: number
+      performanceMetrics: any
+      usageStats: any
+    }, { period?: string }>({
+      query: (params) => ({
+        url: '/transparency/metrics',
+        params,
+      }),
+      providesTags: ['TransparencyMetrics'],
+    }),
+
+    // Get model performance comparison
+    getModelPerformanceComparison: builder.query<{
+      models: Array<{
+        modelId: string
+        averageConfidence: number
+        responseTime: number
+        successRate: number
+        usageCount: number
+      }>
+    }, { period?: string }>({
+      query: (params) => ({
+        url: '/transparency/models/comparison',
+        params,
+      }),
+      providesTags: ['ModelPerformance'],
+    }),
+
+    // Get real-time monitoring data
+    getRealTimeMonitoringData: builder.query<{
+      activeQueries: number
+      averageConfidence: number
+      systemLoad: number
+      connectionStatus: string
+    }, void>({
+      query: () => '/transparency/monitoring/realtime',
+      providesTags: ['RealTimeMonitoring'],
+    }),
+
 
   }),
   overrideExisting: false,
@@ -113,6 +196,12 @@ export const {
   useExportProcessFlowDataMutation,
   useAnalyzePromptConstructionMutation,
   useGetProcessFlowSessionsQuery,
+  useGetTransparencyDashboardMetricsQuery,
+  useGetTransparencySettingsQuery,
+  useUpdateTransparencySettingsMutation,
+  useGetTransparencyMetricsQuery,
+  useGetModelPerformanceComparisonQuery,
+  useGetRealTimeMonitoringDataQuery,
 } = transparencyApi
 
 // Enhanced hooks for ProcessFlow functionality
@@ -170,6 +259,38 @@ export const useProcessFlowManagement = () => {
       analyticsQuery.refetch()
       dashboardQuery.refetch()
     }
+  }
+}
+
+// Real-time monitoring hook
+export const useRealTimeMonitoring = (options: { enabled?: boolean } = {}) => {
+  const { enabled = true } = options
+
+  const monitoringQuery = useGetRealTimeMonitoringDataQuery(undefined, {
+    skip: !enabled,
+    pollingInterval: 5000, // Poll every 5 seconds
+  })
+
+  return {
+    data: monitoringQuery.data,
+    isConnected: !monitoringQuery.error && !monitoringQuery.isLoading,
+    isLoading: monitoringQuery.isLoading,
+    error: monitoringQuery.error,
+    refetch: monitoringQuery.refetch
+  }
+}
+
+// Transparency review hook
+export const useTransparencyReview = (sessionId?: string) => {
+  const sessionQuery = useGetProcessFlowSessionQuery(sessionId || '', {
+    skip: !sessionId,
+  })
+
+  return {
+    session: sessionQuery.data,
+    isLoading: sessionQuery.isLoading,
+    error: sessionQuery.error,
+    refetch: sessionQuery.refetch
   }
 }
 

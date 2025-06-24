@@ -348,9 +348,13 @@ public class QueryController : ControllerBase
     /// <param name="request">Enhanced query request</param>
     /// <returns>Processed query with semantic analysis and optimization</returns>
     [HttpPost("enhanced")]
-    public async Task<ActionResult<EnhancedQueryResponse>> ProcessEnhancedQuery([FromBody] EnhancedQueryRequest request)
+    public async Task<ActionResult<EnhancedQueryResponse>> ProcessEnhancedQuery([FromBody] EnhancedQueryRequest request, CancellationToken cancellationToken = default)
     {
         var traceId = Guid.NewGuid().ToString();
+
+        // Add overall timeout for the entire enhanced query processing
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
         try
         {
@@ -431,7 +435,10 @@ public class QueryController : ControllerBase
             SemanticAnalysisResponse? semanticAnalysis = null;
             if (request.IncludeSemanticAnalysis)
             {
-                var analysis = await _semanticAnalyzer.AnalyzeAsync(request.Query);
+                _logger.LogInformation("🔍 [SEMANTIC] Starting semantic analysis with timeout [TraceId: {TraceId}]", traceId);
+                var analysis = await _semanticAnalyzer.AnalyzeAsync(request.Query, combinedCts.Token);
+                _logger.LogInformation("✅ [SEMANTIC] Semantic analysis completed [TraceId: {TraceId}]", traceId);
+
                 semanticAnalysis = new SemanticAnalysisResponse
                 {
                     Entities = analysis.Entities.Select(e => e.Text).ToList(),
@@ -516,9 +523,26 @@ public class QueryController : ControllerBase
 
             return Ok(response);
         }
+        catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
+        {
+            _logger.LogWarning("Enhanced query processing timed out for user {UserId}: {Query} [TraceId: {TraceId}]",
+                GetCurrentUserId(), request.Query, traceId);
+
+            // Add timeout headers
+            Response.Headers["X-AI-Status"] = "timeout";
+            Response.Headers["X-AI-Provider"] = "openai";
+            Response.Headers["X-AI-Real"] = "false";
+
+            return StatusCode(408, new EnhancedQueryResponse
+            {
+                Success = false,
+                ErrorMessage = "Query processing timed out. Please try a simpler query or try again later.",
+                Timestamp = DateTime.UtcNow
+            });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing enhanced query");
+            _logger.LogError(ex, "Error processing enhanced query [TraceId: {TraceId}]", traceId);
 
             // Add error headers
             Response.Headers["X-AI-Status"] = "error";
@@ -889,7 +913,268 @@ public class QueryController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Test ProcessFlow system without AI calls
+    /// </summary>
+    /// <returns>ProcessFlow test results</returns>
+    [HttpPost("test-processflow")]
+    public ActionResult<object> TestProcessFlow([FromBody] TestProcessFlowRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("🧪 Testing ProcessFlow system - SYNC VERSION");
 
+            // Simple test without any async operations or complex services
+            var sessionId = $"test-session-{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..8]}";
+
+            _logger.LogInformation("✅ Simple sync test completed");
+
+            return Ok(new
+            {
+                success = true,
+                sessionId = sessionId,
+                message = "Simple sync test completed successfully",
+                timestamp = DateTime.UtcNow,
+                query = request.TestQuery ?? "Test ProcessFlow query"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in simple sync test: {Message}", ex.Message);
+            return StatusCode(500, new { error = "Failed simple sync test", details = ex.Message, stackTrace = ex.StackTrace });
+        }
+    }
+
+    /// <summary>
+    /// Test enhanced query without hanging AI calls
+    /// </summary>
+    /// <returns>Enhanced query test results</returns>
+    [HttpPost("test-enhanced-simple")]
+    public async Task<ActionResult<object>> TestEnhancedQuerySimple([FromBody] EnhancedQueryRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var traceId = Guid.NewGuid().ToString();
+            _logger.LogInformation("🧪 Testing enhanced query (simple) for user {UserId}: {Query}", userId, request.Query);
+
+            // Start ProcessFlow session
+            var sessionId = await _processFlowTracker.StartSessionAsync(userId, request.Query, "enhanced-query-test");
+            _logger.LogInformation("✅ Started ProcessFlow session: {SessionId}", sessionId);
+
+            // Step 1: Authentication (mock)
+            await _processFlowTracker.StartStepAsync("authentication");
+            await _processFlowTracker.SetStepInputAsync("authentication", new { userId = userId });
+            await _processFlowTracker.CompleteStepAsync("authentication", 1.0m, new { authenticated = true });
+            _logger.LogInformation("✅ Completed authentication step");
+
+            // Step 2: Business Context Analysis (mock - no AI calls)
+            await _processFlowTracker.StartStepAsync("business-context");
+            await _processFlowTracker.SetStepInputAsync("business-context", new { query = request.Query });
+            var mockBusinessProfile = new
+            {
+                Intent = new { Type = "General" },
+                ConfidenceScore = 0.8,
+                Domain = new { Name = "Test Domain" },
+                Entities = new[] { new { Name = "test_entity" } }
+            };
+            await _processFlowTracker.CompleteStepAsync("business-context", 0.8m, mockBusinessProfile);
+            _logger.LogInformation("✅ Completed business context step (mock)");
+
+            // Step 3: Query Processing (mock - no AI calls)
+            await _processFlowTracker.StartStepAsync("query-processing");
+            await _processFlowTracker.SetStepInputAsync("query-processing", new { query = request.Query });
+            var mockProcessedQuery = new
+            {
+                GeneratedSql = "SELECT COUNT(*) as user_count FROM Users",
+                ConfidenceScore = 0.9,
+                Success = true
+            };
+            await _processFlowTracker.CompleteStepAsync("query-processing", 0.9m, mockProcessedQuery);
+            _logger.LogInformation("✅ Completed query processing step (mock)");
+
+            // Add transparency data
+            await _processFlowTracker.SetTransparencyAsync(
+                model: "mock-model",
+                temperature: 0.1m,
+                promptTokens: 150,
+                completionTokens: 75,
+                cost: 0.02m,
+                confidence: 0.85m,
+                processingTimeMs: 500);
+            _logger.LogInformation("✅ Set transparency data");
+
+            // Complete session
+            await _processFlowTracker.CompleteSessionAsync(
+                status: ProcessFlowStatus.Completed,
+                generatedSQL: "SELECT COUNT(*) as user_count FROM Users",
+                executionResult: "Enhanced query test completed successfully",
+                overallConfidence: 0.85m);
+            _logger.LogInformation("✅ Completed ProcessFlow session");
+
+            return Ok(new
+            {
+                success = true,
+                sessionId = sessionId,
+                traceId = traceId,
+                processedQuery = mockProcessedQuery,
+                businessProfile = mockBusinessProfile,
+                message = "Enhanced query test completed successfully (no AI calls)",
+                timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error testing enhanced query (simple)");
+            return StatusCode(500, new { error = "Failed to test enhanced query", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Test endpoint for prompt building pipeline (no OpenAI calls)
+    /// </summary>
+    [HttpPost("test-prompt-building")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> TestPromptBuildingAsync([FromBody] PromptBuildingTestRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var traceId = Guid.NewGuid().ToString("N")[..8];
+            _logger.LogInformation("🧪 [PROMPT-TEST] Testing prompt building pipeline for user {UserId} with query: {Query} [TraceId: {TraceId}]", userId, request.Query, traceId);
+
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            // Start ProcessFlow session for tracking
+            await _processFlowTracker.StartSessionAsync(
+                userId: userId,
+                query: request.Query,
+                queryType: "prompt-building-test");
+
+            // 🧠 STEP 1: Enhanced Business Context Analysis
+            _logger.LogInformation("🧠 [PROMPT-TEST] Step 1: Analyzing business context [TraceId: {TraceId}]", traceId);
+            var businessProfile = await _processFlowTracker.TrackStepWithConfidenceAsync(
+                ProcessFlowSteps.SemanticAnalysis,
+                async () => {
+                    var result = await _businessContextAnalyzer.AnalyzeUserQuestionAsync(request.Query, userId);
+                    return (result, (decimal)result.ConfidenceScore);
+                });
+
+            // 💰 STEP 2: Token Budget Management
+            _logger.LogInformation("💰 [PROMPT-TEST] Step 2: Managing token budget [TraceId: {TraceId}]", traceId);
+            var tokenBudget = await _tokenBudgetManager.CreateTokenBudgetAsync(businessProfile, 4000, 500);
+
+            // 📊 STEP 3: Get Relevant Business Metadata
+            _logger.LogInformation("📊 [PROMPT-TEST] Step 3: Retrieving relevant business metadata [TraceId: {TraceId}]", traceId);
+            var schema = await _processFlowTracker.TrackStepAsync(
+                ProcessFlowSteps.SchemaRetrieval,
+                async () => await _metadataService.GetRelevantBusinessMetadataAsync(businessProfile, 10));
+
+            // 🔧 STEP 4: Build Business-Aware Prompt
+            _logger.LogInformation("🔧 [PROMPT-TEST] Step 4: Building business-aware prompt [TraceId: {TraceId}]", traceId);
+            var prompt = await _processFlowTracker.TrackStepAsync(
+                ProcessFlowSteps.PromptBuilding,
+                async () => await _promptBuilder.BuildBusinessAwarePromptAsync(request.Query, businessProfile, schema));
+
+            stopwatch.Stop();
+
+            // Set transparency data
+            await _processFlowTracker.SetTransparencyAsync(
+                model: "prompt-building-test",
+                temperature: 0.1m,
+                promptTokens: EstimateTokenUsage(prompt ?? "", ""),
+                completionTokens: 0, // No completion since we're not calling OpenAI
+                cost: 0.0m,
+                confidence: (decimal)businessProfile.ConfidenceScore,
+                processingTimeMs: stopwatch.ElapsedMilliseconds
+            );
+
+            // Complete session
+            await _processFlowTracker.CompleteSessionAsync(
+                status: ProcessFlowStatus.Completed,
+                generatedSQL: "[PROMPT BUILDING TEST - NO SQL GENERATED]",
+                executionResult: "Prompt building test completed successfully",
+                overallConfidence: (decimal)businessProfile.ConfidenceScore
+            );
+
+            _logger.LogInformation("✅ [PROMPT-TEST] Prompt building test completed in {ElapsedMs}ms [TraceId: {TraceId}]", stopwatch.ElapsedMilliseconds, traceId);
+
+            return Ok(new
+            {
+                success = true,
+                traceId = traceId,
+                processingTimeMs = stopwatch.ElapsedMilliseconds,
+                sessionId = "prompt-test-session",
+                businessContext = new
+                {
+                    intent = new
+                    {
+                        type = businessProfile.Intent.Type,
+                        confidence = businessProfile.ConfidenceScore,
+                        complexity = "moderate"
+                    },
+                    domain = new
+                    {
+                        name = businessProfile.Domain.Name,
+                        confidence = businessProfile.Domain.RelevanceScore,
+                        category = "general"
+                    },
+                    entities = businessProfile.Entities.Select(e => new
+                    {
+                        name = e.Name,
+                        type = e.Type,
+                        confidence = e.ConfidenceScore,
+                        value = e.OriginalText
+                    }).ToList(),
+                    businessTerms = businessProfile.BusinessTerms,
+                    timeContext = businessProfile.TimeContext != null ? new
+                    {
+                        start = businessProfile.TimeContext.StartDate,
+                        end = businessProfile.TimeContext.EndDate,
+                        granularity = businessProfile.TimeContext.Granularity
+                    } : null,
+                    overallConfidence = businessProfile.ConfidenceScore
+                },
+                tokenBudget = new
+                {
+                    totalTokens = tokenBudget.MaxTotalTokens,
+                    availableContextTokens = tokenBudget.AvailableContextTokens,
+                    reservedTokens = tokenBudget.ReservedResponseTokens,
+                    usedTokens = 0
+                },
+                schema = new
+                {
+                    tableCount = schema.RelevantTables.Count,
+                    tables = schema.RelevantTables.Select(t => new
+                    {
+                        name = t.TableName,
+                        schema = t.SchemaName,
+                        relevanceScore = 0.8,
+                        columnCount = t.Columns.Count,
+                        businessDescription = t.BusinessPurpose
+                    }).ToList(),
+                    businessRules = new List<object>()
+                },
+                prompt = new
+                {
+                    content = prompt,
+                    length = prompt?.Length ?? 0,
+                    estimatedTokens = EstimateTokenUsage(prompt ?? "", "")
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [PROMPT-TEST] Error in prompt building test");
+            return StatusCode(500, new ProblemDetails
+            {
+                Title = "Prompt Building Test Error",
+                Detail = ex.Message,
+                Status = StatusCodes.Status500InternalServerError
+            });
+        }
+    }
 
     #endregion
 
@@ -1519,6 +1804,22 @@ public class SimilarityResponse
     public List<string> CommonEntities { get; set; } = new();
     public List<string> CommonKeywords { get; set; } = new();
     public string Analysis { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Request for testing ProcessFlow system
+/// </summary>
+public class TestProcessFlowRequest
+{
+    public string? TestQuery { get; set; }
+}
+
+/// <summary>
+/// Request for prompt building test
+/// </summary>
+public class PromptBuildingTestRequest
+{
+    public string Query { get; set; } = string.Empty;
 }
 
 #endregion

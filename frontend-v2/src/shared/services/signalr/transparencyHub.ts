@@ -1,6 +1,10 @@
 import { HubConnectionBuilder, HubConnection, HubConnectionState } from '@microsoft/signalr'
 import { store } from '@shared/store'
 import { selectAccessToken } from '@shared/store/auth'
+import { validateTokenForSignalR, isAuthenticationError } from '@shared/utils/tokenUtils'
+
+// Global flag to prevent reconnection attempts when authentication fails
+let authenticationFailed = false
 
 /**
  * TransparencyHubService - SignalR service for real-time transparency updates
@@ -29,18 +33,47 @@ class TransparencyHubService {
       const state = store.getState()
       const token = selectAccessToken(state)
 
-      if (!token) {
-        throw new Error('No authentication token available')
+      // Validate token before attempting connection
+      const tokenValidation = validateTokenForSignalR(token)
+      if (!tokenValidation.isValid) {
+        console.warn(`Cannot connect to SignalR: ${tokenValidation.reason}`)
+        authenticationFailed = true
+        throw new Error(`Authentication failed: ${tokenValidation.reason}`)
       }
 
+      // Reset authentication failure flag if we have a valid token
+      if (authenticationFailed) {
+        console.log('🔐 Valid token detected - resetting authentication failure flag')
+        authenticationFailed = false
+      }
+
+      // Get the backend URL from environment or default
+      const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:55244'
+      const hubUrl = `${backendUrl}/hubs/transparency`
+
+      console.log('Connecting to transparency hub:', hubUrl)
+
       this.connection = new HubConnectionBuilder()
-        .withUrl('/hubs/transparency', {
-          accessTokenFactory: () => token,
+        .withUrl(hubUrl, {
+          accessTokenFactory: () => {
+            // Always get fresh token from store
+            const currentState = store.getState()
+            const currentToken = selectAccessToken(currentState)
+
+            const validation = validateTokenForSignalR(currentToken)
+            if (!validation.isValid) {
+              console.warn(`Token validation failed during SignalR connection: ${validation.reason}`)
+              return ''
+            }
+
+            return validation.token!
+          },
         })
         .withAutomaticReconnect({
           nextRetryDelayInMilliseconds: (retryContext) => {
             // Exponential backoff: 2s, 4s, 8s, 16s, 30s
             const delay = Math.min(2000 * Math.pow(2, retryContext.previousRetryCount), 30000)
+            console.log(`SignalR reconnect attempt ${retryContext.previousRetryCount + 1}, delay: ${delay}ms`)
             return delay
           }
         })
@@ -64,6 +97,15 @@ class TransparencyHubService {
       this.connection.onclose((error) => {
         console.log('Transparency hub connection closed', error)
         this.emit('connectionStateChanged', { state: 'disconnected', error })
+
+        // Don't attempt to reconnect if the error is due to authentication
+        if (error && isAuthenticationError(error)) {
+          console.warn('SignalR connection closed due to authentication failure - not attempting reconnect')
+          authenticationFailed = true
+          this.emit('authenticationFailed', { error })
+          return
+        }
+
         this.handleConnectionClosed(error)
       })
 
@@ -134,12 +176,19 @@ class TransparencyHubService {
    * Handle connection closed event
    */
   private async handleConnectionClosed(error?: Error): Promise<void> {
+    // Don't attempt to reconnect if authentication has failed
+    if (authenticationFailed) {
+      console.warn('Not attempting reconnect - authentication failed')
+      this.emit('connectionStateChanged', { state: 'failed', error })
+      return
+    }
+
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++
       const delay = Math.min(2000 * Math.pow(2, this.reconnectAttempts - 1), 30000)
-      
+
       console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
-      
+
       setTimeout(() => {
         this.connect().catch(err => {
           console.error('Reconnection attempt failed:', err)
@@ -265,6 +314,14 @@ class TransparencyHubService {
    */
   get isConnected(): boolean {
     return this.connection?.state === HubConnectionState.Connected
+  }
+
+  /**
+   * Reset authentication failure flag (call when new valid token is available)
+   */
+  static resetAuthenticationFailure(): void {
+    authenticationFailed = false
+    console.log('🔐 Authentication failure flag reset - SignalR can attempt connections again')
   }
 }
 

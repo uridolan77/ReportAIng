@@ -542,9 +542,24 @@ public class AITuningSettingsService : IAITuningSettingsService
     {
         try
         {
+            _logger.LogDebug("🔄 Refreshing AI tuning settings cache...");
+
+            // Add timeout to prevent hanging
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+            // Check if table exists first
+            var tableExists = await CheckIfTableExistsAsync(cts.Token);
+            if (!tableExists)
+            {
+                _logger.LogWarning("⚠️ AITuningSettings table does not exist. Using default settings.");
+                LoadDefaultSettings();
+                _lastCacheUpdate = DateTime.UtcNow;
+                return;
+            }
+
             var settings = await _context.AITuningSettings
                 .Where(s => s.IsActive)
-                .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+                .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue, cts.Token);
 
             _settingsCache.Clear();
             foreach (var setting in settings)
@@ -553,11 +568,53 @@ public class AITuningSettingsService : IAITuningSettingsService
             }
 
             _lastCacheUpdate = DateTime.UtcNow;
+            _logger.LogDebug("✅ AI tuning settings cache refreshed successfully. {Count} settings loaded.", settings.Count);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("⏰ AI tuning settings cache refresh timed out. Using default settings.");
+            LoadDefaultSettings();
+            _lastCacheUpdate = DateTime.UtcNow;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error refreshing AI tuning settings cache");
+            _logger.LogError(ex, "❌ Error refreshing AI tuning settings cache. Using default settings.");
+            LoadDefaultSettings();
+            _lastCacheUpdate = DateTime.UtcNow;
         }
+    }
+
+    private async Task<bool> CheckIfTableExistsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Try to query the table directly - if it doesn't exist, this will throw
+            var count = await _context.AITuningSettings.CountAsync(cancellationToken);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug("Table check failed: {Error}", ex.Message);
+            return false;
+        }
+    }
+
+    private void LoadDefaultSettings()
+    {
+        _logger.LogInformation("📋 Loading default AI tuning settings...");
+        _settingsCache.Clear();
+
+        // Add essential default settings
+        _settingsCache["EnableQueryCaching"] = "true";
+        _settingsCache["EnableEnhancedSemanticCache"] = "false";
+        _settingsCache["DefaultAIProvider"] = "OpenAI";
+        _settingsCache["DefaultModel"] = "gpt-4";
+        _settingsCache["MaxTokens"] = "4000";
+        _settingsCache["Temperature"] = "0.1";
+        _settingsCache["EnableAIAnalytics"] = "true";
+        _settingsCache["CacheExpiryHours"] = "24";
+
+        _logger.LogInformation("✅ Default AI tuning settings loaded. {Count} settings available.", _settingsCache.Count);
     }
 
     #endregion

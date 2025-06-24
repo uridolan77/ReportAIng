@@ -274,6 +274,15 @@ class SocketService {
     this.connection?.off('StreamingQueryError', callback)
   }
 
+  // Generic event listeners for custom events
+  on(eventName: string, callback: (...args: any[]) => void) {
+    this.connection?.on(eventName, callback)
+  }
+
+  off(eventName: string, callback?: (...args: any[]) => void) {
+    this.connection?.off(eventName, callback)
+  }
+
   // Invoke SignalR methods (using correct backend method names)
   async joinQuerySession(sessionId: string) {
     try {
@@ -490,5 +499,7 @@ export const useSocket = () => {
     offStreamingQueryError: socketService.offStreamingQueryError.bind(socketService),
     joinQuerySession: socketService.joinQuerySession.bind(socketService),
     leaveQuerySession: socketService.leaveQuerySession.bind(socketService),
+    on: socketService.on.bind(socketService),
+    off: socketService.off.bind(socketService),
   }
 }

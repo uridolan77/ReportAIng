@@ -8,6 +8,7 @@ import { chatSlice } from './chat'
 import { baseApi } from './api/baseApi'
 import aiTransparencyReducer from './aiTransparencySlice'
 import streamingProcessingReducer from './streamingProcessingSlice'
+import { isTokenExpired } from '@shared/utils/tokenUtils'
 
 // Import API files to ensure endpoints are injected
 import './api/authApi'
@@ -21,12 +22,38 @@ import './api/tuningApi'
 import './api/costApi'
 import './api/performanceApi'
 import './api/transparencyApi'
+import './api/aiStreamingApi'
+import './api/analyticsApi'
+import './api/intelligentAgentsApi'
+import './api/llmManagementApi'
+import './api/templateAnalyticsApi'
 
-// Configure persistence for auth slice
+// Configure persistence for auth slice with token validation
 const authPersistConfig = {
   key: 'auth',
   storage,
-  whitelist: ['isAuthenticated', 'user', 'accessToken', 'refreshToken', 'preferences']
+  whitelist: ['isAuthenticated', 'user', 'accessToken', 'refreshToken', 'preferences'],
+  // Transform to validate tokens during rehydration
+  transforms: [
+    {
+      in: (inboundState: any) => {
+        // Validate tokens during rehydration from storage
+        if (inboundState && inboundState.accessToken) {
+          if (isTokenExpired(inboundState.accessToken)) {
+            console.warn('🔐 Expired access token detected during rehydration - clearing auth state')
+            return {
+              ...inboundState,
+              accessToken: null,
+              refreshToken: null,
+              isAuthenticated: false
+            }
+          }
+        }
+        return inboundState
+      },
+      out: (outboundState: any) => outboundState
+    }
+  ]
 }
 
 const persistedAuthReducer = persistReducer(authPersistConfig, authSlice.reducer)
@@ -80,3 +107,4 @@ export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
 export { authActions } from './auth'
 export { uiActions } from './ui'
 export { chatActions } from './chat'
+export { aiTransparencyActions } from './aiTransparencySlice'

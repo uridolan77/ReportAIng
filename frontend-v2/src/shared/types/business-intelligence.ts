@@ -319,6 +319,17 @@ export interface IntentAlternative {
   tradeoffs?: string[]
 }
 
+export interface ConfidenceBreakdown {
+  overallScore: number
+  factors: Array<{
+    name: string
+    score: number
+    weight: number
+    description: string
+  }>
+  methodology: string
+}
+
 export interface ProcessFlowConfidenceBreakdown {
   overallConfidence: number
   factors: ProcessFlowConfidenceFactor[]

@@ -324,6 +324,9 @@ builder.Services.AddValidatorsFromAssemblyContaining<BIReportingCopilot.Core.Que
 builder.Services.Configure<BIReportingCopilot.Core.Configuration.ApplicationSettings>(
     builder.Configuration.GetSection(BIReportingCopilot.Core.Configuration.ApplicationSettings.SectionName));
 
+// Add unified configuration validation and registration
+builder.Services.AddValidatedConfiguration(builder.Configuration);
+
 // Configure security settings
 builder.Services.Configure<BIReportingCopilot.Infrastructure.Security.RateLimitingConfiguration>(
     builder.Configuration.GetSection("RateLimiting"));
@@ -497,48 +500,62 @@ builder.Services.AddSignalR(options =>
 
 // Redis Cache configuration is handled below in the caching section
 
-// Add OpenAI client for AI service
+// Add OpenAI client factory for lazy initialization (prevents hanging during DI)
+builder.Services.AddSingleton<Func<Azure.AI.OpenAI.OpenAIClient>>(provider =>
+{
+    return () =>
+    {
+        var logger = provider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            // Get the resolved configurations from the options
+            var openAIOptions = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BIReportingCopilot.Core.Configuration.OpenAIConfiguration>>();
+            var azureOpenAIOptions = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BIReportingCopilot.Core.Configuration.AzureOpenAIConfiguration>>();
+
+            var openAIConfig = openAIOptions.Value;
+            var azureConfig = azureOpenAIOptions.Value;
+
+            // Try Azure OpenAI first if configured
+            if (!string.IsNullOrEmpty(azureConfig.Endpoint) && !string.IsNullOrEmpty(azureConfig.ApiKey))
+            {
+                logger.LogInformation("Creating Azure OpenAI client with endpoint: {Endpoint}", azureConfig.Endpoint);
+                return new Azure.AI.OpenAI.OpenAIClient(new Uri(azureConfig.Endpoint), new Azure.AzureKeyCredential(azureConfig.ApiKey));
+            }
+
+            // Fallback to regular OpenAI
+            if (!string.IsNullOrEmpty(openAIConfig.ApiKey) &&
+                openAIConfig.ApiKey != "your-openai-api-key-here" &&
+                !openAIConfig.ApiKey.StartsWith("{azurevault:"))
+            {
+                logger.LogInformation("✅ Creating OpenAI client with resolved API key");
+                return new Azure.AI.OpenAI.OpenAIClient(openAIConfig.ApiKey);
+            }
+
+            logger.LogWarning("No valid OpenAI configuration found. Creating mock client for development.");
+            // Return a mock client for development - this will be handled by the service layer
+            return new Azure.AI.OpenAI.OpenAIClient("mock-key-for-development");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error creating OpenAI client, using mock client");
+            return new Azure.AI.OpenAI.OpenAIClient("mock-key-error-fallback");
+        }
+    };
+});
+
+// Add the actual OpenAI client as a lazy singleton
 builder.Services.AddSingleton(provider =>
 {
-    var logger = provider.GetRequiredService<ILogger<Program>>();
+    var factory = provider.GetRequiredService<Func<Azure.AI.OpenAI.OpenAIClient>>();
+    return new Lazy<Azure.AI.OpenAI.OpenAIClient>(factory);
+});
 
-    // Get the resolved configurations from the options
-    var openAIOptions = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BIReportingCopilot.Core.Configuration.OpenAIConfiguration>>();
-    var azureOpenAIOptions = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BIReportingCopilot.Core.Configuration.AzureOpenAIConfiguration>>();
-
-    var openAIConfig = openAIOptions.Value;
-    var azureConfig = azureOpenAIOptions.Value;
-
-    // Try Azure OpenAI first if configured
-    if (!string.IsNullOrEmpty(azureConfig.Endpoint) && !string.IsNullOrEmpty(azureConfig.ApiKey))
-    {
-        logger.LogInformation("Configuring Azure OpenAI client with endpoint: {Endpoint}", azureConfig.Endpoint);
-        return new Azure.AI.OpenAI.OpenAIClient(new Uri(azureConfig.Endpoint), new Azure.AzureKeyCredential(azureConfig.ApiKey));
-    }
-
-    // Fallback to regular OpenAI
-    logger.LogInformation("🔍 DEBUG: OpenAI API Key value: '{ApiKey}' (Length: {Length})",
-        openAIConfig.ApiKey?.Substring(0, Math.Min(20, openAIConfig.ApiKey?.Length ?? 0)) + "...",
-        openAIConfig.ApiKey?.Length ?? 0);
-
-    if (!string.IsNullOrEmpty(openAIConfig.ApiKey) && openAIConfig.ApiKey != "your-openai-api-key-here")
-    {
-        // Check if it's still an Azure Key Vault placeholder (shouldn't be after resolution)
-        if (openAIConfig.ApiKey.StartsWith("{azurevault:"))
-        {
-            logger.LogWarning("🚨 OpenAI API Key is still an Azure Key Vault placeholder after resolution: {ApiKey}", openAIConfig.ApiKey);
-            logger.LogWarning("Azure Key Vault resolution failed. Using fallback.");
-        }
-        else
-        {
-            logger.LogInformation("✅ Configuring OpenAI client with resolved API key");
-            return new Azure.AI.OpenAI.OpenAIClient(openAIConfig.ApiKey);
-        }
-    }
-
-    logger.LogWarning("No valid OpenAI configuration found. AI features will use fallback responses.");
-    // Return a mock client for development - this will be handled by the service layer
-    return new Azure.AI.OpenAI.OpenAIClient("mock-key");
+// Add the OpenAI client interface that services will use
+builder.Services.AddTransient(provider =>
+{
+    var lazyClient = provider.GetRequiredService<Lazy<Azure.AI.OpenAI.OpenAIClient>>();
+    return lazyClient.Value;
 });
 
 // ===== REPOSITORY LAYER =====
@@ -574,8 +591,19 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Core.AIService>(
 // Register the LLM-aware service as a decorator
 builder.Services.AddScoped<ILLMAwareAIService, BIReportingCopilot.Infrastructure.AI.Core.LLMAwareAIService>();
 
-// Register IAIService to use the LLM-aware service
-builder.Services.AddScoped<IAIService>(provider => provider.GetRequiredService<ILLMAwareAIService>());
+// Register IAIService with a minimal implementation to avoid circular dependency during startup
+// This prevents hanging during service registration by avoiding heavy dependencies
+builder.Services.AddScoped<IAIService>(provider =>
+{
+    // Create a minimal AI service that only depends on essential services
+    var providerFactory = provider.GetRequiredService<IAIProviderFactory>();
+    var logger = provider.GetRequiredService<ILogger<BIReportingCopilot.Infrastructure.AI.Core.AIService>>();
+    var cacheService = provider.GetRequiredService<ICacheService>();
+
+    // Use lazy initialization for heavy dependencies to avoid startup hanging
+    return new BIReportingCopilot.Infrastructure.AI.Core.MinimalAIService(
+        providerFactory, logger, cacheService);
+});
 
 // ===== CONSOLIDATED SERVICES (ROUND 4, 5 & 6 CLEANUP) =====
 
@@ -695,6 +723,9 @@ builder.Services.Configure<BIReportingCopilot.Infrastructure.Messaging.EventBusC
 // ===== REAL-TIME NOTIFICATIONS =====
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.RealTime.IRealTimeNotificationService, BIReportingCopilot.Infrastructure.RealTime.RealTimeNotificationService>();
 
+// ===== AI PIPELINE TESTING SERVICES =====
+builder.Services.AddScoped<BIReportingCopilot.API.Hubs.IPipelineTestNotificationService, BIReportingCopilot.API.Hubs.PipelineTestNotificationService>();
+
 // ===== CACHING & REDIS =====
 // Configure Cache settings (includes Redis configuration)
 builder.Services.Configure<BIReportingCopilot.Core.Configuration.CacheConfiguration>(
@@ -768,7 +799,7 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Messaging.EventHand
 
 // ===== CORE APPLICATION SERVICES =====
 // Base services
-builder.Services.AddScoped<IQueryProgressNotifier, BIReportingCopilot.API.Hubs.SignalRQueryProgressNotifier>();
+builder.Services.AddScoped<IQueryProgressNotifier, BIReportingCopilot.API.Hubs.NoOpQueryProgressNotifier>();
 builder.Services.AddScoped<IQueryService, BIReportingCopilot.Infrastructure.Query.QueryService>();
 builder.Services.AddScoped<ISchemaService, BIReportingCopilot.Infrastructure.Schema.SchemaService>(); // Unified with built-in caching
 builder.Services.AddScoped<ISqlQueryService, BIReportingCopilot.Infrastructure.Query.SqlQueryService>();
@@ -1072,6 +1103,8 @@ app.MapHub<PerformanceMonitoringHub>("/hubs/performance-monitoring");
 app.MapHub<ResourceMonitoringHub>("/hubs/resource-monitoring");
 // Template Analytics hub for real-time analytics updates
 app.MapHub<TemplateAnalyticsHub>("/hubs/template-analytics");
+// AI Pipeline Testing hub for real-time testing updates
+app.MapHub<BIReportingCopilot.API.Hubs.PipelineTestHub>("/hubs/pipeline-test");
 
 // Configure health checks
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
@@ -1132,7 +1165,7 @@ if (!string.IsNullOrEmpty(builder.Configuration.GetConnectionString("DefaultConn
         try
         {
             await dbInitService.InitializeAsync();
-            Log.Information("Database initialization completed successfully");
+            Log.Information("✅ Database initialization completed successfully");
         }
         catch (Exception ex)
         {

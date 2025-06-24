@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Row, Col, FloatButton, Card, Space, Typography, Switch, Tooltip } from 'antd'
 import { EyeOutlined, EyeInvisibleOutlined, SettingOutlined } from '@ant-design/icons'
 import { ChatInterface } from './ChatInterface'
-import { LiveQueryTracker } from '@shared/components/ai/transparency/LiveQueryTracker'
-import { RealTimeMonitor } from '@shared/components/ai/transparency/RealTimeMonitor'
-import { InstantFeedbackPanel } from '@shared/components/ai/transparency/InstantFeedbackPanel'
+import { ProcessFlowSessionViewer, ProcessFlowDashboard } from '@shared/components/ai/transparency'
 import { useAppSelector, useAppDispatch } from '@shared/hooks'
 import { selectMessages, selectIsLoading, chatActions } from '@shared/store/chat'
 import { useRealTimeMonitoring } from '@shared/store/api/transparencyApi'
@@ -153,23 +151,23 @@ export const EnhancedChatInterface: React.FC<EnhancedChatInterfaceProps> = ({
           </Card>
         )}
 
-        {/* Live Query Tracking */}
+        {/* ProcessFlow Session Tracking */}
         {transparencySettings.showQueryFlow && currentQueryId && (
-          <LiveQueryTracker
-            queryId={currentQueryId}
-            autoTrack={true}
-            showStepDetails={true}
-            showUserInfo={false}
+          <ProcessFlowSessionViewer
+            sessionId={currentQueryId}
+            showDetailedSteps={true}
+            showLogs={false}
+            showTransparency={true}
+            compact={true}
           />
         )}
 
-        {/* Instant Feedback */}
-        {transparencySettings.showFeedback && currentQueryId && !isLoading && (
-          <InstantFeedbackPanel
-            queryId={currentQueryId}
-            showRating={true}
-            showComments={true}
-            showSuggestions={false}
+        {/* ProcessFlow Dashboard */}
+        {transparencySettings.showFeedback && (
+          <ProcessFlowDashboard
+            filters={{ days: 1, includeDetails: true }}
+            showCharts={false}
+            showMetrics={true}
           />
         )}
 

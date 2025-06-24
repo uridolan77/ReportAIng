@@ -110,6 +110,14 @@ export interface SchemaTable {
   metadata: Record<string, any>
 }
 
+export interface TableRelationship {
+  relatedTable: string
+  relationshipType: 'one-to-one' | 'one-to-many' | 'many-to-many'
+  strength: number
+  description?: string
+  joinCondition?: string
+}
+
 export interface SuggestedJoin {
   leftTable: string
   rightTable: string

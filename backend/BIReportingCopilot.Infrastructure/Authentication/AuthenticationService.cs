@@ -384,17 +384,26 @@ public class AuthenticationService : IAuthenticationService
         var permissions = await _userRepository.GetUserPermissionsAsync(user.Id);
         claims.AddRange(permissions.Select(permission => new Claim("permission", permission)));
 
+        var now = DateTime.UtcNow;
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(_securitySettings.JwtAccessTokenExpirationMinutes),
+            NotBefore = now,
+            IssuedAt = now,
+            Expires = now.AddMinutes(_securitySettings.JwtAccessTokenExpirationMinutes),
             Issuer = _securitySettings.JwtIssuer,
             Audience = _securitySettings.JwtAudience,
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+        var tokenString = tokenHandler.WriteToken(token);
+
+        // Debug: Log token timing information
+        _logger.LogInformation("JWT Token Generated - NotBefore: {NotBefore}, IssuedAt: {IssuedAt}, Expires: {Expires}, Current UTC: {CurrentUtc}",
+            tokenDescriptor.NotBefore, tokenDescriptor.IssuedAt, tokenDescriptor.Expires, DateTime.UtcNow);
+
+        return tokenString;
     }
 
     private async Task<bool> IsAccountLockedAsync(string username)

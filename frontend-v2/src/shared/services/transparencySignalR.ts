@@ -15,17 +15,48 @@ export class TransparencySignalRService {
   private maxReconnectAttempts = 5
   private listeners: Map<string, Set<(data: any) => void>> = new Map()
 
-  constructor(private hubUrl: string = 'http://localhost:55244/hubs/transparency') {}
+  constructor(private hubUrl?: string) {
+    // Use environment variable or default
+    this.hubUrl = hubUrl || `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:55244'}/hubs/transparency`
+  }
 
   /**
    * Start SignalR connection
    */
   async connect(token?: string): Promise<void> {
     try {
+      // Check if token is provided and valid
+      if (!token) {
+        console.warn('No token provided for transparency SignalR connection')
+        throw new Error('No authentication token provided')
+      }
+
+      // Check if token is expired
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        const currentTime = Math.floor(Date.now() / 1000)
+        if (payload.exp < currentTime) {
+          console.warn('Token expired for transparency SignalR connection')
+          throw new Error('Authentication token is expired')
+        }
+      } catch (parseError) {
+        console.warn('Invalid token format for transparency SignalR connection')
+        throw new Error('Invalid authentication token format')
+      }
+
+      console.log('Connecting to transparency SignalR hub:', this.hubUrl)
+
       // Build connection
       this.connection = new signalR.HubConnectionBuilder()
         .withUrl(this.hubUrl, {
-          accessTokenFactory: () => token || '',
+          accessTokenFactory: () => {
+            // Always return the provided token
+            if (!token) {
+              console.warn('Token missing during SignalR connection')
+              return ''
+            }
+            return token
+          },
           transport: signalR.HttpTransportType.WebSockets,
           skipNegotiation: true
         })

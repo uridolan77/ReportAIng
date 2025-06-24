@@ -39,9 +39,9 @@ public class AIProviderFactory : IAIProviderFactory
     {
         try
         {
-            // For synchronous calls, skip LLM Management service to avoid deadlocks
-            // and potential stack overflow from async-to-sync calls
-            _logger.LogDebug("Using legacy configuration for synchronous provider selection");
+            // For synchronous calls, ALWAYS skip LLM Management service to avoid circular dependencies
+            // during service registration and potential deadlocks from async-to-sync calls
+            _logger.LogDebug("Using legacy configuration for synchronous provider selection (avoiding circular dependency)");
             return GetLegacyProvider();
         }
         catch (Exception ex)
@@ -169,21 +169,31 @@ public class AIProviderFactory : IAIProviderFactory
         try
         {
             // Try to get LLM Management service (lazy loading to avoid circular dependency)
+            // Only attempt this if we're not in the middle of service registration
             var llmManagementService = _serviceProvider.GetService<ILLMManagementService>();
 
             if (llmManagementService != null)
             {
-                // First try to get from LLM Management system
-                var providers = await llmManagementService.GetProvidersAsync();
-                var managedProvider = providers.FirstOrDefault(p =>
-                    p.ProviderId.Equals(providerType, StringComparison.OrdinalIgnoreCase) ||
-                    p.Name.Equals(providerType, StringComparison.OrdinalIgnoreCase));
-
-                if (managedProvider != null && managedProvider.IsEnabled)
+                // Check if we can safely access the database (not during startup)
+                try
                 {
-                    _logger.LogInformation("Using LLM managed provider: {ProviderName} ({ProviderId})",
-                        managedProvider.Name, managedProvider.ProviderId);
-                    return GetManagedProvider(managedProvider);
+                    // First try to get from LLM Management system
+                    var providers = await llmManagementService.GetProvidersAsync();
+                    var managedProvider = providers.FirstOrDefault(p =>
+                        p.ProviderId.Equals(providerType, StringComparison.OrdinalIgnoreCase) ||
+                        p.Name.Equals(providerType, StringComparison.OrdinalIgnoreCase));
+
+                    if (managedProvider != null && managedProvider.IsEnabled)
+                    {
+                        _logger.LogInformation("Using LLM managed provider: {ProviderName} ({ProviderId})",
+                            managedProvider.Name, managedProvider.ProviderId);
+                        return GetManagedProvider(managedProvider);
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    // Service container is still being built, fall back to legacy provider
+                    _logger.LogDebug("Service container still building, using legacy provider for {ProviderType}", providerType);
                 }
             }
         }

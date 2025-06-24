@@ -305,7 +305,16 @@ public class SchemaService : ISchemaService
     {
         if (string.IsNullOrEmpty(dataSource))
         {
-            // Use BIDatabase as the primary connection for schema operations
+            // For now, use DefaultConnection instead of BIDatabase to avoid Azure Key Vault issues
+            // TODO: Implement proper Azure Key Vault resolution for BIDatabase connection
+            var defaultConnection = _configuration.GetConnectionString("DefaultConnection");
+            if (!string.IsNullOrEmpty(defaultConnection))
+            {
+                _logger.LogInformation("Using DefaultConnection for schema operations (BIDatabase requires Azure Key Vault setup)");
+                return defaultConnection;
+            }
+
+            // Fallback to BIDatabase if DefaultConnection is not available
             return await _connectionStringProvider.GetConnectionStringAsync("BIDatabase");
         }
 

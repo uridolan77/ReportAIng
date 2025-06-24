@@ -19,7 +19,7 @@ namespace BIReportingCopilot.Infrastructure.AI.Analysis;
 /// </summary>
 public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
 {
-    private readonly OpenAIClient _client;
+    private readonly Lazy<OpenAIClient> _lazyClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<QueryAnalysisService> _logger;
     private readonly ICacheService _cacheService;
@@ -49,17 +49,35 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
     };
 
     public QueryAnalysisService(
-        OpenAIClient client,
+        Lazy<OpenAIClient> lazyClient,
         IConfiguration configuration,
         ILogger<QueryAnalysisService> logger,
         ICacheService cacheService)
     {
-        _client = client;
+        _lazyClient = lazyClient;
         _configuration = configuration;
         _logger = logger;
         _cacheService = cacheService;
         _isConfigured = !string.IsNullOrEmpty(configuration["OpenAI:ApiKey"]) ||
                        !string.IsNullOrEmpty(configuration["AzureOpenAI:ApiKey"]);
+
+        _logger.LogInformation("🔧 QueryAnalysisService initialized with lazy OpenAI client (prevents hanging)");
+    }
+
+    /// <summary>
+    /// Get the OpenAI client when needed (lazy initialization)
+    /// </summary>
+    private OpenAIClient GetClient()
+    {
+        try
+        {
+            return _lazyClient.Value;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting OpenAI client, AI features will be limited");
+            throw new InvalidOperationException("OpenAI client is not available", ex);
+        }
     }
 
     #region ISemanticAnalyzer Implementation
@@ -79,9 +97,18 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
                 return cachedResult;
             }
 
-            var entities = await ExtractEntitiesAsync(naturalLanguageQuery);
+            // Add timeout for AI operations
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+            _logger.LogDebug("🔍 Starting entity extraction with timeout");
+            var entities = await ExtractEntitiesAsync(naturalLanguageQuery, combinedCts.Token);
+
+            _logger.LogDebug("🔍 Starting keyword extraction");
             var keywords = ExtractKeywords(naturalLanguageQuery);
-            var intent = await ClassifyIntentAsync(naturalLanguageQuery);
+
+            _logger.LogDebug("🔍 Starting intent classification with timeout");
+            var intent = await ClassifyIntentAsync(naturalLanguageQuery, combinedCts.Token);
 
             var analysis = new SemanticAnalysisResult
             {
@@ -97,6 +124,11 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
 
             _logger.LogDebug("Semantic analysis completed with confidence: {Confidence}", analysis.ConfidenceScore);
             return analysis;
+        }
+        catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
+        {
+            _logger.LogWarning("Semantic analysis timed out for query: {Query}", naturalLanguageQuery);
+            return CreateFallbackSemanticAnalysisResult(naturalLanguageQuery);
         }
         catch (Exception ex)
         {
@@ -128,7 +160,8 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
                 input: new[] { text }
             );
 
-            var response = await _client.GetEmbeddingsAsync(embeddingsOptions);
+            var client = GetClient();
+            var response = await client.GetEmbeddingsAsync(embeddingsOptions);
             var embedding = response.Value.Data[0].Embedding.ToArray();
 
             // Cache the embedding
@@ -181,7 +214,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         }
     }
 
-    public Task<List<EntityExtraction>> ExtractEntitiesAsync(string query)
+    public Task<List<EntityExtraction>> ExtractEntitiesAsync(string query, CancellationToken cancellationToken = default)
     {
         var entities = new List<EntityExtraction>();
         var lowerQuery = query.ToLowerInvariant();
@@ -219,7 +252,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         return Task.FromResult(result);
     }
 
-    public Task<BIReportingCopilot.Core.Models.QueryIntent> ClassifyIntentAsync(string query)
+    public Task<BIReportingCopilot.Core.Models.QueryIntent> ClassifyIntentAsync(string query, CancellationToken cancellationToken = default)
     {
         var lowerQuery = query.ToLowerInvariant();
 
@@ -1172,22 +1205,7 @@ public class QueryAnalysisService : ISemanticAnalyzer, IQueryClassifier
         return await GenerateEmbeddingAsync(text);
     }
 
-    /// <summary>
-    /// Extract entities async (ISemanticAnalyzer interface)
-    /// </summary>
-    public async Task<List<EntityExtraction>> ExtractEntitiesAsync(string text, CancellationToken cancellationToken = default)
-    {
-        var analysis = await AnalyzeAsync(text, cancellationToken);
-        return analysis.Entities.Select(e => new EntityExtraction
-        {
-            Entity = e.Text,
-            Type = e.Type.ToString(),
-            Confidence = e.Confidence,
-            StartIndex = e.StartPosition,
-            EndIndex = e.EndPosition,
-            Properties = e.Properties
-        }).ToList();
-    }
+
 
     /// <summary>
     /// Analyze with context async (ISemanticAnalyzer interface)

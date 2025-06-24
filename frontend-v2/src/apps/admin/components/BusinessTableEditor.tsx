@@ -264,9 +264,9 @@ export const BusinessTableEditor: React.FC<BusinessTableEditorProps> = ({
         <div>
           <Text strong style={{ fontSize: '13px' }}>{text}</Text>
           <div style={{ marginTop: 2 }}>
-            {record.isKeyColumn && <Tag color="gold" size="small">Key</Tag>}
-            {record.isSensitiveData && <Tag color="red" size="small">Sensitive</Tag>}
-            {record.isCalculatedField && <Tag color="blue" size="small">Calculated</Tag>}
+            {record.isKeyColumn && <Tag color="gold">Key</Tag>}
+            {record.isSensitiveData && <Tag color="red">Sensitive</Tag>}
+            {record.isCalculatedField && <Tag color="blue">Calculated</Tag>}
           </div>
         </div>
       ),

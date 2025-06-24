@@ -17,7 +17,6 @@ import { ComprehensiveChatInterface } from '../components/ComprehensiveChatInter
 import { useAppSelector, useAppDispatch } from '@shared/hooks'
 import { selectUser } from '@shared/store/auth'
 import { useGetTransparencyDashboardMetricsQuery } from '@shared/store/api/transparencyApi'
-import { transparencyConnectionManager } from '@shared/services/transparencyConnectionManager'
 import { useRealTimeTransparency } from '@shared/components/ai/transparency/hooks/useAITransparency'
 
 const { Title, Text, Paragraph } = Typography

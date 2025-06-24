@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Complete Auth Flow</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .step { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { margin: 5px; padding: 10px 15px; }
+    </style>
+</head>
+<body>
+    <h1>Complete Authentication Flow Test</h1>
+    <div id="results"></div>
+    
+    <button onclick="runCompleteTest()">🧪 Run Complete Test</button>
+    <button onclick="clearStorage()">🗑️ Clear Storage</button>
+    <button onclick="showCurrentState()">📊 Show Current State</button>
+
+    <script>
+        // Token validation functions (copied from utils)
+        function isTokenExpired(token) {
+            if (!token) return true;
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const currentTimeUTC = Math.floor(Date.now() / 1000);
+                return payload.exp < currentTimeUTC;
+            } catch {
+                return true;
+            }
+        }
+
+        function getTokenExpiration(token) {
+            if (!token) return null;
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                return new Date(payload.exp * 1000);
+            } catch {
+                return null;
+            }
+        }
+
+        function addStep(message, type = 'info') {
+            const results = document.getElementById('results');
+            const step = document.createElement('div');
+            step.className = `step ${type}`;
+            step.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.appendChild(step);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function clearStorage() {
+            // Clear all auth-related storage
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('auth') || key.includes('token') || key.includes('persist'))) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+
+            const sessionKeysToRemove = [];
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                if (key && (key.includes('auth') || key.includes('token'))) {
+                    sessionKeysToRemove.push(key);
+                }
+            }
+            sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
+
+            addStep(`Cleared ${keysToRemove.length} localStorage and ${sessionKeysToRemove.length} sessionStorage items`, 'success');
+        }
+
+        function showCurrentState() {
+            const persistAuth = localStorage.getItem('persist:auth');
+            if (persistAuth) {
+                try {
+                    const parsed = JSON.parse(persistAuth);
+                    const accessToken = parsed.accessToken ? JSON.parse(parsed.accessToken) : null;
+                    const isAuthenticated = parsed.isAuthenticated ? JSON.parse(parsed.isAuthenticated) : false;
+                    
+                    if (accessToken) {
+                        const isExpired = isTokenExpired(accessToken);
+                        const expiration = getTokenExpiration(accessToken);
+                        addStep(`Current stored token: ${isExpired ? '❌ EXPIRED' : '✅ VALID'} (expires: ${expiration?.toLocaleString()})`, isExpired ? 'error' : 'success');
+                        addStep(`Authentication state: ${isAuthenticated ? '✅ Authenticated' : '❌ Not authenticated'}`, isAuthenticated ? 'success' : 'error');
+                    } else {
+                        addStep('No access token in storage', 'info');
+                    }
+                } catch (e) {
+                    addStep(`Error parsing stored auth: ${e.message}`, 'error');
+                }
+            } else {
+                addStep('No persisted auth data found', 'info');
+            }
+        }
+
+        async function runCompleteTest() {
+            document.getElementById('results').innerHTML = '';
+            addStep('🚀 Starting complete authentication flow test', 'info');
+
+            try {
+                // Step 1: Clear existing storage
+                addStep('Step 1: Clearing existing storage...', 'info');
+                clearStorage();
+
+                // Step 2: Get fresh token
+                addStep('Step 2: Getting fresh token from backend...', 'info');
+                const response = await fetch('http://localhost:55244/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Username: 'admin', Password: 'Admin123!' })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Login failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const token = data.accessToken;
+                addStep('✅ Fresh token received from backend', 'success');
+
+                // Step 3: Validate fresh token
+                addStep('Step 3: Validating fresh token...', 'info');
+                const isExpired = isTokenExpired(token);
+                const expiration = getTokenExpiration(token);
+                
+                if (isExpired) {
+                    addStep('❌ Fresh token is already expired! This indicates a timezone/clock issue.', 'error');
+                    addStep(`Token expires at: ${expiration?.toLocaleString()}`, 'error');
+                    addStep(`Current time: ${new Date().toLocaleString()}`, 'error');
+                } else {
+                    addStep('✅ Fresh token is valid', 'success');
+                    addStep(`Token expires at: ${expiration?.toLocaleString()}`, 'success');
+                    
+                    const timeUntilExpiration = expiration.getTime() - Date.now();
+                    const minutesLeft = Math.floor(timeUntilExpiration / (1000 * 60));
+                    addStep(`Time until expiration: ${minutesLeft} minutes`, 'success');
+                }
+
+                // Step 4: Simulate storage and rehydration
+                addStep('Step 4: Simulating Redux persist storage...', 'info');
+                const mockAuthState = {
+                    isAuthenticated: JSON.stringify(true),
+                    accessToken: JSON.stringify(token),
+                    refreshToken: JSON.stringify(data.refreshToken || 'mock-refresh'),
+                    user: JSON.stringify({ id: 'admin-user-001', username: 'admin' }),
+                    preferences: JSON.stringify(null)
+                };
+                localStorage.setItem('persist:auth', JSON.stringify(mockAuthState));
+                addStep('✅ Auth state stored in localStorage', 'success');
+
+                // Step 5: Test rehydration validation
+                addStep('Step 5: Testing rehydration validation...', 'info');
+                const storedAuth = localStorage.getItem('persist:auth');
+                const parsedAuth = JSON.parse(storedAuth);
+                const storedToken = JSON.parse(parsedAuth.accessToken);
+                
+                if (isTokenExpired(storedToken)) {
+                    addStep('❌ Stored token would be rejected during rehydration', 'error');
+                } else {
+                    addStep('✅ Stored token would pass rehydration validation', 'success');
+                }
+
+                addStep('🎉 Complete test finished successfully!', 'success');
+
+            } catch (error) {
+                addStep(`❌ Test failed: ${error.message}`, 'error');
+                addStep('Make sure the backend is running on localhost:55244', 'info');
+            }
+        }
+
+        // Show current state on load
+        showCurrentState();
+    </script>
+</body>
+</html>

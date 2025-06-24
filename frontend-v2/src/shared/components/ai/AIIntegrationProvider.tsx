@@ -316,7 +316,7 @@ export const useAIIntegration = () => {
 export const useAIPerformanceMonitor = (componentName: string) => {
   const { reportError, updatePerformance } = useAIIntegration()
   
-  const trackPerformance = async <T>(operation: () => Promise<T>): Promise<T> => {
+  const trackPerformance = async <T,>(operation: () => Promise<T>): Promise<T> => {
     const startTime = performance.now()
     try {
       const result = await operation()

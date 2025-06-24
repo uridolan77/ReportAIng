@@ -367,6 +367,12 @@ export interface IntentAlternative {
   reasoning?: string
 }
 
+export interface ProcessFlowConfidenceFactor {
+  factor: string
+  impact: number
+  description: string
+}
+
 export interface IntentConfidenceBreakdown {
   factors: ProcessFlowConfidenceFactor[]
   overallScore: number

@@ -18,7 +18,8 @@ import {
   ThunderboltOutlined,
   ExclamationCircleOutlined,
   CheckCircleOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  ApiOutlined
 } from '@ant-design/icons'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import type {
@@ -29,11 +30,15 @@ import type {
 const { Title, Text } = Typography
 
 export interface TokenUsageAnalyzerProps {
-  processFlowSteps: ProcessFlowStep[]
-  transparency: ProcessFlowTransparency
+  processFlowSteps?: ProcessFlowStep[]
+  transparency?: ProcessFlowTransparency
+  timeRange?: number
   showCostAnalysis?: boolean
+  showCostBreakdown?: boolean
+  showModelComparison?: boolean
   showOptimizationSuggestions?: boolean
   tokenCostPerK?: number // Cost per 1000 tokens
+  compact?: boolean
   className?: string
   testId?: string
 }
@@ -65,17 +70,21 @@ interface TokenAnalysis {
  * - Efficiency metrics
  */
 export const TokenUsageAnalyzer: React.FC<TokenUsageAnalyzerProps> = ({
-  processFlowSteps,
+  processFlowSteps = [],
   transparency,
+  timeRange,
   showCostAnalysis = true,
+  showCostBreakdown = false,
+  showModelComparison = false,
   showOptimizationSuggestions = true,
   tokenCostPerK = 0.002, // Default cost per 1000 tokens
+  compact = false,
   className,
   testId = 'token-usage-analyzer'
 }) => {
   // Analyze token usage
   const analysis = useMemo((): TokenAnalysis => {
-    if (processFlowSteps.length === 0 || !transparency) {
+    if (!processFlowSteps || processFlowSteps.length === 0 || !transparency) {
       return {
         totalTokens: 0,
         averagePerStep: 0,
@@ -153,6 +162,7 @@ export const TokenUsageAnalyzer: React.FC<TokenUsageAnalyzerProps> = ({
 
   // Prepare chart data
   const stepData = useMemo(() => {
+    if (!processFlowSteps || processFlowSteps.length === 0) return []
     return processFlowSteps.map((step, index) => ({
       step: index + 1,
       stepName: step.name.substring(0, 15) + (step.name.length > 15 ? '...' : ''),
@@ -163,6 +173,8 @@ export const TokenUsageAnalyzer: React.FC<TokenUsageAnalyzerProps> = ({
   }, [processFlowSteps])
 
   const distributionData = useMemo(() => {
+    if (!processFlowSteps || processFlowSteps.length === 0) return []
+
     // Show confidence distribution for ProcessFlow steps
     const ranges = [
       { name: 'Low Confidence (0-50%)', min: 0, max: 0.5, color: '#ff4d4f' },
@@ -182,7 +194,7 @@ export const TokenUsageAnalyzer: React.FC<TokenUsageAnalyzerProps> = ({
 
   const renderStepBreakdown = () => (
     <Timeline>
-      {processFlowSteps.map((step, index) => {
+      {(processFlowSteps || []).map((step, index) => {
         const isLongDuration = (step.durationMs || 0) > analysis.averagePerStep * 1.5
         const isLowConfidence = (step.confidence || 0) < 0.7
 

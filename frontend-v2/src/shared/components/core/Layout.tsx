@@ -169,6 +169,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (path === '/admin/template-analytics') return ['admin-template-analytics']
     if (path.startsWith('/admin/template-analytics')) return ['admin-template-analytics']
 
+    // Advanced Features - AI Pipeline Testing
+    if (path === '/chat/pipeline-test') return ['ai-pipeline-test']
+    if (path.startsWith('/chat/pipeline-test')) return ['ai-pipeline-test']
+
     return []
   }
 
@@ -283,6 +287,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         onClick: () => navigate('/admin/template-analytics'),
       },
     ] : []),
+    // AI Pipeline Testing - Available to all users
+    {
+      key: 'ai-pipeline-test',
+      icon: <ThunderboltOutlined />,
+      label: 'AI Pipeline Testing',
+      onClick: () => navigate('/chat/pipeline-test'),
+    },
   ]
 
   return (

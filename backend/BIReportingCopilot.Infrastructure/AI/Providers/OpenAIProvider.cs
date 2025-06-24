@@ -15,7 +15,7 @@ namespace BIReportingCopilot.Infrastructure.AI.Providers;
 /// </summary>
 public class OpenAIProvider : IAIProvider
 {
-    private readonly OpenAIClient _client;
+    private readonly Lazy<OpenAIClient> _lazyClient;
     private readonly OpenAIConfiguration _config;
     private readonly ILogger<OpenAIProvider> _logger;
 
@@ -24,13 +24,31 @@ public class OpenAIProvider : IAIProvider
     public bool IsConfigured => _config.IsConfigured;
 
     public OpenAIProvider(
-        OpenAIClient client,
+        Lazy<OpenAIClient> lazyClient,
         IOptions<OpenAIConfiguration> config,
         ILogger<OpenAIProvider> logger)
     {
-        _client = client;
+        _lazyClient = lazyClient;
         _config = config.Value;
         _logger = logger;
+
+        _logger.LogInformation("🔧 OpenAIProvider initialized with lazy client (prevents hanging)");
+    }
+
+    /// <summary>
+    /// Get the OpenAI client when needed (lazy initialization)
+    /// </summary>
+    private OpenAIClient GetClient()
+    {
+        try
+        {
+            return _lazyClient.Value;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting OpenAI client in OpenAIProvider");
+            throw new InvalidOperationException("OpenAI client is not available", ex);
+        }
     }
 
     public async Task<string> GenerateCompletionAsync(string prompt, AIOptions options)
@@ -72,7 +90,8 @@ public class OpenAIProvider : IAIProvider
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(options.TimeoutSeconds));
 
-            var response = await _client.GetChatCompletionsAsync(chatCompletionsOptions, cts.Token);
+            var client = GetClient();
+            var response = await client.GetChatCompletionsAsync(chatCompletionsOptions, cts.Token);
 
             if (response?.Value?.Choices?.Count > 0)
             {
@@ -159,7 +178,8 @@ public class OpenAIProvider : IAIProvider
         ChatCompletionsOptions options,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var streamingResponse = await _client.GetChatCompletionsStreamingAsync(options, cancellationToken);
+        var client = GetClient();
+        var streamingResponse = await client.GetChatCompletionsStreamingAsync(options, cancellationToken);
         int chunkIndex = 0;
 
         await foreach (var update in streamingResponse.WithCancellation(cancellationToken))
