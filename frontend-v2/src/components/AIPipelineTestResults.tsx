@@ -25,7 +25,7 @@ import {
   DownloadOutlined,
   EyeOutlined
 } from '@ant-design/icons';
-import { PipelineTestResult, PipelineStep } from '../types/aiPipelineTest';
+import { PipelineTestResult, PipelineStep, formatPipelineStepName } from '../types/aiPipelineTest';
 
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
@@ -41,6 +41,7 @@ const AIPipelineTestResults: React.FC<AIPipelineTestResultsProps> = ({
   onExport,
   onViewDetails
 }) => {
+  console.log('🔍 AIPipelineTestResults rendering with result:', result);
   const getStepIcon = (step: PipelineStep) => {
     const icons = {
       [PipelineStep.BusinessContextAnalysis]: '🧠',
@@ -108,20 +109,26 @@ const AIPipelineTestResults: React.FC<AIPipelineTestResultsProps> = ({
     </Row>
   );
 
-  const renderStepResults = () => (
-    <Collapse className="mb-6">
-      {result.requestedSteps.map(step => {
-        const stepResult = result.results[step];
-        const status = getStepStatus(step);
-        
-        return (
+  const renderStepResults = () => {
+    console.log('🔍 Rendering step results. requestedSteps:', result.requestedSteps);
+    console.log('🔍 Available results:', result.results);
+
+    return (
+      <Collapse className="mb-6">
+        {result.requestedSteps.map(step => {
+          const stepResult = result.results?.[step];
+          const status = getStepStatus(step);
+
+          console.log(`🔍 Step ${step}:`, { stepResult, status });
+
+          return (
           <Panel
             key={step}
             header={
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
                   <span className="text-lg">{getStepIcon(step)}</span>
-                  <Text strong>{step.replace(/([A-Z])/g, ' $1').trim()}</Text>
+                  <Text strong>{formatPipelineStepName(step)}</Text>
                   <Tag color={status.status}>{status.text}</Tag>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -159,9 +166,10 @@ const AIPipelineTestResults: React.FC<AIPipelineTestResultsProps> = ({
             )}
           </Panel>
         );
-      })}
-    </Collapse>
-  );
+        })}
+      </Collapse>
+    );
+  };
 
   const renderStepSpecificResults = (step: PipelineStep, stepResult: any) => {
     switch (step) {

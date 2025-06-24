@@ -42,7 +42,7 @@ export default defineConfig({
           })
         },
       },
-      '/hub': {
+      '/hubs': {
         target: 'http://localhost:55244',
         changeOrigin: true,
         secure: false,

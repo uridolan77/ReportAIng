@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { message } from 'antd';
+import { useAppSelector } from '@shared/hooks';
+import { selectAccessToken } from '@shared/store/auth';
 import { PipelineTestSession, PipelineStepProgress, PipelineStep } from '../types/aiPipelineTest';
 
 interface PipelineTestMonitoringState {
@@ -22,21 +24,17 @@ export const usePipelineTestMonitoring = () => {
 
   const connectionRef = useRef<HubConnection | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const getAuthToken = () => {
-    return localStorage.getItem('authToken');
-  };
+  const accessToken = useAppSelector(selectAccessToken);
 
   const createConnection = useCallback(() => {
-    const token = getAuthToken();
-    if (!token) {
+    if (!accessToken) {
       setState(prev => ({ ...prev, connectionError: 'No authentication token available' }));
       return null;
     }
 
     const connection = new HubConnectionBuilder()
-      .withUrl(`${process.env.REACT_APP_API_URL || 'https://localhost:7001'}/hubs/pipeline-test`, {
-        accessTokenFactory: () => token
+      .withUrl(`${window.location.origin}/hubs/pipeline-test`, {
+        accessTokenFactory: () => accessToken
       })
       .withAutomaticReconnect({
         nextRetryDelayInMilliseconds: retryContext => {
@@ -78,7 +76,18 @@ export const usePipelineTestMonitoring = () => {
       console.log('🧪 Test started:', data);
       setState(prev => ({
         ...prev,
-        currentSession: {
+        currentSession: prev.currentSession ? {
+          ...prev.currentSession,
+          query: data.testRequest.query,
+          steps: data.testRequest.steps,
+          status: 'running',
+          startTime: data.timestamp,
+          stepProgress: data.testRequest.steps.map((step: PipelineStep) => ({
+            step,
+            status: 'pending',
+            progress: 0
+          }))
+        } : {
           sessionId: data.testId,
           testId: data.testId,
           query: data.testRequest.query,
@@ -163,6 +172,25 @@ export const usePipelineTestMonitoring = () => {
       message.error(`Step ${data.stepName} failed: ${data.error}`);
     });
 
+    connection.on('TestSessionJoined', (data) => {
+      console.log('👥 Joined test session:', data);
+      message.success(`Joined test session: ${data.testId}`);
+
+      // Set up initial session state when joining
+      setState(prev => ({
+        ...prev,
+        currentSession: {
+          sessionId: data.testId,
+          testId: data.testId,
+          query: '', // Will be updated when test starts
+          steps: [], // Will be updated when test starts
+          status: 'waiting',
+          startTime: data.joinedAt,
+          stepProgress: []
+        }
+      }));
+    });
+
     connection.on('TestCompleted', (data) => {
       console.log('🎉 Test completed:', data);
       setState(prev => ({
@@ -190,11 +218,6 @@ export const usePipelineTestMonitoring = () => {
       message.error(`Pipeline test failed: ${data.error}`);
     });
 
-    connection.on('TestSessionJoined', (data) => {
-      console.log('👥 Joined test session:', data);
-      message.info(`Joined test session ${data.testId}`);
-    });
-
     connection.on('TestSessionLeft', (data) => {
       console.log('👋 Left test session:', data);
     });
@@ -204,7 +227,7 @@ export const usePipelineTestMonitoring = () => {
     });
 
     return connection;
-  }, []);
+  }, [accessToken]);
 
   const connect = useCallback(async () => {
     if (connectionRef.current?.state === 'Connected') {

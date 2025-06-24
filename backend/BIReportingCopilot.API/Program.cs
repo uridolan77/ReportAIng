@@ -241,6 +241,9 @@ builder.Services.AddControllers()
         // Configure JSON serialization to use camelCase to match frontend expectations
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.WriteIndented = builder.Environment.IsDevelopment();
+
+        // Configure enum serialization to use string values instead of numbers
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 
 // Add Swagger documentation

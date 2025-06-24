@@ -15,11 +15,22 @@ const baseQuery = fetchBaseQuery({
 
 const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
   let result = await baseQuery(args, api, extraOptions)
-  
+
   if (result.error && result.error.status === 401) {
+    const requestUrl = typeof args === 'string' ? args : args.url
+    console.warn(`🔒 401 Unauthorized on ${requestUrl} - attempting token refresh`)
+
+    // Don't try to refresh if this was already a refresh request
+    if (requestUrl?.includes('/auth/refresh') || requestUrl?.includes('/auth/login')) {
+      console.warn('🔒 401 on auth endpoint - logging out user')
+      api.dispatch({ type: 'auth/logout' })
+      return result
+    }
+
     // Try to get a new token
     const refreshToken = (api.getState() as RootState).auth.refreshToken
     if (refreshToken) {
+      console.log('🔄 Attempting token refresh...')
       const refreshResult = await baseQuery(
         {
           url: '/auth/refresh',
@@ -29,26 +40,29 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
         api,
         extraOptions
       )
-      
+
       if (refreshResult.data) {
+        console.log('✅ Token refresh successful - retrying original request')
         // Store the new token
         api.dispatch({
           type: 'auth/updateTokens',
           payload: refreshResult.data,
         })
-        
+
         // Retry the original query
         result = await baseQuery(args, api, extraOptions)
       } else {
+        console.warn('❌ Token refresh failed - logging out user')
         // Refresh failed, logout user
         api.dispatch({ type: 'auth/logout' })
       }
     } else {
+      console.warn('❌ No refresh token available - logging out user')
       // No refresh token, logout user
       api.dispatch({ type: 'auth/logout' })
     }
   }
-  
+
   return result
 }
 

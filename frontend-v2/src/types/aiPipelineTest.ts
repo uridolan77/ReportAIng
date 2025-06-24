@@ -8,7 +8,46 @@ export enum PipelineStep {
   AIGeneration = 'AIGeneration'
 }
 
+// Utility function to format pipeline step names for display
+export const formatPipelineStepName = (step: PipelineStep): string => {
+  return String(step).replace(/([A-Z])/g, ' $1').trim();
+};
+
+// Utility function to convert numeric enum values to string enum values
+export const normalizePipelineStep = (step: any): PipelineStep => {
+  // If it's already a string enum value, return as-is
+  if (typeof step === 'string' && Object.values(PipelineStep).includes(step as PipelineStep)) {
+    return step as PipelineStep;
+  }
+
+  // If it's a numeric value, convert to string enum
+  if (typeof step === 'number') {
+    const enumValues = Object.values(PipelineStep);
+    if (step >= 0 && step < enumValues.length) {
+      return enumValues[step];
+    }
+  }
+
+  // Fallback: try to match by index
+  const enumEntries = Object.entries(PipelineStep);
+  for (let i = 0; i < enumEntries.length; i++) {
+    if (step === i) {
+      return enumEntries[i][1];
+    }
+  }
+
+  // If all else fails, return the first enum value
+  console.warn('Unknown pipeline step value:', step, 'defaulting to BusinessContextAnalysis');
+  return PipelineStep.BusinessContextAnalysis;
+};
+
+// Utility function to normalize an array of pipeline steps
+export const normalizePipelineSteps = (steps: any[]): PipelineStep[] => {
+  return steps.map(normalizePipelineStep);
+};
+
 export interface PipelineTestRequest {
+  testId?: string; // Optional test ID for real-time monitoring
   query: string;
   steps: PipelineStep[];
   parameters: PipelineTestParameters;

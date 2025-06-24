@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { message } from 'antd'
 import { useAppSelector, useAppDispatch } from '@shared/hooks'
 import { selectAccessToken } from '@shared/store/auth'
 import { logout } from '@shared/store/auth'

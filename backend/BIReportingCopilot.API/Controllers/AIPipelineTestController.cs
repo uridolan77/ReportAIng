@@ -58,7 +58,7 @@ public class AIPipelineTestController : ControllerBase
     public async Task<IActionResult> TestPipelineStepsAsync([FromBody] PipelineTestRequest request)
     {
         var userId = GetCurrentUserId();
-        var testId = Guid.NewGuid().ToString("N")[..8];
+        var testId = !string.IsNullOrEmpty(request.TestId) ? request.TestId : Guid.NewGuid().ToString("N")[..8];
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         _logger.LogInformation("🧪 [PIPELINE-TEST] Starting pipeline test {TestId} for user {UserId}", testId, userId);
@@ -73,14 +73,32 @@ public class AIPipelineTestController : ControllerBase
         };
 
         // Send real-time notification that test has started
-        await _notificationService.SendTestStartedAsync(testId, userId, request);
+        try
+        {
+            _logger.LogInformation("🔔 [DEBUG] About to send TestStarted notification for {TestId}", testId);
+            await _notificationService.SendTestStartedAsync(testId, userId, request);
+            _logger.LogInformation("✅ [DEBUG] Successfully sent TestStarted notification for {TestId}", testId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [DEBUG] Failed to send TestStarted notification for {TestId}: {Error}", testId, ex.Message);
+        }
 
         try
         {
             // Step 1: Business Context Analysis
             if (request.Steps.Contains(PipelineStep.BusinessContextAnalysis))
             {
-                await _notificationService.SendStepStartedAsync(testId, "BusinessContextAnalysis", new { query = request.Query });
+                try
+                {
+                    _logger.LogInformation("🔔 [DEBUG] About to send StepStarted notification for BusinessContextAnalysis in {TestId}", testId);
+                    await _notificationService.SendStepStartedAsync(testId, "BusinessContextAnalysis", new { query = request.Query });
+                    _logger.LogInformation("✅ [DEBUG] Successfully sent StepStarted notification for BusinessContextAnalysis in {TestId}", testId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ [DEBUG] Failed to send StepStarted notification for BusinessContextAnalysis in {TestId}: {Error}", testId, ex.Message);
+                }
                 var contextResult = await TestBusinessContextAnalysisAsync(request.Query, userId, request.Parameters, testId);
                 result.Results[PipelineStep.BusinessContextAnalysis.ToString()] = contextResult;
                 result.BusinessProfile = contextResult.BusinessProfile;
@@ -625,6 +643,7 @@ public class AIPipelineTestController : ControllerBase
 /// </summary>
 public class PipelineTestRequest
 {
+    public string? TestId { get; set; } // Optional test ID for real-time monitoring
     public string Query { get; set; } = string.Empty;
     public List<PipelineStep> Steps { get; set; } = new();
     public PipelineTestParameters Parameters { get; set; } = new();

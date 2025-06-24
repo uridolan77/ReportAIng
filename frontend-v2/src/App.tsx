@@ -6,6 +6,7 @@ import { ErrorBoundary } from '@shared/components/ErrorBoundary'
 import { LoadingSpinner } from '@shared/components/LoadingSpinner'
 import { AuthGuard } from '@shared/components/AuthGuard'
 import { initializeApiMode } from '@shared/components/core/ApiModeToggle'
+import { useTokenMonitor } from '@shared/hooks/useTokenMonitor'
 
 // Lazy load applications
 const ChatApp = React.lazy(() => import('@chat/ChatApp'))
@@ -14,6 +15,9 @@ const LoginPage = React.lazy(() => import('@shared/pages/LoginPage'))
 
 function App() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated)
+
+  // Initialize token monitoring for automatic logout on expiration
+  useTokenMonitor()
 
   // Initialize API mode on app start
   useEffect(() => {

@@ -37,7 +37,8 @@ import {
   PipelineTestConfiguration,
   PipelineStep,
   PipelineTestParameters,
-  ParameterValidationResult
+  ParameterValidationResult,
+  formatPipelineStepName
 } from '../types/aiPipelineTest';
 
 const { Option } = Select;
@@ -273,7 +274,7 @@ const PipelineTestConfigurationManager: React.FC<PipelineTestConfigurationManage
         render: (steps: PipelineStep[]) => (
           <div className="space-x-1">
             {steps.slice(0, 3).map(step => (
-              <Tag key={step} size="small">{step.replace(/([A-Z])/g, ' $1').trim()}</Tag>
+              <Tag key={step} size="small">{formatPipelineStepName(step)}</Tag>
             ))}
             {steps.length > 3 && <Tag size="small">+{steps.length - 3} more</Tag>}
           </div>

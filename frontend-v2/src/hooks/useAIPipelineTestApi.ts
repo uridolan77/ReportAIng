@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
+import { useAppSelector } from '@shared/hooks';
+import { selectAccessToken } from '@shared/store/auth';
 import {
   PipelineTestRequest,
   PipelineTestResult,
@@ -12,20 +14,21 @@ import {
   ParameterValidationRequest,
   ParameterValidationResult,
   PipelineStep,
-  PipelineTestParameters
+  PipelineTestParameters,
+  normalizePipelineSteps
 } from '../types/aiPipelineTest';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:7001';
+const API_BASE_URL = '/api'; // Use Vite proxy instead of direct backend URL
 
 export const useAIPipelineTestApi = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const accessToken = useAppSelector(selectAccessToken);
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('authToken');
     return {
       'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
+      'Authorization': accessToken ? `Bearer ${accessToken}` : '',
     };
   };
 
@@ -63,30 +66,43 @@ export const useAIPipelineTestApi = () => {
 
   // Get available pipeline steps and their configurations
   const getAvailableSteps = useCallback(async (): Promise<PipelineStepInfo[]> => {
-    return handleApiCall(
-      () => fetch(`${API_BASE_URL}/api/aipipelinetest/steps`, {
+    const result = await handleApiCall<PipelineStepInfo[]>(
+      () => fetch(`${API_BASE_URL}/aipipelinetest/steps`, {
         method: 'GET',
         headers: getAuthHeaders(),
       })
     );
+
+    // Normalize enum values in case backend returns numeric values
+    return result.map(stepInfo => ({
+      ...stepInfo,
+      step: normalizePipelineSteps([stepInfo.step as any])[0]
+    }));
   }, []);
 
   // Test pipeline steps
   const testPipelineSteps = useCallback(async (request: PipelineTestRequest): Promise<PipelineTestResult> => {
-    return handleApiCall(
-      () => fetch(`${API_BASE_URL}/api/aipipelinetest/test-steps`, {
+    const result = await handleApiCall<PipelineTestResult>(
+      () => fetch(`${API_BASE_URL}/aipipelinetest/test-steps`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(request),
       }),
       'Pipeline test completed successfully'
     );
+
+    // Normalize enum values in case backend returns numeric values
+    if (result.requestedSteps) {
+      result.requestedSteps = normalizePipelineSteps(result.requestedSteps as any[]);
+    }
+
+    return result;
   }, []);
 
   // Get test session details
   const getTestSession = useCallback(async (sessionId: string): Promise<PipelineTestSession> => {
     return handleApiCall(
-      () => fetch(`${API_BASE_URL}/api/aipipelinetest/sessions/${sessionId}`, {
+      () => fetch(`${API_BASE_URL}/aipipelinetest/sessions/${sessionId}`, {
         method: 'GET',
         headers: getAuthHeaders(),
       })
@@ -103,7 +119,7 @@ export const useAIPipelineTestApi = () => {
     if (endDate) params.append('endDate', endDate);
 
     return handleApiCall(
-      () => fetch(`${API_BASE_URL}/api/aipipelinetest/analytics?${params}`, {
+      () => fetch(`${API_BASE_URL}/aipipelinetest/analytics?${params}`, {
         method: 'GET',
         headers: getAuthHeaders(),
       })
@@ -113,7 +129,7 @@ export const useAIPipelineTestApi = () => {
   // Save test configuration
   const saveTestConfiguration = useCallback(async (config: SaveConfigurationRequest): Promise<PipelineTestConfiguration> => {
     return handleApiCall(
-      () => fetch(`${API_BASE_URL}/api/aipipelinetest/configurations`, {
+      () => fetch(`${API_BASE_URL}/aipipelinetest/configurations`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(config),
@@ -125,7 +141,7 @@ export const useAIPipelineTestApi = () => {
   // Get saved test configurations
   const getTestConfigurations = useCallback(async (): Promise<PipelineTestConfiguration[]> => {
     return handleApiCall(
-      () => fetch(`${API_BASE_URL}/api/aipipelinetest/configurations`, {
+      () => fetch(`${API_BASE_URL}/aipipelinetest/configurations`, {
         method: 'GET',
         headers: getAuthHeaders(),
       })
@@ -135,7 +151,7 @@ export const useAIPipelineTestApi = () => {
   // Delete test configuration
   const deleteTestConfiguration = useCallback(async (configId: string): Promise<void> => {
     return handleApiCall(
-      () => fetch(`${API_BASE_URL}/api/aipipelinetest/configurations/${configId}`, {
+      () => fetch(`${API_BASE_URL}/aipipelinetest/configurations/${configId}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       }),
@@ -146,7 +162,7 @@ export const useAIPipelineTestApi = () => {
   // Get test templates
   const getTestTemplates = useCallback(async (): Promise<PipelineTestTemplate[]> => {
     return handleApiCall(
-      () => fetch(`${API_BASE_URL}/api/aipipelinetest/templates`, {
+      () => fetch(`${API_BASE_URL}/aipipelinetest/templates`, {
         method: 'GET',
         headers: getAuthHeaders(),
       })
@@ -160,7 +176,7 @@ export const useAIPipelineTestApi = () => {
     parameterOverrides?: Record<string, any>
   ): Promise<PipelineTestRequest> => {
     return handleApiCall(
-      () => fetch(`${API_BASE_URL}/api/aipipelinetest/templates/${templateId}/create-test`, {
+      () => fetch(`${API_BASE_URL}/aipipelinetest/templates/${templateId}/create-test`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ query, parameterOverrides }),
@@ -175,7 +191,7 @@ export const useAIPipelineTestApi = () => {
     parameters: Record<string, any>
   ): Promise<PipelineTestResult[]> => {
     return handleApiCall(
-      () => fetch(`${API_BASE_URL}/api/aipipelinetest/batch-test`, {
+      () => fetch(`${API_BASE_URL}/aipipelinetest/batch-test`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ queries, steps, parameters }),
@@ -189,7 +205,7 @@ export const useAIPipelineTestApi = () => {
     testIds: string[],
     format: 'json' | 'csv' | 'excel' = 'json'
   ): Promise<Blob> => {
-    const response = await fetch(`${API_BASE_URL}/api/aipipelinetest/export`, {
+    const response = await fetch(`${API_BASE_URL}/aipipelinetest/export`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ testIds, format }),
@@ -208,9 +224,8 @@ export const useAIPipelineTestApi = () => {
     onUpdate: (session: PipelineTestSession) => void,
     onError?: (error: string) => void
   ) => {
-    const token = localStorage.getItem('authToken');
-    const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/ws/pipeline-test/${sessionId}?token=${token}`;
-    
+    const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/ws/pipeline-test/${sessionId}?token=${accessToken}`;
+
     const ws = new WebSocket(wsUrl);
     
     ws.onmessage = (event) => {
@@ -238,7 +253,7 @@ export const useAIPipelineTestApi = () => {
     return () => {
       ws.close();
     };
-  }, []);
+  }, [accessToken]);
 
   // Validate test configuration
   const validateTestConfiguration = useCallback(async (
@@ -246,7 +261,7 @@ export const useAIPipelineTestApi = () => {
     parameters: PipelineTestParameters
   ): Promise<ParameterValidationResult> => {
     return handleApiCall(
-      () => fetch(`${API_BASE_URL}/api/aipipelinetest/validate`, {
+      () => fetch(`${API_BASE_URL}/aipipelinetest/validate`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ steps, parameters }),

@@ -27,7 +27,7 @@ import {
   HeartOutlined
 } from '@ant-design/icons';
 import { usePipelineTestMonitoring } from '../hooks/usePipelineTestMonitoring';
-import { PipelineStep } from '../types/aiPipelineTest';
+import { PipelineStep, formatPipelineStepName } from '../types/aiPipelineTest';
 
 const { Title, Text } = Typography;
 
@@ -231,7 +231,7 @@ const PipelineTestMonitoringDashboard: React.FC<PipelineTestMonitoringDashboardP
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-lg">{getStepIcon(step)}</span>
-                <Text strong>{step.replace(/([A-Z])/g, ' $1').trim()}</Text>
+                <Text strong>{formatPipelineStepName(step)}</Text>
                 <Tag color={getStepStatusColor(progress.status)}>
                   {progress.status}
                 </Tag>

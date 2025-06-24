@@ -18,7 +18,8 @@ import {
   Statistic,
   Switch,
   InputNumber,
-  Tooltip
+  Tooltip,
+  message
 } from 'antd';
 import {
   PlayCircleOutlined,
@@ -31,8 +32,10 @@ import {
   ThunderboltOutlined
 } from '@ant-design/icons';
 import { useAIPipelineTestApi } from '../hooks/useAIPipelineTestApi';
-import { PipelineStep, PipelineTestRequest, PipelineTestResult, PipelineStepInfo, PipelineTestConfiguration } from '../types/aiPipelineTest';
+import { usePipelineTestMonitoring } from '../hooks/usePipelineTestMonitoring';
+import { PipelineStep, PipelineTestRequest, PipelineTestResult, PipelineStepInfo, PipelineTestConfiguration, formatPipelineStepName } from '../types/aiPipelineTest';
 import AIPipelineTestResults from '../components/AIPipelineTestResults';
+import '../utils/testEnumNormalization'; // Import to run tests
 import PipelineTestMonitoringDashboard from '../components/PipelineTestMonitoringDashboard';
 import EnhancedMonitoringDashboard from '../components/EnhancedMonitoringDashboard';
 import PipelineTestConfigurationManager from '../components/PipelineTestConfigurationManager';
@@ -44,7 +47,7 @@ const { Panel } = Collapse;
 const AIPipelineTestPage: React.FC = () => {
   const [form] = Form.useForm();
   const [selectedSteps, setSelectedSteps] = useState<PipelineStep[]>([]);
-  const [testQuery, setTestQuery] = useState('Show me total sales by region for last quarter');
+  const [testQuery, setTestQuery] = useState('Top 10 depositors yesterday from UK');
   const [isRunning, setIsRunning] = useState(false);
   const [testResult, setTestResult] = useState<PipelineTestResult | null>(null);
   const [availableSteps, setAvailableSteps] = useState<PipelineStepInfo[]>([]);
@@ -54,10 +57,52 @@ const AIPipelineTestPage: React.FC = () => {
   const [useEnhancedMonitoring, setUseEnhancedMonitoring] = useState(true);
 
   const { testPipelineSteps, getAvailableSteps } = useAIPipelineTestApi();
+  const {
+    isConnected,
+    currentSession,
+    stepProgress,
+    connectionError,
+    connect,
+    disconnect,
+    joinTestSession,
+    leaveTestSession
+  } = usePipelineTestMonitoring();
 
   useEffect(() => {
     loadAvailableSteps();
   }, []);
+
+  // Connect to monitoring when component mounts
+  useEffect(() => {
+    if (showMonitoring && !isConnected) {
+      connect();
+    }
+    return () => {
+      if (isConnected) {
+        disconnect();
+      }
+    };
+  }, [showMonitoring, isConnected, connect, disconnect]);
+
+  // Join test session when test starts
+  useEffect(() => {
+    if (currentTestId && isConnected && showMonitoring) {
+      joinTestSession(currentTestId);
+    }
+  }, [currentTestId, isConnected, showMonitoring, joinTestSession]);
+
+  // Listen for test completion
+  useEffect(() => {
+    if (currentSession?.status === 'completed' && currentSession.testId === currentTestId) {
+      // Test completed, refresh the result
+      console.log('🎉 Test completed via SignalR, refreshing result...');
+      // The monitoring dashboard should handle this, but we could also fetch the final result here
+    }
+  }, [currentSession, currentTestId]);
+
+  useEffect(() => {
+    console.log('🔍 testResult state changed:', testResult);
+  }, [testResult]);
 
   const loadAvailableSteps = async () => {
     try {
@@ -107,28 +152,98 @@ const AIPipelineTestPage: React.FC = () => {
 
   const runTest = async () => {
     if (selectedSteps.length === 0) {
+      message.warning('Please select at least one step to test');
+      return;
+    }
+
+    // Generate test ID immediately and join session for real-time monitoring
+    const testId = `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    setIsRunning(true);
+    setTestResult(null);
+    setCurrentTestId(testId); // Set test ID immediately
+    setShowMonitoring(true);
+
+    // Join test session immediately for real-time updates
+    if (isConnected) {
+      await joinTestSession(testId);
+      console.log(`🔗 Joined test session: ${testId}`);
+    }
+
+    try {
+      const request: PipelineTestRequest = {
+        testId, // Pass the test ID to backend
+        query: testQuery,
+        steps: selectedSteps,
+        parameters
+      };
+
+      console.log('🚀 Sending test request:', request);
+      message.info('Starting pipeline test...');
+
+      const result = await testPipelineSteps(request);
+      console.log('✅ Received test result:', result);
+      console.log('🔍 Setting testResult state...');
+
+      setTestResult(result);
+
+      console.log('✅ State updated, testResult should now be:', result);
+
+      if (result.success) {
+        message.success('Pipeline test completed successfully!');
+      } else {
+        message.error(`Pipeline test failed: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('❌ Test failed:', error);
+      message.error('Failed to execute pipeline test');
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const runMockTest = async () => {
+    if (selectedSteps.length === 0) {
+      message.warning('Please select at least one step to test');
       return;
     }
 
     setIsRunning(true);
     setTestResult(null);
     setShowMonitoring(true);
+    message.info('Starting mock pipeline test...');
 
-    try {
-      const request: PipelineTestRequest = {
-        query: testQuery,
-        steps: selectedSteps,
-        parameters
-      };
+    // Simulate test execution
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-      const result = await testPipelineSteps(request);
-      setTestResult(result);
-      setCurrentTestId(result.testId);
-    } catch (error) {
-      console.error('Test failed:', error);
-    } finally {
-      setIsRunning(false);
-    }
+    // Create mock result
+    const mockResult: PipelineTestResult = {
+      testId: 'mock-test-' + Date.now(),
+      query: testQuery,
+      requestedSteps: selectedSteps,
+      startTime: new Date().toISOString(),
+      endTime: new Date().toISOString(),
+      totalDurationMs: 3000,
+      success: true,
+      error: null,
+      results: {
+        [selectedSteps[0]]: {
+          success: true,
+          durationMs: 1500,
+          error: null
+        }
+      },
+      businessProfile: null,
+      tokenBudget: null,
+      schemaMetadata: null,
+      generatedPrompt: null,
+      generatedSQL: null
+    };
+
+    setTestResult(mockResult);
+    setCurrentTestId(mockResult.testId);
+    setIsRunning(false);
+    message.success('Mock pipeline test completed successfully!');
   };
 
   const handleLoadConfiguration = (config: PipelineTestConfiguration) => {
@@ -263,16 +378,29 @@ const AIPipelineTestPage: React.FC = () => {
             </Button>
           </div>
 
-          <Button
-            type="primary"
-            icon={<PlayCircleOutlined />}
-            onClick={runTest}
-            loading={isRunning}
-            disabled={selectedSteps.length === 0}
-            size="large"
-          >
-            {isRunning ? 'Running Test...' : 'Run Pipeline Test'}
-          </Button>
+          <Space>
+            <Button
+              type="primary"
+              icon={<PlayCircleOutlined />}
+              onClick={runTest}
+              loading={isRunning}
+              disabled={selectedSteps.length === 0}
+              size="large"
+            >
+              {isRunning ? 'Running Test...' : 'Run Pipeline Test'}
+            </Button>
+
+            <Button
+              type="default"
+              icon={<PlayCircleOutlined />}
+              onClick={runMockTest}
+              loading={isRunning}
+              disabled={selectedSteps.length === 0}
+              size="large"
+            >
+              {isRunning ? 'Running Mock Test...' : 'Run Mock Test'}
+            </Button>
+          </Space>
         </div>
 
         {parameters.enableAIGeneration && (
@@ -282,6 +410,16 @@ const AIPipelineTestPage: React.FC = () => {
             type="warning"
             showIcon
             icon={<ExclamationCircleOutlined />}
+          />
+        )}
+
+        {isRunning && (
+          <Alert
+            message="Pipeline Test Running"
+            description={`Testing ${selectedSteps.length} step(s): ${selectedSteps.map(step => formatPipelineStepName(step)).join(', ')}`}
+            type="info"
+            showIcon
+            icon={<Spin size="small" />}
           />
         )}
       </Space>
@@ -306,6 +444,9 @@ const AIPipelineTestPage: React.FC = () => {
           <div>
             {renderTestControls()}
 
+            {/* Step Selection - Moved above configuration */}
+            {renderStepConfiguration()}
+
             {/* Configuration Manager */}
             <PipelineTestConfigurationManager
               currentSteps={selectedSteps}
@@ -313,26 +454,46 @@ const AIPipelineTestPage: React.FC = () => {
               onLoadConfiguration={handleLoadConfiguration}
               onParametersChange={setParameters}
             />
-
-            {renderStepConfiguration()}
           </div>
         </Col>
 
         {showMonitoring && (
           <Col span={12}>
-            {useEnhancedMonitoring ? (
-              <EnhancedMonitoringDashboard
-                testId={currentTestId || undefined}
-                autoJoinSession={true}
-                showAnalytics={true}
-                showLogs={true}
-              />
-            ) : (
-              <PipelineTestMonitoringDashboard
-                testId={currentTestId || undefined}
-                autoJoinSession={true}
-              />
-            )}
+            <div className="space-y-4">
+              {/* Debug Panel */}
+              <Card title="Test Results Debug" size="small">
+                <div style={{ padding: 8, background: testResult ? '#f6ffed' : '#fff2e8', borderRadius: 4 }}>
+                  <Text strong>Status: {testResult ? 'Test Result Available' : 'No Test Result'}</Text>
+                  {testResult && (
+                    <>
+                      <br />
+                      <Text>Test ID: {testResult.testId}</Text>
+                      <br />
+                      <Text>Success: {testResult.success ? 'Yes' : 'No'}</Text>
+                      <br />
+                      <Text>Steps: {JSON.stringify(testResult.requestedSteps)}</Text>
+                      <br />
+                      <Text>Results: {JSON.stringify(Object.keys(testResult.results || {}))}</Text>
+                    </>
+                  )}
+                </div>
+              </Card>
+
+              {/* Monitoring Dashboard */}
+              {useEnhancedMonitoring ? (
+                <EnhancedMonitoringDashboard
+                  testId={currentTestId || undefined}
+                  autoJoinSession={true}
+                  showAnalytics={true}
+                  showLogs={true}
+                />
+              ) : (
+                <PipelineTestMonitoringDashboard
+                  testId={currentTestId || undefined}
+                  autoJoinSession={true}
+                />
+              )}
+            </div>
           </Col>
         )}
       </Row>
@@ -342,11 +503,9 @@ const AIPipelineTestPage: React.FC = () => {
         <AIPipelineTestResults
           result={testResult}
           onExport={() => {
-            // TODO: Implement export functionality
             console.log('Export results:', testResult);
           }}
           onViewDetails={(step) => {
-            // TODO: Implement detailed view
             console.log('View details for step:', step);
           }}
         />
