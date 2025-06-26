@@ -29,7 +29,7 @@ import dayjs from 'dayjs'
 const { Search } = Input
 const { RangePicker } = DatePicker
 const { Text } = Typography
-const { Panel } = Collapse
+
 
 interface SearchCriteria {
   query: string
@@ -198,9 +198,11 @@ export const TemplateSearchFilters: React.FC<TemplateSearchFiltersProps> = ({
   )
 
   const advancedFilters = (
-    <Collapse activeKey={isAdvancedMode ? ['filters'] : []}>
-      <Panel 
-        header={
+    <Collapse
+      activeKey={isAdvancedMode ? ['filters'] : []}
+      items={[{
+        key: 'filters',
+        label: (
           <Space>
             <FilterOutlined />
             Advanced Filters
@@ -208,9 +210,8 @@ export const TemplateSearchFilters: React.FC<TemplateSearchFiltersProps> = ({
               <Badge count={getActiveFiltersCount()} size="small" />
             )}
           </Space>
-        } 
-        key="filters"
-      >
+        ),
+        children: (
         <Row gutter={16} style={{ marginBottom: '16px' }}>
           <Col span={6}>
             <Text strong>Business Owner:</Text>
@@ -319,8 +320,9 @@ export const TemplateSearchFilters: React.FC<TemplateSearchFiltersProps> = ({
             />
           </Col>
         </Row>
-      </Panel>
-    </Collapse>
+        )
+      }]}
+    />
   )
 
   const savedSearchesPanel = savedSearches.length > 0 && (

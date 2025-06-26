@@ -367,6 +367,14 @@ public class GlossaryManagementService : IGlossaryManagementService
     }
 
     /// <summary>
+    /// Get glossary terms by category async (IGlossaryManagementService interface)
+    /// </summary>
+    public async Task<List<BusinessGlossaryDto>> GetGlossaryTermsByCategoryAsync(string category, CancellationToken cancellationToken = default)
+    {
+        return await GetGlossaryTermsByCategoryAsync(category);
+    }
+
+    /// <summary>
     /// Get glossary term async (IGlossaryManagementService interface)
     /// </summary>
     public async Task<BusinessGlossaryDto?> GetGlossaryTermAsync(string termId, CancellationToken cancellationToken = default)

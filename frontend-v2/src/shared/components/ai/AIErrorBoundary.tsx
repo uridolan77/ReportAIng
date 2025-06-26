@@ -9,7 +9,6 @@ import {
 } from '@ant-design/icons'
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
 
 // ============================================================================
 // ERROR BOUNDARY STATE AND PROPS
@@ -200,9 +199,11 @@ export class AIErrorBoundary extends Component<AIErrorBoundaryProps, AIErrorBoun
     
     return (
       <Card size="small" style={{ marginTop: 16 }}>
-        <Collapse size="small">
-          <Panel 
-            header={
+        <Collapse
+          size="small"
+          items={[{
+            key: 'error-details',
+            label: (
               <Space>
                 <BugOutlined />
                 <span>Error Details</span>
@@ -210,64 +211,64 @@ export class AIErrorBoundary extends Component<AIErrorBoundaryProps, AIErrorBoun
                   {severity.toUpperCase()}
                 </Tag>
               </Space>
-            } 
-            key="error-details"
-          >
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <div>
-                <Text strong>Error ID: </Text>
-                <Text code>{errorId}</Text>
-              </div>
-              
-              <div>
-                <Text strong>Message: </Text>
-                <Text>{error.message}</Text>
-              </div>
-              
-              <div>
-                <Text strong>Component: </Text>
-                <Text>{this.props.componentName || 'Unknown'}</Text>
-              </div>
-              
-              <div>
-                <Text strong>Timestamp: </Text>
-                <Text>{new Date(this.state.lastErrorTime).toLocaleString()}</Text>
-              </div>
-              
-              {error.stack && (
+            ),
+            children: (
+              <Space direction="vertical" style={{ width: '100%' }}>
                 <div>
-                  <Text strong>Stack Trace: </Text>
-                  <pre style={{ 
-                    fontSize: '11px', 
-                    background: '#f5f5f5', 
-                    padding: '8px', 
-                    borderRadius: '4px',
-                    overflow: 'auto',
-                    maxHeight: '200px'
-                  }}>
-                    {error.stack}
-                  </pre>
+                  <Text strong>Error ID: </Text>
+                  <Text code>{errorId}</Text>
                 </div>
-              )}
-              
-              {errorInfo?.componentStack && (
+
                 <div>
-                  <Text strong>Component Stack: </Text>
-                  <pre style={{ 
-                    fontSize: '11px', 
-                    background: '#f5f5f5', 
-                    padding: '8px', 
-                    borderRadius: '4px',
-                    overflow: 'auto',
-                    maxHeight: '200px'
-                  }}>
-                    {errorInfo.componentStack}
-                  </pre>
+                  <Text strong>Message: </Text>
+                  <Text>{error.message}</Text>
                 </div>
-              )}
-            </Space>
-          </Panel>
-        </Collapse>
+
+                <div>
+                  <Text strong>Component: </Text>
+                  <Text>{this.props.componentName || 'Unknown'}</Text>
+                </div>
+
+                <div>
+                  <Text strong>Timestamp: </Text>
+                  <Text>{new Date(this.state.lastErrorTime).toLocaleString()}</Text>
+                </div>
+
+                {error.stack && (
+                  <div>
+                    <Text strong>Stack Trace: </Text>
+                    <pre style={{
+                      fontSize: '11px',
+                      background: '#f5f5f5',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      overflow: 'auto',
+                      maxHeight: '200px'
+                    }}>
+                      {error.stack}
+                    </pre>
+                  </div>
+                )}
+
+                {errorInfo?.componentStack && (
+                  <div>
+                    <Text strong>Component Stack: </Text>
+                    <pre style={{
+                      fontSize: '11px',
+                      background: '#f5f5f5',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      overflow: 'auto',
+                      maxHeight: '200px'
+                    }}>
+                      {errorInfo.componentStack}
+                    </pre>
+                  </div>
+                )}
+              </Space>
+            )
+          }]}
+        />
       </Card>
     )
   }

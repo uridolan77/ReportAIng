@@ -32,7 +32,7 @@ import { ConfidenceIndicator } from '../common/ConfidenceIndicator'
 import type { SchemaContext, BusinessTerm, TableMetadata, ColumnMetadata } from '@shared/types/ai'
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
+
 const { Search } = Input
 const { TreeNode } = Tree
 

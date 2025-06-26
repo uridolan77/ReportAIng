@@ -1,6 +1,0 @@
-{
-  "query": "Show me sales data for Q3",
-  "executeQuery": false,
-  "includeAlternatives": true,
-  "includeSemanticAnalysis": true
-}

@@ -9,6 +9,7 @@ using BIReportingCopilot.Core.Interfaces.Security;
 using BIReportingCopilot.Core.Interfaces.Analytics;
 using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Commands;
+
 using BIReportingCopilot.API.Hubs;
 using System.Security.Claims;
 using System.Runtime.CompilerServices;
@@ -1435,31 +1436,124 @@ public class QueryController : ControllerBase
                 conversationId: null,
                 messageId: traceId);
 
-            // Track business context analysis step
+            // Track business context analysis step with full details
             await _processFlowTracker.TrackStepAsync(ProcessFlowSteps.SemanticAnalysis, async () => {
                 await _processFlowTracker.SetStepInputAsync(ProcessFlowSteps.SemanticAnalysis, new {
                     Query = userQuestion,
-                    Intent = businessProfile.Intent.Type.ToString(),
-                    Domain = businessProfile.Domain.Name
+                    QueryLength = userQuestion.Length,
+                    UserId = userId,
+                    Timestamp = DateTime.UtcNow
                 });
 
                 await _processFlowTracker.SetStepOutputAsync(ProcessFlowSteps.SemanticAnalysis, new {
+                    // Intent Analysis
                     Intent = businessProfile.Intent.Type.ToString(),
+                    IntentConfidence = businessProfile.Intent.ConfidenceScore,
+                    IntentDescription = businessProfile.Intent.Description,
+
+                    // Domain Analysis
                     Domain = businessProfile.Domain.Name,
-                    Confidence = businessProfile.ConfidenceScore,
-                    Entities = businessProfile.Entities.Select(e => e.Name).ToList()
+                    DomainConfidence = businessProfile.Domain.RelevanceScore,
+                    DomainDescription = businessProfile.Domain.Description,
+
+                    // Overall Analysis
+                    OverallConfidence = businessProfile.ConfidenceScore,
+
+                    // Extracted Entities
+                    EntitiesCount = businessProfile.Entities.Count,
+                    Entities = businessProfile.Entities.Select(e => new {
+                        Name = e.Name,
+                        Type = e.Type.ToString(),
+                        Confidence = e.ConfidenceScore,
+                        Value = e.OriginalText,
+                        MappedTable = e.MappedTableName,
+                        MappedColumn = e.MappedColumnName
+                    }).ToList(),
+
+                    // Business Terms
+                    BusinessTermsCount = businessProfile.BusinessTerms.Count,
+                    BusinessTerms = businessProfile.BusinessTerms,
+                    RelevanceScores = businessProfile.TermRelevanceScores,
+
+                    // Context Information
+                    TimeContext = businessProfile.TimeContext != null ? new {
+                        StartDate = businessProfile.TimeContext.StartDate,
+                        EndDate = businessProfile.TimeContext.EndDate,
+                        RelativeExpression = businessProfile.TimeContext.RelativeExpression,
+                        Granularity = businessProfile.TimeContext.Granularity.ToString()
+                    } : null
                 });
             });
 
-            // Track schema retrieval step
+            // Track schema retrieval step with comprehensive details
             await _processFlowTracker.TrackStepAsync(ProcessFlowSteps.SchemaRetrieval, async () => {
-                var schema = await _metadataService.GetRelevantBusinessMetadataAsync(businessProfile, 10);
+                try
+                {
+                    _logger.LogInformation("🔍 Starting schema retrieval for business profile: Intent={Intent}, Domain={Domain}",
+                        businessProfile.Intent.Type, businessProfile.Domain.Name);
 
-                await _processFlowTracker.SetStepOutputAsync(ProcessFlowSteps.SchemaRetrieval, new {
-                    TablesRetrieved = schema.RelevantTables.Count,
-                    RelevanceScore = schema.RelevanceScore,
-                    Tables = schema.RelevantTables.Select(t => t.TableName).ToList()
-                });
+                    var schema = await _metadataService.GetRelevantBusinessMetadataAsync(businessProfile, 10);
+
+                    _logger.LogInformation("✅ Schema retrieval successful: {TableCount} tables, {GlossaryCount} glossary terms",
+                        schema.RelevantTables.Count, schema.RelevantGlossaryTerms.Count);
+
+                    await _processFlowTracker.SetStepOutputAsync(ProcessFlowSteps.SchemaRetrieval, new {
+                        // Table Information
+                        TablesRetrieved = schema.RelevantTables.Count,
+                        TableNames = schema.RelevantTables.Select(t => t.TableName).ToArray(),
+                        Tables = schema.RelevantTables.Select(t => new {
+                            SchemaName = t.SchemaName,
+                            TableName = t.TableName,
+                            BusinessPurpose = t.BusinessPurpose,
+                            DomainClassification = t.DomainClassification,
+                            ColumnsCount = schema.TableColumns.ContainsKey(t.Id) ? schema.TableColumns[t.Id].Count : 0
+                        }).ToArray(),
+
+                        // Column Information
+                        TotalColumns = schema.TableColumns.Values.SelectMany(cols => cols).Count(),
+                        ColumnDetails = schema.TableColumns.SelectMany(kvp => kvp.Value.Select(col => new {
+                            TableId = kvp.Key,
+                            ColumnName = col.ColumnName,
+                            DataType = col.DataType,
+                            BusinessMeaning = col.BusinessMeaning,
+                            IsKey = col.IsKey
+                        })).ToArray(),
+
+                        // Business Glossary
+                        GlossaryTermsCount = schema.RelevantGlossaryTerms.Count,
+                        GlossaryTerms = schema.RelevantGlossaryTerms.Select(g => new {
+                            Term = g.Term,
+                            Definition = g.Definition,
+                            Category = g.Category,
+                            BusinessContext = g.BusinessContext
+                        }).ToArray(),
+
+                        // Relationships and Rules
+                        RelationshipsCount = schema.TableRelationships.Count,
+                        BusinessRulesCount = schema.BusinessRules.Count,
+
+                        // Quality Metrics
+                        RelevanceScore = schema.RelevanceScore,
+                        Complexity = schema.Complexity,
+
+                        // Performance Hints
+                        SuggestedIndexes = schema.SuggestedIndexes,
+                        PartitioningHints = schema.PartitioningHints
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ Schema retrieval failed: {ErrorMessage}", ex.Message);
+                    await _processFlowTracker.SetStepOutputAsync(ProcessFlowSteps.SchemaRetrieval, new {
+                        Error = ex.Message,
+                        ErrorType = ex.GetType().Name,
+                        TablesRetrieved = 0,
+                        TableNames = new string[0],
+                        GlossaryTermsCount = 0,
+                        RelevanceScore = 0.0
+                    });
+                    throw; // Re-throw to let the step fail properly
+                }
             });
 
             // Track prompt building step

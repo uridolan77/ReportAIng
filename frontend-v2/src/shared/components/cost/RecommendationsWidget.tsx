@@ -20,7 +20,6 @@ import {
 import type { CostRecommendation } from '../../types/cost'
 
 const { Text, Paragraph } = Typography
-const { Panel } = Collapse
 
 interface RecommendationsWidgetProps {
   recommendations?: CostRecommendation[]
@@ -171,28 +170,31 @@ export const RecommendationsWidget: React.FC<RecommendationsWidgetProps> = ({
 
                 {/* Action Items */}
                 {recommendation.actionItems && recommendation.actionItems.length > 0 && (
-                  <Collapse ghost size="small">
-                    <Panel 
-                      header={
+                  <Collapse
+                    ghost
+                    size="small"
+                    items={[{
+                      key: '1',
+                      label: (
                         <Text style={{ fontSize: '12px' }}>
                           <InfoCircleOutlined /> View Action Items ({recommendation.actionItems.length})
                         </Text>
-                      } 
-                      key="1"
-                    >
-                      <List
-                        size="small"
-                        dataSource={recommendation.actionItems}
-                        renderItem={(item, index) => (
-                          <List.Item style={{ padding: '4px 0', fontSize: '11px' }}>
-                            <Text type="secondary">
-                              {index + 1}. {item}
-                            </Text>
-                          </List.Item>
-                        )}
-                      />
-                    </Panel>
-                  </Collapse>
+                      ),
+                      children: (
+                        <List
+                          size="small"
+                          dataSource={recommendation.actionItems}
+                          renderItem={(item, index) => (
+                            <List.Item style={{ padding: '4px 0', fontSize: '11px' }}>
+                              <Text type="secondary">
+                                {index + 1}. {item}
+                              </Text>
+                            </List.Item>
+                          )}
+                        />
+                      )
+                    }]}
+                  />
                 )}
 
                 {/* Implement Button */}

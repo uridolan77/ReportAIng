@@ -5,7 +5,10 @@ export enum PipelineStep {
   TokenBudgetManagement = 'TokenBudgetManagement',
   SchemaRetrieval = 'SchemaRetrieval',
   PromptBuilding = 'PromptBuilding',
-  AIGeneration = 'AIGeneration'
+  AIGeneration = 'AIGeneration',
+  SQLValidation = 'SQLValidation',
+  SQLExecution = 'SQLExecution',
+  ResultsProcessing = 'ResultsProcessing'
 }
 
 // Utility function to format pipeline step names for display
@@ -73,6 +76,21 @@ export interface PipelineTestParameters {
   // AI Generation
   enableAIGeneration?: boolean;
   temperature?: number;
+
+  // SQL Validation
+  enableSemanticValidation?: boolean;
+  enableSecurityValidation?: boolean;
+  validationTimeout?: number;
+
+  // SQL Execution
+  enableExecution?: boolean;
+  maxRows?: number;
+  executionTimeout?: number;
+
+  // Results Processing
+  formatResults?: boolean;
+  includeMetadata?: boolean;
+  exportFormat?: string;
 
   // Additional parameters
   [key: string]: any;

@@ -564,15 +564,181 @@ BUSINESS_CONTEXT: [detailed context]
 
     private async Task UpdateColumnMetadataAsync(BusinessTableInfoEntity table, TableDetails details, BusinessTableMetadata metadata, bool useAI)
     {
-        // This would update column metadata - simplified for now
-        await Task.CompletedTask;
+        try
+        {
+            _logger.LogInformation("🔧 Updating column metadata for {Schema}.{Table} with {ColumnCount} columns",
+                table.SchemaName, table.TableName, details.Columns.Count);
+
+            // Remove existing columns if overwriting
+            var existingColumns = await _context.BusinessColumnInfo
+                .Where(c => c.TableInfoId == table.Id)
+                .ToListAsync();
+
+            if (existingColumns.Any())
+            {
+                _context.BusinessColumnInfo.RemoveRange(existingColumns);
+                _logger.LogInformation("🗑️ Removed {Count} existing columns for {Schema}.{Table}",
+                    existingColumns.Count, table.SchemaName, table.TableName);
+            }
+
+            // Add new column metadata
+            foreach (var column in details.Columns)
+            {
+                var businessMeaning = InferColumnBusinessMeaning(column);
+                var businessDataType = InferBusinessDataType(column);
+                var semanticTags = InferSemanticTags(column);
+                var sampleValues = await GetSampleValuesAsync(table.SchemaName, table.TableName, column.ColumnName);
+
+                var columnEntity = new BusinessColumnInfoEntity
+                {
+                    TableInfoId = table.Id,
+                    ColumnName = column.ColumnName,
+                    BusinessMeaning = businessMeaning,
+                    BusinessContext = $"Column from {table.SchemaName}.{table.TableName}",
+                    BusinessDataType = businessDataType,
+                    DataExamples = JsonSerializer.Serialize(sampleValues),
+                    ValueExamples = JsonSerializer.Serialize(sampleValues),
+                    SemanticTags = JsonSerializer.Serialize(semanticTags),
+                    NaturalLanguageAliases = JsonSerializer.Serialize(new[] { column.ColumnName }),
+                    IsKeyColumn = column.IsPrimaryKey || column.IsForeignKey,
+                    IsSensitiveData = IsSensitiveData(column),
+                    IsActive = true,
+                    CreatedBy = "AutoPopulation",
+                    CreatedDate = DateTime.UtcNow,
+                    SemanticRelevanceScore = CalculateColumnRelevanceScore(column, businessMeaning)
+                };
+
+                _context.BusinessColumnInfo.Add(columnEntity);
+            }
+
+            _logger.LogInformation("✅ Added {Count} column metadata entries for {Schema}.{Table}",
+                details.Columns.Count, table.SchemaName, table.TableName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error updating column metadata for {Schema}.{Table}",
+                table.SchemaName, table.TableName);
+            throw;
+        }
     }
 
     // Additional helper methods
-    private string InferColumnBusinessMeaning(ColumnDetails column) => $"Business meaning for {column.ColumnName}";
-    private string InferBusinessDataType(ColumnDetails column) => column.DataType;
-    private List<string> InferSemanticTags(ColumnDetails column) => new List<string>();
-    private bool IsSensitiveData(ColumnDetails column) => column.ColumnName.ToLower().Contains("email") || column.ColumnName.ToLower().Contains("phone");
+    private string InferColumnBusinessMeaning(ColumnDetails column)
+    {
+        var columnName = column.ColumnName.ToLower();
+
+        // Gaming domain specific mappings
+        if (columnName.Contains("deposit")) return "Deposit amount or deposit-related information";
+        if (columnName.Contains("country")) return "Country or geographical location";
+        if (columnName.Contains("user") || columnName.Contains("player")) return "User or player identifier";
+        if (columnName.Contains("action") || columnName.Contains("activity")) return "User action or activity data";
+        if (columnName.Contains("date") || columnName.Contains("time")) return "Date or time information";
+        if (columnName.Contains("amount") || columnName.Contains("value")) return "Monetary amount or numeric value";
+        if (columnName.Contains("currency")) return "Currency information";
+        if (columnName.Contains("game")) return "Game-related information";
+        if (columnName.Contains("transaction")) return "Financial transaction data";
+        if (columnName.Contains("id")) return "Unique identifier";
+
+        return $"Business data for {column.ColumnName}";
+    }
+
+    private string InferBusinessDataType(ColumnDetails column)
+    {
+        var sqlType = column.DataType.ToLower();
+        var columnName = column.ColumnName.ToLower();
+
+        // Map SQL types to business types
+        if (sqlType.Contains("money") || sqlType.Contains("decimal") || sqlType.Contains("numeric"))
+        {
+            if (columnName.Contains("amount") || columnName.Contains("deposit") || columnName.Contains("value"))
+                return "Currency";
+            return "Decimal";
+        }
+        if (sqlType.Contains("int") || sqlType.Contains("bigint")) return "Integer";
+        if (sqlType.Contains("varchar") || sqlType.Contains("nvarchar") || sqlType.Contains("text")) return "Text";
+        if (sqlType.Contains("date") || sqlType.Contains("time")) return "DateTime";
+        if (sqlType.Contains("bit")) return "Boolean";
+
+        return column.DataType; // Fallback to SQL type
+    }
+
+    private List<string> InferSemanticTags(ColumnDetails column)
+    {
+        var tags = new List<string>();
+        var columnName = column.ColumnName.ToLower();
+
+        if (column.IsPrimaryKey) tags.Add("PrimaryKey");
+        if (column.IsForeignKey) tags.Add("ForeignKey");
+        if (columnName.Contains("id")) tags.Add("Identifier");
+        if (columnName.Contains("date") || columnName.Contains("time")) tags.Add("Temporal");
+        if (columnName.Contains("amount") || columnName.Contains("deposit") || columnName.Contains("value")) tags.Add("Financial");
+        if (columnName.Contains("country") || columnName.Contains("location")) tags.Add("Geographic");
+        if (columnName.Contains("user") || columnName.Contains("player")) tags.Add("UserData");
+        if (columnName.Contains("game")) tags.Add("Gaming");
+        if (IsSensitiveData(column)) tags.Add("Sensitive");
+
+        return tags;
+    }
+
+    private bool IsSensitiveData(ColumnDetails column)
+    {
+        var columnName = column.ColumnName.ToLower();
+        return columnName.Contains("email") || columnName.Contains("phone") ||
+               columnName.Contains("password") || columnName.Contains("ssn") ||
+               columnName.Contains("credit") || columnName.Contains("card");
+    }
+
+    private decimal CalculateColumnRelevanceScore(ColumnDetails column, string businessMeaning)
+    {
+        decimal score = 0.5m; // Base score
+
+        // Increase score for key columns
+        if (column.IsPrimaryKey || column.IsForeignKey) score += 0.2m;
+
+        // Increase score for commonly used business columns
+        var columnName = column.ColumnName.ToLower();
+        if (columnName.Contains("id") || columnName.Contains("date") ||
+            columnName.Contains("amount") || columnName.Contains("user") ||
+            columnName.Contains("country") || columnName.Contains("deposit")) score += 0.3m;
+
+        return Math.Min(1.0m, score);
+    }
+
+    private async Task<List<string>> GetSampleValuesAsync(string schemaName, string tableName, string columnName)
+    {
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = $@"
+                SELECT DISTINCT TOP 5 [{columnName}]
+                FROM [{schemaName}].[{tableName}]
+                WHERE [{columnName}] IS NOT NULL
+                ORDER BY [{columnName}]";
+
+            using var command = new SqlCommand(query, connection);
+            using var reader = await command.ExecuteReaderAsync();
+
+            var values = new List<string>();
+            while (await reader.ReadAsync() && values.Count < 5)
+            {
+                var value = reader.GetValue(0)?.ToString();
+                if (!string.IsNullOrEmpty(value))
+                {
+                    values.Add(value);
+                }
+            }
+
+            return values;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not get sample values for {Schema}.{Table}.{Column}",
+                schemaName, tableName, columnName);
+            return new List<string>();
+        }
+    }
 }
 
 // Supporting classes

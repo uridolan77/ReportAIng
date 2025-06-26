@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { message } from 'antd'
 import { useAppSelector, useAppDispatch } from '@shared/hooks'
-import { selectAccessToken } from '@shared/store/auth'
-import { logout } from '@shared/store/auth'
+import { selectAccessToken, authActions } from '@shared/store/auth'
 import { isTokenExpired, getTimeUntilExpiration, willExpireSoon } from '@shared/utils/tokenUtils'
 
 /**
@@ -28,7 +27,14 @@ export function useTokenMonitor() {
   // Handle token expiration
   const handleTokenExpiration = () => {
     console.warn('🔐 Token expired - logging out and disconnecting services')
-    
+
+    // Show user notification
+    message.warning({
+      content: 'Your session has expired. Please log in again.',
+      duration: 5,
+      key: 'token-expired'
+    })
+
     // Call all registered callbacks (e.g., SignalR disconnections)
     callbacksRef.current.forEach(callback => {
       try {
@@ -37,9 +43,9 @@ export function useTokenMonitor() {
         console.error('Error in token expiration callback:', error)
       }
     })
-    
+
     // Logout user
-    dispatch(logout())
+    dispatch(authActions.logout())
   }
 
   useEffect(() => {
@@ -72,11 +78,20 @@ export function useTokenMonitor() {
         return
       }
 
-      // Log warning if token will expire soon
-      if (willExpireSoon(token, 5)) {
+      // Show warning if token will expire soon
+      if (willExpireSoon(token, 10)) {
         const timeLeft = getTimeUntilExpiration(token)
         const minutesLeft = Math.floor(timeLeft / (1000 * 60))
         console.warn(`🔐 Token will expire in ${minutesLeft} minutes`)
+
+        // Show user notification for tokens expiring in 5 minutes or less
+        if (minutesLeft <= 5 && minutesLeft > 0) {
+          message.warning({
+            content: `Your session will expire in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}. Please save your work.`,
+            duration: 8,
+            key: 'token-expiring-soon'
+          })
+        }
       }
     }, 30000) // Check every 30 seconds
 

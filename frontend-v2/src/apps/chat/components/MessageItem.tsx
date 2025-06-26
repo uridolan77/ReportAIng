@@ -37,7 +37,7 @@ import { SemanticAnalysisPanel } from './SemanticAnalysisPanel'
 import { MessageActions } from './MessageActions'
 
 const { Text, Paragraph } = Typography
-const { Panel } = Collapse
+
 
 interface MessageItemProps {
   message: ChatMessage

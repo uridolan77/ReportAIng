@@ -34,7 +34,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 dayjs.extend(relativeTime)
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
+
 
 interface TemplateVersionHistoryProps {
   visible: boolean

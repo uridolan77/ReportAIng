@@ -203,13 +203,25 @@ const PipelineTestConfigurationManager: React.FC<PipelineTestConfigurationManage
                     <span className="text-sm">Include Examples</span>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 p-2 border border-red-200 rounded bg-red-50">
                     <Switch
                       checked={currentParameters.enableAIGeneration}
                       onChange={(checked) => onParametersChange({ ...currentParameters, enableAIGeneration: checked })}
                       size="small"
                     />
-                    <span className="text-sm text-red-600">Enable AI Generation</span>
+                    <div>
+                      <span className="text-sm text-red-600 font-medium">Enable AI Generation</span>
+                      <div className="text-xs text-red-500">Required for AI Generation step - incurs costs!</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={currentParameters.enableExecution}
+                      onChange={(checked) => onParametersChange({ ...currentParameters, enableExecution: checked })}
+                      size="small"
+                    />
+                    <span className="text-sm text-orange-600">Enable SQL Execution</span>
                   </div>
                 </div>
               </div>

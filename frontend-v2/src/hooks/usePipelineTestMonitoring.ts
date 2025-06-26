@@ -3,6 +3,7 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signal
 import { message } from 'antd';
 import { useAppSelector } from '@shared/hooks';
 import { selectAccessToken } from '@shared/store/auth';
+import { useSignalRTokenMonitor } from '@shared/hooks/useTokenMonitor';
 import { PipelineTestSession, PipelineStepProgress, PipelineStep } from '../types/aiPipelineTest';
 
 interface PipelineTestMonitoringState {
@@ -138,6 +139,15 @@ export const usePipelineTestMonitoring = () => {
 
     connection.on('StepCompleted', (data) => {
       console.log('✅ Step completed:', data);
+      console.log('✅ Step completed - stepName:', data.stepName);
+      console.log('✅ Step completed - stepResult:', data.stepResult);
+
+      if (data.stepName === 'AIGeneration') {
+        console.log('🤖 [AI-GENERATION-SIGNALR] AIGeneration step completed!');
+        console.log('🤖 [AI-GENERATION-SIGNALR] Step result:', data.stepResult);
+        console.log('🤖 [AI-GENERATION-SIGNALR] Full data:', data);
+      }
+
       setState(prev => ({
         ...prev,
         stepProgress: {
@@ -152,6 +162,10 @@ export const usePipelineTestMonitoring = () => {
           }
         }
       }));
+
+      if (data.stepName === 'AIGeneration') {
+        console.log('🤖 [AI-GENERATION-SIGNALR] Updated state for AIGeneration');
+      }
     });
 
     connection.on('StepError', (data) => {
@@ -235,22 +249,29 @@ export const usePipelineTestMonitoring = () => {
     }
 
     try {
-      setState(prev => ({ ...prev, connectionError: null }));
-      
+      setState(prev => ({ ...prev, isReconnecting: true, connectionError: null }));
+
       const connection = createConnection();
-      if (!connection) return;
+      if (!connection) {
+        setState(prev => ({ ...prev, isReconnecting: false, connectionError: 'Failed to create connection' }));
+        return;
+      }
 
       connectionRef.current = connection;
       await connection.start();
-      
-      setState(prev => ({ ...prev, isConnected: true, connectionError: null }));
+
+      setState(prev => ({ ...prev, isConnected: true, connectionError: null, isReconnecting: false }));
       console.log('🔗 Connected to pipeline test hub');
-      
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to connect';
-      setState(prev => ({ ...prev, connectionError: errorMessage }));
+      setState(prev => ({ ...prev, connectionError: errorMessage, isReconnecting: false }));
       console.error('Failed to connect to pipeline test hub:', error);
-      message.error('Failed to connect to pipeline test monitoring');
+
+      // Don't show error message for negotiation errors as they often recover
+      if (!errorMessage.includes('negotiation')) {
+        message.error(`Connection failed: ${errorMessage}`);
+      }
     }
   }, [createConnection]);
 
@@ -330,6 +351,12 @@ export const usePipelineTestMonitoring = () => {
       }
     };
   }, []);
+
+  // Monitor token expiration and disconnect SignalR when token expires
+  useSignalRTokenMonitor(() => {
+    console.log('🔌 Token expired - disconnecting pipeline test monitoring SignalR');
+    disconnect();
+  });
 
   return {
     ...state,

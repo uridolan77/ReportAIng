@@ -24,7 +24,7 @@ import {
 } from '@shared/store/api/businessApi'
 
 const { Text, Title } = Typography
-const { Panel } = Collapse
+
 
 export const RealApiTester: React.FC = () => {
   const [testResults, setTestResults] = useState<Record<string, any>>({})
@@ -199,8 +199,11 @@ export const RealApiTester: React.FC = () => {
 
         {/* Test Results */}
         {Object.keys(testResults).length > 0 && (
-          <Collapse>
-            <Panel header="Test Results" key="results">
+          <Collapse
+            items={[{
+              key: 'results',
+              label: 'Test Results',
+              children: (
               <Space direction="vertical" style={{ width: '100%' }}>
                 {Object.entries(testResults).map(([name, result]: [string, any]) => (
                   <Card key={name} size="small">
@@ -245,8 +248,9 @@ export const RealApiTester: React.FC = () => {
                   </Card>
                 ))}
               </Space>
-            </Panel>
-          </Collapse>
+              )
+            }]}
+          />
         )}
 
         {/* API Errors */}

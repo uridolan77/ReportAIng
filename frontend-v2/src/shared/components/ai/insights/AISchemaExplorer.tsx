@@ -35,7 +35,6 @@ import type { SchemaNode, SchemaRecommendation, TableRelationship } from '@share
 
 const { Title, Text, Paragraph } = Typography
 const { Search } = Input
-const { Panel } = Collapse
 const { TreeNode } = Tree
 
 export interface AISchemaExplorerProps {
@@ -334,30 +333,35 @@ export const AISchemaExplorer: React.FC<AISchemaExplorerProps> = ({
         }
         size="small"
       >
-        <Collapse size="small">
-          <Panel header="Discovered Relationships" key="relationships">
-            <List
-              size="small"
-              dataSource={schemaNavigation.relationships}
-              renderItem={(relationship) => (
-                <List.Item>
-                  <Space>
-                    <Text>{relationship.fromTable}</Text>
-                    <LinkOutlined />
-                    <Text>{relationship.toTable}</Text>
-                    <Tag color="blue">{relationship.relationshipType}</Tag>
-                    <ConfidenceIndicator
-                      confidence={relationship.confidence}
-                      size="small"
-                      type="badge"
-                      showPercentage={false}
-                    />
-                  </Space>
-                </List.Item>
-              )}
-            />
-          </Panel>
-        </Collapse>
+        <Collapse
+          size="small"
+          items={[{
+            key: 'relationships',
+            label: 'Discovered Relationships',
+            children: (
+              <List
+                size="small"
+                dataSource={schemaNavigation.relationships}
+                renderItem={(relationship) => (
+                  <List.Item>
+                    <Space>
+                      <Text>{relationship.fromTable}</Text>
+                      <LinkOutlined />
+                      <Text>{relationship.toTable}</Text>
+                      <Tag color="blue">{relationship.relationshipType}</Tag>
+                      <ConfidenceIndicator
+                        confidence={relationship.confidence}
+                        size="small"
+                        type="badge"
+                        showPercentage={false}
+                      />
+                    </Space>
+                  </List.Item>
+                )}
+              />
+            )
+          }]}
+        />
       </Card>
     )
   }

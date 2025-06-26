@@ -34,7 +34,6 @@ import { useGetQueryOptimizationQuery, useApplyOptimizationMutation } from '@sha
 import type { QueryOptimization, OptimizationSuggestion, PerformanceMetrics } from '@shared/types/intelligentAgents'
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
 
 export interface QueryOptimizationEngineProps {
   query: string
@@ -381,37 +380,47 @@ export const QueryOptimizationEngine: React.FC<QueryOptimizationEngineProps> = (
         size="small"
         style={{ marginBottom: 16 }}
       >
-        <Collapse size="small">
-          <Panel header="Execution Plan Analysis" key="execution-plan">
-            <Space direction="vertical" style={{ width: '100%' }}>
-              {optimization.analysis.bottlenecks.map((bottleneck, index) => (
-                <Alert
-                  key={index}
-                  message={bottleneck.type}
-                  description={bottleneck.description}
-                  type="warning"
-                  showIcon
-                  style={{ marginBottom: 8 }}
+        <Collapse
+          size="small"
+          items={[
+            {
+              key: 'execution-plan',
+              label: 'Execution Plan Analysis',
+              children: (
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  {optimization.analysis.bottlenecks.map((bottleneck, index) => (
+                    <Alert
+                      key={index}
+                      message={bottleneck.type}
+                      description={bottleneck.description}
+                      type="warning"
+                      showIcon
+                      style={{ marginBottom: 8 }}
+                    />
+                  ))}
+                </Space>
+              )
+            },
+            {
+              key: 'insights',
+              label: 'Performance Insights',
+              children: (
+                <List
+                  size="small"
+                  dataSource={optimization.analysis.insights}
+                  renderItem={(insight) => (
+                    <List.Item>
+                      <Space>
+                        <BulbOutlined style={{ color: '#faad14' }} />
+                        <Text>{insight}</Text>
+                      </Space>
+                    </List.Item>
+                  )}
                 />
-              ))}
-            </Space>
-          </Panel>
-          
-          <Panel header="Performance Insights" key="insights">
-            <List
-              size="small"
-              dataSource={optimization.analysis.insights}
-              renderItem={(insight) => (
-                <List.Item>
-                  <Space>
-                    <BulbOutlined style={{ color: '#faad14' }} />
-                    <Text>{insight}</Text>
-                  </Space>
-                </List.Item>
-              )}
-            />
-          </Panel>
-        </Collapse>
+              )
+            }
+          ]}
+        />
       </Card>
     )
   }

@@ -31,7 +31,6 @@ import { useFeatureFlag } from '@shared/components/ai/common/hooks/useAIFeatureF
 import type { SemanticAnalysis } from '@shared/types/chat'
 
 const { Text, Title } = Typography
-const { Panel } = Collapse
 
 interface SemanticAnalysisPanelProps {
   analysis: SemanticAnalysis

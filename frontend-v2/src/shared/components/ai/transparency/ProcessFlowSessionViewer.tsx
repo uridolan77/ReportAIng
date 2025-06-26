@@ -32,7 +32,6 @@ import type { ProcessFlowSession, ProcessFlowStep, ProcessFlowLog } from '@share
 import { useProcessFlowSession } from '@shared/store/api/transparencyApi';
 
 const { Title, Text, Paragraph } = Typography;
-const { Panel } = Collapse;
 
 export interface ProcessFlowSessionViewerProps {
   sessionId: string;
@@ -314,58 +313,63 @@ export const ProcessFlowSessionViewer: React.FC<ProcessFlowSessionViewerProps> =
 
                   {expandedSteps.includes(step.stepId) && (
                     <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-                      <Collapse size="small" ghost>
-                        {step.inputData && (
-                          <Panel header="Input Data" key="input">
-                            <SyntaxHighlighter 
-                              language="json" 
-                              style={tomorrow}
-                              customStyle={{ fontSize: '11px', margin: 0 }}
-                            >
-                              {JSON.stringify(step.inputData, null, 2)}
-                            </SyntaxHighlighter>
-                          </Panel>
-                        )}
-                        
-                        {step.outputData && (
-                          <Panel header="Output Data" key="output">
-                            <SyntaxHighlighter 
-                              language="json" 
-                              style={tomorrow}
-                              customStyle={{ fontSize: '11px', margin: 0 }}
-                            >
-                              {JSON.stringify(step.outputData, null, 2)}
-                            </SyntaxHighlighter>
-                          </Panel>
-                        )}
-                        
-                        {showLogs && logs.filter(log => log.stepId === step.stepId).length > 0 && (
-                          <Panel 
-                            header={`Logs (${logs.filter(log => log.stepId === step.stepId).length})`} 
-                            key="logs"
-                          >
-                            <div style={{ maxHeight: '200px', overflow: 'auto' }}>
-                              {logs
-                                .filter(log => log.stepId === step.stepId)
-                                .map((log, index) => (
-                                  <div key={index} style={{ 
-                                    fontSize: '11px', 
-                                    fontFamily: 'monospace',
-                                    padding: '2px 0',
-                                    borderBottom: '1px solid #f0f0f0',
-                                    color: log.level === 'Error' ? '#ff4d4f' : 
-                                           log.level === 'Warning' ? '#faad14' : 
-                                           log.level === 'Info' ? '#1890ff' : '#666'
-                                  }}>
-                                    <Text type="secondary" style={{ fontSize: '10px' }}>
-                                      [{log.level}] {new Date(log.timestamp).toLocaleTimeString()}:
-                                    </Text> {log.message}
-                                  </div>
-                                ))}
-                            </div>
-                          </Panel>
-                        )}
-                      </Collapse>
+                      <Collapse
+                        size="small"
+                        ghost
+                        items={[
+                          ...(step.inputData ? [{
+                            key: 'input',
+                            label: 'Input Data',
+                            children: (
+                              <SyntaxHighlighter
+                                language="json"
+                                style={tomorrow}
+                                customStyle={{ fontSize: '11px', margin: 0 }}
+                              >
+                                {JSON.stringify(step.inputData, null, 2)}
+                              </SyntaxHighlighter>
+                            )
+                          }] : []),
+                          ...(step.outputData ? [{
+                            key: 'output',
+                            label: 'Output Data',
+                            children: (
+                              <SyntaxHighlighter
+                                language="json"
+                                style={tomorrow}
+                                customStyle={{ fontSize: '11px', margin: 0 }}
+                              >
+                                {JSON.stringify(step.outputData, null, 2)}
+                              </SyntaxHighlighter>
+                            )
+                          }] : []),
+                          ...(showLogs && logs.filter(log => log.stepId === step.stepId).length > 0 ? [{
+                            key: 'logs',
+                            label: `Logs (${logs.filter(log => log.stepId === step.stepId).length})`,
+                            children: (
+                              <div style={{ maxHeight: '200px', overflow: 'auto' }}>
+                                {logs
+                                  .filter(log => log.stepId === step.stepId)
+                                  .map((log, index) => (
+                                    <div key={index} style={{
+                                      fontSize: '11px',
+                                      fontFamily: 'monospace',
+                                      padding: '2px 0',
+                                      borderBottom: '1px solid #f0f0f0',
+                                      color: log.level === 'Error' ? '#ff4d4f' :
+                                             log.level === 'Warning' ? '#faad14' :
+                                             log.level === 'Info' ? '#1890ff' : '#666'
+                                    }}>
+                                      <Text type="secondary" style={{ fontSize: '10px' }}>
+                                        [{log.level}] {new Date(log.timestamp).toLocaleTimeString()}:
+                                      </Text> {log.message}
+                                    </div>
+                                  ))}
+                              </div>
+                            )
+                          }] : [])
+                        ]}
+                      />
                     </div>
                   )}
                 </div>

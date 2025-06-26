@@ -147,7 +147,7 @@ export const templateAnalyticsApi = baseApi.injectEndpoints({
       providesTags: ['PerformanceAlert'],
     }),
 
-    getPerformanceTrends: builder.query<PerformanceTrend[], {
+    getTemplateTrends: builder.query<PerformanceTrend[], {
       templateKey?: string;
       startDate: string;
       endDate: string;
@@ -448,6 +448,7 @@ export const {
   useGetPerformanceDashboardQuery,
   useGetTemplatePerformanceQuery,
   useGetTopPerformingTemplatesQuery,
+  useGetTemplateTrendsQuery,
   useGetPerformanceAlertsQuery,
   useResolvePerformanceAlertMutation,
 

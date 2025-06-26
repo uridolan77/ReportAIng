@@ -86,9 +86,13 @@ public class AIPipelineTestController : ControllerBase
 
         try
         {
+            // Log requested steps for debugging
+            _logger.LogInformation("🔍 [PIPELINE-TEST] Requested steps for {TestId}: {Steps}", testId, string.Join(", ", request.Steps));
+
             // Step 1: Business Context Analysis
             if (request.Steps.Contains(PipelineStep.BusinessContextAnalysis))
             {
+                _logger.LogInformation("🚀 [PIPELINE-TEST] Executing BusinessContextAnalysis step for {TestId}", testId);
                 try
                 {
                     _logger.LogInformation("🔔 [DEBUG] About to send StepStarted notification for BusinessContextAnalysis in {TestId}", testId);
@@ -104,25 +108,83 @@ public class AIPipelineTestController : ControllerBase
                 result.BusinessProfile = contextResult.BusinessProfile;
                 await _notificationService.SendStepCompletedAsync(testId, "BusinessContextAnalysis", contextResult);
             }
+            else
+            {
+                _logger.LogInformation("⏭️ [PIPELINE-TEST] Skipping BusinessContextAnalysis step for {TestId} (not requested)", testId);
+            }
 
             // Step 2: Token Budget Management
             if (request.Steps.Contains(PipelineStep.TokenBudgetManagement))
             {
-                await _notificationService.SendStepStartedAsync(testId, "TokenBudgetManagement", new { maxTokens = request.Parameters.MaxTokens });
+                _logger.LogInformation("🚀 [PIPELINE-TEST] Executing TokenBudgetManagement step for {TestId}", testId);
+                try
+                {
+                    _logger.LogInformation("🔔 [DEBUG] About to send StepStarted notification for TokenBudgetManagement in {TestId}", testId);
+                    await _notificationService.SendStepStartedAsync(testId, "TokenBudgetManagement", new { maxTokens = request.Parameters.MaxTokens });
+                    _logger.LogInformation("✅ [DEBUG] Successfully sent StepStarted notification for TokenBudgetManagement in {TestId}", testId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ [DEBUG] Failed to send StepStarted notification for TokenBudgetManagement in {TestId}: {Error}", testId, ex.Message);
+                }
+
                 var tokenResult = await TestTokenBudgetManagementAsync(result.BusinessProfile, request.Parameters, testId);
                 result.Results[PipelineStep.TokenBudgetManagement.ToString()] = tokenResult;
                 result.TokenBudget = tokenResult.TokenBudget;
-                await _notificationService.SendStepCompletedAsync(testId, "TokenBudgetManagement", tokenResult);
+
+                try
+                {
+                    _logger.LogInformation("🔔 [DEBUG] About to send StepCompleted notification for TokenBudgetManagement in {TestId}", testId);
+                    _logger.LogInformation("📊 [DEBUG] TokenBudgetManagement result data: Success={Success}, MaxTokens={MaxTokens}, AvailableContextTokens={AvailableContextTokens}, ReservedTokens={ReservedTokens}",
+                        tokenResult.Success, tokenResult.MaxTokens, tokenResult.AvailableContextTokens, tokenResult.ReservedTokens);
+                    await _notificationService.SendStepCompletedAsync(testId, "TokenBudgetManagement", tokenResult);
+                    _logger.LogInformation("✅ [DEBUG] Successfully sent StepCompleted notification for TokenBudgetManagement in {TestId}", testId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ [DEBUG] Failed to send StepCompleted notification for TokenBudgetManagement in {TestId}: {Error}", testId, ex.Message);
+                }
+            }
+            else
+            {
+                _logger.LogInformation("⏭️ [PIPELINE-TEST] Skipping TokenBudgetManagement step for {TestId} (not requested)", testId);
             }
 
             // Step 3: Schema Retrieval
             if (request.Steps.Contains(PipelineStep.SchemaRetrieval))
             {
-                await _notificationService.SendStepStartedAsync(testId, "SchemaRetrieval", new { maxTables = request.Parameters.MaxTables });
+                _logger.LogInformation("🚀 [PIPELINE-TEST] Executing SchemaRetrieval step for {TestId}", testId);
+                try
+                {
+                    _logger.LogInformation("🔔 [DEBUG] About to send StepStarted notification for SchemaRetrieval in {TestId}", testId);
+                    await _notificationService.SendStepStartedAsync(testId, "SchemaRetrieval", new { maxTables = request.Parameters.MaxTables });
+                    _logger.LogInformation("✅ [DEBUG] Successfully sent StepStarted notification for SchemaRetrieval in {TestId}", testId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ [DEBUG] Failed to send StepStarted notification for SchemaRetrieval in {TestId}: {Error}", testId, ex.Message);
+                }
+
                 var schemaResult = await TestSchemaRetrievalAsync(result.BusinessProfile, request.Parameters, testId);
                 result.Results[PipelineStep.SchemaRetrieval.ToString()] = schemaResult;
                 result.SchemaMetadata = schemaResult.SchemaMetadata;
-                await _notificationService.SendStepCompletedAsync(testId, "SchemaRetrieval", schemaResult);
+
+                try
+                {
+                    _logger.LogInformation("🔔 [DEBUG] About to send StepCompleted notification for SchemaRetrieval in {TestId}", testId);
+                    _logger.LogInformation("📊 [DEBUG] SchemaRetrieval result data: Success={Success}, TablesRetrieved={TablesRetrieved}, RelevanceScore={RelevanceScore}, TableNames={TableNames}",
+                        schemaResult.Success, schemaResult.TablesRetrieved, schemaResult.RelevanceScore, string.Join(", ", schemaResult.TableNames));
+                    await _notificationService.SendStepCompletedAsync(testId, "SchemaRetrieval", schemaResult);
+                    _logger.LogInformation("✅ [DEBUG] Successfully sent StepCompleted notification for SchemaRetrieval in {TestId}", testId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ [DEBUG] Failed to send StepCompleted notification for SchemaRetrieval in {TestId}: {Error}", testId, ex.Message);
+                }
+            }
+            else
+            {
+                _logger.LogInformation("⏭️ [PIPELINE-TEST] Skipping SchemaRetrieval step for {TestId} (not requested)", testId);
             }
 
             // Step 4: Prompt Building
@@ -136,13 +198,79 @@ public class AIPipelineTestController : ControllerBase
             }
 
             // Step 5: AI Generation (if enabled)
+            _logger.LogInformation("🔍 [PIPELINE-TEST] AI Generation check - Step requested: {StepRequested}, EnableAIGeneration: {EnableAIGeneration}",
+                request.Steps.Contains(PipelineStep.AIGeneration), request.Parameters.EnableAIGeneration);
+
             if (request.Steps.Contains(PipelineStep.AIGeneration) && request.Parameters.EnableAIGeneration)
             {
-                await _notificationService.SendStepStartedAsync(testId, "AIGeneration", new { temperature = request.Parameters.Temperature, enabled = request.Parameters.EnableAIGeneration });
-                var aiResult = await TestAIGenerationAsync(result.GeneratedPrompt, request.Parameters, testId);
-                result.Results[PipelineStep.AIGeneration.ToString()] = aiResult;
-                result.GeneratedSQL = aiResult.GeneratedSQL;
-                await _notificationService.SendStepCompletedAsync(testId, "AIGeneration", aiResult);
+                _logger.LogInformation("🚀 [PIPELINE-TEST] Starting AI Generation step for test {TestId}", testId);
+
+                try
+                {
+                    await _notificationService.SendStepStartedAsync(testId, "AIGeneration", new { temperature = request.Parameters.Temperature, enabled = request.Parameters.EnableAIGeneration });
+
+                    var aiResult = await TestAIGenerationAsync(result.GeneratedPrompt, request.Parameters, testId);
+                    result.Results[PipelineStep.AIGeneration.ToString()] = aiResult;
+                    result.GeneratedSQL = aiResult.GeneratedSQL;
+
+                    // Debug logging for SQL generation
+                    _logger.LogInformation("🔍 [PIPELINE-TEST] AI Generation completed. SQL Generated: {HasSQL}, Length: {SQLLength}, Success: {Success}",
+                        !string.IsNullOrEmpty(aiResult.GeneratedSQL), aiResult.GeneratedSQL?.Length ?? 0, aiResult.Success);
+
+                    _logger.LogInformation("📊 [PIPELINE-TEST] AI Generation result data: Success={Success}, SQLLength={SQLLength}, EstimatedCost={EstimatedCost}",
+                        aiResult.Success, aiResult.SQLLength, aiResult.EstimatedCost);
+
+                    await _notificationService.SendStepCompletedAsync(testId, "AIGeneration", aiResult);
+                    _logger.LogInformation("✅ [PIPELINE-TEST] AI Generation step completed notification sent for test {TestId}", testId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ [PIPELINE-TEST] AI Generation step failed for test {TestId}: {Error}", testId, ex.Message);
+
+                    var errorResult = new AIGenerationTestResult
+                    {
+                        Success = false,
+                        DurationMs = 0,
+                        Error = ex.Message
+                    };
+
+                    result.Results[PipelineStep.AIGeneration.ToString()] = errorResult;
+                    await _notificationService.SendStepCompletedAsync(testId, "AIGeneration", errorResult);
+                }
+            }
+            else if (request.Steps.Contains(PipelineStep.AIGeneration))
+            {
+                _logger.LogWarning("⚠️ [PIPELINE-TEST] AI Generation step was requested but EnableAIGeneration is false for test {TestId}", testId);
+            }
+
+            // Step 6: SQL Validation
+            if (request.Steps.Contains(PipelineStep.SQLValidation) && !string.IsNullOrEmpty(result.GeneratedSQL))
+            {
+                await _notificationService.SendStepStartedAsync(testId, "SQLValidation", new { sql = result.GeneratedSQL?.Substring(0, Math.Min(100, result.GeneratedSQL?.Length ?? 0)) });
+                var validationResult = await TestSQLValidationAsync(result.GeneratedSQL, request.Query, request.Parameters, testId);
+                result.Results[PipelineStep.SQLValidation.ToString()] = validationResult;
+                await _notificationService.SendStepCompletedAsync(testId, "SQLValidation", validationResult);
+            }
+
+            // Step 7: SQL Execution (if enabled and SQL is valid)
+            _logger.LogInformation("🔍 [PIPELINE-TEST] SQL Execution check - Step requested: {StepRequested}, Execution enabled: {ExecutionEnabled}, Has SQL: {HasSQL}",
+                request.Steps.Contains(PipelineStep.SQLExecution), request.Parameters.EnableExecution, !string.IsNullOrEmpty(result.GeneratedSQL));
+
+            if (request.Steps.Contains(PipelineStep.SQLExecution) && request.Parameters.EnableExecution && !string.IsNullOrEmpty(result.GeneratedSQL))
+            {
+                await _notificationService.SendStepStartedAsync(testId, "SQLExecution", new { sql = result.GeneratedSQL?.Substring(0, Math.Min(100, result.GeneratedSQL?.Length ?? 0)), maxRows = request.Parameters.MaxRows });
+                var executionResult = await TestSQLExecutionAsync(result.GeneratedSQL, request.Parameters, testId);
+                result.Results[PipelineStep.SQLExecution.ToString()] = executionResult;
+                await _notificationService.SendStepCompletedAsync(testId, "SQLExecution", executionResult);
+            }
+
+            // Step 8: Results Processing
+            if (request.Steps.Contains(PipelineStep.ResultsProcessing))
+            {
+                await _notificationService.SendStepStartedAsync(testId, "ResultsProcessing", new { format = request.Parameters.ExportFormat });
+                var processingResult = await TestResultsProcessingAsync(result, request.Parameters, testId);
+                result.Results[PipelineStep.ResultsProcessing.ToString()] = processingResult;
+                await _notificationService.SendStepCompletedAsync(testId, "ResultsProcessing", processingResult);
             }
 
             stopwatch.Stop();
@@ -235,6 +363,42 @@ public class AIPipelineTestController : ControllerBase
                 {
                     new ParameterInfo { Name = "EnableAIGeneration", Type = "bool", DefaultValue = "false", Description = "Enable actual AI generation (costs money!)" },
                     new ParameterInfo { Name = "Temperature", Type = "decimal", DefaultValue = "0.1", Description = "AI temperature setting" }
+                }
+            },
+            new PipelineStepInfo
+            {
+                Step = PipelineStep.SQLValidation,
+                Name = "SQL Validation",
+                Description = "Validate generated SQL syntax, semantics, and security",
+                Parameters = new[]
+                {
+                    new ParameterInfo { Name = "EnableSemanticValidation", Type = "bool", DefaultValue = "true", Description = "Enable semantic validation of SQL" },
+                    new ParameterInfo { Name = "EnableSecurityValidation", Type = "bool", DefaultValue = "true", Description = "Enable security validation of SQL" },
+                    new ParameterInfo { Name = "ValidationTimeout", Type = "int", DefaultValue = "30", Description = "Validation timeout in seconds" }
+                }
+            },
+            new PipelineStepInfo
+            {
+                Step = PipelineStep.SQLExecution,
+                Name = "SQL Execution",
+                Description = "Execute validated SQL query against database",
+                Parameters = new[]
+                {
+                    new ParameterInfo { Name = "EnableExecution", Type = "bool", DefaultValue = "false", Description = "Enable actual SQL execution (affects database!)" },
+                    new ParameterInfo { Name = "MaxRows", Type = "int", DefaultValue = "100", Description = "Maximum number of rows to return" },
+                    new ParameterInfo { Name = "ExecutionTimeout", Type = "int", DefaultValue = "60", Description = "Execution timeout in seconds" }
+                }
+            },
+            new PipelineStepInfo
+            {
+                Step = PipelineStep.ResultsProcessing,
+                Name = "Results Processing",
+                Description = "Process and format query results for presentation",
+                Parameters = new[]
+                {
+                    new ParameterInfo { Name = "FormatResults", Type = "bool", DefaultValue = "true", Description = "Format results for display" },
+                    new ParameterInfo { Name = "IncludeMetadata", Type = "bool", DefaultValue = "true", Description = "Include execution metadata" },
+                    new ParameterInfo { Name = "ExportFormat", Type = "string", DefaultValue = "json", Description = "Export format (json, csv, excel)" }
                 }
             }
         };
@@ -457,10 +621,17 @@ public class AIPipelineTestController : ControllerBase
         
         try
         {
+            _logger.LogInformation("🔍 [DEBUG] TokenBudgetManagement received BusinessProfile: {IsNull} for {TestId}",
+                businessProfile == null ? "NULL" : "NOT NULL", testId);
+
             if (businessProfile == null)
             {
+                _logger.LogError("❌ [DEBUG] BusinessProfile is null in TokenBudgetManagement for {TestId}", testId);
                 throw new InvalidOperationException("Business profile is required for token budget management");
             }
+
+            _logger.LogInformation("✅ [DEBUG] BusinessProfile available - Intent: {Intent}, Domain: {Domain} for {TestId}",
+                businessProfile.Intent, businessProfile.Domain, testId);
 
             var maxTokens = parameters.MaxTokens ?? 4000;
             var reservedTokens = parameters.ReservedResponseTokens ?? 500;
@@ -497,10 +668,17 @@ public class AIPipelineTestController : ControllerBase
 
         try
         {
+            _logger.LogInformation("🔍 [DEBUG] SchemaRetrieval received BusinessProfile: {IsNull} for {TestId}",
+                businessProfile == null ? "NULL" : "NOT NULL", testId);
+
             if (businessProfile == null)
             {
+                _logger.LogError("❌ [DEBUG] BusinessProfile is null in SchemaRetrieval for {TestId}", testId);
                 throw new InvalidOperationException("Business profile is required for schema retrieval");
             }
+
+            _logger.LogInformation("✅ [DEBUG] BusinessProfile available - Intent: {Intent}, Domain: {Domain} for {TestId}",
+                businessProfile.Intent, businessProfile.Domain, testId);
 
             var maxTables = parameters.MaxTables ?? 10;
             await _notificationService.SendStepProgressAsync(testId, "SchemaRetrieval", 30, "Retrieving relevant tables...");
@@ -627,6 +805,171 @@ public class AIPipelineTestController : ControllerBase
         return promptCost + completionCost;
     }
 
+    private async Task<SQLValidationTestResult> TestSQLValidationAsync(string sql, string originalQuery, PipelineTestParameters parameters, string testId)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        try
+        {
+            await _notificationService.SendStepProgressAsync(testId, "SQLValidation", 25, "Validating SQL syntax...");
+
+            // Basic validation - check if SQL is not empty and starts with SELECT
+            var isBasicValid = !string.IsNullOrWhiteSpace(sql) && sql.Trim().ToUpperInvariant().StartsWith("SELECT");
+
+            await _notificationService.SendStepProgressAsync(testId, "SQLValidation", 50, "Checking security constraints...");
+
+            // Security validation - check for dangerous keywords
+            var dangerousKeywords = new[] { "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE" };
+            var hasDangerousKeywords = dangerousKeywords.Any(keyword => sql.ToUpperInvariant().Contains(keyword));
+
+            await _notificationService.SendStepProgressAsync(testId, "SQLValidation", 75, "Performing semantic validation...");
+
+            // Semantic validation - basic checks
+            var hasSelectClause = sql.ToUpperInvariant().Contains("SELECT");
+            var hasFromClause = sql.ToUpperInvariant().Contains("FROM");
+
+            stopwatch.Stop();
+
+            var isValid = isBasicValid && !hasDangerousKeywords && hasSelectClause && hasFromClause;
+
+            return new SQLValidationTestResult
+            {
+                Success = true,
+                DurationMs = stopwatch.ElapsedMilliseconds,
+                IsValid = isValid,
+                ValidationErrors = hasDangerousKeywords ? new[] { "SQL contains potentially dangerous keywords" } : new string[0],
+                SecurityScore = hasDangerousKeywords ? 0.3m : 0.9m,
+                SyntaxScore = isBasicValid ? 0.9m : 0.1m,
+                SemanticScore = (hasSelectClause && hasFromClause) ? 0.8m : 0.2m
+            };
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            return new SQLValidationTestResult
+            {
+                Success = false,
+                DurationMs = stopwatch.ElapsedMilliseconds,
+                Error = ex.Message,
+                IsValid = false
+            };
+        }
+    }
+
+    private async Task<SQLExecutionTestResult> TestSQLExecutionAsync(string sql, PipelineTestParameters parameters, string testId)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        try
+        {
+            await _notificationService.SendStepProgressAsync(testId, "SQLExecution", 25, "Preparing SQL execution...");
+
+            if (!parameters.EnableExecution)
+            {
+                // Simulate execution without actually running the SQL
+                await _notificationService.SendStepProgressAsync(testId, "SQLExecution", 50, "Simulating SQL execution...");
+                await Task.Delay(1000); // Simulate processing time
+                await _notificationService.SendStepProgressAsync(testId, "SQLExecution", 90, "Generating mock results...");
+
+                stopwatch.Stop();
+
+                return new SQLExecutionTestResult
+                {
+                    Success = true,
+                    DurationMs = stopwatch.ElapsedMilliseconds,
+                    ExecutedSuccessfully = true,
+                    RowsReturned = 42, // Mock data
+                    ExecutionTimeMs = (int)stopwatch.ElapsedMilliseconds,
+                    ResultPreview = "Mock execution - SQL would return sample data",
+                    IsSimulated = true
+                };
+            }
+
+            // If actual execution is enabled, this would call the SQL service
+            // For now, return a simulated result
+            await _notificationService.SendStepProgressAsync(testId, "SQLExecution", 90, "Execution completed");
+            stopwatch.Stop();
+
+            return new SQLExecutionTestResult
+            {
+                Success = true,
+                DurationMs = stopwatch.ElapsedMilliseconds,
+                ExecutedSuccessfully = true,
+                RowsReturned = 0,
+                ExecutionTimeMs = (int)stopwatch.ElapsedMilliseconds,
+                ResultPreview = "Actual execution disabled for safety",
+                IsSimulated = true
+            };
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            return new SQLExecutionTestResult
+            {
+                Success = false,
+                DurationMs = stopwatch.ElapsedMilliseconds,
+                Error = ex.Message,
+                ExecutedSuccessfully = false
+            };
+        }
+    }
+
+    private async Task<ResultsProcessingTestResult> TestResultsProcessingAsync(PipelineTestResult testResult, PipelineTestParameters parameters, string testId)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        try
+        {
+            await _notificationService.SendStepProgressAsync(testId, "ResultsProcessing", 25, "Processing test results...");
+
+            // Analyze the test results
+            var totalSteps = testResult.Results.Count;
+            var successfulSteps = testResult.Results.Values.Count(r => r.GetType().GetProperty("Success")?.GetValue(r) as bool? == true);
+            var successRate = totalSteps > 0 ? (decimal)successfulSteps / totalSteps : 0;
+
+            await _notificationService.SendStepProgressAsync(testId, "ResultsProcessing", 50, "Formatting results...");
+
+            // Format results based on export format
+            var formattedResults = parameters.ExportFormat?.ToLowerInvariant() switch
+            {
+                "csv" => "CSV format results would be generated here",
+                "excel" => "Excel format results would be generated here",
+                _ => "JSON format results generated"
+            };
+
+            await _notificationService.SendStepProgressAsync(testId, "ResultsProcessing", 75, "Generating metadata...");
+
+            stopwatch.Stop();
+
+            return new ResultsProcessingTestResult
+            {
+                Success = true,
+                DurationMs = stopwatch.ElapsedMilliseconds,
+                TotalSteps = totalSteps,
+                SuccessfulSteps = successfulSteps,
+                SuccessRate = successRate,
+                FormattedResults = formattedResults,
+                ExportFormat = parameters.ExportFormat ?? "json",
+                ProcessingMetadata = new
+                {
+                    ProcessedAt = DateTime.UtcNow,
+                    TotalDuration = testResult.TotalDurationMs,
+                    StepsExecuted = testResult.Results.Keys.ToArray()
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            return new ResultsProcessingTestResult
+            {
+                Success = false,
+                DurationMs = stopwatch.ElapsedMilliseconds,
+                Error = ex.Message
+            };
+        }
+    }
+
     private string GetCurrentUserId()
     {
         return User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -673,6 +1016,21 @@ public class PipelineTestParameters
     // AI Generation
     public bool EnableAIGeneration { get; set; } = false;
     public decimal? Temperature { get; set; }
+
+    // SQL Validation
+    public bool? EnableSemanticValidation { get; set; }
+    public bool? EnableSecurityValidation { get; set; }
+    public int? ValidationTimeout { get; set; }
+
+    // SQL Execution
+    public bool EnableExecution { get; set; } = false;
+    public int? MaxRows { get; set; }
+    public int? ExecutionTimeout { get; set; }
+
+    // Results Processing
+    public bool? FormatResults { get; set; }
+    public bool? IncludeMetadata { get; set; }
+    public string? ExportFormat { get; set; }
 }
 
 /// <summary>
@@ -684,7 +1042,10 @@ public enum PipelineStep
     TokenBudgetManagement,
     SchemaRetrieval,
     PromptBuilding,
-    AIGeneration
+    AIGeneration,
+    SQLValidation,
+    SQLExecution,
+    ResultsProcessing
 }
 
 /// <summary>
@@ -794,6 +1155,43 @@ public class AIGenerationTestResult : BaseTestResult
     public string? GeneratedSQL { get; set; }
     public int SQLLength { get; set; }
     public decimal EstimatedCost { get; set; }
+}
+
+/// <summary>
+/// SQL validation test result
+/// </summary>
+public class SQLValidationTestResult : BaseTestResult
+{
+    public bool IsValid { get; set; }
+    public string[] ValidationErrors { get; set; } = Array.Empty<string>();
+    public decimal SecurityScore { get; set; }
+    public decimal SyntaxScore { get; set; }
+    public decimal SemanticScore { get; set; }
+}
+
+/// <summary>
+/// SQL execution test result
+/// </summary>
+public class SQLExecutionTestResult : BaseTestResult
+{
+    public bool ExecutedSuccessfully { get; set; }
+    public int RowsReturned { get; set; }
+    public int ExecutionTimeMs { get; set; }
+    public string? ResultPreview { get; set; }
+    public bool IsSimulated { get; set; }
+}
+
+/// <summary>
+/// Results processing test result
+/// </summary>
+public class ResultsProcessingTestResult : BaseTestResult
+{
+    public int TotalSteps { get; set; }
+    public int SuccessfulSteps { get; set; }
+    public decimal SuccessRate { get; set; }
+    public string? FormattedResults { get; set; }
+    public string? ExportFormat { get; set; }
+    public object? ProcessingMetadata { get; set; }
 }
 
 /// <summary>

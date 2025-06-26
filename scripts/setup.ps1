@@ -115,7 +115,7 @@ function Set-Frontend {
     }
     
     Write-Host "⚛️  Setting up React frontend..." -ForegroundColor Yellow
-    
+
     Push-Location "frontend"
     
     try {

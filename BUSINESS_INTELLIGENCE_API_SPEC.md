@@ -1,1615 +1,701 @@
-# Business Intelligence API Endpoints Specification
-
-## Overview
-This document specifies all API endpoints required for the Business Intelligence system implementation. These endpoints replace the current demo functionality with production-ready AI-powered business intelligence features.
-
-## Base URL
-```
-/api/business-intelligence
-```
-
-## Authentication
-All endpoints require authentication via JWT token in the Authorization header:
-```
-Authorization: Bearer <jwt_token>
-```
-
-## Core Query Analysis Endpoints
-
-### 1. Query Analysis
-**Endpoint:** `POST /api/business-intelligence/query/analyze`
-
-**Purpose:** Analyze natural language queries and extract business context, entities, and intent.
-
-**Request Body:**
-```json
-{
-  "query": "Show me quarterly sales by region for the last year",
-  "userId": "user-123",
-  "context": {
-    "userRole": "analyst",
-    "department": "sales", 
-    "accessLevel": "standard",
-    "timezone": "America/New_York"
-  },
-  "options": {
-    "includeEntityDetails": true,
-    "includeAlternatives": true,
-    "includeSuggestions": true
-  }
-}
-```
-
-**Response:**
-```json
-{
+chunk-XQLYTHWV.js?v=abb20976:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+adminApi.ts:150 called `injectEndpoints` to override already-existing endpointName refreshSchemaCache without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ adminApi.ts:150
+adminApi.ts:150 called `injectEndpoints` to override already-existing endpointName updateTableSemanticMetadata without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ adminApi.ts:150
+adminApi.ts:150 called `injectEndpoints` to override already-existing endpointName updateColumnSemanticMetadata without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ adminApi.ts:150
+adminApi.ts:150 called `injectEndpoints` to override already-existing endpointName generateSemanticEmbeddings without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ adminApi.ts:150
+adminApi.ts:150 called `injectEndpoints` to override already-existing endpointName validateSemanticMetadata without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ adminApi.ts:150
+adminApi.ts:150 called `injectEndpoints` to override already-existing endpointName enrichSchemaMetadata without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ adminApi.ts:150
+chatApi.ts:13 called `injectEndpoints` to override already-existing endpointName analyzeQuerySemantics without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ chatApi.ts:13
+chatApi.ts:13 called `injectEndpoints` to override already-existing endpointName getRelevantGlossaryTerms without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ chatApi.ts:13
+chatApi.ts:13 called `injectEndpoints` to override already-existing endpointName generateLLMContext without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ chatApi.ts:13
+chatApi.ts:13 called `injectEndpoints` to override already-existing endpointName refreshSchemaCache without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ chatApi.ts:13
+featuresApi.ts:153 called `injectEndpoints` to override already-existing endpointName getSystemStatistics without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ featuresApi.ts:153
+featuresApi.ts:153 called `injectEndpoints` to override already-existing endpointName getQueryAnalytics without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ featuresApi.ts:153
+featuresApi.ts:153 called `injectEndpoints` to override already-existing endpointName getPerformanceMetrics without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ featuresApi.ts:153
+performanceApi.ts:15 called `injectEndpoints` to override already-existing endpointName getPerformanceMetrics without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ performanceApi.ts:15
+aiStreamingApi.ts:18 called `injectEndpoints` to override already-existing endpointName startStreamingSession without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ aiStreamingApi.ts:18
+analyticsApi.ts:23 called `injectEndpoints` to override already-existing endpointName getQueryAnalytics without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ analyticsApi.ts:23
+analyticsApi.ts:23 called `injectEndpoints` to override already-existing endpointName getCostAnalytics without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ analyticsApi.ts:23
+llmManagementApi.ts:165 called `injectEndpoints` to override already-existing endpointName getPerformanceMetrics without specifying `overrideExisting: true`
+injectEndpoints @ chunk-ZBX6PUQY.js?v=abb20976:1924
+(anonymous) @ llmManagementApi.ts:165
+react-router-dom.js?v=abb20976:4393 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+warnOnce @ react-router-dom.js?v=abb20976:4393
+logDeprecation @ react-router-dom.js?v=abb20976:4396
+logV6DeprecationWarnings @ react-router-dom.js?v=abb20976:4399
+(anonymous) @ react-router-dom.js?v=abb20976:5271
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=abb20976:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=abb20976:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=abb20976:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=abb20976:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=abb20976:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=abb20976:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=abb20976:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=abb20976:19416
+commitRoot @ chunk-XQLYTHWV.js?v=abb20976:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=abb20976:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=abb20976:19432
+commitRoot @ chunk-XQLYTHWV.js?v=abb20976:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=abb20976:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18718
+workLoop @ chunk-XQLYTHWV.js?v=abb20976:197
+flushWork @ chunk-XQLYTHWV.js?v=abb20976:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=abb20976:384
+react-router-dom.js?v=abb20976:4393 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+warnOnce @ react-router-dom.js?v=abb20976:4393
+logDeprecation @ react-router-dom.js?v=abb20976:4396
+logV6DeprecationWarnings @ react-router-dom.js?v=abb20976:4402
+(anonymous) @ react-router-dom.js?v=abb20976:5271
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=abb20976:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=abb20976:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=abb20976:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=abb20976:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=abb20976:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=abb20976:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=abb20976:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=abb20976:19416
+commitRoot @ chunk-XQLYTHWV.js?v=abb20976:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=abb20976:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=abb20976:19432
+commitRoot @ chunk-XQLYTHWV.js?v=abb20976:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=abb20976:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18718
+workLoop @ chunk-XQLYTHWV.js?v=abb20976:197
+flushWork @ chunk-XQLYTHWV.js?v=abb20976:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=abb20976:384
+chunk-L4GHDMH2.js?v=abb20976:1005 Warning: [antd: Tabs] `Tabs.TabPane` is deprecated. Please use `items` instead.
+warning @ chunk-L4GHDMH2.js?v=abb20976:1005
+call @ chunk-L4GHDMH2.js?v=abb20976:1024
+warningOnce @ chunk-L4GHDMH2.js?v=abb20976:1029
+warning2 @ antd.js?v=abb20976:3340
+typeWarning @ antd.js?v=abb20976:3366
+typeWarning.deprecated @ antd.js?v=abb20976:3371
+useLegacyItems @ antd.js?v=abb20976:44581
+Tabs2 @ antd.js?v=abb20976:45587
+renderWithHooks @ chunk-XQLYTHWV.js?v=abb20976:11548
+mountIndeterminateComponent @ chunk-XQLYTHWV.js?v=abb20976:14926
+beginWork @ chunk-XQLYTHWV.js?v=abb20976:15914
+beginWork$1 @ chunk-XQLYTHWV.js?v=abb20976:19753
+performUnitOfWork @ chunk-XQLYTHWV.js?v=abb20976:19198
+workLoopConcurrent @ chunk-XQLYTHWV.js?v=abb20976:19189
+renderRootConcurrent @ chunk-XQLYTHWV.js?v=abb20976:19164
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18678
+workLoop @ chunk-XQLYTHWV.js?v=abb20976:197
+flushWork @ chunk-XQLYTHWV.js?v=abb20976:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=abb20976:384
+AIPipelineTestPage.tsx:114 🔍 testResult state changed: null
+AIPipelineTestPage.tsx:114 🔍 testResult state changed: null
+usePipelineTestMonitoring.ts:248 [2025-06-26T02:00:32.242Z] Error: Failed to start the connection: Error: The connection was stopped during negotiation.
+log @ @microsoft_signalr.js?v=abb20976:293
+_startInternal @ @microsoft_signalr.js?v=abb20976:2305
+await in _startInternal
+start @ @microsoft_signalr.js?v=abb20976:2198
+_startInternal @ @microsoft_signalr.js?v=abb20976:988
+_startWithStateTransitions @ @microsoft_signalr.js?v=abb20976:968
+start @ @microsoft_signalr.js?v=abb20976:958
+(anonymous) @ usePipelineTestMonitoring.ts:248
+(anonymous) @ usePipelineTestMonitoring.ts:319
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=abb20976:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=abb20976:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=abb20976:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=abb20976:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=abb20976:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=abb20976:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=abb20976:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=abb20976:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=abb20976:19432
+commitRoot @ chunk-XQLYTHWV.js?v=abb20976:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=abb20976:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18718
+workLoop @ chunk-XQLYTHWV.js?v=abb20976:197
+flushWork @ chunk-XQLYTHWV.js?v=abb20976:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=abb20976:384
+usePipelineTestMonitoring.ts:256 Failed to connect to pipeline test hub: AbortError: The connection was stopped during negotiation.
+    at HttpConnection._startInternal (@microsoft_signalr.js?v=abb20976:2273:19)
+(anonymous) @ usePipelineTestMonitoring.ts:256
+await in (anonymous)
+(anonymous) @ usePipelineTestMonitoring.ts:319
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=abb20976:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=abb20976:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=abb20976:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=abb20976:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=abb20976:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=abb20976:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=abb20976:19447
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18868
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=abb20976:9119
+commitRootImpl @ chunk-XQLYTHWV.js?v=abb20976:19432
+commitRoot @ chunk-XQLYTHWV.js?v=abb20976:19277
+finishConcurrentRender @ chunk-XQLYTHWV.js?v=abb20976:18805
+performConcurrentWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18718
+workLoop @ chunk-XQLYTHWV.js?v=abb20976:197
+flushWork @ chunk-XQLYTHWV.js?v=abb20976:176
+performWorkUntilDeadline @ chunk-XQLYTHWV.js?v=abb20976:384
+usePipelineTestMonitoring.ts:277 🔌 Disconnected from pipeline test hub
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:32.366Z] Information: WebSocket connected to ws://localhost:3001/hubs/pipeline-test?id=-91SP4xAwq9zpYU1eVdg_g&access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJhZG1pbi11c2VyLTAwMSIsInVuaXF1ZV9uYW1lIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQGJpcmVwb3J0aW5nLmxvY2FsIiwiZGlzcGxheV9uYW1lIjoiU3lzdGVtIEFkbWluaXN0cmF0b3IiLCJyb2xlIjoiQWRtaW4iLCJwZXJtaXNzaW9uIjpbImJpX2NvcGlsb3RfYWNjZXNzIiwicmVhZF9kYXRhIiwicXVlcnlfZGF0YSIsImV4cG9ydF9kYXRhIiwibWFuYWdlX3VzZXJzIiwidmlld19hdWRpdF9sb2dzIiwic3lzdGVtX2NvbmZpZ3VyZSJdLCJuYmYiOjE3NTA5MDMyMzEsImV4cCI6MTc1MDkwNjgzMSwiaWF0IjoxNzUwOTAzMjMxLCJpc3MiOiJCSVJlcG9ydGluZ0NvcGlsb3QiLCJhdWQiOiJCSVJlcG9ydGluZ0NvcGlsb3QtVXNlcnMifQ.oXzszUuR6q-3kkBKS6ycU755jdZCBgRcrr_6Aj117DA.
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:32.367Z] Information: Using HubProtocol 'json'.
+usePipelineTestMonitoring.ts:251 🔗 Connected to pipeline test hub
+testEnumNormalization.ts:5 🧪 Testing Enum Normalization...
+testEnumNormalization.ts:8 Test 1: String enum values
+testEnumNormalization.ts:10 Input: "BusinessContextAnalysis" -> Output: BusinessContextAnalysis
+testEnumNormalization.ts:14 Test 2: Numeric enum values
+testEnumNormalization.ts:18 Input: 0 -> Output: BusinessContextAnalysis
+testEnumNormalization.ts:19 Input: 1 -> Output: TokenBudgetManagement
+testEnumNormalization.ts:20 Input: 2 -> Output: SchemaRetrieval
+testEnumNormalization.ts:26 Test 3: Array normalization
+testEnumNormalization.ts:29 Input: (4) [0, 'TokenBudgetManagement', 2, 'AIGeneration']
+testEnumNormalization.ts:30 Output: (4) ['BusinessContextAnalysis', 'TokenBudgetManagement', 'SchemaRetrieval', 'AIGeneration']
+testEnumNormalization.ts:37 Test 4: Invalid values
+aiPipelineTest.ts:43 Unknown pipeline step value: 999 defaulting to BusinessContextAnalysis
+normalizePipelineStep @ aiPipelineTest.ts:43
+testEnumNormalization @ testEnumNormalization.ts:38
+(anonymous) @ testEnumNormalization.ts:80
+setTimeout
+(anonymous) @ testEnumNormalization.ts:78
+testEnumNormalization.ts:39 Input: 999 -> Output: BusinessContextAnalysis
+testEnumNormalization.ts:42 ✅ All enum normalization tests passed!
+testEnumNormalization.ts:45 🔍 Testing API Response Format...
+testEnumNormalization.ts:62 Mock API Response requestedSteps: [0]
+testEnumNormalization.ts:64 Normalized requestedSteps: ['BusinessContextAnalysis']
+testEnumNormalization.ts:67 ✅ API response normalization test passed!
+ComprehensiveSignalRMonitor.tsx:106 🔄 Auto-connecting to SignalR hub...
+ComprehensiveSignalRMonitor.tsx:106 🔄 Auto-connecting to SignalR hub...
+usePipelineTestMonitoring.ts:248 [2025-06-26T02:00:34.932Z] Error: Failed to start the connection: Error: The connection was stopped during negotiation.
+log @ @microsoft_signalr.js?v=abb20976:293
+_startInternal @ @microsoft_signalr.js?v=abb20976:2305
+await in _startInternal
+start @ @microsoft_signalr.js?v=abb20976:2198
+_startInternal @ @microsoft_signalr.js?v=abb20976:988
+_startWithStateTransitions @ @microsoft_signalr.js?v=abb20976:968
+start @ @microsoft_signalr.js?v=abb20976:958
+(anonymous) @ usePipelineTestMonitoring.ts:248
+(anonymous) @ ComprehensiveSignalRMonitor.tsx:107
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=abb20976:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=abb20976:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=abb20976:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=abb20976:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=abb20976:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=abb20976:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=abb20976:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=abb20976:19416
+commitRoot @ chunk-XQLYTHWV.js?v=abb20976:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=abb20976:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=abb20976:18627
+usePipelineTestMonitoring.ts:256 Failed to connect to pipeline test hub: AbortError: The connection was stopped during negotiation.
+    at HttpConnection._startInternal (@microsoft_signalr.js?v=abb20976:2273:19)
+(anonymous) @ usePipelineTestMonitoring.ts:256
+await in (anonymous)
+(anonymous) @ ComprehensiveSignalRMonitor.tsx:107
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=abb20976:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=abb20976:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=abb20976:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=abb20976:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=abb20976:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=abb20976:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=abb20976:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=abb20976:19416
+commitRoot @ chunk-XQLYTHWV.js?v=abb20976:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=abb20976:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=abb20976:18627
+usePipelineTestMonitoring.ts:277 🔌 Disconnected from pipeline test hub
+usePipelineTestMonitoring.ts:248 [2025-06-26T02:00:34.932Z] Error: Failed to start the connection: Error: The connection was stopped during negotiation.
+log @ @microsoft_signalr.js?v=abb20976:293
+_startInternal @ @microsoft_signalr.js?v=abb20976:2305
+await in _startInternal
+start @ @microsoft_signalr.js?v=abb20976:2198
+_startInternal @ @microsoft_signalr.js?v=abb20976:988
+_startWithStateTransitions @ @microsoft_signalr.js?v=abb20976:968
+start @ @microsoft_signalr.js?v=abb20976:958
+(anonymous) @ usePipelineTestMonitoring.ts:248
+(anonymous) @ usePipelineTestMonitoring.ts:319
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=abb20976:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=abb20976:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=abb20976:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=abb20976:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=abb20976:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=abb20976:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=abb20976:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=abb20976:19416
+commitRoot @ chunk-XQLYTHWV.js?v=abb20976:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=abb20976:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=abb20976:18627
+usePipelineTestMonitoring.ts:256 Failed to connect to pipeline test hub: AbortError: The connection was stopped during negotiation.
+    at HttpConnection._startInternal (@microsoft_signalr.js?v=abb20976:2273:19)
+(anonymous) @ usePipelineTestMonitoring.ts:256
+await in (anonymous)
+(anonymous) @ usePipelineTestMonitoring.ts:319
+commitHookEffectListMount @ chunk-XQLYTHWV.js?v=abb20976:16915
+commitPassiveMountOnFiber @ chunk-XQLYTHWV.js?v=abb20976:18156
+commitPassiveMountEffects_complete @ chunk-XQLYTHWV.js?v=abb20976:18129
+commitPassiveMountEffects_begin @ chunk-XQLYTHWV.js?v=abb20976:18119
+commitPassiveMountEffects @ chunk-XQLYTHWV.js?v=abb20976:18109
+flushPassiveEffectsImpl @ chunk-XQLYTHWV.js?v=abb20976:19490
+flushPassiveEffects @ chunk-XQLYTHWV.js?v=abb20976:19447
+commitRootImpl @ chunk-XQLYTHWV.js?v=abb20976:19416
+commitRoot @ chunk-XQLYTHWV.js?v=abb20976:19277
+performSyncWorkOnRoot @ chunk-XQLYTHWV.js?v=abb20976:18895
+flushSyncCallbacks @ chunk-XQLYTHWV.js?v=abb20976:9119
+(anonymous) @ chunk-XQLYTHWV.js?v=abb20976:18627
+usePipelineTestMonitoring.ts:277 🔌 Disconnected from pipeline test hub
+ComprehensiveSignalRMonitor.tsx:106 🔄 Auto-connecting to SignalR hub...
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:34.953Z] Information: WebSocket connected to ws://localhost:3001/hubs/pipeline-test?id=5VBxvDZEybJ99MvyNl0iIw&access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJhZG1pbi11c2VyLTAwMSIsInVuaXF1ZV9uYW1lIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQGJpcmVwb3J0aW5nLmxvY2FsIiwiZGlzcGxheV9uYW1lIjoiU3lzdGVtIEFkbWluaXN0cmF0b3IiLCJyb2xlIjoiQWRtaW4iLCJwZXJtaXNzaW9uIjpbImJpX2NvcGlsb3RfYWNjZXNzIiwicmVhZF9kYXRhIiwicXVlcnlfZGF0YSIsImV4cG9ydF9kYXRhIiwibWFuYWdlX3VzZXJzIiwidmlld19hdWRpdF9sb2dzIiwic3lzdGVtX2NvbmZpZ3VyZSJdLCJuYmYiOjE3NTA5MDMyMzEsImV4cCI6MTc1MDkwNjgzMSwiaWF0IjoxNzUwOTAzMjMxLCJpc3MiOiJCSVJlcG9ydGluZ0NvcGlsb3QiLCJhdWQiOiJCSVJlcG9ydGluZ0NvcGlsb3QtVXNlcnMifQ.oXzszUuR6q-3kkBKS6ycU755jdZCBgRcrr_6Aj117DA.
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:34.953Z] Information: Using HubProtocol 'json'.
+usePipelineTestMonitoring.ts:251 🔗 Connected to pipeline test hub
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:34.970Z] Information: WebSocket connected to ws://localhost:3001/hubs/pipeline-test?id=gllI09Dn81zN9PHocDCt7g&access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJhZG1pbi11c2VyLTAwMSIsInVuaXF1ZV9uYW1lIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQGJpcmVwb3J0aW5nLmxvY2FsIiwiZGlzcGxheV9uYW1lIjoiU3lzdGVtIEFkbWluaXN0cmF0b3IiLCJyb2xlIjoiQWRtaW4iLCJwZXJtaXNzaW9uIjpbImJpX2NvcGlsb3RfYWNjZXNzIiwicmVhZF9kYXRhIiwicXVlcnlfZGF0YSIsImV4cG9ydF9kYXRhIiwibWFuYWdlX3VzZXJzIiwidmlld19hdWRpdF9sb2dzIiwic3lzdGVtX2NvbmZpZ3VyZSJdLCJuYmYiOjE3NTA5MDMyMzEsImV4cCI6MTc1MDkwNjgzMSwiaWF0IjoxNzUwOTAzMjMxLCJpc3MiOiJCSVJlcG9ydGluZ0NvcGlsb3QiLCJhdWQiOiJCSVJlcG9ydGluZ0NvcGlsb3QtVXNlcnMifQ.oXzszUuR6q-3kkBKS6ycU755jdZCBgRcrr_6Aj117DA.
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:34.970Z] Information: Using HubProtocol 'json'.
+usePipelineTestMonitoring.ts:251 🔗 Connected to pipeline test hub
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:35.000Z] Information: WebSocket connected to ws://localhost:3001/hubs/pipeline-test?id=FfnSDk94O1wlOg2m37OOPg&access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJhZG1pbi11c2VyLTAwMSIsInVuaXF1ZV9uYW1lIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQGJpcmVwb3J0aW5nLmxvY2FsIiwiZGlzcGxheV9uYW1lIjoiU3lzdGVtIEFkbWluaXN0cmF0b3IiLCJyb2xlIjoiQWRtaW4iLCJwZXJtaXNzaW9uIjpbImJpX2NvcGlsb3RfYWNjZXNzIiwicmVhZF9kYXRhIiwicXVlcnlfZGF0YSIsImV4cG9ydF9kYXRhIiwibWFuYWdlX3VzZXJzIiwidmlld19hdWRpdF9sb2dzIiwic3lzdGVtX2NvbmZpZ3VyZSJdLCJuYmYiOjE3NTA5MDMyMzEsImV4cCI6MTc1MDkwNjgzMSwiaWF0IjoxNzUwOTAzMjMxLCJpc3MiOiJCSVJlcG9ydGluZ0NvcGlsb3QiLCJhdWQiOiJCSVJlcG9ydGluZ0NvcGlsb3QtVXNlcnMifQ.oXzszUuR6q-3kkBKS6ycU755jdZCBgRcrr_6Aj117DA.
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:35.000Z] Information: Using HubProtocol 'json'.
+usePipelineTestMonitoring.ts:251 🔗 Connected to pipeline test hub
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:35.031Z] Information: WebSocket connected to ws://localhost:3001/hubs/pipeline-test?id=KHxoODaUd_71BTBjvFVuQQ&access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJhZG1pbi11c2VyLTAwMSIsInVuaXF1ZV9uYW1lIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQGJpcmVwb3J0aW5nLmxvY2FsIiwiZGlzcGxheV9uYW1lIjoiU3lzdGVtIEFkbWluaXN0cmF0b3IiLCJyb2xlIjoiQWRtaW4iLCJwZXJtaXNzaW9uIjpbImJpX2NvcGlsb3RfYWNjZXNzIiwicmVhZF9kYXRhIiwicXVlcnlfZGF0YSIsImV4cG9ydF9kYXRhIiwibWFuYWdlX3VzZXJzIiwidmlld19hdWRpdF9sb2dzIiwic3lzdGVtX2NvbmZpZ3VyZSJdLCJuYmYiOjE3NTA5MDMyMzEsImV4cCI6MTc1MDkwNjgzMSwiaWF0IjoxNzUwOTAzMjMxLCJpc3MiOiJCSVJlcG9ydGluZ0NvcGlsb3QiLCJhdWQiOiJCSVJlcG9ydGluZ0NvcGlsb3QtVXNlcnMifQ.oXzszUuR6q-3kkBKS6ycU755jdZCBgRcrr_6Aj117DA.
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:35.032Z] Information: Using HubProtocol 'json'.
+usePipelineTestMonitoring.ts:251 🔗 Connected to pipeline test hub
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:35.063Z] Information: WebSocket connected to ws://localhost:3001/hubs/pipeline-test?id=2TJRQEv_1BpnAtptPdQ8hw&access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJhZG1pbi11c2VyLTAwMSIsInVuaXF1ZV9uYW1lIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQGJpcmVwb3J0aW5nLmxvY2FsIiwiZGlzcGxheV9uYW1lIjoiU3lzdGVtIEFkbWluaXN0cmF0b3IiLCJyb2xlIjoiQWRtaW4iLCJwZXJtaXNzaW9uIjpbImJpX2NvcGlsb3RfYWNjZXNzIiwicmVhZF9kYXRhIiwicXVlcnlfZGF0YSIsImV4cG9ydF9kYXRhIiwibWFuYWdlX3VzZXJzIiwidmlld19hdWRpdF9sb2dzIiwic3lzdGVtX2NvbmZpZ3VyZSJdLCJuYmYiOjE3NTA5MDMyMzEsImV4cCI6MTc1MDkwNjgzMSwiaWF0IjoxNzUwOTAzMjMxLCJpc3MiOiJCSVJlcG9ydGluZ0NvcGlsb3QiLCJhdWQiOiJCSVJlcG9ydGluZ0NvcGlsb3QtVXNlcnMifQ.oXzszUuR6q-3kkBKS6ycU755jdZCBgRcrr_6Aj117DA.
+@microsoft_signalr.js?v=abb20976:299 [2025-06-26T02:00:35.064Z] Information: Using HubProtocol 'json'.
+usePipelineTestMonitoring.ts:251 🔗 Connected to pipeline test hub
+AIPipelineTestPage.tsx:180 🔗 Joined test session: test_1750903238413_ayoc7wdwn
+AIPipelineTestPage.tsx:191 🚀 Sending test request: {testId: 'test_1750903238413_ayoc7wdwn', query: 'Top 10 depositors yesterday from UK', steps: Array(8), parameters: {…}}
+AIPipelineTestPage.tsx:192 🔍 [FRONTEND-DEBUG] Frontend code updated - step data merging enabled
+AIPipelineTestPage.tsx:193 Warning: [antd: message] Static function can not consume context like dynamic theme. Please use 'App' component instead.
+warning @ chunk-L4GHDMH2.js?v=abb20976:1005
+call @ chunk-L4GHDMH2.js?v=abb20976:1024
+warningOnce @ chunk-L4GHDMH2.js?v=abb20976:1029
+warning2 @ antd.js?v=abb20976:3340
+warnContext @ antd.js?v=abb20976:6252
+typeOpen @ antd.js?v=abb20976:69450
+staticMethods.<computed> @ antd.js?v=abb20976:69493
+runTest @ AIPipelineTestPage.tsx:193
+await in runTest
+(anonymous) @ antd.js?v=abb20976:13551
+callCallback2 @ chunk-XQLYTHWV.js?v=abb20976:3674
+invokeGuardedCallbackDev @ chunk-XQLYTHWV.js?v=abb20976:3699
+invokeGuardedCallback @ chunk-XQLYTHWV.js?v=abb20976:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-XQLYTHWV.js?v=abb20976:3736
+executeDispatch @ chunk-XQLYTHWV.js?v=abb20976:7014
+processDispatchQueueItemsInOrder @ chunk-XQLYTHWV.js?v=abb20976:7034
+processDispatchQueue @ chunk-XQLYTHWV.js?v=abb20976:7043
+dispatchEventsForPlugins @ chunk-XQLYTHWV.js?v=abb20976:7051
+(anonymous) @ chunk-XQLYTHWV.js?v=abb20976:7174
+batchedUpdates$1 @ chunk-XQLYTHWV.js?v=abb20976:18913
+batchedUpdates @ chunk-XQLYTHWV.js?v=abb20976:3579
+dispatchEventForPluginEventSystem @ chunk-XQLYTHWV.js?v=abb20976:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-XQLYTHWV.js?v=abb20976:5478
+dispatchEvent @ chunk-XQLYTHWV.js?v=abb20976:5472
+dispatchDiscreteEvent @ chunk-XQLYTHWV.js?v=abb20976:5449
+AIPipelineTestPage.tsx:196 ✅ Received test result: {testId: 'test_1750903238413_ayoc7wdwn', query: 'Top 10 depositors yesterday from UK', requestedSteps: Array(8), startTime: '2025-06-26T02:00:38.4854889Z', endTime: '2025-06-26T02:00:47.0756926Z', …}
+AIPipelineTestPage.tsx:197 🔍 Setting testResult state...
+AIPipelineTestPage.tsx:204 🔍 Current stepProgress state: {}
+AIPipelineTestPage.tsx:205 🔍 stepProgress keys: []
+AIPipelineTestPage.tsx:229 ⚠️ No stepProgress data available for merging
+AIPipelineTestPage.tsx:234 ✅ State updated, testResult should now be: {testId: 'test_1750903238413_ayoc7wdwn', query: 'Top 10 depositors yesterday from UK', requestedSteps: Array(8), startTime: '2025-06-26T02:00:38.4854889Z', endTime: '2025-06-26T02:00:47.0756926Z', …}
+AIPipelineTestResults.tsx:44 🔍 AIPipelineTestResults rendering with result: {testId: 'test_1750903238413_ayoc7wdwn', query: 'Top 10 depositors yesterday from UK', requestedSteps: Array(8), startTime: '2025-06-26T02:00:38.4854889Z', endTime: '2025-06-26T02:00:47.0756926Z', …}
+AIPipelineTestResults.tsx:116 🔍 Rendering step results. requestedSteps: (8) ['BusinessContextAnalysis', 'TokenBudgetManagement', 'SchemaRetrieval', 'PromptBuilding', 'AIGeneration', 'SQLValidation', 'SQLExecution', 'ResultsProcessing']
+AIPipelineTestResults.tsx:117 🔍 Available results: {BusinessContextAnalysis: {…}, TokenBudgetManagement: {…}, SchemaRetrieval: {…}, PromptBuilding: {…}, ResultsProcessing: {…}}
+AIPipelineTestResults.tsx:118 🔍 [DEBUG] Full result object structure: {
+  "testId": "test_1750903238413_ayoc7wdwn",
+  "query": "Top 10 depositors yesterday from UK",
+  "requestedSteps": [
+    "BusinessContextAnalysis",
+    "TokenBudgetManagement",
+    "SchemaRetrieval",
+    "PromptBuilding",
+    "AIGeneration",
+    "SQLValidation",
+    "SQLExecution",
+    "ResultsProcessing"
+  ],
+  "startTime": "2025-06-26T02:00:38.4854889Z",
+  "endTime": "2025-06-26T02:00:47.0756926Z",
+  "totalDurationMs": 8595,
   "success": true,
-  "data": {
-    "queryId": "query-456",
-    "analysisTimestamp": "2024-01-15T10:30:00Z",
-    "processingTimeMs": 150,
-    "businessContext": {
-      "confidence": 0.89,
-      "intent": {
-        "type": "aggregation",
-        "confidence": 0.92,
-        "complexity": "moderate",
-        "description": "User wants to aggregate sales data by region over a quarterly time period",
-        "businessGoal": "Analyze regional sales performance to identify growth opportunities",
-        "subIntents": ["time_analysis", "geographic_comparison"],
-        "reasoning": [
-          "Query contains aggregation keywords: 'quarterly', 'by region'",
-          "Time dimension identified: 'last year'",
-          "Geographic dimension identified: 'region'"
-        ]
-      },
-      "entities": [
-        {
-          "id": "ent-001",
-          "name": "sales",
-          "type": "metric",
-          "startPosition": 17,
-          "endPosition": 22,
-          "confidence": 0.95,
-          "businessMeaning": "Revenue generated from product sales",
-          "context": "Primary business metric for performance analysis",
-          "suggestedColumns": ["amount", "revenue", "total_sales"],
-          "relatedTables": ["sales_fact", "revenue_summary"],
-          "relationships": [
-            {
-              "relatedEntity": "revenue",
-              "relationshipType": "synonym",
-              "strength": 0.9
-            }
-          ]
-        }
-      ],
-      "domain": {
-        "name": "Sales Analytics",
-        "description": "Analysis of sales performance, trends, and geographic distribution",
-        "relevance": 0.94,
-        "concepts": ["Revenue", "Territory Management", "Performance Analysis"],
-        "relationships": ["Sales connects to Customer", "Region connects to Territory"]
-      },
-      "timeContext": {
-        "period": "last year",
-        "granularity": "quarterly", 
-        "relativeTo": "current date",
-        "startDate": "2023-01-01",
-        "endDate": "2023-12-31"
-      }
-    },
-    "suggestedQueries": [
-      {
-        "query": "Show me quarterly sales by region for the last year compared to previous year",
-        "confidence": 0.82,
-        "improvement": "Adds comparison baseline for better insights"
-      }
-    ],
-    "estimatedExecutionTime": 2.3,
-    "dataQualityScore": 0.85
-  }
-}
-```
-
-### 2. Query Understanding Flow
-**Endpoint:** `POST /api/business-intelligence/query/understand`
-
-**Purpose:** Get step-by-step query processing flow for transparency and debugging.
-
-**Request Body:**
-```json
-{
-  "query": "Show me quarterly sales by region for the last year",
-  "includeSteps": true,
-  "includeAlternatives": true,
-  "includeConfidenceBreakdown": true
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "queryId": "query-789",
-    "steps": [
-      {
-        "step": 1,
-        "title": "Query Parsing",
-        "description": "Breaking down the natural language query into components",
-        "status": "completed",
-        "confidence": 0.95,
-        "processingTimeMs": 45,
-        "details": {
-          "tokens": ["Show", "me", "quarterly", "sales", "by", "region"],
-          "syntaxTree": {...},
-          "identifiedPatterns": ["aggregation_pattern", "time_pattern"]
-        }
-      },
-      {
-        "step": 2,
-        "title": "Entity Recognition",
-        "description": "Identifying business entities and metrics",
-        "status": "completed", 
-        "confidence": 0.88,
-        "processingTimeMs": 67,
-        "details": {
-          "entitiesFound": 3,
-          "highConfidenceEntities": 2,
-          "ambiguousEntities": 1
-        }
-      }
-    ],
-    "alternatives": [
-      {
-        "id": "alt-001",
-        "type": "trend_analysis", 
-        "confidence": 0.75,
-        "description": "Analyze sales trends over time",
-        "reasoning": "Time dimension suggests trend analysis"
-      }
-    ],
-    "confidenceBreakdown": {
-      "overallConfidence": 0.89,
-      "factors": [
-        {
-          "name": "Entity Recognition",
-          "score": 0.92,
-          "impact": "high",
-          "explanation": "Clear business entities identified"
-        }
-      ]
-    }
-  }
-}
-```
-
-### 3. Query Suggestions
-**Endpoint:** `GET /api/business-intelligence/query/suggestions`
-
-**Purpose:** Get query suggestions based on user context and history.
-
-**Query Parameters:**
-- `userId` (required): User ID
-- `context` (optional): Current context (department, role)
-- `limit` (optional): Number of suggestions (default: 10)
-- `category` (optional): Suggestion category (popular, recent, recommended)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "suggestions": [
-      {
-        "id": "sugg-001",
-        "query": "Show me top 10 customers by revenue this month",
-        "category": "popular",
-        "confidence": 0.87,
-        "description": "Popular query for sales analysis",
-        "estimatedComplexity": "simple",
-        "tags": ["sales", "customers", "revenue"]
-      }
-    ],
-    "categories": ["popular", "recent", "recommended", "similar"],
-    "totalSuggestions": 25
-  }
-}
-```
-
-### 4. Query History
-**Endpoint:** `GET /api/business-intelligence/query/history`
-
-**Purpose:** Get user's query history with analysis results.
-
-**Query Parameters:**
-- `userId` (required): User ID
-- `limit` (optional): Number of queries (default: 20)
-- `startDate` (optional): Filter from date
-- `endDate` (optional): Filter to date
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "queries": [
-      {
-        "queryId": "query-123",
-        "query": "Show me quarterly sales by region",
-        "timestamp": "2024-01-15T10:30:00Z",
-        "confidence": 0.89,
-        "executionTime": 2.3,
-        "intent": "aggregation",
-        "entities": ["sales", "region", "quarterly"],
-        "success": true
-      }
-    ],
-    "pagination": {
-      "total": 156,
-      "page": 1,
-      "pageSize": 20,
-      "totalPages": 8
-    }
-  }
-}
-```
-
-## Business Context Endpoints
-
-### 5. Business Context Profile
-**Endpoint:** `GET /api/business-intelligence/context/business-profile`
-
-**Purpose:** Get comprehensive business context for a query.
-
-**Query Parameters:**
-- `query` (required): The natural language query
-- `userId` (required): User ID for context
-- `includeUserContext` (optional): Include user-specific context
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "profile": {
-      "confidence": 0.89,
-      "intent": {...},
-      "entities": [...],
-      "domain": {...},
-      "businessTerms": ["Sales", "Revenue", "Region"],
-      "timeContext": {...},
-      "userContext": {
-        "role": "analyst",
-        "department": "sales",
-        "accessLevel": "standard",
-        "preferences": {
-          "defaultTimeRange": "last_quarter",
-          "preferredVisualization": "chart"
-        }
-      }
-    },
-    "metadata": {
-      "processingTime": 150,
-      "modelVersion": "v2.1",
-      "lastUpdated": "2024-01-15T08:00:00Z"
-    }
-  }
-}
-```
-
-### 6. Entity Detection
-**Endpoint:** `GET /api/business-intelligence/context/entities`
-
-**Purpose:** Get detected entities from a query with detailed information.
-
-**Query Parameters:**
-- `query` (required): The natural language query
-- `includeRelationships` (optional): Include entity relationships
-- `includeTableMappings` (optional): Include database table mappings
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "entities": [
-      {
-        "id": "ent-001",
-        "name": "sales",
-        "type": "metric",
-        "startPosition": 17,
-        "endPosition": 22,
-        "confidence": 0.95,
-        "businessMeaning": "Revenue generated from product sales",
-        "context": "Primary business metric for performance analysis",
-        "suggestedColumns": ["amount", "revenue", "total_sales"],
-        "relatedTables": ["sales_fact", "revenue_summary"],
-        "relationships": [...],
-        "synonyms": ["revenue", "income"],
-        "dataType": "numeric",
-        "aggregationMethods": ["sum", "avg", "count"]
-      }
-    ],
-    "totalEntities": 3,
-    "averageConfidence": 0.92,
-    "processingTimeMs": 89
-  }
-}
-```
-
-### 7. Intent Classification
-**Endpoint:** `GET /api/business-intelligence/context/intent`
-
-**Purpose:** Get detailed intent classification with alternatives.
-
-**Query Parameters:**
-- `query` (required): The natural language query
-- `includeAlternatives` (optional): Include alternative interpretations
-- `includeConfidenceBreakdown` (optional): Include confidence analysis
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "primaryIntent": {
-      "type": "aggregation",
-      "confidence": 0.92,
-      "complexity": "moderate",
-      "description": "User wants to aggregate sales data by region over a quarterly time period",
-      "businessGoal": "Analyze regional sales performance to identify growth opportunities",
-      "subIntents": ["time_analysis", "geographic_comparison"],
-      "reasoning": [
-        "Query contains aggregation keywords: 'quarterly', 'by region'",
-        "Time dimension identified: 'last year'",
-        "Geographic dimension identified: 'region'"
-      ],
-      "recommendedActions": [
-        "Use GROUP BY for regional aggregation",
-        "Apply quarterly date filtering",
-        "Consider adding comparison metrics"
-      ]
-    },
-    "alternatives": [
-      {
-        "id": "alt-001",
-        "type": "trend_analysis",
-        "confidence": 0.75,
-        "description": "Analyze sales trends over time",
-        "reasoning": "Time dimension suggests trend analysis",
-        "tradeoffs": ["More complex analysis", "Requires time series data"]
-      }
-    ],
-    "confidenceBreakdown": {
-      "overallConfidence": 0.92,
-      "factors": [
-        {
-          "name": "Keyword Analysis",
-          "score": 0.95,
-          "impact": "high",
-          "explanation": "Clear aggregation keywords identified"
+  "error": null,
+  "results": {
+    "BusinessContextAnalysis": {
+      "businessProfile": {
+        "analysisId": "07cbfa14-4b62-4ae2-837e-6644d5b0c0fe",
+        "originalQuestion": "Top 10 depositors yesterday from UK",
+        "userId": "admin-user-001",
+        "intent": {
+          "type": "Aggregation",
+          "description": "The question is asking for a summary of the top 10 depositors from the UK on a specific date (yesterday). This requires aggregation of deposit data.",
+          "confidenceScore": 0.9,
+          "subIntents": [
+            "Detail"
+          ],
+          "keywords": [],
+          "metadata": {}
         },
-        {
-          "name": "Context Relevance",
-          "score": 0.88,
-          "impact": "medium",
-          "explanation": "Query aligns with user's department context"
-        }
-      ]
-    }
-  }
-}
-```
-
-## Schema Intelligence Endpoints
-
-### 8. Contextual Schema Help
-**Endpoint:** `GET /api/business-intelligence/schema/contextual-help`
-
-**Purpose:** Get contextual schema assistance for query construction.
-
-**Query Parameters:**
-- `query` (required): The natural language query
-- `tables` (optional): Specific tables to focus on
-- `includeOptimization` (optional): Include optimization suggestions
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "relevantTables": [
-      {
-        "name": "sales_fact",
-        "relevanceScore": 0.95,
-        "description": "Main sales transaction table with detailed sales records",
-        "businessPurpose": "Core sales data for analytics and reporting",
-        "columns": [
+        "domain": {
+          "name": "Gaming",
+          "description": "Gaming analytics domain",
+          "relatedTables": [
+            "tbl_Daily_actions"
+          ],
+          "keyConcepts": [
+            "players",
+            "games"
+          ],
+          "relevanceScore": 0.8,
+          "metadata": {}
+        },
+        "entities": [
           {
-            "name": "sale_id",
-            "type": "string",
-            "description": "Unique sale identifier",
-            "businessMeaning": "Primary key for sales transactions",
-            "nullable": false,
-            "isPrimaryKey": true,
-            "isForeignKey": false,
-            "relevanceScore": 0.8
+            "name": "depositors",
+            "type": "Table",
+            "originalText": "depositors",
+            "mappedTableName": "",
+            "mappedColumnName": "",
+            "confidenceScore": 1,
+            "properties": {},
+            "metadata": {},
+            "extractionMethod": "",
+            "position": 0
           },
           {
-            "name": "amount",
-            "type": "number",
-            "description": "Sale amount in USD",
-            "businessMeaning": "Revenue value of the transaction",
-            "nullable": false,
-            "isPrimaryKey": false,
-            "isForeignKey": false,
-            "relevanceScore": 0.98
-          }
-        ],
-        "relationships": [
+            "name": "Top 10",
+            "type": "Metric",
+            "originalText": "Top 10",
+            "mappedTableName": "",
+            "mappedColumnName": "",
+            "confidenceScore": 1,
+            "properties": {},
+            "metadata": {},
+            "extractionMethod": "",
+            "position": 0
+          },
           {
-            "relatedTable": "region_dim",
-            "relationshipType": "many-to-one",
-            "strength": 0.9,
-            "description": "Sales belong to regions",
-            "joinCondition": "sales_fact.region_id = region_dim.region_id"
+            "name": "UK",
+            "type": "Dimension",
+            "originalText": "from UK",
+            "mappedTableName": "",
+            "mappedColumnName": "",
+            "confidenceScore": 1,
+            "properties": {},
+            "metadata": {},
+            "extractionMethod": "",
+            "position": 0
+          },
+          {
+            "name": "yesterday",
+            "type": "TimeReference",
+            "originalText": "yesterday",
+            "mappedTableName": "",
+            "mappedColumnName": "",
+            "confidenceScore": 1,
+            "properties": {},
+            "metadata": {},
+            "extractionMethod": "",
+            "position": 0
           }
         ],
-        "estimatedRowCount": 2500000,
-        "lastUpdated": "2024-01-15T08:00:00Z",
-        "dataQuality": {
-          "completeness": 0.98,
-          "accuracy": 0.95,
-          "consistency": 0.92
-        }
-      }
-    ],
-    "suggestedJoins": [
-      {
-        "tables": ["sales_fact", "region_dim"],
-        "joinType": "INNER JOIN",
-        "condition": "sales_fact.region_id = region_dim.region_id",
-        "confidence": 0.95,
-        "reasoning": "Required for regional analysis"
-      }
-    ],
-    "optimizationTips": [
-      {
-        "type": "indexing",
-        "suggestion": "Consider adding index on sale_date for time-based queries",
-        "impact": "high",
-        "estimatedImprovement": "60% faster execution"
-      }
-    ],
-    "potentialIssues": [
-      {
-        "type": "data_quality",
-        "description": "Some regions may have incomplete data for Q4 2023",
-        "severity": "medium",
-        "recommendation": "Filter out incomplete records or use data imputation"
-      }
-    ]
-  }
-}
-```
-
-### 9. Table Relationships
-**Endpoint:** `GET /api/business-intelligence/schema/relationships`
-
-**Purpose:** Get table relationships relevant to the query.
-
-**Query Parameters:**
-- `tables` (required): Comma-separated list of table names
-- `includeIndirect` (optional): Include indirect relationships
-- `maxDepth` (optional): Maximum relationship depth (default: 3)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "relationships": [
-      {
-        "fromTable": "sales_fact",
-        "toTable": "region_dim",
-        "relationshipType": "many-to-one",
-        "strength": 0.9,
-        "joinCondition": "sales_fact.region_id = region_dim.region_id",
-        "description": "Sales transactions are associated with geographic regions",
-        "cardinality": {
-          "from": "many",
-          "to": "one"
+        "businessTerms": [],
+        "termRelevanceScores": {},
+        "confidenceScore": 0.91,
+        "createdAt": "2025-06-26T02:00:44.583084Z",
+        "metadata": {},
+        "identifiedMetrics": [
+          "Top 10"
+        ],
+        "identifiedDimensions": [
+          "UK"
+        ],
+        "timeContext": {
+          "startDate": null,
+          "endDate": null,
+          "relativeExpression": "yesterday",
+          "granularity": "Day"
         },
-        "isRequired": true
-      }
-    ],
-    "relationshipGraph": {
-      "nodes": [...],
-      "edges": [...],
-      "clusters": [...]
+        "comparisonTerms": [],
+        "userPatterns": {}
+      },
+      "extractedEntities": 4,
+      "confidenceScore": 0.91,
+      "intent": "Aggregation",
+      "domain": "Gaming",
+      "success": true,
+      "durationMs": 6057,
+      "error": null
     },
-    "suggestedQueryPath": [
-      "sales_fact",
-      "region_dim",
-      "time_dim"
-    ]
-  }
-}
-```
-
-## Business Terms & Glossary Endpoints
-
-### 10. Business Terms Glossary
-**Endpoint:** `GET /api/business-intelligence/terms/glossary`
-
-**Purpose:** Get business terms glossary with definitions and relationships.
-
-**Query Parameters:**
-- `category` (optional): Filter by category
-- `search` (optional): Search term
-- `page` (optional): Page number (default: 1)
-- `pageSize` (optional): Items per page (default: 20)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "terms": [
-      {
-        "id": "term-001",
-        "name": "Sales",
-        "definition": "Revenue generated from product or service transactions",
-        "category": "Financial",
-        "aliases": ["Revenue", "Income"],
-        "relatedTerms": [
+    "TokenBudgetManagement": {
+      "tokenBudget": {
+        "intentType": "Aggregation",
+        "maxTotalTokens": 4000,
+        "basePromptTokens": 256,
+        "reservedResponseTokens": 500,
+        "availableContextTokens": 3244,
+        "schemaContextBudget": 1297,
+        "businessContextBudget": 729,
+        "examplesBudget": 777,
+        "rulesBudget": 324,
+        "glossaryBudget": 162,
+        "createdAt": "2025-06-26T01:30:12.5013167Z",
+        "allocationStrategy": {
+          "schemaContextPercentage": 0.4,
+          "businessContextPercentage": 0.25,
+          "examplesPercentage": 0.2,
+          "rulesPercentage": 0.1,
+          "glossaryPercentage": 0.05
+        }
+      },
+      "maxTokens": 4000,
+      "availableContextTokens": 3244,
+      "reservedTokens": 500,
+      "success": true,
+      "durationMs": 12,
+      "error": null
+    },
+    "SchemaRetrieval": {
+      "schemaMetadata": {
+        "relevantTables": [
           {
-            "termId": "term-002",
-            "name": "Revenue",
-            "relationshipType": "synonym",
-            "strength": 0.95
+            "id": 3,
+            "tableId": "3",
+            "tableName": "tbl_Daily_actions",
+            "schemaName": "common",
+            "businessName": "Daily Stats",
+            "businessPurpose": "CORE TABLE: Comprehensive daily player statistics and financial metrics aggregated by player and date",
+            "businessContext": "The most important table containing all daily financial and gaming activity per player. Includes deposits, withdraw
+AIPipelineTestResults.tsx:129 🔍 Step BusinessContextAnalysis: {stepData: {…}, stepResult: {…}, status: {…}}
+AIPipelineTestResults.tsx:168 🔍 [RENDER] About to render step BusinessContextAnalysis with stepResult: {businessProfile: {…}, extractedEntities: 4, confidenceScore: 0.91, intent: 'Aggregation', domain: 'Gaming', …}
+AIPipelineTestResults.tsx:170 🔍 [RENDER] renderStepSpecificResults returned: {$$typeof: Symbol(react.element), key: null, ref: null, props: {…}, type: ƒ, …}
+AIPipelineTestResults.tsx:129 🔍 Step TokenBudgetManagement: {stepData: {…}, stepResult: {…}, status: {…}}
+AIPipelineTestResults.tsx:168 🔍 [RENDER] About to render step TokenBudgetManagement with stepResult: {tokenBudget: {…}, maxTokens: 4000, availableContextTokens: 3244, reservedTokens: 500, success: true, …}
+AIPipelineTestResults.tsx:170 🔍 [RENDER] renderStepSpecificResults returned: {$$typeof: Symbol(react.element), type: 'div', key: null, ref: null, props: {…}, …}
+AIPipelineTestResults.tsx:129 🔍 Step SchemaRetrieval: {stepData: {…}, stepResult: {…}, status: {…}}
+AIPipelineTestResults.tsx:168 🔍 [RENDER] About to render step SchemaRetrieval with stepResult: {schemaMetadata: {…}, tablesRetrieved: 3, relevanceScore: 0.8, tableNames: Array(3), success: true, …}
+AIPipelineTestResults.tsx:170 🔍 [RENDER] renderStepSpecificResults returned: {$$typeof: Symbol(react.element), type: 'div', key: null, ref: null, props: {…}, …}
+AIPipelineTestResults.tsx:129 🔍 Step PromptBuilding: {stepData: {…}, stepResult: {…}, status: {…}}
+AIPipelineTestResults.tsx:168 🔍 [RENDER] About to render step PromptBuilding with stepResult: {prompt: 'You are an expert business intelligence analyst wi…y the SQL query without additional explanation.\r\n', promptLength: 2743, estimatedTokens: 686, success: true, durationMs: 2282, …}
+AIPipelineTestResults.tsx:170 🔍 [RENDER] renderStepSpecificResults returned: {$$typeof: Symbol(react.element), type: 'div', key: null, ref: null, props: {…}, …}
+AIPipelineTestResults.tsx:129 🔍 Step AIGeneration: {stepData: undefined, stepResult: undefined, status: {…}}
+AIPipelineTestResults.tsx:129 🔍 Step SQLValidation: {stepData: undefined, stepResult: undefined, status: {…}}
+AIPipelineTestResults.tsx:129 🔍 Step SQLExecution: {stepData: undefined, stepResult: undefined, status: {…}}
+AIPipelineTestResults.tsx:129 🔍 Step ResultsProcessing: {stepData: {…}, stepResult: {…}, status: {…}}
+AIPipelineTestResults.tsx:168 🔍 [RENDER] About to render step ResultsProcessing with stepResult: {totalSteps: 4, successfulSteps: 4, successRate: 1, formattedResults: 'JSON format results generated', exportFormat: 'json', …}
+AIPipelineTestResults.tsx:170 🔍 [RENDER] renderStepSpecificResults returned: {$$typeof: Symbol(react.element), type: 'div', key: null, ref: null, props: {…}, …}
+AIPipelineTestResults.tsx:44 🔍 AIPipelineTestResults rendering with result: {testId: 'test_1750903238413_ayoc7wdwn', query: 'Top 10 depositors yesterday from UK', requestedSteps: Array(8), startTime: '2025-06-26T02:00:38.4854889Z', endTime: '2025-06-26T02:00:47.0756926Z', …}
+AIPipelineTestResults.tsx:116 🔍 Rendering step results. requestedSteps: (8) ['BusinessContextAnalysis', 'TokenBudgetManagement', 'SchemaRetrieval', 'PromptBuilding', 'AIGeneration', 'SQLValidation', 'SQLExecution', 'ResultsProcessing']
+AIPipelineTestResults.tsx:117 🔍 Available results: {BusinessContextAnalysis: {…}, TokenBudgetManagement: {…}, SchemaRetrieval: {…}, PromptBuilding: {…}, ResultsProcessing: {…}}
+AIPipelineTestResults.tsx:118 🔍 [DEBUG] Full result object structure: {
+  "testId": "test_1750903238413_ayoc7wdwn",
+  "query": "Top 10 depositors yesterday from UK",
+  "requestedSteps": [
+    "BusinessContextAnalysis",
+    "TokenBudgetManagement",
+    "SchemaRetrieval",
+    "PromptBuilding",
+    "AIGeneration",
+    "SQLValidation",
+    "SQLExecution",
+    "ResultsProcessing"
+  ],
+  "startTime": "2025-06-26T02:00:38.4854889Z",
+  "endTime": "2025-06-26T02:00:47.0756926Z",
+  "totalDurationMs": 8595,
+  "success": true,
+  "error": null,
+  "results": {
+    "BusinessContextAnalysis": {
+      "businessProfile": {
+        "analysisId": "07cbfa14-4b62-4ae2-837e-6644d5b0c0fe",
+        "originalQuestion": "Top 10 depositors yesterday from UK",
+        "userId": "admin-user-001",
+        "intent": {
+          "type": "Aggregation",
+          "description": "The question is asking for a summary of the top 10 depositors from the UK on a specific date (yesterday). This requires aggregation of deposit data.",
+          "confidenceScore": 0.9,
+          "subIntents": [
+            "Detail"
+          ],
+          "keywords": [],
+          "metadata": {}
+        },
+        "domain": {
+          "name": "Gaming",
+          "description": "Gaming analytics domain",
+          "relatedTables": [
+            "tbl_Daily_actions"
+          ],
+          "keyConcepts": [
+            "players",
+            "games"
+          ],
+          "relevanceScore": 0.8,
+          "metadata": {}
+        },
+        "entities": [
+          {
+            "name": "depositors",
+            "type": "Table",
+            "originalText": "depositors",
+            "mappedTableName": "",
+            "mappedColumnName": "",
+            "confidenceScore": 1,
+            "properties": {},
+            "metadata": {},
+            "extractionMethod": "",
+            "position": 0
+          },
+          {
+            "name": "Top 10",
+            "type": "Metric",
+            "originalText": "Top 10",
+            "mappedTableName": "",
+            "mappedColumnName": "",
+            "confidenceScore": 1,
+            "properties": {},
+            "metadata": {},
+            "extractionMethod": "",
+            "position": 0
+          },
+          {
+            "name": "UK",
+            "type": "Dimension",
+            "originalText": "from UK",
+            "mappedTableName": "",
+            "mappedColumnName": "",
+            "confidenceScore": 1,
+            "properties": {},
+            "metadata": {},
+            "extractionMethod": "",
+            "position": 0
+          },
+          {
+            "name": "yesterday",
+            "type": "TimeReference",
+            "originalText": "yesterday",
+            "mappedTableName": "",
+            "mappedColumnName": "",
+            "confidenceScore": 1,
+            "properties": {},
+            "metadata": {},
+            "extractionMethod": "",
+            "position": 0
           }
         ],
-        "businessContext": "Used in financial reporting and performance analysis",
-        "dataLineage": [
-          {
-            "table": "sales_fact",
-            "column": "amount",
-            "transformation": "SUM(amount)"
-          }
+        "businessTerms": [],
+        "termRelevanceScores": {},
+        "confidenceScore": 0.91,
+        "createdAt": "2025-06-26T02:00:44.583084Z",
+        "metadata": {},
+        "identifiedMetrics": [
+          "Top 10"
         ],
-        "lastUpdated": "2024-01-10T10:00:00Z",
-        "approvedBy": "business-analyst-123",
-        "version": "1.2",
-        "status": "approved"
-      }
-    ],
-    "categories": [
-      {
-        "name": "Financial",
-        "description": "Financial and accounting terms",
-        "termCount": 15
-      }
-    ],
-    "pagination": {
-      "total": 156,
-      "page": 1,
-      "pageSize": 20,
-      "totalPages": 8
-    }
-  }
-}
-```
-
-### 11. Term Search
-**Endpoint:** `GET /api/business-intelligence/terms/search`
-
-**Purpose:** Search business terms with advanced filtering.
-
-**Query Parameters:**
-- `q` (required): Search query
-- `category` (optional): Filter by category
-- `includeDefinitions` (optional): Include full definitions
-- `fuzzy` (optional): Enable fuzzy search (default: true)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "results": [
-      {
-        "id": "term-001",
-        "name": "Sales",
-        "definition": "Revenue generated from product or service transactions",
-        "category": "Financial",
-        "relevanceScore": 0.95,
-        "matchType": "exact",
-        "highlightedText": "<mark>Sales</mark>"
-      }
-    ],
-    "totalResults": 12,
-    "searchTime": 45,
-    "suggestions": ["Revenue", "Income", "Profit"]
-  }
-}
-```
-
-### 12. Term Relationships
-**Endpoint:** `GET /api/business-intelligence/terms/relationships`
-
-**Purpose:** Get relationships between business terms.
-
-**Query Parameters:**
-- `termId` (required): Primary term ID
-- `relationshipTypes` (optional): Filter by relationship types
-- `maxDepth` (optional): Maximum relationship depth
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "primaryTerm": {
-      "id": "term-001",
-      "name": "Sales",
-      "definition": "Revenue generated from product or service transactions"
-    },
-    "relationships": [
-      {
-        "termId": "term-002",
-        "name": "Revenue",
-        "relationshipType": "synonym",
-        "strength": 0.95,
-        "bidirectional": true,
-        "description": "Sales and Revenue are used interchangeably"
-      }
-    ],
-    "relationshipGraph": {
-      "nodes": [...],
-      "edges": [...],
-      "clusters": [...]
-    }
-  }
-}
-```
-
-## Enhanced Schema Intelligence Endpoints
-
-### 13. Schema Analysis
-**Endpoint:** `POST /api/business-intelligence/schema/analyze`
-
-**Purpose:** Comprehensive schema analysis for query optimization and table recommendations.
-
-**Request Body:**
-```json
-{
-  "query": "Show me quarterly sales by region for the last year",
-  "includeOptimizations": true,
-  "includeDataQuality": true,
-  "includeRelationships": true
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "relevantTables": [
-      {
-        "name": "sales_fact",
-        "relevanceScore": 0.95,
-        "description": "Main sales transaction table with detailed sales records",
-        "businessPurpose": "Core sales data for analytics and reporting",
-        "columns": [...],
-        "relationships": [...],
-        "estimatedRowCount": 2500000,
-        "lastUpdated": "2024-01-15T08:00:00Z",
-        "dataQuality": {
-          "completeness": 0.98,
-          "accuracy": 0.95,
-          "consistency": 0.92
-        }
-      }
-    ],
-    "suggestedJoins": [
-      {
-        "tables": ["sales_fact", "region_dim"],
-        "joinType": "INNER JOIN",
-        "condition": "sales_fact.region_id = region_dim.region_id",
-        "confidence": 0.95,
-        "reasoning": "Required for regional analysis - high confidence foreign key relationship"
-      }
-    ],
-    "optimizationTips": [
-      {
-        "type": "indexing",
-        "suggestion": "Consider adding composite index on (region_id, sale_date) for time-based regional queries",
-        "impact": "high",
-        "estimatedImprovement": "60% faster execution for regional time series queries"
-      }
-    ],
-    "potentialIssues": [
-      {
-        "type": "data_quality",
-        "description": "Some regions may have incomplete data for Q4 2023",
-        "severity": "medium",
-        "recommendation": "Filter out incomplete records or use data imputation"
-      }
-    ]
-  }
-}
-```
-
-### 14. Join Recommendations
-**Endpoint:** `GET /api/business-intelligence/schema/join-recommendations`
-
-**Purpose:** Get intelligent join recommendations based on query context.
-
-**Query Parameters:**
-- `tables` (required): Comma-separated list of table names
-- `query` (optional): Natural language query for context
-- `includeAlternatives` (optional): Include alternative join strategies
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "recommendations": [
-      {
-        "id": "join-001",
-        "tables": ["sales_fact", "region_dim"],
-        "joinType": "INNER JOIN",
-        "condition": "sales_fact.region_id = region_dim.region_id",
-        "confidence": 0.95,
-        "reasoning": "Required for regional analysis - high confidence foreign key relationship",
-        "performance": {
-          "estimatedRows": 2500000,
-          "estimatedCost": "medium",
-          "indexRecommendations": ["region_id"]
-        }
-      }
-    ],
-    "alternatives": [
-      {
-        "id": "join-alt-001",
-        "joinType": "LEFT JOIN",
-        "reasoning": "Use if you want to include sales without region data",
-        "tradeoffs": ["May include null regions", "Slightly better performance"]
-      }
-    ]
-  }
-}
-```
-
-### 15. Schema Optimization
-**Endpoint:** `GET /api/business-intelligence/schema/optimization`
-
-**Purpose:** Get schema optimization suggestions for better query performance.
-
-**Query Parameters:**
-- `tables` (optional): Focus on specific tables
-- `queryPatterns` (optional): Common query patterns to optimize for
-- `includeIndexing` (optional): Include indexing recommendations
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "optimizations": [
-      {
-        "type": "indexing",
-        "table": "sales_fact",
-        "suggestion": "CREATE INDEX idx_sales_region_date ON sales_fact(region_id, sale_date)",
-        "impact": "high",
-        "estimatedImprovement": "60% faster execution for regional time series queries",
-        "queryPatterns": ["regional analysis", "time-based filtering"]
-      },
-      {
-        "type": "partitioning",
-        "table": "sales_fact",
-        "suggestion": "Partition sales_fact table by sale_date for improved query performance",
-        "impact": "medium",
-        "estimatedImprovement": "40% faster execution for date range queries"
-      }
-    ],
-    "performanceInsights": {
-      "slowQueries": [...],
-      "bottlenecks": [...],
-      "recommendations": [...]
-    }
-  }
-}
-```
-
-## Enhanced Business Terms Endpoints
-
-### 16. Term Categories
-**Endpoint:** `GET /api/business-intelligence/terms/categories`
-
-**Purpose:** Get business term categories with hierarchical structure.
-
-**Query Parameters:**
-- `includeSubcategories` (optional): Include subcategory details
-- `includeTermCounts` (optional): Include term counts per category
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "categories": [
-      {
-        "id": "sales",
-        "name": "Sales & Revenue",
-        "description": "Terms related to sales processes, revenue tracking, and customer acquisition",
-        "termCount": 25,
-        "color": "#52c41a",
-        "subcategories": [
-          {
-            "id": "sales-metrics",
-            "name": "Sales Metrics",
-            "description": "KPIs and performance indicators",
-            "termCount": 12
-          }
-        ]
-      }
-    ],
-    "totalCategories": 5,
-    "totalTerms": 89
-  }
-}
-```
-
-### 17. Term Usage Analytics
-**Endpoint:** `GET /api/business-intelligence/terms/usage-analytics`
-
-**Purpose:** Get usage analytics for business terms.
-
-**Query Parameters:**
-- `termId` (optional): Specific term ID
-- `timeRange` (optional): Time range for analytics
-- `includeFrequency` (optional): Include usage frequency data
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "termUsage": [
-      {
-        "termId": "term-001",
-        "name": "Revenue",
-        "usageFrequency": 0.95,
-        "queryCount": 156,
-        "lastUsed": "2024-01-15T10:30:00Z",
-        "popularContexts": ["quarterly analysis", "regional comparison"],
-        "userDepartments": ["sales", "finance", "marketing"]
-      }
-    ],
-    "trends": {
-      "mostUsedTerms": [...],
-      "emergingTerms": [...],
-      "deprecatedTerms": [...]
-    }
-  }
-}
-```
-
-### 18. Term Validation
-**Endpoint:** `POST /api/business-intelligence/terms/validate`
-
-**Purpose:** Validate and suggest corrections for business terms in queries.
-
-**Request Body:**
-```json
-{
-  "query": "Show me quartly sales by reigon",
-  "strictMode": false,
-  "includeSuggestions": true
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "validationResults": [
-      {
-        "term": "quartly",
-        "isValid": false,
-        "suggestions": ["quarterly", "quarter"],
-        "confidence": 0.92,
-        "position": {
-          "start": 12,
-          "end": 19
-        }
-      },
-      {
-        "term": "reigon",
-        "isValid": false,
-        "suggestions": ["region", "regions"],
-        "confidence": 0.95,
-        "position": {
-          "start": 29,
-          "end": 35
-        }
-      }
-    ],
-    "correctedQuery": "Show me quarterly sales by region",
-    "overallConfidence": 0.94
-  }
-}
-```
-
-## Advanced Query Processing Endpoints
-
-### 19. Query Alternatives
-**Endpoint:** `POST /api/business-intelligence/query/alternatives`
-
-**Purpose:** Get alternative query interpretations with detailed reasoning.
-
-**Request Body:**
-```json
-{
-  "query": "Show me sales by region last quarter",
-  "maxAlternatives": 5,
-  "includeConfidenceBreakdown": true,
-  "includeQuerySuggestions": true
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "alternatives": [
-      {
-        "id": "alt-001",
-        "interpretation": "Regional sales performance comparison for Q4 2023",
-        "confidence": 0.92,
-        "reasoning": "High confidence based on temporal indicators and comparison keywords",
-        "suggestedQuery": "Show me sales performance by region for Q4 2023 compared to Q3 2023",
-        "queryType": "comparison",
-        "complexity": "moderate"
-      },
-      {
-        "id": "alt-002",
-        "interpretation": "Year-over-year regional sales analysis",
-        "confidence": 0.78,
-        "reasoning": "Alternative interpretation focusing on annual comparison",
-        "suggestedQuery": "Compare regional sales performance Q4 2023 vs Q4 2022",
-        "queryType": "trend_analysis",
-        "complexity": "complex"
-      }
-    ],
-    "recommendedAlternative": "alt-001",
-    "confidenceBreakdown": {
-      "factors": [
-        {
-          "name": "Temporal Context",
-          "score": 0.95,
-          "impact": "high",
-          "explanation": "Clear quarterly time reference"
-        }
-      ]
-    }
-  }
-}
-```
-
-### 20. Query Refinement
-**Endpoint:** `POST /api/business-intelligence/query/refine`
-
-**Purpose:** Refine and optimize queries based on AI suggestions.
-
-**Request Body:**
-```json
-{
-  "originalQuery": "sales by region",
-  "refinementType": "enhance",
-  "includeTimeContext": true,
-  "includeComparisons": true,
-  "userContext": {
-    "role": "analyst",
-    "department": "sales"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "refinedQuery": "Show me quarterly sales performance by region for the last year with year-over-year comparison",
-    "improvements": [
-      {
-        "type": "time_context",
-        "description": "Added quarterly granularity and time range",
-        "impact": "Provides more specific temporal analysis"
-      },
-      {
-        "type": "comparison",
-        "description": "Added year-over-year comparison",
-        "impact": "Enables trend analysis and performance evaluation"
-      }
-    ],
-    "confidence": 0.91,
-    "estimatedComplexity": "moderate"
-  }
-}
-```
-
-## Analytics & Performance Endpoints
-
-### 21. Usage Analytics
-**Endpoint:** `GET /api/business-intelligence/analytics/usage`
-
-**Purpose:** Get Business Intelligence system usage analytics.
-
-**Query Parameters:**
-- `startDate` (optional): Start date for analytics
-- `endDate` (optional): End date for analytics
-- `userId` (optional): Filter by specific user
-- `department` (optional): Filter by department
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "summary": {
-      "totalQueries": 1250,
-      "uniqueUsers": 45,
-      "averageConfidence": 0.87,
-      "averageResponseTime": 1.8,
-      "successRate": 0.94
-    },
-    "trends": {
-      "dailyQueries": [...],
-      "popularIntents": [...],
-      "topEntities": [...]
-    },
-    "performance": {
-      "averageAnalysisTime": 150,
-      "cacheHitRate": 0.78,
-      "errorRate": 0.06
-    }
-  }
-}
-```
-
-### 22. Query Performance
-**Endpoint:** `GET /api/business-intelligence/analytics/performance`
-
-**Purpose:** Get query performance metrics and optimization insights.
-
-**Query Parameters:**
-- `queryId` (optional): Specific query ID
-- `timeRange` (optional): Time range for metrics
-- `includeOptimizations` (optional): Include optimization suggestions
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "metrics": {
-      "averageResponseTime": 1.8,
-      "p95ResponseTime": 3.2,
-      "p99ResponseTime": 5.1,
-      "errorRate": 0.06,
-      "cacheHitRate": 0.78
-    },
-    "slowQueries": [
-      {
-        "queryId": "query-123",
-        "query": "Complex aggregation query",
-        "responseTime": 8.5,
-        "confidence": 0.72,
-        "optimizationSuggestions": [...]
-      }
-    ],
-    "optimizations": [
-      {
-        "type": "caching",
-        "description": "Enable caching for frequently used entity patterns",
-        "estimatedImprovement": "40% faster response time"
-      }
-    ]
-  }
-}
-```
-
-### 23. Real-time Metrics
-**Endpoint:** `GET /api/business-intelligence/analytics/real-time`
-
-**Purpose:** Get real-time system metrics and performance indicators.
-
-**Query Parameters:**
-- `includeActiveQueries` (optional): Include currently processing queries
-- `includeSystemHealth` (optional): Include system health metrics
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "currentMetrics": {
-      "activeQueries": 12,
-      "averageResponseTime": 1.6,
-      "systemLoad": 0.65,
-      "cacheHitRate": 0.82,
-      "errorRate": 0.03
-    },
-    "activeQueries": [
-      {
-        "queryId": "query-active-001",
-        "query": "Show me sales trends",
-        "startTime": "2024-01-15T10:30:00Z",
-        "estimatedCompletion": "2024-01-15T10:30:02Z",
-        "progress": 0.75
-      }
-    ],
-    "systemHealth": {
-      "status": "healthy",
-      "uptime": 99.98,
-      "lastIncident": "2024-01-10T08:00:00Z"
-    }
-  }
-}
-```
-
-## Advanced Entity Detection Endpoints
-
-### 24. Entity Relationships
-**Endpoint:** `GET /api/business-intelligence/entities/relationships`
-
-**Purpose:** Get relationships between detected entities with business context.
-
-**Query Parameters:**
-- `entityIds` (required): Comma-separated list of entity IDs
-- `includeStrength` (optional): Include relationship strength scoring
-- `includeBusinessContext` (optional): Include business context explanations
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "relationships": [
-      {
-        "id": "rel-001",
-        "fromEntityId": "entity-sales",
-        "toEntityId": "entity-revenue",
-        "relationshipType": "synonym",
-        "strength": 0.95,
-        "description": "Sales and revenue are closely related business metrics",
-        "businessContext": "Both metrics are used for financial performance analysis",
-        "bidirectional": true,
-        "confidence": 0.92
-      }
-    ],
-    "relationshipTypes": ["synonym", "related", "parent", "child", "opposite", "contains"],
-    "totalRelationships": 1,
-    "averageStrength": 0.95
-  }
-}
-```
-
-## Advanced Entity Detection Endpoints
-
-### 24. Entity Relationships
-**Endpoint:** `GET /api/business-intelligence/entities/relationships`
-
-**Purpose:** Get relationships between detected entities with business context.
-
-**Query Parameters:**
-- `entityIds` (required): Comma-separated list of entity IDs
-- `includeStrength` (optional): Include relationship strength scoring
-- `includeBusinessContext` (optional): Include business context explanations
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "relationships": [
-      {
-        "id": "rel-001",
-        "fromEntityId": "entity-sales",
-        "toEntityId": "entity-revenue",
-        "relationshipType": "synonym",
-        "strength": 0.95,
-        "description": "Sales and revenue are closely related business metrics",
-        "businessContext": "Both metrics are used for financial performance analysis",
-        "bidirectional": true,
-        "confidence": 0.92
-      },
-      {
-        "id": "rel-002",
-        "fromEntityId": "entity-sales",
-        "toEntityId": "entity-region",
-        "relationshipType": "contains",
-        "strength": 0.88,
-        "description": "Sales data contains regional breakdown information",
-        "businessContext": "Regional analysis is essential for sales performance evaluation",
-        "bidirectional": false,
-        "confidence": 0.89
-      }
-    ],
-    "relationshipTypes": ["synonym", "related", "parent", "child", "opposite", "contains"],
-    "totalRelationships": 2,
-    "averageStrength": 0.915
-  }
-}
-```
-
-### 25. Entity Schema Mappings
-**Endpoint:** `GET /api/business-intelligence/entities/schema-mappings`
-
-**Purpose:** Get database schema mappings for detected entities.
-
-**Query Parameters:**
-- `entityIds` (required): Comma-separated list of entity IDs
-- `includeTransformations` (optional): Include SQL transformation details
-- `includeMappingQuality` (optional): Include mapping confidence and quality metrics
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "mappings": [
-      {
-        "entityId": "entity-sales",
-        "tableName": "sales_fact",
-        "columnName": "amount",
-        "mappingType": "direct",
-        "confidence": 0.95,
-        "transformation": "SUM(amount) for aggregation queries",
-        "dataType": "decimal",
-        "nullable": false,
-        "businessRules": ["Must be positive", "Currency in USD"],
-        "qualityMetrics": {
-          "completeness": 0.98,
-          "accuracy": 0.95,
-          "consistency": 0.92
-        }
-      },
-      {
-        "entityId": "entity-region",
-        "tableName": "region_dim",
-        "columnName": "region_name",
-        "mappingType": "direct",
-        "confidence": 0.88,
-        "transformation": "GROUP BY region_name for regional analysis",
-        "dataType": "varchar",
-        "nullable": false,
-        "businessRules": ["Standardized region names", "No duplicates allowed"],
-        "qualityMetrics": {
-          "completeness": 1.0,
-          "accuracy": 0.97,
-          "consistency": 0.95
-        }
-      }
-    ],
-    "mappingTypes": ["direct", "calculated", "derived"],
-    "totalMappings": 2,
-    "averageConfidence": 0.915
-  }
-}
-```
-
-### 26. Entity Analysis
-**Endpoint:** `POST /api/business-intelligence/entities/analyze`
-
-**Purpose:** Perform advanced analysis on detected entities including statistics and recommendations.
-
-**Request Body:**
-```json
-{
-  "query": "Show me quarterly sales by region for the last year",
-  "entityIds": ["entity-sales", "entity-region", "entity-quarterly"],
-  "includeStatistics": true,
-  "includeRecommendations": true,
-  "includeQualityAssessment": true
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "entityStatistics": {
-      "totalEntities": 3,
-      "averageConfidence": 0.91,
-      "highConfidenceEntities": 2,
-      "businessEntities": 2,
-      "technicalEntities": 1,
-      "entityTypes": {
-        "business_metric": 1,
-        "dimension": 1,
-        "time": 1
-      }
-    },
-    "qualityAssessment": {
-      "overallQuality": 0.93,
-      "detectionAccuracy": 0.95,
-      "mappingQuality": 0.91,
-      "businessRelevance": 0.94,
-      "issues": [
-        {
-          "entityId": "entity-quarterly",
-          "issue": "Ambiguous time reference",
-          "severity": "medium",
-          "recommendation": "Specify exact quarter (Q1, Q2, Q3, Q4)"
-        }
-      ]
-    },
-    "recommendations": [
-      {
-        "type": "enhancement",
-        "title": "Add business context for entities",
-        "description": "Enhance entity definitions with more detailed business meanings",
-        "impact": "medium",
-        "effort": "low"
-      },
-      {
-        "type": "optimization",
-        "title": "Improve entity confidence",
-        "description": "Review and validate low-confidence entity mappings",
-        "impact": "high",
-        "effort": "medium"
-      }
-    ]
-  }
-}
-```
-
-## Advanced Performance Analytics Endpoints
-
-### 27. Performance Optimization Suggestions
-**Endpoint:** `GET /api/business-intelligence/analytics/optimization-suggestions`
-
-**Purpose:** Get AI-powered performance optimization suggestions with impact assessment.
-
-**Query Parameters:**
-- `includeImplementationDetails` (optional): Include detailed implementation steps
-- `priorityLevel` (optional): Filter by priority level (high, medium, low)
-- `optimizationType` (optional): Filter by type (performance, accuracy, efficiency, cost)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "suggestions": [
-      {
-        "id": "opt-001",
-        "type": "performance",
-        "title": "Enable Query Result Caching",
-        "description": "Implement intelligent caching for frequently used query patterns",
-        "impact": "high",
-        "effort": "medium",
-        "estimatedImprovement": "40% faster response time",
-        "priority": 1,
-        "implementationSteps": [
-          "Analyze query patterns for caching opportunities",
-          "Implement Redis-based caching layer",
-          "Configure cache invalidation strategies"
+        "identifiedDimensions": [
+          "UK"
         ],
-        "estimatedTimeToImplement": "2-3 weeks",
-        "resourcesRequired": ["Backend Developer", "DevOps Engineer"]
-      }
-    ],
-    "totalSuggestions": 1,
-    "highPrioritySuggestions": 1,
-    "estimatedOverallImprovement": "45% performance increase"
-  }
-}
-```
-
-### 28. System Health Monitoring
-**Endpoint:** `GET /api/business-intelligence/analytics/system-health`
-
-**Purpose:** Get comprehensive system health metrics and alerts.
-
-**Query Parameters:**
-- `includeAlerts` (optional): Include active system alerts
-- `includeHistoricalData` (optional): Include historical health trends
-- `timeRange` (optional): Time range for health data (1h, 24h, 7d, 30d)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "overallHealth": {
-      "status": "healthy",
-      "score": 94.5,
-      "uptime": 99.98,
-      "lastIncident": "2024-01-10T08:00:00Z"
-    },
-    "componentHealth": [
-      {
-        "component": "Query Analysis Engine",
-        "status": "healthy",
-        "responseTime": 1.2,
-        "errorRate": 0.02,
-        "lastCheck": "2024-01-15T10:30:00Z"
+        "timeContext": {
+          "startDate": null,
+          "endDate": null,
+          "relativeExpression": "yesterday",
+          "granularity": "Day"
+        },
+        "comparisonTerms": [],
+        "userPatterns": {}
       },
-      {
-        "component": "Entity Detection Service",
-        "status": "healthy",
-        "responseTime": 0.8,
-        "errorRate": 0.01,
-        "lastCheck": "2024-01-15T10:30:00Z"
-      }
-    ],
-    "alerts": [
-      {
-        "id": "alert-001",
-        "severity": "warning",
-        "message": "Response time above threshold",
-        "component": "Query Analysis Engine",
-        "timestamp": "2024-01-15T09:45:00Z",
-        "resolved": false
-      }
-    ],
-    "recommendations": [
-      "Consider scaling Query Analysis Engine during peak hours",
-      "Monitor cache hit rate for optimization opportunities"
-    ]
-  }
-}
-```
-
-## Error Handling
-
-All endpoints follow consistent error response format:
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "INVALID_QUERY",
-    "message": "The provided query could not be analyzed",
-    "details": {
-      "reason": "Query too short or ambiguous",
-      "suggestions": ["Try adding more specific terms", "Include time context"]
+      "extractedEntities": 4,
+      "confidenceScore": 0.91,
+      "intent": "Aggregation",
+      "domain": "Gaming",
+      "success": true,
+      "durationMs": 6057,
+      "error": null
     },
-    "timestamp": "2024-01-15T10:30:00Z",
-    "requestId": "req-789"
-  }
-}
-```
-
-### Common Error Codes:
-- `INVALID_QUERY`: Query cannot be processed
-- `INSUFFICIENT_CONTEXT`: Not enough context for analysis
-- `RATE_LIMIT_EXCEEDED`: Too many requests
-- `UNAUTHORIZED`: Invalid or missing authentication
-- `INTERNAL_ERROR`: Server-side processing error
-- `TIMEOUT`: Request processing timeout
-
-## Rate Limiting
-
-All endpoints are subject to rate limiting:
-- **Standard Users**: 100 requests per minute
-- **Premium Users**: 500 requests per minute
-- **Admin Users**: 1000 requests per minute
-
-Rate limit headers included in responses:
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1642248000
-```
-
-## Implementation Priority
-
-### Phase 1 (Core Functionality - Essential for Basic Operation):
-1. `POST /api/business-intelligence/query/analyze` - Core query analysis
-2. `GET /api/business-intelligence/context/business-profile` - Business context
-3. `GET /api/business-intelligence/context/entities` - Entity detection
-4. `GET /api/business-intelligence/query/suggestions` - Query suggestions
-5. `GET /api/business-intelligence/query/history` - Query history
-
-### Phase 2 (Enhanced Features - Advanced Analysis):
-6. `POST /api/business-intelligence/query/understand` - Step-by-step processing
-7. `GET /api/business-intelligence/context/intent` - Intent classification
-8. `POST /api/business-intelligence/schema/analyze` - Schema intelligence
-9. `GET /api/business-intelligence/terms/glossary` - Business terms
-10. `POST /api/business-intelligence/query/alternatives` - Alternative interpretations
-
-### Phase 3 (Advanced Features - Professional Capabilities):
-11. `GET /api/business-intelligence/schema/join-recommendations` - Join suggestions
-12. `GET /api/business-intelligence/schema/optimization` - Schema optimization
-13. `GET /api/business-intelligence/terms/categories` - Term categories
-14. `GET /api/business-intelligence/terms/search` - Advanced term search
-15. `POST /api/business-intelligence/terms/validate` - Term validation
-
-### Phase 4 (Analytics & Performance - Enterprise Features):
-16. `GET /api/business-intelligence/analytics/usage` - Usage analytics
-17. `GET /api/business-intelligence/analytics/performance` - Performance metrics
-18. `GET /api/business-intelligence/analytics/real-time` - Real-time monitoring
-19. `GET /api/business-intelligence/terms/usage-analytics` - Term analytics
-20. `POST /api/business-intelligence/query/refine` - Query refinement
-
-### Phase 5 (Extended Features - Additional Capabilities):
-21. `GET /api/business-intelligence/schema/relationships` - Table relationships
-22. `GET /api/business-intelligence/terms/relationships` - Term relationships
-23. `GET /api/business-intelligence/entities/relationships` - Entity relationships
-24. `GET /api/business-intelligence/entities/schema-mappings` - Entity schema mappings
-25. `POST /api/business-intelligence/entities/analyze` - Advanced entity analysis
-26. `GET /api/business-intelligence/analytics/optimization-suggestions` - Performance optimization
-27. `GET /api/business-intelligence/analytics/system-health` - System health monitoring
-
-## Notes for Backend Implementation
-
-1. **AI/ML Integration**: Endpoints require integration with NLP models for entity recognition, intent classification, and query understanding.
-
-2. **Caching Strategy**: Implement caching for frequently analyzed queries and business context to improve performance.
-
-3. **Database Integration**: Requires access to metadata database, business glossary, and schema information.
-
-4. **User Context**: All endpoints should consider user role, department, and access permissions for personalized results.
-
-5. **Performance Monitoring**: Implement comprehensive logging and monitoring for all endpoints to track usage and performance.
-
-6. **Security**: Ensure all endpoints validate user permissions and sanitize inputs to prevent injection attacks.
-
-7. **Real-time Processing**: Several endpoints support real-time analysis and require efficient processing pipelines.
-
-8. **Data Quality**: Implement data quality scoring and validation across all analysis endpoints.
-
-## API Coverage Summary
-
-This specification provides **28 comprehensive endpoints** covering all aspects of the Business Intelligence system:
-
-### Core Analysis (5 endpoints)
-- Query analysis and understanding
-- Business context profiling
-- Entity detection and classification
-- Query suggestions and history
-
-### Enhanced Features (10 endpoints)
-- Step-by-step query processing
-- Intent classification with alternatives
-- Schema intelligence and optimization
-- Business terms management and validation
-- Query refinement and alternatives
-
-### Advanced Entity Detection (3 endpoints)
-- Entity relationships and mapping
-- Schema mappings with transformations
-- Advanced entity analysis and statistics
-
-### Analytics & Performance (10 endpoints)
-- Usage analytics and monitoring
-- Performance metrics and optimization
-- Real-time system health monitoring
-- Optimization suggestions with impact assessment
-- System health alerts and recommendations
-
-### Key Features Supported:
-✅ **Natural Language Processing** - Advanced NLP for query understanding
-✅ **Business Context Intelligence** - Domain-aware analysis with user context
-✅ **Schema Intelligence** - Automated schema analysis and optimization
-✅ **Business Terms Integration** - Comprehensive glossary management
-✅ **Performance Analytics** - Real-time monitoring and optimization
-✅ **Query Alternatives** - AI-powered alternative interpretations
-✅ **Data Quality Assessment** - Comprehensive quality scoring
-✅ **User Personalization** - Role-based and department-specific results
-
-This API specification supports all features implemented in the enhanced Business Intelligence frontend and provides a complete foundation for enterprise-grade business intelligence capabilities.
+    "TokenBudgetManagement": {
+      "tokenBudget": {
+        "intentType": "Aggregation",
+        "maxTotalTokens": 4000,
+        "basePromptTokens": 256,
+        "reservedResponseTokens": 500,
+        "availableContextTokens": 3244,
+        "schemaContextBudget": 1297,
+        "businessContextBudget": 729,
+        "examplesBudget": 777,
+        "rulesBudget": 324,
+        "glossaryBudget": 162,
+        "createdAt": "2025-06-26T01:30:12.5013167Z",
+        "allocationStrategy": {
+          "schemaContextPercentage": 0.4,
+          "businessContextPercentage": 0.25,
+          "examplesPercentage": 0.2,
+          "rulesPercentage": 0.1,
+          "glossaryPercentage": 0.05
+        }
+      },
+      "maxTokens": 4000,
+      "availableContextTokens": 3244,
+      "reservedTokens": 500,
+      "success": true,
+      "durationMs": 12,
+      "error": null
+    },
+    "SchemaRetrieval": {
+      "schemaMetadata": {
+        "relevantTables": [
+          {
+            "id": 3,
+            "tableId": "3",
+            "tableName": "tbl_Daily_actions",
+            "schemaName": "common",
+            "businessName": "Daily Stats",
+            "businessPurpose": "CORE TABLE: Comprehensive daily player statistics and financial metrics aggregated by player and date",
+            "businessContext": "The most important table containing all daily financial and gaming activity per player. Includes deposits, withdraw
+AIPipelineTestResults.tsx:129 🔍 Step BusinessContextAnalysis: {stepData: {…}, stepResult: {…}, status: {…}}
+AIPipelineTestResults.tsx:168 🔍 [RENDER] About to render step BusinessContextAnalysis with stepResult: {businessProfile: {…}, extractedEntities: 4, confidenceScore: 0.91, intent: 'Aggregation', domain: 'Gaming', …}
+AIPipelineTestResults.tsx:170 🔍 [RENDER] renderStepSpecificResults returned: {$$typeof: Symbol(react.element), key: null, ref: null, props: {…}, type: ƒ, …}$$typeof: Symbol(react.element)key: nullprops: {bordered: true, size: 'small', children: Array(4)}ref: nulltype: (props) => {…}_owner: FiberNode {tag: 0, key: null, stateNode: null, elementType: ƒ, type: ƒ, …}_store: {validated: true}_self: undefined_source: {fileName: 'C:/dev/ReportAIng/frontend-v2/src/components/AIPipelineTestResults.tsx', lineNumber: 206, columnNumber: 11}[[Prototype]]: Object
+AIPipelineTestResults.tsx:129 🔍 Step TokenBudgetManagement: {stepData: {…}, stepResult: {…}, status: {…}}status: status: "success"text: "Success"[[Prototype]]: ObjectstepData: availableContextTokens: 3244durationMs: 12error: nullmaxTokens: 4000reservedTokens: 500success: truetokenBudget: {intentType: 'Aggregation', maxTotalTokens: 4000, basePromptTokens: 256, reservedResponseTokens: 500, availableContextTokens: 3244, …}[[Prototype]]: ObjectstepResult: {tokenBudget: {…}, maxTokens: 4000, availableContextTokens: 3244, reservedTokens: 500, success: true, …}[[Prototype]]: Object
+AIPipelineTestResults.tsx:168 🔍 [RENDER] About to render step TokenBudgetManagement with stepResult: {tokenBudget: {…}, maxTokens: 4000, availableContextTokens: 3244, reservedTokens: 500, success: true, …}availableContextTokens: 3244durationMs: 12error: nullmaxTokens: 4000reservedTokens: 500success: truetokenBudget: allocationStrategy: businessContextPercentage: 0.25examplesPercentage: 0.2glossaryPercentage: 0.05rulesPercentage: 0.1schemaContextPercentage: 0.4[[Prototype]]: ObjectavailableContextTokens: 3244basePromptTokens: 256businessContextBudget: 729createdAt: "2025-06-26T01:30:12.5013167Z"examplesBudget: 777glossaryBudget: 162intentType: "Aggregation"maxTotalTokens: 4000reservedResponseTokens: 500rulesBudget: 324schemaContextBudget: 1297[[Prototype]]: Object[[Prototype]]: Object
+AIPipelineTestResults.tsx:170 🔍 [RENDER] renderStepSpecificResults returned: {$$typeof: Symbol(react.element), type: 'div', key: null, ref: null, props: {…}, …}
+AIPipelineTestResults.tsx:129 🔍 Step SchemaRetrieval: {stepData: {…}, stepResult: {…}, status: {…}}
+AIPipelineTestResults.tsx:168 🔍 [RENDER] About to render step SchemaRetrieval with stepResult: {schemaMetadata: {…}, tablesRetrieved: 3, relevanceScore: 0.8, tableNames: Array(3), success: true, …}
+AIPipelineTestResults.tsx:170 🔍 [RENDER] renderStepSpecificResults returned: {$$typeof: Symbol(react.element), type: 'div', key: null, ref: null, props: {…}, …}
+AIPipelineTestResults.tsx:129 🔍 Step PromptBuilding: {stepData: {…}, stepResult: {…}, status: {…}}
+AIPipelineTestResults.tsx:168 🔍 [RENDER] About to render step PromptBuilding with stepResult: {prompt: 'You are an expert business intelligence analyst wi…y the SQL query without additional explanation.\r\n', promptLength: 2743, estimatedTokens: 686, success: true, durationMs: 2282, …}
+AIPipelineTestResults.tsx:170 🔍 [RENDER] renderStepSpecificResults returned: {$$typeof: Symbol(react.element), type: 'div', key: null, ref: null, props: {…}, …}
+AIPipelineTestResults.tsx:129 🔍 Step AIGeneration: {stepData: undefined, stepResult: undefined, status: {…}}
+AIPipelineTestResults.tsx:129 🔍 Step SQLValidation: {stepData: undefined, stepResult: undefined, status: {…}}
+AIPipelineTestResults.tsx:129 🔍 Step SQLExecution: {stepData: undefined, stepResult: undefined, status: {…}}
+AIPipelineTestResults.tsx:129 🔍 Step ResultsProcessing: {stepData: {…}, stepResult: {…}, status: {…}}status: {status: 'success', text: 'Success'}stepData: durationMs: 0error: nullexportFormat: "json"formattedResults: "JSON format results generated"processingMetadata: {processedAt: '2025-06-26T02:00:47.0705762Z', totalDuration: 0, stepsExecuted: Array(4)}success: truesuccessRate: 1successfulSteps: 4totalSteps: 4[[Prototype]]: ObjectstepResult: {totalSteps: 4, successfulSteps: 4, successRate: 1, formattedResults: 'JSON format results generated', exportFormat: 'json', …}[[Prototype]]: Object
+AIPipelineTestResults.tsx:168 🔍 [RENDER] About to render step ResultsProcessing with stepResult: {totalSteps: 4, successfulSteps: 4, successRate: 1, formattedResults: 'JSON format results generated', exportFormat: 'json', …}durationMs: 0error: nullexportFormat: "json"formattedResults: "JSON format results generated"processingMetadata: processedAt: "2025-06-26T02:00:47.0705762Z"stepsExecuted: (4) ['BusinessContextAnalysis', 'TokenBudgetManagement', 'SchemaRetrieval', 'PromptBuilding']totalDuration: 0[[Prototype]]: Objectsuccess: truesuccessRate: 1successfulSteps: 4totalSteps: 4[[Prototype]]: Object
+AIPipelineTestResults.tsx:170 🔍 [RENDER] renderStepSpecificResults returned: {$$typeof: Symbol(react.element), type: 'div', key: null, ref: null, props: {…}, …}$$typeof: Symbol(react.element)key: nullprops: children: {$$typeof: Symbol(react.element), type: {…}, key: null, ref: null, props: {…}, …}className: "bg-gray-50 p-3 rounded"[[Prototype]]: Objectref: nulltype: "div"_owner: FiberNode {tag: 0, key: null, stateNode: null, elementType: ƒ, type: ƒ, …}_store: {validated: true}_self: undefined_source: {fileName: 'C:/dev/ReportAIng/frontend-v2/src/components/AIPipelineTestResults.tsx', lineNumber: 334, columnNumber: 11}[[Prototype]]: Object
+AIPipelineTestPage.tsx:114 🔍 testResult state changed: {testId: 'test_1750903238413_ayoc7wdwn', query: 'Top 10 depositors yesterday from UK', requestedSteps: Array(8), startTime: '2025-06-26T02:00:38.4854889Z', endTime: '2025-06-26T02:00:47.0756926Z', …}businessProfile: {analysisId: '07cbfa14-4b62-4ae2-837e-6644d5b0c0fe', originalQuestion: 'Top 10 depositors yesterday from UK', userId: 'admin-user-001', intent: {…}, domain: {…}, …}endTime: "2025-06-26T02:00:47.0756926Z"error: nullgeneratedPrompt: "You are an expert business intelligence analyst with deep knowledge of SQL and business data analysis.\r\n\r\n## Business Context\r\n**Query Intent:** Aggregation - The question is asking for a summary of the top 10 depositors from the UK on a specific date (yesterday). This requires aggregation of deposit data.\r\n**Confidence Score:** 90.0%\r\n**Business Domain:** Gaming\r\n**Key Metrics:** Top 10\r\n**Dimensions:** UK\r\n**Time Context:** yesterday (Granularity: Day)\r\n**Identified Entities:** Table: depositors; Metric: Top 10; Dimension: UK; TimeReference: yesterday\r\n\r\n\r\n## Database Schema Context\r\n### common.tbl_Daily_actions\r\n**Purpose:** CORE TABLE: Comprehensive daily player statistics and financial metrics aggregated by player and date\r\n**Key Columns:**\r\n- `ID` () (PK): Unique identifier for each daily activity record\r\n- `Date` (): Date of the activity aggregation\r\n- `Registration` (): Indicates if player registered on this date\r\n- `FTD` (): Indicates if player made First Time Deposit on this date\r\n- `FTDA` (): First Time Deposit Amount for the player\r\n- `Deposits` (): Total deposit amount for the date\r\n- `UpdatedDate` (): Last modification timestamp for daily activity record\r\n\r\n### common.tbl_Daily_actions_games\r\n**Purpose:** Daily gaming statistics aggregated by player, game, and date\r\n**Key Columns:**\r\n- `ID` () (PK): Unique identifier for each game activity record\r\n- `GameDate` (): Date of the gaming activity\r\n- `UpdateDate` (): Last update timestamp for the game activity record\r\n\r\n### dbo.Games\r\n**Purpose:** Master game catalog containing all available games and their configuration\r\n**Key Columns:**\r\n- `UKCompliant` (): Indicates whether the game meets UK Gambling Commission requirements\r\n- `GameID` () (PK): Unique identifier for each game in the catalog\r\n- `CreatedDate` (): Date when the game record was created in the system\r\n- `ReleaseDate` (): Official release date of the game by the provider\r\n- `UpdatedDate` (): Last modification timestamp for game record\r\n\r\n\r\n\r\n## Similar Query Examples\r\n**Question:** What is the total revenue by country?\r\n**SQL:** SELECT Country, SUM(Revenue) as TotalRevenue FROM tbl_Daily_actions GROUP BY Country ORDER BY TotalRevenue DESC\r\n\r\n\r\n\r\n## Task\r\nConvert the following business question into a SQL query:\r\n**Question:** Top 10 depositors yesterday from UK\r\n\r\nUse GROUP BY clauses and aggregate functions (SUM, COUNT, AVG, etc.) as appropriate.\r\n\r\n## Requirements\r\n- Generate syntactically correct SQL\r\n- Use appropriate table and column names from the schema\r\n- Include meaningful column aliases\r\n- Optimize for performance where possible\r\n- Follow SQL best practices\r\n- Apply time filtering based on: yesterday\r\n\r\nProvide only the SQL query without additional explanation.\r\n"generatedSQL: nullquery: "Top 10 depositors yesterday from UK"requestedSteps: (8) ['BusinessContextAnalysis', 'TokenBudgetManagement', 'SchemaRetrieval', 'PromptBuilding', 'AIGeneration', 'SQLValidation', 'SQLExecution', 'ResultsProcessing']results: {BusinessContextAnalysis: {…}, TokenBudgetManagement: {…}, SchemaRetrieval: {…}, PromptBuilding: {…}, ResultsProcessing: {…}}schemaMetadata: {relevantTables: Array(3), tableColumns: {…}, relevantGlossaryTerms: Array(0), businessRules: Array(0), tableRelationships: Array(0), …}startTime: "2025-06-26T02:00:38.4854889Z"success: truetestId: "test_1750903238413_ayoc7wdwn"tokenBudget: {intentType: 'Aggregation', maxTotalTokens: 4000, basePromptTokens: 256, reservedResponseTokens: 500, availableContextTokens: 3244, …}totalDurationMs: 8595[[Prototype]]: Object

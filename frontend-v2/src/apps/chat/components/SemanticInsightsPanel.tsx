@@ -33,7 +33,6 @@ import {
 import type { SemanticAnalysis } from '@shared/types/chat'
 
 const { Text, Title, Paragraph } = Typography
-const { Panel } = Collapse
 
 interface SemanticInsightsPanelProps {
   analysis: SemanticAnalysis

@@ -40,6 +40,7 @@ public interface IBusinessTableManagementService
 public interface IGlossaryManagementService
 {
     Task<List<BusinessGlossaryDto>> GetGlossaryTermsAsync(CancellationToken cancellationToken = default);
+    Task<List<BusinessGlossaryDto>> GetGlossaryTermsByCategoryAsync(string category, CancellationToken cancellationToken = default);
     Task<BusinessGlossaryDto?> GetGlossaryTermAsync(string termId, CancellationToken cancellationToken = default);
     Task<string> CreateGlossaryTermAsync(BusinessGlossaryDto term, CancellationToken cancellationToken = default);
     Task<BusinessGlossaryDto> CreateGlossaryTermAsync(BusinessGlossaryDto request, string userId, CancellationToken cancellationToken = default);

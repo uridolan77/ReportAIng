@@ -149,10 +149,25 @@ public class SemanticMatchingService : ISemanticMatchingService
                     {
                         allColumns.AddRange(tableDetails.Columns.Select(c => new BusinessColumnInfo
                         {
+                            Id = c.Id,
                             ColumnName = c.ColumnName,
+                            DataType = c.BusinessDataType ?? "Unknown",
+                            BusinessName = c.NaturalLanguageAliases ?? c.ColumnName,
                             BusinessMeaning = c.BusinessMeaning,
+                            BusinessPurpose = c.BusinessMeaning,
                             BusinessContext = c.BusinessContext,
-                            IsKeyColumn = c.IsKeyColumn
+                            SemanticContext = c.SemanticTags ?? string.Empty,
+                            DataExamples = !string.IsNullOrEmpty(c.DataExamples)
+                                ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(c.DataExamples) ?? new List<string>()
+                                : new List<string>(),
+                            SampleValues = !string.IsNullOrEmpty(c.ValueExamples)
+                                ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(c.ValueExamples) ?? new List<string>()
+                                : new List<string>(),
+                            IsKey = c.IsKeyColumn,
+                            IsKeyColumn = c.IsKeyColumn,
+                            IsRequired = false,
+                            ValidationRules = c.ValidationRules,
+                            RelevanceScore = (double)c.SemanticRelevanceScore
                         }));
                     }
                 }

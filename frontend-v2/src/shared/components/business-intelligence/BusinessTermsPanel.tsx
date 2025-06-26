@@ -51,7 +51,7 @@ import {
 const { Text, Title, Paragraph } = Typography
 const { Search } = Input
 const { Option } = Select
-const { Panel } = Collapse
+
 const { TabPane } = Tabs
 const { TreeNode } = Tree
 

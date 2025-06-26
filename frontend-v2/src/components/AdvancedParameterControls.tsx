@@ -32,7 +32,6 @@ import {
 import { PipelineTestParameters, ParameterValidationResult } from '../types/aiPipelineTest';
 
 const { Option } = Select;
-const { Panel } = Collapse;
 const { Text, Title } = Typography;
 
 interface AdvancedParameterControlsProps {
@@ -386,6 +385,14 @@ const AdvancedParameterControls: React.FC<AdvancedParameterControlsProps> = ({
                   onChange={(checked) => handleParameterChange('enableAIGeneration', checked)}
                 />
               </div>
+
+              <div className="flex items-center justify-between">
+                <Text strong className="text-orange-600">Enable SQL Execution</Text>
+                <Switch
+                  checked={customParameters.enableExecution}
+                  onChange={(checked) => handleParameterChange('enableExecution', checked)}
+                />
+              </div>
             </div>
           </div>
         </Col>
@@ -472,14 +479,22 @@ const AdvancedParameterControls: React.FC<AdvancedParameterControlsProps> = ({
     <div>
       {renderPresets()}
       
-      <Collapse defaultActiveKey={['tokens', 'quality']} className="mb-4">
-        <Panel header="Token Management" key="tokens">
-          {renderTokenManagement()}
-        </Panel>
-        <Panel header="Quality & Accuracy Controls" key="quality">
-          {renderQualityControls()}
-        </Panel>
-      </Collapse>
+      <Collapse
+        defaultActiveKey={['tokens', 'quality']}
+        className="mb-4"
+        items={[
+          {
+            key: 'tokens',
+            label: 'Token Management',
+            children: renderTokenManagement()
+          },
+          {
+            key: 'quality',
+            label: 'Quality & Accuracy Controls',
+            children: renderQualityControls()
+          }
+        ]}
+      />
 
       {renderValidationResults()}
 

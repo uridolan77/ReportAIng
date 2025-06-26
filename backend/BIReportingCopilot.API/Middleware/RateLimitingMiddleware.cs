@@ -107,7 +107,7 @@ public class RateLimitingMiddleware
             return true;
         }
 
-        // Skip health checks and monitoring endpoints
+        // Skip health checks, monitoring endpoints, and SignalR hubs
         var skipPaths = new[]
         {
             "/health",
@@ -116,7 +116,10 @@ public class RateLimitingMiddleware
             "/metrics",
             "/swagger",
             "/favicon.ico",
-            "/hangfire"
+            "/hangfire",
+            "/hubs/",
+            "/hub/",
+            "/signalr/"
         };
 
         return skipPaths.Any(skipPath => path.StartsWith(skipPath));

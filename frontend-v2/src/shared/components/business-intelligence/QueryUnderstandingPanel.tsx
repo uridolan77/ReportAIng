@@ -51,7 +51,7 @@ import {
 const { Text, Title, Paragraph } = Typography
 const { Step } = Steps
 const { TabPane } = Tabs
-const { Panel } = Collapse
+
 
 interface ProcessingStep {
   id: string
@@ -590,36 +590,32 @@ export const QueryUnderstandingPanel: React.FC<QueryUnderstandingPanelProps> = (
                   activeKey={expandedSteps}
                   onChange={(keys) => setExpandedSteps(Array.isArray(keys) ? keys : [keys])}
                   ghost
-                >
-                  {mockProcessingData.processingSteps.map((step) => (
-                    <Panel
-                      key={step.id}
-                      header={
-                        <Space>
-                          {getStepIcon(step.status)}
-                          <span style={{ fontWeight: 600 }}>{step.name}</span>
-                          <Tag color={getConfidenceColor(step.confidence)}>
-                            {Math.round(step.confidence * 100)}% confidence
-                          </Tag>
-                          <Tag color="blue">{step.duration}ms</Tag>
-                        </Space>
-                      }
-                      extra={
-                        interactive && (
-                          <Button
-                            type="link"
-                            size="small"
-                            icon={<ReloadOutlined />}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleStepRerun(step.id)
-                            }}
-                          >
-                            Rerun
-                          </Button>
-                        )
-                      }
-                    >
+                  items={mockProcessingData.processingSteps.map((step) => ({
+                    key: step.id,
+                    label: (
+                      <Space>
+                        {getStepIcon(step.status)}
+                        <span style={{ fontWeight: 600 }}>{step.name}</span>
+                        <Tag color={getConfidenceColor(step.confidence)}>
+                          {Math.round(step.confidence * 100)}% confidence
+                        </Tag>
+                        <Tag color="blue">{step.duration}ms</Tag>
+                      </Space>
+                    ),
+                    extra: interactive && (
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<ReloadOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleStepRerun(step.id)
+                        }}
+                      >
+                        Rerun
+                      </Button>
+                    ),
+                    children: (
                       <Space direction="vertical" style={{ width: '100%' }}>
                         <div>
                           <Text strong>Processing Details:</Text>
@@ -665,9 +661,9 @@ export const QueryUnderstandingPanel: React.FC<QueryUnderstandingPanelProps> = (
                           format={(percent) => `${percent}% confidence`}
                         />
                       </Space>
-                    </Panel>
-                  ))}
-                </Collapse>
+                    )
+                  }))}
+                />
               </Space>
             </TabPane>
           )}

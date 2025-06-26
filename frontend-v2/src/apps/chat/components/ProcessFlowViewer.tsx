@@ -35,7 +35,6 @@ import type { ProcessFlowSession, ProcessFlowStep, ProcessFlowLog } from '@share
 import { useProcessFlowSession } from '@shared/store/api/transparencyApi';
 
 const { Title, Text, Paragraph } = Typography;
-const { Panel } = Collapse;
 
 interface ProcessFlowViewerProps {
   visible: boolean;
@@ -136,53 +135,61 @@ const ProcessStepCard: React.FC<{
 
       {expanded && hasDetails && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-          <Collapse size="small" ghost>
-            {step.inputData && (
-              <Panel header="Input Data" key="inputData">
-                <SyntaxHighlighter
-                  language="json"
-                  style={tomorrow}
-                  customStyle={{ fontSize: '11px', margin: 0 }}
-                >
-                  {JSON.stringify(step.inputData, null, 2)}
-                </SyntaxHighlighter>
-              </Panel>
-            )}
-
-            {step.outputData && (
-              <Panel header="Output Data" key="outputData">
-                <SyntaxHighlighter
-                  language="json"
-                  style={tomorrow}
-                  customStyle={{ fontSize: '11px', margin: 0 }}
-                >
-                  {JSON.stringify(step.outputData, null, 2)}
-                </SyntaxHighlighter>
-              </Panel>
-            )}
-
-            {stepLogs.length > 0 && (
-              <Panel header={`Logs (${stepLogs.length})`} key="stepLogs">
-                <div style={{ maxHeight: '200px', overflow: 'auto' }}>
-                  {stepLogs.map((log, index) => (
-                    <div key={index} style={{
-                      fontSize: '11px',
-                      fontFamily: 'monospace',
-                      padding: '2px 0',
-                      borderBottom: index < stepLogs.length - 1 ? '1px solid #f0f0f0' : 'none',
-                      color: log.level === 'Error' ? '#ff4d4f' :
-                             log.level === 'Warning' ? '#faad14' :
-                             log.level === 'Info' ? '#1890ff' : '#666'
-                    }}>
-                      <Text type="secondary" style={{ fontSize: '10px' }}>
-                        [{log.level}] {new Date(log.timestamp).toLocaleTimeString()}:
-                      </Text> {log.message}
-                    </div>
-                  ))}
-                </div>
-              </Panel>
-            )}
-          </Collapse>
+          <Collapse
+            size="small"
+            ghost
+            items={[
+              ...(step.inputData ? [{
+                key: 'inputData',
+                label: 'Input Data',
+                children: (
+                  <SyntaxHighlighter
+                    language="json"
+                    style={tomorrow}
+                    customStyle={{ fontSize: '11px', margin: 0 }}
+                  >
+                    {JSON.stringify(step.inputData, null, 2)}
+                  </SyntaxHighlighter>
+                )
+              }] : []),
+              ...(step.outputData ? [{
+                key: 'outputData',
+                label: 'Output Data',
+                children: (
+                  <SyntaxHighlighter
+                    language="json"
+                    style={tomorrow}
+                    customStyle={{ fontSize: '11px', margin: 0 }}
+                  >
+                    {JSON.stringify(step.outputData, null, 2)}
+                  </SyntaxHighlighter>
+                )
+              }] : []),
+              ...(stepLogs.length > 0 ? [{
+                key: 'stepLogs',
+                label: `Logs (${stepLogs.length})`,
+                children: (
+                  <div style={{ maxHeight: '200px', overflow: 'auto' }}>
+                    {stepLogs.map((log, index) => (
+                      <div key={index} style={{
+                        fontSize: '11px',
+                        fontFamily: 'monospace',
+                        padding: '2px 0',
+                        borderBottom: index < stepLogs.length - 1 ? '1px solid #f0f0f0' : 'none',
+                        color: log.level === 'Error' ? '#ff4d4f' :
+                               log.level === 'Warning' ? '#faad14' :
+                               log.level === 'Info' ? '#1890ff' : '#666'
+                      }}>
+                        <Text type="secondary" style={{ fontSize: '10px' }}>
+                          [{log.level}] {new Date(log.timestamp).toLocaleTimeString()}:
+                        </Text> {log.message}
+                      </div>
+                    ))}
+                  </div>
+                )
+              }] : [])
+            ]}
+          />
         </div>
       )}
 

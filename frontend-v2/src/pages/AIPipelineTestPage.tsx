@@ -39,14 +39,23 @@ import '../utils/testEnumNormalization'; // Import to run tests
 import PipelineTestMonitoringDashboard from '../components/PipelineTestMonitoringDashboard';
 import EnhancedMonitoringDashboard from '../components/EnhancedMonitoringDashboard';
 import PipelineTestConfigurationManager from '../components/PipelineTestConfigurationManager';
+import { ComprehensiveSignalRMonitor } from '../components/ComprehensiveSignalRMonitor';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
-const { Panel } = Collapse;
 
 const AIPipelineTestPage: React.FC = () => {
   const [form] = Form.useForm();
-  const [selectedSteps, setSelectedSteps] = useState<PipelineStep[]>([]);
+  const [selectedSteps, setSelectedSteps] = useState<PipelineStep[]>([
+    PipelineStep.BusinessContextAnalysis,
+    PipelineStep.TokenBudgetManagement,
+    PipelineStep.SchemaRetrieval,
+    PipelineStep.PromptBuilding,
+    PipelineStep.AIGeneration,
+    PipelineStep.SQLValidation,
+    PipelineStep.SQLExecution,
+    PipelineStep.ResultsProcessing
+  ]);
   const [testQuery, setTestQuery] = useState('Top 10 depositors yesterday from UK');
   const [isRunning, setIsRunning] = useState(false);
   const [testResult, setTestResult] = useState<PipelineTestResult | null>(null);
@@ -55,6 +64,7 @@ const AIPipelineTestPage: React.FC = () => {
   const [currentTestId, setCurrentTestId] = useState<string | null>(null);
   const [showMonitoring, setShowMonitoring] = useState(false);
   const [useEnhancedMonitoring, setUseEnhancedMonitoring] = useState(true);
+  const [showComprehensiveMonitor, setShowComprehensiveMonitor] = useState(true);
 
   const { testPipelineSteps, getAvailableSteps } = useAIPipelineTestApi();
   const {
@@ -113,7 +123,12 @@ const AIPipelineTestPage: React.FC = () => {
       const defaultParams: Record<string, any> = {};
       steps.forEach(step => {
         step.parameters.forEach(param => {
-          defaultParams[param.name] = parseParameterValue(param.defaultValue, param.type);
+          // Override specific defaults
+          if (param.name === 'useAI' || param.name === 'enableExecution') {
+            defaultParams[param.name] = true;
+          } else {
+            defaultParams[param.name] = parseParameterValue(param.defaultValue, param.type);
+          }
         });
       });
       setParameters(defaultParams);
@@ -142,6 +157,17 @@ const AIPipelineTestPage: React.FC = () => {
       setSelectedSteps(prev => prev.filter(s => s !== step));
     }
   };
+
+  const handleSelectAllSteps = () => {
+    const allSteps = availableSteps.map(step => step.step);
+    setSelectedSteps(allSteps);
+  };
+
+  const handleDeselectAllSteps = () => {
+    setSelectedSteps([]);
+  };
+
+  const isAllStepsSelected = availableSteps.length > 0 && selectedSteps.length === availableSteps.length;
 
   const handleParameterChange = (paramName: string, value: any) => {
     setParameters(prev => ({
@@ -179,15 +205,66 @@ const AIPipelineTestPage: React.FC = () => {
       };
 
       console.log('🚀 Sending test request:', request);
+      console.log('🔍 [FRONTEND-DEBUG] Frontend code updated - step data merging enabled');
       message.info('Starting pipeline test...');
 
       const result = await testPipelineSteps(request);
       console.log('✅ Received test result:', result);
       console.log('🔍 Setting testResult state...');
 
-      setTestResult(result);
+      // Wait a moment for any remaining SignalR events to arrive
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      console.log('✅ State updated, testResult should now be:', result);
+      // Merge real-time step data from monitoring into the final result
+      const enhancedResult = { ...result };
+      console.log('🔍 Current stepProgress state:', stepProgress);
+      console.log('🔍 stepProgress keys:', stepProgress ? Object.keys(stepProgress) : 'stepProgress is null/undefined');
+
+      if (stepProgress && Object.keys(stepProgress).length > 0) {
+        console.log('🔄 Merging real-time step data into result:', stepProgress);
+        enhancedResult.results = {};
+
+        // Convert stepProgress data to the expected results format
+        Object.entries(stepProgress).forEach(([stepName, progress]) => {
+          console.log(`🔍 Processing step ${stepName}:`, progress);
+          console.log(`🔍 Step ${stepName} - status: ${progress.status}, has details: ${!!progress.details}`);
+
+          if (stepName === 'AIGeneration') {
+            console.log(`🤖 [AI-GENERATION-DEBUG] Step details:`, progress.details);
+            console.log(`🤖 [AI-GENERATION-DEBUG] Step status:`, progress.status);
+            console.log(`🤖 [AI-GENERATION-DEBUG] Full progress object:`, progress);
+          }
+
+          if (progress.details && progress.status === 'completed') {
+            console.log(`✅ Adding step ${stepName} details:`, progress.details);
+            enhancedResult.results[stepName] = {
+              ...progress.details,
+              durationMs: progress.endTime && progress.startTime
+                ? new Date(progress.endTime).getTime() - new Date(progress.startTime).getTime()
+                : progress.details.durationMs || 0
+            };
+
+            if (stepName === 'AIGeneration') {
+              console.log(`🤖 [AI-GENERATION-DEBUG] Added to enhancedResult.results:`, enhancedResult.results[stepName]);
+            }
+          } else {
+            console.log(`⚠️ Skipping step ${stepName} - status: ${progress.status}, has details: ${!!progress.details}`);
+
+            if (stepName === 'AIGeneration') {
+              console.log(`🤖 [AI-GENERATION-DEBUG] AIGeneration step was skipped!`);
+              console.log(`🤖 [AI-GENERATION-DEBUG] Reason - status: ${progress.status}, has details: ${!!progress.details}`);
+            }
+          }
+        });
+
+        console.log('✅ Enhanced result with real-time data:', enhancedResult);
+      } else {
+        console.log('⚠️ No stepProgress data available for merging');
+      }
+
+      setTestResult(enhancedResult);
+
+      console.log('✅ State updated, testResult should now be:', enhancedResult);
 
       if (result.success) {
         message.success('Pipeline test completed successfully!');
@@ -208,42 +285,90 @@ const AIPipelineTestPage: React.FC = () => {
       return;
     }
 
+    // Generate test ID immediately and join session for real-time monitoring
+    const testId = `mock_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     setIsRunning(true);
     setTestResult(null);
+    setCurrentTestId(testId);
     setShowMonitoring(true);
-    message.info('Starting mock pipeline test...');
+    message.info('Starting enhanced mock pipeline test with real-time monitoring...');
 
-    // Simulate test execution
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Join test session immediately for real-time updates
+    if (isConnected) {
+      await joinTestSession(testId);
+    }
 
-    // Create mock result
+    // Create detailed mock results for all selected steps
+    const stepResults: Record<string, any> = {};
+    const startTime = new Date();
+
+    for (let i = 0; i < selectedSteps.length; i++) {
+      const step = selectedSteps[i];
+      const stepName = formatPipelineStepName(step);
+      const processingTime = 500 + Math.random() * 1500; // 0.5-2 seconds per step
+
+      console.log(`🔄 Mock Step Started: ${stepName}`);
+
+      // Simulate processing delay
+      await new Promise(resolve => setTimeout(resolve, processingTime));
+
+      stepResults[step] = {
+        success: true,
+        durationMs: Math.round(processingTime),
+        error: null,
+        details: {
+          stepName,
+          mockData: `Detailed mock result for ${stepName}`,
+          timestamp: new Date().toISOString(),
+          stepIndex: i + 1,
+          totalSteps: selectedSteps.length
+        }
+      };
+
+      console.log(`✅ Mock Step Completed: ${stepName} (${Math.round(processingTime)}ms)`);
+    }
+
+    // Create comprehensive mock result
     const mockResult: PipelineTestResult = {
-      testId: 'mock-test-' + Date.now(),
+      testId,
       query: testQuery,
       requestedSteps: selectedSteps,
-      startTime: new Date().toISOString(),
+      startTime: startTime.toISOString(),
       endTime: new Date().toISOString(),
-      totalDurationMs: 3000,
+      totalDurationMs: Object.values(stepResults).reduce((total: number, result: any) => total + (result.durationMs || 0), 0),
       success: true,
       error: null,
-      results: {
-        [selectedSteps[0]]: {
-          success: true,
-          durationMs: 1500,
-          error: null
-        }
+      results: stepResults,
+      businessProfile: {
+        intent: 'Aggregation',
+        domain: 'Gaming',
+        confidence: 0.91,
+        entities: ['depositors', 'UK', 'yesterday', 'Top 10']
       },
-      businessProfile: null,
-      tokenBudget: null,
-      schemaMetadata: null,
-      generatedPrompt: null,
-      generatedSQL: null
+      tokenBudget: {
+        allocated: 4000,
+        used: 2847,
+        remaining: 1153
+      },
+      schemaMetadata: {
+        tables: ['Customers', 'Transactions', 'Deposits'],
+        columns: ['customer_id', 'amount', 'date', 'country'],
+        relationships: ['Customers -> Transactions', 'Transactions -> Deposits']
+      },
+      generatedPrompt: `Generate SQL to find the top 10 depositors from UK yesterday. Use tables: Customers, Transactions, Deposits.`,
+      generatedSQL: `SELECT TOP 10 c.customer_id, c.name, SUM(d.amount) as total_deposits
+FROM Customers c
+JOIN Transactions t ON c.customer_id = t.customer_id
+JOIN Deposits d ON t.transaction_id = d.transaction_id
+WHERE c.country = 'UK' AND DATE(d.created_date) = DATEADD(day, -1, CAST(GETDATE() AS DATE))
+GROUP BY c.customer_id, c.name
+ORDER BY total_deposits DESC;`
     };
 
     setTestResult(mockResult);
-    setCurrentTestId(mockResult.testId);
     setIsRunning(false);
-    message.success('Mock pipeline test completed successfully!');
+    message.success(`Mock pipeline test completed! Executed ${selectedSteps.length} steps with detailed results.`);
   };
 
   const handleLoadConfiguration = (config: PipelineTestConfiguration) => {
@@ -273,7 +398,29 @@ const AIPipelineTestPage: React.FC = () => {
   };
 
   const renderStepConfiguration = () => (
-    <Card title={<><SettingOutlined /> Step Configuration</>} className="mb-4">
+    <Card
+      title={
+        <div className="flex items-center space-x-3">
+          <Checkbox
+            checked={isAllStepsSelected}
+            indeterminate={selectedSteps.length > 0 && selectedSteps.length < availableSteps.length}
+            onChange={(e) => {
+              if (e.target.checked) {
+                handleSelectAllSteps();
+              } else {
+                handleDeselectAllSteps();
+              }
+            }}
+          >
+            <SettingOutlined /> Step Configuration
+          </Checkbox>
+          <Tag color="blue">
+            {selectedSteps.length}/{availableSteps.length} selected
+          </Tag>
+        </div>
+      }
+      className="mb-4"
+    >
       <Row gutter={[16, 16]}>
         {availableSteps.map(stepInfo => (
           <Col span={24} key={stepInfo.step}>
@@ -376,6 +523,28 @@ const AIPipelineTestPage: React.FC = () => {
             >
               {showMonitoring ? 'Hide Monitoring' : 'Show Real-time Monitoring'}
             </Button>
+
+            {showMonitoring && (
+              <>
+                <Button
+                  type={showComprehensiveMonitor ? "primary" : "default"}
+                  icon={<BugOutlined />}
+                  onClick={() => setShowComprehensiveMonitor(!showComprehensiveMonitor)}
+                  size="small"
+                >
+                  {showComprehensiveMonitor ? 'Hide SignalR Monitor' : 'Show SignalR Monitor'}
+                </Button>
+
+                <Button
+                  type={useEnhancedMonitoring ? "primary" : "default"}
+                  icon={<SettingOutlined />}
+                  onClick={() => setUseEnhancedMonitoring(!useEnhancedMonitoring)}
+                  size="small"
+                >
+                  {useEnhancedMonitoring ? 'Enhanced Mode' : 'Basic Mode'}
+                </Button>
+              </>
+            )}
           </div>
 
           <Space>
@@ -407,6 +576,16 @@ const AIPipelineTestPage: React.FC = () => {
           <Alert
             message="AI Generation Enabled"
             description="This will make actual calls to OpenAI and incur costs. Use carefully!"
+            type="warning"
+            showIcon
+            icon={<ExclamationCircleOutlined />}
+          />
+        )}
+
+        {parameters.enableExecution && (
+          <Alert
+            message="SQL Execution Enabled"
+            description="This will execute generated SQL against the database. Ensure you have proper permissions and backups!"
             type="warning"
             showIcon
             icon={<ExclamationCircleOutlined />}
@@ -480,19 +659,28 @@ const AIPipelineTestPage: React.FC = () => {
               </Card>
 
               {/* Monitoring Dashboard */}
-              {useEnhancedMonitoring ? (
-                <EnhancedMonitoringDashboard
-                  testId={currentTestId || undefined}
-                  autoJoinSession={true}
-                  showAnalytics={true}
-                  showLogs={true}
-                />
-              ) : (
-                <PipelineTestMonitoringDashboard
-                  testId={currentTestId || undefined}
-                  autoJoinSession={true}
-                />
-              )}
+              <Row gutter={[16, 16]}>
+                {showComprehensiveMonitor && (
+                  <Col span={24}>
+                    <ComprehensiveSignalRMonitor testResult={testResult} />
+                  </Col>
+                )}
+                <Col span={24}>
+                  {useEnhancedMonitoring ? (
+                    <EnhancedMonitoringDashboard
+                      testId={currentTestId || undefined}
+                      autoJoinSession={true}
+                      showAnalytics={true}
+                      showLogs={true}
+                    />
+                  ) : (
+                    <PipelineTestMonitoringDashboard
+                      testId={currentTestId || undefined}
+                      autoJoinSession={true}
+                    />
+                  )}
+                </Col>
+              </Row>
             </div>
           </Col>
         )}

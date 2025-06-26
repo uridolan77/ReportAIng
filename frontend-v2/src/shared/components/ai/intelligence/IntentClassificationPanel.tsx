@@ -31,7 +31,6 @@ import { ConfidenceIndicator } from '../common/ConfidenceIndicator'
 import type { QueryIntent, IntentAlternative, IntentConfidenceBreakdown } from '@shared/types/ai'
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
 
 export interface IntentClassificationPanelProps {
   intent: QueryIntent

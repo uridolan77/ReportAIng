@@ -66,6 +66,7 @@ public class BusinessColumnInfo
     public bool IsKeyColumn { get; set; } // Added missing property
     public bool IsRequired { get; set; }
     public string? ValidationRules { get; set; }
+    public string? RelatedBusinessTerms { get; set; } = string.Empty; // Added missing property
     public double RelevanceScore { get; set; }
 }
 

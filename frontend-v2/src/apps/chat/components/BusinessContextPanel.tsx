@@ -12,7 +12,6 @@ import {
 import { useGetBusinessContextQuery } from '@shared/store/api/chatApi'
 
 const { Text, Title } = Typography
-const { Panel } = Collapse
 
 export interface BusinessContextPanelProps {
   conversationId?: string
@@ -267,33 +266,32 @@ export const BusinessContextPanel: React.FC<BusinessContextPanelProps> = ({
     </Card>
   )
 
-  const renderDomainSection = (domain: BusinessDomain) => (
-    <Panel
-      key={domain.id}
-      header={
-        <Space>
-          <div style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            backgroundColor: domain.color
-          }} />
-          <Text strong>{domain.name}</Text>
-          <Tag size="small">{domain.entities.length} entities</Tag>
-        </Space>
-      }
-    >
+  const renderDomainSection = (domain: BusinessDomain) => ({
+    key: domain.id,
+    label: (
+      <Space>
+        <div style={{
+          width: '12px',
+          height: '12px',
+          borderRadius: '50%',
+          backgroundColor: domain.color
+        }} />
+        <Text strong>{domain.name}</Text>
+        <Tag size="small">{domain.entities.length} entities</Tag>
+      </Space>
+    ),
+    children: (
       <Space direction="vertical" style={{ width: '100%' }}>
         <Text type="secondary" style={{ fontSize: '11px' }}>
           {domain.description}
         </Text>
-        
+
         <div style={{ marginTop: '8px' }}>
           {domain.entities.map(renderEntityCard)}
         </div>
       </Space>
-    </Panel>
-  )
+    )
+  })
 
   return (
     <div className={`business-context-panel ${className}`}>
@@ -321,14 +319,13 @@ export const BusinessContextPanel: React.FC<BusinessContextPanelProps> = ({
 
         {/* Domain Breakdown */}
         <Card size="small" title="Business Domains">
-          <Collapse 
-            ghost 
+          <Collapse
+            ghost
             size="small"
             activeKey={expandedDomains}
             onChange={(keys) => setExpandedDomains(keys as string[])}
-          >
-            {mockDomains.map(renderDomainSection)}
-          </Collapse>
+            items={mockDomains.map(renderDomainSection)}
+          />
         </Card>
 
         {/* Quick Actions */}

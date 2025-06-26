@@ -198,8 +198,8 @@ public class PipelineTestNotificationService : IPipelineTestNotificationService
 
     public async Task SendStepStartedAsync(string testId, string stepName, object stepDetails)
     {
-        _logger.LogDebug("📡 Sending step started notification for {StepName} in test {TestId}", stepName, testId);
-        
+        _logger.LogInformation("📡 Sending step started notification for {StepName} in test {TestId}", stepName, testId);
+
         await _hubContext.Clients.Group($"test_{testId}")
             .SendAsync("StepStarted", new { testId, stepName, stepDetails, timestamp = DateTime.UtcNow });
     }
@@ -212,8 +212,8 @@ public class PipelineTestNotificationService : IPipelineTestNotificationService
 
     public async Task SendStepCompletedAsync(string testId, string stepName, object stepResult)
     {
-        _logger.LogDebug("📡 Sending step completed notification for {StepName} in test {TestId}", stepName, testId);
-        
+        _logger.LogInformation("📡 Sending step completed notification for {StepName} in test {TestId}", stepName, testId);
+
         await _hubContext.Clients.Group($"test_{testId}")
             .SendAsync("StepCompleted", new { testId, stepName, stepResult, timestamp = DateTime.UtcNow });
     }

@@ -40,7 +40,7 @@ import type {
 
 const { Title, Text, Paragraph } = Typography
 const { Option } = Select
-const { Panel } = Collapse
+
 
 interface TemplateOptimizationInterfaceProps {
   templateKey: string

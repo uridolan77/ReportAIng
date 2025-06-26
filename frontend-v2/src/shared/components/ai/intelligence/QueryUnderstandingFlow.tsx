@@ -31,7 +31,7 @@ import { EntityHighlighter } from './EntityHighlighter'
 import type { QueryUnderstandingResult, QueryProcessingStep, BusinessEntity } from '@shared/types/ai'
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
+
 const { Step } = Steps
 
 export interface QueryUnderstandingFlowProps {

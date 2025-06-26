@@ -507,7 +507,7 @@ public class BusinessTableManagementService : IBusinessTableManagementService
             DataLineage = entity.DataLineage ?? string.Empty,
             CalculationRules = entity.CalculationRules ?? string.Empty,
             SemanticTags = entity.SemanticTags ?? string.Empty,
-            BusinessDataType = entity.BusinessDataType ?? string.Empty,
+            BusinessDataType = entity.BusinessDataType ?? string.Empty, // ✅ ADD MISSING MAPPING!
             ConstraintsAndRules = entity.ConstraintsAndRules ?? string.Empty,
             DataQualityScore = (double)entity.DataQualityScore,
             UsageFrequency = (int)entity.UsageFrequency,
@@ -561,12 +561,21 @@ public class BusinessTableManagementService : IBusinessTableManagementService
 
         return new BusinessColumnInfo
         {
+            Id = entity.Id,
             ColumnName = entity.ColumnName,
+            DataType = entity.BusinessDataType ?? "Unknown", // Add missing DataType mapping
+            BusinessName = entity.NaturalLanguageAliases ?? entity.ColumnName,
             BusinessMeaning = entity.BusinessMeaning,
+            BusinessPurpose = entity.BusinessMeaning, // Use BusinessMeaning as purpose
             BusinessContext = entity.BusinessContext,
+            SemanticContext = entity.SemanticTags ?? string.Empty,
             DataExamples = dataExamples,
+            SampleValues = dataExamples, // Use same data for sample values
+            IsKey = entity.IsKeyColumn,
+            IsKeyColumn = entity.IsKeyColumn,
+            IsRequired = false, // Default to false since IsNullable is not available
             ValidationRules = entity.ValidationRules,
-            IsKeyColumn = entity.IsKeyColumn
+            RelevanceScore = (double)entity.SemanticRelevanceScore
         };
     }
 

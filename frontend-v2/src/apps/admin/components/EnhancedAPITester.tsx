@@ -32,7 +32,7 @@ import {
 } from '@shared/store/api/businessApi'
 
 const { Title, Text } = Typography
-const { Panel } = Collapse
+
 
 interface TestResult {
   name: string
@@ -260,31 +260,30 @@ export const EnhancedAPITester: React.FC = () => {
 
         {/* Test Results */}
         {testResults.length > 0 && (
-          <Collapse>
-            {testResults.map((result, index) => (
-              <Panel
-                key={index}
-                header={
-                  <Space>
-                    {getStatusIcon(result.status)}
-                    <span>{result.name}</span>
-                    <Tag color={getStatusColor(result.status)}>
-                      {result.status}
-                    </Tag>
-                    {result.duration && (
-                      <Text type="secondary">({result.duration}ms)</Text>
-                    )}
-                  </Space>
-                }
-              >
+          <Collapse
+            items={testResults.map((result, index) => ({
+              key: index.toString(),
+              label: (
+                <Space>
+                  {getStatusIcon(result.status)}
+                  <span>{result.name}</span>
+                  <Tag color={getStatusColor(result.status)}>
+                    {result.status}
+                  </Tag>
+                  {result.duration && (
+                    <Text type="secondary">({result.duration}ms)</Text>
+                  )}
+                </Space>
+              ),
+              children: (
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <Text>{result.message}</Text>
-                  
+
                   {result.details && (
                     <Card size="small" title="Details">
-                      <pre style={{ 
-                        background: '#f5f5f5', 
-                        padding: '8px', 
+                      <pre style={{
+                        background: '#f5f5f5',
+                        padding: '8px',
                         borderRadius: '4px',
                         fontSize: '12px',
                         overflow: 'auto',
@@ -295,9 +294,9 @@ export const EnhancedAPITester: React.FC = () => {
                     </Card>
                   )}
                 </Space>
-              </Panel>
-            ))}
-          </Collapse>
+              )
+            }))}
+          />
         )}
 
         {/* API Endpoints List */}

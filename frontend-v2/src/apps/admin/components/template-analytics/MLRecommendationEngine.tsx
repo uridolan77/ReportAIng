@@ -49,7 +49,7 @@ import type {
 } from '@shared/types/templateAnalytics'
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
+
 
 interface MLRecommendation {
   id: string

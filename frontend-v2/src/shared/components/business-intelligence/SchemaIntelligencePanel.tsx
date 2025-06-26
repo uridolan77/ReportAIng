@@ -44,7 +44,7 @@ import {
 
 const { Text, Title, Paragraph } = Typography
 const { TabPane } = Tabs
-const { Panel } = Collapse
+
 
 interface TableInfo {
   name: string

@@ -10,7 +10,6 @@ import { Result, Button, Typography, Card, Space, Alert, Collapse } from 'antd'
 import { ReloadOutlined, BugOutlined, WarningOutlined, InfoCircleOutlined } from '@ant-design/icons'
 
 const { Paragraph, Text } = Typography
-const { Panel } = Collapse
 
 interface Props {
   children: ReactNode
@@ -246,50 +245,54 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
               )}
 
               {showDetails && this.state.error && (
-                <Collapse ghost>
-                  <Panel 
-                    header={
+                <Collapse
+                  ghost
+                  items={[{
+                    key: 'details',
+                    label: (
                       <Space>
                         <InfoCircleOutlined />
                         <Text>Error Details (Development Mode)</Text>
                       </Space>
-                    } 
-                    key="details"
-                  >
-                    <Paragraph>
-                      <Text strong>Error Message:</Text>
-                    </Paragraph>
-                    <Paragraph>
-                      <Text code>{this.state.error.message}</Text>
-                    </Paragraph>
-                    
-                    {this.state.error.stack && (
+                    ),
+                    children: (
                       <>
                         <Paragraph>
-                          <Text strong>Stack Trace:</Text>
+                          <Text strong>Error Message:</Text>
                         </Paragraph>
                         <Paragraph>
-                          <Text code style={{ fontSize: '11px', whiteSpace: 'pre-wrap' }}>
-                            {this.state.error.stack}
-                          </Text>
+                          <Text code>{this.state.error.message}</Text>
                         </Paragraph>
+
+                        {this.state.error.stack && (
+                          <>
+                            <Paragraph>
+                              <Text strong>Stack Trace:</Text>
+                            </Paragraph>
+                            <Paragraph>
+                              <Text code style={{ fontSize: '11px', whiteSpace: 'pre-wrap' }}>
+                                {this.state.error.stack}
+                              </Text>
+                            </Paragraph>
+                          </>
+                        )}
+
+                        {this.state.errorInfo && (
+                          <>
+                            <Paragraph>
+                              <Text strong>Component Stack:</Text>
+                            </Paragraph>
+                            <Paragraph>
+                              <Text code style={{ fontSize: '11px', whiteSpace: 'pre-wrap' }}>
+                                {this.state.errorInfo.componentStack}
+                              </Text>
+                            </Paragraph>
+                          </>
+                        )}
                       </>
-                    )}
-                    
-                    {this.state.errorInfo && (
-                      <>
-                        <Paragraph>
-                          <Text strong>Component Stack:</Text>
-                        </Paragraph>
-                        <Paragraph>
-                          <Text code style={{ fontSize: '11px', whiteSpace: 'pre-wrap' }}>
-                            {this.state.errorInfo.componentStack}
-                          </Text>
-                        </Paragraph>
-                      </>
-                    )}
-                  </Panel>
-                </Collapse>
+                    )
+                  }]}
+                />
               )}
             </div>
           </Result>

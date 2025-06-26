@@ -9,7 +9,6 @@ import {
 } from '@ant-design/icons'
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -135,30 +134,35 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       >
         {this.props.showDetails && this.state.error && (
           <Card size="small" style={{ textAlign: 'left', marginTop: '20px' }}>
-            <Collapse ghost>
-              <Panel header="Error Details" key="details">
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Alert
-                    message="Error ID"
-                    description={this.state.errorId}
-                    type="info"
-                    size="small"
-                  />
-                  <div>
-                    <Text strong>Error Message:</Text>
-                    <Paragraph code>{this.state.error.message}</Paragraph>
-                  </div>
-                  {this.state.error.stack && (
+            <Collapse
+              ghost
+              items={[{
+                key: 'details',
+                label: 'Error Details',
+                children: (
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    <Alert
+                      message="Error ID"
+                      description={this.state.errorId}
+                      type="info"
+                      size="small"
+                    />
                     <div>
-                      <Text strong>Stack Trace:</Text>
-                      <Paragraph code style={{ fontSize: '11px', maxHeight: '200px', overflow: 'auto' }}>
-                        {this.state.error.stack}
-                      </Paragraph>
+                      <Text strong>Error Message:</Text>
+                      <Paragraph code>{this.state.error.message}</Paragraph>
                     </div>
-                  )}
-                </Space>
-              </Panel>
-            </Collapse>
+                    {this.state.error.stack && (
+                      <div>
+                        <Text strong>Stack Trace:</Text>
+                        <Paragraph code style={{ fontSize: '11px', maxHeight: '200px', overflow: 'auto' }}>
+                          {this.state.error.stack}
+                        </Paragraph>
+                      </div>
+                    )}
+                  </Space>
+                )
+              }]}
+            />
           </Card>
         )}
       </Result>

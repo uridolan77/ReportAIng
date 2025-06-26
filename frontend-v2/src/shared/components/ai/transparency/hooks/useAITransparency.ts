@@ -3,6 +3,7 @@ import { transparencyHub } from '@shared/services/signalr/transparencyHub'
 import { transparencySignalR } from '@shared/services/transparencySignalR'
 import { useAppSelector } from '@shared/hooks'
 import { selectAccessToken } from '@shared/store/auth'
+import { useSignalRTokenMonitor } from '@shared/hooks/useTokenMonitor'
 
 /**
  * Hook for real-time transparency updates
@@ -179,6 +180,12 @@ export const useAITransparency = (traceId?: string) => {
       refreshTrace()
     }
   }, [traceId, refreshTrace])
+
+  // Monitor token expiration and disconnect SignalR when token expires
+  useSignalRTokenMonitor(() => {
+    console.log('🔌 Token expired - disconnecting transparency SignalR')
+    disconnect()
+  })
 
   return {
     transparencyData,

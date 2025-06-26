@@ -36,7 +36,7 @@ import { useGenerateTemplateVariantsMutation } from '@shared/store/api/templateA
 import type { TemplateVariant, VariantType } from '@shared/types/templateAnalytics'
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
+
 
 interface TemplateVariantsGeneratorProps {
   templateKey: string

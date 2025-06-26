@@ -32,7 +32,7 @@ import { ConfidenceIndicator } from '../common/ConfidenceIndicator'
 import type { BusinessContextProfile, BusinessEntity, BusinessDomain, QueryIntent } from '@shared/types/ai'
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
+
 
 export interface BusinessContextVisualizerProps {
   context: BusinessContextProfile
