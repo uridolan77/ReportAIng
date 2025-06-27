@@ -43,14 +43,85 @@ public class GenerateSqlCommandHandler : IRequestHandler<GenerateSqlCommand, Gen
             _logger.LogInformation("🔍 [SQL-HANDLER] GenerateSqlCommandHandler.Handle called for question: {Question}", request.Question);
             _logger.LogInformation("🤖 Generating SQL for question: {Question}", request.Question);
 
-            // Build AI prompt with business context
-            var prompt = await _promptService.BuildQueryPromptAsync(request.Question, request.Schema);
+            // Check if enhanced prompt is available and valid
+            string prompt;
+            PromptDetails? promptDetails;
 
-            // Generate detailed prompt information for debugging
-            var promptDetails = await _promptService.BuildDetailedQueryPromptAsync(request.Question, request.Schema);
-            
-            _logger.LogInformation("📝 Prompt built - Template: {TemplateName}, Length: {Length}", 
-                promptDetails?.TemplateName, prompt?.Length ?? 0);
+            if (IsEnhancedPromptValid(request))
+            {
+                _logger.LogInformation("🚀 [ENHANCED-PROMPT] Using enhanced business-aware prompt - Length: {Length}", request.EnhancedPrompt!.Length);
+                prompt = request.EnhancedPrompt!;
+
+                // Create prompt details for enhanced prompt
+                promptDetails = new PromptDetails
+                {
+                    FullPrompt = prompt,
+                    TemplateName = "Enhanced Business Context Template",
+                    TemplateVersion = "1.0",
+                    TokenCount = EstimateTokenCount(prompt),
+                    GeneratedAt = DateTime.UtcNow,
+                    // Enhanced properties
+                    PromptLength = prompt.Length,
+                    SchemaTablesCount = request.SchemaMetadata?.RelevantTables.Count ?? 0,
+                    BusinessDomain = request.BusinessProfile?.Domain.Name ?? "Unknown",
+                    ConfidenceScore = request.BusinessProfile?.ConfidenceScore ?? 0,
+                    IsEnhancedPrompt = true,
+                    EnhancementSource = "Enhanced"
+                };
+
+                _logger.LogInformation("✅ [ENHANCED-PROMPT] Enhanced prompt ready - Domain: {Domain}, Confidence: {Confidence:P2}, Tables: {TableCount}",
+                    promptDetails.BusinessDomain, promptDetails.ConfidenceScore, promptDetails.SchemaTablesCount);
+            }
+            else
+            {
+                var fallbackReason = GetPromptFallbackReason(request);
+                _logger.LogInformation("🔄 [BASIC-PROMPT] Using basic prompt building - Reason: {Reason}", fallbackReason);
+
+                try
+                {
+                    // Build AI prompt with business context (fallback to basic)
+                    prompt = await _promptService.BuildQueryPromptAsync(request.Question, request.Schema);
+
+                    // Generate detailed prompt information for debugging
+                    promptDetails = await _promptService.BuildDetailedQueryPromptAsync(request.Question, request.Schema);
+
+                    // Enhance basic prompt details with new properties
+                    if (promptDetails != null)
+                    {
+                        promptDetails.PromptLength = prompt?.Length ?? 0;
+                        promptDetails.SchemaTablesCount = request.Schema.Tables.Count;
+                        promptDetails.BusinessDomain = "Unknown";
+                        promptDetails.ConfidenceScore = 0.5; // Default confidence for basic prompts
+                        promptDetails.IsEnhancedPrompt = false;
+                        promptDetails.EnhancementSource = "Basic";
+                    }
+
+                    _logger.LogInformation("📝 [BASIC-PROMPT] Basic prompt built - Template: {TemplateName}, Length: {Length}",
+                        promptDetails?.TemplateName, prompt?.Length ?? 0);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ [BASIC-PROMPT] Failed to build basic prompt, using minimal fallback");
+
+                    // Ultimate fallback - create minimal prompt
+                    prompt = $"Generate SQL for: {request.Question}\n\nAvailable tables: {string.Join(", ", request.Schema.Tables.Select(t => t.Name))}";
+                    promptDetails = new PromptDetails
+                    {
+                        FullPrompt = prompt,
+                        TemplateName = "Minimal Fallback Template",
+                        TemplateVersion = "1.0",
+                        TokenCount = EstimateTokenCount(prompt),
+                        GeneratedAt = DateTime.UtcNow,
+                        // Enhanced properties
+                        PromptLength = prompt.Length,
+                        SchemaTablesCount = request.Schema.Tables.Count,
+                        BusinessDomain = "Unknown",
+                        ConfidenceScore = 0.3, // Low confidence for fallback
+                        IsEnhancedPrompt = false,
+                        EnhancementSource = "Fallback"
+                    };
+                }
+            }
 
             // Generate SQL using AI with managed provider/model if specified
             string generatedSQL;
@@ -130,6 +201,64 @@ public class GenerateSqlCommandHandler : IRequestHandler<GenerateSqlCommand, Gen
                 AiExecutionTimeMs = executionTime
             };
         }
+    }
+
+    /// <summary>
+    /// Validate if enhanced prompt is available and usable
+    /// </summary>
+    private bool IsEnhancedPromptValid(GenerateSqlCommand request)
+    {
+        if (string.IsNullOrEmpty(request.EnhancedPrompt))
+        {
+            return false;
+        }
+
+        if (request.EnhancedPrompt.Length < 50)
+        {
+            _logger.LogWarning("⚠️ [PROMPT-VALIDATION] Enhanced prompt too short: {Length} characters", request.EnhancedPrompt.Length);
+            return false;
+        }
+
+        if (request.BusinessProfile == null)
+        {
+            _logger.LogDebug("🔍 [PROMPT-VALIDATION] BusinessProfile is null, enhanced prompt may be incomplete");
+            // Still allow enhanced prompt without business profile for partial enhancement
+        }
+
+        if (request.SchemaMetadata == null)
+        {
+            _logger.LogDebug("🔍 [PROMPT-VALIDATION] SchemaMetadata is null, enhanced prompt may be incomplete");
+            // Still allow enhanced prompt without schema metadata for partial enhancement
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Get reason for falling back to basic prompt
+    /// </summary>
+    private string GetPromptFallbackReason(GenerateSqlCommand request)
+    {
+        if (string.IsNullOrEmpty(request.EnhancedPrompt))
+            return "No enhanced prompt provided";
+
+        if (request.EnhancedPrompt.Length < 50)
+            return $"Enhanced prompt too short ({request.EnhancedPrompt.Length} chars)";
+
+        return "Enhanced prompt validation failed";
+    }
+
+    /// <summary>
+    /// Estimate token count for a given text (rough approximation)
+    /// </summary>
+    private int EstimateTokenCount(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return 0;
+
+        // Rough estimation: 1 token ≈ 4 characters for English text
+        // This is a simplified estimation; actual tokenization may vary
+        return (int)Math.Ceiling(text.Length / 4.0);
     }
 }
 

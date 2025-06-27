@@ -1673,10 +1673,76 @@ public class QueryController : ControllerBase
         return (decimal)tokenCount / 1000 * 0.03m;
     }
 
+    /// <summary>
+    /// Test endpoint for debugging Enhanced Schema Contextualization System
+    /// </summary>
+    [HttpPost("debug/enhanced-schema")]
+    public async Task<ActionResult> DebugEnhancedSchema([FromBody] DebugSchemaRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            _logger.LogInformation("🔍 [DEBUG-ENHANCED-SCHEMA] Testing Enhanced Schema Contextualization for query: {Query}", request.Query);
+
+            // Step 1: Business Context Analysis
+            var businessProfile = await _businessContextAnalyzer.AnalyzeUserQuestionAsync(request.Query, userId);
+
+            _logger.LogInformation("📊 [DEBUG] Business Profile - Intent: {Intent}, Domain: {Domain}, Confidence: {Confidence}",
+                businessProfile.Intent.Type, businessProfile.Domain.Name, businessProfile.ConfidenceScore);
+
+            // Step 2: Enhanced Schema Retrieval
+            var schema = await _metadataService.GetRelevantBusinessMetadataAsync(businessProfile, 10);
+
+            // Step 3: Return detailed debug information
+            var debugResult = new
+            {
+                Query = request.Query,
+                BusinessProfile = new
+                {
+                    Intent = businessProfile.Intent.Type.ToString(),
+                    Domain = businessProfile.Domain.Name,
+                    BusinessTerms = businessProfile.BusinessTerms,
+                    Entities = businessProfile.Entities.Select(e => e.Name).ToList(),
+                    ConfidenceScore = businessProfile.ConfidenceScore
+                },
+                SchemaResults = new
+                {
+                    TablesCount = schema.RelevantTables.Count,
+                    Tables = schema.RelevantTables.Select(t => new
+                    {
+                        t.TableName,
+                        t.SchemaName,
+                        t.BusinessPurpose,
+                        t.RelevanceScore
+                    }).ToList(),
+                    RelevanceScore = schema.RelevanceScore,
+                    Complexity = schema.Complexity
+                },
+                Timestamp = DateTime.UtcNow
+            };
+
+            _logger.LogInformation("✅ [DEBUG-ENHANCED-SCHEMA] Debug complete - {TableCount} tables retrieved", schema.RelevantTables.Count);
+            return Ok(debugResult);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [DEBUG-ENHANCED-SCHEMA] Error during debug: {ErrorMessage}", ex.Message);
+            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+        }
+    }
+
     #endregion
 }
 
 #region Request/Response Models
+
+/// <summary>
+/// Request for debugging schema retrieval
+/// </summary>
+public class DebugSchemaRequest
+{
+    public string Query { get; set; } = string.Empty;
+}
 
 /// <summary>
 /// Request for enhanced query processing

@@ -1,11 +1,13 @@
 using MediatR;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.BusinessContext;
 
 namespace BIReportingCopilot.Core.Commands;
 
 /// <summary>
 /// Command for processing a natural language query through the complete pipeline
 /// Encapsulates the entire query processing workflow including caching, AI generation, and execution
+/// Enhanced with business context and schema metadata for improved SQL generation
 /// </summary>
 public class ProcessQueryCommand : IRequest<QueryResponse>
 {
@@ -14,6 +16,11 @@ public class ProcessQueryCommand : IRequest<QueryResponse>
     public string UserId { get; set; } = string.Empty;
     public QueryOptions Options { get; set; } = new();
     public CancellationToken CancellationToken { get; set; } = default;
+
+    // Enhanced properties for Enhanced Schema Contextualization System
+    public BusinessContextProfile? BusinessProfile { get; set; }
+    public ContextualBusinessSchema? SchemaMetadata { get; set; }
+    public string? EnhancedPrompt { get; set; }
 }
 
 /// <summary>
@@ -45,6 +52,7 @@ public class SubmitQueryFeedbackCommand : IRequest<bool>
 
 /// <summary>
 /// Command for generating SQL from natural language
+/// Enhanced with business context and schema metadata for improved SQL generation
 /// </summary>
 public class GenerateSqlCommand : IRequest<GenerateSqlResponse>
 {
@@ -54,6 +62,11 @@ public class GenerateSqlCommand : IRequest<GenerateSqlResponse>
     public string SessionId { get; set; } = string.Empty;
     public string? ProviderId { get; set; }
     public string? ModelId { get; set; }
+
+    // Enhanced properties for Enhanced Schema Contextualization System
+    public BusinessContextProfile? BusinessProfile { get; set; }
+    public ContextualBusinessSchema? SchemaMetadata { get; set; }
+    public string? EnhancedPrompt { get; set; }
 }
 
 /// <summary>

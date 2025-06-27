@@ -6,6 +6,7 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.Business;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Schema;
+using BIReportingCopilot.Infrastructure.BusinessContext.Enhanced;
 using System.Security.Claims;
 
 namespace BIReportingCopilot.API.Controllers;
@@ -23,19 +24,22 @@ public class BusinessSchemaController : ControllerBase
     private readonly BusinessMetadataPopulationService _populationService;
     private readonly IBusinessTableManagementService _businessTableService;
     private readonly IGlossaryManagementService _glossaryService;
+    private readonly SimplifiedBusinessMetadataEnhancementService _enhancementService;
 
     public BusinessSchemaController(
         ILogger<BusinessSchemaController> logger,
         IBusinessSchemaService businessSchemaService,
         BusinessMetadataPopulationService populationService,
         IBusinessTableManagementService businessTableService,
-        IGlossaryManagementService glossaryService)
+        IGlossaryManagementService glossaryService,
+        SimplifiedBusinessMetadataEnhancementService enhancementService)
     {
         _logger = logger;
         _businessSchemaService = businessSchemaService;
         _populationService = populationService;
         _businessTableService = businessTableService;
         _glossaryService = glossaryService;
+        _enhancementService = enhancementService;
     }
 
     #region Business Schemas
@@ -723,6 +727,50 @@ public class BusinessSchemaController : ControllerBase
             {
                 success = false,
                 message = "Failed to get population status",
+                error = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Run the Enhanced Schema Contextualization System metadata enhancement
+    /// </summary>
+    [HttpPost("metadata/enhance")]
+    public async Task<ActionResult<object>> EnhanceBusinessMetadataAsync()
+    {
+        try
+        {
+            _logger.LogInformation("🚀 [METADATA-ENHANCEMENT] Starting Enhanced Schema Contextualization System metadata enhancement");
+
+            var enhancedCount = await _enhancementService.EnhanceBusinessMetadataAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Successfully enhanced {enhancedCount} metadata items using Enhanced Schema Contextualization System",
+                summary = new
+                {
+                    enhancedItems = enhancedCount,
+                    enhancementType = "Rule-based pattern recognition",
+                    systemName = "Enhanced Schema Contextualization System",
+                    features = new[]
+                    {
+                        "Business-friendly table descriptions",
+                        "Column meaning generation",
+                        "Value examples creation",
+                        "Glossary term enhancement"
+                    }
+                },
+                processedAt = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [METADATA-ENHANCEMENT] Failed to enhance business metadata");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Enhanced Schema Contextualization System metadata enhancement failed",
                 error = ex.Message
             });
         }

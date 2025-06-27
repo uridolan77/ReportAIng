@@ -148,6 +148,7 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<BIReportingCopilot.Infrastructure.Interfaces.ISchemaManagementService, BIReportingCopilot.Infrastructure.Schema.SchemaManagementService>();
         services.AddScoped<BIReportingCopilot.Infrastructure.Schema.DatabaseSchemaDiscoveryService>();
         services.AddScoped<BIReportingCopilot.Core.Interfaces.Schema.IBusinessSchemaService, BIReportingCopilot.Infrastructure.Schema.BusinessSchemaService>();
+        services.AddScoped<IForeignKeyRelationshipService, BIReportingCopilot.Infrastructure.Schema.ForeignKeyRelationshipService>();
 
         // Business Management
         services.AddScoped<IBusinessTableManagementService, BusinessTableManagementService>();
@@ -159,6 +160,11 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<BIReportingCopilot.Core.Interfaces.Business.IQueryPatternManagementService, BIReportingCopilot.Infrastructure.Business.BusinessQueryPatternManagementService>();
         services.AddScoped<IQueryCacheService, BIReportingCopilot.Infrastructure.Query.QueryCacheService>();
         services.AddScoped<IQuerySuggestionService, BIReportingCopilot.Infrastructure.Query.QuerySuggestionService>();
+        // TODO: Enable these services after fixing compilation issues
+        // services.AddScoped<ISqlJoinGeneratorService, BIReportingCopilot.Infrastructure.Query.SqlJoinGeneratorService>();
+        // services.AddScoped<ISqlDateFilterService, BIReportingCopilot.Infrastructure.Query.SqlDateFilterService>();
+        // services.AddScoped<ISqlAggregationService, BIReportingCopilot.Infrastructure.Query.SqlAggregationService>();
+        // services.AddScoped<IEnhancedQueryProcessingService, BIReportingCopilot.Infrastructure.Query.EnhancedQueryProcessingService>();
 
         // AI Context
         services.AddScoped<IBusinessContextAutoGenerator, BIReportingCopilot.Infrastructure.AI.Management.BusinessContextAutoGenerator>();
@@ -178,10 +184,13 @@ public static class ServiceRegistrationExtensions
         services.AddScoped<IBusinessMetadataRetrievalService, BusinessMetadataRetrievalService>();
         services.AddScoped<IContextualPromptBuilder, ContextualPromptBuilder>();
 
+        // Enhanced Business Domain Detection
+        services.AddScoped<BIReportingCopilot.Infrastructure.BusinessContext.Enhanced.BusinessDomainDetector>();
+
         // Enhanced Business Context Analysis - Register dependencies first
         services.AddScoped<IIntentClassificationEnsemble, IntentClassificationEnsemble>();
         services.AddScoped<IEntityExtractionPipeline, EntityExtractionPipeline>();
-        services.AddScoped<IAdvancedDomainDetector, AdvancedDomainDetector>();
+        services.AddScoped<IAdvancedDomainDetector, BusinessDomainDetector>();
         services.AddScoped<IConfidenceValidationSystem, ConfidenceValidationSystem>();
         services.AddScoped<IBusinessTermExtractor, BusinessTermExtractor>();
         services.AddScoped<ITimeContextAnalyzer, TimeContextAnalyzer>();
@@ -189,7 +198,7 @@ public static class ServiceRegistrationExtensions
 
         // Additional dependencies for EntityExtractionPipeline
         services.AddScoped<IBusinessTermMatcher, BusinessTermMatcher>();
-        services.AddScoped<ISemanticEntityLinker, SemanticEntityLinker>();
+        services.AddScoped<ISemanticEntityLinker, SchemaEntityLinker>();
 
         // Additional dependencies for ConfidenceValidationSystem
         services.AddScoped<BIReportingCopilot.Core.Interfaces.BusinessContext.IUserFeedbackRepository, UserFeedbackRepository>();

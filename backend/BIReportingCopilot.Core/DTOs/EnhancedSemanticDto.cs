@@ -27,6 +27,17 @@ public class EnhancedBusinessTableDto
     public DateTime? LastAnalyzed { get; set; }
     public string BusinessOwner { get; set; } = string.Empty;
     public List<string> DataGovernancePolicies { get; set; } = new();
+
+    // Enhanced metadata fields for better AI context
+    public string? BusinessFriendlyName { get; set; }
+    public string? NaturalLanguageDescription { get; set; }
+    public string? SemanticDescription { get; set; }
+    public string? LLMContextHints { get; set; }
+    public string? VectorSearchKeywords { get; set; }
+    public string? RelatedBusinessTerms { get; set; }
+    public string? AnalyticalUseCases { get; set; }
+    public string? BusinessProcesses { get; set; }
+    public string? RelationshipContext { get; set; }
     
     public List<EnhancedBusinessColumnDto> Columns { get; set; } = new();
     public bool IsActive { get; set; } = true;
@@ -60,7 +71,28 @@ public class EnhancedBusinessColumnDto
     public decimal UsageFrequency { get; set; } = 0.0m;
     public string PreferredAggregation { get; set; } = string.Empty;
     public List<string> RelatedBusinessTerms { get; set; } = new();
-    
+
+    // Additional rich metadata fields for AI context (avoiding duplicates)
+    public string? EnhancedValueExamples { get; set; }
+    public string? EnhancedDataExamples { get; set; }
+    public string? EnhancedBusinessFriendlyName { get; set; }
+    public string? EnhancedNaturalLanguageDescription { get; set; }
+    public string? EnhancedConstraintsAndRules { get; set; }
+    public string? EnhancedRelatedBusinessTerms { get; set; }
+    public string? EnhancedSemanticTags { get; set; }
+    public string? EnhancedSemanticContext { get; set; }
+    public string? EnhancedLLMPromptHints { get; set; }
+    public string? EnhancedVectorSearchTags { get; set; }
+    public string? EnhancedBusinessPurpose { get; set; }
+    public string? EnhancedCalculationRules { get; set; }
+    public string? EnhancedDataLineage { get; set; }
+    public decimal? SemanticRelevanceScore { get; set; }
+    public decimal? ImportanceScore { get; set; }
+    public string? BusinessQuestionTypes { get; set; }
+    public string? SemanticSynonyms { get; set; }
+    public string? AnalyticalContext { get; set; }
+    public string? BusinessMetrics { get; set; }
+
     public bool IsKeyColumn { get; set; }
     public bool IsSensitiveData { get; set; } = false;
     public bool IsCalculatedField { get; set; } = false;

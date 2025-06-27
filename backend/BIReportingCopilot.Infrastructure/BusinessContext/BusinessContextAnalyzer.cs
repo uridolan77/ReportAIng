@@ -7,6 +7,7 @@ using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Models.BusinessContext;
 using BIReportingCopilot.Core.DTOs;
 using BIReportingCopilot.Infrastructure.Data.Entities;
+using BIReportingCopilot.Infrastructure.BusinessContext.Enhanced;
 
 namespace BIReportingCopilot.Infrastructure.BusinessContext;
 
@@ -19,17 +20,20 @@ public class BusinessContextAnalyzer : IBusinessContextAnalyzer
     private readonly ISemanticMatchingService _semanticMatchingService;
     private readonly ILogger<BusinessContextAnalyzer> _logger;
     private readonly IMemoryCache _cache;
+    private readonly BusinessDomainDetector _domainDetector;
 
     public BusinessContextAnalyzer(
         IAIService aiService,
         ISemanticMatchingService semanticMatchingService,
         ILogger<BusinessContextAnalyzer> logger,
-        IMemoryCache cache)
+        IMemoryCache cache,
+        BusinessDomainDetector domainDetector)
     {
         _aiService = aiService;
         _semanticMatchingService = semanticMatchingService;
         _logger = logger;
         _cache = cache;
+        _domainDetector = domainDetector;
     }
 
     public async Task<BusinessContextProfile> AnalyzeUserQuestionAsync(
@@ -124,24 +128,28 @@ Respond in JSON format:
 
     public async Task<BusinessDomain> DetectBusinessDomainAsync(string userQuestion)
     {
-        // Get all active domains from database (this would be implemented)
-        var domains = await GetActiveDomainsAsync();
-        
-        // Use semantic matching to find best domain
-        var domainDescriptions = domains.Select(d => 
-            $"{d.Name}: {d.Description} - Key concepts: {string.Join(", ", d.KeyConcepts)}"
-        ).ToList();
+        _logger.LogDebug("🔍 [ENHANCED-DOMAIN-DETECTION] Starting domain detection for: {Query}", userQuestion.Substring(0, Math.Min(50, userQuestion.Length)));
 
-        var bestMatch = await FindBestDomainMatchAsync(userQuestion, domainDescriptions);
-        
-        return new BusinessDomain
+        // Verify BusinessDomainDetector is properly injected
+        if (_domainDetector == null)
         {
-            Name = bestMatch.domainName,
-            Description = bestMatch.description,
-            RelatedTables = bestMatch.relatedTables,
-            KeyConcepts = bestMatch.keyConcepts,
-            RelevanceScore = bestMatch.score
-        };
+            _logger.LogError("❌ [ENHANCED-DOMAIN-DETECTION] BusinessDomainDetector is null! Falling back to basic detection.");
+            return new BusinessDomain
+            {
+                Name = "Unknown",
+                Description = "Domain detection failed - service not available",
+                RelevanceScore = 0.0,
+                KeyConcepts = new List<string>(),
+                RelatedTables = new List<string>()
+            };
+        }
+
+        // Use the Enhanced BusinessDomainDetector instead of hardcoded logic
+        var domain = await _domainDetector.DetectDomainAsync(userQuestion);
+
+        _logger.LogInformation("✅ [ENHANCED-DOMAIN-DETECTION] Domain detected: {Domain} (Score: {Score:F2})", domain.Name, domain.RelevanceScore);
+
+        return domain;
     }
 
     public async Task<List<BusinessEntity>> ExtractBusinessEntitiesAsync(string userQuestion)

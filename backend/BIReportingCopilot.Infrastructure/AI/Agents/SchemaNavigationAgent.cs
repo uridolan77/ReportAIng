@@ -258,13 +258,13 @@ public class SchemaNavigationAgent : ISchemaNavigationAgent
         }
     }
 
-    public async Task<List<JoinPath>> SuggestOptimalJoinsAsync(List<RelevantTable> tables, AgentContext? context = null)
+    public async Task<List<BIReportingCopilot.Core.Models.Agents.JoinPath>> SuggestOptimalJoinsAsync(List<RelevantTable> tables, AgentContext? context = null)
     {
         _logger.LogDebug("🔗 Suggesting optimal joins for {Count} tables", tables.Count);
 
         try
         {
-            var joinPaths = new List<JoinPath>();
+            var joinPaths = new List<BIReportingCopilot.Core.Models.Agents.JoinPath>();
             
             // Get foreign key relationships
             var relationships = await GetTableRelationshipsAsync(tables);
@@ -272,14 +272,14 @@ public class SchemaNavigationAgent : ISchemaNavigationAgent
             // Generate join paths based on relationships
             foreach (var relationship in relationships)
             {
-                var joinPath = new JoinPath
+                var joinPath = new BIReportingCopilot.Core.Models.Agents.JoinPath
                 {
                     FromTable = relationship.FromTable,
                     ToTable = relationship.ToTable,
                     JoinType = DetermineOptimalJoinType(relationship),
-                    Conditions = new List<JoinCondition>
+                    Conditions = new List<BIReportingCopilot.Core.Models.Agents.JoinCondition>
                     {
-                        new JoinCondition
+                        new BIReportingCopilot.Core.Models.Agents.JoinCondition
                         {
                             LeftColumn = relationship.FromColumn,
                             RightColumn = relationship.ToColumn,
@@ -478,10 +478,10 @@ public class SchemaNavigationAgent : ISchemaNavigationAgent
         return string.Join("; ", reasons);
     }
 
-    private async Task<List<JoinPath>> DiscoverJoinPathsAsync(List<RelevantTable> tables)
+    private async Task<List<BIReportingCopilot.Core.Models.Agents.JoinPath>> DiscoverJoinPathsAsync(List<RelevantTable> tables)
     {
         // Simplified join discovery - in production, this would use actual FK relationships
-        var joinPaths = new List<JoinPath>();
+        var joinPaths = new List<BIReportingCopilot.Core.Models.Agents.JoinPath>();
         
         // Common join patterns based on table names
         var commonJoins = new Dictionary<string, List<string>>
@@ -501,7 +501,7 @@ public class SchemaNavigationAgent : ISchemaNavigationAgent
                 {
                     if (tables.Any(t => t.TableName.ToLowerInvariant().Contains(relatedTable)))
                     {
-                        joinPaths.Add(new JoinPath
+                        joinPaths.Add(new BIReportingCopilot.Core.Models.Agents.JoinPath
                         {
                             FromTable = table.TableName,
                             ToTable = relatedTable,

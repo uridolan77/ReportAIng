@@ -139,6 +139,10 @@ public static class ProcessFlowSteps
     public const string IntentDetection = "intent-detection";
     public const string EntityExtraction = "entity-extraction";
     public const string SchemaRetrieval = "schema-retrieval";
+    public const string RelationshipDiscovery = "relationship-discovery";
+    public const string JoinGeneration = "join-generation";
+    public const string DateFilterGeneration = "date-filter-generation";
+    public const string AggregationGeneration = "aggregation-generation";
     public const string PromptBuilding = "prompt-building";
     public const string ContextGathering = "context-gathering";
     public const string PromptAssembly = "prompt-assembly";
@@ -165,9 +169,13 @@ public static class ProcessFlowStepDefinitions
         [ProcessFlowSteps.IntentDetection] = new("Intent Detection", "Determining query type and business intent", 3, ProcessFlowSteps.SemanticAnalysis),
         [ProcessFlowSteps.EntityExtraction] = new("Entity Extraction", "Identifying tables, columns, and business entities", 3, ProcessFlowSteps.SemanticAnalysis),
         [ProcessFlowSteps.SchemaRetrieval] = new("Schema Retrieval", "Fetching relevant database schema information", 4),
-        [ProcessFlowSteps.PromptBuilding] = new("Prompt Construction", "Building enhanced prompt with schema and business rules", 5),
-        [ProcessFlowSteps.ContextGathering] = new("Context Gathering", "Collecting schema, examples, and business rules", 5, ProcessFlowSteps.PromptBuilding),
-        [ProcessFlowSteps.PromptAssembly] = new("Prompt Assembly", "Assembling final prompt for AI model", 5, ProcessFlowSteps.PromptBuilding),
+        [ProcessFlowSteps.RelationshipDiscovery] = new("Relationship Discovery", "Discovering foreign key relationships between tables", 4, ProcessFlowSteps.SchemaRetrieval),
+        [ProcessFlowSteps.JoinGeneration] = new("JOIN Generation", "Generating optimal SQL JOINs based on relationships", 5),
+        [ProcessFlowSteps.DateFilterGeneration] = new("Date Filter Generation", "Creating SQL date filters from time context", 5),
+        [ProcessFlowSteps.AggregationGeneration] = new("Aggregation Generation", "Building SQL aggregations and grouping logic", 5),
+        [ProcessFlowSteps.PromptBuilding] = new("Prompt Construction", "Building enhanced prompt with schema and business rules", 6),
+        [ProcessFlowSteps.ContextGathering] = new("Context Gathering", "Collecting schema, examples, and business rules", 6, ProcessFlowSteps.PromptBuilding),
+        [ProcessFlowSteps.PromptAssembly] = new("Prompt Assembly", "Assembling final prompt for AI model", 6, ProcessFlowSteps.PromptBuilding),
         [ProcessFlowSteps.AIGeneration] = new("AI SQL Generation", "Calling OpenAI API to generate SQL query", 6),
         [ProcessFlowSteps.OpenAIRequest] = new("OpenAI API Call", "Sending request to OpenAI GPT-4 model", 6, ProcessFlowSteps.AIGeneration),
         [ProcessFlowSteps.ResponseParsing] = new("Response Parsing", "Parsing and validating AI response", 6, ProcessFlowSteps.AIGeneration),

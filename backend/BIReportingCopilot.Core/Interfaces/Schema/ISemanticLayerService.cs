@@ -61,6 +61,7 @@ public class ContextualizedSchemaResult
     public QueryAnalysisResult QueryAnalysis { get; set; } = new();
     public List<EnhancedBusinessTableDto> RelevantTables { get; set; } = new();
     public List<EnhancedBusinessColumnDto> RelevantColumns { get; set; } = new();
+    public List<BusinessGlossaryDto> RelevantGlossaryTerms { get; set; } = new();
     public List<string> BusinessTermsUsed { get; set; } = new();
     public decimal ConfidenceScore { get; set; } = 0.0m;
     public int TokenEstimate { get; set; } = 0;

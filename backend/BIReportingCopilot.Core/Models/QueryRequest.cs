@@ -204,6 +204,14 @@ public class PromptDetails
     public string? TemplateKey { get; set; }
     public string? UsageId { get; set; }
     public long? ABTestId { get; set; }
+
+    // Enhanced Schema Contextualization System properties
+    public int PromptLength { get; set; }
+    public int SchemaTablesCount { get; set; }
+    public string? BusinessDomain { get; set; }
+    public double ConfidenceScore { get; set; }
+    public bool IsEnhancedPrompt { get; set; }
+    public string? EnhancementSource { get; set; } // "Enhanced", "Basic", "Fallback"
 }
 
 public class PromptSection

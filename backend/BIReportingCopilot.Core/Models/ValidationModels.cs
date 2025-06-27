@@ -134,17 +134,7 @@ public class ColumnValidationResult
     public Dictionary<string, string> ColumnSuggestions { get; set; } = new();
 }
 
-/// <summary>
-/// Join validation result
-/// </summary>
-public class JoinValidationResult
-{
-    public bool IsValid { get; set; } = false;
-    public List<string> ValidJoins { get; set; } = new();
-    public List<string> InvalidJoins { get; set; } = new();
-    public List<string> MissingJoinConditions { get; set; } = new();
-    public List<string> JoinSuggestions { get; set; } = new();
-}
+
 
 /// <summary>
 /// Context validation result
@@ -179,17 +169,7 @@ public class SensitivityValidationResult
     public List<string> RecommendedMasking { get; set; } = new();
 }
 
-/// <summary>
-/// Aggregation validation result
-/// </summary>
-public class AggregationValidationResult
-{
-    public bool IsValid { get; set; } = false;
-    public List<string> ValidAggregations { get; set; } = new();
-    public List<string> InvalidAggregations { get; set; } = new();
-    public List<string> MissingGroupBy { get; set; } = new();
-    public List<string> AggregationSuggestions { get; set; } = new();
-}
+
 
 /// <summary>
 /// SQL elements extraction result

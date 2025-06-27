@@ -352,6 +352,14 @@ public class EnhancedBusinessContextAnalyzer : IEnhancedBusinessContextAnalyzer
         var profile = await AnalyzeUserQuestionAsync(userQuestion);
         return profile.TimeContext;
     }
+
+    /// <summary>
+    /// Alias method for compatibility with QueryController
+    /// </summary>
+    public async Task<BusinessContextProfile> AnalyzeBusinessContextAsync(string userQuestion, string? userId = null)
+    {
+        return await AnalyzeUserQuestionAsync(userQuestion, userId);
+    }
 }
 
 public record UserAnalysisPatterns
@@ -374,7 +382,8 @@ public record IntentPattern
 public interface IEnhancedBusinessContextAnalyzer
 {
     Task<BusinessContextProfile> AnalyzeUserQuestionAsync(string userQuestion, string? userId = null);
-    
+    Task<BusinessContextProfile> AnalyzeBusinessContextAsync(string userQuestion, string? userId = null);
+
     // Legacy compatibility methods
     Task<QueryIntent> ClassifyBusinessIntentAsync(string userQuestion);
     Task<List<BusinessEntity>> ExtractBusinessEntitiesAsync(string userQuestion);

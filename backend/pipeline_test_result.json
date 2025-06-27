@@ -1,0 +1,32 @@
+{
+  "testId": "3d1b5647",
+  "query": "Top 10 depositors yesterday from UK",
+  "success": true,
+  "totalDurationMs": 21654,
+  "generatedSQL": "```sql\nSELECT TOP 10 \n    da.PlayerID, \n    da.Deposits AS DepositAmount, \n    p.CountryCode\nFROM \n    common.tbl_Daily_actions AS da\nJOIN \n    common.tbl_Daily_actions_players AS p ON da.PlayerID = p.PlayerID\nWHERE \n    da.TransactionDate = DATEADD(day, -1, GETDATE()) \n    AND p.CountryCode = 'UK'\nORDER BY \n    da.Deposits DESC;\n```",
+  "validationIssues": [
+    {
+      "issue": "Column 'TransactionDate' does not exist in tbl_Daily_actions table",
+      "correction": "Should use 'Date' column instead"
+    },
+    {
+      "issue": "Column 'PlayerID' does not exist in tbl_Daily_actions table", 
+      "correction": "Need to check actual schema for player identification"
+    },
+    {
+      "issue": "Column 'CountryCode' not found in tbl_Daily_actions_players table",
+      "correction": "Need to check actual country reference mechanism"
+    }
+  ],
+  "schemaRetrievalResult": {
+    "tablesReturned": 5,
+    "uniqueTables": [
+      "tbl_Daily_actions",
+      "tbl_Daily_actionsGBP_transactions", 
+      "tbl_Daily_actions_players",
+      "tbl_Countries",
+      "tbl_Currencies"
+    ],
+    "deduplicationFixed": true
+  }
+}

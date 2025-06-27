@@ -6,6 +6,9 @@ using BIReportingCopilot.Core.Interfaces.AI;
 using BIReportingCopilot.Core.Models.BusinessContext;
 using BIReportingCopilot.Core.Models.PromptGeneration;
 using BIReportingCopilot.Core.Models;
+using BIReportingCopilot.Core.Models.Enhanced;
+using BIReportingCopilot.Infrastructure.BusinessContext.Enhanced;
+using CorePromptTemplate = BIReportingCopilot.Core.Models.PromptTemplate;
 
 namespace BIReportingCopilot.Infrastructure.BusinessContext;
 
@@ -17,25 +20,54 @@ public class ContextualPromptBuilder : IContextualPromptBuilder
     private readonly IPromptService _promptService;
     private readonly ILogger<ContextualPromptBuilder> _logger;
     private readonly IVectorEmbeddingService _vectorService;
+    private readonly EnhancedPromptTemplate _enhancedTemplate; // RESTORED with null-safe access
 
     public ContextualPromptBuilder(
         IPromptService promptService,
         ILogger<ContextualPromptBuilder> logger,
-        IVectorEmbeddingService vectorService)
+        IVectorEmbeddingService vectorService,
+        ILoggerFactory loggerFactory)
     {
         _promptService = promptService;
         _logger = logger;
         _vectorService = vectorService;
+        _enhancedTemplate = new EnhancedPromptTemplate(loggerFactory.CreateLogger<EnhancedPromptTemplate>()); // Restored with proper logger
     }
 
     public async Task<string> BuildBusinessAwarePromptAsync(
-        string userQuestion, 
-        BusinessContextProfile profile, 
+        string userQuestion,
+        BusinessContextProfile profile,
         ContextualBusinessSchema schema)
     {
         _logger.LogInformation("Building business-aware prompt for intent: {Intent}", profile.Intent.Type);
 
-        // Select optimal template
+        // Try enhanced prompt template first
+        try
+        {
+            var businessProfile = ConvertToBusinessProfile(profile);
+            var contextualSchema = ConvertToContextualSchema(schema);
+            var tokenBudget = new TokenBudget
+            {
+                MaxTotalTokens = 4000,
+                AvailableContextTokens = 3500,
+                SchemaContextBudget = 2000
+            };
+
+            var enhancedPrompt = _enhancedTemplate.GenerateEnhancedSqlPrompt(
+                userQuestion, businessProfile, contextualSchema, tokenBudget);
+
+            if (!string.IsNullOrEmpty(enhancedPrompt))
+            {
+                _logger.LogDebug("✅ [ENHANCED-PROMPT] Using enhanced prompt template");
+                return enhancedPrompt;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "⚠️ [ENHANCED-PROMPT] Enhanced template failed, falling back to standard template");
+        }
+
+        // Fallback to standard template
         var template = await SelectOptimalTemplateAsync(profile);
 
         // Build context sections
@@ -106,7 +138,7 @@ public class ContextualPromptBuilder : IContextualPromptBuilder
         return promptBuilder.ToString();
     }
 
-    public async Task<PromptTemplate> SelectOptimalTemplateAsync(BusinessContextProfile profile)
+    public async Task<CorePromptTemplate> SelectOptimalTemplateAsync(BusinessContextProfile profile)
     {
         try
         {
@@ -125,7 +157,7 @@ public class ContextualPromptBuilder : IContextualPromptBuilder
                 _logger.LogDebug("Selected template: {TemplateKey} with relevance score: {Score}",
                     bestTemplate.TemplateKey, bestTemplate.RelevanceScore);
 
-                return new PromptTemplate
+                return new CorePromptTemplate
                 {
                     Name = bestTemplate.Name,
                     Content = bestTemplate.Content,
@@ -176,15 +208,40 @@ public class ContextualPromptBuilder : IContextualPromptBuilder
             }
         }
 
-        // Add glossary context
+        // Add enhanced glossary context
         if (schema.RelevantGlossaryTerms.Any())
         {
             enrichedPrompt.AppendLine();
-            enrichedPrompt.AppendLine("## Business Glossary");
-            
-            foreach (var term in schema.RelevantGlossaryTerms)
+            enrichedPrompt.AppendLine("## Business Glossary Terms");
+            enrichedPrompt.AppendLine("**Use these business definitions for accurate SQL generation:**");
+            enrichedPrompt.AppendLine();
+
+            foreach (var term in schema.RelevantGlossaryTerms.Take(10)) // Limit to top 10 terms
             {
-                enrichedPrompt.AppendLine($"- **{term.Term}**: {term.Definition}");
+                enrichedPrompt.AppendLine($"### {term.Term}");
+                enrichedPrompt.AppendLine($"**Definition**: {term.Definition}");
+
+                if (!string.IsNullOrWhiteSpace(term.BusinessContext))
+                {
+                    enrichedPrompt.AppendLine($"**Context**: {term.BusinessContext}");
+                }
+
+                if (term.Synonyms?.Any() == true)
+                {
+                    enrichedPrompt.AppendLine($"**Synonyms**: {string.Join(", ", term.Synonyms)}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(term.MappedTables))
+                {
+                    enrichedPrompt.AppendLine($"**Related Tables**: {term.MappedTables}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(term.MappedColumns))
+                {
+                    enrichedPrompt.AppendLine($"**Related Columns**: {term.MappedColumns}");
+                }
+
+                enrichedPrompt.AppendLine();
             }
         }
 
@@ -287,25 +344,173 @@ public class ContextualPromptBuilder : IContextualPromptBuilder
     private string BuildSchemaContextSection(ContextualBusinessSchema schema)
     {
         var context = new StringBuilder();
-        
+        context.AppendLine("## Database Schema Context");
+        context.AppendLine("**CRITICAL: Use these EXACT table and column names in your SQL:**");
+        context.AppendLine();
+
         foreach (var table in schema.RelevantTables)
         {
             context.AppendLine($"### {table.SchemaName}.{table.TableName}");
             context.AppendLine($"**Purpose:** {table.BusinessPurpose}");
-            
+
+            // Add business friendly name if available
+            if (!string.IsNullOrWhiteSpace(table.BusinessName) &&
+                table.BusinessName != table.TableName)
+            {
+                context.AppendLine($"**Business Name:** {table.BusinessName}");
+            }
+
+            // Add LLM context hints if available
+            if (table.LLMContextHints?.Any() == true)
+            {
+                context.AppendLine($"**AI Hints:** {string.Join(", ", table.LLMContextHints)}");
+            }
+
             if (schema.TableColumns.TryGetValue(table.Id, out var columns))
             {
                 context.AppendLine("**Key Columns:**");
-                foreach (var column in columns.Take(10)) // Limit to avoid prompt bloat
+
+                // Group columns by importance for better AI understanding
+                var keyColumns = columns.Where(c => c.IsKeyColumn).Take(3);
+                var importantColumns = columns.Where(c => !c.IsKeyColumn && c.RelevanceScore > 0.8).Take(7);
+                var otherColumns = columns.Where(c => !c.IsKeyColumn && c.RelevanceScore <= 0.8).Take(5);
+
+                // Primary keys first with enhanced metadata
+                foreach (var column in keyColumns)
                 {
-                    var keyIndicator = column.IsKeyColumn ? " (PK)" : "";
-                    context.AppendLine($"- `{column.ColumnName}` ({column.DataType}){keyIndicator}: {column.BusinessMeaning}");
+                    var friendlyName = (!string.IsNullOrWhiteSpace(column.BusinessName) &&
+                                      column.BusinessName != column.ColumnName) ? $" ({column.BusinessName})" : "";
+                    context.AppendLine($"- `{column.ColumnName}` ({column.DataType}) (PK){friendlyName}: {column.BusinessMeaning}");
+
+                    // Add examples for better understanding (only if they have actual values)
+                    if (column.SampleValues?.Any() == true)
+                    {
+                        context.AppendLine($"  Examples: {string.Join(", ", column.SampleValues.Take(3))}");
+                    }
+
+                    // Add business context if available
+                    if (!string.IsNullOrWhiteSpace(column.BusinessContext) &&
+                        column.BusinessContext != column.BusinessMeaning)
+                    {
+                        context.AppendLine($"  Context: {column.BusinessContext}");
+                    }
+
+                    // Add validation rules if available
+                    if (!string.IsNullOrWhiteSpace(column.ValidationRules))
+                    {
+                        context.AppendLine($"  Rules: {column.ValidationRules}");
+                    }
+                }
+
+                // Important business columns with enhanced metadata
+                foreach (var column in importantColumns)
+                {
+                    var friendlyName = (!string.IsNullOrWhiteSpace(column.BusinessName) &&
+                                      column.BusinessName != column.ColumnName) ? $" ({column.BusinessName})" : "";
+                    context.AppendLine($"- `{column.ColumnName}` ({column.DataType}){friendlyName}: {column.BusinessMeaning}");
+
+                    // Add examples and business context (only if they have actual values)
+                    if (column.SampleValues?.Any() == true)
+                    {
+                        context.AppendLine($"  Examples: {string.Join(", ", column.SampleValues.Take(3))}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(column.BusinessContext) &&
+                        column.BusinessContext != column.BusinessMeaning)
+                    {
+                        context.AppendLine($"  Context: {column.BusinessContext}");
+                    }
+
+                    // Add semantic context and business purpose (only if they have actual values)
+                    if (!string.IsNullOrWhiteSpace(column.SemanticContext))
+                    {
+                        context.AppendLine($"  Semantic: {column.SemanticContext}");
+                    }
+                    if (!string.IsNullOrWhiteSpace(column.BusinessPurpose) &&
+                        column.BusinessPurpose != column.BusinessMeaning)
+                    {
+                        context.AppendLine($"  Purpose: {column.BusinessPurpose}");
+                    }
+
+                    // Add validation rules if available
+                    if (!string.IsNullOrWhiteSpace(column.ValidationRules))
+                    {
+                        context.AppendLine($"  Rules: {column.ValidationRules}");
+                    }
+
+                    // Add related business terms if available
+                    if (!string.IsNullOrWhiteSpace(column.RelatedBusinessTerms))
+                    {
+                        context.AppendLine($"  Related Terms: {column.RelatedBusinessTerms}");
+                    }
+                }
+
+                // Other columns (condensed format with essential info)
+                if (otherColumns.Any())
+                {
+                    context.AppendLine("**Additional Columns:**");
+                    foreach (var column in otherColumns)
+                    {
+                        var friendlyName = (!string.IsNullOrWhiteSpace(column.BusinessName) &&
+                                          column.BusinessName != column.ColumnName) ? $" ({column.BusinessName})" : "";
+                        context.AppendLine($"- `{column.ColumnName}` ({column.DataType}){friendlyName}: {column.BusinessMeaning}");
+
+                        // Add value examples for other columns if available (helps with understanding)
+                        if (column.SampleValues?.Any() == true)
+                        {
+                            context.AppendLine($"  Examples: {string.Join(", ", column.SampleValues.Take(2))}");
+                        }
+                    }
                 }
             }
+
+            // Add table relationships if available
+            var tableRelationships = schema.TableRelationships?.Where(r =>
+                r.FromTable == table.TableName || r.ToTable == table.TableName).ToList();
+
+            if (tableRelationships?.Any() == true)
+            {
+                context.AppendLine("**Relationships:**");
+                foreach (var rel in tableRelationships.Take(3))
+                {
+                    context.AppendLine($"- {rel.FromTable} → {rel.ToTable}");
+                }
+            }
+
+            // Add business processes and analytical use cases if available
+            // Business processes and analytical use cases - temporarily disabled due to type mismatch
+            // if (!string.IsNullOrWhiteSpace(table.BusinessProcesses))
+            // {
+            //     context.AppendLine($"**Business Processes:** {table.BusinessProcesses}");
+            // }
+            // if (!string.IsNullOrWhiteSpace(table.AnalyticalUseCases))
+            // {
+            //     context.AppendLine($"**Analytical Use Cases:** {table.AnalyticalUseCases}");
+            // }
+
+
+
             context.AppendLine();
         }
 
         return context.ToString();
+    }
+
+    /// <summary>
+    /// Map business data types to SQL data types for better AI understanding
+    /// </summary>
+    private string MapBusinessDataTypeToSql(string businessDataType)
+    {
+        return businessDataType?.ToLower() switch
+        {
+            "integer" => "bigint",
+            "text" => "nvarchar(255)",
+            "decimal" => "decimal(18,2)",
+            "datetime" => "datetime2",
+            "boolean" => "bit",
+            "currency" => "decimal(18,2)",
+            "percentage" => "decimal(5,2)",
+            _ => businessDataType ?? "nvarchar(255)"
+        };
     }
 
     private async Task<string> BuildExamplesContextAsync(BusinessContextProfile profile)
@@ -365,9 +570,9 @@ public class ContextualPromptBuilder : IContextualPromptBuilder
         };
     }
 
-    private async Task<PromptTemplate> GetDefaultTemplateAsync()
+    private async Task<CorePromptTemplate> GetDefaultTemplateAsync()
     {
-        return new PromptTemplate
+        return new CorePromptTemplate
         {
             Name = "Default Business Query",
             Content = "Convert the business question to SQL using the provided schema context.",
@@ -465,6 +670,68 @@ public class ContextualPromptBuilder : IContextualPromptBuilder
                 GeneratedSql = "SELECT TOP 10 ActionType, COUNT(*) as ActionCount, COUNT(DISTINCT UserId) as UniqueUsers FROM tbl_Daily_actions GROUP BY ActionType ORDER BY ActionCount DESC",
                 BusinessContext = "Exploratory analysis of user action patterns"
             }
+        };
+    }
+
+    /// <summary>
+    /// Convert BusinessContextProfile to BusinessProfile for enhanced template
+    /// </summary>
+    private BIReportingCopilot.Core.Models.Enhanced.BusinessProfile ConvertToBusinessProfile(BusinessContextProfile profile)
+    {
+        return new BIReportingCopilot.Core.Models.Enhanced.BusinessProfile
+        {
+            Domain = new BIReportingCopilot.Core.Models.Enhanced.BusinessDomain
+            {
+                Name = profile.Domain?.Name ?? "Business Intelligence",
+                Description = profile.Domain?.Description,
+                KeyConcepts = profile.Domain?.KeyConcepts?.ToList() ?? new List<string>()
+            },
+            Intent = new BIReportingCopilot.Core.Models.Enhanced.BusinessIntent
+            {
+                Type = profile.Intent?.Type.ToString() ?? "Analysis",
+                Confidence = profile.Intent?.ConfidenceScore ?? 0.8,
+                Description = profile.Intent?.Description
+            },
+            Entities = profile.Entities?.Select(e => new BIReportingCopilot.Core.Models.Enhanced.BusinessEntity
+            {
+                Name = e.Name,
+                Type = e.Type.ToString(),
+                Value = e.OriginalText,
+                Confidence = e.ConfidenceScore
+            }).ToList() ?? new List<BIReportingCopilot.Core.Models.Enhanced.BusinessEntity>()
+        };
+    }
+
+    /// <summary>
+    /// Convert ContextualBusinessSchema to ContextualSchema for enhanced template
+    /// </summary>
+    private BIReportingCopilot.Core.Models.Enhanced.ContextualSchema ConvertToContextualSchema(ContextualBusinessSchema schema)
+    {
+        return new BIReportingCopilot.Core.Models.Enhanced.ContextualSchema
+        {
+            RelevantTables = schema.RelevantTables?.Select(t => new BIReportingCopilot.Core.Models.Enhanced.RelevantTable
+            {
+                TableName = t.TableName,
+                BusinessPurpose = t.BusinessPurpose,
+                RelevanceScore = t.RelevanceScore,
+                Columns = schema.TableColumns?.ContainsKey(t.Id) == true
+                    ? schema.TableColumns[t.Id]?.Select(c => new BIReportingCopilot.Core.Models.Enhanced.ColumnInfo
+                    {
+                        ColumnName = c.ColumnName,
+                        DataType = c.DataType,
+                        BusinessFriendlyName = c.BusinessName ?? c.ColumnName,
+                        NaturalLanguageDescription = c.BusinessMeaning ?? c.BusinessContext ?? string.Empty,
+                        ValueExamples = string.Join(", ", c.SampleValues ?? new List<string>()),
+                        ConstraintsAndRules = c.ValidationRules ?? string.Empty
+                    }).ToList() ?? new List<BIReportingCopilot.Core.Models.Enhanced.ColumnInfo>()
+                    : new List<BIReportingCopilot.Core.Models.Enhanced.ColumnInfo>()
+            }).ToList() ?? new List<BIReportingCopilot.Core.Models.Enhanced.RelevantTable>(),
+            GlossaryTerms = schema.RelevantGlossaryTerms?.Select(g => new BIReportingCopilot.Core.Models.Enhanced.GlossaryTerm
+            {
+                Term = g.Term,
+                Definition = g.Definition,
+                Category = g.Category
+            }).ToList() ?? new List<BIReportingCopilot.Core.Models.Enhanced.GlossaryTerm>()
         };
     }
 }

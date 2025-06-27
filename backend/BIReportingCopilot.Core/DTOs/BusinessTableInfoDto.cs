@@ -5,7 +5,7 @@ namespace BIReportingCopilot.Core.DTOs;
 /// <summary>
 /// Business table information DTO
 /// </summary>
-public class BusinessTableInfoDto
+public class BusinessTableInfoDto : IEquatable<BusinessTableInfoDto>
 {
     public long Id { get; set; }
     public string TableId { get; set; } = string.Empty;
@@ -45,6 +45,34 @@ public class BusinessTableInfoDto
     public double RelevanceScore { get; set; }
     public DateTime? LastAnalyzed { get; set; }
     public string BusinessOwner { get; set; } = string.Empty;
+
+    // IEquatable implementation for proper deduplication
+    public bool Equals(BusinessTableInfoDto? other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return TableName == other.TableName && SchemaName == other.SchemaName;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as BusinessTableInfoDto);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(TableName, SchemaName);
+    }
+
+    public static bool operator ==(BusinessTableInfoDto? left, BusinessTableInfoDto? right)
+    {
+        return EqualityComparer<BusinessTableInfoDto>.Default.Equals(left, right);
+    }
+
+    public static bool operator !=(BusinessTableInfoDto? left, BusinessTableInfoDto? right)
+    {
+        return !(left == right);
+    }
 }
 
 /// <summary>
@@ -68,6 +96,10 @@ public class BusinessColumnInfo
     public string? ValidationRules { get; set; }
     public string? RelatedBusinessTerms { get; set; } = string.Empty; // Added missing property
     public double RelevanceScore { get; set; }
+
+    // Enhanced field loading properties for performance optimization
+    public bool LazyLoadingAvailable { get; set; } = false;
+    public long? SourceColumnId { get; set; }
 }
 
 /// <summary>

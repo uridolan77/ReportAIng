@@ -91,7 +91,7 @@ public interface ISchemaNavigationAgent : ISpecializedAgent
     /// <summary>
     /// Suggest optimal join paths between tables
     /// </summary>
-    Task<List<JoinPath>> SuggestOptimalJoinsAsync(List<RelevantTable> tables, AgentContext? context = null);
+    Task<List<BIReportingCopilot.Core.Models.Agents.JoinPath>> SuggestOptimalJoinsAsync(List<RelevantTable> tables, AgentContext? context = null);
     
     /// <summary>
     /// Find related tables through foreign key relationships

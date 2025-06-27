@@ -42,4 +42,19 @@ public static class CacheServiceExtensions
             return (false, default(T));
         }
     }
+
+    /// <summary>
+    /// Sets a value type in cache by boxing it as an object
+    /// </summary>
+    public static async Task SetValueAsync<T>(this ICacheService cacheService, string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : struct
+    {
+        try
+        {
+            await cacheService.SetAsync(key, (object)value, expiration, cancellationToken);
+        }
+        catch
+        {
+            // Silently fail for cache operations
+        }
+    }
 }
