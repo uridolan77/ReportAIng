@@ -66,18 +66,31 @@ export const useAIPipelineTestApi = () => {
 
   // Get available pipeline steps and their configurations
   const getAvailableSteps = useCallback(async (): Promise<PipelineStepInfo[]> => {
-    const result = await handleApiCall<PipelineStepInfo[]>(
-      () => fetch(`${API_BASE_URL}/aipipelinetest/steps`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      })
-    );
+    console.log('🔄 API: Calling getAvailableSteps...');
+    console.log('🔄 API: URL:', `${API_BASE_URL}/aipipelinetest/steps`);
+    console.log('🔄 API: Headers:', getAuthHeaders());
 
-    // Normalize enum values in case backend returns numeric values
-    return result.map(stepInfo => ({
-      ...stepInfo,
-      step: normalizePipelineSteps([stepInfo.step as any])[0]
-    }));
+    try {
+      const result = await handleApiCall<PipelineStepInfo[]>(
+        () => fetch(`${API_BASE_URL}/aipipelinetest/steps`, {
+          method: 'GET',
+          headers: getAuthHeaders()
+        })
+      );
+      console.log('✅ API: Received result:', result);
+
+      // Normalize enum values in case backend returns numeric values
+      const normalizedResult = result.map(stepInfo => ({
+        ...stepInfo,
+        step: normalizePipelineSteps([stepInfo.step as any])[0]
+      }));
+
+      console.log('✅ API: Normalized result:', normalizedResult);
+      return normalizedResult;
+    } catch (error) {
+      console.error('❌ API: getAvailableSteps failed:', error);
+      throw error;
+    }
   }, []);
 
   // Test pipeline steps

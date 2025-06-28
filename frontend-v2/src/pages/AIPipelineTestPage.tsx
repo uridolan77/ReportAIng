@@ -59,8 +59,114 @@ const AIPipelineTestPage: React.FC = () => {
   const [testQuery, setTestQuery] = useState('Top 10 depositors yesterday from UK');
   const [isRunning, setIsRunning] = useState(false);
   const [testResult, setTestResult] = useState<PipelineTestResult | null>(null);
-  const [availableSteps, setAvailableSteps] = useState<PipelineStepInfo[]>([]);
-  const [parameters, setParameters] = useState<Record<string, any>>({});
+  // Initialize with default steps matching the backend API configuration
+  const [availableSteps, setAvailableSteps] = useState<PipelineStepInfo[]>([
+    {
+      step: PipelineStep.BusinessContextAnalysis,
+      name: 'Business Context Analysis',
+      description: 'Analyze user query to extract intent, domain, entities, and business terms',
+      parameters: [
+        { name: 'ConfidenceThreshold', type: 'decimal', defaultValue: '0.7', description: 'Minimum confidence threshold for entity extraction' },
+        { name: 'MaxEntities', type: 'int', defaultValue: '10', description: 'Maximum number of entities to extract' }
+      ]
+    },
+    {
+      step: PipelineStep.TokenBudgetManagement,
+      name: 'Token Budget Management',
+      description: 'Create and manage token budgets for optimal prompt construction',
+      parameters: [
+        { name: 'MaxTokens', type: 'int', defaultValue: '4000', description: 'Maximum total tokens allowed' },
+        { name: 'ReservedResponseTokens', type: 'int', defaultValue: '500', description: 'Tokens reserved for AI response' }
+      ]
+    },
+    {
+      step: PipelineStep.SchemaRetrieval,
+      name: 'Schema Retrieval',
+      description: 'Retrieve relevant database schema and business metadata',
+      parameters: [
+        { name: 'MaxTables', type: 'int', defaultValue: '10', description: 'Maximum number of tables to retrieve' },
+        { name: 'RelevanceThreshold', type: 'decimal', defaultValue: '0.5', description: 'Minimum relevance score for table inclusion' }
+      ]
+    },
+    {
+      step: PipelineStep.PromptBuilding,
+      name: 'Prompt Building',
+      description: 'Build business-aware prompt for AI generation',
+      parameters: [
+        { name: 'IncludeExamples', type: 'bool', defaultValue: 'true', description: 'Include example queries in prompt' },
+        { name: 'IncludeBusinessRules', type: 'bool', defaultValue: 'true', description: 'Include business rules in prompt' }
+      ]
+    },
+    {
+      step: PipelineStep.AIGeneration,
+      name: 'AI Generation',
+      description: 'Generate SQL using AI service (requires EnableAIGeneration=true)',
+      parameters: [
+        { name: 'EnableAIGeneration', type: 'bool', defaultValue: 'false', description: 'Enable actual AI generation (costs money!)' },
+        { name: 'Temperature', type: 'decimal', defaultValue: '0.1', description: 'AI temperature setting' }
+      ]
+    },
+    {
+      step: PipelineStep.SQLValidation,
+      name: 'SQL Validation',
+      description: 'Validate generated SQL syntax, semantics, and security',
+      parameters: [
+        { name: 'EnableSemanticValidation', type: 'bool', defaultValue: 'true', description: 'Enable semantic validation of SQL' },
+        { name: 'EnableSecurityValidation', type: 'bool', defaultValue: 'true', description: 'Enable security validation of SQL' },
+        { name: 'ValidationTimeout', type: 'int', defaultValue: '30', description: 'Validation timeout in seconds' }
+      ]
+    },
+    {
+      step: PipelineStep.SQLExecution,
+      name: 'SQL Execution',
+      description: 'Execute validated SQL query against database',
+      parameters: [
+        { name: 'EnableExecution', type: 'bool', defaultValue: 'false', description: 'Enable actual SQL execution (affects database!)' },
+        { name: 'MaxRows', type: 'int', defaultValue: '100', description: 'Maximum number of rows to return' },
+        { name: 'ExecutionTimeout', type: 'int', defaultValue: '60', description: 'Execution timeout in seconds' }
+      ]
+    },
+    {
+      step: PipelineStep.ResultsProcessing,
+      name: 'Results Processing',
+      description: 'Process and format query results for presentation',
+      parameters: [
+        { name: 'FormatResults', type: 'bool', defaultValue: 'true', description: 'Format results for display' },
+        { name: 'IncludeMetadata', type: 'bool', defaultValue: 'true', description: 'Include execution metadata' },
+        { name: 'ExportFormat', type: 'string', defaultValue: 'json', description: 'Export format (json, csv, excel)' }
+      ]
+    }
+  ]);
+  // Initialize parameters with default values
+  const [parameters, setParameters] = useState<Record<string, any>>({
+    // Business Context Analysis
+    ConfidenceThreshold: 0.7,
+    MaxEntities: 10,
+    // Token Budget Management
+    MaxTokens: 4000,
+    ReservedResponseTokens: 500,
+    // Schema Retrieval
+    MaxTables: 10,
+    RelevanceThreshold: 0.5,
+    // Prompt Building
+    IncludeExamples: true,
+    IncludeBusinessRules: true,
+    // AI Generation
+    EnableAIGeneration: true, // Enable by default for testing
+    Temperature: 0.1,
+    // SQL Validation
+    EnableSemanticValidation: true,
+    EnableSecurityValidation: true,
+    ValidationTimeout: 30,
+    // SQL Execution
+    EnableExecution: false, // Keep disabled by default for safety
+    MaxRows: 100,
+    ExecutionTimeout: 60,
+    // Results Processing
+    FormatResults: true,
+    IncludeMetadata: true,
+    ExportFormat: 'json'
+  });
   const [currentTestId, setCurrentTestId] = useState<string | null>(null);
   const [showMonitoring, setShowMonitoring] = useState(false);
   const [useEnhancedMonitoring, setUseEnhancedMonitoring] = useState(true);
@@ -116,9 +222,11 @@ const AIPipelineTestPage: React.FC = () => {
 
   const loadAvailableSteps = async () => {
     try {
+      console.log('🔄 Loading available steps...');
       const steps = await getAvailableSteps();
+      console.log('✅ Received steps from API:', steps);
       setAvailableSteps(steps);
-      
+
       // Set default parameters
       const defaultParams: Record<string, any> = {};
       steps.forEach(step => {
@@ -132,8 +240,30 @@ const AIPipelineTestPage: React.FC = () => {
         });
       });
       setParameters(defaultParams);
+      console.log('✅ Steps loaded successfully, count:', steps.length);
     } catch (error) {
-      console.error('Failed to load available steps:', error);
+      console.error('❌ Failed to load available steps:', error);
+      console.error('❌ Error details:', error instanceof Error ? error.message : 'Unknown error');
+      message.error('Failed to load pipeline steps configuration, using fallback');
+
+      // Fallback: Create default step configuration if API fails
+      const fallbackSteps: PipelineStepInfo[] = [
+        { step: PipelineStep.BusinessContextAnalysis, name: 'Business Context Analysis', description: 'Analyze business context', parameters: [] },
+        { step: PipelineStep.TokenBudgetManagement, name: 'Token Budget Management', description: 'Manage token budget', parameters: [] },
+        { step: PipelineStep.SchemaRetrieval, name: 'Schema Retrieval', description: 'Retrieve database schema', parameters: [] },
+        { step: PipelineStep.PromptBuilding, name: 'Prompt Building', description: 'Build AI prompts', parameters: [] },
+        { step: PipelineStep.AIGeneration, name: 'AI Generation', description: 'Generate SQL with AI', parameters: [] },
+        { step: PipelineStep.SQLValidation, name: 'SQL Validation', description: 'Validate generated SQL', parameters: [] },
+        { step: PipelineStep.SQLExecution, name: 'SQL Execution', description: 'Execute SQL query', parameters: [] },
+        { step: PipelineStep.ResultsProcessing, name: 'Results Processing', description: 'Process query results', parameters: [] }
+      ];
+      console.log('🔄 Using fallback steps, count:', fallbackSteps.length);
+      setAvailableSteps(fallbackSteps);
+
+      // Auto-select all fallback steps
+      const allStepValues = fallbackSteps.map(step => step.step);
+      setSelectedSteps(allStepValues);
+      console.log('✅ Auto-selected fallback steps:', allStepValues);
     }
   };
 
@@ -165,6 +295,20 @@ const AIPipelineTestPage: React.FC = () => {
 
   const handleDeselectAllSteps = () => {
     setSelectedSteps([]);
+  };
+
+  const handleResetToDefaultSteps = () => {
+    const defaultSteps = [
+      PipelineStep.BusinessContextAnalysis,
+      PipelineStep.TokenBudgetManagement,
+      PipelineStep.SchemaRetrieval,
+      PipelineStep.PromptBuilding,
+      PipelineStep.AIGeneration,
+      PipelineStep.SQLValidation,
+      PipelineStep.SQLExecution,
+      PipelineStep.ResultsProcessing
+    ];
+    setSelectedSteps(defaultSteps);
   };
 
   const isAllStepsSelected = availableSteps.length > 0 && selectedSteps.length === availableSteps.length;
@@ -428,23 +572,33 @@ ORDER BY total_deposits DESC;`
   const renderStepConfiguration = () => (
     <Card
       title={
-        <div className="flex items-center space-x-3">
-          <Checkbox
-            checked={isAllStepsSelected}
-            indeterminate={selectedSteps.length > 0 && selectedSteps.length < availableSteps.length}
-            onChange={(e) => {
-              if (e.target.checked) {
-                handleSelectAllSteps();
-              } else {
-                handleDeselectAllSteps();
-              }
-            }}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Checkbox
+              checked={isAllStepsSelected}
+              indeterminate={selectedSteps.length > 0 && selectedSteps.length < availableSteps.length}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  handleSelectAllSteps();
+                } else {
+                  handleDeselectAllSteps();
+                }
+              }}
+            >
+              <SettingOutlined /> Step Configuration
+            </Checkbox>
+            <Tag color="blue">
+              {selectedSteps.length}/{availableSteps.length} selected
+            </Tag>
+          </div>
+          <Button
+            size="small"
+            type="link"
+            onClick={handleResetToDefaultSteps}
+            title="Reset to default steps"
           >
-            <SettingOutlined /> Step Configuration
-          </Checkbox>
-          <Tag color="blue">
-            {selectedSteps.length}/{availableSteps.length} selected
-          </Tag>
+            Reset Steps
+          </Button>
         </div>
       }
       className="mb-4"
