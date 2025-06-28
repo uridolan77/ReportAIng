@@ -11,7 +11,6 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.BusinessContext;
 using BIReportingCopilot.Core.Commands;
 using BIReportingCopilot.API.Hubs;
-using BIReportingCopilot.Infrastructure.BusinessContext.Enhanced;
 using System.Security.Claims;
 using SchemaService = BIReportingCopilot.Core.Interfaces.Schema.ISchemaService;
 
@@ -134,11 +133,11 @@ public class QueryExecutionController : ControllerBase
             TokenBudget tokenBudget;
             try
             {
-                tokenBudget = await _tokenBudgetManager.CreateTokenBudgetAsync(
-                    businessProfile, 4000, 500); // Use default values since QueryOptions doesn't have MaxTokens
+                tokenBudget = await _tokenBudgetManager.CreateBudgetAsync(
+                    request.Options.MaxTokens ?? 4000, businessProfile);
 
                 _logger.LogInformation("✅ [ENHANCED-PIPELINE] Token budget created - Max: {MaxTokens}, Reserved: {ReservedTokens}",
-                    tokenBudget.MaxTotalTokens, tokenBudget.ReservedResponseTokens);
+                    tokenBudget.MaxTokens, tokenBudget.ReservedResponseTokens);
             }
             catch (Exception ex)
             {
@@ -169,7 +168,7 @@ public class QueryExecutionController : ControllerBase
             try
             {
                 schemaMetadata = await _metadataService.GetRelevantBusinessMetadataAsync(
-                    businessProfile, 5); // Use default value since QueryOptions doesn't have MaxTables
+                    businessProfile, request.Options.MaxTables ?? 5);
 
                 if (!schemaMetadata.RelevantTables.Any())
                 {

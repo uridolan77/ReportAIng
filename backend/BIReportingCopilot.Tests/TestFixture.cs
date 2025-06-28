@@ -4,7 +4,6 @@ using BIReportingCopilot.Core.Models;
 using BIReportingCopilot.Core.Models.BusinessContext;
 using BIReportingCopilot.Infrastructure.AI.Core;
 using BIReportingCopilot.Infrastructure.Query;
-using BIReportingCopilot.Infrastructure.BusinessContext.Enhanced;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;

@@ -236,14 +236,10 @@ public class OpenAIProvider : IAIProvider
                 Temperature = (float)request.Temperature,
                 MaxTokens = request.MaxTokens,
                 SystemMessage = request.SystemMessage,
-                TimeoutSeconds = request.TimeoutSeconds > 0 ? request.TimeoutSeconds : 30 // Use request timeout or default
+                TimeoutSeconds = 30 // Default timeout
             };
 
-            _logger.LogInformation("🔍 [OPENAI-PROVIDER] Starting AI generation with timeout: {TimeoutSeconds}s", options.TimeoutSeconds);
-
             var content = await GenerateCompletionAsync(request.Prompt, options, cancellationToken);
-
-            _logger.LogInformation("✅ [OPENAI-PROVIDER] AI generation completed successfully");
 
             return new AIResponse
             {
@@ -254,21 +250,9 @@ public class OpenAIProvider : IAIProvider
                 Provider = ProviderId
             };
         }
-        catch (OperationCanceledException ex)
-        {
-            _logger.LogWarning("⏰ [OPENAI-PROVIDER] AI generation timed out: {Message}", ex.Message);
-            return new AIResponse
-            {
-                Content = string.Empty,
-                Success = false,
-                Error = "AI generation timed out",
-                Model = _config.Model,
-                Provider = ProviderId
-            };
-        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ [OPENAI-PROVIDER] Error generating AI response: {Message}", ex.Message);
+            _logger.LogError(ex, "Error generating AI response");
             return new AIResponse
             {
                 Content = string.Empty,

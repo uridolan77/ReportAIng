@@ -120,28 +120,11 @@ public class AIService : IAIService
                     }
                 }
 
-                // Check if this is already an enhanced prompt (contains business context)
-                string enhancedPrompt;
-                string systemMessage;
-
-                if (IsEnhancedPrompt(finalPrompt))
-                {
-                    // Use enhanced prompt as-is without modification
-                    enhancedPrompt = finalPrompt;
-                    systemMessage = "You are an expert SQL analyst. Return ONLY the SQL query without explanations, comments, or markdown formatting.";
-                    _logger.LogInformation("🚀 [AI-SERVICE] Using enhanced business-aware prompt without modification");
-                }
-                else
-                {
-                    // Apply basic prompt building for non-enhanced prompts
-                    enhancedPrompt = BuildPrompt(finalPrompt);
-                    systemMessage = "You are an expert SQL developer. Generate only valid SQL queries without explanations. Always use WITH (NOLOCK) hints on all table references for better read performance in reporting scenarios. Format as: FROM TableName WITH (NOLOCK) or FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints.";
-                    _logger.LogInformation("🔄 [AI-SERVICE] Using basic prompt building with NOLOCK instructions");
-                }
+                var enhancedPrompt = BuildPrompt(finalPrompt);
 
                 var options = new AIOptions
                 {
-                    SystemMessage = systemMessage,
+                    SystemMessage = "You are an expert SQL developer. Generate only valid SQL queries without explanations. Always use WITH (NOLOCK) hints on all table references for better read performance in reporting scenarios. Format as: FROM TableName WITH (NOLOCK) or FROM TableName alias WITH (NOLOCK) - never use AS keyword with table hints.",
                     Temperature = 0.1f,
                     MaxTokens = 2000,
                     FrequencyPenalty = 0.0f,
@@ -579,22 +562,6 @@ Return only valid JSON.";
             _logger.LogInformation("🔍 [AI-SERVICE] Using cached AI provider: {ProviderType}", _provider?.GetType().Name ?? "null");
         }
         return _provider;
-    }
-
-    /// <summary>
-    /// Check if the prompt is already an enhanced business-aware prompt
-    /// </summary>
-    private bool IsEnhancedPrompt(string prompt)
-    {
-        if (string.IsNullOrWhiteSpace(prompt))
-            return false;
-
-        // Enhanced prompts contain specific business context sections
-        return prompt.Contains("=== BUSINESS DOMAIN CONTEXT ===") ||
-               prompt.Contains("=== DATABASE SCHEMA CONTEXT ===") ||
-               prompt.Contains("=== SQL GENERATION INSTRUCTIONS ===") ||
-               prompt.Contains("Enhanced Business Context Template") ||
-               prompt.Contains("You are an expert SQL analyst specializing in");
     }
 
     private string BuildPrompt(string originalPrompt)

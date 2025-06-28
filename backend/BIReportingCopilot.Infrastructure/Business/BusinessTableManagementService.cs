@@ -482,9 +482,9 @@ public class BusinessTableManagementService : IBusinessTableManagementService
             DataQualityIndicators = DeserializeObject(entity.DataQualityIndicators),
             RelationshipSemantics = DeserializeObject(entity.RelationshipSemantics),
             DataGovernancePolicies = DeserializeObject(entity.DataGovernancePolicies),
-            ImportanceScore = entity.ImportanceScore ?? 0.0m,
-            UsageFrequency = entity.UsageFrequency ?? 0.0m,
-            SemanticCoverageScore = entity.SemanticCoverageScore ?? 0.0m,
+            ImportanceScore = entity.ImportanceScore,
+            UsageFrequency = entity.UsageFrequency,
+            SemanticCoverageScore = entity.SemanticCoverageScore,
             LastAnalyzed = entity.LastAnalyzed,
             BusinessOwner = entity.BusinessOwner ?? string.Empty,
             Columns = entity.Columns?.Select(MapColumnToDto).ToList() ?? new List<BusinessColumnInfoDto>()

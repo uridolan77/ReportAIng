@@ -48,7 +48,7 @@ public class SemanticValidationResult
 /// </summary>
 public class SchemaComplianceResult
 {
-    public bool IsValid { get; set; } = false;
+    public bool IsCompliant { get; set; } = false;
     public double ComplianceScore { get; set; } = 0.0;
     public TableValidationResult TableValidation { get; set; } = new();
     public ColumnValidationResult ColumnValidation { get; set; } = new();
@@ -62,11 +62,11 @@ public class SchemaComplianceResult
 public class BusinessLogicValidationResult
 {
     public bool IsValid { get; set; } = false;
-    public double ComplianceScore { get; set; } = 0.0;
-    public List<string> BusinessRuleViolations { get; set; } = new();
-    public List<string> Recommendations { get; set; } = new();
+    public double BusinessLogicScore { get; set; } = 0.0;
+    public List<string> RuleViolations { get; set; } = new();
     public AccessValidationResult AccessValidation { get; set; } = new();
     public SensitivityValidationResult SensitivityValidation { get; set; } = new();
+    public AggregationValidationResult AggregationValidation { get; set; } = new();
 }
 
 /// <summary>
@@ -153,9 +153,8 @@ public class ContextValidationResult
 public class AccessValidationResult
 {
     public bool IsValid { get; set; } = false;
-    public string AccessLevel { get; set; } = string.Empty;
-    public List<string> Restrictions { get; set; } = new();
-    public string Reason { get; set; } = string.Empty;
+    public List<string> AccessibleTables { get; set; } = new();
+    public List<string> RestrictedTables { get; set; } = new();
     public List<string> RequiredPermissions { get; set; } = new();
 }
 
@@ -165,11 +164,9 @@ public class AccessValidationResult
 public class SensitivityValidationResult
 {
     public bool IsValid { get; set; } = false;
-    public bool ContainsSensitiveData { get; set; } = false;
-    public List<string> SensitiveFields { get; set; } = new();
-    public string SensitivityLevel { get; set; } = string.Empty;
-    public List<string> RequiredProtections { get; set; } = new();
+    public List<string> SensitiveColumns { get; set; } = new();
     public List<string> ExposureRisks { get; set; } = new();
+    public List<string> RecommendedMasking { get; set; } = new();
 }
 
 
@@ -269,76 +266,4 @@ public class ValidationMetrics
     public int SuccessfulSelfCorrections { get; set; } = 0;
     public double AverageValidationScore { get; set; } = 0.0;
     public Dictionary<string, int> ValidationTypeMetrics { get; set; } = new();
-}
-
-/// <summary>
-/// Self-correction result
-/// </summary>
-public class SelfCorrectionResult
-{
-    public bool WasCorrected { get; set; } = false;
-    public string OriginalSql { get; set; } = string.Empty;
-    public string CorrectedSql { get; set; } = string.Empty;
-    public string CorrectionReason { get; set; } = string.Empty;
-    public double ConfidenceScore { get; set; } = 0.0;
-    public List<string> IssuesAddressed { get; set; } = new();
-    public Dictionary<string, object> CorrectionMetadata { get; set; } = new();
-    public DateTime CorrectionTimestamp { get; set; } = DateTime.UtcNow;
-}
-
-/// <summary>
-/// Table access validation result
-/// </summary>
-public class TableAccessValidationResult
-{
-    public bool IsValid { get; set; } = false;
-    public List<string> AccessibleTables { get; set; } = new();
-    public List<string> InaccessibleTables { get; set; } = new();
-    public string AccessLevel { get; set; } = string.Empty;
-    public List<string> RequiredPermissions { get; set; } = new();
-    public Dictionary<string, string> AccessRestrictions { get; set; } = new();
-}
-
-/// <summary>
-/// Column access validation result
-/// </summary>
-public class ColumnAccessValidationResult
-{
-    public bool IsValid { get; set; } = false;
-    public List<string> AccessibleColumns { get; set; } = new();
-    public List<string> InaccessibleColumns { get; set; } = new();
-    public List<string> RestrictedColumns { get; set; } = new();
-    public Dictionary<string, string> ColumnRestrictions { get; set; } = new();
-}
-
-/// <summary>
-/// Validation report
-/// </summary>
-public class ValidationReport
-{
-    public string Query { get; set; } = string.Empty;
-    public string OriginalQuery { get; set; } = string.Empty;
-    public EnhancedSemanticValidationResult? ValidationResult { get; set; }
-    public bool IsValid { get; set; } = false;
-    public double OverallScore { get; set; } = 0.0;
-    public string Summary { get; set; } = string.Empty;
-    public List<string> Recommendations { get; set; } = new();
-    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
-    public string ValidatorType { get; set; } = string.Empty;
-    public Dictionary<string, object> Metadata { get; set; } = new();
-}
-
-/// <summary>
-/// SQL elements analysis result
-/// </summary>
-public class SqlElementsAnalysisResult
-{
-    public List<string> Tables { get; set; } = new();
-    public List<string> Columns { get; set; } = new();
-    public List<string> Keywords { get; set; } = new();
-    public List<string> Functions { get; set; } = new();
-    public List<string> Operators { get; set; } = new();
-    public List<string> Joins { get; set; } = new();
-    public List<string> Conditions { get; set; } = new();
-    public Dictionary<string, object> Metadata { get; set; } = new();
 }

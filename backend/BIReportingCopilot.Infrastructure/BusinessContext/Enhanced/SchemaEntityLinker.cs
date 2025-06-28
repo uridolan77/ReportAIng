@@ -49,15 +49,15 @@ public class SchemaEntityLinker : ISemanticEntityLinker
         { "user", new("tbl_Daily_actions_players", "PlayerID") },
         { "player id", new("tbl_Daily_actions_players", "PlayerID") },
         
-        // Country/Location entities (based on actual player data structure)
+        // Country/Location entities (based on BusinessTableInfo)
         { "countries", new("tbl_Countries", "CountryID", "CountryIntlCode") },
-        { "country", new("tbl_Daily_actions_players", "Country", "Country") },
-        { "uk", new("tbl_Daily_actions_players", "Country", "UK") },
-        { "united kingdom", new("tbl_Daily_actions_players", "Country", "United Kingdom") },
-        { "gb", new("tbl_Daily_actions_players", "Country", "UK") },
-        { "britain", new("tbl_Daily_actions_players", "Country", "UK") },
-        { "england", new("tbl_Daily_actions_players", "Country", "UK") },
-        { "from uk", new("tbl_Daily_actions_players", "Country", "UK") },
+        { "country", new("tbl_Countries", "CountryID", "CountryIntlCode") },
+        { "uk", new("tbl_Countries", "CountryIntlCode", "GB") },
+        { "united kingdom", new("tbl_Countries", "CountryIntlCode", "GB") },
+        { "gb", new("tbl_Countries", "CountryIntlCode", "GB") },
+        { "britain", new("tbl_Countries", "CountryIntlCode", "GB") },
+        { "england", new("tbl_Countries", "CountryIntlCode", "GB") },
+        { "from uk", new("tbl_Countries", "CountryIntlCode", "GB") },
         
         // Currency entities (from BusinessColumnInfo)
         { "currency", new("tbl_Currencies", "CurrencyID", "CurrencyCode") },
