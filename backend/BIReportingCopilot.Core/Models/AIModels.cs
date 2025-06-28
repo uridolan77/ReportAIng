@@ -204,7 +204,11 @@ public enum QueryCategory
     Trend,
     Comparison,
     Filtering,
-    Export
+    Export,
+    Financial,
+    Gaming,
+    Operational,
+    Unknown
 }
 
 // QueryIntent enum moved to EnhancedSemanticModels.cs to avoid duplication

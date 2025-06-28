@@ -363,8 +363,8 @@ public class EnhancedSemanticLayerService : IEnhancedSemanticLayerService
             ReportingCategories = ParseJsonArray(table.ReportingCategories),
             BusinessGlossaryTerms = ParseJsonArray(table.BusinessGlossaryTerms),
             LLMContextHints = ParseJsonArray(table.LLMContextHints),
-            ImportanceScore = table.ImportanceScore,
-            SemanticCoverageScore = table.SemanticCoverageScore
+            ImportanceScore = table.ImportanceScore ?? 0.0m,
+            SemanticCoverageScore = table.SemanticCoverageScore ?? 0.0m
         };
     }
 

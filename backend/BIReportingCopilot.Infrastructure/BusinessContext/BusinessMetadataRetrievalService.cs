@@ -347,17 +347,17 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
         // Apply domain-specific search strategies
         switch (classification.Category)
         {
-            case QueryCategory.Financial:
+            case BIReportingCopilot.Core.Models.QueryCategory.Financial:
                 _logger.LogWarning("💰 [FINANCIAL-STRATEGY] Executing financial search strategy for deposit query");
                 allTables.AddRange(await ExecuteFinancialSearchStrategy(profile, classification, maxTables));
                 break;
 
-            case QueryCategory.Gaming:
+            case BIReportingCopilot.Core.Models.QueryCategory.Gaming:
                 _logger.LogWarning("🎮 [GAMING-STRATEGY] Executing gaming search strategy");
                 allTables.AddRange(await ExecuteGamingSearchStrategy(profile, classification, maxTables));
                 break;
 
-            case QueryCategory.Analytics:
+            case BIReportingCopilot.Core.Models.QueryCategory.Analytics:
                 _logger.LogWarning("📊 [ANALYTICS-STRATEGY] Executing analytics search strategy");
                 allTables.AddRange(await ExecuteAnalyticsSearchStrategy(profile, classification, maxTables));
                 break;
@@ -599,7 +599,7 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
             // Apply category-specific filtering
             switch (classification.Category)
             {
-                case QueryCategory.Financial:
+                case BIReportingCopilot.Core.Models.QueryCategory.Financial:
                     _logger.LogWarning("💰 [FINANCIAL-FILTER] Checking if {Table} is gaming table for financial query", table.TableName);
                     if (IsGamingTableForFinancialQuery(table))
                     {
@@ -613,12 +613,12 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
                     }
                     break;
 
-                case QueryCategory.Gaming:
+                case BIReportingCopilot.Core.Models.QueryCategory.Gaming:
                     _logger.LogWarning("🎮 [GAMING-FILTER] Gaming queries include most tables: {Table}", table.TableName);
                     // Gaming queries can include most tables
                     break;
 
-                case QueryCategory.Analytics:
+                case BIReportingCopilot.Core.Models.QueryCategory.Analytics:
                     _logger.LogWarning("📊 [ANALYTICS-FILTER] Analytics queries are broad: {Table}", table.TableName);
                     // Analytics queries are broad, minimal filtering
                     break;
@@ -823,19 +823,13 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
     {
         try
         {
-            // For now, use the existing method but we could optimize this later
-            // to only load columns that match the query classification
-            var table = await _businessTableService.GetBusinessTableAsync(tableId);
+            // ENHANCED: Use selective column retrieval instead of loading all columns
+            var table = await GetTableWithOptimizedColumnRetrieval(tableId, classification, profile);
 
             if (table?.Columns != null)
             {
-                // Apply pre-filtering to reduce column count early
-                var preFilteredColumns = ApplyColumnPreFiltering(table.Columns, classification, profile);
-                table.Columns = preFilteredColumns;
-
-                _logger.LogDebug("🔍 [PRE-FILTER] Reduced columns from {Original} to {Filtered} for table {Table}",
-                    table.Columns.Count + (preFilteredColumns.Count - table.Columns.Count),
-                    preFilteredColumns.Count, table.TableName);
+                _logger.LogDebug("🔍 [SELECTIVE-RETRIEVAL] Retrieved {ColumnCount} optimized columns for table {Table}",
+                    table.Columns.Count, table.TableName);
             }
 
             return table;
@@ -844,6 +838,39 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
         {
             _logger.LogError(ex, "❌ Error loading table {TableId} with selective columns", tableId);
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Get table with optimized column retrieval based on query classification
+    /// </summary>
+    private async Task<BusinessTableInfoDto?> GetTableWithOptimizedColumnRetrieval(
+        long tableId,
+        QueryClassificationResult classification,
+        BusinessContextProfile profile)
+    {
+        try
+        {
+            // Get table metadata first (without columns)
+            var table = await _businessTableService.GetBusinessTableAsync(tableId);
+            if (table == null) return null;
+
+            // Get only relevant columns based on query classification
+            var relevantColumns = await GetSelectiveColumnsForTable(tableId, classification, profile);
+
+            // Replace the full column list with selective columns
+            table.Columns = relevantColumns;
+
+            _logger.LogDebug("🎯 [OPTIMIZED-RETRIEVAL] Table {Table}: Retrieved {SelectedCount} selective columns",
+                table.TableName, relevantColumns.Count);
+
+            return table;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error in optimized column retrieval for table {TableId}", tableId);
+            // Fallback to original method
+            return await _businessTableService.GetBusinessTableAsync(tableId);
         }
     }
 
@@ -895,6 +922,229 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
     }
 
     /// <summary>
+    /// Get selective columns for a table based on query classification and context
+    /// </summary>
+    private async Task<List<BusinessColumnInfoDto>> GetSelectiveColumnsForTable(
+        long tableId,
+        QueryClassificationResult classification,
+        BusinessContextProfile profile)
+    {
+        try
+        {
+            var queryLower = profile.OriginalQuestion.ToLowerInvariant();
+            var relevantColumns = new List<BusinessColumnInfoDto>();
+
+            // Build selective column criteria based on query classification
+            var columnCriteria = BuildColumnSelectionCriteria(classification, profile);
+
+            // Get columns from database with selective criteria
+            var selectedColumns = await GetColumnsWithCriteria(tableId, columnCriteria, queryLower);
+
+            _logger.LogDebug("🎯 [SELECTIVE-COLUMNS] Table {TableId}: Retrieved {Count} columns using criteria: {Criteria}",
+                tableId, selectedColumns.Count, string.Join(", ", columnCriteria.KeyTerms.Take(5)));
+
+            return selectedColumns;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error in selective column retrieval for table {TableId}", tableId);
+            // Fallback: get all columns and filter
+            var table = await _businessTableService.GetBusinessTableAsync(tableId);
+            return table?.Columns ?? new List<BusinessColumnInfoDto>();
+        }
+    }
+
+    /// <summary>
+    /// Build column selection criteria based on query classification
+    /// </summary>
+    private ColumnSelectionCriteria BuildColumnSelectionCriteria(
+        QueryClassificationResult classification,
+        BusinessContextProfile profile)
+    {
+        var criteria = new ColumnSelectionCriteria
+        {
+            QueryCategory = classification.Category,
+            KeyTerms = new List<string>(),
+            RequiredDataTypes = new List<string>(),
+            MaxColumns = CalculateMaxColumnsForTokenBudget(classification, profile),
+            MinSemanticScore = classification.IsHighConfidence ? 0.6 : 0.5
+        };
+
+        var queryLower = profile.OriginalQuestion.ToLowerInvariant();
+
+        // Add category-specific terms and data types
+        switch (classification.Category)
+        {
+            case BIReportingCopilot.Core.Models.QueryCategory.Financial:
+                criteria.KeyTerms.AddRange(new[] { "deposit", "amount", "value", "balance", "transaction", "payment", "revenue", "cost", "money", "currency", "price" });
+                criteria.RequiredDataTypes.AddRange(new[] { "Decimal", "Integer", "Money" });
+                break;
+
+            case BIReportingCopilot.Core.Models.QueryCategory.Gaming:
+                criteria.KeyTerms.AddRange(new[] { "game", "bet", "win", "loss", "session", "player", "round", "spin", "bonus" });
+                criteria.RequiredDataTypes.AddRange(new[] { "Integer", "Decimal", "Text" });
+                break;
+
+            case BIReportingCopilot.Core.Models.QueryCategory.Analytics:
+                criteria.KeyTerms.AddRange(new[] { "count", "sum", "avg", "total", "metric", "kpi", "performance", "analysis" });
+                criteria.RequiredDataTypes.AddRange(new[] { "Integer", "Decimal", "DateTime" });
+                break;
+
+            case BIReportingCopilot.Core.Models.QueryCategory.Operational:
+                criteria.KeyTerms.AddRange(new[] { "status", "state", "active", "enabled", "created", "updated", "modified" });
+                criteria.RequiredDataTypes.AddRange(new[] { "Text", "Boolean", "DateTime" });
+                break;
+        }
+
+        // Add query-specific terms
+        var queryWords = queryLower.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(w => w.Length > 3)
+            .ToList();
+        criteria.KeyTerms.AddRange(queryWords);
+
+        // Add entity-based terms
+        criteria.KeyTerms.AddRange(profile.Entities.Select(e => e.Name.ToLowerInvariant()));
+
+        _logger.LogDebug("🎯 [CRITERIA] Built selection criteria: {Category}, {TermCount} terms, max {MaxColumns} columns",
+            criteria.QueryCategory, criteria.KeyTerms.Count, criteria.MaxColumns);
+
+        return criteria;
+    }
+
+    /// <summary>
+    /// Get columns from database using selective criteria
+    /// </summary>
+    private async Task<List<BusinessColumnInfoDto>> GetColumnsWithCriteria(
+        long tableId,
+        ColumnSelectionCriteria criteria,
+        string queryLower)
+    {
+        try
+        {
+            // For now, get all columns and apply intelligent filtering
+            // In a future optimization, this could be done at the database level
+            var table = await _businessTableService.GetBusinessTableAsync(tableId);
+            if (table?.Columns == null) return new List<BusinessColumnInfoDto>();
+
+            var selectedColumns = new List<BusinessColumnInfoDto>();
+            var scoredColumns = new List<(BusinessColumnInfoDto Column, double Score)>();
+
+            // Score each column based on criteria
+            foreach (var column in table.Columns)
+            {
+                var score = CalculateColumnCriteriaScore(column, criteria, queryLower);
+                scoredColumns.Add((column, score));
+            }
+
+            // Select top columns based on score and criteria
+            var topColumns = scoredColumns
+                .Where(x => x.Score >= criteria.MinSemanticScore)
+                .OrderByDescending(x => x.Score)
+                .Take(criteria.MaxColumns)
+                .Select(x => x.Column)
+                .ToList();
+
+            // Ensure we always include key columns
+            var keyColumns = table.Columns.Where(c => c.IsKeyColumn && !topColumns.Contains(c)).ToList();
+            selectedColumns.AddRange(keyColumns);
+            selectedColumns.AddRange(topColumns);
+
+            // Remove duplicates and limit
+            selectedColumns = selectedColumns.Distinct().Take(criteria.MaxColumns).ToList();
+
+            _logger.LogDebug("🎯 [CRITERIA-SELECTION] Table {TableId}: Selected {Selected}/{Total} columns (min score: {MinScore})",
+                tableId, selectedColumns.Count, table.Columns.Count, criteria.MinSemanticScore);
+
+            return selectedColumns;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error applying column criteria for table {TableId}", tableId);
+            return new List<BusinessColumnInfoDto>();
+        }
+    }
+
+    /// <summary>
+    /// Calculate column score based on selection criteria
+    /// </summary>
+    private double CalculateColumnCriteriaScore(
+        BusinessColumnInfoDto column,
+        ColumnSelectionCriteria criteria,
+        string queryLower)
+    {
+        double score = 0.0;
+        var columnLower = column.ColumnName.ToLowerInvariant();
+        var businessMeaningLower = column.BusinessMeaning?.ToLowerInvariant() ?? "";
+
+        // Base semantic relevance
+        score += column.SemanticRelevanceScore;
+
+        // Key column boost
+        if (column.IsKeyColumn)
+        {
+            score += 0.5;
+        }
+
+        // Data type matching
+        if (criteria.RequiredDataTypes.Contains(column.BusinessDataType))
+        {
+            score += 0.3;
+        }
+
+        // Term matching
+        foreach (var term in criteria.KeyTerms)
+        {
+            if (columnLower.Contains(term) || businessMeaningLower.Contains(term))
+            {
+                score += 0.2;
+                break; // Only count once per column
+            }
+        }
+
+        // Category-specific boosts
+        score += ApplyCategorySpecificColumnBoosts(column, criteria.QueryCategory, queryLower);
+
+        return Math.Max(0.0, Math.Min(1.0, score));
+    }
+
+    /// <summary>
+    /// Apply category-specific column scoring boosts
+    /// </summary>
+    private double ApplyCategorySpecificColumnBoosts(
+        BusinessColumnInfoDto column,
+        BIReportingCopilot.Core.Models.QueryCategory category,
+        string queryLower)
+    {
+        double boost = 0.0;
+        var columnLower = column.ColumnName.ToLowerInvariant();
+
+        switch (category)
+        {
+            case BIReportingCopilot.Core.Models.QueryCategory.Financial:
+                if (columnLower.Contains("deposit") || columnLower.Contains("amount") ||
+                    columnLower.Contains("balance") || columnLower.Contains("value"))
+                    boost += 0.4;
+                break;
+
+            case BIReportingCopilot.Core.Models.QueryCategory.Gaming:
+                if (columnLower.Contains("game") || columnLower.Contains("bet") ||
+                    columnLower.Contains("win") || columnLower.Contains("session"))
+                    boost += 0.4;
+                break;
+
+            case BIReportingCopilot.Core.Models.QueryCategory.Analytics:
+                if (columnLower.Contains("count") || columnLower.Contains("total") ||
+                    columnLower.Contains("avg") || columnLower.Contains("sum"))
+                    boost += 0.4;
+                break;
+        }
+
+        return boost;
+    }
+
+
+
+    /// <summary>
     /// Check if column contains relevant terms for the query
     /// </summary>
     private bool ContainsRelevantTerms(BusinessColumnInfoDto column, string queryLower, QueryClassificationResult classification)
@@ -909,11 +1159,11 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
         // Category-specific term matching
         switch (classification.Category)
         {
-            case QueryCategory.Financial:
+            case BIReportingCopilot.Core.Models.QueryCategory.Financial:
                 var financialTerms = new[] { "deposit", "amount", "value", "balance", "transaction", "payment", "revenue", "cost" };
                 return financialTerms.Any(term => searchText.Contains(term));
 
-            case QueryCategory.Gaming:
+            case BIReportingCopilot.Core.Models.QueryCategory.Gaming:
                 var gamingTerms = new[] { "game", "bet", "win", "loss", "session", "player", "round" };
                 return gamingTerms.Any(term => searchText.Contains(term));
 
@@ -1124,15 +1374,15 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
         // Category-specific scoring
         switch (classification.Category)
         {
-            case QueryCategory.Financial:
+            case BIReportingCopilot.Core.Models.QueryCategory.Financial:
                 score += CalculateFinancialColumnScore(column, columnLower, businessMeaningLower, queryLower);
                 break;
 
-            case QueryCategory.Gaming:
+            case BIReportingCopilot.Core.Models.QueryCategory.Gaming:
                 score += CalculateGamingColumnScore(column, columnLower, businessMeaningLower, queryLower);
                 break;
 
-            case QueryCategory.Analytics:
+            case BIReportingCopilot.Core.Models.QueryCategory.Analytics:
                 score += CalculateAnalyticsColumnScore(column, columnLower, businessMeaningLower, queryLower);
                 break;
 
@@ -1152,11 +1402,11 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
         // Base limits by query type
         var baseLimit = classification.Category switch
         {
-            QueryCategory.Financial => 15,  // Financial queries need more detail
-            QueryCategory.Gaming => 12,     // Gaming queries moderate detail
-            QueryCategory.Analytics => 20,  // Analytics queries need comprehensive data
-            QueryCategory.Operational => 8, // Operational queries need minimal data
-            QueryCategory.Reporting => 18,  // Reporting queries need good coverage
+            BIReportingCopilot.Core.Models.QueryCategory.Financial => 15,  // Financial queries need more detail
+            BIReportingCopilot.Core.Models.QueryCategory.Gaming => 12,     // Gaming queries moderate detail
+            BIReportingCopilot.Core.Models.QueryCategory.Analytics => 20,  // Analytics queries need comprehensive data
+            BIReportingCopilot.Core.Models.QueryCategory.Operational => 8, // Operational queries need minimal data
+            BIReportingCopilot.Core.Models.QueryCategory.Reporting => 18,  // Reporting queries need good coverage
             _ => 10                         // Default limit
         };
 
@@ -1571,7 +1821,7 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
                 if (tableLower.Contains("games") ||  // tbl_Daily_actions_games, Games
                     tableLower == "games" ||         // Pure Games table
                     tableLower.Contains("_games") || // Any table ending with _games
-                    (tableLower.Contains("game") && !tableLower.Contains("action"))) // Pure game tables
+                    (tableLower.Contains("game") && tableLower != "tbl_daily_actions")) // Pure game tables (preserve main daily_actions)
                 {
                     isGamingTable = true;
                     _logger.LogInformation("🎮 [GAMING-DEBUG] Gaming table pattern matched: {Table} (Pattern: {Pattern})",
@@ -2041,25 +2291,14 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
         return string.IsNullOrEmpty(firstAlias) ? null : firstAlias;
     }
 
-    /// <summary>
-    /// Enhanced query classification system for domain-specific table selection
-    /// </summary>
-    public enum QueryCategory
-    {
-        Financial,
-        Gaming,
-        Analytics,
-        Operational,
-        Reporting,
-        Unknown
-    }
+
 
     /// <summary>
     /// Query classification result with confidence and context
     /// </summary>
     public class QueryClassificationResult
     {
-        public QueryCategory Category { get; set; }
+        public BIReportingCopilot.Core.Models.QueryCategory Category { get; set; }
         public double Confidence { get; set; }
         public List<string> DetectedPatterns { get; set; } = new();
         public Dictionary<string, double> CategoryScores { get; set; } = new();
@@ -2101,7 +2340,7 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
         var maxScore = result.CategoryScores.Values.Max();
         var primaryCategory = result.CategoryScores.FirstOrDefault(x => x.Value == maxScore);
 
-        result.Category = Enum.Parse<QueryCategory>(primaryCategory.Key);
+        result.Category = Enum.Parse<BIReportingCopilot.Core.Models.QueryCategory>(primaryCategory.Key);
         result.Confidence = Math.Min(maxScore / 10.0, 1.0); // Normalize to 0-1 range
 
         _logger.LogInformation("📊 [QUERY-CLASSIFICATION] Result: {Category} (Confidence: {Confidence:F2}) - Patterns: {Patterns}",
@@ -2312,23 +2551,23 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
 
         switch (classification.Category)
         {
-            case QueryCategory.Financial:
+            case BIReportingCopilot.Core.Models.QueryCategory.Financial:
                 score += ApplyFinancialTableScoring(table, classification, tableLower, purposeLower);
                 break;
 
-            case QueryCategory.Gaming:
+            case BIReportingCopilot.Core.Models.QueryCategory.Gaming:
                 score += ApplyGamingTableScoring(table, classification, tableLower, purposeLower);
                 break;
 
-            case QueryCategory.Analytics:
+            case BIReportingCopilot.Core.Models.QueryCategory.Analytics:
                 score += ApplyAnalyticsTableScoring(table, classification, tableLower, purposeLower);
                 break;
 
-            case QueryCategory.Operational:
+            case BIReportingCopilot.Core.Models.QueryCategory.Operational:
                 score += ApplyOperationalTableScoring(table, classification, tableLower, purposeLower);
                 break;
 
-            case QueryCategory.Reporting:
+            case BIReportingCopilot.Core.Models.QueryCategory.Reporting:
                 score += ApplyReportingTableScoring(table, classification, tableLower, purposeLower);
                 break;
 
@@ -2715,4 +2954,16 @@ public class BusinessMetadataRetrievalService : IBusinessMetadataRetrievalServic
 
         return isGamingTable;
     }
+}
+
+/// <summary>
+/// Criteria for selective column retrieval based on query classification
+/// </summary>
+public class ColumnSelectionCriteria
+{
+    public BIReportingCopilot.Core.Models.QueryCategory QueryCategory { get; set; }
+    public List<string> KeyTerms { get; set; } = new();
+    public List<string> RequiredDataTypes { get; set; } = new();
+    public int MaxColumns { get; set; } = 10;
+    public double MinSemanticScore { get; set; } = 0.5;
 }

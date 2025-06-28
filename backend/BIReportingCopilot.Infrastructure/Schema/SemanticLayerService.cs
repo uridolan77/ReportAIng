@@ -428,8 +428,8 @@ public class SemanticLayerService : ISemanticLayerService
                 ? new List<string>()
                 : JsonSerializer.Deserialize<List<string>>(entity.MappedColumns) ?? new List<string>(),
             BusinessOwner = entity.BusinessOwner,
-            ConfidenceScore = entity.ConfidenceScore,
-            AmbiguityScore = entity.AmbiguityScore,
+            ConfidenceScore = entity.ConfidenceScore ?? 1.0m,
+            AmbiguityScore = entity.AmbiguityScore ?? 0.0m,
             IsActive = entity.IsActive,
             UsageCount = entity.UsageCount,
             LastUsed = entity.LastUsed,

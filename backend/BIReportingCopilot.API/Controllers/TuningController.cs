@@ -12,6 +12,7 @@ using System.Security.Claims;
 using TuningDashboardData = BIReportingCopilot.Core.DTOs.TuningDashboardData;
 using CreateQueryPatternRequest = BIReportingCopilot.Core.DTOs.CreateQueryPatternRequest;
 using BusinessContextAutoGenerator = BIReportingCopilot.Infrastructure.AI.Management.BusinessContextAutoGenerator;
+using BIReportingCopilot.Infrastructure.AI.Management;
 
 namespace BIReportingCopilot.API.Controllers;
 
@@ -24,13 +25,20 @@ public class TuningController : ControllerBase
     private readonly IBusinessTableManagementService _businessTableService;
     private readonly ILogger<TuningController> _logger;
     private readonly BICopilotContext _context;
+    private readonly MetadataEnhancementService _metadataEnhancementService;
 
-    public TuningController(ITuningService tuningService, IBusinessTableManagementService businessTableService, ILogger<TuningController> logger, BICopilotContext context)
+    public TuningController(
+        ITuningService tuningService,
+        IBusinessTableManagementService businessTableService,
+        ILogger<TuningController> logger,
+        BICopilotContext context,
+        MetadataEnhancementService metadataEnhancementService)
     {
         _tuningService = tuningService;
         _businessTableService = businessTableService;
         _logger = logger;
         _context = context;
+        _metadataEnhancementService = metadataEnhancementService;
     }
 
     private string GetCurrentUserId()
@@ -665,6 +673,114 @@ public class TuningController : ControllerBase
         {
             _logger.LogError(ex, "Error testing prompt template {TemplateId}", id);
             return StatusCode(500, "Internal server error");
+        }
+    }
+
+    #endregion
+
+    #region Metadata Enhancement
+
+    [HttpPost("enhance-metadata")]
+    public async Task<ActionResult<MetadataEnhancementService.MetadataEnhancementResult>> EnhanceMetadata(
+        [FromBody] MetadataEnhancementService.MetadataEnhancementRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            _logger.LogInformation("🔧 Starting metadata enhancement for user {UserId}", userId);
+
+            var result = await _metadataEnhancementService.EnhanceMetadataAsync(request, userId);
+
+            if (result.Success)
+            {
+                _logger.LogInformation("✅ Metadata enhancement completed successfully - Fields: {Fields}, Cost: ${Cost:F2}",
+                    result.FieldsEnhanced, result.TotalCost);
+            }
+            else
+            {
+                _logger.LogWarning("⚠️ Metadata enhancement completed with errors: {Errors}",
+                    string.Join(", ", result.Errors));
+            }
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error during metadata enhancement");
+            return StatusCode(500, new { message = "Error during metadata enhancement", error = ex.Message });
+        }
+    }
+
+    [HttpPost("enhance-metadata/preview")]
+    public async Task<ActionResult<MetadataEnhancementService.MetadataEnhancementResult>> PreviewMetadataEnhancement(
+        [FromBody] MetadataEnhancementService.MetadataEnhancementRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            _logger.LogInformation("👁️ Previewing metadata enhancement for user {UserId}", userId);
+
+            // Set preview mode
+            request.PreviewOnly = true;
+            request.BatchSize = Math.Min(request.BatchSize, 10); // Limit preview size
+
+            var result = await _metadataEnhancementService.EnhanceMetadataAsync(request, userId);
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error during metadata enhancement preview");
+            return StatusCode(500, new { message = "Error during preview", error = ex.Message });
+        }
+    }
+
+    [HttpPost("enhance-metadata/empty-fields")]
+    public async Task<ActionResult<MetadataEnhancementService.MetadataEnhancementResult>> EnhanceEmptyFields(
+        [FromQuery] List<string>? tables = null,
+        [FromQuery] int batchSize = 50,
+        [FromQuery] decimal? costBudget = null)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            _logger.LogInformation("🎯 Enhancing empty fields only for user {UserId}", userId);
+
+            var request = new MetadataEnhancementService.MetadataEnhancementRequest
+            {
+                Mode = MetadataEnhancementService.EnhancementMode.EmptyFieldsOnly,
+                TargetTables = tables,
+                BatchSize = batchSize,
+                CostBudget = costBudget
+            };
+
+            var result = await _metadataEnhancementService.EnhanceMetadataAsync(request, userId);
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error enhancing empty fields");
+            return StatusCode(500, new { message = "Error enhancing empty fields", error = ex.Message });
+        }
+    }
+
+    [HttpGet("enhancement-status")]
+    public async Task<ActionResult<MetadataEnhancementService.EnhancementStatus>> GetEnhancementStatus()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            _logger.LogInformation("📊 Getting enhancement status for user {UserId}", userId);
+
+            var status = await _metadataEnhancementService.GetEnhancementStatusAsync();
+
+            return Ok(status);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error getting enhancement status");
+            return StatusCode(500, new { message = "Error getting enhancement status", error = ex.Message });
         }
     }
 

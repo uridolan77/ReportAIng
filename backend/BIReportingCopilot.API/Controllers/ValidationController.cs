@@ -178,8 +178,8 @@ public class ValidationController : ControllerBase
 
             var result = await _enhancedValidator.ValidateBusinessLogicAsync(sql, originalQuery, cancellationToken);
 
-            _logger.LogInformation("✅ Business logic validation completed: {Valid} (Score: {Score:F2})", 
-                result.IsValid, result.BusinessLogicScore);
+            _logger.LogInformation("✅ Business logic validation completed: {Valid} (Score: {Score:F2})",
+                result.IsValid, result.ComplianceScore);
 
             return Ok(result);
         }

@@ -1141,7 +1141,7 @@ public class AIRequest
     public string? SystemMessage { get; set; }
 
     /// <summary>
-    /// Timeout in seconds for the request
+    /// Timeout in seconds for AI request
     /// </summary>
     public int TimeoutSeconds { get; set; } = 30;
 }

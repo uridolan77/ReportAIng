@@ -48,9 +48,9 @@ public class BusinessTableInfoEntity : BaseEntity
     [MaxLength(2000)]
     public string RelationshipSemantics { get; set; } = string.Empty; // JSON - business meaning of relationships
 
-    public decimal ImportanceScore { get; set; } = 0.5m; // 0-1 scale for prioritization
+    public decimal? ImportanceScore { get; set; } = 0.5m; // 0-1 scale for prioritization
 
-    public decimal UsageFrequency { get; set; } = 0.0m; // How often this table is queried
+    public decimal? UsageFrequency { get; set; } = 0.0m; // How often this table is queried
 
     public DateTime? LastAnalyzed { get; set; } // When semantic analysis was last performed
 
@@ -82,7 +82,7 @@ public class BusinessTableInfoEntity : BaseEntity
     [MaxLength(1000)]
     public string BusinessGlossaryTerms { get; set; } = string.Empty; // JSON array of related business glossary terms
 
-    public decimal SemanticCoverageScore { get; set; } = 0.5m; // Coverage score for semantic completeness (0.0 to 1.0)
+    public decimal? SemanticCoverageScore { get; set; } = 0.5m; // Coverage score for semantic completeness (0.0 to 1.0)
 
     [MaxLength(500)]
     public string LLMContextHints { get; set; } = string.Empty; // JSON array of context hints for LLM processing
@@ -150,7 +150,7 @@ public class BusinessColumnInfoEntity : BaseEntity
     [MaxLength(500)]
     public string BusinessMetrics { get; set; } = string.Empty; // JSON array of business metrics this column supports
 
-    public decimal SemanticRelevanceScore { get; set; } = 0.5m; // Relevance score for semantic search (0.0 to 1.0)
+    public decimal? SemanticRelevanceScore { get; set; } = 0.5m; // Relevance score for semantic search (0.0 to 1.0)
 
     [MaxLength(1000)]
     public string LLMPromptHints { get; set; } = string.Empty; // JSON array of hints for LLM prompt engineering
@@ -176,9 +176,9 @@ public class BusinessColumnInfoEntity : BaseEntity
     [MaxLength(1000)]
     public string ConstraintsAndRules { get; set; } = string.Empty; // JSON - business constraints
 
-    public decimal DataQualityScore { get; set; } = 0.0m; // 0-1 completeness/accuracy score
+    public decimal? DataQualityScore { get; set; } = 0.0m; // 0-1 completeness/accuracy score
 
-    public decimal UsageFrequency { get; set; } = 0.0m; // How often this column is used in queries
+    public decimal? UsageFrequency { get; set; } = 0.0m; // How often this column is used in queries
 
     [MaxLength(500)]
     public string PreferredAggregation { get; set; } = string.Empty; // SUM, AVG, COUNT, etc.
@@ -294,9 +294,9 @@ public class BusinessGlossaryEntity : BaseEntity
     [MaxLength(1000)]
     public string RegulationReferences { get; set; } = string.Empty; // JSON - regulatory or compliance context
 
-    public decimal ConfidenceScore { get; set; } = 1.0m; // How confident we are in this definition
+    public decimal? ConfidenceScore { get; set; } = 1.0m; // How confident we are in this definition
 
-    public decimal AmbiguityScore { get; set; } = 0.0m; // How ambiguous this term is (0 = clear, 1 = very ambiguous)
+    public decimal? AmbiguityScore { get; set; } = 0.0m; // How ambiguous this term is (0 = clear, 1 = very ambiguous)
 
     [MaxLength(1000)]
     public string ContextualVariations { get; set; } = string.Empty; // JSON - how meaning changes by context
@@ -323,7 +323,7 @@ public class BusinessGlossaryEntity : BaseEntity
     [MaxLength(1000)]
     public string CrossDomainMappings { get; set; } = string.Empty; // JSON - how this term maps across business domains
 
-    public decimal SemanticStability { get; set; } = 1.0m; // How stable this term's meaning is (0 = volatile, 1 = stable)
+    public decimal? SemanticStability { get; set; } = 1.0m; // How stable this term's meaning is (0 = volatile, 1 = stable)
 
     [MaxLength(1000)]
     public string InferenceRules { get; set; } = string.Empty; // JSON - rules for semantic inference

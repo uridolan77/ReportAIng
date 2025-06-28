@@ -202,8 +202,22 @@ public class DynamicSchemaContextualizationService : IDynamicSchemaContextualiza
                     tableLower.Contains("payment") || tableLower.Contains("financial") ||
                     purposeLower.Contains("deposit") || purposeLower.Contains("financial"))
                 {
-                    score += 2.0m; // Very high priority for financial tables
-                    _logger.LogDebug("💰 High priority financial table: {Table} (+2.0)", table.TableName);
+                    // Special handling: Prefer main daily_actions over currency-specific transaction tables
+                    if (tableLower == "tbl_daily_actions")
+                    {
+                        score += 3.0m; // Highest priority for main daily actions table
+                        _logger.LogDebug("💰 Highest priority main financial table: {Table} (+3.0)", table.TableName);
+                    }
+                    else if (tableLower.Contains("gbp") || tableLower.Contains("eur") || tableLower.Contains("usd"))
+                    {
+                        score += 1.0m; // Lower priority for currency-specific tables
+                        _logger.LogDebug("💱 Currency-specific table (lower priority): {Table} (+1.0)", table.TableName);
+                    }
+                    else
+                    {
+                        score += 2.0m; // Standard priority for other financial tables
+                        _logger.LogDebug("💰 High priority financial table: {Table} (+2.0)", table.TableName);
+                    }
                 }
 
                 // Prioritize daily action tables (likely contain deposit data)
@@ -233,10 +247,17 @@ public class DynamicSchemaContextualizationService : IDynamicSchemaContextualiza
                 // EXCLUDE gaming-specific tables for financial queries
                 if (tableLower.Contains("game") && !tableLower.Contains("deposit") &&
                     !tableLower.Contains("transaction") && !tableLower.Contains("financial") &&
-                    !tableLower.Contains("action"))
+                    tableLower != "tbl_daily_actions") // Preserve main daily_actions table
                 {
-                    score -= 1.0m; // Penalize pure gaming tables for financial queries
-                    _logger.LogDebug("🎮 Penalizing pure gaming table: {Table} (-1.0)", table.TableName);
+                    score -= 2.0m; // Strong penalty for pure gaming tables for financial queries (increased from -1.0)
+                    _logger.LogDebug("🎮 Penalizing pure gaming table: {Table} (-2.0)", table.TableName);
+                }
+
+                // EXCLUDE currency-specific transaction tables for deposit queries when main table is available
+                if (isDepositQuery && (tableLower.Contains("gbp_transactions") || tableLower.Contains("eur_transactions") || tableLower.Contains("usd_transactions")))
+                {
+                    score -= 1.5m; // Penalty for currency-specific transaction tables in favor of main daily_actions
+                    _logger.LogDebug("💱 Penalizing currency-specific transaction table for deposit query: {Table} (-1.5)", table.TableName);
                 }
             }
 
@@ -716,8 +737,8 @@ public class DynamicSchemaContextualizationService : IDynamicSchemaContextualiza
             NaturalLanguageAliases = string.IsNullOrEmpty(entity.NaturalLanguageAliases)
                 ? new List<string>()
                 : JsonSerializer.Deserialize<List<string>>(entity.NaturalLanguageAliases) ?? new List<string>(),
-            ImportanceScore = entity.ImportanceScore,
-            UsageFrequency = entity.UsageFrequency,
+            ImportanceScore = entity.ImportanceScore ?? 0.0m,
+            UsageFrequency = entity.UsageFrequency ?? 0.0m,
             LastAnalyzed = entity.LastAnalyzed,
             BusinessOwner = entity.BusinessOwner,
             IsActive = entity.IsActive,
@@ -740,8 +761,8 @@ public class DynamicSchemaContextualizationService : IDynamicSchemaContextualiza
                 ? new List<string>()
                 : JsonSerializer.Deserialize<List<string>>(entity.NaturalLanguageAliases) ?? new List<string>(),
             BusinessDataType = entity.BusinessDataType,
-            DataQualityScore = entity.DataQualityScore,
-            UsageFrequency = entity.UsageFrequency,
+            DataQualityScore = entity.DataQualityScore ?? 0.0m,
+            UsageFrequency = entity.UsageFrequency ?? 0.0m,
             PreferredAggregation = entity.PreferredAggregation,
             IsKeyColumn = entity.IsKeyColumn,
             IsSensitiveData = entity.IsSensitiveData,

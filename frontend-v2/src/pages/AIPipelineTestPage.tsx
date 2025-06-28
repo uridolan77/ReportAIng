@@ -313,7 +313,8 @@ const AIPipelineTestPage: React.FC = () => {
       // Simulate processing delay
       await new Promise(resolve => setTimeout(resolve, processingTime));
 
-      stepResults[step] = {
+      // Base step result
+      const baseStepResult = {
         success: true,
         durationMs: Math.round(processingTime),
         error: null,
@@ -325,6 +326,33 @@ const AIPipelineTestPage: React.FC = () => {
           totalSteps: selectedSteps.length
         }
       };
+
+      // Add step-specific properties
+      if (step === PipelineStep.AIGeneration) {
+        stepResults[step] = {
+          ...baseStepResult,
+          generatedSQL: `SELECT TOP 10 c.customer_id, c.name, SUM(d.amount) as total_deposits
+FROM Customers c
+JOIN Transactions t ON c.customer_id = t.customer_id
+JOIN Deposits d ON t.transaction_id = d.transaction_id
+WHERE c.country = 'UK' AND DATE(d.created_date) = DATEADD(day, -1, CAST(GETDATE() AS DATE))
+GROUP BY c.customer_id, c.name
+ORDER BY total_deposits DESC;`,
+          sqlLength: 347,
+          estimatedCost: 0.0023
+        };
+      } else if (step === PipelineStep.PromptBuilding) {
+        stepResults[step] = {
+          ...baseStepResult,
+          prompt: `Generate SQL to find the top 10 depositors from UK yesterday. Use tables: Customers, Transactions, Deposits.
+Context: Gaming platform analysis for financial reporting.
+Requirements: Include customer names and total deposit amounts.`,
+          promptLength: 187,
+          estimatedTokens: 45
+        };
+      } else {
+        stepResults[step] = baseStepResult;
+      }
 
       console.log(`✅ Mock Step Completed: ${stepName} (${Math.round(processingTime)}ms)`);
     }

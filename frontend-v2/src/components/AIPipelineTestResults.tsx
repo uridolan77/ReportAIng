@@ -150,7 +150,7 @@ const AIPipelineTestResults: React.FC<AIPipelineTestResultsProps> = ({
       const stepResult = result.results?.[step];
       // Special handling for steps that might have data but appear empty
       let hasData = !!stepResult;
-      if (step === 'AIGeneration') {
+      if (step === 'AIGeneration' && stepResult) {
         hasData = !!(stepResult.generatedSQL || stepResult.sqlLength || stepResult.success !== undefined);
       }
 
@@ -208,6 +208,15 @@ const AIPipelineTestResults: React.FC<AIPipelineTestResultsProps> = ({
   };
 
   const renderStepSpecificResults = (step: string, stepResult: any) => {
+    // Add null check for stepResult
+    if (!stepResult) {
+      return (
+        <div style={{padding: '20px', backgroundColor: '#f5f5f5', textAlign: 'center'}}>
+          <Text type="secondary">No data available for this step</Text>
+        </div>
+      );
+    }
+
     switch (step) {
       case PipelineStep.BusinessContextAnalysis:
         return (

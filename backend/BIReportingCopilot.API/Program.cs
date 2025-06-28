@@ -944,14 +944,14 @@ builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.IForeignKeyRelatio
 // Register business metadata population service
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.Schema.BusinessMetadataPopulationService>();
 
-// Register AI-powered business metadata enhancement service - TEMPORARILY DISABLED due to compilation issues
-// builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Management.BusinessMetadataEnhancementService>();
+// Register AI-powered business metadata enhancement service - ENABLED
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Management.MetadataEnhancementService>();
 
 // Register simplified business metadata enhancement service (replacement for AI-powered version)
 builder.Services.AddScoped<BIReportingCopilot.Infrastructure.BusinessContext.Enhanced.SimplifiedBusinessMetadataEnhancementService>();
 
-// Register basic SQL validator (replacement for enhanced validator) - TEMPORARILY DISABLED
-// builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.IEnhancedSemanticSqlValidator, BIReportingCopilot.Infrastructure.Validation.BasicSemanticSqlValidator>();
+// Register basic SQL validator (replacement for enhanced validator) - ENABLED
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.IEnhancedSemanticSqlValidator, BIReportingCopilot.Infrastructure.Validation.BasicSemanticSqlValidator>();
 
 // ===== ENHANCED SCHEMA CONTEXTUALIZATION SYSTEM =====
 // Note: Enhanced Schema Contextualization System is already implemented in BusinessMetadataRetrievalService
@@ -961,11 +961,11 @@ builder.Services.AddScoped<BIReportingCopilot.Infrastructure.BusinessContext.Enh
 // Enhanced semantic SQL validator with self-correction capabilities - TEMPORARILY DISABLED due to compilation issues
 // builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.IEnhancedSemanticSqlValidator, BIReportingCopilot.Infrastructure.Validation.EnhancedSemanticSqlValidator>();
 
-// Dry-run execution service for SQL validation without full execution - TEMPORARILY DISABLED due to compilation issues
-// builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.IDryRunExecutionService, BIReportingCopilot.Infrastructure.Query.DryRunExecutionService>();
+// Dry-run execution service for SQL validation without full execution - ENABLED
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.IDryRunExecutionService, BIReportingCopilot.Infrastructure.Query.DryRunExecutionService>();
 
-// SQL self-correction service with LLM feedback loops - TEMPORARILY DISABLED due to compilation issues
-// builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.ISqlSelfCorrectionService, BIReportingCopilot.Infrastructure.AI.SqlSelfCorrectionService>();
+// SQL self-correction service with LLM feedback loops - ENABLED
+builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Validation.ISqlSelfCorrectionService, BIReportingCopilot.Infrastructure.AI.SqlSelfCorrectionService>();
 
 // ===== PHASE 4: HUMAN-IN-LOOP REVIEW SERVICES =====
 // Human review workflow management
@@ -1005,6 +1005,9 @@ builder.Services.AddScoped<BIReportingCopilot.Core.Interfaces.Tuning.ITuningServ
 
 builder.Services.AddScoped<IBusinessContextAutoGenerator, BIReportingCopilot.Infrastructure.AI.Management.BusinessContextAutoGenerator>();
 builder.Services.AddScoped<IQuerySuggestionService, BIReportingCopilot.Infrastructure.Query.QuerySuggestionService>();
+
+// Register metadata enhancement service for populating empty semantic fields
+builder.Services.AddScoped<BIReportingCopilot.Infrastructure.AI.Management.MetadataEnhancementService>();
 // Register SignalRProgressReporter with QueryStatusHub context
 builder.Services.AddScoped<IProgressReporter>(provider =>
 {

@@ -61,7 +61,7 @@ public class EnhancedPromptTemplate
             // 7. User query
             prompt.AppendLine($"User Query: {userQuery}");
             prompt.AppendLine();
-            prompt.AppendLine("Generate the SQL query:");
+            prompt.AppendLine("IMPORTANT: Return ONLY the SQL query without any explanations, assumptions, or additional text:");
 
             var finalPrompt = prompt.ToString();
             _logger.LogDebug("✅ [ENHANCED-PROMPT] Generated prompt with {Length} characters", finalPrompt.Length);
@@ -91,7 +91,8 @@ Key Responsibilities:
 - Generate syntactically correct and semantically meaningful SQL
 - Apply appropriate business logic and domain knowledge
 - Ensure optimal performance and proper indexing usage
-- Follow data governance and security best practices";
+- Follow data governance and security best practices
+- Return ONLY valid SQL queries without explanations or additional text";
     }
 
     /// <summary>
@@ -298,6 +299,8 @@ Key Responsibilities:
         instructions.AppendLine("5. Apply appropriate aggregation functions when needed");
         instructions.AppendLine("6. Include ORDER BY clause for ranking/sorting queries");
         instructions.AppendLine("7. Use TOP clause for limit queries");
+        instructions.AppendLine("8. Return ONLY the SQL query without explanations, comments, or markdown formatting");
+        instructions.AppendLine("9. Do not include assumptions, notes, or explanatory text");
 
         if (businessProfile?.Intent?.Type == "Operational")
         {
@@ -350,7 +353,7 @@ Key Responsibilities:
         
         prompt.AppendLine($"User Query: {userQuery}");
         prompt.AppendLine();
-        prompt.AppendLine("Generate the SQL query:");
+        prompt.AppendLine("Return ONLY the SQL query without explanations:");
         
         return prompt.ToString();
     }
