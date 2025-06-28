@@ -41,6 +41,13 @@ public class QueryOptions
 
     public Dictionary<string, object>? Parameters { get; set; }
 
+    // Enhanced Schema Contextualization System options
+    [Range(1000, 8000, ErrorMessage = "MaxTokens must be between 1000 and 8000")]
+    public int? MaxTokens { get; set; } = 4000;
+
+    [Range(1, 20, ErrorMessage = "MaxTables must be between 1 and 20")]
+    public int? MaxTables { get; set; } = 5;
+
     // LLM Management options
     public string? ProviderId { get; set; }
     public string? ModelId { get; set; }
